@@ -30,8 +30,8 @@ class DETRHead(BaseModule):
         embed_dims (int): The dims of Transformer embedding.
         num_reg_fcs (int): Number of fully-connected layers used in `FFN`,
             which is then used for the regression head. Defaults to 2.
-        sync_cls_avg_factor (bool): Whether to sync the avg_factor of
-            all ranks. Default to False.
+        sync_cls_avg_factor (bool): Whether to sync the `avg_factor` of
+            all ranks. Default to `False`.
         loss_cls (:obj:`ConfigDict` or dict): Config of the classification
             loss. Defaults to `CrossEntropyLoss`.
         loss_bbox (:obj:`ConfigDict` or dict): Config of the regression bbox
@@ -43,7 +43,7 @@ class DETRHead(BaseModule):
         test_cfg (:obj:`ConfigDict` or dict): Testing config of transformer
             head.
         init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
-            dict], optional): Initialization config dict. Defaults to None.
+            dict], optional): Initialization config dict. Defaults to `None`.
     """
 
     _version = 2
@@ -142,25 +142,24 @@ class DETRHead(BaseModule):
         """"Forward function.
 
         Args:
-            hidden_states (Tensor): Features from transformer decoder.
-            If `return_intermediate_dec` in detr.py is True output has
-            shape (num_dec_layers, bs, num_query, embed_dims), else
-            has shape (1, bs, num_query, embed_dims) which only contains
-            the last layer outputs.
+            hidden_states (Tensor): Features from transformer decoder. If
+                `return_intermediate_dec` in detr.py is True output has shape
+                (num_hidden_states, bs, num_query, dim), else has shape (1,
+                bs, num_query, dim) which only contains the last layer outputs.
         Returns:
             tuple[Tensor]: results of head containing the following tensor.
 
-            - all_cls_scores (Tensor): Outputs from the classification head,
-            shape (num_dec_layers, bs, num_query, cls_out_channels). Note
-            cls_out_channels should include background.
-            - all_bbox_preds (Tensor): Sigmoid outputs from the regression
-            head with normalized coordinate format (cx, cy, w, h).
-            Shape (num_dec_layers, bs, num_query, 4).
+            - layers_cls_scores (Tensor): Outputs from the classification head,
+              shape (num_hidden_states, bs, num_query, cls_out_channels). Note
+              cls_out_channels should include background.
+            - layers_bbox_preds (Tensor): Sigmoid outputs from the regression
+              head with normalized coordinate format (cx, cy, w, h), has shape
+              (num_hidden_states, bs, num_query, 4).
         """
-        all_cls_scores = self.fc_cls(hidden_states)
-        all_bbox_preds = self.fc_reg(
+        layers_cls_scores = self.fc_cls(hidden_states)
+        layers_bbox_preds = self.fc_reg(
             self.activate(self.reg_ffn(hidden_states))).sigmoid()
-        return all_cls_scores, all_bbox_preds
+        return layers_cls_scores, layers_bbox_preds
 
     def loss(self, hidden_states: Tensor,
              batch_data_samples: SampleList) -> dict:
@@ -168,9 +167,9 @@ class DETRHead(BaseModule):
         head on the features of the upstream network.
 
         Args:
-            hidden_states (Tensor): Feature from the transformer decoder,
-                shape [nb_dec, bs, num_query, cls_out_channels] or
-                [nb_dec, num_query, bs, cls_out_channels].
+            hidden_states (Tensor): Feature from the transformer decoder, has
+                shape (num_decoder_layers, bs, num_query, cls_out_channels) or
+                (num_decoder_layers, num_query, bs, cls_out_channels).
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
@@ -204,12 +203,12 @@ class DETRHead(BaseModule):
 
         Args:
             all_layers_cls_scores (Tensor): Classification outputs
-                for each feature level. Each is a 4D-tensor with shape
-                [nb_dec, bs, num_query, cls_out_channels].
+                of each decoder layers. Each is a 4D-tensor with shape
+                (num_decoder_layers, bs, num_query, cls_out_channels).
             all_layers_bbox_preds (Tensor): Sigmoid regression
-                outputs for each feature level. Each is a 4D-tensor with
+                outputs of each decoder layers. Each is a 4D-tensor with
                 normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, bs, num_query, 4].
+                (num_decoder_layers, bs, num_query, 4).
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
@@ -257,10 +256,10 @@ class DETRHead(BaseModule):
 
         Args:
             cls_scores (Tensor): Box score logits from a single decoder layer
-                for all images. Shape [bs, num_query, cls_out_channels]
+                for all images, has shape (bs, num_query, cls_out_channels).
             bbox_preds (Tensor): Sigmoid outputs from a single decoder layer
                 for all images, with normalized coordinate (cx, cy, w, h) and
-                shape [bs, num_query, 4].
+                shape (bs, num_query, 4).
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
@@ -268,8 +267,8 @@ class DETRHead(BaseModule):
                 image size, scaling factor, etc.
 
         Returns:
-            Tupe[Tensor]: A tuple includes loss_cls, loss_box and
-            loss_iou.
+            Tuple[Tensor]: A tuple including `loss_cls`, `loss_box` and
+            `loss_iou`.
         """
         num_imgs = cls_scores.size(0)
         cls_scores_list = [cls_scores[i] for i in range(num_imgs)]
@@ -445,7 +444,7 @@ class DETRHead(BaseModule):
                          hidden_states: Tuple[Tensor],
                          batch_data_samples: SampleList,
                          proposal_cfg: Optional[ConfigType] = None) \
-            -> Tuple[dict, InstanceList]:
+            -> Tuple[dict, InstanceList]:  # TODO: ?
         """Perform forward propagation of the head, then calculate loss and
         predictions from the features and data samples. Over-write because
         img_metas are needed as inputs for bbox_head.
@@ -472,7 +471,7 @@ class DETRHead(BaseModule):
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
 
-        outs = self(hidden_states)  # TODO: refactor this
+        outs = self(hidden_states)
         loss_inputs = outs + (batch_gt_instances, batch_img_metas)
         losses = self.loss_by_feat(*loss_inputs)
 
@@ -505,52 +504,33 @@ class DETRHead(BaseModule):
             data_samples.metainfo for data_samples in batch_data_samples
         ]
 
-        self.eval()
-        outs = self(hidden_states)  # TODO: refactor this
-        outs_new = self(hidden_states[-1].unsqueeze(0))  # refactor draft
-        # outs = outs_new
+        last_layer_hidden_state = hidden_states[-1].unsqueeze(0)
+        outs = self(last_layer_hidden_state)
 
         predictions = self.predict_by_feat(
             *outs, batch_img_metas=batch_img_metas, rescale=rescale)
 
-        # refactor draft
-        def compare(x, y):
-            return torch.sum(x - y), torch.equal(x, y)
-
-        # compare = lambda x, y: (torch.sum(x - y), torch.equal(x, y))
-        outs_comparison = tuple(data[-1].unsqueeze(0) for data in outs_new)
-        comparison = [compare(a, b) for a, b in zip(outs_comparison, outs_new)]
-        predictions_comparison = self.predict_by_feat(
-            *outs_comparison, batch_img_metas=batch_img_metas, rescale=rescale)
-        comparison_box = compare(predictions[0].bboxes,
-                                 predictions_comparison[0].bboxes)
-        comparison_label = compare(predictions[0].labels,
-                                   predictions_comparison[0].labels)
-        comparison_score = compare(predictions[0].scores,
-                                   predictions_comparison[0].scores)
-        if [comparison, comparison_box, comparison_label, comparison_score]:
-            pass
         return predictions
 
     def predict_by_feat(
             self,
-            all_cls_scores: Tensor,  # TODO: rename this
-            all_bbox_preds: Tensor,  # TODO: rename this
+            last_layer_cls_scores: Tensor,  # TODO: rename this
+            last_layer_bbox_preds: Tensor,  # TODO: rename this
             batch_img_metas: List[dict],
             rescale: bool = True) -> InstanceList:
         """Transform network outputs for a batch into bbox predictions.
 
         Args:
-            all_cls_scores (Tensor): Classification outputs.
-                Each is a 4D-tensor with shape
-                [nb_dec, bs, num_query, cls_out_channels].
-            all_bbox_preds (Tensor): Sigmoid regression
-                outputs for each feature level. Each is a 4D-tensor with
-                normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, bs, num_query, 4].
+            last_layer_cls_scores (Tensor): Classification outputs of the last
+                decoder layer. Each is a 4D-tensor with shape
+                (num_decoder_layers, bs, num_query, cls_out_channels).
+            last_layer_bbox_preds (Tensor): Sigmoid regression outputs of the
+                last decoder layer. Each is a 4D-tensor with normalized
+                coordinate format (cx, cy, w, h) and shape
+                (num_decoder_layers, bs, num_query, 4).
             batch_img_metas (list[dict]): Meta information of each image.
-            rescale (bool, optional): If True, return boxes in original
-                image space. Defaults to True.
+            rescale (bool, optional): If `True`, return boxes in original
+                image space. Defaults to `True`.
 
         Returns:
             list[:obj:`InstanceData`]: Object detection results of each image
@@ -565,8 +545,8 @@ class DETRHead(BaseModule):
         """
         # NOTE only using outputs from the last feature level,
         # and only the outputs from the last decoder layer is used.
-        cls_scores = all_cls_scores[-1]  # TODO: refactor this
-        bbox_preds = all_bbox_preds[-1]  # TODO: refactor this
+        cls_scores = last_layer_cls_scores[-1]
+        bbox_preds = last_layer_bbox_preds[-1]
 
         result_list = []
         for img_id in range(len(batch_img_metas)):

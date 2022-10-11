@@ -602,11 +602,7 @@ class DetrTransformerEncoderLayer(BaseModule):
         ]
         self.norms = ModuleList(norms_list)
 
-    def forward(self,
-                query,
-                query_pos=None,
-                query_key_padding_mask=None,
-                **kwargs):
+    def forward(self, query, query_pos, query_key_padding_mask, **kwargs):
         """Forward function of an encoder layer.
 
         Args:
@@ -701,7 +697,6 @@ class DetrTransformerDecoderLayer(BaseModule):
                 key_pos=None,
                 self_attn_masks=None,
                 cross_attn_masks=None,
-                query_key_padding_mask=None,
                 key_padding_mask=None,
                 **kwargs):
         """
@@ -730,8 +725,6 @@ class DetrTransformerDecoderLayer(BaseModule):
             cross_attn_masks (Tensor): ByteTensor mask with shape [num_queries,
                 num_keys]. Same in `nn.MultiheadAttention.forward`.
                 Defaults to None.
-            query_key_padding_mask (Tensor): ByteTensor with shape
-                [bs, num_keys]. Defaults to None.
             key_padding_mask (Tensor): ByteTensor with shape [bs, num_keys].
                 Defaults to None.
 
@@ -749,7 +742,6 @@ class DetrTransformerDecoderLayer(BaseModule):
             query_pos=query_pos,
             key_pos=query_pos,
             attn_mask=self_attn_masks,
-            key_padding_mask=query_key_padding_mask,
             **kwargs)
         query = self.norms[0](query)
         query = self.cross_attn(
