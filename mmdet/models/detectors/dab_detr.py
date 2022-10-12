@@ -24,9 +24,9 @@ class DABDETR(DETR):
 
     def __init__(self,
                  *args,
-                 iter_update=True,
-                 random_refpoints_xy=False,
-                 num_patterns=0,
+                 iter_update: bool = True,
+                 random_refpoints_xy: bool = False,
+                 num_patterns: int = 0,
                  **kwargs) -> None:
         self.iter_update = iter_update
         self.random_refpoints_xy = random_refpoints_xy
@@ -188,21 +188,21 @@ class ConditionalAttention(BaseModule):
     """A wrapper of conditional attention, dropout and residual connection."""
 
     def __init__(self,
-                 embed_dims,
-                 num_heads,
-                 attn_dropout=0.,
-                 proj_drop=0.,
-                 batch_first=False,
-                 cross_attn=False,
-                 keep_query_pos=False,
+                 embed_dims: int,
+                 num_heads: int,
+                 attn_drop: float = 0.,
+                 proj_drop: float = 0.,
+                 batch_first: bool = False,
+                 cross_attn: bool = False,
+                 keep_query_pos: bool = False,
                  init_cfg=None):
-        super().__init__(init_cfg)
+        super().init(init_cfg=init_cfg)
         self.batch_first = batch_first  # indispensable
         self.cross_attn = cross_attn
         self.keep_query_pos = keep_query_pos
         self.embed_dims = embed_dims  # output dims
         self.num_heads = num_heads
-        self.attn_dropout = Dropout(attn_dropout)
+        self.attn_drop = Dropout(attn_drop)
         self.proj_drop = Dropout(proj_drop)
 
         self._init_proj()
@@ -231,7 +231,7 @@ class ConditionalAttention(BaseModule):
         assert value.size(2) == self.embed_dims, \
             f'{"v_dims must be equal to embed_dims"}'
 
-        tgt_len, bsz, hidden_dims = query.size()
+        tgt_len, bs, hidden_dims = query.size()
         head_dims = hidden_dims // self.num_heads
         v_head_dims = self.embed_dims // self.num_heads
         assert head_dims * self.num_heads == hidden_dims, \
@@ -262,7 +262,7 @@ class ConditionalAttention(BaseModule):
                         'The size of the 2D attn_mask is not correct.')
             elif attn_mask.dim() == 3:
                 if list(attn_mask.size()) != [
-                        bsz * self.num_heads,
+                        bs * self.num_heads,
                         query.size(0),
                         key.size(0)
                 ]:
@@ -277,24 +277,24 @@ class ConditionalAttention(BaseModule):
         if key_padding_mask is not None and key_padding_mask.dtype == int:
             key_padding_mask = key_padding_mask.to(torch.bool)
 
-        q = q.contiguous().view(tgt_len, bsz * self.num_heads,
+        q = q.contiguous().view(tgt_len, bs * self.num_heads,
                                 head_dims).transpose(0, 1)
         if k is not None:
-            k = k.contiguous().view(-1, bsz * self.num_heads,
+            k = k.contiguous().view(-1, bs * self.num_heads,
                                     head_dims).transpose(0, 1)
         if v is not None:
-            v = v.contiguous().view(-1, bsz * self.num_heads,
+            v = v.contiguous().view(-1, bs * self.num_heads,
                                     v_head_dims).transpose(0, 1)
 
         src_len = k.size(1)
 
         if key_padding_mask is not None:
-            assert key_padding_mask.size(0) == bsz
+            assert key_padding_mask.size(0) == bs
             assert key_padding_mask.size(1) == src_len
 
         attn_output_weights = torch.bmm(q, k.transpose(1, 2))
         assert list(attn_output_weights.size()) == [
-            bsz * self.num_heads, tgt_len, src_len
+            bs * self.num_heads, tgt_len, src_len
         ]
 
         if attn_mask is not None:
@@ -305,32 +305,31 @@ class ConditionalAttention(BaseModule):
 
         if key_padding_mask is not None:
             attn_output_weights = attn_output_weights.view(
-                bsz, self.num_heads, tgt_len, src_len)
+                bs, self.num_heads, tgt_len, src_len)
             attn_output_weights = attn_output_weights.masked_fill(
                 key_padding_mask.unsqueeze(1).unsqueeze(2),
                 float('-inf'),
             )
             attn_output_weights = attn_output_weights.view(
-                bsz * self.num_heads, tgt_len, src_len)
+                bs * self.num_heads, tgt_len, src_len)
 
         attn_output_weights = F.softmax(
             attn_output_weights -
             attn_output_weights.max(dim=-1, keepdim=True)[0],
             dim=-1)
-        attn_output_weights = self.attn_dropout(attn_output_weights)
+        attn_output_weights = self.attn_drop(attn_output_weights)
 
         attn_output = torch.bmm(attn_output_weights, v)
-        assert list(attn_output.size()) == [
-            bsz * self.num_heads, tgt_len, v_head_dims
-        ]
+        assert list(
+            attn_output.size()) == [bs * self.num_heads, tgt_len, v_head_dims]
         attn_output = attn_output.transpose(0, 1).contiguous().view(
-            tgt_len, bsz, self.embed_dims)
+            tgt_len, bs, self.embed_dims)
         attn_output = self.out_proj(attn_output)
 
         if need_weights:
             # average attention weights over heads
             attn_output_weights = attn_output_weights.view(
-                bsz, self.num_heads, tgt_len, src_len)
+                bs, self.num_heads, tgt_len, src_len)
             return attn_output, attn_output_weights.sum(dim=1) / self.num_heads
         else:
             return attn_output, None
@@ -621,9 +620,6 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
 
 
 class DabDetrTransformerEncoder(DetrTransformerEncoder):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     def _init_layers(self):
         self.layers = ModuleList()
