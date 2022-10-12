@@ -19,7 +19,7 @@ model = dict(
         num_stages=4,
         out_indices=(3, ),
         frozen_stages=1,
-        norm_cfg=dict(type='FrozenBN2d', requires_grad=False),
+        norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         style='pytorch',
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
@@ -48,7 +48,11 @@ model = dict(
         modulate_hw_attn=True,
         layer_cfg=dict(
             self_attn_cfg=dict(
-                embed_dims=256, num_heads=8, attn_dropout=0., proj_drop=0.),
+                embed_dims=256,
+                num_heads=8,
+                attn_dropout=0.,
+                proj_drop=0.,
+                cross_attn=False),
             cross_attn_cfg=dict(
                 embed_dims=256,
                 num_heads=8,

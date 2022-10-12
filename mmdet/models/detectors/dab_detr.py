@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
-from typing import Any, Dict, Tuple, Union
+from typing import Dict, List, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -11,7 +11,6 @@ from mmengine.model import BaseModule, ModuleList, uniform_init
 from torch import Tensor, nn
 
 from mmdet.registry import MODELS
-from mmdet.structures import OptSampleList, SampleList
 from ..layers import (MLP, DetrTransformerDecoder, DetrTransformerDecoderLayer,
                       DetrTransformerEncoder, DetrTransformerEncoderLayer,
                       SinePositionalEncodingHW)
@@ -21,6 +20,21 @@ from .detr import DETR
 
 @MODELS.register_module()
 class DABDETR(DETR):
+    r"""Implementation of `DAB-DETR:
+    Dynamic Anchor Boxes are Better Queries for DETR.
+
+    <https://arxiv.org/abs/2201.12329>`_.
+
+    Code is modified from the `official github repo
+    <https://github.com/IDEA-Research/DAB-DETR>`_.
+
+    Args:
+          iter_update (bool): Whether to update references layer-by-layer.
+            Defaults to True.
+          random_refpoints_xy (bool): Whether to randomly initialize query
+            embeddings and not update them during training. Defaults to False.
+          num_patterns (int): Inspired by Anchor-DETR. Defaults to 0.
+    """
 
     def __init__(self,
                  *args,
@@ -39,6 +53,7 @@ class DABDETR(DETR):
         super().__init__(*args, **kwargs)
 
     def _init_layers(self) -> None:
+        """Initialize layers except for backbone, neck and bbox_head."""
         self.positional_encoding = SinePositionalEncodingHW(
             **self.positional_encoding_cfg)
         self.encoder = DabDetrTransformerEncoder(**self.encoder_cfg)
@@ -48,9 +63,6 @@ class DABDETR(DETR):
         self.query_embedding = nn.Embedding(self.num_query, self.query_dim)
         if self.num_patterns > 0:
             self.patterns = nn.Embedding(self.num_patterns, self.embed_dims)
-
-        # self.bbox_embed_diff_each_layer = \
-        #     self.decoder.bbox_embed_diff_each_layer
         self.nb_dec = self.decoder.num_layers
 
         num_feats = self.positional_encoding.num_feats
@@ -59,6 +71,7 @@ class DABDETR(DETR):
             f'Found {self.embed_dims} and {num_feats}.'
 
     def init_weights(self) -> None:
+        """Initialize weights for Transformer and other components."""
         super(DABDETR, self).init_weights()
         if self.random_refpoints_xy:
             uniform_init(self.query_embedding)
@@ -66,126 +79,107 @@ class DABDETR(DETR):
                 inverse_sigmoid(self.query_embedding.weight.data[:, :2])
             self.query_embedding.weight.data[:, :2].requires_grad = False
 
-    def forward_pretransformer(
-            self,
-            img_feats: Tuple[Tensor],
-            batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
-        feat = img_feats[-1]
-        batch_size = feat.size(0)
-        # construct binary masks which used for the transformer.
-        assert batch_data_samples is not None
-        batch_input_shape = batch_data_samples[0].batch_input_shape
-        img_shape_list = [sample.img_shape for sample in batch_data_samples]
+    def pre_decoder(self, memory: Tensor) -> Tuple[Dict, Dict]:
+        """Prepare intermediate variables before entering Transformer decoder,
+        such as `query`, `query_pos`.
 
-        input_img_h, input_img_w = batch_input_shape
-        masks = feat.new_ones((batch_size, input_img_h, input_img_w))
-        for img_id in range(batch_size):
-            img_h, img_w = img_shape_list[img_id]
-            masks[img_id, :img_h, :img_w] = 0
-        # NOTE following the official DETR repo, non-zero values representing
-        # ignored positions, while zero values means valid positions.
+        Args:
+            memory (Tensor): The output embeddings of the Transformer encoder,
+                has shape (bs, num_feat, dim).
 
-        # prepare transformer_inputs_dict
-        masks = F.interpolate(
-            masks.unsqueeze(1), size=feat.shape[-2:]).to(torch.bool).squeeze(1)
-        pos_embed = self.positional_encoding(masks)  # [bs, embed_dim, h, w]
+        Returns:
+            tuple[dict, dict]: The first dict contains the inputs of decoder
+            and the second dict contains the inputs of the bbox_head function.
+
+            - decoder_inputs_dict (dict): The keyword args dictionary of
+                `self.forward_decoder()`, which includes 'query', 'query_pos',
+                'memory'.
+            - head_inputs_dict (dict): The keyword args dictionary of the
+                bbox_head functions, which is usually empty, or includes
+                `enc_outputs_class` and `enc_outputs_class` when the detector
+                support 'two stage' or 'query selection' strategies.
+        """
+        batch_size = memory.size(1)
+        query_pos = self.query_embedding.weight
+        query_pos = query_pos.unsqueeze(1).repeat(1, batch_size, 1)
+        if self.num_patterns == 0:
+            query = torch.zeros(
+                self.num_query,
+                batch_size,
+                self.embed_dims,
+                device=query_pos.device)
+        else:
+            query = self.patterns.weight[:, None, None, :]\
+                .repeat(1, self.num_query, batch_size, 1)\
+                .view(-1, batch_size, self.embed_dims)
+            query_pos = query_pos.repeat(self.num_patterns, 1, 1)
         # iterative refinement for anchor boxes
         reg_branches = self.bbox_head.fc_reg if self.iter_update else None
 
-        transformer_inputs_dict = dict(
-            feat=feat,
-            masks=masks,
-            pos_embed=pos_embed,
-            query_embed=self.query_embedding.weight,
+        decoder_inputs_dict = dict(
+            query_pos=query_pos,
+            query=query,
+            memory=memory,
             reg_branches=reg_branches)
+        head_inputs_dict = dict()
+        return decoder_inputs_dict, head_inputs_dict
 
-        return transformer_inputs_dict
+    def forward_decoder(self, query: Tensor, query_pos: Tensor, memory: Tensor,
+                        memory_mask: Tensor, memory_pos: Tensor,
+                        reg_branches: nn.Module) -> Dict:
+        """Forward with Transformer decoder.
 
-    def forward_transformer(self,
-                            feat: Tensor,
-                            masks: Tensor,
-                            pos_embed: Tensor,
-                            query_embed: nn.Module,
-                            return_memory: bool = False,
-                            reg_branches=None) -> Union[Tuple[Tensor], Any]:
-        bs, c, h, w = feat.shape
-        # use `view` instead of `flatten` for dynamically exporting to ONNX
-        feat = feat.view(bs, c, -1).permute(2, 0,
-                                            1)  # [bs, c, h, w] -> [h*w, bs, c]
-        pos_embed = pos_embed.view(bs, c, -1).permute(2, 0, 1)
-        query_embed = query_embed.unsqueeze(1).repeat(
-            1, bs, 1)  # [num_query, query_dim] -> [num_query, bs, query_dim]
-        masks = masks.view(bs, -1)  # [bs, h, w] -> [bs, h*w]
-        memory = self.encoder(
-            query=feat, query_pos=pos_embed, query_key_padding_mask=masks)
-        if self.num_patterns == 0:
-            target = torch.zeros(
-                self.num_query, bs, self.embed_dims, device=query_embed.device)
-        else:
-            target = self.patterns.weight[:, None, None, :]\
-                .repeat(1, self.num_query, bs, 1)\
-                .view(-1, bs, self.embed_dims)
-            query_embed = query_embed.repeat(self.num_patterns, 1, 1)
+        Args:
+            query (Tensor): The queries of decoder inputs, has shape
+                (num_query, bs, dim).
+            query_pos (Tensor): The positional queries of decoder inputs,
+                has shape (num_query, bs, dim).
+            memory (Tensor): The output embeddings of the Transformer encoder,
+                has shape (num_feat, bs, dim).
+            memory_mask (Tensor): ByteTensor, the padding mask of the memory,
+                has shape (bs, num_feat).
+            memory_pos (Tensor): The positional embeddings of memory, has
+                shape (num_feat, bs, dim).
+            reg_branches (nn.Module): The regression branch for dynamically
+                updating references in each layer.
 
-        out_dec, reference = self.decoder(
-            query=target,
-            key=memory,
-            key_pos=pos_embed,
-            query_pos=query_embed,
-            key_padding_mask=masks,
-            reg_branches=reg_branches)
-        if return_memory:
-            memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
-            return out_dec, reference, memory
-
-        return out_dec, reference, None
-
-    def _forward(self,
-                 batch_inputs: Tensor,
-                 batch_data_samples: OptSampleList = None) -> Tuple[Tensor]:
-        """Network forward process.
-
-        Includes backbone, neck and head forward without post-processing.
+        Returns:
+            dict: The dictionary of decoder outputs, which includes the
+            `hidden_states` and `references` of the decoder output.
         """
-        img_feats = self.extract_feat(batch_inputs)
-        transformer_inputs_dict = self.forward_pretransformer(
-            img_feats, batch_data_samples)
-        outs_dec, reference, _ = self.forward_transformer(
-            **transformer_inputs_dict)
-        results = self.bbox_head.forward(outs_dec, reference)
-
-        return results
-
-    def loss(self, batch_inputs: Tensor,
-             batch_data_samples: SampleList) -> Union[dict, list]:
-        img_feats = self.extract_feat(batch_inputs)
-        transformer_inputs_dict = self.forward_pretransformer(
-            img_feats, batch_data_samples)
-        outs_dec, reference, _ = self.forward_transformer(
-            **transformer_inputs_dict)
-        losses = self.bbox_head.loss(outs_dec, reference, batch_data_samples)
-
-        return losses
-
-    def predict(self,
-                batch_inputs: Tensor,
-                batch_data_samples: SampleList,
-                rescale: bool = True) -> SampleList:
-        img_feats = self.extract_feat(batch_inputs)
-        transformer_inputs_dict = self.forward_pretransformer(
-            img_feats, batch_data_samples)
-        outs_dec, reference, _ = self.forward_transformer(
-            **transformer_inputs_dict)
-        results_list = self.bbox_head.predict(
-            outs_dec, reference, batch_data_samples, rescale=rescale)
-        batch_data_samples = self.add_pred_to_datasample(
-            batch_data_samples, results_list)
-
-        return batch_data_samples
+        hidden_states, references = self.decoder(
+            query=query,
+            key=memory,
+            key_pos=memory_pos,
+            query_pos=query_pos,
+            key_padding_mask=memory_mask,
+            reg_branches=reg_branches)
+        head_inputs_dict = dict(
+            hidden_states=hidden_states, references=references)
+        return head_inputs_dict
 
 
 class ConditionalAttention(BaseModule):
-    """A wrapper of conditional attention, dropout and residual connection."""
+    """A wrapper of conditional attention, dropout and residual connection.
+
+    Args:
+        embed_dims (int): The embedding dimension.
+        num_heads (int): Parallel attention heads.
+        attn_drop (float): A Dropout layer on attn_output_weights.
+            Default: 0.0.
+        proj_drop: A Dropout layer after `nn.MultiheadAttention`.
+            Default: 0.0.
+        batch_first (bool): When it is True,  Key, Query and Value are shape of
+            (batch, n, embed_dim), otherwise (n, batch, embed_dim).
+            Default: False.
+        cross_attn (bool): Whether the attention module is for cross attention.
+            Default: False
+        keep_query_pos (bool): Whether to transform query_pos before cross
+            attention.
+            Default: False.
+        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+            Default: None.
+    """
 
     def __init__(self,
                  embed_dims: int,
@@ -197,10 +191,10 @@ class ConditionalAttention(BaseModule):
                  keep_query_pos: bool = False,
                  init_cfg=None):
         super().init(init_cfg=init_cfg)
-        self.batch_first = batch_first  # indispensable
+        self.batch_first = batch_first
         self.cross_attn = cross_attn
         self.keep_query_pos = keep_query_pos
-        self.embed_dims = embed_dims  # output dims
+        self.embed_dims = embed_dims
         self.num_heads = num_heads
         self.attn_drop = Dropout(attn_drop)
         self.proj_drop = Dropout(proj_drop)
@@ -208,6 +202,7 @@ class ConditionalAttention(BaseModule):
         self._init_proj()
 
     def _init_proj(self):
+        """Initialize layers for qkv projection."""
         embed_dims = self.embed_dims
         self.qcontent_proj = Linear(embed_dims, embed_dims)
         self.qpos_proj = Linear(embed_dims, embed_dims)
@@ -218,10 +213,38 @@ class ConditionalAttention(BaseModule):
             self.qpos_sine_proj = Linear(embed_dims, embed_dims)
         self.out_proj = Linear(embed_dims, embed_dims)
 
-        nn.init.constant_(self.out_proj.bias, 0.)  # init out_proj
+        nn.init.constant_(self.out_proj.bias, 0.)
 
-    def forward_attn(self, query, key, value, attn_mask, key_padding_mask,
-                     need_weights):
+    def forward_attn(self, query, key, value, attn_mask,
+                     key_padding_mask) -> Tuple[Tensor]:
+        """Forward process for `ConditionalAttention`.
+
+        Args:
+            query (Tensor): The input query with shape [num_queries, bs,
+                embed_dims] if self.batch_first is False, else
+                [bs, num_queries embed_dims].
+            key (Tensor): The key tensor with shape [num_keys, bs,
+                embed_dims] if self.batch_first is False, else
+                [bs, num_keys, embed_dims] .
+                If None, the ``query`` will be used. Defaults to None.
+            value (Tensor): The value tensor with same shape as `key`.
+                Same in `nn.MultiheadAttention.forward`. Defaults to None.
+                If None, the `key` will be used.
+            attn_mask (Tensor): ByteTensor mask with shape [num_queries,
+                num_keys]. Same in `nn.MultiheadAttention.forward`.
+                Defaults to None.
+            key_padding_mask (Tensor): ByteTensor with shape [bs, num_keys].
+                Defaults to None.
+
+        Returns:
+            Tuple[Tensor]: Attention outputs of shape :math:`(L, N, E)`,
+                where :math:`L` is the target sequence length,
+                :math:`N` is the batch size, and :math:`E` is the
+                embedding dimension ``embed_dim``. Attention weights per
+                head of shape :math:`(num_heads, L, S)`. where :math:`N` is
+                the batch size, :math:`L` is the target sequence length, and
+                :math:`S` is the source sequence length.
+        """
         assert key.size(0) == value.size(0), \
             f'{"key, value must have the same sequence length"}'
         assert query.size(1) == key.size(1) == value.size(1), \
@@ -326,26 +349,59 @@ class ConditionalAttention(BaseModule):
             tgt_len, bs, self.embed_dims)
         attn_output = self.out_proj(attn_output)
 
-        if need_weights:
-            # average attention weights over heads
-            attn_output_weights = attn_output_weights.view(
-                bs, self.num_heads, tgt_len, src_len)
-            return attn_output, attn_output_weights.sum(dim=1) / self.num_heads
-        else:
-            return attn_output, None
+        # average attention weights over heads
+        attn_output_weights = attn_output_weights.view(bs, self.num_heads,
+                                                       tgt_len, src_len)
+        return attn_output, attn_output_weights.sum(dim=1) / self.num_heads
 
-    def forward(
-            self,
-            query,  # tgt
-            key,  # memory
-            query_pos=None,
-            query_sine_embed=None,
-            key_pos=None,  # pos
-            attn_mask=None,
-            query_key_padding_mask=None,  # tgt_key_padding_mask
-            key_padding_mask=None,  # memory_key_padding_mask
-            need_weights=True,
-            is_first=False):
+    def forward(self,
+                query,
+                key,
+                query_pos=None,
+                query_sine_embed=None,
+                key_pos=None,
+                attn_mask=None,
+                key_padding_mask=None,
+                is_first=False) -> Tensor:
+        """Forward function for `ConditionalAttention`.
+
+        Args:
+            query (Tensor): The input query with shape [num_queries, bs,
+                embed_dims] if self.batch_first is False, else
+                [bs, num_queries embed_dims].
+            key (Tensor): The key tensor with shape [num_keys, bs,
+                embed_dims] if self.batch_first is False, else
+                [bs, num_keys, embed_dims] .
+                If None, the ``query`` will be used. Defaults to None.
+            query_pos (Tensor): The positional encoding for query in self
+                attention, with the same shape as `x`. If not None, it will
+                be added to `x` before forward function.
+                Defaults to None.
+            query_sine_embed (Tensor): The positional encoding for query in
+                cross attention, with the same shape as `x`. If not None, it
+                will be added to `x` before forward function.
+                Defaults to None.
+            key_pos (Tensor): The positional encoding for `key`, with the
+                same shape as `key`. Defaults to None. If not None, it will
+                be added to `key` before forward function. If None, and
+                `query_pos` has the same shape as `key`, then `query_pos`
+                will be used for `key_pos`. Defaults to None.
+            attn_mask (Tensor): ByteTensor mask with shape [num_queries,
+                num_keys]. Same in `nn.MultiheadAttention.forward`.
+                Defaults to None.
+            key_padding_mask (Tensor): ByteTensor with shape [bs, num_keys].
+                Defaults to None.
+            is_first (bool): A indicator to tell whether the current layer
+                is the first layer of the decoder.
+                Defaults to False.
+
+        Returns:
+            Tensor: forwarded results with shape
+            [num_queries, bs, embed_dims]
+            if self.batch_first is False, else
+            [bs, num_queries embed_dims].
+        """
+
         if self.cross_attn:
             q_content = self.qcontent_proj(query)
             k_content = self.kcontent_proj(key)
@@ -375,8 +431,7 @@ class ConditionalAttention(BaseModule):
                 key=k,
                 value=v,
                 attn_mask=attn_mask,
-                key_padding_mask=key_padding_mask,
-                need_weights=need_weights)[0]
+                key_padding_mask=key_padding_mask)[0]
             query = query + self.proj_drop(ca_output)
         else:
             q_content = self.qcontent_proj(query)
@@ -391,20 +446,18 @@ class ConditionalAttention(BaseModule):
                 key=k,
                 value=v,
                 attn_mask=attn_mask,
-                key_padding_mask=query_key_padding_mask,
-                need_weights=need_weights)[0]
+                key_padding_mask=key_padding_mask)[0]
             query = query + self.proj_drop(sa_output)
 
         return query
 
 
 class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
-
-    def __init__(self, *args, **kwargs):
-
-        super().__init__(*args, **kwargs)
+    """Implements decoder layer in DAB-DETR transformer."""
 
     def _init_layers(self):
+        """Initialize self-attention, cross-attention, FFN, normalization and
+        others."""
         self.self_attn = ConditionalAttention(**self.self_attn_cfg)
         self.cross_attn = ConditionalAttention(**self.cross_attn_cfg)
         self.embed_dims = self.self_attn.embed_dims
@@ -416,31 +469,64 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
         self.norms = ModuleList(norms_list)
         self.keep_query_pos = self.cross_attn.keep_query_pos
 
-    def forward(
-            self,
-            query,  # tgt
-            key=None,  # memory
-            query_pos=None,
-            query_sine_embed=None,
-            key_pos=None,  # pos
-            self_attn_mask=None,
-            cross_attn_mask=None,
-            query_key_padding_mask=None,  # tgt_key_padding_mask
-            key_padding_mask=None,  # memory_key_padding_mask
-            need_weights=True,
-            is_first=False,
-            **kwargs):
+    def forward(self,
+                query,
+                key=None,
+                query_pos=None,
+                query_sine_embed=None,
+                key_pos=None,
+                self_attn_masks=None,
+                cross_attn_masks=None,
+                key_padding_mask=None,
+                is_first=False,
+                **kwargs) -> Tensor:
+        """
+        Args:
+            query (Tensor): The input query with shape [num_queries, bs,
+                embed_dims] if self.batch_first is False, else
+                [bs, num_queries, embed_dims].
+            key (Tensor): The key tensor with shape [num_keys, bs,
+                embed_dims] if self.batch_first is False, else
+                [bs, num_keys, embed_dims] .
+                If None, the ``query`` will be used. Defaults to None.
+            query_pos (Tensor): The positional encoding for query in self
+                attention, with the same shape as `x`. If not None,
+                it will be added to `x` before forward function.
+                Defaults to None.
+            query_sine_embed (Tensor): The positional encoding for query in
+                cross attention, with the same shape as `x`. If not None,
+                it will be added to `x` before forward function.
+                Defaults to None.
+            key_pos (Tensor): The positional encoding for `key`, with the
+                same shape as `key`. Defaults to None. If not None, it will
+                be added to `key` before forward function. If None, and
+                `query_pos` has the same shape as `key`, then `query_pos`
+                will be used for `key_pos`. Defaults to None.
+            self_attn_masks (Tensor): ByteTensor mask with shape [num_queries,
+                num_keys]. Same in `nn.MultiheadAttention.forward`.
+                Defaults to None.
+            cross_attn_masks (Tensor): ByteTensor mask with shape [num_queries,
+                num_keys]. Same in `nn.MultiheadAttention.forward`.
+                Defaults to None.
+            key_padding_mask (Tensor): ByteTensor with shape [bs, num_keys].
+                Defaults to None.
+            is_first (bool): A indicator to tell whether the current layer
+                is the first layer of the decoder.
+                Defaults to False.
+
+        Returns:
+            Tensor: forwarded results with shape
+            [num_queries, bs, embed_dims]
+            if self.batch_first is False, else
+            [bs, num_queries embed_dims].
+        """
 
         query = self.self_attn(
             query=query,
-            key=key,
+            key=query,
             query_pos=query_pos,
-            query_sine_embed=query_sine_embed,
-            key_pos=key_pos,
-            attn_mask=self_attn_mask,
-            key_padding_mask=key_padding_mask,
-            query_key_padding_mask=query_key_padding_mask,
-            is_first=is_first,
+            key_pos=query_pos,
+            attn_mask=self_attn_masks,
             **kwargs)
         query = self.norms[0](query)
         query = self.cross_attn(
@@ -449,9 +535,8 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
             query_pos=query_pos,
             query_sine_embed=query_sine_embed,
             key_pos=key_pos,
-            attn_mask=cross_attn_mask,
+            attn_mask=cross_attn_masks,
             key_padding_mask=key_padding_mask,
-            query_key_padding_mask=query_key_padding_mask,
             is_first=is_first,
             **kwargs)
         query = self.norms[1](query)
@@ -462,24 +547,33 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
 
 
 class DabDetrTransformerDecoder(DetrTransformerDecoder):
+    """Decoder of DAB-DETR.
 
-    def __init__(
-            self,
-            *args,
-            query_dim=4,
-            query_scale_type='cond_elewise',
-            modulate_hw_attn=True,
-            # bbox_embed_diff_each_layer=False,
-            **kwargs):
+    Args:
+        query_dim (int): The last dimension of query pos,
+            4 for anchor format, 2 for point format.
+            Defaults to 4.
+        query_scale_type (str): Type of transformation applied
+            to content query. Defaults to `cond_elewise`.
+        modulate_hw_attn (bool): Whether to inject h&w info
+            during cross conditional attention. Defaults to True.
+    """
+
+    def __init__(self,
+                 *args,
+                 query_dim=4,
+                 query_scale_type='cond_elewise',
+                 modulate_hw_attn=True,
+                 **kwargs):
 
         self.query_dim = query_dim
         self.query_scale_type = query_scale_type
         self.modulate_hw_attn = modulate_hw_attn
-        # self.bbox_embed_diff_each_layer = bbox_embed_diff_each_layer
 
         super().__init__(*args, **kwargs)
 
     def _init_layers(self):
+        """Initialize decoder layers and other layers."""
         assert self.query_dim in [2, 4], \
             f'{"dab-detr only supports anchor prior or reference point prior"}'
         assert self.query_scale_type in [
@@ -516,18 +610,40 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
             for layer_id in range(self.num_layers - 1):
                 self.layers[layer_id + 1].cross_attn.qpos_proj = None
 
-    def forward(
-            self,
-            query,  # tgt
-            key,  # memory
-            query_pos,  # refpoints_unsigmoid
-            key_pos=None,  # pos
-            attn_masks=None,
-            query_key_padding_mask=None,  # tgt_key_padding_mask
-            key_padding_mask=None,  # memory_key_padding_mask
-            reg_branches=None,
-            **kwargs):
+    def forward(self,
+                query,
+                key,
+                query_pos,
+                key_pos=None,
+                key_padding_mask=None,
+                reg_branches=None,
+                **kwargs) -> List[Tensor]:
+        """Forward function of decoder.
 
+        Args:
+            query (Tensor): The input query with shape (num_query, bs, dim)
+                if `self.batch_first` is `False`, else (bs, num_queries, dim).
+            key (Tensor): The input key with shape (num_key, bs, dim) if
+                `self.batch_first` is `False`, else (bs, num_keys, dim). If
+                `None`, the `query` will be used. Defaults to `None`.
+            query_pos (Tensor): The positional encoding for `query`, with the
+                same shape as `query`. If not `None`, it will be added to
+                `query` before forward function. Defaults to `None`.
+            key_pos (Tensor): The positional encoding for `key`, with the
+                same shape as `key`. If not `None`, it will be added to
+                `key` before forward function. If `None`, and `query_pos`
+                has the same shape as `key`, then `query_pos` will be used
+                as `key_pos`. Defaults to `None`.
+            key_padding_mask (Tensor): ByteTensor with shape (bs, num_key).
+                Defaults to `None`.
+
+        Returns:
+            List[Tensor]: forwarded results with shape (num_decoder_layers,
+            bs, num_query, dim) if `return_intermediate` is True, otherwise
+            with shape (1, bs, num_query, dim). references with shape
+            (num_decoder_layers, bs, num_query, 2/4) if `reg_branches`
+            is not None, otherwise with shape (1, bs, num_query, 2/4).
+        """
         output = query
         reference_unsigmoid = query_pos
 
@@ -567,18 +683,11 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
                 query_pos=query_pos,
                 query_sine_embed=query_sine_embed,
                 key_pos=key_pos,
-                self_attn_mask=attn_masks,
-                cross_attn_mask=attn_masks,
-                query_key_padding_mask=query_key_padding_mask,
                 key_padding_mask=key_padding_mask,
                 is_first=(layer_id == 0),
                 **kwargs)
             # iter update
             if reg_branches is not None:
-                # if self.bbox_embed_diff_each_layer:
-                #     tmp = reg_branches[layer_id](output)
-                # else:
-                #     tmp = reg_branches(output)
                 tmp = reg_branches(output)
                 tmp[..., :self.query_dim] += inverse_sigmoid(reference)
                 new_reference = tmp[..., :self.query_dim].sigmoid()
@@ -620,8 +729,10 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
 
 
 class DabDetrTransformerEncoder(DetrTransformerEncoder):
+    """Encoder of DAB-DETR."""
 
     def _init_layers(self):
+        """Initialize encoder layers."""
         self.layers = ModuleList()
         for i in range(self.num_layers):
             self.layers.append(
@@ -632,15 +743,28 @@ class DabDetrTransformerEncoder(DetrTransformerEncoder):
     def forward(self,
                 query,
                 query_pos=None,
-                attn_masks=None,
                 query_key_padding_mask=None,
                 **kwargs):
+        """Forward function of encoder.
+
+        Args:
+            query (Tensor): Input queries of encoder, has shape
+                (num_query, bs, dim).
+            query_pos (Tensor): The positional embeddings of the queries, has
+                shape (num_feat, bs, dim).
+            query_key_padding_mask (Tensor): ByteTensor, the key padding mask
+                of the queries, has shape (num_feat, bs).
+
+        Returns:
+            Tensor: With shape (bs, num_query, dim) if `batch_first` is `True`,
+            otherwise (num_query, bs, dim).
+        """
+
         for layer in self.layers:
             pos_scales = self.query_scale(query)
             query = layer(
                 query,
                 query_pos=query_pos * pos_scales,
-                attn_masks=attn_masks,
                 query_key_padding_mask=query_key_padding_mask,
                 **kwargs)
 
