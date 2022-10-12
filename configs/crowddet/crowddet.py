@@ -6,9 +6,11 @@ _base_ = [
 model = dict(
     type='CrowdDet',
     data_preprocessor=dict(
-        type='DetDataPreprocessor',
+        # type='DetDataPreprocessor',
+        type='BatchResize',
         mean=[103.53, 116.28, 123.675],
         std=[57.375, 57.12, 58.395],
+        scale=(1400, 800),
         bgr_to_rgb=False,
         pad_size_divisor=64),
     backbone=dict(
@@ -16,7 +18,7 @@ model = dict(
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
-        frozen_stages=1,  # 1
+        frozen_stages=2,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         style='pytorch',
@@ -58,7 +60,7 @@ model = dict(
             featmap_strides=[4, 8, 16, 32]),
         bbox_head=dict(
             type='MultiInstanceBBoxHead',
-            refine_flag=False,
+            refine_flag=True,
             num_shared_fcs=2,
             in_channels=256,
             fc_out_channels=1024,
@@ -133,18 +135,20 @@ file_client_args = dict(backend='disk')
 train_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=dict(backend='disk')),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', scale=(1400, 800), keep_ratio=True),
+    # dict(type='Resize', scale=(1400, 800), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
-    dict(type='PackDetInputs')
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape', 'flip',
+                   'flip_direction'))
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=dict(backend='disk')),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', scale=(1400, 800), keep_ratio=True),
+    # dict(type='Resize', scale=(1400, 800), keep_ratio=True),
     dict(
         type='PackDetInputs',
-        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor'))
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape'))
 ]
 
 train_dataloader = dict(
@@ -201,6 +205,14 @@ optim_wrapper = dict(
     type='OptimWrapper',
     optimizer=dict(
         type='SGD', lr=1e-3 * 1.25 * 2 * 1, momentum=0.9, weight_decay=0.0001))
+
+env_cfg = dict(
+    cudnn_benchmark=False,
+    mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0),
+    dist_cfg=dict(backend='nccl'),
+)
+
+randomness = dict(seed=3333)
 
 # load_from = '/data/YuYoujiang/CrowdDet/useful/pretrained_sample_mmdet_wo.pth'
 # Initialization weight of meg2mmdet can available at:
