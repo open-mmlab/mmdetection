@@ -453,7 +453,7 @@ class DetrTransformerEncoder(BaseModule):
         self.embed_dims = self.layers[0].embed_dims
 
     def forward(self, query: Tensor, query_pos: Tensor,
-                query_key_padding_mask: Tensor, **kwargs):  # TODO: add comment
+                query_key_padding_mask: Tensor, **kwargs):
         """Forward function of encoder.
 
         Args:
@@ -462,7 +462,7 @@ class DetrTransformerEncoder(BaseModule):
             query_pos (Tensor): The positional embeddings of the queries, has
                 shape (num_feat, bs, dim).
             query_key_padding_mask (Tensor): ByteTensor, the key padding mask
-                of the queries, has shape (num_feat, bs).  # TODO: refine it
+                of the queries, has shape (num_feat, bs).
 
         Returns:
             Tensor: With shape (bs, num_query, dim) if `batch_first` is `True`,

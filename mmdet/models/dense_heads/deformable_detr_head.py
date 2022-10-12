@@ -17,7 +17,7 @@ from .detr_head import DETRHead
 
 @MODELS.register_module()
 class DeformableDETRHead(DETRHead):
-    """Head of DeformDETR: Deformable DETR: Deformable Transformers for End-to-
+    r"""Head of DeformDETR: Deformable DETR: Deformable Transformers for End-to-
     End Object Detection.
 
     Code is modified from the `official github repo

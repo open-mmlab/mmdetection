@@ -12,7 +12,7 @@ from .base import BaseDetector
 
 @MODELS.register_module()
 class TransformerDetector(BaseDetector, metaclass=ABCMeta):
-    """Base class for Transformer-based detectors.
+    r"""Base class for Transformer-based detectors.
 
     Transformer-based detectors use an encoder to process output features of
     neck, then several queries interactive with the output features of encoder
@@ -159,8 +159,7 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         img_feats = self.extract_feat(batch_inputs)
         head_inputs_dict = self.forward_transformer(img_feats,
                                                     batch_data_samples)
-        results = self.bbox_head.forward(
-            **head_inputs_dict)  # TODO: refine this  # noqa
+        results = self.bbox_head.forward(**head_inputs_dict)
         return results
 
     def forward_transformer(self,

@@ -15,7 +15,7 @@ from .base_detr import TransformerDetector
 
 @MODELS.register_module()
 class DETR(TransformerDetector):
-    """Implementation of `DETR: End-to-End Object Detection with Transformers.
+    r"""Implementation of `DETR: End-to-End Object Detection with Transformers.
 
     <https://arxiv.org/pdf/2005.12872>`_.
 
@@ -37,7 +37,7 @@ class DETR(TransformerDetector):
 
         num_feats = self.positional_encoding.num_feats
         assert num_feats * 2 == self.embed_dims, \
-            f'embed_dims should be exactly 2 times of num_feats. ' \
+            'embed_dims should be exactly 2 times of num_feats. ' \
             f'Found {self.embed_dims} and {num_feats}.'
 
     def init_weights(self) -> None:

@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import torch
 import torch.nn as nn
@@ -20,7 +20,7 @@ from ..utils import multi_apply
 
 @MODELS.register_module()
 class DETRHead(BaseModule):
-    """Head of DETR. DETR:End-to-End Object Detection with Transformers.
+    r"""Head of DETR. DETR:End-to-End Object Detection with Transformers.
 
     More details can be found in the `paper
     <https://arxiv.org/pdf/2005.12872>`_ .
@@ -224,7 +224,7 @@ class DETRHead(BaseModule):
         """
         assert batch_gt_instances_ignore is None, \
             f'{self.__class__.__name__} only supports ' \
-            f'for batch_gt_instances_ignore setting to None.'
+            'for batch_gt_instances_ignore setting to None.'
 
         losses_cls, losses_bbox, losses_iou = multi_apply(
             self.loss_by_feat_single,
@@ -440,11 +440,9 @@ class DETRHead(BaseModule):
         return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
                 neg_inds)
 
-    def loss_and_predict(self,
-                         hidden_states: Tuple[Tensor],
-                         batch_data_samples: SampleList,
-                         proposal_cfg: Optional[ConfigType] = None) \
-            -> Tuple[dict, InstanceList]:  # TODO: ?
+    def loss_and_predict(
+            self, hidden_states: Tuple[Tensor],
+            batch_data_samples: SampleList) -> Tuple[dict, InstanceList]:
         """Perform forward propagation of the head, then calculate loss and
         predictions from the features and data samples. Over-write because
         img_metas are needed as inputs for bbox_head.
@@ -454,9 +452,6 @@ class DETRHead(BaseModule):
             batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
                 the meta information of each image and corresponding
                 annotations.
-            proposal_cfg (ConfigDict, optional): Test / postprocessing
-                configuration, if None, test_cfg would be used.
-                Defaults to None.
 
         Returns:
             tuple: the return value is a tuple contains:
@@ -512,20 +507,19 @@ class DETRHead(BaseModule):
 
         return predictions
 
-    def predict_by_feat(
-            self,
-            last_layer_cls_scores: Tensor,  # TODO: rename this
-            last_layer_bbox_preds: Tensor,  # TODO: rename this
-            batch_img_metas: List[dict],
-            rescale: bool = True) -> InstanceList:
+    def predict_by_feat(self,
+                        layer_cls_scores: Tensor,
+                        layer_bbox_preds: Tensor,
+                        batch_img_metas: List[dict],
+                        rescale: bool = True) -> InstanceList:
         """Transform network outputs for a batch into bbox predictions.
 
         Args:
-            last_layer_cls_scores (Tensor): Classification outputs of the last
-                decoder layer. Each is a 4D-tensor with shape
+            layer_cls_scores (Tensor): Classification outputs of the last or
+                all decoder layer. Each is a 4D-tensor with shape
                 (num_decoder_layers, bs, num_query, cls_out_channels).
-            last_layer_bbox_preds (Tensor): Sigmoid regression outputs of the
-                last decoder layer. Each is a 4D-tensor with normalized
+            layer_bbox_preds (Tensor): Sigmoid regression outputs of the last
+                or all decoder layer. Each is a 4D-tensor with normalized
                 coordinate format (cx, cy, w, h) and shape
                 (num_decoder_layers, bs, num_query, 4).
             batch_img_metas (list[dict]): Meta information of each image.
@@ -545,8 +539,8 @@ class DETRHead(BaseModule):
         """
         # NOTE only using outputs from the last feature level,
         # and only the outputs from the last decoder layer is used.
-        cls_scores = last_layer_cls_scores[-1]
-        bbox_preds = last_layer_bbox_preds[-1]
+        cls_scores = layer_cls_scores[-1]
+        bbox_preds = layer_bbox_preds[-1]
 
         result_list = []
         for img_id in range(len(batch_img_metas)):

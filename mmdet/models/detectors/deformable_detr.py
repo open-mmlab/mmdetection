@@ -29,6 +29,10 @@ class DeformableDETR(TransformerDetector):
     <https://github.com/fundamentalvision/Deformable-DETR>`_.
 
     Args:
+        decoder_cfg (:obj:`ConfigDict` or dict): Config of decoder.
+            Defaults to None.
+        bbox_head (:obj:`ConfigDict` or dict): Config for position
+            encoding. Defaults to None.
         with_box_refine (bool, optional): Whether to refine the references
             in the decoder. Defaults to `False`.
         as_two_stage (bool, optional): Whether to generate the proposal
@@ -74,7 +78,7 @@ class DeformableDETR(TransformerDetector):
 
         num_feats = self.positional_encoding.num_feats
         assert num_feats * 2 == self.embed_dims, \
-            f'embed_dims should be exactly 2 times of num_feats. ' \
+            'embed_dims should be exactly 2 times of num_feats. ' \
             f'Found {self.embed_dims} and {num_feats}.'
 
         self.level_embed = nn.Parameter(
