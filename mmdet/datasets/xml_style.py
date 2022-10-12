@@ -16,16 +16,22 @@ class XMLDataset(BaseDetDataset):
     """XML dataset for detection.
 
     Args:
-        img_subdir (str): Subdir where images are stored. Default: JPEGImages.
-        ann_subdir (str): Subdir where annotations are. Default: Annotations.
+        img_subdir (str): Subdir where images are stored.
+            Default to 'JPEGImages'.
+        ann_subdir (str): Subdir where annotations are.
+            Default to 'Annotations'.
+        minus_one (bool): Whether to subtract 1 from the coordinates.
+            Defaults to False.
     """
 
     def __init__(self,
                  img_subdir: str = 'JPEGImages',
                  ann_subdir: str = 'Annotations',
+                 minus_one: bool = False,
                  **kwargs) -> None:
         self.img_subdir = img_subdir
         self.ann_subdir = ann_subdir
+        self.minus_one = minus_one
         super().__init__(**kwargs)
 
     @property
@@ -102,20 +108,15 @@ class XMLDataset(BaseDetDataset):
         data_info['height'] = height
         data_info['width'] = width
 
-        data_info['instances'] = self._parse_instance_info(
-            raw_ann_info, minus_one=True)
+        data_info['instances'] = self._parse_instance_info(raw_ann_info)
 
         return data_info
 
-    def _parse_instance_info(self,
-                             raw_ann_info: ET,
-                             minus_one: bool = False) -> List[dict]:
+    def _parse_instance_info(self, raw_ann_info: ET) -> List[dict]:
         """parse instance information.
 
         Args:
             raw_ann_info (ElementTree): ElementTree object.
-            minus_one (bool): Whether to subtract 1 from the coordinates.
-                Defaults to False.
 
         Returns:
             List[dict]: List of instances.
@@ -137,7 +138,7 @@ class XMLDataset(BaseDetDataset):
             ]
 
             # VOC needs to subtract 1 from the coordinates
-            if minus_one:
+            if self.minus_one:
                 bbox = [x - 1 for x in bbox]
 
             ignore = False

@@ -21,7 +21,8 @@ class WIDERFaceDataset(XMLDataset):
     METAINFO = {'classes': ('face', ), 'palette': [(0, 255, 0)]}
 
     def __init__(self, **kwargs):
-        super(WIDERFaceDataset, self).__init__(img_subdir='', **kwargs)
+        super(WIDERFaceDataset, self).__init__(
+            img_subdir='', minus_one=False, **kwargs)
 
     @property
     def img_root(self) -> str:
