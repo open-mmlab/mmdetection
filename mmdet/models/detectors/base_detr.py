@@ -12,11 +12,36 @@ from .base import BaseDetector
 
 @MODELS.register_module()
 class TransformerDetector(BaseDetector, metaclass=ABCMeta):
-    """Base class for Transformer-based detectors.
+    r"""Base class for Transformer-based detectors.
 
     Transformer-based detectors use an encoder to process output features of
     neck, then several queries interactive with the output features of encoder
     and do the regression and classification.
+
+    Args:
+        backbone (:obj:`ConfigDict` or dict): Config of backbone.
+        neck (:obj:`ConfigDict` or dict): Config of neck.
+            Defaults to None.
+        encoder_cfg (:obj:`ConfigDict` or dict): Config of encoder.
+            Defaults to None.
+        decoder_cfg (:obj:`ConfigDict` or dict): Config of decoder.
+            Defaults to None.
+        positional_encoding_cfg (:obj:`ConfigDict` or dict): Config of
+            positional encoding. Defaults to None.
+        bbox_head (:obj:`ConfigDict` or dict): Config for position
+            encoding. Defaults to None.
+        num_query (int): Number of decoder query in Transformer.
+            Defaults to 100.
+        train_cfg (:obj:`ConfigDict` or dict): Training config of transformer
+            head. Defaults to None.
+        test_cfg (:obj:`ConfigDict` or dict): Testing config of transformer
+            head. Defaults to None.
+        data_preprocessor (dict or ConfigDict, optional): The pre-process
+           config of :class:`BaseDataPreprocessor`.  it usually includes,
+            ``pad_size_divisor``, ``pad_value``, ``mean`` and ``std``.
+            Defaults to None.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict], optional): Initialization config dict. Defaults to None.
     """
 
     def __init__(self,
@@ -52,28 +77,64 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
 
     @abstractmethod
     def _init_layers(self) -> None:
-        """Initialize layers except backbone, neck and bbox_head."""
+        """Initialize layers except for backbone, neck and bbox_head."""
         pass
 
     def loss(self, batch_inputs: Tensor,
              batch_data_samples: SampleList) -> Union[dict, list]:
+        """Calculate losses from a batch of inputs and data samples.
+
+        Args:
+            batch_inputs (Tensor): Input images of shape (bs, dim, H, W).
+                These should usually be mean centered and std scaled.
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+
+        Returns:
+            dict: A dictionary of loss components
+        """
         img_feats = self.extract_feat(batch_inputs)
-        transformer_inputs_dict = self.forward_pretransformer(
-            img_feats, batch_data_samples)
-        outs_dec = self.forward_transformer(**transformer_inputs_dict)
-        losses = self.bbox_head.loss(outs_dec, batch_data_samples)
+        head_inputs_dict = self.forward_transformer(img_feats,
+                                                    batch_data_samples)
+        losses = self.bbox_head.loss(
+            **head_inputs_dict, batch_data_samples=batch_data_samples)
         return losses
 
     def predict(self,
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> SampleList:
+        """Predict results from a batch of inputs and data samples with post-
+        processing.
+
+        Args:
+            batch_inputs (Tensor): Inputs with shape (bs, dim, H, W).
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+            rescale (bool): Whether to rescale the results.
+                Defaults to True.
+
+        Returns:
+            list[:obj:`DetDataSample`]: Detection results of the input images.
+            Each DetDataSample usually contain 'pred_instances'. And the
+            `pred_instances` usually contains following keys.
+
+            - scores (Tensor): Classification scores, has a shape
+              (num_instance, )
+            - labels (Tensor): Labels of bboxes, has a shape
+              (num_instances, ).
+            - bboxes (Tensor): Has a shape (num_instances, 4),
+              the last dimension 4 arrange as (x1, y1, x2, y2).
+        """
         img_feats = self.extract_feat(batch_inputs)
-        transformer_inputs_dict = self.forward_pretransformer(
-            img_feats, batch_data_samples)
-        outs_dec = self.forward_transformer(**transformer_inputs_dict)
+        head_inputs_dict = self.forward_transformer(img_feats,
+                                                    batch_data_samples)
         results_list = self.bbox_head.predict(
-            outs_dec, batch_data_samples, rescale=rescale)
+            **head_inputs_dict,
+            rescale=rescale,
+            batch_data_samples=batch_data_samples)
         batch_data_samples = self.add_pred_to_datasample(
             batch_data_samples, results_list)
         return batch_data_samples
@@ -82,26 +143,94 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             self,
             batch_inputs: Tensor,
             batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
-        """Network forward process.
+        """Network forward process. Usually includes backbone, neck and head
+        forward without any post-processing.
 
-        Includes backbone, neck and head forward without post-processing.
+         Args:
+            batch_inputs (Tensor): Inputs with shape (bs, dim, H, W).
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+                Defaults to None.
+
+        Returns:
+            tuple[Tensor]: A tuple of features from ``bbox_head`` forward.
         """
         img_feats = self.extract_feat(batch_inputs)
-        transformer_inputs_dict = self.forward_pretransformer(
-            img_feats, batch_data_samples)
-        outs_dec = self.forward_transformer(**transformer_inputs_dict)
-        results = self.bbox_head.forward(outs_dec)
+        head_inputs_dict = self.forward_transformer(img_feats,
+                                                    batch_data_samples)
+        results = self.bbox_head.forward(**head_inputs_dict)
         return results
+
+    def forward_transformer(self,
+                            img_feats: Tuple[Tensor],
+                            batch_data_samples: OptSampleList = None) -> Dict:
+        """Forward process of Transformer, which includes four steps:
+        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'. We
+        summarized the parameters flow of the existing DETR-like detector,
+        which can be illustrated as follow:
+
+        .. code:: text
+
+                 img_feats & batch_data_samples
+                               |
+                               V
+                      +-----------------+
+                      | pre_transformer |
+                      +-----------------+
+                          |          |
+                          |          V
+                          |    +-----------------+
+                          |    | forward_encoder |
+                          |    +-----------------+
+                          |             |
+                          |             V
+                          |     +---------------+
+                          |     |  pre_decoder  |
+                          |     +---------------+
+                          |         |       |
+                          V         V       |
+                      +-----------------+   |
+                      | forward_decoder |   |
+                      +-----------------+   |
+                                |           |
+                                V           V
+                              head_inputs_dict
+
+        Args:
+            img_feats (tuple[Tensor]): Tuple of feature maps from neck. Each
+                feature map has shape (bs, dim, H, W).
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+                Defaults to None.
+
+        Returns:
+            dict: The dictionary of bbox_head function inputs, which always
+            includes the `hidden_states` of the decoder output and may contain
+            `references` including the initial and intermediate references.
+        """
+        encoder_inputs_dict, decoder_inputs_dict = self.pre_transformer(
+            img_feats, batch_data_samples)
+
+        encoder_outputs_dict = self.forward_encoder(**encoder_inputs_dict)
+
+        tmp_dec_in, head_inputs_dict = self.pre_decoder(**encoder_outputs_dict)
+        decoder_inputs_dict.update(tmp_dec_in)
+
+        decoder_outputs_dict = self.forward_decoder(**decoder_inputs_dict)
+        head_inputs_dict.update(decoder_outputs_dict)
+        return head_inputs_dict
 
     def extract_feat(self, batch_inputs: Tensor) -> Tuple[Tensor]:
         """Extract features.
 
         Args:
-            batch_inputs (Tensor): Image tensor with shape (N, C, H ,W).
+            batch_inputs (Tensor): Image tensor with shape (bs, dim, H, W).
 
         Returns:
-            tuple[Tensor]: Multi-level features that may have
-            different resolutions.
+            tuple[Tensor]: Tuple of feature maps from neck. Each feature map
+            has shape (bs, dim, H, W).
         """
         x = self.backbone(batch_inputs)
         if self.with_neck:
@@ -109,16 +238,92 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         return x
 
     @abstractmethod
-    def forward_pretransformer(
+    def pre_transformer(
             self,
             img_feats: Tuple[Tensor],
-            batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
-        """This function creates the inputs of the Transformer.
-           1. Construct batch padding mask.
-           2. Prepare transformer_inputs_dict."""
+            batch_data_samples: OptSampleList = None) -> Tuple[Dict, Dict]:
+        """Process image features before feeding them to the transformer.
+
+        Args:
+            img_feats (tuple[Tensor]): Tuple of feature maps from neck. Each
+                feature map has shape (bs, dim, H, W).
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+                Defaults to None.
+
+        Returns:
+            tuple[dict, dict]: The first dict contains the inputs of encoder
+            and the second dict contains the inputs of decoder.
+
+            - encoder_inputs_dict (dict): The keyword args dictionary of
+              `self.forward_encoder()`, which includes 'feat', 'feat_mask',
+              'feat_pos', and other algorithm-specific arguments.
+            - decoder_inputs_dict (dict): The keyword args dictionary of
+              `self.forward_decoder()`, which includes 'memory_mask', and
+              other algorithm-specific arguments.
+        """
         pass
 
     @abstractmethod
-    def forward_transformer(self, **kwargs) -> Tuple[Tensor]:
-        """Process sequential features with transformer."""
+    def forward_encoder(self, feat: Tensor, feat_mask: Tensor,
+                        feat_pos: Tensor, **kwargs) -> Dict:
+        """Forward with Transformer encoder.
+
+        Args:
+            feat (Tensor): Sequential features, has shape (num_feat, bs, dim).
+            feat_mask (Tensor): ByteTensor, the padding mask of the features,
+                has shape (num_feat, bs).
+            feat_pos (Tensor): The positional embeddings of the features, has
+                shape (num_feat, bs, dim).
+
+        Returns:
+            dict: The dictionary of encoder outputs, which includes the
+            `memory` of the encoder output and other algorithm-specific
+            arguments.
+        """
+        pass
+
+    @abstractmethod
+    def pre_decoder(self, memory: Tensor, **kwargs) -> Tuple[Dict, Dict]:
+        """Prepare intermediate variables before entering Transformer decoder,
+        such as `query`, `query_pos`, and `reference_points`.
+
+        Args:
+            memory (Tensor): The output embeddings of the Transformer encoder,
+                has shape (bs, num_feat, dim).
+
+        Returns:
+            tuple[dict, dict]: The first dict contains the inputs of decoder
+            and the second dict contains the inputs of the bbox_head function.
+
+            - decoder_inputs_dict (dict): The keyword dictionary args of
+              `self.forward_decoder()`, which includes 'query', 'query_pos',
+              'memory', and other algorithm-specific arguments.
+            - head_inputs_dict (dict): The keyword dictionary args of the
+              bbox_head functions, which is usually empty, or includes
+              `enc_outputs_class` and `enc_outputs_class` when the detector
+              support 'two stage' or 'query selection' strategies.
+        """
+        pass
+
+    @abstractmethod
+    def forward_decoder(self, query: Tensor, query_pos: Tensor, memory: Tensor,
+                        **kwargs) -> Dict:
+        """Forward with Transformer decoder.
+
+        Args:
+            query (Tensor): The queries of decoder inputs, has shape
+                (num_query, bs, dim).
+            query_pos (Tensor): The positional queries of decoder inputs,
+                has shape (num_query, bs, dim).
+            memory (Tensor): The output embeddings of the Transformer encoder,
+                has shape (num_feat, bs, dim).
+
+        Returns:
+            dict: The dictionary of decoder outputs, which includes the
+            `hidden_states` of the decoder output, `references` including
+            the initial and intermediate reference_points, and other
+            algorithm-specific arguments.
+        """
         pass

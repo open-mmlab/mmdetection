@@ -31,26 +31,32 @@ model = dict(
         act_cfg=None,
         norm_cfg=dict(type='GN', num_groups=32),
         num_outs=4),
-    encoder_cfg=dict(
+    encoder_cfg=dict(  # DeformableDetrTransformerEncoder
         num_layers=6,
-        layer_cfg=dict(
-            self_attn_cfg=dict(embed_dims=256),
+        layer_cfg=dict(  # DeformableDetrTransformerEncoderLayer
+            self_attn_cfg=dict(  # MultiScaleDeformableAttention
+                embed_dims=256),
             ffn_cfg=dict(
                 embed_dims=256, feedforward_channels=1024, ffn_drop=0.1))),
-    decoder_cfg=dict(
+    decoder_cfg=dict(  # DeformableDetrTransformerDecoder
         num_layers=6,
         return_intermediate=True,
-        layer_cfg=dict(
-            self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.1),
-            cross_attn_cfg=dict(embed_dims=256),
+        layer_cfg=dict(  # DeformableDetrTransformerDecoderLayer
+            self_attn_cfg=dict(  # MultiheadAttention
+                embed_dims=256,
+                num_heads=8,
+                dropout=0.1),
+            cross_attn_cfg=dict(  # MultiScaleDeformableAttention
+                embed_dims=256),
             ffn_cfg=dict(
                 embed_dims=256, feedforward_channels=1024, ffn_drop=0.1)),
         post_norm_cfg=None),
     positional_encoding_cfg=dict(num_feats=128, normalize=True, offset=-0.5),
     bbox_head=dict(
         type='DeformableDETRHead',
-        # NOTE The three key word args "as_two_stage,  with_box_refine, num_decoder_layers" are set in the detector,
-        # the users should not set them in config.
+        # NOTE the three keyword args `as_two_stage`, `with_box_refine`,
+        # `num_decoder_layers` are set in `model` (detector) config, users
+        # should not set them in `bbox_head` config.
         num_classes=80,
         sync_cls_avg_factor=True,
         loss_cls=dict(
@@ -132,10 +138,7 @@ optim_wrapper = dict(
 # learning policy
 max_epochs = 50
 train_cfg = dict(
-    # type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
-    type='IterBasedTrainLoop',
-    max_iters=max_epochs,
-    val_interval=1)
+    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 
