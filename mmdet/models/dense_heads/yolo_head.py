@@ -96,10 +96,10 @@ class YOLOV3Head(BaseDenseHead):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         if self.train_cfg:
-            self.assigner = TASK_UTILS.build(self.train_cfg.assigner)
+            self.assigner = TASK_UTILS.build(self.train_cfg['assigner'])
             if train_cfg.get('sampler', None) is not None:
                 self.sampler = TASK_UTILS.build(
-                    self.train_cfg.sampler, context=self)
+                    self.train_cfg['sampler'], context=self)
             else:
                 self.sampler = PseudoSampler()
 
