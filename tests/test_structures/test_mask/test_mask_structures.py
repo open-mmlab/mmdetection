@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 from mmengine.testing import assert_allclose
 
-from mmdet.structures.mask import BitmapMasks
+from mmdet.structures.mask import BitmapMasks, PolygonMasks
 
 
 class TestMaskStructures(TestCase):
@@ -41,3 +41,33 @@ class TestMaskStructures(TestCase):
         mask = mask.translate((20, 8), 5)
         assert mask.masks.shape == (5, 20, 8)
         assert_allclose(mask_target, mask.masks)
+
+    def test_bitmap_cat(self):
+        # test invalid inputs
+        with self.assertRaises(AssertionError):
+            BitmapMasks.cat(BitmapMasks.random(4))
+        with self.assertRaises(ValueError):
+            BitmapMasks.cat([])
+        with self.assertRaises(AssertionError):
+            BitmapMasks.cat([BitmapMasks.random(2), PolygonMasks.random(3)])
+
+        masks = [BitmapMasks.random(num_masks=3) for _ in range(5)]
+        cat_mask = BitmapMasks.cat(masks)
+        assert len(cat_mask) == 3 * 5
+        for i, m in enumerate(masks):
+            assert_allclose(m.masks, cat_mask.masks[i * 3:(i + 1) * 3])
+
+    def test_polygon_cat(self):
+        # test invalid inputs
+        with self.assertRaises(AssertionError):
+            PolygonMasks.cat(PolygonMasks.random(4))
+        with self.assertRaises(ValueError):
+            PolygonMasks.cat([])
+        with self.assertRaises(AssertionError):
+            PolygonMasks.cat([BitmapMasks.random(2), PolygonMasks.random(3)])
+
+        masks = [PolygonMasks.random(num_masks=3) for _ in range(5)]
+        cat_mask = PolygonMasks.cat(masks)
+        assert len(cat_mask) == 3 * 5
+        for i, m in enumerate(masks):
+            assert_allclose(m.masks, cat_mask.masks[i * 3:(i + 1) * 3])
