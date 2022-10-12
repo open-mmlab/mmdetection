@@ -137,7 +137,11 @@ class SSH(BaseModule):
             in_c, out_c = self.in_channels[idx], self.out_channels[idx]
             self.add_module(
                 f'ssh_module{idx}',
-                SSHModule(in_c, out_c, conv_cfg=conv_cfg, norm_cfg=norm_cfg))
+                SSHModule(
+                    in_channels=in_c,
+                    out_channels=out_c,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg))
 
     def forward(self, inputs: Tuple[torch.Tensor]) -> tuple:
         assert len(inputs) == self.num_scales
@@ -180,7 +184,10 @@ class RetinaSSH(BaseModule):
         self.out_channels = out_channels
 
         self.ssh_module = SSHModule(
-            in_channels, out_channels, conv_cfg=conv_cfg, norm_cfg=norm_cfg)
+            in_channels=in_channels,
+            out_channels=out_channels,
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg)
 
     def forward(self, inputs: Tuple[torch.Tensor]) -> tuple:
         outs = []
