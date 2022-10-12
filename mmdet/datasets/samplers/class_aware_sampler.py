@@ -6,6 +6,7 @@ from mmcv.runner import get_dist_info
 from torch.utils.data import Sampler
 
 from mmdet.core.utils import sync_random_seed
+from mmdet.utils import get_device
 
 
 class ClassAwareSampler(Sampler):
@@ -58,7 +59,8 @@ class ClassAwareSampler(Sampler):
         # Must be the same across all workers. If None, will use a
         # random seed shared among workers
         # (require synchronization among all workers)
-        self.seed = sync_random_seed(seed)
+        device = get_device()
+        self.seed = sync_random_seed(seed, device)
 
         # The number of samples taken from each per-label list
         assert num_sample_class > 0 and isinstance(num_sample_class, int)
