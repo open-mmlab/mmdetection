@@ -83,3 +83,4 @@ test_evaluator = val_evaluator
 #     format_only=True,
 #     ann_file=data_root + 'annotations/image_info_test-dev2017.json',
 #     outfile_prefix='./work_dirs/coco_detection/test')
+
