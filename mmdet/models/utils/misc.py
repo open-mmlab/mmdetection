@@ -147,6 +147,9 @@ def empty_instances(batch_img_metas: List[dict],
         box_type (str or type): The empty box type. Defaults to `hbox`.
         use_box_type (bool): Whether to warp boxes with the box type.
             Defaults to False.
+        num_classes (int): num_classes of bbox_head. Defaults to 80.
+        score_per_cls (bool):  Whether to generate class-aware score for
+            the empty instance. Defaults to False.
 
     Returns:
         list[:obj:`InstanceData`]: Detection results of each image
@@ -171,11 +174,8 @@ def empty_instances(batch_img_metas: List[dict],
             if use_box_type:
                 bboxes = box_type(bboxes, clone=False)
             results.bboxes = bboxes
-            if score_per_cls:
-                results.scores = torch.zeros((0, num_classes + 1),
-                                             device=device)
-            else:
-                results.scores = torch.zeros((0, ), device=device)
+            score_shape = (0, num_classes + 1) if score_per_cls else (0, )
+            results.scores = torch.zeros(score_shape, device=device)
             results.labels = torch.zeros((0, ),
                                          device=device,
                                          dtype=torch.long)
