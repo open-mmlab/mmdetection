@@ -127,7 +127,9 @@ def empty_instances(batch_img_metas: List[dict],
                     instance_results: OptInstanceList = None,
                     mask_thr_binary: Union[int, float] = 0,
                     box_type: Union[str, type] = 'hbox',
-                    use_box_type: bool = False) -> List[InstanceData]:
+                    use_box_type: bool = False,
+                    num_classes: int = 80,
+                    score_per_cls: bool = False) -> List[InstanceData]:
     """Handle predicted instances when RoI is empty.
 
     Note: If ``instance_results`` is not None, it will be modified
@@ -169,7 +171,11 @@ def empty_instances(batch_img_metas: List[dict],
             if use_box_type:
                 bboxes = box_type(bboxes, clone=False)
             results.bboxes = bboxes
-            results.scores = torch.zeros((0, ), device=device)
+            if score_per_cls:
+                results.scores = torch.zeros((0, num_classes + 1),
+                                             device=device)
+            else:
+                results.scores = torch.zeros((0, ), device=device)
             results.labels = torch.zeros((0, ),
                                          device=device,
                                          dtype=torch.long)
