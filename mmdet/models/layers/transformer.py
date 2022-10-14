@@ -146,18 +146,18 @@ class PatchEmbed(BaseModule):
     """
 
     def __init__(
-        self,
-        in_channels=3,
-        embed_dims=768,
-        conv_type='Conv2d',
-        kernel_size=16,
-        stride=16,
-        padding='corner',
-        dilation=1,
-        bias=True,
-        norm_cfg=None,
-        input_size=None,
-        init_cfg=None,
+            self,
+            in_channels=3,
+            embed_dims=768,
+            conv_type='Conv2d',
+            kernel_size=16,
+            stride=16,
+            padding='corner',
+            dilation=1,
+            bias=True,
+            norm_cfg=None,
+            input_size=None,
+            init_cfg=None,
     ):
         super(PatchEmbed, self).__init__(init_cfg=init_cfg)
 
@@ -438,7 +438,6 @@ class DetrTransformerEncoder(BaseModule):
                  num_layers: int,
                  layer_cfg: Union[dict, ConfigDict],
                  init_cfg: Union[dict, ConfigDict] = None) -> None:
-
         super().__init__(init_cfg=init_cfg)
         self.num_layers = num_layers
         self.layer_cfg = layer_cfg
@@ -460,9 +459,9 @@ class DetrTransformerEncoder(BaseModule):
             query (Tensor): Input queries of encoder, has shape
                 (num_query, bs, dim).
             query_pos (Tensor): The positional embeddings of the queries, has
-                shape (num_feat, bs, dim).
+                shape (num_key, bs, dim).
             query_key_padding_mask (Tensor): ByteTensor, the key padding mask
-                of the queries, has shape (num_feat, bs).
+                of the queries, has shape (num_key, bs).
 
         Returns:
             Tensor: With shape (bs, num_query, dim) if `batch_first` is `True`,
@@ -514,9 +513,9 @@ class DetrTransformerDecoder(BaseModule):
         """Forward function of decoder
         Args:
             query (Tensor): The input query with shape (num_query, bs, dim)
-                if `self.batch_first` is `False`, else (bs, num_queries, dim).
+                if `batch_first` is `False`, else (bs, num_query, dim).
             key (Tensor): The input key with shape (num_key, bs, dim) if
-                `self.batch_first` is `False`, else (bs, num_keys, dim). If
+                `batch_first` is `False`, else (bs, num_key, dim). If
                 `None`, the `query` will be used. Defaults to `None`.
             value (Tensor): The input value with the same shape as `key`.
                 If `None`, the `key` will be used. Defaults to `None`.
@@ -532,8 +531,13 @@ class DetrTransformerDecoder(BaseModule):
                 Defaults to `None`.
 
         Returns:
-            Tensor: forwarded results with shape (num_query, bs, dim) if
-            `self.batch_first` is `False`, else (bs, num_query, dim).
+            Tensor: When `batch_first` is `False`. The forwarded results
+            will have shape (num_decoder_layers, num_query, bs, dim) if
+            `return_intermediate` is `True` else (num_query, bs, dim).
+
+            When `batch_first` is `True`. The forwarded results will
+            have shape (num_decoder_layers, bs, num_query, dim) if
+            `return_intermediate` is `True` else (bs, num_query, dim).
         """
         intermediate = []
         for layer in self.layers:
@@ -564,8 +568,8 @@ class DetrTransformerEncoderLayer(BaseModule):
             Defaults to `LN`.
         init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
             dict], optional): Initialization config dict. Defaults to None.
-        batch_first (bool): If True, the output will have shape [bs, h*w, c],
-            otherwise [h*w, bs, c], where c = embed_dims. Defaults to False.
+        batch_first (bool): If True, the output will have shape [bs, h*w, dim],
+            otherwise [h*w, bs, dim]. Defaults to False.
     """
 
     def __init__(self,
@@ -606,19 +610,19 @@ class DetrTransformerEncoderLayer(BaseModule):
         """Forward function of an encoder layer.
 
         Args:
-            query (Tensor): The input query with shape [num_queries, bs,
-                embed_dims] if self.batch_first is False, else
-                [bs, num_queries, embed_dims].
+            query (Tensor): The input query with shape [num_query, bs,
+                dim] if `batch_first` is `False`, else
+                [bs, num_query, dim].
             query_pos (Tensor): The positional encoding for query, with
                 the same shape as `query`. If not None, it will
                 be added to `query` before forward function. Defaults to None.
             query_key_padding_mask (Tensor): ByteTensor with shape
-                [bs, num_keys]. Defaults to None.
+                [bs, num_key]. Defaults to None.
         Returns:
             Tensor: forwarded results with shape
-            [num_queries, bs, embed_dims]
+            [num_query, bs, dim]
             if self.batch_first is False, else
-            [bs, num_queries embed_dims].
+            [bs, num_query, dim].
         """
         query = self.self_attn(
             query=query,
@@ -646,8 +650,9 @@ class DetrTransformerDecoderLayer(BaseModule):
             Defaults to `LN`.
         init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
             dict], optional): Initialization config dict. Defaults to None.
-        batch_first (bool): If True, the output will have shape [bs, h*w, c],
-            otherwise [h*w, bs, c], where c = embed_dims. Defaults to False.
+        batch_first (bool): If True, the output will have shape
+            [bs, num_query, dim], otherwise [num_query, bs, dim].
+            Defaults to False.
     """
 
     def __init__(self,
@@ -701,12 +706,12 @@ class DetrTransformerDecoderLayer(BaseModule):
                 **kwargs):
         """
         Args:
-            query (Tensor): The input query with shape [num_queries, bs,
-                embed_dims] if self.batch_first is False, else
-                [bs, num_queries, embed_dims].
-            key (Tensor): The key tensor with shape [num_keys, bs,
-                embed_dims] if self.batch_first is False, else
-                [bs, num_keys, embed_dims] .
+            query (Tensor): The input query with shape [num_query, bs,
+                dim] if self.batch_first is False, else
+                [bs, num_query, dim].
+            key (Tensor): The key tensor with shape [num_key, bs,
+                dim] if self.batch_first is False, else
+                [bs, num_key, dim] .
                 If None, the ``query`` will be used. Defaults to None.
             value (Tensor): The value tensor with same shape as `key`.
                 Same in `nn.MultiheadAttention.forward`. Defaults to None.
@@ -719,20 +724,20 @@ class DetrTransformerDecoderLayer(BaseModule):
                 be added to `key` before forward function. If None, and
                 `query_pos` has the same shape as `key`, then `query_pos`
                 will be used for `key_pos`. Defaults to None.
-            self_attn_masks (Tensor): ByteTensor mask with shape [num_queries,
-                num_keys]. Same in `nn.MultiheadAttention.forward`.
+            self_attn_masks (Tensor): ByteTensor mask with shape [num_query,
+                num_key]. Same in `nn.MultiheadAttention.forward`.
                 Defaults to None.
-            cross_attn_masks (Tensor): ByteTensor mask with shape [num_queries,
-                num_keys]. Same in `nn.MultiheadAttention.forward`.
+            cross_attn_masks (Tensor): ByteTensor mask with shape [num_query,
+                num_key]. Same in `nn.MultiheadAttention.forward`.
                 Defaults to None.
-            key_padding_mask (Tensor): ByteTensor with shape [bs, num_keys].
+            key_padding_mask (Tensor): ByteTensor with shape [bs, num_key].
                 Defaults to None.
 
         Returns:
             Tensor: forwarded results with shape
-            [num_queries, bs, embed_dims]
+            [num_query, bs, dim]
             if self.batch_first is False, else
-            [bs, num_queries embed_dims].
+            [bs, num_query, dim].
         """
 
         query = self.self_attn(
@@ -817,7 +822,7 @@ class DynamicConv(BaseModule):
 
         self.activation = build_activation_layer(act_cfg)
 
-        num_output = self.out_channels * input_feat_shape**2
+        num_output = self.out_channels * input_feat_shape ** 2
         if self.with_proj:
             self.fc_layer = nn.Linear(num_output, self.out_channels)
             self.fc_norm = build_norm_layer(norm_cfg, self.out_channels)[1]
