@@ -1,7 +1,4 @@
-import dataclasses
-import os.path
-
-from custom.utils import read_files, replace_extention, KittiAnnotation, convert_kitti_files
+from custom.convert.utils import convert_kitti_files
 
 KITTI_PATH_TRAIN = "/home/chrissikek/repos/data/train"
 KITTI_PATH_VAL = "/home/chrissikek/repos/data/val"

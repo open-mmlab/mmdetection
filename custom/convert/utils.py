@@ -4,6 +4,8 @@ from typing import List
 
 import cv2
 
+from custom.convert.target_class_map import target_class_map
+
 
 @dataclass
 class KittiAnnotation:
@@ -63,6 +65,12 @@ def replace_extention(name, extention):
 def xyxy2xywh(bbox):
     return [bbox[0], bbox[1], bbox[2]-bbox[0], bbox[3]-bbox[1]]
 
+def apply_target_class_map(cat: str):
+    if cat in target_class_map:
+        return target_class_map[cat]
+    else:
+        return cat
+
 def read_files_make_dict(path):
     files = [file for file in read_files(path)]
     path_dict = {os.path.basename(file): file for file in files}
@@ -89,6 +97,9 @@ def convert_kitti_files(train_path, val_path):
                     image_ids += 1
                 annots = read_kitti_annot(path_dict[txt_name])
                 for bb, cat in annots:
+                    cat = apply_target_class_map(cat)
+                    if cat is None:
+                        continue
                     if not cat in categories:
                         category = CategoryAnnot(id=category_ids, name=cat)
                         categories[cat] = category
