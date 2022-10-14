@@ -29,11 +29,12 @@ class DABDETR(DETR):
     <https://github.com/IDEA-Research/DAB-DETR>`_.
 
     Args:
-          iter_update (bool): Whether to update references layer-by-layer.
+        iter_update (bool): Whether to update references layer-by-layer.
             Defaults to True.
-          random_refpoints_xy (bool): Whether to randomly initialize query
-            embeddings and not update them during training. Defaults to False.
-          num_patterns (int): Inspired by Anchor-DETR. Defaults to 0.
+        random_refpoints_xy (bool): Whether to randomly initialize query
+            embeddings and not update them during training.
+            Defaults to False.
+        num_patterns (int): Inspired by Anchor-DETR. Defaults to 0.
     """
 
     def __init__(self,
@@ -85,7 +86,7 @@ class DABDETR(DETR):
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (bs, num_feat, dim).
+                has shape (num_feat, bs, dim).
 
         Returns:
             tuple[dict, dict]: The first dict contains the inputs of decoder
@@ -93,7 +94,7 @@ class DABDETR(DETR):
 
             - decoder_inputs_dict (dict): The keyword args dictionary of
                 `self.forward_decoder()`, which includes 'query', 'query_pos',
-                'memory'.
+                'memory' and 'reg_branches'.
             - head_inputs_dict (dict): The keyword args dictionary of the
                 bbox_head functions, which is usually empty, or includes
                 `enc_outputs_class` and `enc_outputs_class` when the detector

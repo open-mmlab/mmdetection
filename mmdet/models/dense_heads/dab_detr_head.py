@@ -23,12 +23,14 @@ class DABDETRHead(DETRHead):
     """
 
     def _init_layers(self) -> None:
+        """Initialize layers of the transformer head."""
         # cls branch
         self.fc_cls = Linear(self.embed_dims, self.cls_out_channels)
         # reg branch
         self.fc_reg = MLP(self.embed_dims, self.embed_dims, 4, 3)
 
     def init_weights(self) -> None:
+        """initialize weights."""
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             nn.init.constant_(self.fc_cls.bias, bias_init)
