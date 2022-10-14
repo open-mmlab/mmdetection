@@ -1,2 +1,2 @@
-tta_model=dict(type='SingleStageTestTimeAugModel')
+tta_model = dict(type='SingleStageTestTimeAugModel')
 

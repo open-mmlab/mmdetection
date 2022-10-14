@@ -8,14 +8,14 @@ from mmengine.structures import InstanceData
 
 from mmdet.structures import DetDataSample
 from mmdet.structures.bbox import bbox_flip
-from mmdet.models.builder import MODELS
 
-from mmengine.model import BaseTestTimeAugModel
+from mmengine.model import BaseTTAModel
+from mmengine.registry import MODEL_WRAPPERS
 
 
-@MODELS.register_module()
-class SingleStageTestTimeAugModel(BaseTestTimeAugModel):
-    def merge_results(self, data_samples_list: List[List[DetDataSample]]):
+@MODEL_WRAPPERS.register_module()
+class SingleStageTestTimeAugModel(BaseTTAModel):
+    def merge_preds(self, data_samples_list: List[List[DetDataSample]]):
         aug_bboxes = []
         aug_scores = []
         aug_labels = []

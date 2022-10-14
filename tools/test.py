@@ -5,6 +5,7 @@ import os.path as osp
 
 from mmengine.config import Config, DictAction
 from mmengine.runner import Runner
+from mmengine.model.wrappers.test_time_aug import build_runner_with_tta
 
 from mmdet.registry import RUNNERS
 from mmdet.utils import register_all_modules
@@ -96,26 +97,24 @@ def main():
 
     cfg.load_from = args.checkpoint
 
-    if args.tta_pipeline:
-        assert args.tta_model is not None
-        cfg.merge_from_dict(Config.fromfile(args.tta_pipeline))
-        cfg.merge_from_dict(Config.fromfile(args.tta_model))
-
-        cfg.test_dataloader.dataset.pipeline = cfg.tta_pipeline
-        cfg.tta_model.module = cfg.model
-        cfg.model = cfg.tta_model
 
     if args.show or args.show_dir:
         cfg = trigger_visualization_hook(cfg, args)
 
-    # build the runner from config
-    if 'runner_type' not in cfg:
-        # build the default runner
-        runner = Runner.from_cfg(cfg)
+    if args.tta_pipeline:
+        cfg.merge_from_dict(Config.fromfile(args.tta_pipeline))
+        cfg.merge_from_dict(Config.fromfile(args.tta_model))
+        runner = build_runner_with_tta(cfg)
+
     else:
-        # build customized runner from the registry
-        # if 'runner_type' is set in the cfg
-        runner = RUNNERS.build(cfg)
+        # build the runner from config
+        if 'runner_type' not in cfg:
+            # build the default runner
+            runner = Runner.from_cfg(cfg)
+        else:
+            # build customized runner from the registry
+            # if 'runner_type' is set in the cfg
+            runner = RUNNERS.build(cfg)
 
     runner.test()
 
