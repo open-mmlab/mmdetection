@@ -133,7 +133,7 @@ class DETR(TransformerDetector):
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (bs, num_feat, dim).
+                has shape (num_feat, bs, dim).
 
         Returns:
             tuple[dict, dict]: The first dict contains the inputs of decoder
