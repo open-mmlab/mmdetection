@@ -14,8 +14,6 @@ from torch import Tensor, nn
 
 from mmdet.registry import MODELS
 
-# from torch.nn import ModuleList  TODO: use mmengine wrapper
-
 
 def nlc_to_nchw(x, hw_shape):
     """Convert [N, L, C] shape tensor to [N, C, H, W] shape tensor.
@@ -621,20 +619,20 @@ class DetrTransformerEncoderLayer(BaseModule):
                  batch_first=False):
 
         super().__init__(init_cfg=init_cfg)
-        if 'batch_first' in self_attn_cfg:  # TODO
+        if 'batch_first' in self_attn_cfg:
             assert batch_first == self_attn_cfg['batch_first']
         else:
             self_attn_cfg['batch_first'] = batch_first
-        self.batch_first = batch_first  # TODO
-        self.self_attn_cfg = self_attn_cfg  # TODO
-        self.ffn_cfg = ffn_cfg  # TODO
-        self.norm_cfg = norm_cfg  # TODO
+        self.batch_first = batch_first
+        self.self_attn_cfg = self_attn_cfg
+        self.ffn_cfg = ffn_cfg
+        self.norm_cfg = norm_cfg
         self._init_layers()
 
     def _init_layers(self):
         """Initialize self-attention, FFN, and normalization."""
         self.self_attn = MultiheadAttention(**self.self_attn_cfg)
-        self.embed_dims = self.self_attn.embed_dims  # TODO
+        self.embed_dims = self.self_attn.embed_dims
         self.ffn = FFN(**self.ffn_cfg)
         norms_list = [
             build_norm_layer(self.norm_cfg, self.embed_dims)[1]
@@ -722,7 +720,7 @@ class DetrTransformerDecoderLayer(BaseModule):
         """Initialize self-attention, FFN, and normalization."""
         self.self_attn = MultiheadAttention(**self.self_attn_cfg)
         self.cross_attn = MultiheadAttention(**self.cross_attn_cfg)
-        self.embed_dims = self.self_attn.embed_dims  # TODO
+        self.embed_dims = self.self_attn.embed_dims
         self.ffn = FFN(**self.ffn_cfg)
         norms_list = [
             build_norm_layer(self.norm_cfg, self.embed_dims)[1]
