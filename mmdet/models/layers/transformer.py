@@ -451,23 +451,23 @@ class DetrTransformerEncoder(BaseModule):
         self.embed_dims = self.layers[0].embed_dims
 
     def forward(self, query: Tensor, query_pos: Tensor,
-                query_key_padding_mask: Tensor, **kwargs):
+                key_padding_mask: Tensor, **kwargs):
         """Forward function of encoder.
 
         Args:
             query (Tensor): Input queries of encoder, has shape
                 (num_query, bs, dim).
             query_pos (Tensor): The positional embeddings of the queries, has
-                shape (num_key, bs, dim).
-            query_key_padding_mask (Tensor): ByteTensor, the key padding mask
-                of the queries, has shape (num_key, bs).
+                shape (num_query, bs, dim).
+            key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
+                input. ByteTensor with shape (num_query, bs).
 
         Returns:
             Tensor: With shape (bs, num_query, dim) if `batch_first` is `True`,
             otherwise (num_query, bs, dim).
         """
         for layer in self.layers:
-            query = layer(query, query_pos, query_key_padding_mask, **kwargs)
+            query = layer(query, query_pos, key_padding_mask, **kwargs)
         return query
 
 
@@ -526,8 +526,8 @@ class DetrTransformerDecoder(BaseModule):
                 `key` before forward function. If `None`, and `query_pos`
                 has the same shape as `key`, then `query_pos` will be used
                 as `key_pos`. Defaults to `None`.
-            key_padding_mask (Tensor): ByteTensor with shape (bs, num_key).
-                Defaults to `None`.
+            key_padding_mask (Tensor): The `key_padding_mask` of `cross_attn`
+                input. ByteTensor with shape (num_value, bs).
 
         Returns:
             Tensor: When `batch_first` is `False`. The forwarded results
@@ -605,7 +605,7 @@ class DetrTransformerEncoderLayer(BaseModule):
         ]
         self.norms = ModuleList(norms_list)
 
-    def forward(self, query, query_pos, query_key_padding_mask, **kwargs):
+    def forward(self, query, query_pos, key_padding_mask, **kwargs):
         """Forward function of an encoder layer.
 
         Args:
@@ -615,8 +615,8 @@ class DetrTransformerEncoderLayer(BaseModule):
             query_pos (Tensor): The positional encoding for query, with
                 the same shape as `query`. If not None, it will
                 be added to `query` before forward function. Defaults to None.
-            query_key_padding_mask (Tensor): ByteTensor with shape
-                [bs, num_key]. Defaults to None.
+            key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
+                input. ByteTensor with shape (num_query, bs).
         Returns:
             Tensor: forwarded results with shape
             [num_query, bs, dim]
@@ -629,7 +629,7 @@ class DetrTransformerEncoderLayer(BaseModule):
             value=query,
             query_pos=query_pos,
             key_pos=query_pos,
-            key_padding_mask=query_key_padding_mask,
+            key_padding_mask=key_padding_mask,
             **kwargs)
         query = self.norms[0](query)
         query = self.ffn(query)
@@ -729,8 +729,8 @@ class DetrTransformerDecoderLayer(BaseModule):
             cross_attn_masks (Tensor): ByteTensor mask with shape [num_query,
                 num_key]. Same in `nn.MultiheadAttention.forward`.
                 Defaults to None.
-            key_padding_mask (Tensor): ByteTensor with shape [bs, num_key].
-                Defaults to None.
+            key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
+                input. ByteTensor with shape (num_value, bs).
 
         Returns:
             Tensor: forwarded results with shape
@@ -821,7 +821,7 @@ class DynamicConv(BaseModule):
 
         self.activation = build_activation_layer(act_cfg)
 
-        num_output = self.out_channels * input_feat_shape ** 2
+        num_output = self.out_channels * input_feat_shape**2
         if self.with_proj:
             self.fc_layer = nn.Linear(num_output, self.out_channels)
             self.fc_norm = build_norm_layer(norm_cfg, self.out_channels)[1]
