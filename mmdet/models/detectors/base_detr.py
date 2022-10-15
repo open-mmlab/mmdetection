@@ -166,8 +166,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
                             img_feats: Tuple[Tensor],
                             batch_data_samples: OptSampleList = None) -> Dict:
         """Forward process of Transformer, which includes four steps:
-        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'. We
-        summarized the parameters flow of the existing DETR-like detector,
+        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'.
+        We summarized the parameters flow of the existing DETR-like detector,
         which can be illustrated as follow:
 
         .. code:: text
@@ -195,7 +195,7 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
                       +-----------------+   |
                                 |           |
                                 V           V
-                              head_inputs_dict
+                               head_inputs_dict
 
         Args:
             img_feats (tuple[Tensor]): Tuple of feature maps from neck. Each

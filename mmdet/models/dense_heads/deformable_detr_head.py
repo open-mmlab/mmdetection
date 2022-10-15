@@ -27,25 +27,18 @@ class DeformableDETRHead(DETRHead):
     <https://arxiv.org/abs/2010.04159>`_ .
 
     Args:
-        with_box_refine (bool): Whether to refine the reference points
-            in the decoder. Defaults to False.
-        as_two_stage (bool) : Whether to generate the proposal from
-            the outputs of encoder.
-        transformer (obj:`ConfigDict`): ConfigDict is used for building
-            the Encoder and Decoder.
+        share_pred_layer (bool): Whether to share parameters for all the
+            prediction layers.
+        num_pred_layer (int): The number of the prediction layers.
     """
 
     def __init__(self,
                  *args,
-                 as_two_stage: bool = False,
-                 with_box_refine: bool = False,
-                 num_decoder_layers: int = 6,
+                 share_pred_layer: bool = False,
+                 num_pred_layer: int = 6,
                  **kwargs) -> None:
-        # NOTE The three key word args are set in the detector,
-        # the users do not need to set them in config.
-        self.as_two_stage = as_two_stage
-        self.with_box_refine = with_box_refine
-        self.num_decoder_layers = num_decoder_layers
+        self.share_pred_layer = share_pred_layer
+        self.num_pred_layer = num_pred_layer
 
         super().__init__(*args, **kwargs)
 
@@ -59,21 +52,16 @@ class DeformableDETRHead(DETRHead):
         reg_branch.append(Linear(self.embed_dims, 4))
         reg_branch = nn.Sequential(*reg_branch)
 
-        # last reg_branch is used to generate proposal from
-        # encode feature map when as_two_stage is True.
-        num_pred = (self.num_decoder_layers + 1) if \
-            self.as_two_stage else self.num_decoder_layers
-
-        if self.with_box_refine:
-            self.cls_branches = nn.ModuleList(
-                [copy.deepcopy(fc_cls) for _ in range(num_pred)])
-            self.reg_branches = nn.ModuleList(
-                [copy.deepcopy(reg_branch) for _ in range(num_pred)])
+        if self.share_pred_layers:
+            self.cls_branches = nn.ModuleList([
+                copy.deepcopy(fc_cls) for _ in range(self.num_pred_layer)])
+            self.reg_branches = nn.ModuleList([
+                copy.deepcopy(reg_branch) for _ in range(self.num_pred_layer)])
         else:
-            self.cls_branches = nn.ModuleList(
-                [fc_cls for _ in range(num_pred)])
-            self.reg_branches = nn.ModuleList(
-                [reg_branch for _ in range(num_pred)])
+            self.cls_branches = nn.ModuleList([
+                fc_cls for _ in range(self.num_pred_layer)])
+            self.reg_branches = nn.ModuleList([
+                reg_branch for _ in range(self.num_pred_layer)])
 
     def init_weights(self) -> None:
         """Initialize weights of the Deformable DETR head."""
@@ -99,9 +87,10 @@ class DeformableDETRHead(DETRHead):
                 The first reference is the `init_reference` (initial) and the
                 other num_decoder_layers(6) references are `inter_references`
                 (intermediate). The `init_reference` has shape (bs, num_query,
-                4) when `as_two_stage` is `True`, otherwise (bs, num_query, 2).
-                Each `inter_reference` has shape (bs, num_query, 4) when
-                `with_box_refine` is `True`, otherwise (bs, num_query, 2).
+                4) when `as_two_stage` of the detector is `True`, otherwise
+                (bs, num_query, 2). Each `inter_reference` has shape
+                (bs, num_query, 4) when `with_box_refine` of the detector is
+                `True`, otherwise (bs, num_query, 2).
 
         Returns:
             tuple[Tensor]: results of head containing the following tensor.
@@ -125,12 +114,14 @@ class DeformableDETRHead(DETRHead):
             outputs_class = self.cls_branches[layer_id](hidden_state)
             tmp_reg_preds = self.reg_branches[layer_id](hidden_state)
             if reference.shape[-1] == 4:
-                # When `layer` is 0 and `as_two_stage` is `True`, or when
-                # `layer` is greater than 0 and `with_box_refine` is `True`
+                # When `layer` is 0 and `as_two_stage` of the detector
+                # is `True`, or when `layer` is greater than 0 and
+                # `with_box_refine` of the detector is `True`.
                 tmp_reg_preds += reference
             else:
-                # When `layer` is 0 and `as_two_stage` is `False`, or when
-                # `layer` is greater than 0 and `with_box_refine` is `False`.
+                # When `layer` is 0 and `as_two_stage` of the detector
+                # is `False`, or when `layer` is greater than 0 and
+                # `with_box_refine` of the detector is `False`.
                 assert reference.shape[-1] == 2
                 tmp_reg_preds[..., :2] += reference
             outputs_coord = tmp_reg_preds.sigmoid()
@@ -155,9 +146,10 @@ class DeformableDETRHead(DETRHead):
                 The first reference is the `init_reference` (initial) and the
                 other num_decoder_layers(6) references are `inter_references`
                 (intermediate). The `init_reference` has shape (bs, num_query,
-                4) when `as_two_stage` is `True`, otherwise (bs, num_query, 2).
-                Each `inter_reference` has shape (bs, num_query, 4) when
-                `with_box_refine` is `True`, otherwise (bs, num_query, 2).
+                4) when `as_two_stage` of the detector is `True`, otherwise
+                (bs, num_query, 2). Each `inter_reference` has shape
+                (bs, num_query, 4) when `with_box_refine` of the detector is
+                `True`, otherwise (bs, num_query, 2).
             enc_outputs_class (Tensor): The score of each point on encode
                 feature map, has shape (bs, num_feat, cls_out_channels).
                 Only when `as_two_stage` is `True` it would be returned,
@@ -263,9 +255,10 @@ class DeformableDETRHead(DETRHead):
                 The first reference is the `init_reference` (initial) and the
                 other num_decoder_layers(6) references are `inter_references`
                 (intermediate). The `init_reference` has shape (bs, num_query,
-                4) when `as_two_stage` is `True`, otherwise (bs, num_query, 2).
-                Each `inter_reference` has shape (bs, num_query, 4) when
-                `with_box_refine` is `True`, otherwise (bs, num_query, 2).
+                4) when `as_two_stage` of the detector is `True`, otherwise
+                (bs, num_query, 2). Each `inter_reference` has shape
+                (bs, num_query, 4) when `with_box_refine` of the detector is
+                `True`, otherwise (bs, num_query, 2).
             batch_data_samples (list[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.

@@ -54,6 +54,11 @@ class DETR(TransformerDetector):
             batch_data_samples: OptSampleList = None) -> Tuple[Dict, Dict]:
         """Prepare the inputs of the Transformer.
 
+        The forward procedure of the transformer is defined as:
+        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'
+        More details can be found at `TransformerDetector.forward_transformer`
+        in `mmdet/detector/base_detr.py`.
+
         Args:
             img_feats (Tuple[Tensor]): Tuple of features output from the neck,
                 with shape (bs, c, h, w).
@@ -111,6 +116,11 @@ class DETR(TransformerDetector):
                         feat_pos: Tensor) -> Dict:
         """Forward with Transformer encoder.
 
+        The forward procedure of the transformer is defined as:
+        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'
+        More details can be found at `TransformerDetector.forward_transformer`
+        in `mmdet/detector/base_detr.py`.
+
         Args:
             feat (Tensor): Sequential features, has shape (num_feat, bs, dim).
             feat_mask (Tensor): ByteTensor, the padding mask of the features,
@@ -130,6 +140,11 @@ class DETR(TransformerDetector):
     def pre_decoder(self, memory: Tensor) -> Tuple[Dict, Dict]:
         """Prepare intermediate variables before entering Transformer decoder,
         such as `query`, `query_pos`.
+
+        The forward procedure of the transformer is defined as:
+        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'
+        More details can be found at `TransformerDetector.forward_transformer`
+        in `mmdet/detector/base_detr.py`.
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
@@ -162,6 +177,11 @@ class DETR(TransformerDetector):
     def forward_decoder(self, query: Tensor, query_pos: Tensor, memory: Tensor,
                         memory_mask: Tensor, memory_pos: Tensor) -> Dict:
         """Forward with Transformer decoder.
+
+        The forward procedure of the transformer is defined as:
+        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'
+        More details can be found at `TransformerDetector.forward_transformer`
+        in `mmdet/detector/base_detr.py`.
 
         Args:
             query (Tensor): The queries of decoder inputs, has shape

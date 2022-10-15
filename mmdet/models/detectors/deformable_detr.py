@@ -54,11 +54,18 @@ class DeformableDETR(TransformerDetector):
         self.num_feature_levels = num_feature_levels
 
         if bbox_head is not None:
-            bbox_head.update(
-                dict(
-                    with_box_refine=with_box_refine,
-                    as_two_stage=as_two_stage,
-                    num_decoder_layers=decoder_cfg['num_layers']))
+            assert 'share_pred_layer' not in bbox_head and \
+                   'num_pred_layer' not in bbox_head, \
+                'The two keyword args `share_pred_layer`, `num_pred_layer` ' \
+                'are set in `detector.__init__()`, users should not set ' \
+                'them in `bbox_head` config.'
+            # The last prediction layer is used to generate proposal
+            # from encode feature map when `as_two_stage` is `True`.
+            # And all the prediction layers should share parameters
+            # when `with_box_refine` is `True`.
+            bbox_head['share_pred_layer'] = not with_box_refine
+            bbox_head['num_pred_layer'] = (decoder_cfg['num_layers'] + 1) \
+                if self.as_two_stage else decoder_cfg['num_layers']
 
         super().__init__(
             *args, decoder_cfg=decoder_cfg, bbox_head=bbox_head, **kwargs)
@@ -112,6 +119,11 @@ class DeformableDETR(TransformerDetector):
             mlvl_feats: Tuple[Tensor],
             batch_data_samples: OptSampleList = None) -> Tuple[Dict]:
         """Process image features before feeding them to the transformer.
+
+        The forward procedure of the transformer is defined as:
+        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'
+        More details can be found at `TransformerDetector.forward_transformer`
+        in `mmdet/detector/base_detr.py`.
 
         Args:
             mlvl_feats (tuple[Tensor]): Multi-level features that may have
@@ -211,6 +223,11 @@ class DeformableDETR(TransformerDetector):
                         valid_ratios: Tensor) -> Dict:
         """Forward with Transformer encoder.
 
+        The forward procedure of the transformer is defined as:
+        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'
+        More details can be found at `TransformerDetector.forward_transformer`
+        in `mmdet/detector/base_detr.py`.
+
         Args:
             feat (Tensor): Sequential features, has shape (num_feat, bs, dim).
             feat_mask (Tensor): ByteTensor, the padding mask of the features,
@@ -248,6 +265,11 @@ class DeformableDETR(TransformerDetector):
                     spatial_shapes: Tensor) -> Tuple[Dict, Dict]:
         """Prepare intermediate variables before entering Transformer decoder,
         such as `query`, `query_pos`, and `reference_points`.
+
+        The forward procedure of the transformer is defined as:
+        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'
+        More details can be found at `TransformerDetector.forward_transformer`
+        in `mmdet/detector/base_detr.py`.
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
@@ -329,6 +351,11 @@ class DeformableDETR(TransformerDetector):
                         spatial_shapes: Tensor, level_start_index: Tensor,
                         valid_ratios: Tensor) -> Dict:
         """Forward with Transformer decoder.
+
+        The forward procedure of the transformer is defined as:
+        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'
+        More details can be found at `TransformerDetector.forward_transformer`
+        in `mmdet/detector/base_detr.py`.
 
         Args:
             query (Tensor): The queries of decoder inputs, has shape
