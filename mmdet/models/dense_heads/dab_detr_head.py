@@ -75,7 +75,7 @@ class DABDETRHead(DETRHead):
 
         Args:
             hidden_states (Tensor): Feature from the transformer decoder, has
-                shape (num_decoder_layers, bs, num_query, cls_out_channels).
+                shape (num_decoder_layers, bs, num_query, dim).
             references (Tensor): references from the transformer decoder, has
                 shape (num_decoder_layers, bs, num_query, 2/4).
             batch_data_samples (List[:obj:`DetDataSample`]): The Data

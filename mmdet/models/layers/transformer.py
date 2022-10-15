@@ -147,20 +147,18 @@ class PatchEmbed(BaseModule):
             initialization. Default: None.
     """
 
-    def __init__(
-        self,
-        in_channels=3,
-        embed_dims=768,
-        conv_type='Conv2d',
-        kernel_size=16,
-        stride=16,
-        padding='corner',
-        dilation=1,
-        bias=True,
-        norm_cfg=None,
-        input_size=None,
-        init_cfg=None,
-    ):
+    def __init__(self,
+                 in_channels=3,
+                 embed_dims=768,
+                 conv_type='Conv2d',
+                 kernel_size=16,
+                 stride=16,
+                 padding='corner',
+                 dilation=1,
+                 bias=True,
+                 norm_cfg=None,
+                 input_size=None,
+                 init_cfg=None):
         super(PatchEmbed, self).__init__(init_cfg=init_cfg)
 
         self.embed_dims = embed_dims
