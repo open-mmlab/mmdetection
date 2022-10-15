@@ -17,7 +17,7 @@ from .se_layer import DyReLU, SELayer
 from .transformer import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DetrTransformerEncoder, DetrTransformerEncoderLayer,
                           DynamicConv, PatchEmbed, PatchMerging,
-                          inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
+                          inverse_sigmoid, nchw_to_nlc, nlc_to_nchw, MLP)
 
 __all__ = [
     'fast_nms', 'multiclass_nms', 'mask_matrix_nms', 'DropBlock',
@@ -29,5 +29,5 @@ __all__ = [
     'AdaptiveAvgPool2d', 'PatchEmbed', 'nchw_to_nlc', 'nlc_to_nchw', 'DyReLU',
     'ExpMomentumEMA', 'inverse_sigmoid', 'DetrTransformerEncoder',
     'DetrTransformerDecoder', 'DetrTransformerEncoderLayer',
-    'DetrTransformerDecoderLayer'
+    'DetrTransformerDecoderLayer', 'MLP'
 ]
