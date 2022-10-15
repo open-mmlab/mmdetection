@@ -145,20 +145,18 @@ class PatchEmbed(BaseModule):
             initialization. Default: None.
     """
 
-    def __init__(
-            self,
-            in_channels=3,
-            embed_dims=768,
-            conv_type='Conv2d',
-            kernel_size=16,
-            stride=16,
-            padding='corner',
-            dilation=1,
-            bias=True,
-            norm_cfg=None,
-            input_size=None,
-            init_cfg=None,
-    ):
+    def __init__(self,
+                 in_channels=3,
+                 embed_dims=768,
+                 conv_type='Conv2d',
+                 kernel_size=16,
+                 stride=16,
+                 padding='corner',
+                 dilation=1,
+                 bias=True,
+                 norm_cfg=None,
+                 input_size=None,
+                 init_cfg=None):
         super(PatchEmbed, self).__init__(init_cfg=init_cfg)
 
         self.embed_dims = embed_dims
@@ -438,6 +436,7 @@ class DetrTransformerEncoder(BaseModule):
                  num_layers: int,
                  layer_cfg: Union[dict, ConfigDict],
                  init_cfg: Union[dict, ConfigDict] = None) -> None:
+
         super().__init__(init_cfg=init_cfg)
         self.num_layers = num_layers
         self.layer_cfg = layer_cfg
@@ -585,20 +584,20 @@ class DetrTransformerEncoderLayer(BaseModule):
                  batch_first=False):
 
         super().__init__(init_cfg=init_cfg)
-        if 'batch_first' in self_attn_cfg:  # TODO
+        if 'batch_first' in self_attn_cfg:
             assert batch_first == self_attn_cfg['batch_first']
         else:
             self_attn_cfg['batch_first'] = batch_first
-        self.batch_first = batch_first  # TODO
-        self.self_attn_cfg = self_attn_cfg  # TODO
-        self.ffn_cfg = ffn_cfg  # TODO
-        self.norm_cfg = norm_cfg  # TODO
+        self.batch_first = batch_first
+        self.self_attn_cfg = self_attn_cfg
+        self.ffn_cfg = ffn_cfg
+        self.norm_cfg = norm_cfg
         self._init_layers()
 
     def _init_layers(self):
         """Initialize self-attention, FFN, and normalization."""
         self.self_attn = MultiheadAttention(**self.self_attn_cfg)
-        self.embed_dims = self.self_attn.embed_dims  # TODO
+        self.embed_dims = self.self_attn.embed_dims
         self.ffn = FFN(**self.ffn_cfg)
         norms_list = [
             build_norm_layer(self.norm_cfg, self.embed_dims)[1]
@@ -686,7 +685,7 @@ class DetrTransformerDecoderLayer(BaseModule):
         """Initialize self-attention, FFN, and normalization."""
         self.self_attn = MultiheadAttention(**self.self_attn_cfg)
         self.cross_attn = MultiheadAttention(**self.cross_attn_cfg)
-        self.embed_dims = self.self_attn.embed_dims  # TODO
+        self.embed_dims = self.self_attn.embed_dims
         self.ffn = FFN(**self.ffn_cfg)
         norms_list = [
             build_norm_layer(self.norm_cfg, self.embed_dims)[1]
@@ -711,7 +710,7 @@ class DetrTransformerDecoderLayer(BaseModule):
                 [bs, num_query, dim].
             key (Tensor): The key tensor with shape [num_key, bs,
                 dim] if self.batch_first is False, else
-                [bs, num_key, dim] .
+                [bs, num_key, dim].
                 If None, the ``query`` will be used. Defaults to None.
             value (Tensor): The value tensor with same shape as `key`.
                 Same in `nn.MultiheadAttention.forward`. Defaults to None.
