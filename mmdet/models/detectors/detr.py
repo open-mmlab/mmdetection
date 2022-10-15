@@ -133,7 +133,8 @@ class DETR(TransformerDetector):
             `memory` of the encoder output.
         """
         memory = self.encoder(
-            query=feat, query_pos=feat_pos, query_key_padding_mask=feat_mask)
+            query=feat, query_pos=feat_pos,
+            key_padding_mask=feat_mask)  # for self_attn
         encoder_outputs_dict = dict(memory=memory)
         return encoder_outputs_dict
 
@@ -206,7 +207,7 @@ class DETR(TransformerDetector):
             value=memory,
             query_pos=query_pos,
             key_pos=memory_pos,
-            key_padding_mask=memory_mask)
+            key_padding_mask=memory_mask)  # for cross_attn
         hidden_states = hidden_states.transpose(1, 2)
         head_inputs_dict = dict(hidden_states=hidden_states)
         return head_inputs_dict
