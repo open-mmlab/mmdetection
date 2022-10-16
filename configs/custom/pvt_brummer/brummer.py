@@ -1,7 +1,7 @@
 _base_ = [
-    '../custom/retinanet_r50_fpn.py',
-    '../custom/my_custom_dataset.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+    '../../custom/pvt_brummer/retinanet_r50_fpn.py',
+    '../../custom/pvt_brummer/brummer_dataset.py',
+    '../../_base_/schedules/schedule_1x.py', '../../_base_/default_runtime.py'
 ]
 model = dict(
     type='RetinaNet',
@@ -13,4 +13,4 @@ model = dict(
                       'releases/download/v2/pvt_tiny.pth')),
     neck=dict(in_channels=[64, 128, 320, 512]))
 # optimizer
-optimizer = dict(_delete_=True, type='AdamW', lr=0.0001, weight_decay=0.0001)
+optimizer = dict(_delete_=True, type='AdamW', lr=0.00003, weight_decay=0.0001)

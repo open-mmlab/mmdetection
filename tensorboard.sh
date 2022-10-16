@@ -1,0 +1,1 @@
+tensorboard --logdir_spec yolo:yolox_s_8x8_300e_coco/,fst:fst

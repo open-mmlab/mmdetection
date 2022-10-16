@@ -20,11 +20,10 @@ from .custom import CustomDataset
 
 
 @DATASETS.register_module()
-class ForkliftsDataset(CustomDataset):
-    CLASSES = ("low_forklift", "forklift", "person", "amr", "other_vehicle", "manual_pallet_jack")
+class FSTDataset(CustomDataset):
+    CLASSES = ("forklift", "person", "manual_pallet_jack")
 
-    PALETTE = [(220, 20, 60), (255, 0, 0), (0, 0, 142), (0, 0, 70),
-               (0, 80, 100), (0, 0, 230)]
+    PALETTE = [(220, 20, 60), (255, 0, 0), (0, 0, 142)]
 
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.

@@ -368,6 +368,7 @@ class RandomFlip:
     """
 
     def __init__(self, flip_ratio=None, direction='horizontal'):
+        self.dump_count = 0
         if isinstance(flip_ratio, list):
             assert mmcv.is_list_of(flip_ratio, float)
             assert 0 <= sum(flip_ratio) <= 1
@@ -438,7 +439,8 @@ class RandomFlip:
             dict: Flipped results, 'flip', 'flip_direction' keys are added \
                 into result dict.
         """
-
+        # cv2.imwrite(f"data/dump/{self.dump_count}.png", results["img"])
+        # self.dump_count += 1
         if 'flip' not in results:
             if isinstance(self.direction, list):
                 # None means non-flip

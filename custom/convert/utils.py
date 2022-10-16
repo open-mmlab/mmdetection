@@ -4,8 +4,7 @@ from typing import List
 
 import cv2
 
-from custom.convert.target_class_map import target_class_map
-
+from custom.convert.target_class_map import target_class_map_brummer as target_class_map
 
 @dataclass
 class KittiAnnotation:
@@ -114,6 +113,8 @@ def convert_kitti_files(train_path, val_path):
         coco["annotations"] = [annot.__dict__ for annot in annot_dict.values()]
         coco["categories"] = [cat.__dict__ for cat in categories.values()]
         cocos.append(coco)
+        print(f"{len(coco['annotations'])} annotations\n{len(coco['images'])} images")
+    print(f"classes found {coco['categories']}\n" )
     return cocos
 
 
