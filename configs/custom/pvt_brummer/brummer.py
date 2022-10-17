@@ -13,4 +13,4 @@ model = dict(
                       'releases/download/v2/pvt_tiny.pth')),
     neck=dict(in_channels=[64, 128, 320, 512]))
 # optimizer
-optimizer = dict(_delete_=True, type='AdamW', lr=0.00003, weight_decay=0.0001)
+optimizer = dict(_delete_=True, type='AdamW', lr=0.00001, weight_decay=0.0001)

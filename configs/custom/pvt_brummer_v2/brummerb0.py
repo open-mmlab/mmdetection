@@ -1,7 +1,7 @@
 _base_ = [
     '../../custom/pvt_brummer/retinanet_r50_fpn.py',
     '../../custom/pvt_brummer/brummer_dataset.py',
-    '../../_base_/schedules/schedule_2x.py',
+    '../../_base_/schedules/schedule_1x.py',
     '../../_base_/default_runtime.py'
 ]
 model = dict(

@@ -4,6 +4,7 @@ import io
 import itertools
 import logging
 import os.path as osp
+import pdb
 import tempfile
 import warnings
 from collections import OrderedDict
@@ -356,7 +357,7 @@ class ForkliftsDataset(CustomDataset):
                           coco_gt,
                           metrics,
                           logger=None,
-                          classwise=False,
+                          classwise=True,
                           proposal_nums=(100, 300, 1000),
                           iou_thrs=None,
                           metric_items=None):
@@ -446,7 +447,9 @@ class ForkliftsDataset(CustomDataset):
                     logger=logger,
                     level=logging.ERROR)
                 break
-
+            # coco_det.anns = {k:it for k,it in coco_det.anns.items() if it["score"] > 0.5}
+            # coco_det.anns = {i:it for i, (k,it) in enumerate(coco_det.anns.items())}
+            # coco_det = coco_gt
             cocoEval = COCOeval(coco_gt, coco_det, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids

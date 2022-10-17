@@ -21,8 +21,8 @@ checkpoint_file = 'work_dirs/brummer/latest.pth'
 # inf_dir = 'data/fst/random_select_/random_select'
 # inf_out_dir = 'data/fst/random_select_/fstv2_first'
 
-inf_dir = "data/brummer/test/image_2"
-inf_out_dir = 'data/brummer/test/brummer_v2'
+inf_dir = "data/brummer/val/image_2"
+inf_out_dir = 'data/brummer/val/brummer_v2_debug'
 
 class FPSLogger():
     def __init__(self):
