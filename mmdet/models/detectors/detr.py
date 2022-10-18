@@ -61,7 +61,7 @@ class DETR(TransformerDetector):
 
         Args:
             img_feats (Tuple[Tensor]): Tuple of features output from the neck,
-                with shape (bs, c, h, w).
+                has shape (bs, c, h, w).
             batch_data_samples (List[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such as
                 `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
@@ -81,7 +81,7 @@ class DETR(TransformerDetector):
 
         feat = img_feats[-1]  # NOTE img_feats contains only one feature.
         batch_size, feat_dim, _, _ = feat.shape
-        # construct binary masks which used for the transformer.
+        # construct binary masks which for the transformer.
         assert batch_data_samples is not None
         batch_input_shape = batch_data_samples[0].batch_input_shape
         img_shape_list = [sample.img_shape for sample in batch_data_samples]
@@ -91,8 +91,8 @@ class DETR(TransformerDetector):
         for img_id in range(batch_size):
             img_h, img_w = img_shape_list[img_id]
             masks[img_id, :img_h, :img_w] = 0
-        # NOTE following the official DETR repo, non-zero values representing
-        # ignored positions, while zero values means valid positions.
+        # NOTE following the official DETR repo, non-zero values represent
+        # ignored positions, while zero values mean valid positions.
 
         masks = F.interpolate(
             masks.unsqueeze(1), size=feat.shape[-2:]).to(torch.bool).squeeze(1)

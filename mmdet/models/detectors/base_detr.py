@@ -19,28 +19,28 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
     and do the regression and classification.
 
     Args:
-        backbone (:obj:`ConfigDict` or dict): Config of backbone.
-        neck (:obj:`ConfigDict` or dict): Config of neck.
+        backbone (:obj:`ConfigDict` or dict): Config of the backbone.
+        neck (:obj:`ConfigDict` or dict, optional): Config of the neck.
             Defaults to None.
-        encoder_cfg (:obj:`ConfigDict` or dict): Config of encoder.
-            Defaults to None.
-        decoder_cfg (:obj:`ConfigDict` or dict): Config of decoder.
-            Defaults to None.
-        positional_encoding_cfg (:obj:`ConfigDict` or dict): Config of
-            positional encoding. Defaults to None.
-        bbox_head (:obj:`ConfigDict` or dict): Config for position
-            encoding. Defaults to None.
-        num_query (int): Number of decoder query in Transformer.
+        encoder_cfg (:obj:`ConfigDict` or dict, optional): Config of the
+            Transformer encoder. Defaults to None.
+        decoder_cfg (:obj:`ConfigDict` or dict, optional): Config of the
+            Transformer decoder. Defaults to None.
+        positional_encoding_cfg (:obj:`ConfigDict` or dict, optional): Config
+            of the positional encoding module. Defaults to None.
+        bbox_head (:obj:`ConfigDict` or dict, optional): Config for the
+            bounding box head module. Defaults to None.
+        num_query (int, optional): Number of decoder query in Transformer.
             Defaults to 100.
-        train_cfg (:obj:`ConfigDict` or dict): Training config of transformer
-            head. Defaults to None.
-        test_cfg (:obj:`ConfigDict` or dict): Testing config of transformer
-            head. Defaults to None.
+        train_cfg (:obj:`ConfigDict` or dict, optional): Training config of
+            the bounding box head module. Defaults to None.
+        test_cfg (:obj:`ConfigDict` or dict, optional): Testing config of
+            the bounding box head module. Defaults to None.
         data_preprocessor (dict or ConfigDict, optional): The pre-process
-           config of :class:`BaseDataPreprocessor`.  it usually includes,
+            config of :class:`BaseDataPreprocessor`.  it usually includes,
             ``pad_size_divisor``, ``pad_value``, ``mean`` and ``std``.
             Defaults to None.
-        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or
             dict], optional): Initialization config dict. Defaults to None.
     """
 
@@ -109,7 +109,7 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         processing.
 
         Args:
-            batch_inputs (Tensor): Inputs with shape (bs, dim, H, W).
+            batch_inputs (Tensor): Inputs, has shape (bs, dim, H, W).
             batch_data_samples (List[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
@@ -147,9 +147,9 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         forward without any post-processing.
 
          Args:
-            batch_inputs (Tensor): Inputs with shape (bs, dim, H, W).
-            batch_data_samples (List[:obj:`DetDataSample`]): The batch
-                data samples. It usually includes information such
+            batch_inputs (Tensor): Inputs, has shape (bs, dim, H, W).
+            batch_data_samples (List[:obj:`DetDataSample`], optional): The
+                batch data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
                 Defaults to None.
 
@@ -166,8 +166,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
                             img_feats: Tuple[Tensor],
                             batch_data_samples: OptSampleList = None) -> Dict:
         """Forward process of Transformer, which includes four steps:
-        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'.
-        We summarized the parameters flow of the existing DETR-like detector,
+        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'. We
+        summarized the parameters flow of the existing DETR-like detector,
         which can be illustrated as follow:
 
         .. code:: text
@@ -200,8 +200,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         Args:
             img_feats (tuple[Tensor]): Tuple of feature maps from neck. Each
                 feature map has shape (bs, dim, H, W).
-            batch_data_samples (list[:obj:`DetDataSample`]): The batch
-                data samples. It usually includes information such
+            batch_data_samples (list[:obj:`DetDataSample`], optional): The
+                batch data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
                 Defaults to None.
 
@@ -226,7 +226,7 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         """Extract features.
 
         Args:
-            batch_inputs (Tensor): Image tensor with shape (bs, dim, H, W).
+            batch_inputs (Tensor): Image tensor, has shape (bs, dim, H, W).
 
         Returns:
             tuple[Tensor]: Tuple of feature maps from neck. Each feature map
@@ -247,8 +247,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         Args:
             img_feats (tuple[Tensor]): Tuple of feature maps from neck. Each
                 feature map has shape (bs, dim, H, W).
-            batch_data_samples (list[:obj:`DetDataSample`]): The batch
-                data samples. It usually includes information such
+            batch_data_samples (list[:obj:`DetDataSample`], optional): The
+                batch data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
                 Defaults to None.
 

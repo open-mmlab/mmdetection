@@ -29,10 +29,10 @@ class DeformableDETR(TransformerDetector):
     <https://github.com/fundamentalvision/Deformable-DETR>`_.
 
     Args:
-        decoder_cfg (:obj:`ConfigDict` or dict): Config of decoder.
-            Defaults to None.
-        bbox_head (:obj:`ConfigDict` or dict): Config for position
-            encoding. Defaults to None.
+        decoder_cfg (:obj:`ConfigDict` or dict, optional): Config of the
+            Transformer decoder. Defaults to None.
+        bbox_head (:obj:`ConfigDict` or dict, optional): Config for the
+            bounding box head module. Defaults to None.
         with_box_refine (bool, optional): Whether to refine the references
             in the decoder. Defaults to `False`.
         as_two_stage (bool, optional): Whether to generate the proposal
@@ -55,10 +55,11 @@ class DeformableDETR(TransformerDetector):
 
         if bbox_head is not None:
             assert 'share_pred_layer' not in bbox_head and \
-                   'num_pred_layer' not in bbox_head, \
-                'The two keyword args `share_pred_layer`, `num_pred_layer` ' \
-                'are set in `detector.__init__()`, users should not set ' \
-                'them in `bbox_head` config.'
+                   'num_pred_layer' not in bbox_head and \
+                   'as_two_stage' not in bbox_head, \
+                'The two keyword args `share_pred_layer`, `num_pred_layer`, ' \
+                'and `as_two_stage are set in `detector.__init__()`, users ' \
+                'should not set them in `bbox_head` config.'
             # The last prediction layer is used to generate proposal
             # from encode feature map when `as_two_stage` is `True`.
             # And all the prediction layers should share parameters
@@ -66,6 +67,7 @@ class DeformableDETR(TransformerDetector):
             bbox_head['share_pred_layer'] = not with_box_refine
             bbox_head['num_pred_layer'] = (decoder_cfg['num_layers'] + 1) \
                 if self.as_two_stage else decoder_cfg['num_layers']
+            bbox_head['as_two_stage'] = as_two_stage
 
         super().__init__(
             *args, decoder_cfg=decoder_cfg, bbox_head=bbox_head, **kwargs)
@@ -129,8 +131,8 @@ class DeformableDETR(TransformerDetector):
             mlvl_feats (tuple[Tensor]): Multi-level features that may have
                 different resolutions, output from neck. Each feature has
                 shape (bs, dim, h_lvl, w_lvl), where 'lvl' means 'layer'.
-            batch_data_samples (list[:obj:`DetDataSample`]): The batch
-                data samples. It usually includes information such
+            batch_data_samples (list[:obj:`DetDataSample`], optional): The
+                batch data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
                 Defaults to None.
 
@@ -146,7 +148,7 @@ class DeformableDETR(TransformerDetector):
         """
         batch_size = mlvl_feats[0].size(0)
 
-        # construct binary mask of feat
+        # construct binary masks for the transformer.
         assert batch_data_samples is not None
         batch_input_shape = batch_data_samples[0].batch_input_shape
         img_shape_list = [sample.img_shape for sample in batch_data_samples]
@@ -234,8 +236,8 @@ class DeformableDETR(TransformerDetector):
                 has shape (num_feat, bs).
             feat_pos (Tensor): The positional embeddings of the features, has
                 shape (num_feat, bs, dim).
-            spatial_shapes (Tensor): Spatial shapes of features in all levels.
-                With shape (num_levels, 2), last dimension represents (h, w).
+            spatial_shapes (Tensor): Spatial shapes of features in all levels,
+                has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
                 A tensor has shape (num_levels, ) and can be represented
                 as [0, h_0*w_0, h_0*w_0+h_1*w_1, ...].
@@ -275,11 +277,11 @@ class DeformableDETR(TransformerDetector):
             memory (Tensor): The output embeddings of the Transformer encoder,
                 has shape (bs, num_feat, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
-                has shape (bs, num_feat). Will only be used when `as_two_stage`
-                is `True`.
-            spatial_shapes (Tensor): Spatial shapes of features in all levels.
-                With shape (num_levels, 2), last dimension represents (h, w).
-                Will only be used when `as_two_stage` is `True`.
+                has shape (bs, num_feat). It will only be used when
+                `as_two_stage` is `True`.
+            spatial_shapes (Tensor): Spatial shapes of features in all levels,
+                has shape (num_levels, 2), last dimension represents (h, w).
+                It will only be used when `as_two_stage` is `True`.
 
         Returns:
             tuple[dict, dict]: The decoder_inputs_dict and head_inputs_dict.
@@ -369,8 +371,8 @@ class DeformableDETR(TransformerDetector):
             reference_points (Tensor): The initial reference, has shape
                 (bs, num_query, 4) when `as_two_stage` is `True`,
                 otherwise has shape (bs, num_query, 2).
-            spatial_shapes (Tensor): Spatial shapes of features in all levels.
-                With shape (num_levels, 2), last dimension represents (h, w).
+            spatial_shapes (Tensor): Spatial shapes of features in all levels,
+                has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
                 A tensor has shape (num_levels, ) and can be represented
                 as [0, h_0*w_0, h_0*w_0+h_1*w_1, ...].
@@ -441,16 +443,16 @@ class DeformableDETR(TransformerDetector):
     def gen_encoder_output_proposals(
             self, memory: Tensor, memory_mask: Tensor,
             spatial_shapes: Tensor) -> Tuple[Tensor, Tensor]:
-        """Generate proposals from encoded memory. Will only be used when
-        `as_two_stage` is `True`.
+        """Generate proposals from encoded memory. The function will only be
+        used when `as_two_stage` is `True`.
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
                 has shape (num_feat, bs, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
                 has shape (bs, num_feat).
-            spatial_shapes (Tensor): Spatial shapes of features in all levels.
-                With shape (num_levels, 2), last dimension represents (h, w).
+            spatial_shapes (Tensor): Spatial shapes of features in all levels,
+                has shape (num_levels, 2), last dimension represents (h, w).
 
         Returns:
             tuple: A tuple of transformed memory and proposals.
@@ -463,7 +465,7 @@ class DeformableDETR(TransformerDetector):
 
         num_feat = memory.size(0)
         proposals = []
-        _cur = 0
+        _cur = 0  # start index in the sequence of the current level
         for lvl, (H, W) in enumerate(spatial_shapes):
             mask_flatten_ = memory_mask[:, _cur:(_cur + H * W)].view(
                 num_feat, H, W, 1)
@@ -508,7 +510,7 @@ class DeformableDETR(TransformerDetector):
     @staticmethod
     def get_proposal_pos_embed(proposals: Tensor,
                                num_pos_feats: int = 128,
-                               temperature: int = 10000):
+                               temperature: int = 10000) -> Tensor:
         """Get the position embedding of the proposal.
 
         Args:
@@ -557,14 +559,14 @@ class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
         """Forward function of Transformer encoder.
 
         Args:
-            query (Tensor): The input query with shape (num_query, bs, dim).
-            query_pos (Tensor): The positional encoding for query, with shape
+            query (Tensor): The input query, has shape (num_query, bs, dim).
+            query_pos (Tensor): The positional encoding for query, has shape
                 (num_query, bs, dim). If not None, it will be added to the
                 `query` before forward function. Defaults to None.
             key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
-                input. ByteTensor with shape (num_query, bs).
-            spatial_shapes (Tensor): Spatial shapes of features in all levels.
-                With shape (num_levels, 2), last dimension represents (h, w).
+                input. ByteTensor, has shape (num_query, bs).
+            spatial_shapes (Tensor): Spatial shapes of features in all levels,
+                has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
                 A tensor has shape (num_levels, ) and can be represented
                 as [0, h_0*w_0, h_0*w_0+h_1*w_1, ...].
@@ -573,8 +575,9 @@ class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
                 levels, has shape (bs, num_levels, 2).
 
         Returns:
-            Tensor: Output queries of Transformer encoder, which is also called
-            'encoder output embeddings' or 'memory'.
+            Tensor: Output queries of Transformer encoder, which is also
+            called 'encoder output embeddings' or 'memory', has shape
+            (num_query, bs, dim)
         """
         reference_points = self.get_encoder_reference_points(
             spatial_shapes, valid_ratios, device=query.device)
@@ -593,16 +596,17 @@ class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
     @staticmethod
     def get_encoder_reference_points(
             spatial_shapes: Tensor, valid_ratios: Tensor,
-            device: Union[str, torch.device]) -> Tensor:
+            device: Union[torch.device, str]) -> Tensor:
         """Get the reference points used in encoder.
 
         Args:
-            spatial_shapes (Tensor): Spatial shapes of features in all levels.
-                With shape (num_levels, 2), last dimension represents (h, w).
+            spatial_shapes (Tensor): Spatial shapes of features in all levels,
+                has shape (num_levels, 2), last dimension represents (h, w).
             valid_ratios (Tensor): The ratios of the valid width and the valid
                 height relative to the width and the height of features in all
                 levels, has shape (bs, num_levels, 2).
-            device (obj:`device`): The device acquired by `reference_points`.
+            device (obj:`device` or str): The device acquired by the
+                `reference_points`.
 
         Returns:
             Tensor: Reference points used in decoder, has shape (bs, length,
@@ -655,18 +659,18 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
         """Forward function of Transformer decoder.
 
         Args:
-            query (Tensor): The input queries, with shape (num_query, bs, dim).
-            query_pos (Tensor): The input positional query, with shape
+            query (Tensor): The input queries, has shape (num_query, bs, dim).
+            query_pos (Tensor): The input positional query, has shape
                 (num_query, bs, dim). It will be added to `query` before
                 forward function.
-            value (Tensor): The input values, with shape (num_value, bs, dim).
+            value (Tensor): The input values, has shape (num_value, bs, dim).
             key_padding_mask (Tensor): The `key_padding_mask` of `cross_attn`
-                input. ByteTensor with shape (num_value, bs).
+                input. ByteTensor, has shape (num_value, bs).
             reference_points (Tensor): The initial reference, has shape
                 (bs, num_query, 4) when `as_two_stage` is `True`,
                 otherwise has shape (bs, num_query, 2).
-            spatial_shapes (Tensor): Spatial shapes of features in all levels.
-                With shape (num_levels, 2), last dimension represents (h, w).
+            spatial_shapes (Tensor): Spatial shapes of features in all levels,
+                has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
                 A tensor has shape (num_levels, ) and can be represented
                 as [0, h_0*w_0, h_0*w_0+h_1*w_1, ...].
@@ -680,21 +684,20 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
         Returns:
             tuple[Tensor]: Outputs of Deformable Transformer Decoder.
 
-            - inter_states (Tensor): Output embeddings of the decoder,
-              has shape [num_query, bs, embed_dims] when
-              `return_intermediate` is False. Otherwise, Intermediate
-              output embeddings of the decoder layers, has shape
-              [num_decoder_layers, num_query, bs, embed_dims].
-            - inter_references (Tensor): The reference of last decoder
-              layer, has shape [bs, num_query, 4] when
-              `return_intermediate` is False. Otherwise, Intermediate
-              references of the decoder layers, has shape
-              [num_decoder_layers, bs, num_query, 4].
+            - output (Tensor): Output embeddings of the last decoder, has
+              shape (num_query, bs, embed_dims) when `return_intermediate`
+              is `False`. Otherwise, Intermediate output embeddings of all
+              decoder layers, has shape (num_decoder_layers, num_query, bs,
+              embed_dims).
+            - reference_points (Tensor): The reference of the last decoder
+              layer, has shape (bs, num_query, 4) when `return_intermediate`
+              is `False`. Otherwise, Intermediate references of all decoder
+              layers, has shape (num_decoder_layers, bs, num_query, 4).
         """
         output = query
         intermediate = []
         intermediate_reference_points = []
-        for lid, layer in enumerate(self.layers):
+        for layer_id, layer in enumerate(self.layers):
             if reference_points.shape[-1] == 4:
                 reference_points_input = \
                     reference_points[:, :, None] * \
@@ -717,7 +720,7 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
             output = output.permute(1, 0, 2)
 
             if reg_branches is not None:
-                tmp = reg_branches[lid](output)
+                tmp = reg_branches[layer_id](output)
                 if reference_points.shape[-1] == 4:
                     new_reference_points = tmp + inverse_sigmoid(
                         reference_points)

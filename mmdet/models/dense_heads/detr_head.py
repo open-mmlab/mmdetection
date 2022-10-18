@@ -203,7 +203,7 @@ class DETRHead(BaseModule):
 
         Args:
             all_layers_cls_scores (Tensor): Classification outputs
-                of each decoder layers. Each is a 4D-tensor with shape
+                of each decoder layers. Each is a 4D-tensor, has shape
                 (num_decoder_layers, bs, num_query, cls_out_channels).
             all_layers_bbox_preds (Tensor): Sigmoid regression
                 outputs of each decoder layers. Each is a 4D-tensor with
@@ -336,7 +336,7 @@ class DETRHead(BaseModule):
 
         Args:
             cls_scores_list (list[Tensor]): Box score logits from a single
-                decoder layer for each image with shape [num_query,
+                decoder layer for each image, has shape [num_query,
                 cls_out_channels].
             bbox_preds_list (list[Tensor]): Sigmoid outputs from a single
                 decoder layer for each image, with normalized coordinate
@@ -516,7 +516,7 @@ class DETRHead(BaseModule):
 
         Args:
             layer_cls_scores (Tensor): Classification outputs of the last or
-                all decoder layer. Each is a 4D-tensor with shape
+                all decoder layer. Each is a 4D-tensor, has shape
                 (num_decoder_layers, bs, num_query, cls_out_channels).
             layer_bbox_preds (Tensor): Sigmoid regression outputs of the last
                 or all decoder layer. Each is a 4D-tensor with normalized

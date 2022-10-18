@@ -28,17 +28,22 @@ class DeformableDETRHead(DETRHead):
 
     Args:
         share_pred_layer (bool): Whether to share parameters for all the
-            prediction layers.
+            prediction layers. Defaults to `False`.
         num_pred_layer (int): The number of the prediction layers.
+            Defaults to 6.
+        as_two_stage (bool, optional): Whether to generate the proposal
+            from the outputs of encoder. Defaults to `False`.
     """
 
     def __init__(self,
                  *args,
                  share_pred_layer: bool = False,
                  num_pred_layer: int = 6,
+                 as_two_stage: bool = False,
                  **kwargs) -> None:
         self.share_pred_layer = share_pred_layer
         self.num_pred_layer = num_pred_layer
+        self.as_two_stage = as_two_stage
 
         super().__init__(*args, **kwargs)
 
@@ -52,16 +57,17 @@ class DeformableDETRHead(DETRHead):
         reg_branch.append(Linear(self.embed_dims, 4))
         reg_branch = nn.Sequential(*reg_branch)
 
-        if self.share_pred_layers:
-            self.cls_branches = nn.ModuleList([
-                copy.deepcopy(fc_cls) for _ in range(self.num_pred_layer)])
+        if self.share_pred_layer:
+            self.cls_branches = nn.ModuleList(
+                [copy.deepcopy(fc_cls) for _ in range(self.num_pred_layer)])
             self.reg_branches = nn.ModuleList([
-                copy.deepcopy(reg_branch) for _ in range(self.num_pred_layer)])
+                copy.deepcopy(reg_branch) for _ in range(self.num_pred_layer)
+            ])
         else:
-            self.cls_branches = nn.ModuleList([
-                fc_cls for _ in range(self.num_pred_layer)])
-            self.reg_branches = nn.ModuleList([
-                reg_branch for _ in range(self.num_pred_layer)])
+            self.cls_branches = nn.ModuleList(
+                [fc_cls for _ in range(self.num_pred_layer)])
+            self.reg_branches = nn.ModuleList(
+                [reg_branch for _ in range(self.num_pred_layer)])
 
     def init_weights(self) -> None:
         """Initialize weights of the Deformable DETR head."""
