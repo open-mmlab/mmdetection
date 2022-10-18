@@ -1,8 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 
-import mmcv
-from mmcv import Config, DictAction
+import mmengine
+from mmengine import Config, DictAction
 from mmengine.evaluator import Evaluator
 
 from mmdet.registry import DATASETS
@@ -39,7 +39,7 @@ def main():
         cfg.merge_from_dict(args.cfg_options)
 
     dataset = DATASETS.build(cfg.test_dataloader.dataset)
-    predictions = mmcv.load(args.pkl_results)
+    predictions = mmengine.load(args.pkl_results)
     assert len(dataset) == len(predictions)
 
     evaluator = Evaluator(cfg.test_evaluator)
