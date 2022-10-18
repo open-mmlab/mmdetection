@@ -45,6 +45,7 @@ def main():
     evaluator = Evaluator(cfg.test_evaluator)
     evaluator.dataset_meta = dataset.metainfo
     eval_results = evaluator.offline_evaluate(predictions)
+    print(eval_results)
 
 
 if __name__ == '__main__':
