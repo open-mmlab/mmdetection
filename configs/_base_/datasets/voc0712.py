@@ -38,6 +38,7 @@ train_dataloader = dict(
         times=3,
         dataset=dict(
             type='ConcatDataset',
+            ignore_keys=['DATASET_TYPE'],
             datasets=[
                 dict(
                     type=dataset_type,
