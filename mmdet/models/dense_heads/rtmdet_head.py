@@ -43,7 +43,7 @@ class RTMDetHead(ATSSHead):
         self.with_objectness = with_objectness
         super().__init__(num_classes, in_channels, **kwargs)
         if self.train_cfg:
-            self.assigner = TASK_UTILS.build(self.train_cfg.assigner)
+            self.assigner = TASK_UTILS.build(self.train_cfg['assigner'])
 
     def _init_layers(self):
         """Initialize layers of the head."""
@@ -427,7 +427,7 @@ class RTMDetHead(ATSSHead):
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
-                                           self.train_cfg.allowed_border)
+                                           self.train_cfg['allowed_border'])
         if not inside_flags.any():
             return (None, ) * 7
         # assign gt and sample anchors
@@ -461,10 +461,10 @@ class RTMDetHead(ATSSHead):
             bbox_targets[pos_inds, :] = pos_bbox_targets
 
             labels[pos_inds] = sampling_result.pos_gt_labels
-            if self.train_cfg.pos_weight <= 0:
+            if self.train_cfg['pos_weight'] <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
+                label_weights[pos_inds] = self.train_cfg['pos_weight']
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 
