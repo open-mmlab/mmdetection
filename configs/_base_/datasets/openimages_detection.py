@@ -66,8 +66,8 @@ test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='OpenImagesMetric',
-    iou_thr=0.5,
-    ioa_thr=0.5,
+    iou_thrs=0.5,
+    ioa_thrs=0.5,
     use_group_of=True,
     get_supercategory=True)
 test_evaluator = val_evaluator
