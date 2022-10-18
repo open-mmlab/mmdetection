@@ -170,6 +170,7 @@ def load_json_logs(json_logs):
             epoch = 1
             for i, line in enumerate(log_file):
                 log = json.loads(line.strip())
+                val_flag = False
                 # skip lines only contains one key
                 if not len(log) > 1:
                     continue
@@ -180,6 +181,9 @@ def load_json_logs(json_logs):
                 for k, v in log.items():
                     if '/' in k:
                         log_dict[epoch][k.split('/')[-1]].append(v)
+                        val_flag = True
+                    elif val_flag:
+                        continue
                     else:
                         log_dict[epoch][k].append(v)
 
