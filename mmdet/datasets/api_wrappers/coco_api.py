@@ -15,33 +15,102 @@ class COCO(_COCO):
 
     It implements some snake case function aliases. So that the COCO class has
     the same interface as LVIS class.
+
+    Args:
+        annotation_file (str, optional): Path of annotation file.
+            Defaults to None.
     """
 
-    def __init__(self, annotation_file=None):
+    def __init__(self, annotation_file: Optional[str] = None) -> None:
         if getattr(pycocotools, '__version__', '0') >= '12.0.2':
             warnings.warn(
-                'mmpycocotools is deprecated. Please install official pycocotools by "pip install pycocotools"',  # noqa: E501
-                UserWarning)
+                'mmpycocotools is deprecated. '
+                'Please install official pycocotools by '
+                '"pip install pycocotools"', UserWarning)
         super().__init__(annotation_file=annotation_file)
         self.img_ann_map = self.imgToAnns
         self.cat_img_map = self.catToImgs
 
-    def get_ann_ids(self, img_ids=[], cat_ids=[], area_rng=[], iscrowd=None):
+    def get_ann_ids(self,
+                    img_ids: Union[list, int] = [],
+                    cat_ids: Union[list, int] = [],
+                    area_rng: Union[list, int] = [],
+                    iscrowd: Optional[bool] = None) -> list:
+        """Get annotation ids that satisfy given filter conditions.
+
+        Args:
+            img_ids (list | int): Get annotations for given images.
+            cat_ids (list | int): Get categories for given images.
+            area_rng (list | int): Get annotations for given area range.
+            iscrowd (bool, optional):  Get annotations for given crowd label.
+
+        Returns:
+            List: Integer array of annotation ids.
+        """
         return self.getAnnIds(img_ids, cat_ids, area_rng, iscrowd)
 
-    def get_cat_ids(self, cat_names=[], sup_names=[], cat_ids=[]):
+    def get_cat_ids(self,
+                    cat_names: Union[list, int] = [],
+                    sup_names: Union[list, int] = [],
+                    cat_ids: Union[list, int] = []) -> list:
+        """Get category ids that satisfy given filter conditions.
+
+        Args:
+            cat_names (list | int): Get categories for given category names.
+            sup_names (list | int): Get categories for given supercategory
+                names.
+            cat_ids (list | int):  Get categories  for given category ids.
+
+        Returns:
+            List: Integer array of category ids.
+        """
         return self.getCatIds(cat_names, sup_names, cat_ids)
 
-    def get_img_ids(self, img_ids=[], cat_ids=[]):
+    def get_img_ids(self,
+                    img_ids: Union[list, int] = [],
+                    cat_ids: Union[list, int] = []) -> list:
+        """Get image ids that satisfy given filter conditions.
+
+        Args:
+            img_ids (list | int): Get images for given ids
+            cat_ids (list | int): Get images with all given cats
+
+        Returns:
+            List: Integer array of image ids.
+        """
         return self.getImgIds(img_ids, cat_ids)
 
-    def load_anns(self, ids):
+    def load_anns(self, ids: Union[list, int] = []) -> list:
+        """Load annotations with the specified ids.
+
+        Args:
+            ids (list | int): Integer ids specifying annotations.
+
+        Returns:
+            List[dict]: Loaded annotation objects.
+        """
         return self.loadAnns(ids)
 
-    def load_cats(self, ids):
+    def load_cats(self, ids: Union[list, int] = []) -> list:
+        """Load categories with the specified ids.
+
+        Args:
+            ids (list | int): Integer ids specifying categories.
+
+        Returns:
+            List[dict]: loaded category objects.
+        """
         return self.loadCats(ids)
 
-    def load_imgs(self, ids):
+    def load_imgs(self, ids: Union[list, int] = []) -> list:
+        """Load annotations with the specified ids.
+
+        Args:
+            ids (list): integer ids specifying image.
+
+        Returns:
+            List[dict]: Loaded image objects.
+        """
         return self.loadImgs(ids)
 
 
@@ -53,14 +122,7 @@ class COCOPanoptic(COCO):
     """This wrapper is for loading the panoptic style annotation file.
 
     The format is shown in the CocoPanopticDataset class.
-
-    Args:
-        annotation_file (str, optional): Path of annotation file.
-            Defaults to None.
     """
-
-    def __init__(self, annotation_file: Optional[str] = None) -> None:
-        super(COCOPanoptic, self).__init__(annotation_file)
 
     def createIndex(self) -> None:
         """Create index."""
@@ -114,16 +176,16 @@ class COCOPanoptic(COCO):
 
     def load_anns(self,
                   ids: Union[List[int], int] = []) -> Optional[List[dict]]:
-        """Load anns with the specified ids.
+        """Load annotations with the specified ids.
 
         ``self.anns`` is a list of annotation lists instead of a
         list of annotations.
 
         Args:
-            ids (Union[List[int], int]): Integer ids specifying anns.
+            ids (Union[List[int], int]): Integer ids specifying annotations.
 
         Returns:
-            anns (List[dict], optional): Loaded ann objects.
+            anns (List[dict], optional): Loaded annotation objects.
         """
         anns = []
 

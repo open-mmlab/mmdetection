@@ -57,7 +57,8 @@ test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=data_root + 'annotations/instances_val2017.json',
+    # TODO:
+    # ann_file=data_root + 'annotations/instances_val2017.json',
     metric=['bbox', 'segm'],
     format_only=False)
 test_evaluator = val_evaluator

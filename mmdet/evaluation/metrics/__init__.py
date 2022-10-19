@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from .cityscapes_metric import CityScapesMetric
 from .coco_metric import CocoMetric
+from .coco_metric_old import CocoMetricOld
 from .coco_panoptic_metric import CocoPanopticMetric
 from .crowdhuman_metric import CrowdHumanMetric
 from .lvis_metric import LVISMetric
@@ -9,5 +10,5 @@ from .voc_metric import VOCMetric
 
 __all__ = [
     'CityScapesMetric', 'CocoMetric', 'CocoPanopticMetric', 'OpenImagesMetric',
-    'VOCMetric', 'LVISMetric', 'CrowdHumanMetric'
+    'VOCMetric', 'LVISMetric', 'CrowdHumanMetric', 'CocoMetricOld'
 ]
