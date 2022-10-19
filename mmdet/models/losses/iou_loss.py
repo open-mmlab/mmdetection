@@ -276,13 +276,12 @@ def eiou_loss(pred, target, smooth_point=0.1, eps=1e-7):
     ymax = torch.max(iy1, iy2)
 
     # Intersection
-    intersection = (ix2 - ex1) * (iy2 - ey1) +   \
-                   (xmin - ex1) * (ymin - ey1) - \
-                   (ix1 - ex1) * (ymax - ey1) -   \
-                   (xmax - ex1) * (iy1 - ey1)
+    intersection = (ix2 - ex1) * (iy2 - ey1) + (xmin - ex1) * (ymin - ey1) - (
+        ix1 - ex1) * (ymax - ey1) - (xmax - ex1) * (
+            iy1 - ey1)
     # Union
-    union = (px2 - px1) * (py2 - py1) + \
-            (tx2 - tx1) * (ty2 - ty1) - intersection + eps
+    union = (px2 - px1) * (py2 - py1) + (tx2 - tx1) * (
+        ty2 - ty1) - intersection + eps
     # IoU
     ious = 1 - (intersection / union)
 
