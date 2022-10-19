@@ -4,7 +4,6 @@ import io
 import itertools
 import logging
 import os.path as osp
-import pdb
 import tempfile
 import warnings
 from collections import OrderedDict
@@ -21,11 +20,10 @@ from .custom import CustomDataset
 
 
 @DATASETS.register_module()
-class ForkliftsDataset(CustomDataset):
-    CLASSES = ("low_forklift", "forklift", "person", "amr", "other_vehicle", "manual_pallet_jack")
+class AmazonDataset(CustomDataset):
+    CLASSES = ("vehicle", "person")
 
-    PALETTE = [(220, 20, 60), (255, 0, 0), (0, 0, 142), (0, 0, 70),
-               (0, 80, 100), (0, 0, 230)]
+    PALETTE = [(220, 20, 60), (255, 0, 0)]
 
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.
@@ -357,7 +355,7 @@ class ForkliftsDataset(CustomDataset):
                           coco_gt,
                           metrics,
                           logger=None,
-                          classwise=True,
+                          classwise=False,
                           proposal_nums=(100, 300, 1000),
                           iou_thrs=None,
                           metric_items=None):
@@ -447,9 +445,7 @@ class ForkliftsDataset(CustomDataset):
                     logger=logger,
                     level=logging.ERROR)
                 break
-            # coco_det.anns = {k:it for k,it in coco_det.anns.items() if it["score"] > 0.5}
-            # coco_det.anns = {i:it for i, (k,it) in enumerate(coco_det.anns.items())}
-            # coco_det = coco_gt
+
             cocoEval = COCOeval(coco_gt, coco_det, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
@@ -506,7 +502,7 @@ class ForkliftsDataset(CustomDataset):
                 with contextlib.redirect_stdout(redirect_string):
                     cocoEval.summarize()
                 print_log('\n' + redirect_string.getvalue(), logger=logger)
-                classwise = True
+
                 if classwise:  # Compute per-category AP
                     # Compute per-category AP
                     # from https://github.com/facebookresearch/detectron2/

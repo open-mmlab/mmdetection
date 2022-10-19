@@ -1,6 +1,6 @@
 _base_ = [
-    '../../custom/pvt_brummer/retinanet_r50_fpn.py',
-    '../../custom/pvt_brummer/amazon_dataset.py',
+    '../../custom/pvt_amazon/retinanet_r50_fpn.py',
+    '../../custom/pvt_amazon/amazon_dataset.py',
     '../../_base_/schedules/schedule_1x.py',
     '../../_base_/default_runtime.py'
 ]

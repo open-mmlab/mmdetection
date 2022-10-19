@@ -8,21 +8,23 @@ import os
 # config_file = 'configs/custom/my_retinanet_pvt-t_fpn_1x_coco.py'
 # checkpoint_file = 'work_dirs/my_retinanet_pvt-t_fpn_1x_coco/epoch_7.pth'
 
-config_file = 'configs/custom/pvt_brummer_v2/brummer.py'
-checkpoint_file = 'work_dirs/brummer/latest.pth'
+# config_file = 'configs/custom/pvt_brummer_v2/amazon.py'
+# checkpoint_file = 'work_dirs/brummer/latest.pth'
 
 # config_file = 'configs/custom_yolo/yolox_s_8x8_300e_coco.py'
 # checkpoint_file = 'work_dirs/yolox_s_8x8_300e_coco/latest.pth'
 
-# config_file = 'configs/custom/pvt_fst_v2/brummer.py'
+# config_file = 'configs/custom/pvt_fst_v2/amazon.py'
 # checkpoint_file = 'work_dirs/fst/latest.pth'
 
+config_file = 'configs/custom/pv2_amazon_v2/amazon.py'
+checkpoint_file = 'work_dirs/amazon/latest.pth'
 
 # inf_dir = 'data/fst/random_select_/random_select'
 # inf_out_dir = 'data/fst/random_select_/fstv2_first'
 
-inf_dir = "data/brummer/val/image_2"
-inf_out_dir = 'data/brummer/val/brummer_v2_debug'
+inf_dir = "data/amazon/220921_amazon_all"
+inf_out_dir = 'data/amazon/220921_amazon_all_preds_2'
 
 class FPSLogger():
     def __init__(self):

@@ -8,3 +8,4 @@ target_class_map = {"low_forklift": "forklift",
                     "robotize_AMR": None}
 target_class_map_brummer = {"electric_pallet_jack": "low_forklift",
                     "automatic_pallet_jack": "low_forklift"}
+target_class_map_amazon = {"p": "person"}

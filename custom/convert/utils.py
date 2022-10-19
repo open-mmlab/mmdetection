@@ -4,7 +4,7 @@ from typing import List
 
 import cv2
 
-from custom.convert.target_class_map import target_class_map_brummer as target_class_map
+from custom.convert.target_class_map import target_class_map_amazon as target_class_map
 
 @dataclass
 class KittiAnnotation:
