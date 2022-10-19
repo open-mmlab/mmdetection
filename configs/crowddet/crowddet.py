@@ -1,24 +1,29 @@
-_base_ = [
-    # '../_base_/schedules/schedule_1x.py',
-    '../_base_/default_runtime.py'
-]
+_base_ = ['../_base_/default_runtime.py']
 
 model = dict(
     type='CrowdDet',
+    # data_preprocessor=dict(
+    #     type='BatchResize',
+    #     mean=[103.53, 116.28, 123.675],
+    #     std=[57.375, 57.12, 58.395],
+    #     scale=(1400, 800),
+    #     bgr_to_rgb=False,
+    #     pad_size_divisor=64),
     data_preprocessor=dict(
-        # type='DetDataPreprocessor',
-        type='BatchResize',
+        type='DetDataPreprocessor',
         mean=[103.53, 116.28, 123.675],
         std=[57.375, 57.12, 58.395],
-        scale=(1400, 800),
         bgr_to_rgb=False,
-        pad_size_divisor=64),
+        pad_size_divisor=64,
+        batch_augments=[
+            dict(type='BatchResize', scale=(1400, 800), pad_size_divisor=64)
+        ]),
     backbone=dict(
         type='ResNet',
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
-        frozen_stages=2,
+        frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         style='pytorch',
@@ -60,7 +65,7 @@ model = dict(
             featmap_strides=[4, 8, 16, 32]),
         bbox_head=dict(
             type='MultiInstanceBBoxHead',
-            refine_flag=True,
+            refine_flag=False,
             num_shared_fcs=2,
             in_channels=256,
             fc_out_channels=1024,
@@ -135,7 +140,6 @@ file_client_args = dict(backend='disk')
 train_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=dict(backend='disk')),
     dict(type='LoadAnnotations', with_bbox=True),
-    # dict(type='Resize', scale=(1400, 800), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(
         type='PackDetInputs',
@@ -145,10 +149,11 @@ train_pipeline = [
 test_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=dict(backend='disk')),
     dict(type='LoadAnnotations', with_bbox=True),
-    # dict(type='Resize', scale=(1400, 800), keep_ratio=True),
+    dict(type='Resize', scale=(1400, 800), keep_ratio=True),
     dict(
         type='PackDetInputs',
-        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape'))
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
 ]
 
 train_dataloader = dict(
@@ -156,7 +161,7 @@ train_dataloader = dict(
     num_workers=4,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
-    batch_sampler=dict(type='AspectRatioBatchSampler', drop_last=True),
+    batch_sampler=None,
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
@@ -204,7 +209,7 @@ param_scheduler = [
 optim_wrapper = dict(
     type='OptimWrapper',
     optimizer=dict(
-        type='SGD', lr=1e-3 * 1.25 * 2 * 1, momentum=0.9, weight_decay=0.0001))
+        type='SGD', lr=1e-3 * 1.25 * 2 * 8, momentum=0.9, weight_decay=0.0001))
 
 env_cfg = dict(
     cudnn_benchmark=False,
@@ -212,8 +217,7 @@ env_cfg = dict(
     dist_cfg=dict(backend='nccl'),
 )
 
-randomness = dict(seed=3333)
-
-# load_from = '/data/YuYoujiang/CrowdDet/useful/pretrained_sample_mmdet_wo.pth'
+randomness = dict(seed=3335)
+load_from = '/data/YuYoujiang/CrowdDet/useful/pretrained_sample_mmdet_wo.pth'
 # Initialization weight of meg2mmdet can available at:
 # 链接: https://pan.baidu.com/s/1Fp9j_VLG9Kw1xXL18qg8Tg  密码: 17w6

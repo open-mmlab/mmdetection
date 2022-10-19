@@ -556,44 +556,46 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
 
 
 @MODELS.register_module()
-class BatchResize(DetDataPreprocessor):
+class BatchResize(nn.Module):
+    """Batch resize during training.
 
-    def __init__(self, scale, **kwargs) -> None:
-        super().__init__(**kwargs)
+    Args:
+        scale (tuple): Images scales for resizing.
+        pad_size_divisor (int): Image size divisible factor.
+            Defaults to 1.
+    """
+
+    def __init__(self, scale, pad_size_divisor=1) -> None:
+        super().__init__()
         self.min_size = min(scale)
         self.max_size = max(scale)
+        self.pad_size_divisor = pad_size_divisor
 
-    def forward(self, data: dict, training: bool = False) -> dict:
+    def forward(
+        self, inputs: Tensor, data_samples: List[DetDataSample]
+    ) -> Tuple[Tensor, List[DetDataSample]]:
+        """resize a batch of images and bboxes."""
 
-        images, height, width = [], [], []
-        for i in range(len(data['inputs'])):
-            images.append(data['inputs'][i].numpy().transpose(1, 2, 0))
-            height.append(data['data_samples'][i].ori_shape[0])
-            width.append(data['data_samples'][i].ori_shape[1])
-
-        batch_height, batch_width = max(height), max(width)
-        padded_images = [
-            mmcv.impad(
-                im,
-                shape=(batch_height, batch_width),
-                pad_val=0,
-                padding_mode='constant') for im in images
-        ]
-
+        batch_height, batch_width = inputs.shape[-2:]
         t_height, t_width, scale = self.target_size(batch_height, batch_width)
+
+        device = inputs.device
+        padded_images = inputs.cpu().detach().numpy().transpose(0, 2, 3, 1)
         resized_images = np.array(
             [mmcv.imrescale(im, (t_width, t_height)) for im in padded_images])
         resized_images = resized_images.transpose(0, 3, 1, 2)
-        images = torch.tensor(resized_images, device=self.mean.device).float()
-        images = (images -
-                  self.mean.unsqueeze(dim=0)) / self.std.unsqueeze(dim=0)
-        images = self.get_padded_tensor(images)
+        inputs = torch.tensor(resized_images, device=device).float()
+        # inputs = F.interpolate(inputs, size=(
+        # t_height, t_width), mode='bilinear', align_corners=False)
 
-        data_samples = data['data_samples']
+        inputs = self.get_padded_tensor(inputs)
+
         if data_samples is not None:
-            batch_input_shape = tuple(images.size()[-2:])
+            batch_input_shape = tuple(inputs.size()[-2:])
             for data_sample in data_samples:
-                img_shape = [scale * _ for _ in list(data_sample.img_shape)]
+                img_shape = [
+                    int(scale * _) for _ in list(data_sample.img_shape)
+                ]
                 data_sample.set_metainfo({
                     'img_shape': tuple(img_shape),
                     'batch_input_shape': batch_input_shape,
@@ -601,18 +603,13 @@ class BatchResize(DetDataPreprocessor):
                     'scale_factor': (scale, scale)
                 })
 
-                data_sample.gt_instances.bboxes.rescale_(
-                    data_sample.scale_factor)
-                data_sample.ignored_instances.bboxes.rescale_(
-                    data_sample.scale_factor)
+                data_sample.gt_instances.bboxes *= scale
+                data_sample.ignored_instances.bboxes *= scale
 
-        data_samples = self.cast_data(data_samples)
-        if self.boxtype2tensor:
-            samplelist_boxtype2tensor(data_samples)
-
-        return {'inputs': images, 'data_samples': data_samples}
+        return inputs, data_samples
 
     def target_size(self, height, width):
+        """Get the target size of a batch of images based on data and scale."""
         im_size_min = np.min([height, width])
         im_size_max = np.max([height, width])
         scale = (self.min_size + 0.0) / im_size_min
@@ -623,24 +620,110 @@ class BatchResize(DetDataPreprocessor):
         return t_height, t_width, scale
 
     def get_padded_tensor(self, tensor, pad_value=0):
+        """Pad images according to pad_size_divisor."""
+        assert tensor.ndim == 4
         t_height, t_width = tensor.shape[-2], tensor.shape[-1]
-        multiple_number = self.pad_size_divisor
-        padded_height = (t_height + multiple_number -
-                         1) // multiple_number * multiple_number
-        padded_width = (t_width + multiple_number -
-                        1) // multiple_number * multiple_number
-        ndim = tensor.ndim
-        if ndim == 4:
-            padded_tensor = torch.ones([
-                tensor.shape[0], tensor.shape[1], padded_height, padded_width
-            ]) * pad_value
-            padded_tensor = padded_tensor.type_as(tensor)
-            padded_tensor[:, :, :t_height, :t_width] = tensor
-        elif ndim == 3:
-            padded_tensor = torch.ones(
-                [tensor.shape[0], padded_height, padded_width]) * pad_value
-            padded_tensor = padded_tensor.type_as(tensor)
-            padded_tensor[:, :t_height, :t_width] = tensor
-        else:
-            raise Exception('Not supported tensor dim: {}'.format(ndim))
+        divisor = self.pad_size_divisor
+        padded_height = (t_height + divisor - 1) // divisor * divisor
+        padded_width = (t_width + divisor - 1) // divisor * divisor
+        padded_tensor = torch.ones([
+            tensor.shape[0], tensor.shape[1], padded_height, padded_width
+        ]) * pad_value
+        padded_tensor = padded_tensor.type_as(tensor)
+        padded_tensor[:, :, :t_height, :t_width] = tensor
         return padded_tensor
+
+
+# @MODELS.register_module()
+# class BatchResize(DetDataPreprocessor):
+#
+#     def __init__(self, scale, **kwargs) -> None:
+#         super().__init__(**kwargs)
+#         self.min_size = min(scale)
+#         self.max_size = max(scale)
+#
+#     def forward(self, data: dict, training: bool = False) -> dict:
+#
+#         images, height, width = [], [], []
+#         for i in range(len(data['inputs'])):
+#             images.append(data['inputs'][i].numpy().transpose(1, 2, 0))
+#             height.append(data['data_samples'][i].ori_shape[0])
+#             width.append(data['data_samples'][i].ori_shape[1])
+#
+#         batch_height, batch_width = max(height), max(width)
+#         padded_images = [
+#             mmcv.impad(
+#                 im,
+#                 shape=(batch_height, batch_width),
+#                 pad_val=0,
+#                 padding_mode='constant') for im in images
+#         ]
+#
+#         t_height, t_width, scale = self.target_size(
+#         batch_height, batch_width)
+#         resized_images = np.array(
+#             [mmcv.imrescale(
+#             im, (t_width, t_height)) for im in padded_images])
+#         resized_images = resized_images.transpose(0, 3, 1, 2)
+#         images = torch.tensor(
+#         resized_images, device=self.mean.device).float()
+#         images = (images -
+#                   self.mean.unsqueeze(dim=0)) / self.std.unsqueeze(dim=0)
+#         images = self.get_padded_tensor(images)
+#
+#         data_samples = data['data_samples']
+#         if data_samples is not None:
+#             batch_input_shape = tuple(images.size()[-2:])
+#             for data_sample in data_samples:
+#                 img_shape = [scale * _ for _ in list(data_sample.img_shape)]
+#                 data_sample.set_metainfo({
+#                     'img_shape': tuple(img_shape),
+#                     'batch_input_shape': batch_input_shape,
+#                     'pad_shape': batch_input_shape,
+#                     'scale_factor': (scale, scale)
+#                 })
+#
+#                 data_sample.gt_instances.bboxes.rescale_(
+#                     data_sample.scale_factor)
+#                 data_sample.ignored_instances.bboxes.rescale_(
+#                     data_sample.scale_factor)
+#
+#         data_samples = data['data_samples']
+#         data_samples = self.cast_data(data_samples)
+#         if self.boxtype2tensor:
+#             samplelist_boxtype2tensor(data_samples)
+#
+#         return {'inputs': images, 'data_samples': data_samples}
+#
+#     def target_size(self, height, width):
+#         im_size_min = np.min([height, width])
+#         im_size_max = np.max([height, width])
+#         scale = (self.min_size + 0.0) / im_size_min
+#         if scale * im_size_max > self.max_size:
+#             scale = (self.max_size + 0.0) / im_size_max
+#         t_height, t_width = int(round(height * scale)), int(
+#             round(width * scale))
+#         return t_height, t_width, scale
+#
+#     def get_padded_tensor(self, tensor, pad_value=0):
+#         t_height, t_width = tensor.shape[-2], tensor.shape[-1]
+#         multiple_number = self.pad_size_divisor
+#         padded_height = (t_height + multiple_number -
+#                          1) // multiple_number * multiple_number
+#         padded_width = (t_width + multiple_number -
+#                         1) // multiple_number * multiple_number
+#         ndim = tensor.ndim
+#         if ndim == 4:
+#             padded_tensor = torch.ones([
+#                 tensor.shape[0], tensor.shape[1], padded_height, padded_width
+#             ]) * pad_value
+#             padded_tensor = padded_tensor.type_as(tensor)
+#             padded_tensor[:, :, :t_height, :t_width] = tensor
+#         elif ndim == 3:
+#             padded_tensor = torch.ones(
+#                 [tensor.shape[0], padded_height, padded_width]) * pad_value
+#             padded_tensor = padded_tensor.type_as(tensor)
+#             padded_tensor[:, :t_height, :t_width] = tensor
+#         else:
+#             raise Exception('Not supported tensor dim: {}'.format(ndim))
+#         return padded_tensor
