@@ -1,7 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from mmdet.models.utils.misc import get_box_tensor
 from mmdet.registry import TASK_UTILS
 from mmdet.structures.bbox import bbox_overlaps, get_box_tensor
 
