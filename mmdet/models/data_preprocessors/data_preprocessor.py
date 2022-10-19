@@ -14,7 +14,7 @@ from mmengine.structures import PixelData
 from mmengine.utils import is_list_of
 from torch import Tensor
 
-from mmdet.models.utils.misc import samplelist_boxlist2tensor
+from mmdet.models.utils.misc import samplelist_boxtype2tensor
 from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
 from mmdet.utils import ConfigType
@@ -60,7 +60,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             Defaults to False.
         rgb_to_bgr (bool): whether to convert image from RGB to RGB.
             Defaults to False.
-        boxlist2tensor (bool): Whether to keep the ``BaseBoxes`` type of
+        boxtype2tensor (bool): Whether to keep the ``BaseBoxes`` type of
             bboxes data or not. Defaults to False.
         batch_augments (list[dict], optional): Batch-level augmentations
     """
@@ -76,7 +76,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                  seg_pad_value: int = 255,
                  bgr_to_rgb: bool = False,
                  rgb_to_bgr: bool = False,
-                 boxlist2tensor: bool = True,
+                 boxtype2tensor: bool = True,
                  batch_augments: Optional[List[dict]] = None):
         super().__init__(
             mean=mean,
@@ -94,7 +94,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         self.mask_pad_value = mask_pad_value
         self.pad_seg = pad_seg
         self.seg_pad_value = seg_pad_value
-        self.boxlist2tensor = boxlist2tensor
+        self.boxtype2tensor = boxtype2tensor
 
     def forward(self, data: dict, training: bool = False) -> dict:
         """Perform normalization、padding and bgr2rgb conversion based on
@@ -122,8 +122,8 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                     'pad_shape': pad_shape
                 })
 
-            if self.boxlist2tensor:
-                samplelist_boxlist2tensor(data_samples)
+            if self.boxtype2tensor:
+                samplelist_boxtype2tensor(data_samples)
 
             if self.pad_mask and training:
                 self.pad_gt_masks(data_samples)

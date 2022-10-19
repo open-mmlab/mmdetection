@@ -3,7 +3,7 @@ import torch
 
 from mmdet.models.utils.misc import get_box_tensor
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import bbox_overlaps
+from mmdet.structures.bbox import bbox_overlaps, get_box_tensor
 
 
 def cast_tensor_type(x, scale=1., dtype=None):

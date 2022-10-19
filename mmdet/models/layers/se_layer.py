@@ -5,6 +5,8 @@ from mmcv.cnn import ConvModule
 from mmengine.model import BaseModule
 from mmengine.utils import is_tuple_of
 
+from mmdet.utils.typing import OptMultiConfig
+
 
 class SELayer(BaseModule):
     """Squeeze-and-Excitation Module.
@@ -125,3 +127,25 @@ class DyReLU(BaseModule):
         a2 = a2 * 2.0  # [-1.0, 1.0]
         out = torch.max(x * a1 + b1, x * a2 + b2)
         return out
+
+
+class ChannelAttention(BaseModule):
+    """Channel attention Module.
+
+    Args:
+        channels (int): The input (and output) channels of the attention layer.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Defaults to None.
+    """
+
+    def __init__(self, channels: int, init_cfg: OptMultiConfig = None) -> None:
+        super().__init__(init_cfg)
+        self.global_avgpool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Conv2d(channels, channels, 1, 1, 0, bias=True)
+        self.act = nn.Hardsigmoid(inplace=True)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out = self.global_avgpool(x)
+        out = self.fc(out)
+        out = self.act(out)
+        return x * out

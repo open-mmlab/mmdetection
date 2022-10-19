@@ -7,7 +7,7 @@ class BaseBBoxCoder(metaclass=ABCMeta):
 
     Args:
         use_box_type (bool): Whether to warp decoded boxes with the
-            boxlist data structure. Defaults to False.
+            box type data structure. Defaults to False.
     """
 
     # The size of the last of dimension of the encoded tensor.

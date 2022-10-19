@@ -8,14 +8,13 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS
-from mmdet.structures.bbox import BaseBoxes
+from mmdet.structures.bbox import BaseBoxes, cat_boxes, get_box_tensor
 from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
                          OptInstanceList, OptMultiConfig)
 from ..task_modules.prior_generators import (AnchorGenerator,
                                              anchor_inside_flags)
 from ..task_modules.samplers import PseudoSampler
-from ..utils import (cat_boxes, get_box_tensor, images_to_levels, multi_apply,
-                     unmap)
+from ..utils import images_to_levels, multi_apply, unmap
 from .base_dense_head import BaseDenseHead
 
 
@@ -87,10 +86,10 @@ class AnchorHead(BaseDenseHead):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         if self.train_cfg:
-            self.assigner = TASK_UTILS.build(self.train_cfg.assigner)
+            self.assigner = TASK_UTILS.build(self.train_cfg['assigner'])
             if train_cfg.get('sampler', None) is not None:
                 self.sampler = TASK_UTILS.build(
-                    self.train_cfg.sampler, default_args=dict(context=self))
+                    self.train_cfg['sampler'], default_args=dict(context=self))
             else:
                 self.sampler = PseudoSampler(context=self)
 
@@ -212,7 +211,7 @@ class AnchorHead(BaseDenseHead):
         Args:
             flat_anchors (Tensor or :obj:`BaseBoxes`): Multi-level anchors
                 of the image, which are concatenated into a single tensor
-                or boxlist of shape (num_anchors, 4)
+                or box type of shape (num_anchors, 4)
             valid_flags (Tensor): Multi level valid flags of the image,
                 which are concatenated into a single tensor of
                     shape (num_anchors, ).
@@ -240,7 +239,7 @@ class AnchorHead(BaseDenseHead):
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
-                                           self.train_cfg.allowed_border)
+                                           self.train_cfg['allowed_border'])
         if not inside_flags.any():
             raise ValueError(
                 'There is no valid anchor inside the image boundary. Please '
@@ -271,9 +270,9 @@ class AnchorHead(BaseDenseHead):
 
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
-        # `bbox_coder.encode` accepts tensor or boxlist inputs and generates
+        # `bbox_coder.encode` accepts tensor or box type inputs and generates
         # tensor targets. If regressing decoded boxes, the code will convert
-        # boxlist `pos_bbox_targets` to tensor.
+        # box type `pos_bbox_targets` to tensor.
         if len(pos_inds) > 0:
             if not self.reg_decoded_bbox:
                 pos_bbox_targets = self.bbox_coder.encode(
@@ -285,10 +284,10 @@ class AnchorHead(BaseDenseHead):
             bbox_weights[pos_inds, :] = 1.0
 
             labels[pos_inds] = sampling_result.pos_gt_labels
-            if self.train_cfg.pos_weight <= 0:
+            if self.train_cfg['pos_weight'] <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
+                label_weights[pos_inds] = self.train_cfg['pos_weight']
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 

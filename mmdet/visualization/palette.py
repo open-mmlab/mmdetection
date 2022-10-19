@@ -90,3 +90,19 @@ def _get_adaptive_scales(areas: np.ndarray,
     scales = 0.5 + (areas - min_area) / (max_area - min_area)
     scales = np.clip(scales, 0.5, 1.0)
     return scales
+
+
+def jitter_color(color: tuple) -> tuple:
+    """Randomly jitter the given color in order to better distinguish instances
+    with the same class.
+
+    Args:
+        color (tuple): The RGB color tuple. Each value is between [0, 255].
+
+    Returns:
+        tuple: The jittered color tuple.
+    """
+    jitter = np.random.rand(3)
+    jitter = (jitter / np.linalg.norm(jitter) - 0.5) * 0.5 * 255
+    color = np.clip(jitter + color, 0, 255).astype(np.uint8)
+    return tuple(color)

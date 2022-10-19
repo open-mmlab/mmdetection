@@ -173,7 +173,7 @@ Here is a valid example of annotations:
  ]
 ```
 
-We use this way to support CityScapes dataset. The script is in [cityscapes.py](https://github.com/open-mmlab/mmdetection/blob/3.x/tools/dataset_converters/cityscapes.py) and we also provide the finetuning [configs](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/cityscapes).
+We use this way to support CityScapes dataset. The script is in [cityscapes.py](../../../tools/dataset_converters/cityscapes.py) and we also provide the finetuning [configs](../../../configs/cityscapes).
 
 **Note**
 
@@ -237,7 +237,7 @@ Here is an example.
 
 Some datasets may provide annotations like crowd/difficult/ignored bboxes, we use `ignore_flag`to cover them.
 
-After obtaining the above standard data annotation format, you can directly use [BaseDetDataset](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/datasets/base_det_dataset.py#L13) of MMDetection in the configuration , without conversion.
+After obtaining the above standard data annotation format, you can directly use [BaseDetDataset](../../../mmdet/datasets/base_det_dataset.py#L13) of MMDetection in the configuration , without conversion.
 
 ### An example of customized dataset
 
@@ -357,7 +357,7 @@ test_dataloader = dict(
 
 - Before MMDetection v2.5.0, the dataset will filter out the empty GT images automatically if the classes are set and there is no way to disable that through config. This is an undesirable behavior and introduces confusion because if the classes are not set, the dataset only filter the empty GT images when `filter_empty_gt=True` and `test_mode=False`. After MMDetection v2.5.0, we decouple the image filtering process and the classes modification, i.e., the dataset will only filter empty GT images when `filter_cfg=dict(filter_empty_gt=True)` and `test_mode=False`, no matter whether the classes are set. Thus, setting the classes only influences the annotations of classes used for training and users could decide whether to filter empty GT images by themselves.
 - When directly using `BaseDataset` in MMEngine or `BaseDetDataset` in MMDetection, users cannot filter images without GT by modifying the configuration, but it can be solved in an offline way.
-- Please remember to modify the `num_classes` in the head when specifying `classes` in dataset. We implemented [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/engine/hooks/num_class_check_hook.py) to check whether the numbers are consistent since v2.9.0(after PR#4508).
+- Please remember to modify the `num_classes` in the head when specifying `classes` in dataset. We implemented [NumClassCheckHook](../../../mmdet/engine/hooks/num_class_check_hook.py) to check whether the numbers are consistent since v2.9.0(after PR#4508).
 
 ## COCO Panoptic Dataset
 

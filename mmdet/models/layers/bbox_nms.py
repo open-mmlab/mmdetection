@@ -16,7 +16,8 @@ def multiclass_nms(
     nms_cfg: ConfigType,
     max_num: int = -1,
     score_factors: Optional[Tensor] = None,
-    return_inds: bool = False
+    return_inds: bool = False,
+    box_dim: int = 4
 ) -> Union[Tuple[Tensor, Tensor, Tensor], Tuple[Tensor, Tensor]]:
     """NMS for multi-class bboxes.
 
@@ -34,6 +35,7 @@ def multiclass_nms(
             before applying NMS. Default to None.
         return_inds (bool, optional): Whether return the indices of kept
             bboxes. Default to False.
+        box_dim (int): The dimension of boxes. Defaults to 4.
 
     Returns:
         Union[Tuple[Tensor, Tensor, Tensor], Tuple[Tensor, Tensor]]:
@@ -42,18 +44,18 @@ def multiclass_nms(
     """
     num_classes = multi_scores.size(1) - 1
     # exclude background category
-    if multi_bboxes.shape[1] > 4:
-        bboxes = multi_bboxes.view(multi_scores.size(0), -1, 4)
+    if multi_bboxes.shape[1] > box_dim:
+        bboxes = multi_bboxes.view(multi_scores.size(0), -1, box_dim)
     else:
         bboxes = multi_bboxes[:, None].expand(
-            multi_scores.size(0), num_classes, 4)
+            multi_scores.size(0), num_classes, box_dim)
 
     scores = multi_scores[:, :-1]
 
     labels = torch.arange(num_classes, dtype=torch.long, device=scores.device)
     labels = labels.view(1, -1).expand_as(scores)
 
-    bboxes = bboxes.reshape(-1, 4)
+    bboxes = bboxes.reshape(-1, box_dim)
     scores = scores.reshape(-1)
     labels = labels.reshape(-1)
 
@@ -77,7 +79,7 @@ def multiclass_nms(
     else:
         # TensorRT NMS plugin has invalid output filled with -1
         # add dummy data to make detection output correct.
-        bboxes = torch.cat([bboxes, bboxes.new_zeros(1, 4)], dim=0)
+        bboxes = torch.cat([bboxes, bboxes.new_zeros(1, box_dim)], dim=0)
         scores = torch.cat([scores, scores.new_zeros(1)], dim=0)
         labels = torch.cat([labels, labels.new_zeros(1)], dim=0)
 

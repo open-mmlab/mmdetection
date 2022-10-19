@@ -117,7 +117,7 @@ class PISARetinaHead(RetinaHead):
                     bbox_coder=self.bbox_coder,
                     loss_cls=self.loss_cls,
                     num_class=self.num_classes,
-                    **self.train_cfg.isr)
+                    **self.train_cfg['isr'])
             (flatten_labels, flatten_label_weights, flatten_bbox_targets,
              flatten_bbox_weights) = all_targets
 
@@ -145,7 +145,7 @@ class PISARetinaHead(RetinaHead):
                 flatten_bbox_preds,
                 flatten_bbox_targets,
                 self.loss_bbox,
-                **self.train_cfg.carl,
+                **self.train_cfg['carl'],
                 avg_factor=avg_factor,
                 sigmoid=True,
                 num_class=self.num_classes)

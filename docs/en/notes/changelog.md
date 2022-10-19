@@ -1,5 +1,36 @@
 # Changelog of v3.x
 
+## v3.0.0rc1 (26/9/2022)
+
+### Highlights
+
+- Release a high-precision, low-latency single-stage object detector [RTMDet](configs/rtmdet).
+
+#### Bug Fixes
+
+- Fix UT to be compatible with PyTorch 1.6 (#8707)
+- Fix `NumClassCheckHook` bug when model is wrapped (#8794)
+- Update the right URL of R-50-FPN with BoundedIoULoss (#8805)
+- Fix potential bug of indices in RandAugment (#8826)
+- Fix some types and links (#8839, #8820, #8793, #8868)
+- Fix incorrect background fill values in `FSAF` and `RepPoints` Head (#8813)
+
+#### Improvements
+
+- Refactored anchor head and base head with `box type` (#8625)
+- Refactored `SemiBaseDetector` and `SoftTeacher` (#8786)
+- Add list to dict keys to avoid modify loss dict (#8828)
+- Update `analyze_results.py` , `analyze_logs.py` and `loading.py` (#8430, #8402, #8784)
+- Support dump results in `test.py` (#8814)
+- Check empty predictions in `DetLocalVisualizer._draw_instances` (#8830)
+- Fix `floordiv` warning in `SOLO` (#8738)
+
+#### Contributors
+
+A total of 16 developers contributed to this release.
+
+Thanks @ZwwWayne, @jbwang1997, @Czm369, @ice-tong, @Zheng-LinXiao, @chhluo, @RangiLyu, @liuyanyi, @wanghonglie, @levan92, @JiayuXu0, @nye0, @hhaAndroid, @xin-li-67, @shuxp, @zytx121
+
 ## v3.0.0rc0 (31/8/2022)
 
 We are excited to announce the release of MMDetection 3.0.0rc0. MMDet 3.0.0rc0 is the first version of MMDetection 3.x, a part of the OpenMMLab 2.0 projects. Built upon the new [training engine](https://github.com/open-mmlab/mmengine), MMDet 3.x unifies the interfaces of the dataset, models, evaluation, and visualization with faster training and testing speed. It also provides a general semi-supervised object detection framework and strong baselines.

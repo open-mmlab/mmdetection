@@ -13,7 +13,7 @@ from .pixel_decoder import PixelDecoder, TransformerEncoderPixelDecoder
 from .positional_encoding import (LearnedPositionalEncoding,
                                   SinePositionalEncoding)
 from .res_layer import ResLayer, SimplifiedBasicBlock
-from .se_layer import DyReLU, SELayer
+from .se_layer import ChannelAttention, DyReLU, SELayer
 from .transformer import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DetrTransformerEncoder, DetrTransformerEncoderLayer,
                           DynamicConv, PatchEmbed, PatchMerging,
@@ -27,7 +27,7 @@ __all__ = [
     'SimplifiedBasicBlock', 'NormedLinear', 'NormedConv2d', 'InvertedResidual',
     'SELayer', 'ConvUpsample', 'CSPLayer', 'adaptive_avg_pool2d',
     'AdaptiveAvgPool2d', 'PatchEmbed', 'nchw_to_nlc', 'nlc_to_nchw', 'DyReLU',
-    'ExpMomentumEMA', 'inverse_sigmoid', 'DetrTransformerEncoder',
-    'DetrTransformerDecoder', 'DetrTransformerEncoderLayer',
-    'DetrTransformerDecoderLayer', 'MLP'
+    'ExpMomentumEMA', 'inverse_sigmoid', 'ChannelAttention', 'SiLU', 'MLP',
+    'DetrTransformerEncoderLayer', 'DetrTransformerDecoderLayer',
+    'DetrTransformerEncoder', 'DetrTransformerDecoder',
 ]

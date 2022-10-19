@@ -55,7 +55,7 @@ Optional arguments:
 Assuming that you have already downloaded the checkpoints to the directory `checkpoints/`.
 
 1. Test Faster R-CNN and visualize the results. Press any key for the next image.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/faster_rcnn).
+   Config and checkpoint files are available [here](../../../configs/faster_rcnn).
 
    ```shell
    python tools/test.py \
@@ -65,7 +65,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
    ```
 
 2. Test Faster R-CNN and save the painted images for future visualization.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/faster_rcnn).
+   Config and checkpoint files are available [here](../../../configs/faster_rcnn).
 
    ```shell
    python tools/test.py \
@@ -75,7 +75,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
    ```
 
 3. Test Faster R-CNN on PASCAL VOC (without saving the test results).
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/pascal_voc).
+   Config and checkpoint files are available [here](../../../configs/pascal_voc).
 
    ```shell
    python tools/test.py \
@@ -84,7 +84,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
    ```
 
 4. Test Mask R-CNN with 8 GPUs, and evaluate.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/mask_rcnn).
+   Config and checkpoint files are available [here](../../../configs/mask_rcnn).
 
    ```shell
    ./tools/dist_test.sh \
@@ -95,7 +95,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
    ```
 
 5. Test Mask R-CNN with 8 GPUs, and evaluate the metric **class-wise**.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/mask_rcnn).
+   Config and checkpoint files are available [here](../../../configs/mask_rcnn).
 
    ```shell
    ./tools/dist_test.sh \
@@ -107,9 +107,9 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
    ```
 
 6. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate JSON files for submitting to the official evaluation server.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/mask_rcnn).
+   Config and checkpoint files are available [here](../../../configs/mask_rcnn).
 
-   Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets/coco_instance.py) and run:
+   Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](../../../configs/_base_/datasets/coco_instance.py) and run:
 
    ```shell
    ./tools/dist_test.sh \
@@ -121,9 +121,9 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
    This command generates two JSON files `./work_dirs/coco_instance/test.bbox.json` and `./work_dirs/coco_instance/test.segm.json`.
 
 7. Test Mask R-CNN on Cityscapes test with 8 GPUs, and generate txt and png files for submitting to the official evaluation server.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/cityscapes).
+   Config and checkpoint files are available [here](../../../configs/cityscapes).
 
-   Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets/cityscapes_instance.py) and run:
+   Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](../../../configs/_base_/datasets/cityscapes_instance.py) and run:
 
    ```shell
    ./tools/dist_test.sh \
@@ -136,7 +136,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
 
 ## Test without Ground Truth Annotations
 
-MMDetection supports to test models without ground-truth annotations using `CocoDataset`. If your dataset format is not in COCO format, please convert them to COCO format. For example, if your dataset format is VOC, you can directly convert it to COCO format by the [script in tools.](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/tools/dataset_converters/pascal_voc.py) If your dataset format is Cityscapes, you can directly convert it to COCO format by the [script in tools.](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/tools/dataset_converters/cityscapes.py) The rest of the formats can be converted using [this script](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/tools/dataset_converters/images2coco.py).
+MMDetection supports to test models without ground-truth annotations using `CocoDataset`. If your dataset format is not in COCO format, please convert them to COCO format. For example, if your dataset format is VOC, you can directly convert it to COCO format by the [script in tools.](../../../tools/dataset_converters/pascal_voc.py) If your dataset format is Cityscapes, you can directly convert it to COCO format by the [script in tools.](../../../tools/dataset_converters/cityscapes.py) The rest of the formats can be converted using [this script](../../../tools/dataset_converters/images2coco.py).
 
 ```shel
 python tools/dataset_converters/images2coco.py \
@@ -153,7 +153,7 @@ arguments：
 - `OUT`: The output annotation json file name. The save dir is in the same directory as `IMG_PATH`.
 - `exclude-extensions`: The suffix of images to be excluded, such as 'png' and 'bmp'.
 
-After the conversion is complete, you need to replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets/coco_detection.py)(find which dataset in 'configs/_base_/datasets' the current config corresponds to) and run:
+After the conversion is complete, you need to replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](../../../configs/_base_/datasets/coco_detection.py)(find which dataset in 'configs/_base_/datasets' the current config corresponds to) and run:
 
 ```shell
 # Single-gpu testing

@@ -91,11 +91,27 @@ class BaseBoxes(metaclass=ABCMeta):
         from .box_type import convert_box_type
         return convert_box_type(self, dst_type=dst_type)
 
-    def create_fake_boxes(self: T,
-                          sizes: Tuple[int],
-                          fill: float = 0,
-                          dtype: Optional[torch.dtype] = None,
-                          device: Optional[DeviceType] = None) -> T:
+    def empty_boxes(self: T,
+                    dtype: Optional[torch.dtype] = None,
+                    device: Optional[DeviceType] = None) -> T:
+        """Create empty box.
+
+        Args:
+            dtype (torch.dtype, Optional): data type of boxes.
+            device (str or torch.device, Optional): device of boxes.
+
+        Returns:
+            T: empty boxes with shape of (0, box_dim).
+        """
+        empty_box = self.tensor.new_zeros(
+            0, self.box_dim, dtype=dtype, device=device)
+        return type(self)(empty_box, clone=False)
+
+    def fake_boxes(self: T,
+                   sizes: Tuple[int],
+                   fill: float = 0,
+                   dtype: Optional[torch.dtype] = None,
+                   device: Optional[DeviceType] = None) -> T:
         """Create fake boxes with specific sizes and fill values.
 
         Args:
@@ -452,12 +468,19 @@ class BaseBoxes(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def is_inside(self, img_shape: Tuple[int, int]) -> BoolTensor:
+    def is_inside(self,
+                  img_shape: Tuple[int, int],
+                  all_inside: bool = False,
+                  allowed_border: int = 0) -> BoolTensor:
         """Find boxes inside the image.
 
         Args:
             img_shape (Tuple[int, int]): A tuple of image height and width.
-
+            all_inside (bool): Whether the boxes are all inside the image or
+                part inside the image. Defaults to False.
+            allowed_border (int): Boxes that extend beyond the image shape
+                boundary by more than ``allowed_border`` are considered
+                "outside" Defaults to 0.
         Returns:
             BoolTensor: A BoolTensor indicating whether the box is inside
             the image. Assuming the original boxes have shape (m, n, box_dim),

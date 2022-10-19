@@ -146,7 +146,6 @@ class Resize(MMCV_Resize):
             'scale', 'scale_factor', 'height', 'width', and 'keep_ratio' keys
             are updated in result dict.
         """
-
         if self.scale:
             results['scale'] = self.scale
         else:
@@ -163,6 +162,143 @@ class Resize(MMCV_Resize):
         repr_str = self.__class__.__name__
         repr_str += f'(scale={self.scale}, '
         repr_str += f'scale_factor={self.scale_factor}, '
+        repr_str += f'keep_ratio={self.keep_ratio}, '
+        repr_str += f'clip_object_border={self.clip_object_border}), '
+        repr_str += f'backend={self.backend}), '
+        repr_str += f'interpolation={self.interpolation})'
+        return repr_str
+
+
+@TRANSFORMS.register_module()
+class FixShapeResize(Resize):
+    """Resize images & bbox & seg to the specified size.
+
+    This transform resizes the input image according to ``width`` and
+    ``height``. Bboxes, masks, and seg map are then resized
+    with the same parameters.
+
+    Required Keys:
+
+    - img
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
+    - gt_masks (BitmapMasks | PolygonMasks) (optional)
+    - gt_seg_map (np.uint8) (optional)
+
+    Modified Keys:
+
+    - img
+    - img_shape
+    - gt_bboxes
+    - gt_masks
+    - gt_seg_map
+
+
+    Added Keys:
+
+    - scale
+    - scale_factor
+    - keep_ratio
+    - homography_matrix
+
+    Args:
+        width (int): width for resizing.
+        height (int): height for resizing.
+            Defaults to None.
+        pad_val (Number | dict[str, Number], optional): Padding value for if
+            the pad_mode is "constant".  If it is a single number, the value
+            to pad the image is the number and to pad the semantic
+            segmentation map is 255. If it is a dict, it should have the
+            following keys:
+
+            - img: The value to pad the image.
+            - seg: The value to pad the semantic segmentation map.
+            Defaults to dict(img=0, seg=255).
+        keep_ratio (bool): Whether to keep the aspect ratio when resizing the
+            image. Defaults to False.
+        clip_object_border (bool): Whether to clip the objects
+            outside the border of the image. In some dataset like MOT17, the gt
+            bboxes are allowed to cross the border of images. Therefore, we
+            don't need to clip the gt bboxes in these cases. Defaults to True.
+        backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
+            These two backends generates slightly different results. Defaults
+            to 'cv2'.
+        interpolation (str): Interpolation method, accepted values are
+            "nearest", "bilinear", "bicubic", "area", "lanczos" for 'cv2'
+            backend, "nearest", "bilinear" for 'pillow' backend. Defaults
+            to 'bilinear'.
+    """
+
+    def __init__(self,
+                 width: int,
+                 height: int,
+                 pad_val: Union[Number, dict] = dict(img=0, seg=255),
+                 keep_ratio: bool = False,
+                 clip_object_border: bool = True,
+                 backend: str = 'cv2',
+                 interpolation: str = 'bilinear') -> None:
+        assert width is not None and height is not None, (
+            '`width` and'
+            '`height` can not be `None`')
+
+        self.width = width
+        self.height = height
+        self.scale = (width, height)
+
+        self.backend = backend
+        self.interpolation = interpolation
+        self.keep_ratio = keep_ratio
+        self.clip_object_border = clip_object_border
+
+        if keep_ratio is True:
+            # padding to the fixed size when keep_ratio=True
+            self.pad_transform = Pad(size=self.scale, pad_val=pad_val)
+
+    @autocast_box_type()
+    def transform(self, results: dict) -> dict:
+        """Transform function to resize images, bounding boxes and semantic
+        segmentation map.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+        Returns:
+            dict: Resized results, 'img', 'gt_bboxes', 'gt_seg_map',
+            'scale', 'scale_factor', 'height', 'width', and 'keep_ratio' keys
+            are updated in result dict.
+        """
+        img = results['img']
+        h, w = img.shape[:2]
+        if self.keep_ratio:
+            scale_factor = min(self.width / w, self.height / h)
+            results['scale_factor'] = (scale_factor, scale_factor)
+            real_w, real_h = int(w * float(scale_factor) +
+                                 0.5), int(h * float(scale_factor) + 0.5)
+            img, scale_factor = mmcv.imrescale(
+                results['img'], (real_w, real_h),
+                interpolation=self.interpolation,
+                return_scale=True,
+                backend=self.backend)
+            # the w_scale and h_scale has minor difference
+            # a real fix should be done in the mmcv.imrescale in the future
+            results['img'] = img
+            results['img_shape'] = img.shape[:2]
+            results['keep_ratio'] = self.keep_ratio
+            results['scale'] = (real_w, real_h)
+        else:
+            results['scale'] = (self.width, self.height)
+            results['scale_factor'] = (self.width / w, self.height / h)
+            super()._resize_img(results)
+
+        self._resize_bboxes(results)
+        self._resize_masks(results)
+        self._resize_seg(results)
+        self._record_homography_matrix(results)
+        if self.keep_ratio:
+            self.pad_transform(results)
+        return results
+
+    def __repr__(self) -> str:
+        repr_str = self.__class__.__name__
+        repr_str += f'(width={self.width}, height={self.height}, '
         repr_str += f'keep_ratio={self.keep_ratio}, '
         repr_str += f'clip_object_border={self.clip_object_border}), '
         repr_str += f'backend={self.backend}), '
@@ -460,47 +596,6 @@ class Pad(MMCV_Pad):
         self._pad_seg(results)
         self._pad_masks(results)
         return results
-
-
-@TRANSFORMS.register_module()
-class Normalize:
-    """Normalize the image.
-
-    Added key is "img_norm_cfg".
-
-    Args:
-        mean (sequence): Mean values of 3 channels.
-        std (sequence): Std values of 3 channels.
-        to_rgb (bool): Whether to convert the image from BGR to RGB,
-            default is true.
-    """
-
-    def __init__(self, mean, std, to_rgb=True):
-        self.mean = np.array(mean, dtype=np.float32)
-        self.std = np.array(std, dtype=np.float32)
-        self.to_rgb = to_rgb
-
-    def __call__(self, results):
-        """Call function to normalize images.
-
-        Args:
-            results (dict): Result dict from loading pipeline.
-
-        Returns:
-            dict: Normalized results, 'img_norm_cfg' key is added into
-                result dict.
-        """
-        for key in results.get('img_fields', ['img']):
-            results[key] = mmcv.imnormalize(results[key], self.mean, self.std,
-                                            self.to_rgb)
-        results['img_norm_cfg'] = dict(
-            mean=self.mean, std=self.std, to_rgb=self.to_rgb)
-        return results
-
-    def __repr__(self):
-        repr_str = self.__class__.__name__
-        repr_str += f'(mean={self.mean}, std={self.std}, to_rgb={self.to_rgb})'
-        return repr_str
 
 
 @TRANSFORMS.register_module()
@@ -3004,4 +3099,475 @@ class RandomErasing(BaseTransform):
         repr_str += f'img_border_value={self.img_border_value}, '
         repr_str += f'mask_border_value={self.mask_border_value}, '
         repr_str += f'seg_ignore_label={self.seg_ignore_label})'
+        return repr_str
+
+
+@TRANSFORMS.register_module()
+class CachedMosaic(Mosaic):
+    """Cached mosaic augmentation.
+
+    Cached mosaic transform will random select images from the cache
+    and combine them into one output image.
+
+    .. code:: text
+
+                        mosaic transform
+                           center_x
+                +------------------------------+
+                |       pad        |  pad      |
+                |      +-----------+           |
+                |      |           |           |
+                |      |  image1   |--------+  |
+                |      |           |        |  |
+                |      |           | image2 |  |
+     center_y   |----+-------------+-----------|
+                |    |   cropped   |           |
+                |pad |   image3    |  image4   |
+                |    |             |           |
+                +----|-------------+-----------+
+                     |             |
+                     +-------------+
+
+     The cached mosaic transform steps are as follows:
+
+         1. Append the results from the last transform into the cache.
+         2. Choose the mosaic center as the intersections of 4 images
+         3. Get the left top image according to the index, and randomly
+            sample another 3 images from the result cache.
+         4. Sub image will be cropped if image is larger than mosaic patch
+
+    Required Keys:
+
+    - img
+    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes_labels (np.int64) (optional)
+    - gt_ignore_flags (np.bool) (optional)
+
+    Modified Keys:
+
+    - img
+    - img_shape
+    - gt_bboxes (optional)
+    - gt_bboxes_labels (optional)
+    - gt_ignore_flags (optional)
+
+    Args:
+        img_scale (Sequence[int]): Image size after mosaic pipeline of single
+            image. The shape order should be (height, width).
+            Defaults to (640, 640).
+        center_ratio_range (Sequence[float]): Center ratio range of mosaic
+            output. Defaults to (0.5, 1.5).
+        bbox_clip_border (bool, optional): Whether to clip the objects outside
+            the border of the image. In some dataset like MOT17, the gt bboxes
+            are allowed to cross the border of images. Therefore, we don't
+            need to clip the gt bboxes in these cases. Defaults to True.
+        pad_val (int): Pad value. Defaults to 114.
+        prob (float): Probability of applying this transformation.
+            Defaults to 1.0.
+        max_cached_images (int): The maximum length of the cache. The larger
+            the cache, the stronger the randomness of this transform. As a
+            rule of thumb, providing 10 caches for each image suffices for
+            randomness. Defaults to 40.
+        random_pop (bool): Whether to randomly pop a result from the cache
+            when the cache is full. If set to False, use FIFO popping method.
+            Defaults to True.
+    """
+
+    def __init__(self,
+                 *args,
+                 max_cached_images: int = 40,
+                 random_pop: bool = True,
+                 **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.results_cache = []
+        self.random_pop = random_pop
+        assert max_cached_images >= 4, 'The length of cache must >= 4, ' \
+                                       f'but got {max_cached_images}.'
+        self.max_cached_images = max_cached_images
+
+    @cache_randomness
+    def get_indexes(self, cache: list) -> list:
+        """Call function to collect indexes.
+
+        Args:
+            cache (list): The results cache.
+
+        Returns:
+            list: indexes.
+        """
+
+        indexes = [random.randint(0, len(cache) - 1) for _ in range(3)]
+        return indexes
+
+    @autocast_box_type()
+    def transform(self, results: dict) -> dict:
+        """Mosaic transform function.
+
+        Args:
+            results (dict): Result dict.
+
+        Returns:
+            dict: Updated result dict.
+        """
+        # cache and pop images
+        self.results_cache.append(copy.deepcopy(results))
+        if len(self.results_cache) > self.max_cached_images:
+            if self.random_pop:
+                index = random.randint(0, len(self.results_cache) - 1)
+            else:
+                index = 0
+            self.results_cache.pop(index)
+
+        if len(self.results_cache) <= 4:
+            return results
+
+        if random.uniform(0, 1) > self.prob:
+            return results
+        indices = self.get_indexes(self.results_cache)
+        mix_results = [copy.deepcopy(self.results_cache[i]) for i in indices]
+
+        # TODO: refactor mosaic to reuse these code.
+        mosaic_bboxes = []
+        mosaic_bboxes_labels = []
+        mosaic_ignore_flags = []
+        if len(results['img'].shape) == 3:
+            mosaic_img = np.full(
+                (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2), 3),
+                self.pad_val,
+                dtype=results['img'].dtype)
+        else:
+            mosaic_img = np.full(
+                (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2)),
+                self.pad_val,
+                dtype=results['img'].dtype)
+
+        # mosaic center x, y
+        center_x = int(
+            random.uniform(*self.center_ratio_range) * self.img_scale[1])
+        center_y = int(
+            random.uniform(*self.center_ratio_range) * self.img_scale[0])
+        center_position = (center_x, center_y)
+
+        loc_strs = ('top_left', 'top_right', 'bottom_left', 'bottom_right')
+        for i, loc in enumerate(loc_strs):
+            if loc == 'top_left':
+                results_patch = copy.deepcopy(results)
+            else:
+                results_patch = copy.deepcopy(mix_results[i - 1])
+
+            img_i = results_patch['img']
+            h_i, w_i = img_i.shape[:2]
+            # keep_ratio resize
+            scale_ratio_i = min(self.img_scale[0] / h_i,
+                                self.img_scale[1] / w_i)
+            img_i = mmcv.imresize(
+                img_i, (int(w_i * scale_ratio_i), int(h_i * scale_ratio_i)))
+
+            # compute the combine parameters
+            paste_coord, crop_coord = self._mosaic_combine(
+                loc, center_position, img_i.shape[:2][::-1])
+            x1_p, y1_p, x2_p, y2_p = paste_coord
+            x1_c, y1_c, x2_c, y2_c = crop_coord
+
+            # crop and paste image
+            mosaic_img[y1_p:y2_p, x1_p:x2_p] = img_i[y1_c:y2_c, x1_c:x2_c]
+
+            # adjust coordinate
+            gt_bboxes_i = results_patch['gt_bboxes']
+            gt_bboxes_labels_i = results_patch['gt_bboxes_labels']
+            gt_ignore_flags_i = results_patch['gt_ignore_flags']
+
+            padw = x1_p - x1_c
+            padh = y1_p - y1_c
+            gt_bboxes_i.rescale_([scale_ratio_i, scale_ratio_i])
+            gt_bboxes_i.translate_([padw, padh])
+            mosaic_bboxes.append(gt_bboxes_i)
+            mosaic_bboxes_labels.append(gt_bboxes_labels_i)
+            mosaic_ignore_flags.append(gt_ignore_flags_i)
+
+        mosaic_bboxes = mosaic_bboxes[0].cat(mosaic_bboxes, 0)
+        mosaic_bboxes_labels = np.concatenate(mosaic_bboxes_labels, 0)
+        mosaic_ignore_flags = np.concatenate(mosaic_ignore_flags, 0)
+
+        if self.bbox_clip_border:
+            mosaic_bboxes.clip_([2 * self.img_scale[0], 2 * self.img_scale[1]])
+        # remove outside bboxes
+        inside_inds = mosaic_bboxes.is_inside(
+            [2 * self.img_scale[0], 2 * self.img_scale[1]]).numpy()
+        mosaic_bboxes = mosaic_bboxes[inside_inds]
+        mosaic_bboxes_labels = mosaic_bboxes_labels[inside_inds]
+        mosaic_ignore_flags = mosaic_ignore_flags[inside_inds]
+
+        results['img'] = mosaic_img
+        results['img_shape'] = mosaic_img.shape
+        results['gt_bboxes'] = mosaic_bboxes
+        results['gt_bboxes_labels'] = mosaic_bboxes_labels
+        results['gt_ignore_flags'] = mosaic_ignore_flags
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(img_scale={self.img_scale}, '
+        repr_str += f'center_ratio_range={self.center_ratio_range}, '
+        repr_str += f'pad_val={self.pad_val}, '
+        repr_str += f'prob={self.prob}, '
+        repr_str += f'max_cached_images={self.max_cached_images}, '
+        repr_str += f'random_pop={self.random_pop})'
+        return repr_str
+
+
+@TRANSFORMS.register_module()
+class CachedMixUp(BaseTransform):
+    """Cached mixup data augmentation.
+
+    .. code:: text
+
+                         mixup transform
+                +------------------------------+
+                | mixup image   |              |
+                |      +--------|--------+     |
+                |      |        |        |     |
+                |---------------+        |     |
+                |      |                 |     |
+                |      |      image      |     |
+                |      |                 |     |
+                |      |                 |     |
+                |      |-----------------+     |
+                |             pad              |
+                +------------------------------+
+
+     The cached mixup transform steps are as follows:
+
+        1. Append the results from the last transform into the cache.
+        2. Another random image is picked from the cache and embedded in
+           the top left patch(after padding and resizing)
+        3. The target of mixup transform is the weighted average of mixup
+           image and origin image.
+
+    Required Keys:
+
+    - img
+    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes_labels (np.int64) (optional)
+    - gt_ignore_flags (np.bool) (optional)
+    - mix_results (List[dict])
+
+
+    Modified Keys:
+
+    - img
+    - img_shape
+    - gt_bboxes (optional)
+    - gt_bboxes_labels (optional)
+    - gt_ignore_flags (optional)
+
+
+    Args:
+        img_scale (Sequence[int]): Image output size after mixup pipeline.
+            The shape order should be (height, width). Defaults to (640, 640).
+        ratio_range (Sequence[float]): Scale ratio of mixup image.
+            Defaults to (0.5, 1.5).
+        flip_ratio (float): Horizontal flip ratio of mixup image.
+            Defaults to 0.5.
+        pad_val (int): Pad value. Defaults to 114.
+        max_iters (int): The maximum number of iterations. If the number of
+            iterations is greater than `max_iters`, but gt_bbox is still
+            empty, then the iteration is terminated. Defaults to 15.
+        bbox_clip_border (bool, optional): Whether to clip the objects outside
+            the border of the image. In some dataset like MOT17, the gt bboxes
+            are allowed to cross the border of images. Therefore, we don't
+            need to clip the gt bboxes in these cases. Defaults to True.
+        max_cached_images (int): The maximum length of the cache. The larger
+            the cache, the stronger the randomness of this transform. As a
+            rule of thumb, providing 10 caches for each image suffices for
+            randomness. Defaults to 20.
+        random_pop (bool): Whether to randomly pop a result from the cache
+            when the cache is full. If set to False, use FIFO popping method.
+            Defaults to True.
+        prob (float): Probability of applying this transformation.
+            Defaults to 1.0.
+    """
+
+    def __init__(self,
+                 img_scale: Tuple[int, int] = (640, 640),
+                 ratio_range: Tuple[float, float] = (0.5, 1.5),
+                 flip_ratio: float = 0.5,
+                 pad_val: float = 114.0,
+                 max_iters: int = 15,
+                 bbox_clip_border: bool = True,
+                 max_cached_images: int = 20,
+                 random_pop: bool = True,
+                 prob: float = 1.0) -> None:
+        assert isinstance(img_scale, tuple)
+        assert max_cached_images >= 2, 'The length of cache must >= 2, ' \
+                                       f'but got {max_cached_images}.'
+        assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. ' \
+                                 f'got {prob}.'
+        self.dynamic_scale = img_scale
+        self.ratio_range = ratio_range
+        self.flip_ratio = flip_ratio
+        self.pad_val = pad_val
+        self.max_iters = max_iters
+        self.bbox_clip_border = bbox_clip_border
+        self.results_cache = []
+
+        self.max_cached_images = max_cached_images
+        self.random_pop = random_pop
+        self.prob = prob
+
+    @cache_randomness
+    def get_indexes(self, cache: list) -> int:
+        """Call function to collect indexes.
+
+        Args:
+            cache (list): The result cache.
+
+        Returns:
+            int: index.
+        """
+
+        for i in range(self.max_iters):
+            index = random.randint(0, len(cache) - 1)
+            gt_bboxes_i = cache[index]['gt_bboxes']
+            if len(gt_bboxes_i) != 0:
+                break
+        return index
+
+    @autocast_box_type()
+    def transform(self, results: dict) -> dict:
+        """MixUp transform function.
+
+        Args:
+            results (dict): Result dict.
+
+        Returns:
+            dict: Updated result dict.
+        """
+        # cache and pop images
+        self.results_cache.append(copy.deepcopy(results))
+        if len(self.results_cache) > self.max_cached_images:
+            if self.random_pop:
+                index = random.randint(0, len(self.results_cache) - 1)
+            else:
+                index = 0
+            self.results_cache.pop(index)
+
+        if len(self.results_cache) <= 1:
+            return results
+
+        if random.uniform(0, 1) > self.prob:
+            return results
+
+        index = self.get_indexes(self.results_cache)
+        retrieve_results = copy.deepcopy(self.results_cache[index])
+
+        # TODO: refactor mixup to reuse these code.
+        if retrieve_results['gt_bboxes'].shape[0] == 0:
+            # empty bbox
+            return results
+
+        retrieve_img = retrieve_results['img']
+
+        jit_factor = random.uniform(*self.ratio_range)
+        is_filp = random.uniform(0, 1) > self.flip_ratio
+
+        if len(retrieve_img.shape) == 3:
+            out_img = np.ones(
+                (self.dynamic_scale[0], self.dynamic_scale[1], 3),
+                dtype=retrieve_img.dtype) * self.pad_val
+        else:
+            out_img = np.ones(
+                self.dynamic_scale, dtype=retrieve_img.dtype) * self.pad_val
+
+        # 1. keep_ratio resize
+        scale_ratio = min(self.dynamic_scale[0] / retrieve_img.shape[0],
+                          self.dynamic_scale[1] / retrieve_img.shape[1])
+        retrieve_img = mmcv.imresize(
+            retrieve_img, (int(retrieve_img.shape[1] * scale_ratio),
+                           int(retrieve_img.shape[0] * scale_ratio)))
+
+        # 2. paste
+        out_img[:retrieve_img.shape[0], :retrieve_img.shape[1]] = retrieve_img
+
+        # 3. scale jit
+        scale_ratio *= jit_factor
+        out_img = mmcv.imresize(out_img, (int(out_img.shape[1] * jit_factor),
+                                          int(out_img.shape[0] * jit_factor)))
+
+        # 4. flip
+        if is_filp:
+            out_img = out_img[:, ::-1, :]
+
+        # 5. random crop
+        ori_img = results['img']
+        origin_h, origin_w = out_img.shape[:2]
+        target_h, target_w = ori_img.shape[:2]
+        padded_img = np.zeros(
+            (max(origin_h, target_h), max(origin_w,
+                                          target_w), 3)).astype(np.uint8)
+        padded_img[:origin_h, :origin_w] = out_img
+
+        x_offset, y_offset = 0, 0
+        if padded_img.shape[0] > target_h:
+            y_offset = random.randint(0, padded_img.shape[0] - target_h)
+        if padded_img.shape[1] > target_w:
+            x_offset = random.randint(0, padded_img.shape[1] - target_w)
+        padded_cropped_img = padded_img[y_offset:y_offset + target_h,
+                                        x_offset:x_offset + target_w]
+
+        # 6. adjust bbox
+        retrieve_gt_bboxes = retrieve_results['gt_bboxes']
+        retrieve_gt_bboxes.rescale_([scale_ratio, scale_ratio])
+        if self.bbox_clip_border:
+            retrieve_gt_bboxes.clip_([origin_h, origin_w])
+
+        if is_filp:
+            retrieve_gt_bboxes.flip_([origin_h, origin_w],
+                                     direction='horizontal')
+
+        # 7. filter
+        cp_retrieve_gt_bboxes = retrieve_gt_bboxes.clone()
+        cp_retrieve_gt_bboxes.translate_([-x_offset, -y_offset])
+        if self.bbox_clip_border:
+            cp_retrieve_gt_bboxes.clip_([target_h, target_w])
+
+        # 8. mix up
+        ori_img = ori_img.astype(np.float32)
+        mixup_img = 0.5 * ori_img + 0.5 * padded_cropped_img.astype(np.float32)
+
+        retrieve_gt_bboxes_labels = retrieve_results['gt_bboxes_labels']
+        retrieve_gt_ignore_flags = retrieve_results['gt_ignore_flags']
+
+        mixup_gt_bboxes = cp_retrieve_gt_bboxes.cat(
+            (results['gt_bboxes'], cp_retrieve_gt_bboxes), dim=0)
+        mixup_gt_bboxes_labels = np.concatenate(
+            (results['gt_bboxes_labels'], retrieve_gt_bboxes_labels), axis=0)
+        mixup_gt_ignore_flags = np.concatenate(
+            (results['gt_ignore_flags'], retrieve_gt_ignore_flags), axis=0)
+
+        # remove outside bbox
+        inside_inds = mixup_gt_bboxes.is_inside([target_h, target_w]).numpy()
+        mixup_gt_bboxes = mixup_gt_bboxes[inside_inds]
+        mixup_gt_bboxes_labels = mixup_gt_bboxes_labels[inside_inds]
+        mixup_gt_ignore_flags = mixup_gt_ignore_flags[inside_inds]
+
+        results['img'] = mixup_img.astype(np.uint8)
+        results['img_shape'] = mixup_img.shape
+        results['gt_bboxes'] = mixup_gt_bboxes
+        results['gt_bboxes_labels'] = mixup_gt_bboxes_labels
+        results['gt_ignore_flags'] = mixup_gt_ignore_flags
+
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(dynamic_scale={self.dynamic_scale}, '
+        repr_str += f'ratio_range={self.ratio_range}, '
+        repr_str += f'flip_ratio={self.flip_ratio}, '
+        repr_str += f'pad_val={self.pad_val}, '
+        repr_str += f'max_iters={self.max_iters}, '
+        repr_str += f'bbox_clip_border={self.bbox_clip_border}, '
+        repr_str += f'max_cached_images={self.max_cached_images}, '
+        repr_str += f'random_pop={self.random_pop}, '
+        repr_str += f'prob={self.prob})'
         return repr_str

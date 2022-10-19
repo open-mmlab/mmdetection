@@ -12,6 +12,8 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.structures import SampleList
+from mmdet.structures.bbox import (cat_boxes, get_box_tensor, get_box_wh,
+                                   scale_boxes)
 from mmdet.utils import InstanceList, OptMultiConfig
 from ..test_time_augs import merge_aug_results
 from ..utils import (cat_boxes, filter_scores_and_topk, get_box_tensor,
