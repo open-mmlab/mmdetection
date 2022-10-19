@@ -28,7 +28,7 @@ model = dict(
         act_cfg=None,
         norm_cfg=None,
         num_outs=1),
-    encoder_cfg=dict(  # DetrTransformerEncoder
+    encoder=dict(  # DetrTransformerEncoder
         num_layers=6,
         layer_cfg=dict(  # DetrTransformerEncoderLayer
             self_attn_cfg=dict(  # MultiheadAttention
@@ -41,7 +41,7 @@ model = dict(
                 num_fcs=2,
                 ffn_drop=0.1,
                 act_cfg=dict(type='ReLU', inplace=True)))),
-    decoder_cfg=dict(  # DetrTransformerDecoder
+    decoder=dict(  # DetrTransformerDecoder
         num_layers=6,
         layer_cfg=dict(  # DetrTransformerDecoderLayer
             self_attn_cfg=dict(  # MultiheadAttention
