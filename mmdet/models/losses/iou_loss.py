@@ -287,8 +287,8 @@ def eiou_loss(pred, target, smooth_point=0.1, eps=1e-7):
 
     # Smooth-EIoU
     smooth_sign = (ious < smooth_point).detach().float()
-    loss = 0.5 * smooth_sign * (ious**2) / smooth_point
-    loss += (1 - smooth_sign) * (ious - 0.5 * smooth_point)
+    loss = 0.5 * smooth_sign * (ious**2) / smooth_point + (1 - smooth_sign) * (
+        ious - 0.5 * smooth_point)
     return loss
 
 
