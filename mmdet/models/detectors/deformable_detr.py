@@ -104,9 +104,10 @@ class DeformableDETR(DetectionTransformer):
     def init_weights(self) -> None:
         """Initialize weights for Transformer and other components."""
         super().init_weights()
-        for p in self.parameters():
-            if p.dim() > 1:
-                nn.init.xavier_uniform_(p)
+        for coder in [self.encoder, self.decoder]:
+            for m in coder.modules():
+                if hasattr(m, 'weight') and m.weight.dim() > 1:
+                    xavier_init(m, distribution='uniform')
         for m in self.modules():
             if isinstance(m, MultiScaleDeformableAttention):
                 m.init_weights()
