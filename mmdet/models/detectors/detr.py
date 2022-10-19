@@ -3,7 +3,6 @@ from typing import Dict, Tuple
 
 import torch
 import torch.nn.functional as F
-from mmengine.model import xavier_init
 from torch import Tensor, nn
 
 from mmdet.registry import MODELS
@@ -43,10 +42,10 @@ class DETR(DetectionTransformer):
     def init_weights(self) -> None:
         """Initialize weights for Transformer and other components."""
         super().init_weights()
-        for coder in [self.encoder, self.decoder]:
-            for m in coder.modules():
-                if hasattr(m, 'weight') and m.weight.dim() > 1:
-                    xavier_init(m, distribution='uniform')
+        for coder in self.encoder, self.decoder:
+            for p in coder.parameters():
+                if p.dim() > 1:
+                    nn.init.xavier_uniform_(p)
 
     def pre_transformer(
             self,
