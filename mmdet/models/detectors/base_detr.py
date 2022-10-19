@@ -11,20 +11,20 @@ from .base import BaseDetector
 
 
 @MODELS.register_module()
-class TransformerDetector(BaseDetector, metaclass=ABCMeta):
-    r"""Base class for Transformer-based detectors.
+class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
+    r"""Base class for Detection Transformer.
 
-    Transformer-based detectors use an encoder to process output features of
-    neck, then several queries interactive with the output features of encoder
-    and do the regression and classification.
+    Detection Transformer uses an encoder to process output features of neck,
+    then several queries interactive with the output features of encoder and
+    do the regression and classification with bounding box head.
 
     Args:
         backbone (:obj:`ConfigDict` or dict): Config of the backbone.
         neck (:obj:`ConfigDict` or dict, optional): Config of the neck.
             Defaults to None.
-        encoder_cfg (:obj:`ConfigDict` or dict, optional): Config of the
+        encoder (:obj:`ConfigDict` or dict, optional): Config of the
             Transformer encoder. Defaults to None.
-        decoder_cfg (:obj:`ConfigDict` or dict, optional): Config of the
+        decoder (:obj:`ConfigDict` or dict, optional): Config of the
             Transformer decoder. Defaults to None.
         positional_encoding_cfg (:obj:`ConfigDict` or dict, optional): Config
             of the positional encoding module. Defaults to None.
@@ -40,15 +40,15 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             config of :class:`BaseDataPreprocessor`.  it usually includes,
             ``pad_size_divisor``, ``pad_value``, ``mean`` and ``std``.
             Defaults to None.
-        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or
-            dict], optional): Initialization config dict. Defaults to None.
+        init_cfg (:obj:`ConfigDict` or dict, optional): the config to control
+            the initialization. Defaults to None.
     """
 
     def __init__(self,
                  backbone: ConfigType,
                  neck: OptConfigType = None,
-                 encoder_cfg: OptConfigType = None,
-                 decoder_cfg: OptConfigType = None,
+                 encoder: OptConfigType = None,
+                 decoder: OptConfigType = None,
                  positional_encoding_cfg: OptConfigType = None,
                  bbox_head: OptConfigType = None,
                  num_query: int = 100,
@@ -63,8 +63,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         bbox_head.update(test_cfg=test_cfg)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        self.encoder_cfg = encoder_cfg
-        self.decoder_cfg = decoder_cfg
+        self.encoder = encoder
+        self.decoder = decoder
         self.positional_encoding_cfg = positional_encoding_cfg
         self.num_query = num_query
 

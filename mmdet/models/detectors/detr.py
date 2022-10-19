@@ -10,11 +10,11 @@ from mmdet.registry import MODELS
 from mmdet.structures import OptSampleList
 from ..layers import (DetrTransformerDecoder, DetrTransformerEncoder,
                       SinePositionalEncoding)
-from .base_detr import TransformerDetector
+from .base_detr import DetectionTransformer
 
 
 @MODELS.register_module()
-class DETR(TransformerDetector):
+class DETR(DetectionTransformer):
     r"""Implementation of `DETR: End-to-End Object Detection with Transformers.
 
     <https://arxiv.org/pdf/2005.12872>`_.
@@ -27,8 +27,8 @@ class DETR(TransformerDetector):
         """Initialize layers except for backbone, neck and bbox_head."""
         self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding_cfg)
-        self.encoder = DetrTransformerEncoder(**self.encoder_cfg)
-        self.decoder = DetrTransformerDecoder(**self.decoder_cfg)
+        self.encoder = DetrTransformerEncoder(**self.encoder)
+        self.decoder = DetrTransformerDecoder(**self.decoder)
         self.embed_dims = self.encoder.embed_dims
         # NOTE The embed_dims is typically passed from the inside out.
         # For example in DETR, The embed_dims is passed as

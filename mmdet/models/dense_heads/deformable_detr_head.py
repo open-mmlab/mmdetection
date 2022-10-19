@@ -59,15 +59,15 @@ class DeformableDETRHead(DETRHead):
 
         if self.share_pred_layer:
             self.cls_branches = nn.ModuleList(
+                [fc_cls for _ in range(self.num_pred_layer)])
+            self.reg_branches = nn.ModuleList(
+                [reg_branch for _ in range(self.num_pred_layer)])
+        else:
+            self.cls_branches = nn.ModuleList(
                 [copy.deepcopy(fc_cls) for _ in range(self.num_pred_layer)])
             self.reg_branches = nn.ModuleList([
                 copy.deepcopy(reg_branch) for _ in range(self.num_pred_layer)
             ])
-        else:
-            self.cls_branches = nn.ModuleList(
-                [fc_cls for _ in range(self.num_pred_layer)])
-            self.reg_branches = nn.ModuleList(
-                [reg_branch for _ in range(self.num_pred_layer)])
 
     def init_weights(self) -> None:
         """Initialize weights of the Deformable DETR head."""

@@ -17,11 +17,11 @@ from mmdet.utils import OptConfigType
 from ..layers import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
                       DetrTransformerEncoder, DetrTransformerEncoderLayer,
                       SinePositionalEncoding, inverse_sigmoid)
-from .base_detr import TransformerDetector
+from .base_detr import DetectionTransformer
 
 
 @MODELS.register_module()
-class DeformableDETR(TransformerDetector):
+class DeformableDETR(DetectionTransformer):
     r"""Implementation of `Deformable DETR: Deformable Transformers for
     End-to-End Object Detection <https://arxiv.org/abs/2010.04159>`_
 
@@ -29,7 +29,7 @@ class DeformableDETR(TransformerDetector):
     <https://github.com/fundamentalvision/Deformable-DETR>`_.
 
     Args:
-        decoder_cfg (:obj:`ConfigDict` or dict, optional): Config of the
+        decoder (:obj:`ConfigDict` or dict, optional): Config of the
             Transformer decoder. Defaults to None.
         bbox_head (:obj:`ConfigDict` or dict, optional): Config for the
             bounding box head module. Defaults to None.
@@ -43,7 +43,7 @@ class DeformableDETR(TransformerDetector):
 
     def __init__(self,
                  *args,
-                 decoder_cfg: OptConfigType = None,
+                 decoder: OptConfigType = None,
                  bbox_head: OptConfigType = None,
                  with_box_refine: bool = False,
                  as_two_stage: bool = False,
@@ -65,19 +65,18 @@ class DeformableDETR(TransformerDetector):
             # And all the prediction layers should share parameters
             # when `with_box_refine` is `True`.
             bbox_head['share_pred_layer'] = not with_box_refine
-            bbox_head['num_pred_layer'] = (decoder_cfg['num_layers'] + 1) \
-                if self.as_two_stage else decoder_cfg['num_layers']
+            bbox_head['num_pred_layer'] = (decoder['num_layers'] + 1) \
+                if self.as_two_stage else decoder['num_layers']
             bbox_head['as_two_stage'] = as_two_stage
 
-        super().__init__(
-            *args, decoder_cfg=decoder_cfg, bbox_head=bbox_head, **kwargs)
+        super().__init__(*args, decoder=decoder, bbox_head=bbox_head, **kwargs)
 
     def _init_layers(self) -> None:
         """Initialize layers except for backbone, neck and bbox_head."""
         self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding_cfg)
-        self.encoder = DeformableDetrTransformerEncoder(**self.encoder_cfg)
-        self.decoder = DeformableDetrTransformerDecoder(**self.decoder_cfg)
+        self.encoder = DeformableDetrTransformerEncoder(**self.encoder)
+        self.decoder = DeformableDetrTransformerDecoder(**self.decoder)
         self.embed_dims = self.encoder.embed_dims
         if not self.as_two_stage:
             self.query_embedding = nn.Embedding(self.num_query,

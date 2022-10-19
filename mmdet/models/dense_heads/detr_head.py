@@ -42,8 +42,8 @@ class DETRHead(BaseModule):
             head.
         test_cfg (:obj:`ConfigDict` or dict): Testing config of transformer
             head.
-        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
-            dict], optional): Initialization config dict. Defaults to `None`.
+        init_cfg (:obj:`ConfigDict` or dict, optional): the config to control
+            the initialization. Defaults to None.
     """
 
     _version = 2

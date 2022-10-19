@@ -31,14 +31,14 @@ model = dict(
         act_cfg=None,
         norm_cfg=dict(type='GN', num_groups=32),
         num_outs=4),
-    encoder_cfg=dict(  # DeformableDetrTransformerEncoder
+    encoder=dict(  # DeformableDetrTransformerEncoder
         num_layers=6,
         layer_cfg=dict(  # DeformableDetrTransformerEncoderLayer
             self_attn_cfg=dict(  # MultiScaleDeformableAttention
                 embed_dims=256),
             ffn_cfg=dict(
                 embed_dims=256, feedforward_channels=1024, ffn_drop=0.1))),
-    decoder_cfg=dict(  # DeformableDetrTransformerDecoder
+    decoder=dict(  # DeformableDetrTransformerDecoder
         num_layers=6,
         return_intermediate=True,
         layer_cfg=dict(  # DeformableDetrTransformerDecoderLayer
