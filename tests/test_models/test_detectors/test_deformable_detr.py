@@ -5,14 +5,14 @@ import torch
 from mmengine.config import ConfigDict
 from mmengine.structures import InstanceData
 
-from mmdet.models.detectors.detr import DETR
+from mmdet.models.detectors.deformable_detr import DeformableDETR
 from mmdet.structures import DetDataSample
 from mmdet.utils import register_all_modules
 
 
-class TestDETR(TestCase):
+class TestDeformableDETR(TestCase):
 
-    def setUp(self) -> None:
+    def setUp(self):
         register_all_modules()
 
     def test_detr_head_loss(self):
@@ -31,12 +31,15 @@ class TestDETR(TestCase):
 
         config = ConfigDict(
             dict(
-                num_query=100,
+                num_query=300,
+                num_feature_levels=4,
+                with_box_refine=False,
+                as_two_stage=False,
                 backbone=dict(
                     type='ResNet',
                     depth=50,
                     num_stages=4,
-                    out_indices=(3, ),
+                    out_indices=(1, 2, 3),
                     frozen_stages=1,
                     norm_cfg=dict(type='BN', requires_grad=False),
                     norm_eval=True,
@@ -46,54 +49,48 @@ class TestDETR(TestCase):
                         checkpoint='torchvision://resnet50')),
                 neck=dict(
                     type='ChannelMapper',
-                    in_channels=[2048],
+                    in_channels=[512, 1024, 2048],
                     kernel_size=1,
                     out_channels=256,
                     act_cfg=None,
-                    norm_cfg=None,
-                    num_outs=1),
-                encoder=dict(  # DetrTransformerEncoder
+                    norm_cfg=dict(type='GN', num_groups=32),
+                    num_outs=4),
+                encoder=dict(  # DeformableDetrTransformerEncoder
                     num_layers=6,
-                    layer_cfg=dict(  # DetrTransformerEncoderLayer
+                    layer_cfg=dict(  # DeformableDetrTransformerEncoderLayer
+                        self_attn_cfg=dict(  # MultiScaleDeformableAttention
+                            embed_dims=256),
+                        ffn_cfg=dict(
+                            embed_dims=256,
+                            feedforward_channels=1024,
+                            ffn_drop=0.1))),
+                decoder=dict(  # DeformableDetrTransformerDecoder
+                    num_layers=6,
+                    return_intermediate=True,
+                    layer_cfg=dict(  # DeformableDetrTransformerDecoderLayer
                         self_attn_cfg=dict(  # MultiheadAttention
                             embed_dims=256,
                             num_heads=8,
                             dropout=0.1),
+                        cross_attn_cfg=dict(  # MultiScaleDeformableAttention
+                            embed_dims=256),
                         ffn_cfg=dict(
                             embed_dims=256,
-                            feedforward_channels=2048,
-                            num_fcs=2,
-                            ffn_drop=0.1,
-                            act_cfg=dict(type='ReLU', inplace=True)))),
-                decoder=dict(  # DetrTransformerDecoder
-                    num_layers=6,
-                    layer_cfg=dict(  # DetrTransformerDecoderLayer
-                        self_attn_cfg=dict(  # MultiheadAttention
-                            embed_dims=256,
-                            num_heads=8,
-                            dropout=0.1),
-                        cross_attn_cfg=dict(  # MultiheadAttention
-                            embed_dims=256,
-                            num_heads=8,
-                            dropout=0.1),
-                        ffn_cfg=dict(
-                            embed_dims=256,
-                            feedforward_channels=2048,
-                            num_fcs=2,
-                            ffn_drop=0.1,
-                            act_cfg=dict(type='ReLU', inplace=True))),
-                    return_intermediate=True),
-                positional_encoding_cfg=dict(num_feats=128, normalize=True),
+                            feedforward_channels=1024,
+                            ffn_drop=0.1)),
+                    post_norm_cfg=None),
+                positional_encoding_cfg=dict(
+                    num_feats=128, normalize=True, offset=-0.5),
                 bbox_head=dict(
-                    type='DETRHead',
+                    type='DeformableDETRHead',
                     num_classes=80,
-                    embed_dims=256,
+                    sync_cls_avg_factor=True,
                     loss_cls=dict(
-                        type='CrossEntropyLoss',
-                        bg_cls_weight=0.1,
-                        use_sigmoid=False,
-                        loss_weight=1.0,
-                        class_weight=1.0),
+                        type='FocalLoss',
+                        use_sigmoid=True,
+                        gamma=2.0,
+                        alpha=0.25,
+                        loss_weight=2.0),
                     loss_bbox=dict(type='L1Loss', loss_weight=5.0),
                     loss_iou=dict(type='GIoULoss', loss_weight=2.0)),
                 # training and testing settings
@@ -101,7 +98,7 @@ class TestDETR(TestCase):
                     assigner=dict(
                         type='HungarianAssigner',
                         match_costs=[
-                            dict(type='ClassificationCost', weight=1.),
+                            dict(type='FocalLossCost', weight=2.0),
                             dict(
                                 type='BBoxL1Cost',
                                 weight=5.0,
@@ -110,7 +107,7 @@ class TestDETR(TestCase):
                         ])),
                 test_cfg=dict(max_per_img=100)))
 
-        model = DETR(**config)
+        model = DeformableDETR(**config)
         model.init_weights()
         random_image = torch.rand(1, 3, s, s)
 
@@ -137,7 +134,7 @@ class TestDETR(TestCase):
             elif 'iou' in key:
                 self.assertEqual(
                     loss.item(), 0,
-                    'there should be no iou loss when there are no true boxes')
+                    'there should be no iou loss when no ground true boxes')
 
         # When truth is non-empty then both cls and box loss should be nonzero
         # for random inputs
