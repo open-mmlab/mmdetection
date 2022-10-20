@@ -529,5 +529,3 @@ def test_detr_transformer_dencoder_encoder_layer():
     with pytest.raises(AssertionError):
         # len(operation_order) == 6
         DetrTransformerEncoder(**config)
-
-
