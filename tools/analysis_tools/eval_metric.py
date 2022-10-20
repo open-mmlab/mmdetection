@@ -41,7 +41,7 @@ def main():
     dataset = DATASETS.build(cfg.test_dataloader.dataset)
     predictions = mmengine.load(args.pkl_results)
 
-    evaluator = Evaluator(cfg.test_evaluator)
+    evaluator = Evaluator(cfg.val_evaluator)
     evaluator.dataset_meta = dataset.metainfo
     eval_results = evaluator.offline_evaluate(predictions)
     print(eval_results)
