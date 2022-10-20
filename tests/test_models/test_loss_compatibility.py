@@ -51,6 +51,7 @@ def _get_detector_cfg(fname):
     dict(type='GIoULoss', loss_weight=1.0),
     dict(type='DIoULoss', loss_weight=1.0),
     dict(type='CIoULoss', loss_weight=1.0),
+    dict(type='EIoULoss', loss_weight=1.0),
     dict(type='MSELoss', loss_weight=1.0),
     dict(type='SmoothL1Loss', loss_weight=1.0),
     dict(type='BalancedL1Loss', loss_weight=1.0)
