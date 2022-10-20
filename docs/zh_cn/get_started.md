@@ -210,7 +210,7 @@ print(mmdet.__version__)
 们提供了一个 [Dockerfile](../../docker/Dockerfile) 来构建一个镜像。请确保你的 [docker版本](https://docs.docker.com/engine/install/) >=19.03。
 
 ```shell
-# build an image with PyTorch 1.6, CUDA 10.1
+# build an image with PyTorch 1.9, CUDA 11.1
 # If you prefer other versions, just modified the Dockerfile
 docker build -t mmdetection docker/
 ```
