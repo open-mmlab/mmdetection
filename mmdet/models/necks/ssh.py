@@ -38,7 +38,7 @@ class SSHModule(BaseModule):
         self.in_channels = in_channels
         self.out_channels = out_channels
 
-        self.conv3X3 = ConvModule(
+        self.conv3x3 = ConvModule(
             self.in_channels,
             self.out_channels // 2,
             3,
@@ -48,7 +48,7 @@ class SSHModule(BaseModule):
             norm_cfg=norm_cfg,
             act_cfg=None)
 
-        self.conv5X5_1 = ConvModule(
+        self.conv5x5_1 = ConvModule(
             self.in_channels,
             self.out_channels // 4,
             3,
@@ -58,7 +58,7 @@ class SSHModule(BaseModule):
             norm_cfg=norm_cfg,
         )
 
-        self.conv5X5_2 = ConvModule(
+        self.conv5x5_2 = ConvModule(
             self.out_channels // 4,
             self.out_channels // 4,
             3,
@@ -68,7 +68,7 @@ class SSHModule(BaseModule):
             norm_cfg=norm_cfg,
             act_cfg=None)
 
-        self.conv7X7_2 = ConvModule(
+        self.conv7x7_2 = ConvModule(
             self.out_channels // 4,
             self.out_channels // 4,
             3,
@@ -78,7 +78,7 @@ class SSHModule(BaseModule):
             norm_cfg=norm_cfg,
         )
 
-        self.conv7X7_3 = ConvModule(
+        self.conv7x7_3 = ConvModule(
             self.out_channels // 4,
             self.out_channels // 4,
             3,
@@ -90,12 +90,12 @@ class SSHModule(BaseModule):
         )
 
     def forward(self, x):
-        conv3X3 = self.conv3X3(x)
-        conv5X5_1 = self.conv5X5_1(x)
-        conv5X5 = self.conv5X5_2(conv5X5_1)
-        conv7X7_2 = self.conv7X7_2(conv5X5_1)
-        conv7X7 = self.conv7X7_3(conv7X7_2)
-        out = torch.cat([conv3X3, conv5X5, conv7X7], dim=1)
+        conv3x3 = self.conv3x3(x)
+        conv5x5_1 = self.conv5x5_1(x)
+        conv5x5 = self.conv5x5_2(conv5x5_1)
+        conv7x7_2 = self.conv7x7_2(conv5x5_1)
+        conv7x7 = self.conv7x7_3(conv7x7_2)
+        out = torch.cat([conv3x3, conv5x5, conv7x7], dim=1)
         out = F.relu(out)
 
         return out
