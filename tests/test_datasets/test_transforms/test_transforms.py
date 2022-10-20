@@ -1502,6 +1502,37 @@ class TestAlbu(unittest.TestCase):
 
         self.assertEqual(results['img'].dtype, np.uint8)
 
+        # test bbox
+        albu_transform = dict(
+            type='Albu',
+            transforms=[dict(type='ChannelShuffle', p=1)],
+            bbox_params=dict(
+                type='BboxParams',
+                format='pascal_voc',
+                label_fields=['gt_bboxes_labels', 'gt_ignore_flags']),
+            keymap={
+                'img': 'image',
+                'gt_bboxes': 'bboxes'
+            })
+        albu_transform = TRANSFORMS.build(albu_transform)
+        results = {
+            'img':
+            np.random.random((224, 224, 3)),
+            'img_shape': (224, 224),
+            'gt_bboxes_labels':
+            np.array([1, 2, 3], dtype=np.int64),
+            'gt_bboxes':
+            np.array([[10, 10, 20, 20], [20, 20, 40, 40], [40, 40, 80, 80]],
+                     dtype=np.float32),
+            'gt_ignore_flags':
+            np.array([0, 0, 1], dtype=bool),
+        }
+        results = albu_transform(results)
+        self.assertEqual(results['img'].dtype, np.float64)
+        self.assertEqual(results['gt_bboxes'].dtype, np.float32)
+        self.assertEqual(results['gt_ignore_flags'].dtype, np.bool)
+        self.assertEqual(results['gt_bboxes_labels'].dtype, np.int64)
+
     @unittest.skipIf(albumentations is None, 'albumentations is not installed')
     def test_repr(self):
         albu_transform = dict(

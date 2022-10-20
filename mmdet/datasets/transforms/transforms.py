@@ -1542,6 +1542,16 @@ class Albu(BaseTransform):
             ori_masks: Optional[Union[BitmapMasks,
                                       PolygonMasks]] = None) -> dict:
         """Post-processing Albu output."""
+        # albumentations may return np.array or list on different versions
+        if 'gt_bboxes_labels' in results and isinstance(
+                results['gt_bboxes_labels'], list):
+            results['gt_bboxes_labels'] = np.array(
+                results['gt_bboxes_labels'], dtype=np.int64)
+        if 'gt_ignore_flags' in results and isinstance(
+                results['gt_ignore_flags'], list):
+            results['gt_ignore_flags'] = np.array(
+                results['gt_ignore_flags'], dtype=np.bool)
+
         if 'bboxes' in results:
             if isinstance(results['bboxes'], list):
                 results['bboxes'] = np.array(
