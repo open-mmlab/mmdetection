@@ -10,9 +10,11 @@ from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 
 
-class SSHModule(BaseModule):
-    """This is an implementation of `SSH module` described in `SSH: Single
-    Stage Headless Face Detector <https://arxiv.org/pdf/1708.03979.pdf>`_.
+class SSHContextModule(BaseModule):
+    """This is an implementation of `SSH context module` described in `SSH:
+    Single Stage Headless Face Detector.
+
+    <https://arxiv.org/pdf/1708.03979.pdf>`_.
 
     Args:
         in_channels (int): Number of input channels used at each scale.
@@ -21,32 +23,18 @@ class SSHModule(BaseModule):
             convolution layer. Defaults to None.
         norm_cfg (:obj:`ConfigDict` or dict): Config dict for normalization
             layer. Defaults to dict(type='BN').
-        init_cfg (:obj:`ConfigDict` or list[:obj:`ConfigDict`] or dict or
-            list[dict], optional): Initialization config dict.
-            Defaults to None.
     """
 
     def __init__(self,
                  in_channels: int,
                  out_channels: int,
                  conv_cfg: OptConfigType = None,
-                 norm_cfg: ConfigType = dict(type='BN'),
-                 init_cfg: OptMultiConfig = None):
-        super().__init__(init_cfg=init_cfg)
+                 norm_cfg: ConfigType = dict(type='BN')):
+        super().__init__()
         assert out_channels % 4 == 0
 
         self.in_channels = in_channels
         self.out_channels = out_channels
-
-        self.conv3x3 = ConvModule(
-            self.in_channels,
-            self.out_channels // 2,
-            3,
-            stride=1,
-            padding=1,
-            conv_cfg=conv_cfg,
-            norm_cfg=norm_cfg,
-            act_cfg=None)
 
         self.conv5x5_1 = ConvModule(
             self.in_channels,
@@ -89,12 +77,64 @@ class SSHModule(BaseModule):
             act_cfg=None,
         )
 
-    def forward(self, x):
-        conv3x3 = self.conv3x3(x)
+    def forward(self, x: torch.Tensor) -> tuple:
         conv5x5_1 = self.conv5x5_1(x)
         conv5x5 = self.conv5x5_2(conv5x5_1)
         conv7x7_2 = self.conv7x7_2(conv5x5_1)
         conv7x7 = self.conv7x7_3(conv7x7_2)
+
+        return (conv5x5, conv7x7)
+
+
+class SSHDetModule(BaseModule):
+    """This is an implementation of `SSH detection module` described in `SSH:
+    Single Stage Headless Face Detector.
+
+    <https://arxiv.org/pdf/1708.03979.pdf>`_.
+
+    Args:
+        in_channels (int): Number of input channels used at each scale.
+        out_channels (int): Number of output channels used at each scale.
+        conv_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
+            convolution layer. Defaults to None.
+        norm_cfg (:obj:`ConfigDict` or dict): Config dict for normalization
+            layer. Defaults to dict(type='BN').
+        init_cfg (:obj:`ConfigDict` or list[:obj:`ConfigDict`] or dict or
+            list[dict], optional): Initialization config dict.
+            Defaults to None.
+    """
+
+    def __init__(self,
+                 in_channels: int,
+                 out_channels: int,
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: ConfigType = dict(type='BN'),
+                 init_cfg: OptMultiConfig = None):
+        super().__init__(init_cfg=init_cfg)
+        assert out_channels % 4 == 0
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
+        self.conv3x3 = ConvModule(
+            self.in_channels,
+            self.out_channels // 2,
+            3,
+            stride=1,
+            padding=1,
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg,
+            act_cfg=None)
+
+        self.context_module = SSHContextModule(
+            in_channels=self.in_channels,
+            out_channels=self.out_channels,
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        conv3x3 = self.conv3x3(x)
+        conv5x5, conv7x7 = self.context_module(x)
         out = torch.cat([conv3x3, conv5x5, conv7x7], dim=1)
         out = F.relu(out)
 
@@ -137,7 +177,7 @@ class SSH(BaseModule):
             in_c, out_c = self.in_channels[idx], self.out_channels[idx]
             self.add_module(
                 f'ssh_module{idx}',
-                SSHModule(
+                SSHDetModule(
                     in_channels=in_c,
                     out_channels=out_c,
                     conv_cfg=conv_cfg,
@@ -183,7 +223,7 @@ class RetinaSSH(BaseModule):
         self.in_channels = in_channels
         self.out_channels = out_channels
 
-        self.ssh_module = SSHModule(
+        self.ssh_module = SSHDetModule(
             in_channels=in_channels,
             out_channels=out_channels,
             conv_cfg=conv_cfg,
