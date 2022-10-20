@@ -15,11 +15,14 @@ from .positional_encoding import (LearnedPositionalEncoding,
                                   SinePositionalEncoding)
 from .res_layer import ResLayer, SimplifiedBasicBlock
 from .se_layer import ChannelAttention, DyReLU, SELayer
-from .transformer import (MLP, DetrTransformerDecoder,
-                          DetrTransformerDecoderLayer, DetrTransformerEncoder,
-                          DetrTransformerEncoderLayer, DynamicConv, PatchEmbed,
-                          PatchMerging, inverse_sigmoid, nchw_to_nlc,
-                          nlc_to_nchw)
+from .transformer import (MLP, DeformableDetrTransformerDecoder,
+                          DeformableDetrTransformerDecoderLayer,
+                          DeformableDetrTransformerEncoder,
+                          DeformableDetrTransformerEncoderLayer,
+                          DetrTransformerDecoder, DetrTransformerDecoderLayer,
+                          DetrTransformerEncoder, DetrTransformerEncoderLayer,
+                          DynamicConv, PatchEmbed, PatchMerging,
+                          inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
 
 __all__ = [
     'fast_nms', 'multiclass_nms', 'mask_matrix_nms', 'DropBlock',
@@ -31,5 +34,8 @@ __all__ = [
     'AdaptiveAvgPool2d', 'PatchEmbed', 'nchw_to_nlc', 'nlc_to_nchw', 'DyReLU',
     'ExpMomentumEMA', 'inverse_sigmoid', 'ChannelAttention', 'SiLU', 'MLP',
     'DetrTransformerEncoderLayer', 'DetrTransformerDecoderLayer',
-    'DetrTransformerEncoder', 'DetrTransformerDecoder'
+    'DetrTransformerEncoder', 'DetrTransformerDecoder',
+    'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
+    'DeformableDetrTransformerEncoderLayer',
+    'DeformableDetrTransformerDecoderLayer'
 ]
