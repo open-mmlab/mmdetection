@@ -22,7 +22,6 @@ class LoadImageFromFile:
     key "filename"). Added or updated keys are "filename", "img", "img_shape",
     "ori_shape" (same as `img_shape`), "pad_shape" (same as `img_shape`),
     "scale_factor" (1.0) and "img_norm_cfg" (means=0 and stds=1).
-
     Args:
         to_float32 (bool): Whether to convert the loaded image to a float32
             numpy array. If set to False, the loaded image is an uint8 array.
@@ -45,55 +44,36 @@ class LoadImageFromFile:
         self.file_client_args = file_client_args.copy()
         self.file_client = None
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    def __call__(self, results):
-        """Call functions to load image and get image meta information.
-
-        Args:
-            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
-        Returns:
-            dict: The dict contains loaded image and meta information.
-        """
-
-        if self.file_client is None:
-            self.file_client = mmcv.FileClient(**self.file_client_args)
-
-=======
     def _load_image(self, results):
->>>>>>> Set default values for meta keys in LoadMultiChannelImageFromFile
-=======
-    def _load_image(self, results):
->>>>>>> Update loading.py
         if results['img_prefix'] is not None:
             filename = osp.join(results['img_prefix'],
                                 results['img_info']['filename'])
         else:
             filename = results['img_info']['filename']
         img_bytes = self.file_client.get(filename)
-        img = mmcv.imfrombytes(
-            img_bytes, flag=self.color_type, channel_order=self.channel_order)
+        img = mmcv.imfrombytes(img_bytes, flag=self.color_type)
         if self.to_float32:
             img = img.astype(np.float32)
-<<<<<<< HEAD
-
-=======
         return img, filename
 
     def __call__(self, results):
+        """Call functions to load image and get image meta information.
+
+        Args:
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+        Returns:
+            dict: The dict contains loaded image and meta information.
+        """
+
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
         img, filename = self._load_image(results)
->>>>>>> Set default values for meta keys in LoadMultiChannelImageFromFile
+
         results['filename'] = filename
         results['ori_filename'] = results['img_info']['filename']
         results['img'] = img
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
-<<<<<<< HEAD
-        results['img_fields'] = ['img']
-=======
         # Set initial values for default meta_keys
         results['pad_shape'] = img.shape
         results['scale_factor'] = 1.0
@@ -102,7 +82,7 @@ class LoadImageFromFile:
             mean=np.zeros(num_channels, dtype=np.float32),
             std=np.ones(num_channels, dtype=np.float32),
             to_rgb=False)
->>>>>>> Update to latest version
+        results['img_fields'] = ['img']
         return results
 
     def __repr__(self):
@@ -115,7 +95,6 @@ class LoadImageFromFile:
 
 
 @PIPELINES.register_module()
-<<<<<<< HEAD
 class LoadImageFromWebcam(LoadImageFromFile):
     """Load an image from webcam.
 
@@ -148,10 +127,7 @@ class LoadImageFromWebcam(LoadImageFromFile):
 
 
 @PIPELINES.register_module()
-class LoadMultiChannelImageFromFiles:
-=======
 class LoadMultiChannelImageFromFiles(LoadImageFromFile):
->>>>>>> Update loading.py
     """Load multi-channel images from a list of separate channel files.
 
     Required keys are "img_prefix" and "img_info" (a dict that must contain the
@@ -159,8 +135,6 @@ class LoadMultiChannelImageFromFiles(LoadImageFromFile):
     Added or updated keys are "filename", "img", "img_shape",
     "ori_shape" (same as `img_shape`), "pad_shape" (same as `img_shape`),
     "scale_factor" (1.0) and "img_norm_cfg" (means=0 and stds=1).
-
-<<<<<<< HEAD
     Args:
         to_float32 (bool): Whether to convert the loaded image to a float32
             numpy array. If set to False, the loaded image is an uint8 array.
@@ -170,12 +144,6 @@ class LoadMultiChannelImageFromFiles(LoadImageFromFile):
         file_client_args (dict): Arguments to instantiate a FileClient.
             See :class:`mmcv.fileio.FileClient` for details.
             Defaults to ``dict(backend='disk')``.
-=======
-@PIPELINES.register_module
-class LoadMultiChannelImageFromFiles(LoadImageFromFile):
-    """ Load multi channel images from a list of separate channel files.
-    Expects results['filename'] to be a list of filenames
->>>>>>> Set default values for meta keys in LoadMultiChannelImageFromFile
     """
 
     def __init__(self,
@@ -185,24 +153,7 @@ class LoadMultiChannelImageFromFiles(LoadImageFromFile):
         super(LoadMultiChannelImageFromFiles,
               self).__init__(to_float32, color_type, file_client_args)
 
-<<<<<<< HEAD
-    def __call__(self, results):
-        """Call functions to load multiple images and get images meta
-        information.
-
-        Args:
-            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
-        Returns:
-            dict: The dict contains loaded images and meta information.
-        """
-
-        if self.file_client is None:
-            self.file_client = mmcv.FileClient(**self.file_client_args)
-
-=======
     def _load_image(self, results):
->>>>>>> Set default values for meta keys in LoadMultiChannelImageFromFile
         if results['img_prefix'] is not None:
             filename = [
                 osp.join(results['img_prefix'], fname)
@@ -217,25 +168,7 @@ class LoadMultiChannelImageFromFiles(LoadImageFromFile):
         img = np.stack(img, axis=-1)
         if self.to_float32:
             img = img.astype(np.float32)
-<<<<<<< HEAD
-
-        results['filename'] = filename
-        results['ori_filename'] = results['img_info']['filename']
-        results['img'] = img
-        results['img_shape'] = img.shape
-        results['ori_shape'] = img.shape
-        # Set initial values for default meta_keys
-        results['pad_shape'] = img.shape
-        results['scale_factor'] = 1.0
-        num_channels = 1 if len(img.shape) < 3 else img.shape[2]
-        results['img_norm_cfg'] = dict(
-            mean=np.zeros(num_channels, dtype=np.float32),
-            std=np.ones(num_channels, dtype=np.float32),
-            to_rgb=False)
-        return results
-=======
         return img, filename
->>>>>>> Set default values for meta keys in LoadMultiChannelImageFromFile
 
     def __repr__(self):
         repr_str = (f'{self.__class__.__name__}('
