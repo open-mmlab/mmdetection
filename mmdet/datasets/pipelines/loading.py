@@ -64,7 +64,6 @@ class LoadImageFromFile:
         Returns:
             dict: The dict contains loaded image and meta information.
         """
-
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
         img, filename = self._load_image(results)
@@ -75,13 +74,14 @@ class LoadImageFromFile:
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
         # Set initial values for default meta_keys
-        results['pad_shape'] = img.shape
-        results['scale_factor'] = 1.0
         num_channels = 1 if len(img.shape) < 3 else img.shape[2]
-        results['img_norm_cfg'] = dict(
-            mean=np.zeros(num_channels, dtype=np.float32),
-            std=np.ones(num_channels, dtype=np.float32),
-            to_rgb=False)
+        if self.__class__.__name__ == 'LoadMultiChannelImageFromFiles':
+            results['scale_factor'] = 1.0
+            results['pad_shape'] = img.shape
+            results['img_norm_cfg'] = dict(
+                mean=np.zeros(num_channels, dtype=np.float32),
+                std=np.ones(num_channels, dtype=np.float32),
+                to_rgb=False)
         results['img_fields'] = ['img']
         return results
 
@@ -150,8 +150,10 @@ class LoadMultiChannelImageFromFiles(LoadImageFromFile):
                  to_float32=False,
                  color_type='unchanged',
                  file_client_args=dict(backend='disk')):
-        super(LoadMultiChannelImageFromFiles,
-              self).__init__(to_float32, color_type, file_client_args)
+        super(LoadMultiChannelImageFromFiles, self).__init__(
+            to_float32=to_float32,
+            color_type=color_type,
+            file_client_args=file_client_args)
 
     def _load_image(self, results):
         if results['img_prefix'] is not None:
