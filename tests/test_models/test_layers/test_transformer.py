@@ -6,8 +6,7 @@ from mmengine.config import ConfigDict
 from mmdet.models.layers.transformer import (AdaptivePadding,
                                              DetrTransformerDecoder,
                                              DetrTransformerEncoder,
-                                             PatchEmbed, PatchMerging,
-                                             Transformer)
+                                             PatchEmbed, PatchMerging)
 
 
 def test_adaptive_padding():
@@ -532,39 +531,3 @@ def test_detr_transformer_dencoder_encoder_layer():
         DetrTransformerEncoder(**config)
 
 
-def test_transformer():
-    config = ConfigDict(
-        dict(
-            encoder=dict(
-                type='DetrTransformerEncoder',
-                num_layers=6,
-                transformerlayers=dict(
-                    type='BaseTransformerLayer',
-                    attn_cfgs=[
-                        dict(
-                            type='MultiheadAttention',
-                            embed_dims=256,
-                            num_heads=8,
-                            dropout=0.1)
-                    ],
-                    feedforward_channels=2048,
-                    ffn_dropout=0.1,
-                    operation_order=('self_attn', 'norm', 'ffn', 'norm'))),
-            decoder=dict(
-                type='DetrTransformerDecoder',
-                return_intermediate=True,
-                num_layers=6,
-                transformerlayers=dict(
-                    type='DetrTransformerDecoderLayer',
-                    attn_cfgs=dict(
-                        type='MultiheadAttention',
-                        embed_dims=256,
-                        num_heads=8,
-                        dropout=0.1),
-                    feedforward_channels=2048,
-                    ffn_dropout=0.1,
-                    operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
-                                     'ffn', 'norm')),
-            )))
-    transformer = Transformer(**config)
-    transformer.init_weights()

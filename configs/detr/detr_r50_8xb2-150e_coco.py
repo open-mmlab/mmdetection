@@ -3,6 +3,7 @@ _base_ = [
 ]
 model = dict(
     type='DETR',
+    num_query=100,
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
@@ -19,45 +20,50 @@ model = dict(
         norm_eval=True,
         style='pytorch',
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
+    neck=dict(
+        type='ChannelMapper',
+        in_channels=[2048],
+        kernel_size=1,
+        out_channels=256,
+        act_cfg=None,
+        norm_cfg=None,
+        num_outs=1),
+    encoder=dict(  # DetrTransformerEncoder
+        num_layers=6,
+        layer_cfg=dict(  # DetrTransformerEncoderLayer
+            self_attn_cfg=dict(  # MultiheadAttention
+                embed_dims=256,
+                num_heads=8,
+                dropout=0.1),
+            ffn_cfg=dict(
+                embed_dims=256,
+                feedforward_channels=2048,
+                num_fcs=2,
+                ffn_drop=0.1,
+                act_cfg=dict(type='ReLU', inplace=True)))),
+    decoder=dict(  # DetrTransformerDecoder
+        num_layers=6,
+        layer_cfg=dict(  # DetrTransformerDecoderLayer
+            self_attn_cfg=dict(  # MultiheadAttention
+                embed_dims=256,
+                num_heads=8,
+                dropout=0.1),
+            cross_attn_cfg=dict(  # MultiheadAttention
+                embed_dims=256,
+                num_heads=8,
+                dropout=0.1),
+            ffn_cfg=dict(
+                embed_dims=256,
+                feedforward_channels=2048,
+                num_fcs=2,
+                ffn_drop=0.1,
+                act_cfg=dict(type='ReLU', inplace=True))),
+        return_intermediate=True),
+    positional_encoding_cfg=dict(num_feats=128, normalize=True),
     bbox_head=dict(
         type='DETRHead',
         num_classes=80,
-        in_channels=2048,
-        transformer=dict(
-            type='Transformer',
-            encoder=dict(
-                type='DetrTransformerEncoder',
-                num_layers=6,
-                transformerlayers=dict(
-                    type='BaseTransformerLayer',
-                    attn_cfgs=[
-                        dict(
-                            type='MultiheadAttention',
-                            embed_dims=256,
-                            num_heads=8,
-                            dropout=0.1)
-                    ],
-                    feedforward_channels=2048,
-                    ffn_dropout=0.1,
-                    operation_order=('self_attn', 'norm', 'ffn', 'norm'))),
-            decoder=dict(
-                type='DetrTransformerDecoder',
-                return_intermediate=True,
-                num_layers=6,
-                transformerlayers=dict(
-                    type='DetrTransformerDecoderLayer',
-                    attn_cfgs=dict(
-                        type='MultiheadAttention',
-                        embed_dims=256,
-                        num_heads=8,
-                        dropout=0.1),
-                    feedforward_channels=2048,
-                    ffn_dropout=0.1,
-                    operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
-                                     'ffn', 'norm')),
-            )),
-        positional_encoding=dict(
-            type='SinePositionalEncoding', num_feats=128, normalize=True),
+        embed_dims=256,
         loss_cls=dict(
             type='CrossEntropyLoss',
             bg_cls_weight=0.1,
