@@ -3,7 +3,7 @@ import itertools
 from typing import List, Optional, Sequence, Union
 
 import numpy as np
-from mmeval import CocoMetric as _CocoMetric
+from mmeval import CocoDetectionMetric as _CocoMetric
 from terminaltables import AsciiTable
 
 from mmdet.registry import METRICS
@@ -13,7 +13,7 @@ from mmdet.structures.mask import (BitmapMasks, PolygonMasks,
 
 @METRICS.register_module()
 class CocoMetric(_CocoMetric):
-    """COCO evaluation metric.
+    """COCO object detection task evaluation metric.
 
     Evaluate AR, AP, and mAP for detection tasks including proposal/box
     detection and instance segmentation. Please refer to
@@ -44,6 +44,13 @@ class CocoMetric(_CocoMetric):
         file_client_args (dict): Arguments to instantiate a FileClient.
             See :class:`mmeval.fileio.FileClient` for details.
             Defaults to ``dict(backend='disk')``.
+        gt_mask_area (bool): Whether calculate GT mask area when not loading
+            ann_file. If True, the GT instance area will be the mask area,
+            else the bounding box area. It will not be used when loading
+            ann_file. Defaults to True.
+        dist_backend (str | None): The name of the distributed communication
+            backend. Refer to :class:`mmeval.BaseMetric`.
+            Defaults to 'torch_cuda'.
         **kwargs: Keyword parameters passed to :class:`BaseMetric`.
     """
     default_prefix: Optional[str] = 'coco'
@@ -58,6 +65,8 @@ class CocoMetric(_CocoMetric):
                  format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
                  file_client_args: dict = dict(backend='disk'),
+                 gt_mask_area: bool = True,
+                 dist_backend: str = 'torch_cuda',
                  **kwargs) -> None:
         super().__init__(
             ann_file=ann_file,
@@ -69,6 +78,8 @@ class CocoMetric(_CocoMetric):
             format_only=format_only,
             outfile_prefix=outfile_prefix,
             file_client_args=file_client_args,
+            gt_mask_area=gt_mask_area,
+            dist_backend=dist_backend,
             **kwargs)
 
     # TODO: data_batch is no longer needed, consider adjusting the
