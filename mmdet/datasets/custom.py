@@ -63,6 +63,7 @@ class CustomDataset(Dataset):
                  data_root=None,
                  img_prefix='',
                  seg_prefix=None,
+                 seg_suffix='.png',
                  proposal_file=None,
                  test_mode=False,
                  filter_empty_gt=True,
@@ -71,6 +72,7 @@ class CustomDataset(Dataset):
         self.data_root = data_root
         self.img_prefix = img_prefix
         self.seg_prefix = seg_prefix
+        self.seg_suffix = seg_suffix
         self.proposal_file = proposal_file
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
