@@ -6,8 +6,7 @@ from mmengine.config import ConfigDict
 from mmdet.models.layers.transformer import (AdaptivePadding,
                                              DetrTransformerDecoder,
                                              DetrTransformerEncoder,
-                                             PatchEmbed, PatchMerging,
-                                             Transformer)
+                                             PatchEmbed, PatchMerging)
 
 
 def test_adaptive_padding():
