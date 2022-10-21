@@ -1,26 +1,26 @@
 # Train predefined models on standard datasets
 
 MMDetection also provides out-of-the-box tools for training detection models.
-This section will show how to train _predefined_ models (under [configs](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs)) on standard datasets i.e. COCO.
+This section will show how to train _predefined_ models (under [configs](../../../configs)) on standard datasets i.e. COCO.
 
 ## Prepare datasets
 
 Training requires preparing datasets too. See section [Prepare datasets](#prepare-datasets) above for details.
 
 **Note**:
-Currently, the config files under `configs/cityscapes` use COCO pretrained weights to initialize.
+Currently, the config files under `configs/cityscapes` use COCO pre-trained weights to initialize.
 You could download the existing models in advance if the network connection is unavailable or slow. Otherwise, it would cause errors at the beginning of training.
 
-## Learning rate automatically scale
+## Learning rate auto scaling
 
-**Important**: The default learning rate in config files is for 8 GPUs and 2 sample per gpu (batch size = 8 * 2 = 16). And it had been set to `auto_scale_lr.base_batch_size` in `config/_base_/default_runtime.py`. Learning rate will be automatically scaled base on this value when the batch size is `16`. Meanwhile, in order not to affect other codebase which based on mmdet, the flag `auto_scale_lr.enable` is set to `False` by default.
+**Important**: The default learning rate in config files is for 8 GPUs and 2 sample per GPU (batch size = 8 * 2 = 16). And it had been set to `auto_scale_lr.base_batch_size` in `config/_base_/default_runtime.py`. Learning rate will be automatically scaled base on this value when the batch size is `16`. Meanwhile, in order not to affect other codebase which based on mmdet, the flag `auto_scale_lr.enable` is set to `False` by default.
 
 If you want to enable this feature, you need to add argument `--auto-scale-lr`. And you need to check the config name which you want to use before you process the command, because the config name indicates the default batch size.
 By default, it is `8 x 2 = 16 batch size`, like `faster_rcnn_r50_caffe_fpn_90k_coco.py` or `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`. In other cases, you will see the config file name have `_NxM_` in dictating, like `cornernet_hourglass104_mstest_32x3_210e_coco.py` which batch size is `32 x 3 = 96`, or `scnet_x101_64x4d_fpn_8x1_20e_coco.py` which batch size is `8 x 1 = 8`.
 
 **Please remember to check the bottom of the specific config file you want to use, it will have `auto_scale_lr.base_batch_size` if the batch size is not `16`. If you can't find those values, check the config file which in `_base_=[xxx]` and you will find it. Please do not modify its values if you want to automatically scale the LR.**
 
-Learning rate automatically scale basic usage is as follows.
+The basic usage of learning rate auto scaling is as follows.
 
 ```shell
 python tools/train.py \
@@ -29,7 +29,7 @@ python tools/train.py \
     [optional arguments]
 ```
 
-If you enabled this feature, the learning rate will be automatically scaled according to the number of GPUs of the machine and the batch size of training. See [linear scaling rule](https://arxiv.org/abs/1706.02677) for details. For example, If there are 4 GPUs and 2 pictures on each GPU, `lr = 0.01`, then if there are 16 GPUs and 4 pictures on each GPU, it will automatically scale to `lr = 0.08`.
+If you enabled this feature, the learning rate will be automatically scaled according to the number of GPUs on the machine and the batch size of training. See [linear scaling rule](https://arxiv.org/abs/1706.02677) for details. For example, If there are 4 GPUs and 2 pictures on each GPU, `lr = 0.01`, then if there are 16 GPUs and 4 pictures on each GPU, it will automatically scale to `lr = 0.08`.
 
 If you don't want to use it, you need to calculate the learning rate according to the [linear scaling rule](https://arxiv.org/abs/1706.02677) manually then change `optimizer.lr` in specific config file.
 
@@ -49,7 +49,7 @@ During training, log files and checkpoints will be saved to the working director
 By default, the model is evaluated on the validation set every epoch, the evaluation interval can be specified in the config file as shown below.
 
 ```python
-# evaluate the model every 12 epoch.
+# evaluate the model every 12 epochs.
 train_cfg = dict(val_interval=12)
 ```
 
@@ -71,7 +71,7 @@ And then run the script [above](#training-on-a-single-GPU).
 
 **Note**:
 
-We do not recommend users to use CPU for training because it is too slow. We support this feature to allow users to debug on machines without GPU for convenience.
+We do not recommend users to use the CPU for training because it is too slow. We support this feature to allow users to debug on machines without GPU for convenience.
 
 ## Training on multiple GPUs
 
@@ -92,7 +92,7 @@ Optional arguments remain the same as stated [above](#training-on-a-single-GPU).
 If you would like to launch multiple jobs on a single machine, e.g., 2 jobs of 4-GPU training on a machine with 8 GPUs,
 you need to specify different ports (29500 by default) for each job to avoid communication conflict.
 
-If you use `dist_train.sh` to launch training jobs, you can set the port in commands.
+If you use `dist_train.sh` to launch training jobs, you can set the port in the commands.
 
 ```shell
 CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=29500 ./tools/dist_train.sh ${CONFIG_FILE} 4
@@ -101,7 +101,7 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
 
 ## Train with multiple machines
 
-If you launch with multiple machines simply connected with ethernet, you can simply run following commands:
+If you launch with multiple machines simply connected with ethernet, you can simply run the following commands:
 
 On the first machine:
 
@@ -115,7 +115,7 @@ On the second machine:
 NNODES=2 NODE_RANK=1 PORT=$MASTER_PORT MASTER_ADDR=$MASTER_ADDR sh tools/dist_train.sh $CONFIG $GPUS
 ```
 
-Usually it is slow if you do not have high speed networking like InfiniBand.
+Usually, it is slow if you do not have high-speed networking like InfiniBand.
 
 ## Manage jobs with Slurm
 
@@ -134,9 +134,9 @@ Below is an example of using 16 GPUs to train Mask R-CNN on a Slurm partition na
 GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask-rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
 ```
 
-You can check [the source code](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/tools/slurm_train.sh) to review full arguments and environment variables.
+You can check [the source code](../../../tools/slurm_train.sh) to review full arguments and environment variables.
 
-When using Slurm, the port option need to be set in one of the following ways:
+When using Slurm, the port option needs to be set in one of the following ways:
 
 1. Set the port through `--options`. This is more recommended since it does not change the original configs.
 
@@ -174,7 +174,7 @@ The basic steps are as below:
 
 1. Prepare the customized dataset
 2. Prepare a config
-3. Train, test, inference models on the customized dataset.
+3. Train, test, and infer models on the customized dataset.
 
 ## Prepare the customized dataset
 
@@ -184,15 +184,15 @@ There are three ways to support a new dataset in MMDetection:
 2. Reorganize the dataset into a middle format.
 3. Implement a new dataset.
 
-Usually we recommend using the first two methods which are usually easier than the third.
+Usually, we recommend using the first two methods which are usually easier than the third.
 
-In this note, we give an example for converting the data into COCO format.
+In this note, we give an example of converting the data into COCO format.
 
-**Note**: Datasets and metrics have been decoupled except CityScapes since MMDetection 3.0 . Therefore, uers can use any kind of evaluation metrics for any format of datasets during validation. For example: evaluate on COCO dataset with VOC metric, or evaluate on OpenImages dataset with both VOC and COCO metrics.
+**Note**: Datasets and metrics have been decoupled except CityScapes since MMDetection 3.0. Therefore, users can use any kind of evaluation metrics for any format of datasets during validation. For example: evaluate on COCO dataset with VOC metric, or evaluate on OpenImages dataset with both VOC and COCO metrics.
 
 ### COCO annotation format
 
-The necessary keys of COCO format for instance segmentation is as below, for the complete details, please refer [here](https://cocodataset.org/#format-data).
+The necessary keys of COCO format for instance segmentation are as below, for the complete details, please refer [here](https://cocodataset.org/#format-data).
 
 ```json
 {

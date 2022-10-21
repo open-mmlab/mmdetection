@@ -10,7 +10,7 @@ log file. Run `pip install seaborn` first to install the dependency.
 python tools/analysis_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--eval-interval ${EVALUATION_INTERVAL}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
 ```
 
-![loss curve image](../../resources/loss_curve.png)
+![loss curve image](../../../resources/loss_curve.png)
 
 Examples:
 
@@ -151,7 +151,7 @@ Assume that you have got [Mask R-CNN checkpoint file](https://download.openmmlab
 You can modify the test_evaluator to save the results bbox by:
 
 1. Find which dataset in 'configs/base/datasets' the current config corresponds to.
-2. Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in dateset config.
+2. Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in dataset config.
 3. Use the following command to get the results bbox and segmentation json file.
 
 ```shell
@@ -160,7 +160,7 @@ python tools/test.py \
        checkpoint/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
 ```
 
-1. Get COCO bbox error results per category , save analyze result images to the directory(In  [config](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets/coco_instance.py) the default directory is './work_dirs/coco_instance/test')
+1. Get COCO bbox error results per category , save analyze result images to the directory(In  [config](../../../configs/_base_/datasets/coco_instance.py) the default directory is './work_dirs/coco_instance/test')
 
 ```shell
 python tools/analysis_tools/coco_error_analysis.py \
@@ -397,7 +397,7 @@ python tools/misc/download_dataset.py --dataset-name lvis
 ```shell
 python -m torch.distributed.launch --nproc_per_node=1 --master_port=${PORT} tools/analysis_tools/benchmark.py \
     ${CONFIG} \
-    ${CHECKPOINT} \
+    [--checkpoint ${CHECKPOINT}] \
     [--repeat-num ${REPEAT_NUM}] \
     [--max-iter ${MAX_ITER}] \
     [--log-interval ${LOG_INTERVAL}] \

@@ -74,12 +74,10 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 最新进展
 
-**v3.0.0rc0** 版本已经在 2022.8.31 发布：
+**v3.0.0rc2** 版本已经在 2022.10.21 发布：
 
-- 基于 [MMEngine](https://github.com/open-mmlab/mmengine) 统一了各组件接口。
-- 全面支持混合精度，训练测试速度更快。
-- 提供了更强的基线模型，并支持了通用的半监督目标检测框架，详见[半监督目标检测教程](https://mmdetection.readthedocs.io/zh_CN/v3.0.0rc0/user_guides/semi_det.html)。
-- 支持使用任意单阶段检测器作为二阶段模型的 RPN，详见[教程](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/single_stage_as_rpn.html)。
+- 支持在 [ImageNet 上预训练](configs/rtmdet/cspnext_imagenet_pretrain) RTMDet 的骨干网络。
+- 重构 Standard RoI Head 以支持 `box type`。
 
 ## 安装
 
@@ -122,7 +120,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
   </details>
 
-我们提供了 [检测的 colab 教程](demo/MMDet_Tutorial.ipynb) 和 [实例分割的 colab 教程](demo/MMDet_InstanceSeg_Tutorial.ipynb)
+我们提供了检测的 colab 教程 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](demo/MMDet_Tutorial.ipynb) 和 实例分割的 colab 教程 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](demo/MMDet_Tutorial.ipynb)
 
 同时，我们还提供了 [MMDetection 中文解读文案汇总](docs/zh_cn/article.md)
 
@@ -367,6 +365,7 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 - [MMDetection](https://github.com/open-mmlab/mmdetection): OpenMMLab 目标检测工具箱
 - [MMDetection3D](https://github.com/open-mmlab/mmdetection3d): OpenMMLab 新一代通用 3D 目标检测平台
 - [MMRotate](https://github.com/open-mmlab/mmrotate): OpenMMLab 旋转框检测工具箱与测试基准
+- [MMYOLO](https://github.com/open-mmlab/mmyolo): OpenMMLab YOLO 系列工具箱与测试基准
 - [MMSegmentation](https://github.com/open-mmlab/mmsegmentation): OpenMMLab 语义分割工具箱
 - [MMOCR](https://github.com/open-mmlab/mmocr): OpenMMLab 全流程文字检测识别理解工具包
 - [MMPose](https://github.com/open-mmlab/mmpose): OpenMMLab 姿态估计工具箱

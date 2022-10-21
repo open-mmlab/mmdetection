@@ -12,6 +12,8 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS
+from mmdet.structures.bbox import (cat_boxes, empty_box_as, get_box_tensor,
+                                   get_box_wh, scale_boxes)
 from mmdet.utils import InstanceList, MultiConfig, OptInstanceList
 from .anchor_head import AnchorHead
 
@@ -71,8 +73,9 @@ class RPNHead(AnchorHead):
         self.rpn_cls = nn.Conv2d(self.feat_channels,
                                  self.num_base_priors * self.cls_out_channels,
                                  1)
-        self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_base_priors * 4,
-                                 1)
+        reg_dim = self.bbox_coder.encode_size
+        self.rpn_reg = nn.Conv2d(self.feat_channels,
+                                 self.num_base_priors * reg_dim, 1)
 
     def forward_single(self, x: Tensor) -> Tuple[Tensor, Tensor]:
         """Forward feature of a single scale level.
@@ -187,7 +190,8 @@ class RPNHead(AnchorHead):
                               mlvl_priors)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
 
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+            reg_dim = self.bbox_coder.encode_size
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, reg_dim)
             cls_score = cls_score.permute(1, 2,
                                           0).reshape(-1, self.cls_out_channels)
             if self.use_sigmoid_cls:
@@ -205,7 +209,7 @@ class RPNHead(AnchorHead):
                 topk_inds = rank_inds[:nms_pre]
                 scores = ranked_scores[:nms_pre]
                 bbox_pred = bbox_pred[topk_inds, :]
-                priors = priors[topk_inds, :]
+                priors = priors[topk_inds]
 
             mlvl_bbox_preds.append(bbox_pred)
             mlvl_valid_priors.append(priors)
@@ -218,7 +222,7 @@ class RPNHead(AnchorHead):
                                 dtype=torch.long))
 
         bbox_pred = torch.cat(mlvl_bbox_preds)
-        priors = torch.cat(mlvl_valid_priors)
+        priors = cat_boxes(mlvl_valid_priors)
         bboxes = self.bbox_coder.decode(priors, bbox_pred, max_shape=img_shape)
 
         results = InstanceData()
@@ -265,19 +269,19 @@ class RPNHead(AnchorHead):
         assert with_nms, '`with_nms` must be True in RPNHead'
         if rescale:
             assert img_meta.get('scale_factor') is not None
-            results.bboxes /= results.bboxes.new_tensor(
-                img_meta['scale_factor']).repeat((1, 2))
+            scale_factor = [1 / s for s in img_meta['scale_factor']]
+            results.bboxes = scale_boxes(results.bboxes, scale_factor)
 
         # filter small size bboxes
         if cfg.get('min_bbox_size', -1) >= 0:
-            w = results.bboxes[:, 2] - results.bboxes[:, 0]
-            h = results.bboxes[:, 3] - results.bboxes[:, 1]
+            w, h = get_box_wh(results.bboxes)
             valid_mask = (w > cfg.min_bbox_size) & (h > cfg.min_bbox_size)
             if not valid_mask.all():
                 results = results[valid_mask]
 
         if results.bboxes.numel() > 0:
-            det_bboxes, keep_idxs = batched_nms(results.bboxes, results.scores,
+            bboxes = get_box_tensor(results.bboxes)
+            det_bboxes, keep_idxs = batched_nms(bboxes, results.scores,
                                                 results.level_ids, cfg.nms)
             results = results[keep_idxs]
             # some nms would reweight the score, such as softnms
@@ -291,7 +295,7 @@ class RPNHead(AnchorHead):
         else:
             # To avoid some potential error
             results_ = InstanceData()
-            results_.bboxes = results.scores.new_zeros(0, 4)
+            results_.bboxes = empty_box_as(results.bboxes)
             results_.scores = results.scores.new_zeros(0)
             results_.labels = results.scores.new_zeros(0)
             results = results_

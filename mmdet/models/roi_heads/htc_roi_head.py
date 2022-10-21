@@ -32,7 +32,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         interleaved (bool): Whether to interleaves the box branch and mask
             branch. If True, the mask branch can take the refined bounding
             box predictions. Defaults to True.
-        mask_info_flow (bool): Whether ro turn on the mask information flow,
+        mask_info_flow (bool): Whether to turn on the mask information flow,
             which means that feeding the mask features of the preceding stage
             to the current stage. Defaults to True.
     """

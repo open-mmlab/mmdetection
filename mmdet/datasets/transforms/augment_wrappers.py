@@ -241,7 +241,8 @@ class RandAugment(RandomChoice):
     @cache_randomness
     def random_pipeline_index(self):
         indices = np.arange(len(self.transforms))
-        return np.random.choice(indices, self.aug_num, p=self.prob)
+        return np.random.choice(
+            indices, self.aug_num, p=self.prob, replace=False)
 
     def transform(self, results: dict) -> dict:
         """Transform function to use RandAugment.

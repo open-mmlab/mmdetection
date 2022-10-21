@@ -1,16 +1,17 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from functools import partial
-from typing import List, Union
+from typing import List, Sequence, Union
 
 import numpy as np
 import torch
 from mmengine.structures import InstanceData
+from mmengine.utils import digit_version
 from six.moves import map, zip
 from torch.autograd import Function
 from torch.nn import functional as F
 
 from mmdet.structures import SampleList
-from mmdet.structures.bbox import BaseBoxes
+from mmdet.structures.bbox import BaseBoxes, get_box_type, stack_boxes
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from mmdet.utils import OptInstanceList
 
@@ -120,12 +121,13 @@ def unpack_gt_instances(batch_data_samples: SampleList) -> tuple:
     return batch_gt_instances, batch_gt_instances_ignore, batch_img_metas
 
 
-def empty_instances(
-        batch_img_metas: List[dict],
-        device: torch.device,
-        task_type: str,
-        instance_results: OptInstanceList = None,
-        mask_thr_binary: Union[int, float] = 0) -> List[InstanceData]:
+def empty_instances(batch_img_metas: List[dict],
+                    device: torch.device,
+                    task_type: str,
+                    instance_results: OptInstanceList = None,
+                    mask_thr_binary: Union[int, float] = 0,
+                    box_type: Union[str, type] = 'hbox',
+                    use_box_type: bool = False) -> List[InstanceData]:
     """Handle predicted instances when RoI is empty.
 
     Note: If ``instance_results`` is not None, it will be modified
@@ -140,6 +142,9 @@ def empty_instances(
             results.
         mask_thr_binary (int, float): mask binarization threshold.
             Defaults to 0.
+        box_type (str or type): The empty box type. Defaults to `hbox`.
+        use_box_type (bool): Whether to warp boxes with the box type.
+            Defaults to False.
 
     Returns:
         list[:obj:`InstanceData`]: Detection results of each image
@@ -159,7 +164,11 @@ def empty_instances(
             results = InstanceData()
 
         if task_type == 'bbox':
-            results.bboxes = torch.zeros(0, 4, device=device)
+            _, box_type = get_box_type(box_type)
+            bboxes = torch.zeros(0, box_type.box_dim, device=device)
+            if use_box_type:
+                bboxes = box_type(bboxes, clone=False)
+            results.bboxes = bboxes
             results.scores = torch.zeros((0, ), device=device)
             results.labels = torch.zeros((0, ),
                                          device=device,
@@ -412,7 +421,7 @@ def images_to_levels(target, num_levels):
 
     [target_img0, target_img1] -> [target_level0, target_level1, ...]
     """
-    target = torch.stack(target, 0)
+    target = stack_boxes(target, 0)
     level_targets = []
     start = 0
     for n in num_levels:
@@ -423,7 +432,7 @@ def images_to_levels(target, num_levels):
     return level_targets
 
 
-def samplelist_boxlist2tensor(batch_data_samples: SampleList) -> SampleList:
+def samplelist_boxtype2tensor(batch_data_samples: SampleList) -> SampleList:
     for data_samples in batch_data_samples:
         if 'gt_instances' in data_samples:
             bboxes = data_samples.gt_instances.get('bboxes', None)
@@ -437,3 +446,117 @@ def samplelist_boxlist2tensor(batch_data_samples: SampleList) -> SampleList:
             bboxes = data_samples.ignored_instances.get('bboxes', None)
             if isinstance(bboxes, BaseBoxes):
                 data_samples.ignored_instances.bboxes = bboxes.tensor
+
+
+_torch_version_div_indexing = (
+    'parrots' not in torch.__version__
+    and digit_version(torch.__version__) >= digit_version('1.8'))
+
+
+def floordiv(dividend, divisor, rounding_mode='trunc'):
+    if _torch_version_div_indexing:
+        return torch.div(dividend, divisor, rounding_mode=rounding_mode)
+    else:
+        return dividend // divisor
+
+
+def _filter_gt_instances_by_score(batch_data_samples: SampleList,
+                                  score_thr: float) -> SampleList:
+    """Filter ground truth (GT) instances by score.
+
+    Args:
+        batch_data_samples (SampleList): The Data
+            Samples. It usually includes information such as
+            `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+        score_thr (float): The score filter threshold.
+
+    Returns:
+        SampleList: The Data Samples filtered by score.
+    """
+    for data_samples in batch_data_samples:
+        assert 'scores' in data_samples.gt_instances, \
+            'there does not exit scores in instances'
+        if data_samples.gt_instances.bboxes.shape[0] > 0:
+            data_samples.gt_instances = data_samples.gt_instances[
+                data_samples.gt_instances.scores > score_thr]
+    return batch_data_samples
+
+
+def _filter_gt_instances_by_size(batch_data_samples: SampleList,
+                                 wh_thr: tuple) -> SampleList:
+    """Filter ground truth (GT) instances by size.
+
+    Args:
+        batch_data_samples (SampleList): The Data
+            Samples. It usually includes information such as
+            `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+        wh_thr (tuple):  Minimum width and height of bbox.
+
+    Returns:
+        SampleList: The Data Samples filtered by score.
+    """
+    for data_samples in batch_data_samples:
+        bboxes = data_samples.gt_instances.bboxes
+        if bboxes.shape[0] > 0:
+            w = bboxes[:, 2] - bboxes[:, 0]
+            h = bboxes[:, 3] - bboxes[:, 1]
+            data_samples.gt_instances = data_samples.gt_instances[
+                (w > wh_thr[0]) & (h > wh_thr[1])]
+    return batch_data_samples
+
+
+def filter_gt_instances(batch_data_samples: SampleList,
+                        score_thr: float = None,
+                        wh_thr: tuple = None):
+    """Filter ground truth (GT) instances by score and/or size.
+
+    Args:
+        batch_data_samples (SampleList): The Data
+            Samples. It usually includes information such as
+            `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+        score_thr (float): The score filter threshold.
+        wh_thr (tuple):  Minimum width and height of bbox.
+
+    Returns:
+        SampleList: The Data Samples filtered by score and/or size.
+    """
+
+    if score_thr is not None:
+        batch_data_samples = _filter_gt_instances_by_score(
+            batch_data_samples, score_thr)
+    if wh_thr is not None:
+        batch_data_samples = _filter_gt_instances_by_size(
+            batch_data_samples, wh_thr)
+    return batch_data_samples
+
+
+def rename_loss_dict(prefix: str, losses: dict) -> dict:
+    """Rename the key names in loss dict by adding a prefix.
+
+    Args:
+        prefix (str): The prefix for loss components.
+        losses (dict):  A dictionary of loss components.
+
+    Returns:
+            dict: A dictionary of loss components with prefix.
+    """
+    return {prefix + k: v for k, v in losses.items()}
+
+
+def reweight_loss_dict(losses: dict, weight: float) -> dict:
+    """Reweight losses in the dict by weight.
+
+    Args:
+        losses (dict):  A dictionary of loss components.
+        weight (float): Weight for loss components.
+
+    Returns:
+            dict: A dictionary of weighted loss components.
+    """
+    for name, loss in losses.items():
+        if 'loss' in name:
+            if isinstance(loss, Sequence):
+                losses[name] = [item * weight for item in loss]
+            else:
+                losses[name] = loss * weight
+    return losses

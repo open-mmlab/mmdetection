@@ -141,9 +141,9 @@ class Mask2FormerHead(MaskFormerHead):
         self.test_cfg = test_cfg
         self.train_cfg = train_cfg
         if train_cfg:
-            self.assigner = TASK_UTILS.build(self.train_cfg.assigner)
+            self.assigner = TASK_UTILS.build(self.train_cfg['assigner'])
             self.sampler = TASK_UTILS.build(
-                self.train_cfg.sampler, default_args=dict(context=self))
+                self.train_cfg['sampler'], default_args=dict(context=self))
             self.num_points = self.train_cfg.get('num_points', 12544)
             self.oversample_ratio = self.train_cfg.get('oversample_ratio', 3.0)
             self.importance_sample_ratio = self.train_cfg.get(

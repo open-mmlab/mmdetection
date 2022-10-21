@@ -32,7 +32,8 @@ from scipy.optimize import differential_evolution
 from mmdet.datasets import build_dataset
 from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_overlaps,
                                    bbox_xyxy_to_cxcywh)
-from mmdet.utils import replace_cfg_vals, update_data_root
+from mmdet.utils import (register_all_modules, replace_cfg_vals,
+                         update_data_root)
 
 
 def parse_args():
@@ -109,14 +110,15 @@ class BaseAnchorOptimizer:
         img_shapes = []
         prog_bar = ProgressBar(len(self.dataset))
         for idx in range(len(self.dataset)):
-            ann = self.dataset.get_ann_info(idx)
-            data_info = self.dataset.data_infos[idx]
+            data_info = self.dataset.get_data_info(idx)
             img_shape = np.array([data_info['width'], data_info['height']])
-            gt_bboxes = ann['bboxes']
-            for bbox in gt_bboxes:
+            gt_instances = data_info['instances']
+            for instance in gt_instances:
+                bbox = np.array(instance['bbox'])
                 wh = bbox[2:4] - bbox[0:2]
                 img_shapes.append(img_shape)
                 bbox_whs.append(wh)
+
             prog_bar.update()
         print('\n')
         bbox_whs = np.array(bbox_whs)
@@ -327,6 +329,7 @@ def main():
     args = parse_args()
     cfg = args.config
     cfg = Config.fromfile(cfg)
+    register_all_modules()
 
     # replace the ${key} with the value of cfg.key
     cfg = replace_cfg_vals(cfg)
@@ -344,7 +347,7 @@ def main():
     base_sizes = cfg.model.bbox_head.anchor_generator.base_sizes
     num_anchors = sum([len(sizes) for sizes in base_sizes])
 
-    train_data_cfg = cfg.data.train
+    train_data_cfg = cfg.train_dataloader
     while 'dataset' in train_data_cfg:
         train_data_cfg = train_data_cfg['dataset']
     dataset = build_dataset(train_data_cfg)

@@ -112,9 +112,10 @@ class RepPointsHead(AnchorFreeHead):
             self.point_strides, offset=0.)
 
         if self.train_cfg:
-            self.init_assigner = TASK_UTILS.build(self.train_cfg.init.assigner)
+            self.init_assigner = TASK_UTILS.build(
+                self.train_cfg['init']['assigner'])
             self.refine_assigner = TASK_UTILS.build(
-                self.train_cfg.refine.assigner)
+                self.train_cfg['refine']['assigner'])
 
             if self.train_cfg.get('sampler', None) is not None:
                 self.sampler = TASK_UTILS.build(
@@ -435,10 +436,10 @@ class RepPointsHead(AnchorFreeHead):
 
         if stage == 'init':
             assigner = self.init_assigner
-            pos_weight = self.train_cfg.init.pos_weight
+            pos_weight = self.train_cfg['init']['pos_weight']
         else:
             assigner = self.refine_assigner
-            pos_weight = self.train_cfg.refine.pos_weight
+            pos_weight = self.train_cfg['refine']['pos_weight']
 
         assign_result = assigner.assign(pred_instances, gt_instances,
                                         gt_instances_ignore)
@@ -473,7 +474,11 @@ class RepPointsHead(AnchorFreeHead):
         # map up to original set of proposals
         if unmap_outputs:
             num_total_proposals = flat_proposals.size(0)
-            labels = unmap(labels, num_total_proposals, inside_flags)
+            labels = unmap(
+                labels,
+                num_total_proposals,
+                inside_flags,
+                fill=self.num_classes)  # fill bg label
             label_weights = unmap(label_weights, num_total_proposals,
                                   inside_flags)
             bbox_gt = unmap(bbox_gt, num_total_proposals, inside_flags)
@@ -689,7 +694,7 @@ class RepPointsHead(AnchorFreeHead):
                                                        batch_img_metas, device)
         pts_coordinate_preds_init = self.offset_to_pts(center_list,
                                                        pts_preds_init)
-        if self.train_cfg.init.assigner['type'] == 'PointAssigner':
+        if self.train_cfg['init']['assigner']['type'] == 'PointAssigner':
             # Assign target for center list
             candidate_list = center_list
         else:

@@ -8,6 +8,7 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures.bbox import BaseBoxes, cat_boxes, get_box_tensor
 from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
                          OptInstanceList, OptMultiConfig)
 from ..task_modules.prior_generators import (AnchorGenerator,
@@ -85,10 +86,10 @@ class AnchorHead(BaseDenseHead):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         if self.train_cfg:
-            self.assigner = TASK_UTILS.build(self.train_cfg.assigner)
+            self.assigner = TASK_UTILS.build(self.train_cfg['assigner'])
             if train_cfg.get('sampler', None) is not None:
                 self.sampler = TASK_UTILS.build(
-                    self.train_cfg.sampler, default_args=dict(context=self))
+                    self.train_cfg['sampler'], default_args=dict(context=self))
             else:
                 self.sampler = PseudoSampler(context=self)
 
@@ -120,8 +121,9 @@ class AnchorHead(BaseDenseHead):
         self.conv_cls = nn.Conv2d(self.in_channels,
                                   self.num_base_priors * self.cls_out_channels,
                                   1)
-        self.conv_reg = nn.Conv2d(self.in_channels, self.num_base_priors * 4,
-                                  1)
+        reg_dim = self.bbox_coder.encode_size
+        self.conv_reg = nn.Conv2d(self.in_channels,
+                                  self.num_base_priors * reg_dim, 1)
 
     def forward_single(self, x: Tensor) -> Tuple[Tensor, Tensor]:
         """Forward feature of a single scale level.
@@ -197,7 +199,7 @@ class AnchorHead(BaseDenseHead):
         return anchor_list, valid_flag_list
 
     def _get_targets_single(self,
-                            flat_anchors: Tensor,
+                            flat_anchors: Union[Tensor, BaseBoxes],
                             valid_flags: Tensor,
                             gt_instances: InstanceData,
                             img_meta: dict,
@@ -207,8 +209,9 @@ class AnchorHead(BaseDenseHead):
         single image.
 
         Args:
-            flat_anchors (Tensor): Multi-level anchors of the image, which are
-                concatenated into a single tensor of shape (num_anchors, 4)
+            flat_anchors (Tensor or :obj:`BaseBoxes`): Multi-level anchors
+                of the image, which are concatenated into a single tensor
+                or box type of shape (num_anchors, 4)
             valid_flags (Tensor): Multi level valid flags of the image,
                 which are concatenated into a single tensor of
                     shape (num_anchors, ).
@@ -236,14 +239,14 @@ class AnchorHead(BaseDenseHead):
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
-                                           self.train_cfg.allowed_border)
+                                           self.train_cfg['allowed_border'])
         if not inside_flags.any():
             raise ValueError(
                 'There is no valid anchor inside the image boundary. Please '
                 'check the image size and anchor sizes, or set '
                 '``allowed_border`` to -1 to skip the condition.')
         # assign gt and sample anchors
-        anchors = flat_anchors[inside_flags, :]
+        anchors = flat_anchors[inside_flags]
 
         pred_instances = InstanceData(priors=anchors)
         assign_result = self.assigner.assign(pred_instances, gt_instances,
@@ -254,8 +257,10 @@ class AnchorHead(BaseDenseHead):
                                               gt_instances)
 
         num_valid_anchors = anchors.shape[0]
-        bbox_targets = torch.zeros_like(anchors)
-        bbox_weights = torch.zeros_like(anchors)
+        target_dim = gt_instances.bboxes.size(-1) if self.reg_decoded_bbox \
+            else self.bbox_coder.encode_size
+        bbox_targets = anchors.new_zeros(num_valid_anchors, target_dim)
+        bbox_weights = anchors.new_zeros(num_valid_anchors, target_dim)
 
         # TODO: Considering saving memory, is it necessary to be long?
         labels = anchors.new_full((num_valid_anchors, ),
@@ -265,20 +270,24 @@ class AnchorHead(BaseDenseHead):
 
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
+        # `bbox_coder.encode` accepts tensor or box type inputs and generates
+        # tensor targets. If regressing decoded boxes, the code will convert
+        # box type `pos_bbox_targets` to tensor.
         if len(pos_inds) > 0:
             if not self.reg_decoded_bbox:
                 pos_bbox_targets = self.bbox_coder.encode(
                     sampling_result.pos_priors, sampling_result.pos_gt_bboxes)
             else:
                 pos_bbox_targets = sampling_result.pos_gt_bboxes
+                pos_bbox_targets = get_box_tensor(pos_bbox_targets)
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
 
             labels[pos_inds] = sampling_result.pos_gt_labels
-            if self.train_cfg.pos_weight <= 0:
+            if self.train_cfg['pos_weight'] <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
+                label_weights[pos_inds] = self.train_cfg['pos_weight']
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 
@@ -362,7 +371,7 @@ class AnchorHead(BaseDenseHead):
         concat_valid_flag_list = []
         for i in range(num_imgs):
             assert len(anchor_list[i]) == len(valid_flag_list[i])
-            concat_anchor_list.append(torch.cat(anchor_list[i]))
+            concat_anchor_list.append(cat_boxes(anchor_list[i]))
             concat_valid_flag_list.append(torch.cat(valid_flag_list[i]))
 
         # compute targets for each image
@@ -438,15 +447,19 @@ class AnchorHead(BaseDenseHead):
         loss_cls = self.loss_cls(
             cls_score, labels, label_weights, avg_factor=avg_factor)
         # regression loss
-        bbox_targets = bbox_targets.reshape(-1, 4)
-        bbox_weights = bbox_weights.reshape(-1, 4)
-        bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
+        target_dim = bbox_targets.size(-1)
+        bbox_targets = bbox_targets.reshape(-1, target_dim)
+        bbox_weights = bbox_weights.reshape(-1, target_dim)
+        bbox_pred = bbox_pred.permute(0, 2, 3,
+                                      1).reshape(-1,
+                                                 self.bbox_coder.encode_size)
         if self.reg_decoded_bbox:
             # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
             # is applied directly on the decoded bounding boxes, it
             # decodes the already encoded coordinates to absolute format.
-            anchors = anchors.reshape(-1, 4)
+            anchors = anchors.reshape(-1, anchors.size(-1))
             bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
+            bbox_pred = get_box_tensor(bbox_pred)
         loss_bbox = self.loss_bbox(
             bbox_pred, bbox_targets, bbox_weights, avg_factor=avg_factor)
         return loss_cls, loss_bbox
@@ -500,7 +513,7 @@ class AnchorHead(BaseDenseHead):
         # concat all level anchors and flags to a single tensor
         concat_anchor_list = []
         for i in range(len(anchor_list)):
-            concat_anchor_list.append(torch.cat(anchor_list[i]))
+            concat_anchor_list.append(cat_boxes(anchor_list[i]))
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
 

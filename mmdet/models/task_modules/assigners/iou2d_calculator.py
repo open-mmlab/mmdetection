@@ -2,7 +2,7 @@
 import torch
 
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import bbox_overlaps
+from mmdet.structures.bbox import bbox_overlaps, get_box_tensor
 
 
 def cast_tensor_type(x, scale=1., dtype=None):
@@ -24,12 +24,13 @@ class BboxOverlaps2D:
         """Calculate IoU between 2D bboxes.
 
         Args:
-            bboxes1 (Tensor): bboxes have shape (m, 4) in <x1, y1, x2, y2>
-                format, or shape (m, 5) in <x1, y1, x2, y2, score> format.
-            bboxes2 (Tensor): bboxes have shape (m, 4) in <x1, y1, x2, y2>
-                format, shape (m, 5) in <x1, y1, x2, y2, score> format, or be
-                empty. If ``is_aligned `` is ``True``, then m and n must be
-                equal.
+            bboxes1 (Tensor or :obj:`BaseBoxes`): bboxes have shape (m, 4)
+                in <x1, y1, x2, y2> format, or shape (m, 5) in <x1, y1, x2,
+                y2, score> format.
+            bboxes2 (Tensor or :obj:`BaseBoxes`): bboxes have shape (m, 4)
+                in <x1, y1, x2, y2> format, shape (m, 5) in <x1, y1, x2, y2,
+                score> format, or be empty. If ``is_aligned `` is ``True``,
+                then m and n must be equal.
             mode (str): "iou" (intersection over union), "iof" (intersection
                 over foreground), or "giou" (generalized intersection over
                 union).
@@ -39,6 +40,8 @@ class BboxOverlaps2D:
         Returns:
             Tensor: shape (m, n) if ``is_aligned `` is False else shape (m,)
         """
+        bboxes1 = get_box_tensor(bboxes1)
+        bboxes2 = get_box_tensor(bboxes2)
         assert bboxes1.size(-1) in [0, 4, 5]
         assert bboxes2.size(-1) in [0, 4, 5]
         if bboxes2.size(-1) == 5:

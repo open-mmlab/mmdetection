@@ -202,14 +202,15 @@ class GuidedAnchorHead(AnchorHead):
             # use PseudoSampler when no sampler in train_cfg
             if train_cfg.get('sampler', None) is not None:
                 self.sampler = TASK_UTILS.build(
-                    self.train_cfg.sampler, default_args=dict(context=self))
+                    self.train_cfg['sampler'], default_args=dict(context=self))
             else:
                 self.sampler = PseudoSampler()
 
             self.ga_assigner = TASK_UTILS.build(self.train_cfg['ga_assigner'])
             if train_cfg.get('ga_sampler', None) is not None:
                 self.ga_sampler = TASK_UTILS.build(
-                    self.train_cfg.ga_sampler, default_args=dict(context=self))
+                    self.train_cfg['ga_sampler'],
+                    default_args=dict(context=self))
             else:
                 self.ga_sampler = PseudoSampler()
 
@@ -293,7 +294,7 @@ class GuidedAnchorHead(AnchorHead):
                     inside_flags = anchor_inside_flags(
                         split_approxs, split_valid_flags,
                         img_meta['img_shape'][:2],
-                        self.train_cfg.allowed_border)
+                        self.train_cfg['allowed_border'])
                     inside_flags_list.append(inside_flags)
                 # inside_flag for a position is true if any anchor in this
                 # position is true
@@ -417,8 +418,8 @@ class GuidedAnchorHead(AnchorHead):
             assert (stride[0] == stride[1])
         anchor_strides = [stride[0] for stride in anchor_strides]
 
-        center_ratio = self.train_cfg.center_ratio
-        ignore_ratio = self.train_cfg.ignore_ratio
+        center_ratio = self.train_cfg['center_ratio']
+        ignore_ratio = self.train_cfg['ignore_ratio']
         img_per_gpu = len(batch_gt_instances)
         num_lvls = len(featmap_sizes)
         r1 = (1 - center_ratio) / 2
