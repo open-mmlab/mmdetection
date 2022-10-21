@@ -1,8 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import itertools
+import os.path as osp
 from typing import List, Optional, Sequence, Union
 
 import numpy as np
+from mmengine.logging import print_log
 from mmeval import CocoDetectionMetric as _CocoMetric
 from terminaltables import AsciiTable
 
@@ -41,9 +43,8 @@ class CocoMetric(_CocoMetric):
         outfile_prefix (str, optional): The prefix of json files. It includes
             the file path and the prefix of filename, e.g., "a/b/prefix".
             If not specified, a temp file will be created. Defaults to None.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmeval.fileio.FileClient` for details.
-            Defaults to ``dict(backend='disk')``.
+        backend_args (dict, optional): Arguments to instantiate the
+            preifx of uri corresponding backend. Defaults to None.
         gt_mask_area (bool): Whether calculate GT mask area when not loading
             ann_file. If True, the GT instance area will be the mask area,
             else the bounding box area. It will not be used when loading
@@ -64,7 +65,7 @@ class CocoMetric(_CocoMetric):
                  metric_items: Optional[Sequence[str]] = None,
                  format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
-                 file_client_args: dict = dict(backend='disk'),
+                 backend_args: Optional[dict] = None,
                  gt_mask_area: bool = True,
                  dist_backend: str = 'torch_cuda',
                  **kwargs) -> None:
@@ -77,7 +78,7 @@ class CocoMetric(_CocoMetric):
             metric_items=metric_items,
             format_only=format_only,
             outfile_prefix=outfile_prefix,
-            file_client_args=file_client_args,
+            backend_args=backend_args,
             gt_mask_area=gt_mask_area,
             dist_backend=dist_backend,
             **kwargs)
@@ -163,7 +164,14 @@ class CocoMetric(_CocoMetric):
         """
         metric_results = self.compute(*args, **kwargs)
         self.reset()
-        from mmengine.logging import print_log
+
+        if self.format_only:
+            print_log(
+                'Results are saved in '
+                f'{osp.dirname(self.outfile_prefix)}',
+                logger='current')
+            return metric_results
+
         for metric in self.metrics:
             print_log(f'Evaluating {metric}...', logger='current')
 
