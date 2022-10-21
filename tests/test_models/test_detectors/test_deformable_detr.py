@@ -32,10 +32,12 @@ class TestDeformableDETR(TestCase):
         configs = [
             get_detector_cfg(
                 'deformable_detr/deformable-detr_r50_16xb2-50e_coco.py'),
-            get_detector_cfg('deformable_detr/deformable-det \
-                r_refine_r50_16xb2-50e_coco.py'),
-            get_detector_cfg('deformable_detr/deformable-detr \
-                _refine_twostage_r50_16xb2-50e_coco.py')
+            get_detector_cfg(
+                'deformable_detr/deformable-detr_refine_r50_16xb2-50e_coco.py'  # noqa
+            ),
+            get_detector_cfg(
+                'deformable_detr/deformable-detr_refine_twostage_r50_16xb2-50e_coco.py'  # noqa
+            )
         ]
 
         for config in configs:
