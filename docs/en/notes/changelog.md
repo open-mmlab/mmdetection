@@ -1,5 +1,45 @@
 # Changelog of v3.x
 
+## v3.0.0rc2 (21/10/2022)
+
+### Highlights
+
+- Support [imagenet pre-training](configs/rtmdet/cspnext_imagenet_pretrain) for RTMDet's backbone
+
+#### New Features
+
+- Support [imagenet pre-training](configs/rtmdet/cspnext_imagenet_pretrain) for RTMDet's backbone (#8887)
+- Add `CrowdHumanDataset` and Metric (#8430)
+- Add `FixShapeResize` to support resize of fixed shape (#8665)
+
+#### Bug Fixes
+
+- Fix `ConcatDataset` Import Error (#8909)
+- Fix `CircleCI` and `readthedoc` build failed (#8980, #8963)
+- Fix bitmap mask translate when `out_shape` is different (#8993)
+- Fix inconsistency in `Conv2d` weight channels (#8948)
+- Fix bugs when plotting loss curve by analyze_logs.py (#8944)
+- Fix type change of labels in `albumentations` (#9074)
+- Fix some docs and types error (#8818)
+
+#### Improvements
+
+- Refactored standard roi head with `box type` (#8658)
+- Support mask concatenate in `BitmapMasks` and `PolygonMasks` (#9006)
+- Update pytorch and dependencies' version in dockerfile (#8845)
+- Update `robustness_eval.py` and `print_config` (#8452)
+- Make compatible with `ConfigDict` and `dict` in `dense_heads` (#8942)
+- Support log coco metric copypaste (#9012)
+- Remove `Normalize` transform (#8913)
+- Jitter instance color (#8988)
+- Add assert in `PackDetInputs` (#8982)
+
+#### Contributors
+
+A total of 12 developers contributed to this release.
+
+Thanks @RangiLyu, @jbwang1997, @wanghonglie, @Chan-Sun, @RangeKing, @chhluo, @MambaWong, @yuyoujiang, @hhaAndroid, @sltlls, @Nioolek, @ZwwWayne
+
 ## v3.0.0rc1 (26/9/2022)
 
 ### Highlights
