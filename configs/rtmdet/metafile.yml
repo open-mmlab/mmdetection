@@ -19,7 +19,7 @@ Models:
     In Collection: RTMDet
     Config: configs/rtmdet/rtmdet_tiny_8xb32-300e_coco.py
     Metadata:
-      Training Memory (GB): 7.6
+      Training Memory (GB): 11.7
       Epochs: 300
     Results:
       - Task: Object Detection
@@ -32,7 +32,7 @@ Models:
     In Collection: RTMDet
     Config: configs/rtmdet/rtmdet_s_8xb32-300e_coco.py
     Metadata:
-      Training Memory (GB): 7.6
+      Training Memory (GB): 15.9
       Epochs: 300
     Results:
       - Task: Object Detection
@@ -45,7 +45,7 @@ Models:
     In Collection: RTMDet
     Config: configs/rtmdet/rtmdet_m_8xb32-300e_coco.py
     Metadata:
-      Training Memory (GB): 7.6
+      Training Memory (GB): 27.8
       Epochs: 300
     Results:
       - Task: Object Detection
@@ -58,7 +58,7 @@ Models:
     In Collection: RTMDet
     Config: configs/rtmdet/rtmdet_l_8xb32-300e_coco.py
     Metadata:
-      Training Memory (GB): 7.6
+      Training Memory (GB): 43.2
       Epochs: 300
     Results:
       - Task: Object Detection
@@ -71,7 +71,7 @@ Models:
     In Collection: RTMDet
     Config: configs/rtmdet/rtmdet_x_8xb32-300e_coco.py
     Metadata:
-      Training Memory (GB): 7.6
+      Training Memory (GB): 61.1
       Epochs: 300
     Results:
       - Task: Object Detection
