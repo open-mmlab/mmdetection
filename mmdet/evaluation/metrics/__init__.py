@@ -6,9 +6,11 @@ from .coco_panoptic_metric import CocoPanopticMetric
 from .crowdhuman_metric import CrowdHumanMetric
 from .lvis_metric import LVISMetric
 from .openimages_metric import OpenImagesMetric
+from .proposal_recall_metric import ProposalRecallMetric
 from .voc_metric import VOCMetric
 
 __all__ = [
     'CityScapesMetric', 'CocoMetric', 'CocoPanopticMetric', 'OpenImagesMetric',
-    'VOCMetric', 'LVISMetric', 'CrowdHumanMetric', 'CocoMetricOld'
+    'VOCMetric', 'LVISMetric', 'CrowdHumanMetric', 'CocoMetricOld',
+    'ProposalRecallMetric'
 ]

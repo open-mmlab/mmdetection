@@ -3,5 +3,12 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-val_evaluator = dict(metric='proposal_fast')
+# TODO: Delete
+# val_evaluator = dict(metric='proposal_fast')
+val_evaluator = dict(
+    _delete_=True,
+    type='ProposalRecallMetric',
+    proposal_nums=(100, 300, 1000),
+    use_legacy_coordinate=False,  # VOCDataset should set True, else False
+)
 test_evaluator = val_evaluator
