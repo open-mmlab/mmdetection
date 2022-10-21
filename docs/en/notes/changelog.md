@@ -21,20 +21,20 @@
 - Fix bugs when plotting loss curve by analyze_logs.py (#8944)
 - Fix type change of labels in `albumentations` (#9074)
 - Fix some docs and types error (#8818)
-- Update memory occupation of RTMDet in metafile (#9098)
+- Update memory occupation of `RTMDet` in metafile (#9098)
 - Fix wrong arguments of `OpenImageMetrics` in the config (#9061)
 
 #### Improvements
 
 - Refactor standard roi head with `box type` (#8658)
 - Support mask concatenation in `BitmapMasks` and `PolygonMasks` (#9006)
-- Update pytorch and dependencies' version in dockerfile (#8845)
+- Update PyTorch and dependencies' version in dockerfile (#8845)
 - Update `robustness_eval.py` and `print_config` (#8452)
 - Make compatible with `ConfigDict` and `dict` in `dense_heads` (#8942)
-- Support log coco metric copypaste (#9012)
+- Support logging coco metric copypaste (#9012)
 - Remove `Normalize` transform (#8913)
-- Jitter instance color (#8988)
-- Add assert in `PackDetInputs` (#8982)
+- Support jittering the color of different instances of the same class (#8988)
+- Add assertion for missing key in `PackDetInputs` (#8982)
 
 ## New Contributors
 
