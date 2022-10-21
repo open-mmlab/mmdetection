@@ -78,7 +78,7 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 **v3.0.0rc2** was released in 21/10/2022:
 
 - Support [imagenet pre-training](configs/rtmdet/cspnext_imagenet_pretrain) for RTMDet's backbone.
-- Refactored standard roi head with `box type`.
+- Refactor standard roi head with `box type`.
 
 ## Installation
 
