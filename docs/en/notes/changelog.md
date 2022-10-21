@@ -34,6 +34,14 @@
 - Jitter instance color (#8988)
 - Add assert in `PackDetInputs` (#8982)
 
+## New Contributors
+
+- @Chan-Sun made their first contribution in https://github.com/open-mmlab/mmdetection/pull/8909
+- @MambaWong made their first contribution in https://github.com/open-mmlab/mmdetection/pull/8913
+- @yuyoujiang made their first contribution in https://github.com/open-mmlab/mmdetection/pull/8437
+- @sltlls made their first contribution in https://github.com/open-mmlab/mmdetection/pull/8944
+- @Nioolek made their first contribution in https://github.com/open-mmlab/mmdetection/pull/8845
+
 #### Contributors
 
 A total of 12 developers contributed to this release.
