@@ -72,4 +72,8 @@ class WIDERFaceDataset(XMLDataset):
 
             if is_main_process():
                 prog_bar.update()
+
+        if is_main_process():
+            prog_bar.file.write('\n')
+
         return data_list
