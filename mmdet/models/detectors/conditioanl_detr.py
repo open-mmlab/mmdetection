@@ -22,7 +22,13 @@ from mmdet.registry import MODELS
 
 @MODELS.register_module()
 class ConditionalDETR(DETR):
+    r"""Implementation of `Conditional DETR for Fast Training Convergence.
 
+    <https://arxiv.org/abs/2108.06152>`_.
+
+    Code is modified from the `official github repo
+    <https://github.com/Atten4Vis/ConditionalDETR>`_.
+    """
     def _init_layers(self) -> None:
         """Initialize layers except for backbone, neck and bbox_head."""
         self.positional_encoding = SinePositionalEncoding(
