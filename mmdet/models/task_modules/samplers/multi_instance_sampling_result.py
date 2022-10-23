@@ -36,7 +36,6 @@ class MultiInstanceSamplingResult(SamplingResult):
         self.neg_gt_labels = assign_result.labels[neg_inds]
 
         if gt_and_ignore_bboxes.numel() == 0:
-            assert self.pos_assigned_gt_inds.numel() == 0
             self.neg_gt_bboxes = torch.empty_like(gt_and_ignore_bboxes).view(
                 -1, 4)
         else:

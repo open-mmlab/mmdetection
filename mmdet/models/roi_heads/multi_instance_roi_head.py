@@ -18,7 +18,6 @@ class MultiInstanceRoIHead(StandardRoIHead):
     """The roi head for Multi-instance prediction."""
 
     def __init__(self, num_instance: int = 2, *args, **kwargs) -> None:
-        assert num_instance == 2, 'Currently only 2 instances are supported'
         self.num_instance = num_instance
         super().__init__(*args, **kwargs)
 
@@ -55,8 +54,6 @@ class MultiInstanceRoIHead(StandardRoIHead):
         # TODO: a more flexible way to decide which feature maps to use
         bbox_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], rois)
-        if self.with_shared_head:
-            bbox_feats = self.shared_head(bbox_feats)
         bbox_results = self.bbox_head(bbox_feats)
 
         # Refine module affects the number of return values
@@ -172,6 +169,30 @@ class MultiInstanceRoIHead(StandardRoIHead):
                      rpn_results_list: InstanceList,
                      rcnn_test_cfg: ConfigType,
                      rescale: bool = False) -> InstanceList:
+        """Perform forward propagation of the bbox head and predict detection
+        results on the features of the upstream network.
+
+        Args:
+            x (tuple[Tensor]): Feature maps of all scale level.
+            batch_img_metas (list[dict]): List of image information.
+            rpn_results_list (list[:obj:`InstanceData`]): List of region
+                proposals.
+            rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of R-CNN.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
+
+        Returns:
+            list[:obj:`InstanceData`]: Detection results of each image
+            after the post process.
+            Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
+        """
         proposals = [res.bboxes for res in rpn_results_list]
         rois = bbox2roi(proposals)
 

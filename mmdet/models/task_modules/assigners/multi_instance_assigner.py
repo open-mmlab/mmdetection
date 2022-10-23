@@ -11,7 +11,9 @@ from .max_iou_assigner import MaxIoUAssigner
 
 @TASK_UTILS.register_module()
 class MultiInstanceAssigner(MaxIoUAssigner):
-    """Assign a corresponding gt bbox or background to each bbox.
+    """Assign a corresponding gt bbox or background to each proposal bbox. If
+    we need to use a proposal box to generate multiple predict boxes,
+    `MultiInstanceAssigner` can assign multiple gt to each proposal box.
 
     Args:
         num_instance (int): How many bboxes are predicted by each proposal box.
@@ -26,12 +28,44 @@ class MultiInstanceAssigner(MaxIoUAssigner):
                gt_instances: InstanceData,
                gt_instances_ignore: Optional[InstanceData] = None,
                **kwargs) -> AssignResult:
+        """Assign gt to bboxes.
+
+        This method assign gt bboxes to every bbox (proposal/anchor), each bbox
+        is assigned a set of gts, and the number of gts in this set is defined
+        by `self.num_instance`.
+
+        Args:
+            pred_instances (:obj:`InstanceData`): Instances of model
+                predictions. It includes ``priors``, and the priors can
+                be anchors or points, or the bboxes predicted by the
+                previous stage, has shape (n, 4). The bboxes predicted by
+                the current model or stage will be named ``bboxes``,
+                ``labels``, and ``scores``, the same as the ``InstanceData``
+                in other places.
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes``, with shape (k, 4),
+                and ``labels``, with shape (k, ).
+            gt_instances_ignore (:obj:`InstanceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes``
+                attribute data that is ignored during training and testing.
+                Defaults to None.
+
+        Returns:
+            :obj:`AssignResult`: The assign result.
+        """
         gt_bboxes = gt_instances.bboxes
         priors = pred_instances.priors
         # Set the FG label to 1 and add ignored annotations
         gt_labels = gt_instances.labels + 1
-        gt_bboxes_ignore = gt_instances_ignore.bboxes
-        gt_labels_ignore = gt_instances_ignore.labels
+        if gt_instances_ignore is not None:
+            gt_bboxes_ignore = gt_instances_ignore.bboxes
+            if hasattr(gt_instances_ignore, 'labels'):
+                gt_labels_ignore = gt_instances_ignore.labels
+            else:
+                gt_labels_ignore = torch.ones_like(gt_bboxes_ignore)[:, 0] * -1
+        else:
+            gt_bboxes_ignore = None
+            gt_labels_ignore = None
 
         assign_on_cpu = True if (self.gpu_assign_thr > 0) and (
             gt_bboxes.shape[0] > self.gpu_assign_thr) else False
@@ -43,9 +77,14 @@ class MultiInstanceAssigner(MaxIoUAssigner):
             gt_labels = gt_labels.cpu()
             if gt_bboxes_ignore is not None:
                 gt_bboxes_ignore = gt_bboxes_ignore.cpu()
+                gt_labels_ignore = gt_labels_ignore.cpu()
 
-        all_bboxes = torch.cat([gt_bboxes, gt_bboxes_ignore], dim=0)
-        all_labels = torch.cat([gt_labels, gt_labels_ignore], dim=0)
+        if gt_bboxes_ignore is not None:
+            all_bboxes = torch.cat([gt_bboxes, gt_bboxes_ignore], dim=0)
+            all_labels = torch.cat([gt_labels, gt_labels_ignore], dim=0)
+        else:
+            all_bboxes = gt_bboxes
+            all_labels = gt_labels
         all_priors = torch.cat([priors, all_bboxes], dim=0)
 
         overlaps_normal = self.iou_calculator(

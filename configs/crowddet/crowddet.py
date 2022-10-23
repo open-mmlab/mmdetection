@@ -2,19 +2,15 @@ _base_ = ['../_base_/default_runtime.py']
 
 model = dict(
     type='CrowdDet',
-    # data_preprocessor=dict(
-    #     type='BatchResize',
-    #     mean=[103.53, 116.28, 123.675],
-    #     std=[57.375, 57.12, 58.395],
-    #     scale=(1400, 800),
-    #     bgr_to_rgb=False,
-    #     pad_size_divisor=64),
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[103.53, 116.28, 123.675],
         std=[57.375, 57.12, 58.395],
         bgr_to_rgb=False,
         pad_size_divisor=64,
+        # This option is set according to https://github.com/Purkialo/CrowdDet/
+        # blob/master/lib/data/CrowdHuman.py The images in the entire batch are
+        # resize together.
         batch_augments=[
             dict(type='BatchResize', scale=(1400, 800), pad_size_divisor=64)
         ]),
@@ -161,7 +157,7 @@ train_dataloader = dict(
     num_workers=4,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
-    batch_sampler=None,
+    batch_sampler=None,  # The 'batch_sampler' may decrease the precision
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
@@ -208,16 +204,4 @@ param_scheduler = [
 # optimizer
 optim_wrapper = dict(
     type='OptimWrapper',
-    optimizer=dict(
-        type='SGD', lr=1e-3 * 1.25 * 2 * 8, momentum=0.9, weight_decay=0.0001))
-
-env_cfg = dict(
-    cudnn_benchmark=False,
-    mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0),
-    dist_cfg=dict(backend='nccl'),
-)
-
-randomness = dict(seed=3335)
-load_from = '/data/YuYoujiang/CrowdDet/useful/pretrained_sample_mmdet_wo.pth'
-# Initialization weight of meg2mmdet can available at:
-# 链接: https://pan.baidu.com/s/1Fp9j_VLG9Kw1xXL18qg8Tg  密码: 17w6
+    optimizer=dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001))
