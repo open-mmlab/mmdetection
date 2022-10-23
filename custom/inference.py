@@ -14,17 +14,17 @@ import os
 # config_file = 'configs/custom_yolo/yolox_s_8x8_300e_coco.py'
 # checkpoint_file = 'work_dirs/yolox_s_8x8_300e_coco/latest.pth'
 
-# config_file = 'configs/custom/pvt_fst_v2/amazon.py'
-# checkpoint_file = 'work_dirs/fst/latest.pth'
+config_file = 'work_dirs/fstb0/fstb0.py'
+checkpoint_file = 'work_dirs/fstb0/latest.pth'
 
-config_file = 'configs/custom/pv2_amazon_v2/amazon.py'
-checkpoint_file = 'work_dirs/amazon/latest.pth'
+# config_file = 'work_dirs/amazonb0/amazonb0.py'
+# checkpoint_file = 'work_dirs/amazonb0/latest.pth'
 
-# inf_dir = 'data/fst/random_select_/random_select'
-# inf_out_dir = 'data/fst/random_select_/fstv2_first'
+inf_dir = 'data/fst/random_select_/random_select_rotated'
+inf_out_dir = 'data/fst/random_select_/fstrot90'
 
-inf_dir = "data/amazon/220921_amazon_all"
-inf_out_dir = 'data/amazon/220921_amazon_all_preds_2'
+# inf_dir = "data/amazon/220921_amazon_all"
+# inf_out_dir = 'data/amazon/220921_amazon_all_b0_384x384'
 
 class FPSLogger():
     def __init__(self):

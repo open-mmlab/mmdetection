@@ -8,6 +8,8 @@ train_pipeline = [
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='Resize', img_scale=[(512, 384), (512, 300)], keep_ratio=True),
+    dict(type='Rot90'),
+    # dict(type='Rotate', level=10, max_rotate_angle=180),
     dict(
             type='RandomCrop',
             crop_type='relative_range',
@@ -28,6 +30,10 @@ test_pipeline = [
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
+            #dict(type='Rot90'),
+            #dict(type='Rotate', level=10, max_rotate_angle=180),
+            #dict(type='Rot90'),
+            #dict(type='RandomAffine', max_translate_ratio=0.0,  scaling_ratio_range=(1.0, 1.0), ),
             dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32),

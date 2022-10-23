@@ -7,8 +7,8 @@ train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
-        #type='Resize', img_scale=[(768, 512), (768, 400)], keep_ratio=True),
-        type='Resize', img_scale=[(1024, 768), (1024, 600)], keep_ratio=True),
+        type='Resize', img_scale=[(768, 512), (768, 600)], keep_ratio=True),
+        #type='Resize', img_scale=[(1024, 768), (1024, 600)], keep_ratio=True),
     dict(
             type='RandomCrop',
             crop_type='relative_range',
@@ -25,7 +25,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(1024, 768),
+        img_scale=(768, 512),
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
@@ -37,7 +37,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=3,
+    samples_per_gpu=8,
     workers_per_gpu=2,
     train=dict(
         type='RepeatDataset',
