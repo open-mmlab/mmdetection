@@ -5,7 +5,7 @@ from .base import BaseDetector
 from .base_detr import DetectionTransformer
 from .cascade_rcnn import CascadeRCNN
 from .centernet import CenterNet
-from .conditional_detr import ConditionalDETR
+from .conditioanl_detr import ConditionalDETR
 from .cornernet import CornerNet
 from .ddod import DDOD
 from .deformable_detr import DeformableDETR
