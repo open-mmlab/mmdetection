@@ -219,7 +219,8 @@ class ConditionalAttention(BaseModule):
                  batch_first: bool = False,
                  cross_attn: bool = False,
                  keep_query_pos: bool = False,
-                 init_cfg: OptMultiConfig = None):
+                 init_cfg: OptMultiConfig = None,
+                 group_detr=1):
         super().__init__(init_cfg)
         self.batch_first = batch_first  # indispensable
         self.cross_attn = cross_attn
@@ -230,6 +231,7 @@ class ConditionalAttention(BaseModule):
         self.proj_drop = Dropout(proj_drop)
 
         self._init_proj()
+        self.group_detr = group_detr
 
     def _init_proj(self):
         embed_dims = self.embed_dims
@@ -410,13 +412,20 @@ class ConditionalAttention(BaseModule):
             k_content = self.kcontent_proj(query)
             k_pos = self.kpos_proj(query_pos)
             v = self.v_proj(query)
+            num_queries, bs, _ = q_content.shape
             q = q_content if q_pos is None else q_content + q_pos
             k = k_content if k_pos is None else k_content + k_pos
+            if self.training:
+                q = torch.cat(q.split(num_queries // self.group_detr, dim=0), dim=1)
+                k = torch.cat(k.split(num_queries // self.group_detr, dim=0), dim=1)
+                v = torch.cat(v.split(num_queries // self.group_detr, dim=0), dim=1)
             sa_output = self.forward_attn(
                 query=q,
                 key=k,
                 value=v,
                 attn_mask=attn_mask,
                 need_weights=need_weights)[0]
+            if self.training:
+                sa_output = torch.cat(sa_output.split(bs, dim=1), dim=0)
             query = query + self.proj_drop(sa_output)
         return query
