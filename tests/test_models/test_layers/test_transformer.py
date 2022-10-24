@@ -465,69 +465,40 @@ def test_patch_merging():
         assert x_out.size(1) == out_size[0] * out_size[1]
 
 
-def test_detr_transformer_dencoder_encoder_layer():
+def test_detr_transformer_encoder_decoder():
     config = ConfigDict(
-        dict(
-            return_intermediate=True,
-            num_layers=6,
-            transformerlayers=dict(
-                type='DetrTransformerDecoderLayer',
-                attn_cfgs=dict(
-                    type='MultiheadAttention',
-                    embed_dims=256,
-                    num_heads=8,
-                    dropout=0.1),
+        num_layers=6,
+        layer_cfg=dict(  # DetrTransformerDecoderLayer
+            self_attn_cfg=dict(  # MultiheadAttention
+                embed_dims=256,
+                num_heads=8,
+                dropout=0.1),
+            cross_attn_cfg=dict(  # MultiheadAttention
+                embed_dims=256,
+                num_heads=8,
+                dropout=0.1),
+            ffn_cfg=dict(
+                embed_dims=256,
                 feedforward_channels=2048,
-                ffn_dropout=0.1,
-                operation_order=(
-                    'norm',
-                    'self_attn',
-                    'norm',
-                    'cross_attn',
-                    'norm',
-                    'ffn',
-                ))))
-    assert DetrTransformerDecoder(**config).layers[0].pre_norm
+                num_fcs=2,
+                ffn_drop=0.1,
+                act_cfg=dict(type='ReLU', inplace=True))))
     assert len(DetrTransformerDecoder(**config).layers) == 6
-
-    DetrTransformerDecoder(**config)
-    with pytest.raises(AssertionError):
-        config = ConfigDict(
-            dict(
-                return_intermediate=True,
-                num_layers=6,
-                transformerlayers=[
-                    dict(
-                        type='DetrTransformerDecoderLayer',
-                        attn_cfgs=dict(
-                            type='MultiheadAttention',
-                            embed_dims=256,
-                            num_heads=8,
-                            dropout=0.1),
-                        feedforward_channels=2048,
-                        ffn_dropout=0.1,
-                        operation_order=('self_attn', 'norm', 'cross_attn',
-                                         'norm', 'ffn', 'norm'))
-                ] * 5))
-        DetrTransformerDecoder(**config)
+    assert DetrTransformerDecoder(**config)
 
     config = ConfigDict(
         dict(
             num_layers=6,
-            transformerlayers=dict(
-                type='DetrTransformerDecoderLayer',
-                attn_cfgs=dict(
-                    type='MultiheadAttention',
+            layer_cfg=dict(  # DetrTransformerEncoderLayer
+                self_attn_cfg=dict(  # MultiheadAttention
                     embed_dims=256,
                     num_heads=8,
                     dropout=0.1),
-                feedforward_channels=2048,
-                ffn_dropout=0.1,
-                operation_order=('norm', 'self_attn', 'norm', 'cross_attn',
-                                 'norm', 'ffn', 'norm'))))
-
-    with pytest.raises(AssertionError):
-        # len(operation_order) == 6
-        DetrTransformerEncoder(**config)
-
-
+                ffn_cfg=dict(
+                    embed_dims=256,
+                    feedforward_channels=2048,
+                    num_fcs=2,
+                    ffn_drop=0.1,
+                    act_cfg=dict(type='ReLU', inplace=True)))))
+    assert len(DetrTransformerEncoder(**config).layers) == 6
+    assert DetrTransformerEncoder(**config)
