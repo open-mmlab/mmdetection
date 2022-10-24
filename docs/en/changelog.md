@@ -1,5 +1,33 @@
 ## Changelog
 
+### v2.25.3 (25/10/2022)
+
+#### Bug Fixes
+
+- Skip remote sync when wandb is offline (#8755)
+- Fix jpg to png bug when using seg maps (#9078)
+
+#### Improvements
+
+- Fix typo in warning (#8844)
+- Fix CI for timm, pycocotools, onnx (#9034)
+- Upgrade pre-commit hooks (#8964)
+
+#### Documents
+
+- Update BoundedIoULoss config in readme (#8808)
+- Fix Faster R-CNN Readme (#8803)
+- Update location of test_cfg and train_cfg (#8792)
+- Fix issue template (#8966)
+- Update random sampler docstring (#9033)
+- Fix wrong image link (#9054)
+- Fix FPG readme (#9041)
+
+#### Contributors
+
+A total of 13 developers contributed to this release.
+Thanks @Zheng-LinXiao, @i-aki-y, @fbagci, @sudoAimer, @Czm369, @DrRyanHuang, @RangiLyu, @wanghonglie, @shinya7y, @Ryoo72, @akshaygulabrao, @gy-7, @Neesky
+
 ### v2.25.2 (15/9/2022)
 
 #### Bug Fixes
