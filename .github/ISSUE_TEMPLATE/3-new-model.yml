@@ -1,6 +1,8 @@
-name: "\U0001F31F New model/dataset addition"
-description: Submit a proposal/request to implement a new model / dataset
-labels: [ "New model/dataset" ]
+name: "\U0001F31F New model/dataset/scheduler addition"
+description: Submit a proposal/request to implement a new model / dataset / scheduler
+labels: "kind/feature,status/unconfirmed"
+title: "[New Models] "
+
 
 body:
   - type: textarea
@@ -8,9 +10,9 @@ body:
     validations:
       required: true
     attributes:
-      label: Model/Dataset description
+      label: Model/Dataset/Scheduler description
       description: |
-        Put any and all important information relative to the model/dataset
+        Put any and all important information relative to the model/dataset/scheduler
 
   - type: checkboxes
     attributes:
