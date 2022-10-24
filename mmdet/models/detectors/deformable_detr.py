@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -539,3 +539,29 @@ class DeformableDETR(DetectionTransformer):
         pos = torch.stack((pos[:, :, :, 0::2].sin(), pos[:, :, :, 1::2].cos()),
                           dim=4).flatten(2)
         return pos
+
+    def _forward(
+            self,
+            batch_inputs: Tensor,
+            batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
+        """Network forward process. Usually includes backbone, neck and head
+        forward without any post-processing.Overwrite to pop
+        'enc_outputs_class' and 'enc_outputs_coord'.
+
+         Args:
+            batch_inputs (Tensor): Inputs, has shape (bs, dim, H, W).
+            batch_data_samples (List[:obj:`DetDataSample`], optional): The
+                batch data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+                Defaults to None.
+
+        Returns:
+            tuple[Tensor]: A tuple of features from ``bbox_head`` forward.
+        """
+        img_feats = self.extract_feat(batch_inputs)
+        head_inputs_dict = self.forward_transformer(img_feats,
+                                                    batch_data_samples)
+        head_inputs_dict.pop('enc_outputs_class')
+        head_inputs_dict.pop('enc_outputs_coord')
+        results = self.bbox_head.forward(**head_inputs_dict)
+        return results
