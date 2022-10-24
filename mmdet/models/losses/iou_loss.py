@@ -233,10 +233,9 @@ def ciou_loss(pred, target, eps=1e-7):
 
 @weighted_loss
 def eiou_loss(pred, target, smooth_point=0.1, eps=1e-7):
-    r"""Implementation of paper 'Extended-IoU Loss: A Systematic IoU-Related
-     Method: Beyond Simplified Regression for Better Localization,
-
-     <https://ieeexplore.ieee.org/abstract/document/9429909> '.
+    r"""Implementation of paper `Extended-IoU Loss: A Systematic
+    IoU-Related Method: Beyond Simplified Regression for Better
+    Localization <https://ieeexplore.ieee.org/abstract/document/9429909>`_
 
     Code is modified from https://github.com//ShiqiYu/libfacedetection.train.
 
@@ -244,7 +243,7 @@ def eiou_loss(pred, target, smooth_point=0.1, eps=1e-7):
         pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
             shape (n, 4).
         target (Tensor): Corresponding gt bboxes, shape (n, 4).
-        smooth_point (float): hyperparameter, default is 0.1
+        smooth_point (float): hyperparameter, default is 0.1.
         eps (float): Eps to avoid log(0).
     Return:
         Tensor: Loss tensor.
@@ -524,6 +523,21 @@ class CIoULoss(nn.Module):
 
 @MODELS.register_module()
 class EIoULoss(nn.Module):
+    r"""Implementation of paper `Extended-IoU Loss: A Systematic
+    IoU-Related Method: Beyond Simplified Regression for Better
+    Localization <https://ieeexplore.ieee.org/abstract/document/9429909>`_
+
+    Code is modified from https://github.com//ShiqiYu/libfacedetection.train.
+
+    Args:
+        pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+            shape (n, 4).
+        target (Tensor): Corresponding gt bboxes, shape (n, 4).
+        smooth_point (float): hyperparameter, default is 0.1.
+        eps (float): Eps to avoid log(0).
+    Return:
+        Tensor: Loss tensor.
+    """
 
     def __init__(self,
                  eps=1e-6,
