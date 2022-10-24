@@ -39,7 +39,7 @@ train_dataloader = dict(
         dataset=dict(
             type='ConcatDataset',
             # VOCDataset will add `DATASET_TYPE` in dataset.metainfo,
-            # which will get error if using Concatdataset. Adding
+            # which will get error if using ConcatDataset. Adding
             # `ignore_keys` can avoid this error.
             ignore_keys=['DATASET_TYPE'],
             datasets=[
