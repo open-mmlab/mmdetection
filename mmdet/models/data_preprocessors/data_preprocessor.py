@@ -564,7 +564,11 @@ class BatchResize(nn.Module):
             Defaults to 1.
     """
 
-    def __init__(self, scale, pad_size_divisor=1) -> None:
+    def __init__(
+        self,
+        scale: tuple,
+        pad_size_divisor: int = 1,
+    ) -> None:
         super().__init__()
         self.min_size = min(scale)
         self.max_size = max(scale)

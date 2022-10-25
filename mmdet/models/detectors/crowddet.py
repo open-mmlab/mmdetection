@@ -6,7 +6,24 @@ from .two_stage import TwoStageDetector
 
 @MODELS.register_module()
 class CrowdDet(TwoStageDetector):
-    """Implementation of `CrowdDet <https://arxiv.org/abs/2003.09163>`_"""
+    """Implementation of `CrowdDet <https://arxiv.org/abs/2003.09163>`_
+
+    Args:
+        backbone (:obj:`ConfigDict` or dict): The backbone config.
+        rpn_head (:obj:`ConfigDict` or dict): The rpn config.
+        roi_head (:obj:`ConfigDict` or dict): The roi config.
+        train_cfg (:obj:`ConfigDict` or dict, optional): The training config
+            of FCOS. Defaults to None.
+        test_cfg (:obj:`ConfigDict` or dict, optional): The testing config
+            of FCOS. Defaults to None.
+        neck (:obj:`ConfigDict` or dict): The neck config.
+        data_preprocessor (:obj:`ConfigDict` or dict, optional): Config of
+            :class:`DetDataPreprocessor` to process the input data.
+            Defaults to None.
+        init_cfg (:obj:`ConfigDict` or list[:obj:`ConfigDict`] or dict or
+            list[dict], optional): Initialization config dict.
+            Defaults to None.
+    """
 
     def __init__(self,
                  backbone: ConfigType,

@@ -30,7 +30,6 @@ class MultiInstanceRoIHead(StandardRoIHead):
                 roi extractor.
             bbox_head (dict or ConfigDict): Config of box in box head.
         """
-        bbox_head.update(num_instance=self.num_instance)
         self.bbox_roi_extractor = MODELS.build(bbox_roi_extractor)
         self.bbox_head = MODELS.build(bbox_head)
 
@@ -56,19 +55,19 @@ class MultiInstanceRoIHead(StandardRoIHead):
             x[:self.bbox_roi_extractor.num_inputs], rois)
         bbox_results = self.bbox_head(bbox_feats)
 
-        # Refine module affects the number of return values
-        if len(bbox_results) == 2:
-            bbox_results = dict(
-                cls_score=bbox_results[0],
-                bbox_pred=bbox_results[1],
-                bbox_feats=bbox_feats)
-        else:
+        if self.bbox_head.with_refine:
             bbox_results = dict(
                 cls_score=bbox_results[0],
                 bbox_pred=bbox_results[1],
                 cls_score_ref=bbox_results[2],
                 bbox_pred_ref=bbox_results[3],
                 bbox_feats=bbox_feats)
+        else:
+            bbox_results = dict(
+                cls_score=bbox_results[0],
+                bbox_pred=bbox_results[1],
+                bbox_feats=bbox_feats)
+
         return bbox_results
 
     def bbox_loss(self, x: Tuple[Tensor],

@@ -21,25 +21,42 @@ class MultiInstanceBBoxHead(BBoxHead):
     r"""Bbox head used in CrowdDet.
 
     .. code-block:: none
-                                        /-> cls convs_1 -> cls fcs_1 -> cls_1
-                                   |----
-                                   |    \-> reg convs_1 -> reg fcs_1 -> reg_1
+
+                                      /-> cls convs_1 -> cls fcs_1 -> cls_1
+                                   |--
+                                   |  \-> reg convs_1 -> reg fcs_1 -> reg_1
                                    |
-                                   |    /-> cls convs_2 -> cls fcs_2 -> cls_2
-        shared convs -> shared fcs |----
-                                   |    \-> reg convs_2 -> reg fcs_2 -> reg_2
+                                   |  /-> cls convs_2 -> cls fcs_2 -> cls_2
+        shared convs -> shared fcs |--
+                                   |  \-> reg convs_2 -> reg fcs_2 -> reg_2
                                    |
                                    |                     ...
                                    |
-                                   |    /-> cls convs_k -> cls fcs_k -> cls_k
-                                   |----
-                                        \-> reg convs_k -> reg fcs_k -> reg_k
+                                   |  /-> cls convs_k -> cls fcs_k -> cls_k
+                                   |--
+                                      \-> reg convs_k -> reg fcs_k -> reg_k
 
+
+    Args:
+        num_instance (int): The number of branches after shared fcs.
+            Defaults to 2.
+        with_refine (bool): Whether to use refine module. Defaults to False.
+        num_shared_convs (int): The number of shared convs. Defaults to 0.
+        num_shared_fcs (int): The number of shared fcs. Defaults to 2.
+        num_cls_convs (int): The number of cls convs. Defaults to 0.
+        num_cls_fcs (int): The number of cls fcs. Defaults to 0.
+        num_reg_convs (int): The number of reg convs. Defaults to 0.
+        num_reg_fcs (int): The number of reg fcs. Defaults to 0.
+        conv_out_channels (int): The number of conv out channels.
+            Defaults to 256.
+        fc_out_channels (int): The number of fc out channels. Defaults to 1024.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Defaults to None.
     """  # noqa: W605
 
     def __init__(self,
                  num_instance: int = 2,
-                 refine_flag: bool = True,
+                 with_refine: bool = False,
                  num_shared_convs: int = 0,
                  num_shared_fcs: int = 2,
                  num_cls_convs: int = 0,
@@ -48,8 +65,6 @@ class MultiInstanceBBoxHead(BBoxHead):
                  num_reg_fcs: int = 0,
                  conv_out_channels: int = 256,
                  fc_out_channels: int = 1024,
-                 conv_cfg: Optional[Union[dict, ConfigDict]] = None,
-                 norm_cfg: Optional[Union[dict, ConfigDict]] = None,
                  init_cfg: Optional[Union[dict, ConfigDict]] = None,
                  *args,
                  **kwargs) -> None:
@@ -72,9 +87,7 @@ class MultiInstanceBBoxHead(BBoxHead):
         self.num_reg_fcs = num_reg_fcs
         self.conv_out_channels = conv_out_channels
         self.fc_out_channels = fc_out_channels
-        self.refine_flag = refine_flag
-        self.conv_cfg = conv_cfg
-        self.norm_cfg = norm_cfg
+        self.with_refine = with_refine
 
         # add shared convs and fcs
         self.shared_convs, self.shared_fcs, last_layer_dim = \
@@ -84,7 +97,7 @@ class MultiInstanceBBoxHead(BBoxHead):
         self.shared_out_channels = last_layer_dim
         self.relu = nn.ReLU(inplace=True)
 
-        if self.refine_flag:
+        if self.with_refine:
             refine_model_cfg = {
                 'type': 'Linear',
                 'in_features': self.shared_out_channels + 20,
@@ -134,7 +147,7 @@ class MultiInstanceBBoxHead(BBoxHead):
                     in_features=self.cls_last_dim[k],
                     out_features=cls_channels)
                 self.fc_cls.append(MODELS.build(cls_predictor_cfg_))
-                if self.refine_flag:
+                if self.with_refine:
                     self.fc_cls_ref.append(MODELS.build(cls_predictor_cfg_))
 
             if self.with_reg:
@@ -144,7 +157,7 @@ class MultiInstanceBBoxHead(BBoxHead):
                 reg_predictor_cfg_.update(
                     in_features=self.reg_last_dim[k], out_features=out_dim_reg)
                 self.fc_reg.append(MODELS.build(reg_predictor_cfg_))
-                if self.refine_flag:
+                if self.with_refine:
                     self.fc_reg_ref.append(MODELS.build(reg_predictor_cfg_))
 
         if init_cfg is None:
@@ -184,12 +197,8 @@ class MultiInstanceBBoxHead(BBoxHead):
                     last_layer_dim if i == 0 else self.conv_out_channels)
                 branch_convs.append(
                     ConvModule(
-                        conv_in_channels,
-                        self.conv_out_channels,
-                        3,
-                        padding=1,
-                        conv_cfg=self.conv_cfg,
-                        norm_cfg=self.norm_cfg))
+                        conv_in_channels, self.conv_out_channels, 3,
+                        padding=1))
             last_layer_dim = self.conv_out_channels
         # add branch specific fc layers
         branch_fcs = nn.ModuleList()
@@ -266,7 +275,7 @@ class MultiInstanceBBoxHead(BBoxHead):
             cls_score.append(self.fc_cls[k](x_cls) if self.with_cls else None)
             bbox_pred.append(self.fc_reg[k](x_reg) if self.with_reg else None)
 
-        if self.refine_flag:
+        if self.with_refine:
             x_ref = x
             cls_score_ref = list()
             bbox_pred_ref = list()
