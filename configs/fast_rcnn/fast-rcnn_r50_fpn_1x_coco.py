@@ -34,7 +34,7 @@ test_pipeline = [
 ]
 train_dataloader = dict(
     dataset=dict(
-        proposal_file='proposals/rpn_r50_fpn_1x_val2017.pkl',
+        proposal_file='proposals/rpn_r50_fpn_1x_train2017.pkl',
         pipeline=train_pipeline))
 val_dataloader = dict(
     dataset=dict(
