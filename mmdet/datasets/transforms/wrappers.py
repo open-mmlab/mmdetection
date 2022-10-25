@@ -177,6 +177,7 @@ class ProposalBroadcaster(BaseTransform):
     """A transform wrapper to apply the wrapped transforms to process both
     `gt_bboxes` and `proposals` without adding any codes. It will do the
     following steps:
+
         1. Scatter the broadcasting targets to a list of inputs of the wrapped
            transforms. The type of the list should be list[dict, dict], which
            the first is the original inputs, the second is the processing
@@ -186,9 +187,11 @@ class ProposalBroadcaster(BaseTransform):
            list[dict, dict].
         3. Gather the outputs, update the `proposals` in the first item of
            the outputs with the `gt_bboxes` in the second .
+
     Args:
          transforms (list[dict | callable]): Sequence of transform object or
             config dict to be wrapped.
+
     Examples:
         >>> pipeline = [
         >>>     dict(type='LoadImageFromFile'),
@@ -218,6 +221,7 @@ class ProposalBroadcaster(BaseTransform):
 
         Args:
             results (dict): Result dict from loading pipeline.
+
         Returns:
             dict: Updated result dict.
         """
@@ -237,6 +241,7 @@ class ProposalBroadcaster(BaseTransform):
 
         Args:
             data (dict): The original input data.
+
         Returns:
             list[dict, dict]: A list of input data.
         """
@@ -250,6 +255,7 @@ class ProposalBroadcaster(BaseTransform):
 
         Args:
             inputs (list[dict, dict]): list of input data.
+
         Returns:
             list[dict, dict]: The output of the wrapped pipeline.
         """
@@ -264,6 +270,7 @@ class ProposalBroadcaster(BaseTransform):
         Args:
             output_scatters (list[dict, dict]): The output of the wrapped
                 pipeline.
+
         Returns:
             dict: Updated result dict.
         """
