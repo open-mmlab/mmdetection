@@ -4,6 +4,7 @@ from .builder import DATASETS, PIPELINES, build_dataset
 from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
 from .coco_panoptic import CocoPanopticDataset
+from .crowdhuman import CrowdHumanDataset
 from .dataset_wrappers import MultiImageMixDataset
 from .deepfashion import DeepFashionDataset
 from .lvis import LVISDataset, LVISV1Dataset, LVISV05Dataset
@@ -22,5 +23,5 @@ __all__ = [
     'get_loading_pipeline', 'CocoPanopticDataset', 'MultiImageMixDataset',
     'OpenImagesDataset', 'OpenImagesChallengeDataset',
     'AspectRatioBatchSampler', 'ClassAwareSampler', 'MultiSourceSampler',
-    'GroupMultiSourceSampler', 'BaseDetDataset'
+    'GroupMultiSourceSampler', 'BaseDetDataset', 'CrowdHumanDataset'
 ]

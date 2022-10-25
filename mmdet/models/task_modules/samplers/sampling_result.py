@@ -205,7 +205,7 @@ class SamplingResult(util_mixins.NiceRepr):
         from mmdet.models.task_modules.samplers import RandomSampler
         rng = ensure_rng(rng)
 
-        # make probabalistic?
+        # make probabilistic?
         num = 32
         pos_fraction = 0.5
         neg_pos_ub = -1

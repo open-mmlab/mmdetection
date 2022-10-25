@@ -37,8 +37,6 @@ jobs:
         type: string
       torchvision:
         type: string
-      mmcv:
-        type: string
     docker:
       - image: cimg/python:<< parameters.python >>
     resource_class: large
@@ -70,7 +68,8 @@ jobs:
           # force reinstall pycocotools to ensure pycocotools being built under the currenct numpy
           command: |
             python -m pip install git+ssh://git@github.com/open-mmlab/mmengine.git@main
-            python -m pip install << parameters.mmcv >>
+            pip install -U openmim
+            mim install 'mmcv >= 2.0.0rc0'
             pip install -r requirements/tests.txt -r requirements/optional.txt
             pip install --force-reinstall pycocotools
             pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
@@ -96,8 +95,6 @@ jobs:
       cudnn:
         type: integer
         default: 7
-      mmcv:
-        type: string
     machine:
       image: ubuntu-2004-cuda-11.4:202110-01
       # docker_layer_caching: true
@@ -117,10 +114,10 @@ jobs:
             docker exec mmdetection apt-get install -y git
       - run:
           name: Install mmdet dependencies
-          # pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/torch${{matrix.torch_version}}/index.html
           command: |
             docker exec mmdetection pip install -e /mmengine
-            docker exec mmdetection pip install << parameters.mmcv >>
+            docker exec mmdetection pip install -U openmim
+            docker exec mmdetection mim install 'mmcv >= 2.0.0rc0'
             docker exec mmdetection pip install -r requirements/tests.txt -r requirements/optional.txt
             docker exec mmdetection pip install pycocotools
             docker exec mmdetection pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
@@ -161,15 +158,13 @@ workflows:
           torch: 1.6.0
           torchvision: 0.7.0
           python: 3.6.9  # The lowest python 3.6.x version available on CircleCI images
-          mmcv: https://download.openmmlab.com/mmcv/dev-2.x/cpu/torch1.6.0/mmcv_full-2.0.0rc0-cp36-cp36m-manylinux1_x86_64.whl
           requires:
             - lint
       - build_cpu:
           name: maximum_version_cpu
-          torch: 1.9.0
-          torchvision: 0.10.0
+          torch: 1.12.1
+          torchvision: 0.13.1
           python: 3.9.0
-          mmcv: https://download.openmmlab.com/mmcv/dev-2.x/cpu/torch1.9.0/mmcv_full-2.0.0rc0-cp39-cp39-manylinux1_x86_64.whl
           requires:
             - minimum_version_cpu
       - hold:
@@ -182,7 +177,6 @@ workflows:
           # Use double quotation mark to explicitly specify its type
           # as string instead of number
           cuda: "10.2"
-          mmcv: https://download.openmmlab.com/mmcv/dev-2.x/cu102/torch1.8.0/mmcv_full-2.0.0rc0-cp37-cp37m-manylinux1_x86_64.whl
           requires:
             - hold
   merge_stage_test:
@@ -193,9 +187,6 @@ workflows:
       - build_cuda:
           name: minimum_version_gpu
           torch: 1.6.0
-          # Use double quotation mark to explicitly specify its type
-          # as string instead of number
-          mmcv: https://download.openmmlab.com/mmcv/dev-2.x/cu101/torch1.6.0/mmcv_full-2.0.0rc0-cp37-cp37m-manylinux1_x86_64.whl
           cuda: "10.1"
           filters:
             branches:

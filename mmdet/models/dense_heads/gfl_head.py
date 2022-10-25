@@ -128,7 +128,7 @@ class GFLHead(AnchorHead):
             **kwargs)
 
         if self.train_cfg:
-            self.assigner = TASK_UTILS.build(self.train_cfg.assigner)
+            self.assigner = TASK_UTILS.build(self.train_cfg['assigner'])
             if self.train_cfg.get('sampler', None) is not None:
                 self.sampler = TASK_UTILS.build(
                     self.train_cfg['sampler'], default_args=dict(context=self))

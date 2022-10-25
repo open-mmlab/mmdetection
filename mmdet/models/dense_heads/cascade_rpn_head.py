@@ -236,7 +236,7 @@ class StageCascadeRPNHead(RPNHead):
             self.anchor_scales[0],
             self.anchor_strides,
             gt_instances_ignore=gt_instances_ignore,
-            allowed_border=self.train_cfg.allowed_border)
+            allowed_border=self.train_cfg['allowed_border'])
         sampling_result = self.sampler.sample(assign_result, pred_instances,
                                               gt_instances)
 
@@ -257,10 +257,10 @@ class StageCascadeRPNHead(RPNHead):
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
             labels[pos_inds] = sampling_result.pos_gt_labels
-            if self.train_cfg.pos_weight <= 0:
+            if self.train_cfg['pos_weight'] <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
+                label_weights[pos_inds] = self.train_cfg['pos_weight']
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 

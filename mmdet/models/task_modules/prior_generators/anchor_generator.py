@@ -164,7 +164,7 @@ class AnchorGenerator:
         Args:
             base_size (int | float): Basic size of an anchor.
             scales (torch.Tensor): Scales of the anchor.
-            ratios (torch.Tensor): The ratio between between the height
+            ratios (torch.Tensor): The ratio between the height
                 and width of anchors in a single level.
             center (tuple[float], optional): The center of the base anchor
                 related to a single feature grid. Defaults to None.
@@ -684,7 +684,7 @@ class LegacyAnchorGenerator(AnchorGenerator):
         Args:
             base_size (int | float): Basic size of an anchor.
             scales (torch.Tensor): Scales of the anchor.
-            ratios (torch.Tensor): The ratio between between the height.
+            ratios (torch.Tensor): The ratio between the height.
                 and width of anchors in a single level.
             center (tuple[float], optional): The center of the base anchor
                 related to a single feature grid. Defaults to None.

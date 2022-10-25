@@ -411,10 +411,10 @@ class SABLRetinaHead(BaseDenseHead):
             bbox_cls_weights[pos_inds, :] = pos_bbox_cls_weights
             bbox_reg_weights[pos_inds, :] = pos_bbox_reg_weights
             labels[pos_inds] = sampling_result.pos_gt_labels
-            if self.train_cfg.pos_weight <= 0:
+            if self.train_cfg['pos_weight'] <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
+                label_weights[pos_inds] = self.train_cfg['pos_weight']
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 

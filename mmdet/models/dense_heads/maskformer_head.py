@@ -122,9 +122,9 @@ class MaskFormerHead(AnchorFreeHead):
         self.test_cfg = test_cfg
         self.train_cfg = train_cfg
         if train_cfg:
-            self.assigner = TASK_UTILS.build(train_cfg.assigner)
+            self.assigner = TASK_UTILS.build(train_cfg['assigner'])
             self.sampler = TASK_UTILS.build(
-                train_cfg.sampler, default_args=dict(context=self))
+                train_cfg['sampler'], default_args=dict(context=self))
 
         self.class_weight = loss_cls.class_weight
         self.loss_cls = MODELS.build(loss_cls)
