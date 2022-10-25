@@ -11,6 +11,7 @@ data_root = 'data/coco/'
 #     }))
 file_client_args = dict(backend='disk')
 
+# Align with Detectron2
 backend = 'pillow'
 train_pipeline = [
     dict(
@@ -37,7 +38,6 @@ test_pipeline = [
         file_client_args=file_client_args,
         imdecode_backend=backend),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True, backend=backend),
-    # If you don't have a gt annotation, delete the pipeline
     dict(
         type='LoadAnnotations',
         with_bbox=True,
