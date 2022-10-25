@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import warnings
 from typing import Union
 
 from mmengine.config import ConfigDict
@@ -10,7 +9,7 @@ from mmdet.registry import MODELS
 from mmdet.structures import SampleList
 from mmdet.structures.bbox import BaseBoxes
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
-from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
+from mmdet.utils import ConfigType
 from .base import BaseDetector
 
 try:
@@ -55,8 +54,8 @@ def _to_cfgnode_list(cfg: ConfigType,
     return config_list, father_name
 
 
-def add_d2_pred_to_datasample(data_samples: SampleList,
-                              d2_results_list: list) -> SampleList:
+def convert_d2_pred_to_datasample(data_samples: SampleList,
+                                  d2_results_list: list) -> SampleList:
     """Convert the Detectron2's result to DetDataSample.
 
     Args:
@@ -101,39 +100,25 @@ class Detectron2Wrapper(BaseDetector):
     evaluated in MMDetection.
 
     Args:
-        d2_detector (:obj:`ConfigDict` or dict): The module config of
+        detector (:obj:`ConfigDict` or dict): The module config of
             Detectron2.
         bgr_to_rgb (bool): whether to convert image from BGR to RGB.
             Defaults to False.
-        rgb_to_bgr (bool): whether to convert image from RGB to RGB.
+        rgb_to_bgr (bool): whether to convert image from RGB to BGR.
             Defaults to False.
-        data_preprocessor (:obj:`ConfigDict` or dict, optional): Config of
-            :class:`DetDataPreprocessor` to process the input data.
-            Defaults to None.
-        init_cfg (:obj:`ConfigDict` or dict, optional): the config to control
-            the initialization. Defaults to None.
     """
 
     def __init__(self,
-                 d2_detector: ConfigType,
+                 detector: ConfigType,
                  bgr_to_rgb: bool = False,
-                 rgb_to_bgr: bool = False,
-                 data_preprocessor: OptConfigType = None,
-                 init_cfg: OptMultiConfig = None) -> None:
+                 rgb_to_bgr: bool = False) -> None:
         if detectron2 is None:
             raise ImportError('Please install Detectron2 first')
         assert not (bgr_to_rgb and rgb_to_bgr), (
             '`bgr2rgb` and `rgb2bgr` cannot be set to True at the same time')
-        if data_preprocessor is not None:
-            data_preprocessor = None
-            warnings.warn('The `data_preprocessor` should be None.')
-        if init_cfg is not None:
-            init_cfg = None
-            warnings.warn('The `init_cfg` should be None.')
-        super().__init__(
-            data_preprocessor=data_preprocessor, init_cfg=init_cfg)
+        super().__init__()
         self._channel_conversion = rgb_to_bgr or bgr_to_rgb
-        cfgnode_list, _ = _to_cfgnode_list(d2_detector)
+        cfgnode_list, _ = _to_cfgnode_list(detector)
         self.cfg = get_cfg()
         self.cfg.merge_from_list(cfgnode_list)
         self.d2_model = build_model(self.cfg)
@@ -167,7 +152,7 @@ class Detectron2Wrapper(BaseDetector):
         Returns:
             dict: A dictionary of loss components.
         """
-        d2_batched_inputs = self._convert_to_batched_d2_inputs(
+        d2_batched_inputs = self._convert_to_d2_inputs(
             batch_inputs=batch_inputs,
             batch_data_samples=batch_data_samples,
             training=True)
@@ -207,13 +192,13 @@ class Detectron2Wrapper(BaseDetector):
             - bboxes (Tensor): Has a shape (num_instances, 4),
               the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        d2_batched_inputs = self._convert_to_batched_d2_inputs(
+        d2_batched_inputs = self._convert_to_d2_inputs(
             batch_inputs=batch_inputs,
             batch_data_samples=batch_data_samples,
             training=False)
         # results in detectron2 has already rescale
         d2_results_list = self.d2_model(d2_batched_inputs)
-        batch_data_samples = add_d2_pred_to_datasample(
+        batch_data_samples = convert_d2_pred_to_datasample(
             data_samples=batch_data_samples, d2_results_list=d2_results_list)
 
         return batch_data_samples
@@ -234,10 +219,10 @@ class Detectron2Wrapper(BaseDetector):
         """
         pass
 
-    def _convert_to_batched_d2_inputs(self,
-                                      batch_inputs: Tensor,
-                                      batch_data_samples: SampleList,
-                                      training=True) -> list:
+    def _convert_to_d2_inputs(self,
+                              batch_inputs: Tensor,
+                              batch_data_samples: SampleList,
+                              training=True) -> list:
         """Convert inputs type to support Detectron2's model.
 
         Args:

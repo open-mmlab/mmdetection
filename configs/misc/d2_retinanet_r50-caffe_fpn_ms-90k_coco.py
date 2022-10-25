@@ -3,9 +3,8 @@ _base_ = '../common/ms-90k_coco-detection.py'
 # model settings
 model = dict(
     type='Detectron2Wrapper',
-    data_preprocessor=None,  # detectron2 process data inside the model
     bgr_to_rgb=False,
-    d2_detector=dict(
+    detector=dict(
         # The settings in `d2_detector` will merged into default settings
         # in detectron2. More details please refer to
         # https://github.com/facebookresearch/detectron2/blob/main/detectron2/config/defaults.py    # noqa
