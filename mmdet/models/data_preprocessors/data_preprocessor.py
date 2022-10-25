@@ -3,7 +3,6 @@ import random
 from numbers import Number
 from typing import List, Optional, Sequence, Tuple, Union
 
-import mmcv
 import numpy as np
 import torch
 import torch.nn as nn
@@ -579,14 +578,11 @@ class BatchResize(nn.Module):
         batch_height, batch_width = inputs.shape[-2:]
         t_height, t_width, scale = self.target_size(batch_height, batch_width)
 
-        device = inputs.device
-        padded_images = inputs.cpu().detach().numpy().transpose(0, 2, 3, 1)
-        resized_images = np.array(
-            [mmcv.imrescale(im, (t_width, t_height)) for im in padded_images])
-        resized_images = resized_images.transpose(0, 3, 1, 2)
-        inputs = torch.tensor(resized_images, device=device).float()
-        # inputs = F.interpolate(inputs, size=(
-        # t_height, t_width), mode='bilinear', align_corners=False)
+        inputs = F.interpolate(
+            inputs,
+            size=(t_height, t_width),
+            mode='bilinear',
+            align_corners=False)
 
         inputs = self.get_padded_tensor(inputs)
 

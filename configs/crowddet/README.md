@@ -14,9 +14,10 @@ We propose a simple yet effective proposal-based object detector, aiming at dete
 
 ## Results and Models
 
-| Backbone |  Style  | Batch Size | Total Epochs | Mem (GB) | Inf time (fps) | box AP |         Config          |                  Download                   |
-| :------: | :-----: | :--------: | :----------: | :------: | :------------: | :----: | :---------------------: | :-----------------------------------------: |
-| R-50-FPN | pytorch |     2      |      30      |    -     |       -        |  90.0  | [config](./crowddet.py) | [model](https://download.openmmlab.com/) \\ |
+| Backbone | RM    |  Style  | Batch Size | Total Epochs | Mem (GB) | Inf time (fps) | box AP |                            Config                             |                  Download                   |
+| :------: | ----- | :-----: | :--------: | :----------: | :------: | :------------: | :----: | :-----------------------------------------------------------: | :-----------------------------------------: |
+| R-50-FPN | False | pytorch |     2      |      30      |    -     |       -        |  90.0  |      [config](./crowddet_r50_fpn_8xb2-30e_crowdhuman.py)      | [model](https://download.openmmlab.com/) \\ |
+| R-50-FPN | True  | pytorch |     2      |      30      |    -     |       -        | 90.32  | [config](./crowddet_refine_r50_fpn_8xb2-30e_crowdhuman.py.py) | [model](https://download.openmmlab.com/) \\ |
 
 ## Citation
 
