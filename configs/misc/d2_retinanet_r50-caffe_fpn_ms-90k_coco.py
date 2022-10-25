@@ -1,4 +1,4 @@
-_base_ = '../common/ms-90k_coco-detection.py'
+_base_ = '../common/ms-90k_coco.py'
 
 # model settings
 model = dict(
