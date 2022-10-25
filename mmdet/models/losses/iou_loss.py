@@ -530,13 +530,10 @@ class EIoULoss(nn.Module):
     Code is modified from https://github.com//ShiqiYu/libfacedetection.train.
 
     Args:
-        pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
-            shape (n, 4).
-        target (Tensor): Corresponding gt bboxes, shape (n, 4).
-        smooth_point (float): hyperparameter, default is 0.1.
         eps (float): Eps to avoid log(0).
-    Return:
-        Tensor: Loss tensor.
+        reduction (str): Options are "none", "mean" and "sum".
+        loss_weight (float): Weight of loss.
+        smooth_point (float): hyperparameter, default is 0.1.
     """
 
     def __init__(self,
