@@ -90,15 +90,16 @@ def get_test_pipeline_cfg(cfg: Union[str, ConfigDict]) -> ConfigDict:
     if isinstance(cfg, str):
         cfg = Config.fromfile(cfg)
 
-    dataset_cfg = cfg.test_dataloader.dataset
-    test_pipeline = dataset_cfg.get('pipeline', None)
-    # handle dataset wrapper
-    if test_pipeline is None:
-        if 'dataset' in dataset_cfg:
-            test_pipeline = dataset_cfg.dataset.pipeline
+    def _get_test_pipeline_cfg(dataset_cfg):
+        if 'pipeline' in dataset_cfg:
+            return dataset_cfg.pipeline
+        # handle dataset wrapper
+        elif 'dataset' in dataset_cfg:
+            return _get_test_pipeline_cfg(dataset_cfg.dataset)
         # handle dataset wrappers like ConcatDataset
         elif 'datasets' in dataset_cfg:
-            test_pipeline = dataset_cfg.datasets[0].pipeline
-        else:
-            raise RuntimeError('Cannot find `pipeline` in `test_dataloader`')
-    return test_pipeline
+            return _get_test_pipeline_cfg(dataset_cfg.datasets[0])
+
+        raise RuntimeError('Cannot find `pipeline` in `test_dataloader`')
+
+    return _get_test_pipeline_cfg(cfg.test_dataloader.dataset)
