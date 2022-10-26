@@ -51,16 +51,16 @@ class WIDERFaceDataset(XMLDataset):
             prog_bar = ProgressBar(len(img_ids))
 
         for img_id in img_ids:
-            xml_path = osp.join(self.img_root, self.ann_subdir,
-                                f'{img_id}.xml')
+            xml_path = osp.normpath(
+                osp.join(self.img_root, self.ann_subdir, f'{img_id}.xml'))
             with self.file_client.get_local_path(xml_path) as local_path:
                 raw_ann_info = ET.parse(local_path)
             root = raw_ann_info.getroot()
             folder = root.find('folder').text
             filename = root.find('filename').text
             assert osp.splitext(filename)[0] == img_id
-            img_path = osp.join(self.img_root, self.img_subdir, folder,
-                                filename)
+            img_path = osp.normpath(
+                osp.join(self.img_root, self.img_subdir, folder, filename))
 
             raw_img_info = {}
             raw_img_info['img_id'] = img_id

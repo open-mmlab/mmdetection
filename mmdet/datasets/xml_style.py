@@ -56,10 +56,10 @@ class XMLDataset(BaseDetDataset):
         img_ids = list_from_file(
             self.ann_file, file_client_args=self.file_client_args)
         for img_id in img_ids:
-            img_path = osp.join(self.sub_data_root, self.img_subdir,
-                                f'{img_id}.jpg')
-            xml_path = osp.join(self.sub_data_root, self.ann_subdir,
-                                f'{img_id}.xml')
+            img_path = osp.normpath(
+                osp.join(self.sub_data_root, self.img_subdir, f'{img_id}.jpg'))
+            xml_path = osp.normpath(
+                osp.join(self.sub_data_root, self.ann_subdir, f'{img_id}.xml'))
 
             raw_img_info = {}
             raw_img_info['img_id'] = img_id
