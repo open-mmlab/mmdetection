@@ -8,7 +8,7 @@ from mmengine.runner import Runner
 
 from mmdet.engine.hooks.utils import trigger_visualization_hook
 from mmdet.registry import RUNNERS
-from mmdet.utils import add_dump_metric, register_all_modules
+from mmdet.utils import add_dump_metric
 
 
 # TODO: support fuse_conv_bn and format_only
@@ -57,10 +57,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-
-    # register all modules in mmdet into the registries
-    # do not init the default scope here because it will be init in the runner
-    register_all_modules(init_default_scope=False)
 
     # load config
     cfg = Config.fromfile(args.config)
