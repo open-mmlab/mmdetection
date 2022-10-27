@@ -105,6 +105,7 @@ venv.bak/
 .mypy_cache/
 
 data/
+conf/
 data
 .vscode
 .idea
