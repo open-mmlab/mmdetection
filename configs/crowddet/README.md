@@ -14,10 +14,15 @@ We propose a simple yet effective proposal-based object detector, aiming at dete
 
 ## Results and Models
 
-| Backbone | RM    |  Style  | Batch Size | Total Epochs | Mem (GB) | Inf time (fps) | box AP |                            Config                             |                  Download                   |
-| :------: | ----- | :-----: | :--------: | :----------: | :------: | :------------: | :----: | :-----------------------------------------------------------: | :-----------------------------------------: |
-| R-50-FPN | False | pytorch |     2      |      30      |    -     |       -        |  90.0  |      [config](./crowddet_r50_fpn_8xb2-30e_crowdhuman.py)      | [model](https://download.openmmlab.com/) \\ |
-| R-50-FPN | True  | pytorch |     2      |      30      |    -     |       -        | 90.32  | [config](./crowddet_refine_r50_fpn_8xb2-30e_crowdhuman.py.py) | [model](https://download.openmmlab.com/) \\ |
+| Backbone | RM    |  Style  | Mem (GB) | Inf time (fps) | box AP |                               Config                               |                  Download                   |
+| :------: | ----- | :-----: | :------: | :------------: | :----: | :----------------------------------------------------------------: | :-----------------------------------------: |
+| R-50-FPN | False | pytorch |    -     |       -        |  90.0  |      [config](./crowddet-rcnn_r50_fpn_8xb2-30e_crowdhuman.py)      | [model](https://download.openmmlab.com/) \\ |
+| R-50-FPN | True  | pytorch |    -     |       -        | 90.32  | [config](./crowddet-rcnn_refine_r50_fpn_8xb2-30e_crowdhuman.py.py) | [model](https://download.openmmlab.com/) \\ |
+
+Note:
+
+- RM indicates whether to use the refine module.
+- The dataset for train and test this model is `CrowdHuman`, and the metric of `box AP` is calculated by `mmdet/evaluation/metrics/crowdhuman_metric.py`.
 
 ## Citation
 

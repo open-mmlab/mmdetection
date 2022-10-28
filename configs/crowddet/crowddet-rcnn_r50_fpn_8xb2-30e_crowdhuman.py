@@ -12,7 +12,10 @@ model = dict(
         # blob/master/lib/data/CrowdHuman.py The images in the entire batch are
         # resize together.
         batch_augments=[
-            dict(type='BatchResize', scale=(1400, 800), pad_size_divisor=64)
+            dict(
+                type='BatchFixShapeResize',
+                scale=(1400, 800),
+                pad_size_divisor=64)
         ]),
     backbone=dict(
         type='ResNet',
@@ -131,10 +134,10 @@ model = dict(
             max_per_img=500)))
 
 dataset_type = 'CrowdHumanDataset'
-data_root = '/data/YuYoujiang/dataset/CrowdHuman/'
+data_root = '/data/CrowdHuman/'
 file_client_args = dict(backend='disk')
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=dict(backend='disk')),
+    dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomFlip', prob=0.5),
     dict(
@@ -143,7 +146,7 @@ train_pipeline = [
                    'flip_direction'))
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=dict(backend='disk')),
+    dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', scale=(1400, 800), keep_ratio=True),
     dict(
@@ -202,6 +205,7 @@ param_scheduler = [
 ]
 
 # optimizer
+auto_scale_lr = dict(base_batch_size=16)
 optim_wrapper = dict(
     type='OptimWrapper',
     optimizer=dict(type='SGD', lr=0.002, momentum=0.9, weight_decay=0.0001))

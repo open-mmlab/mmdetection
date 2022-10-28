@@ -555,24 +555,35 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
 
 
 @MODELS.register_module()
-class BatchResize(nn.Module):
-    """Batch resize during training.
+class BatchFixShapeResize(nn.Module):
+    """Batch resize during training. This implementation is modified from
+    https://github.com/Purkialo/CrowdDet/blob/master/lib/data/CrowdHuman.py.
+
+    It provides the data pre-processing as follows:
+    - A batch of all images will pad to a uniform size and stack them into
+      a torch.Tensor by `DetDataPreprocessor`.
+    - `BatchFixShapeResize` resize all images to the target size.
+    - Padding images to make sure the size of image can be divisible by
+      ``pad_size_divisor``.
 
     Args:
         scale (tuple): Images scales for resizing.
         pad_size_divisor (int): Image size divisible factor.
             Defaults to 1.
+        pad_value (Number): The padded pixel value. Defaults to 0.
     """
 
     def __init__(
         self,
         scale: tuple,
         pad_size_divisor: int = 1,
+        pad_value: Union[float, int] = 0,
     ) -> None:
         super().__init__()
         self.min_size = min(scale)
         self.max_size = max(scale)
         self.pad_size_divisor = pad_size_divisor
+        self.pad_value = pad_value
 
     def forward(
         self, inputs: Tensor, data_samples: List[DetDataSample]
@@ -580,15 +591,16 @@ class BatchResize(nn.Module):
         """resize a batch of images and bboxes."""
 
         batch_height, batch_width = inputs.shape[-2:]
-        t_height, t_width, scale = self.target_size(batch_height, batch_width)
+        target_height, target_width, scale = self.target_size(
+            batch_height, batch_width)
 
         inputs = F.interpolate(
             inputs,
-            size=(t_height, t_width),
+            size=(target_height, target_width),
             mode='bilinear',
             align_corners=False)
 
-        inputs = self.get_padded_tensor(inputs)
+        inputs = self.get_padded_tensor(inputs, self.pad_value)
 
         if data_samples is not None:
             batch_input_shape = tuple(inputs.size()[-2:])
@@ -612,23 +624,23 @@ class BatchResize(nn.Module):
         """Get the target size of a batch of images based on data and scale."""
         im_size_min = np.min([height, width])
         im_size_max = np.max([height, width])
-        scale = (self.min_size + 0.0) / im_size_min
+        scale = self.min_size / im_size_min
         if scale * im_size_max > self.max_size:
-            scale = (self.max_size + 0.0) / im_size_max
-        t_height, t_width = int(round(height * scale)), int(
+            scale = self.max_size / im_size_max
+        target_height, target_width = int(round(height * scale)), int(
             round(width * scale))
-        return t_height, t_width, scale
+        return target_height, target_width, scale
 
-    def get_padded_tensor(self, tensor, pad_value=0):
+    def get_padded_tensor(self, tensor, pad_value):
         """Pad images according to pad_size_divisor."""
         assert tensor.ndim == 4
-        t_height, t_width = tensor.shape[-2], tensor.shape[-1]
+        target_height, target_width = tensor.shape[-2], tensor.shape[-1]
         divisor = self.pad_size_divisor
-        padded_height = (t_height + divisor - 1) // divisor * divisor
-        padded_width = (t_width + divisor - 1) // divisor * divisor
+        padded_height = (target_height + divisor - 1) // divisor * divisor
+        padded_width = (target_width + divisor - 1) // divisor * divisor
         padded_tensor = torch.ones([
             tensor.shape[0], tensor.shape[1], padded_height, padded_width
         ]) * pad_value
         padded_tensor = padded_tensor.type_as(tensor)
-        padded_tensor[:, :, :t_height, :t_width] = tensor
+        padded_tensor[:, :, :target_height, :target_width] = tensor
         return padded_tensor
