@@ -555,7 +555,7 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
 
 
 @MODELS.register_module()
-class BatchFixShapeResize(nn.Module):
+class BatchResize(nn.Module):
     """Batch resize during training. This implementation is modified from
     https://github.com/Purkialo/CrowdDet/blob/master/lib/data/CrowdHuman.py.
 
@@ -591,7 +591,7 @@ class BatchFixShapeResize(nn.Module):
         """resize a batch of images and bboxes."""
 
         batch_height, batch_width = inputs.shape[-2:]
-        target_height, target_width, scale = self.target_size(
+        target_height, target_width, scale = self.get_target_size(
             batch_height, batch_width)
 
         inputs = F.interpolate(
@@ -620,7 +620,7 @@ class BatchFixShapeResize(nn.Module):
 
         return inputs, data_samples
 
-    def target_size(self, height, width):
+    def get_target_size(self, height, width):
         """Get the target size of a batch of images based on data and scale."""
         im_size_min = np.min([height, width])
         im_size_max = np.max([height, width])

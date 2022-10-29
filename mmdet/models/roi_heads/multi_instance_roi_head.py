@@ -1,7 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import List, Tuple
 
-import torch
 from torch import Tensor
 
 from mmdet.registry import MODELS
@@ -212,15 +211,8 @@ class MultiInstanceRoIHead(StandardRoIHead):
         rois = rois.split(num_proposals_per_img, 0)
         cls_scores = cls_scores.split(num_proposals_per_img, 0)
 
-        # some detector with_reg is False, bbox_preds will be None
         if bbox_preds is not None:
-            # TODO move this to a sabl_roi_head
-            # the bbox prediction of some detectors like SABL is not Tensor
-            if isinstance(bbox_preds, torch.Tensor):
-                bbox_preds = bbox_preds.split(num_proposals_per_img, 0)
-            else:
-                bbox_preds = self.bbox_head.bbox_pred_split(
-                    bbox_preds, num_proposals_per_img)
+            bbox_preds = bbox_preds.split(num_proposals_per_img, 0)
         else:
             bbox_preds = (None, ) * len(proposals)
 

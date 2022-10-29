@@ -23,8 +23,10 @@ PERSON_CLASSES = ['background', 'person']
 @METRICS.register_module()
 class CrowdHumanMetric(BaseMetric):
     """CrowdHuman evaluation metric.
+
     Evaluate Average Precision (AP), Miss Rate (MR) and Jaccard Index (JI)
     for detection tasks.
+
     Args:
         ann_file (str): Path to the annotation file.
         metric (str | List[str]): Metrics to be evaluated. Valid metrics
@@ -138,6 +140,7 @@ class CrowdHumanMetric(BaseMetric):
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
+
         Args:
             data_batch (dict): A batch of data from the dataloader.
             data_samples (Sequence[dict]): A batch of data samples that
@@ -158,8 +161,10 @@ class CrowdHumanMetric(BaseMetric):
 
     def compute_metrics(self, results: list) -> Dict[str, float]:
         """Compute the metrics from processed results.
+
         Args:
             results (list): The processed results of each batch.
+
         Returns:
             eval_results(Dict[str, float]): The computed metrics.
             The keys are the names of the metrics, and the values
@@ -209,8 +214,10 @@ class CrowdHumanMetric(BaseMetric):
 
     def load_eval_samples(self, result_file):
         """Load data from annotations file and detection results.
+
         Args:
             result_file (str): The file path of the saved detection results.
+
         Returns:
             Dict[Image]: The detection result packaged by Image
         """
@@ -232,8 +239,10 @@ class CrowdHumanMetric(BaseMetric):
 
     def compare(self, samples):
         """Match the detection results with the ground_truth.
+
         Args:
             samples (dict[Image]): The detection result packaged by Image.
+
         Returns:
             score_list(list[tuple[ndarray, int, str]]): Matching result.
             a list of tuples (dtbox, label, imgID) in the descending
@@ -253,12 +262,14 @@ class CrowdHumanMetric(BaseMetric):
     @staticmethod
     def eval_ap(score_list, gt_num, img_num):
         """Evaluate by average precision.
+
         Args:
             score_list(list[tuple[ndarray, int, str]]): Matching result.
                 a list of tuples (dtbox, label, imgID) in the descending
                 sort of dtbox.score.
             gt_num(int): The number of gt boxes in the entire dataset.
             img_num(int)： The number of images in the entire dataset.
+
         Returns:
             ap(float): result of average precision.
         """
@@ -300,12 +311,14 @@ class CrowdHumanMetric(BaseMetric):
 
     def eval_mr(self, score_list, gt_num, img_num):
         """Evaluate by Caltech-style log-average miss rate.
+
         Args:
             score_list(list[tuple[ndarray, int, str]]): Matching result.
                 a list of tuples (dtbox, label, imgID) in the descending
                 sort of dtbox.score.
             gt_num(int): The number of gt boxes in the entire dataset.
             img_num(int): The number of image in the entire dataset.
+
         Returns:
             mr(float): result of miss rate.
         """
@@ -358,8 +371,10 @@ class CrowdHumanMetric(BaseMetric):
 
     def eval_ji(self, samples):
         """Evaluate by JI using multi_process.
+
         Args:
             samples(Dict[str, Image]): The detection result packaged by Image.
+
         Returns:
             ji(float): result of jaccard index.
         """
@@ -395,6 +410,7 @@ class CrowdHumanMetric(BaseMetric):
 
     def compute_ji_with_ignore(self, result_queue, dt_result, score_thr):
         """Compute JI with ignore.
+
         Args:
             result_queue(Queue): The Queue for save compute result when
                 multi_process.
@@ -460,9 +476,11 @@ class CrowdHumanMetric(BaseMetric):
 
     def compute_ji_matching(self, dt_boxes, gt_boxes):
         """Match the annotation box for each detection box.
+
         Args:
             dt_boxes(ndarray): Detection boxes.
             gt_boxes(ndarray): Ground_truth boxes.
+
         Returns:
             matches_(list[tuple[int, int]]): Match result.
         """
@@ -494,9 +512,11 @@ class CrowdHumanMetric(BaseMetric):
 
 class Image(object):
     """Data structure for evaluation of CrowdHuman.
+
     Note:
         This implementation is modified from https://github.com/Purkialo/
         CrowdDet/blob/master/lib/evaluate/APMRToolkits/image.py
+
     Args:
         mode (int): Select the mode of evaluate. Valid mode include
             0(just body box), 1(just head box) and 2(both of them).
@@ -517,6 +537,7 @@ class Image(object):
 
     def load(self, record, body_key, head_key, class_names, gt_flag):
         """Loading information for evaluation.
+
         Args:
             record (dict): Label information or test results.
                 The format might look something like this:
@@ -695,8 +716,10 @@ class Image(object):
 
     def compare_voc(self, thres):
         """Match the detection results with the ground_truth by VOC.
+
         Args:
             thres (float): IOU threshold.
+
         Returns:
             score_list(list[tuple[ndarray, int, str]]): Matching result.
             a list of tuples (dtbox, label, imgID) in the descending
@@ -735,8 +758,10 @@ class Image(object):
     def compare_caltech(self, thres):
         """Match the detection results with the ground_truth by Caltech
         matching strategy.
+
         Args:
             thres (float): IOU threshold.
+
         Returns:
             score_list(list[tuple[ndarray, int, str]]): Matching result.
             a list of tuples (dtbox, label, imgID) in the descending

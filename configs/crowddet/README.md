@@ -22,7 +22,7 @@ We propose a simple yet effective proposal-based object detector, aiming at dete
 Note:
 
 - RM indicates whether to use the refine module.
-- The dataset for train and test this model is `CrowdHuman`, and the metric of `box AP` is calculated by `mmdet/evaluation/metrics/crowdhuman_metric.py`.
+- The dataset for training and testing this model is `CrowdHuman`, and the metric of `box AP` is calculated by `mmdet/evaluation/metrics/crowdhuman_metric.py`.
 
 ## Citation
 

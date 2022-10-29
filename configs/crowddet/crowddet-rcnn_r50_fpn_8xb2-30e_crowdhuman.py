@@ -12,10 +12,7 @@ model = dict(
         # blob/master/lib/data/CrowdHuman.py The images in the entire batch are
         # resize together.
         batch_augments=[
-            dict(
-                type='BatchFixShapeResize',
-                scale=(1400, 800),
-                pad_size_divisor=64)
+            dict(type='BatchResize', scale=(1400, 800), pad_size_divisor=64)
         ]),
     backbone=dict(
         type='ResNet',
@@ -134,7 +131,7 @@ model = dict(
             max_per_img=500)))
 
 dataset_type = 'CrowdHumanDataset'
-data_root = '/data/CrowdHuman/'
+data_root = '/data/YuYoujiang/dataset/CrowdHuman/'
 file_client_args = dict(backend='disk')
 train_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
