@@ -7,6 +7,7 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import TASK_UTILS
+from mmdet.structures.bbox import BaseBoxes
 from mmdet.utils import ConfigType
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
@@ -82,11 +83,16 @@ class DynamicSoftLabelAssigner(BaseAssigner):
                                                    dtype=torch.long)
 
         prior_center = priors[:, :2]
-        lt_ = prior_center[:, None] - gt_bboxes[:, :2]
-        rb_ = gt_bboxes[:, 2:] - prior_center[:, None]
+        if isinstance(gt_bboxes, BaseBoxes):
+            is_in_gts = gt_bboxes.find_inside_points(prior_center)
+        else:
+            # Tensor boxes will be treated as horizontal boxes by defaults
+            lt_ = prior_center[:, None] - gt_bboxes[:, :2]
+            rb_ = gt_bboxes[:, 2:] - prior_center[:, None]
 
-        deltas = torch.cat([lt_, rb_], dim=-1)
-        is_in_gts = deltas.min(dim=-1).values > 0
+            deltas = torch.cat([lt_, rb_], dim=-1)
+            is_in_gts = deltas.min(dim=-1).values > 0
+
         valid_mask = is_in_gts.sum(dim=1) > 0
 
         valid_decoded_bbox = decoded_bboxes[valid_mask]
@@ -104,7 +110,11 @@ class DynamicSoftLabelAssigner(BaseAssigner):
                                                       dtype=torch.long)
             return AssignResult(
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
-        gt_center = (gt_bboxes[:, :2] + gt_bboxes[:, 2:]) / 2.0
+        if isinstance(gt_bboxes, BaseBoxes):
+            gt_center = gt_bboxes.centers
+        else:
+            # Tensor boxes will be treated as horizontal boxes by defaults
+            gt_center = (gt_bboxes[:, :2] + gt_bboxes[:, 2:]) / 2.0
         valid_prior = priors[valid_mask]
         strides = valid_prior[:, 2]
         distance = (valid_prior[:, None, :2] - gt_center[None, :, :]
