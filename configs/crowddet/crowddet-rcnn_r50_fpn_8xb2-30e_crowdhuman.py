@@ -131,7 +131,7 @@ model = dict(
             max_per_img=500)))
 
 dataset_type = 'CrowdHumanDataset'
-data_root = '/data/YuYoujiang/dataset/CrowdHuman/'
+data_root = '/data/CrowdHuman/'
 file_client_args = dict(backend='disk')
 train_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
