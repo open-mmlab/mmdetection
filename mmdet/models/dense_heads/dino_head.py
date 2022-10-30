@@ -40,10 +40,10 @@ class DINOHead(DeformableDETRHead):
         return outputs_classes, outputs_coords
 
     def loss(self,
-             hs,
-             inter_references,
-             enc_topk_scores,
-             enc_topk_anchors,
+             hidden_states,
+             references,
+             enc_outputs_class,
+             enc_outputs_coord,
              batch_data_samples: SampleList,
              dn_meta=None) -> dict:
         batch_gt_instances = []
@@ -52,22 +52,22 @@ class DINOHead(DeformableDETRHead):
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
 
-        outs = self(hs, inter_references)
-        loss_inputs = outs + (enc_topk_scores, enc_topk_anchors,
+        outs = self(hidden_states, references)
+        loss_inputs = outs + (enc_outputs_class, enc_outputs_coord,
                               batch_gt_instances, batch_img_metas, None,
                               dn_meta)
         losses = self.loss_by_feat(*loss_inputs)
         return losses
 
     def predict(self,
-                hs,
-                inter_references,
+                hidden_states,
+                references,
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> InstanceList:
         batch_img_metas = [
             data_samples.metainfo for data_samples in batch_data_samples
         ]
-        outs = self(hs, inter_references)
+        outs = self(hidden_states, references)
         predictions = self.predict_by_feat(
             *outs, batch_img_metas=batch_img_metas, rescale=rescale)
         return predictions

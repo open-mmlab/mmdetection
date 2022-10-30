@@ -115,9 +115,10 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
             DeformableDetrTransformerDecoderLayer(**self.layer_cfg)
             for _ in range(self.num_layers)
         ])
+        self.embed_dims = self.layers[0].embed_dims
         if self.post_norm_cfg is not None:
             raise ValueError('There is not post_norm in '
-                             'DeformableDetrTransformerDecoder')
+                             f'{self._get_name()}')
 
     def forward(self,
                 query: Tensor,

@@ -30,7 +30,7 @@ model = dict(
         act_cfg=None,
         norm_cfg=dict(type='GN', num_groups=32),
         num_outs=4),
-    encoder_cfg=dict(
+    encoder=dict(
         num_layers=6,
         layer_cfg=dict(
             self_attn_cfg=dict(embed_dims=256, num_levels=4,
@@ -39,7 +39,7 @@ model = dict(
                 embed_dims=256,
                 feedforward_channels=2048,  # 1024 for DeformDETR
                 ffn_drop=0.0))),  # 0.1 for DeformDETR
-    decoder_cfg=dict(
+    decoder=dict(
         num_layers=6,
         return_intermediate=True,
         layer_cfg=dict(

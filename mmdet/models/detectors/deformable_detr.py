@@ -3,14 +3,15 @@ import math
 from typing import Dict, List, Tuple
 
 import torch
-import torch.nn.functional as F
-from mmcv.cnn.bricks.transformer import MultiScaleDeformableAttention
-from mmengine.model import xavier_init
 from torch import Tensor, nn
 from torch.nn.init import normal_
+import torch.nn.functional as F
+
+from mmengine.model import xavier_init
+from mmcv.cnn.bricks.transformer import MultiScaleDeformableAttention
 
 from mmdet.registry import MODELS
-from mmdet.structures import OptSampleList
+from mmdet.structures import OptSampleList, SampleList
 from mmdet.utils import OptConfigType
 from ..layers import (DeformableDetrTransformerDecoder,
                       DeformableDetrTransformerEncoder, SinePositionalEncoding)
@@ -407,19 +408,19 @@ class DeformableDETR(DetectionTransformer):
 
         .. code:: text
 
-                    |---> valid_H <---|
+                    |---> valid_W <---|
                  ---+-----------------+-----+---
                   A |                 |     | A
                   | |                 |     | |
                   | |                 |     | |
-            valid_W |                 |     | |
-                  | |                 |     | W
+            valid_H |                 |     | |
+                  | |                 |     | H
                   | |                 |     | |
                   V |                 |     | |
                  ---+-----------------+     | |
                     |                       | V
                     +-----------------------+---
-                    |---------> H <---------|
+                    |---------> W <---------|
 
           The valid_ratios are defined as:
                 r_h = valid_H / H,  r_w = valid_W / W
@@ -540,6 +541,47 @@ class DeformableDETR(DetectionTransformer):
                           dim=4).flatten(2)
         return pos
 
+    def predict(self,
+                batch_inputs: Tensor,
+                batch_data_samples: SampleList,
+                rescale: bool = True) -> SampleList:
+        """Predict results from a batch of inputs and data samples with
+        post-processing.
+
+        Args:
+            batch_inputs (Tensor): Inputs, has shape (bs, dim, H, W).
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+            rescale (bool): Whether to rescale the results.
+                Defaults to True.
+
+        Returns:
+            list[:obj:`DetDataSample`]: Detection results of the input images.
+            Each DetDataSample usually contain 'pred_instances'. And the
+            `pred_instances` usually contains following keys.
+
+            - scores (Tensor): Classification scores, has a shape
+              (num_instance, )
+            - labels (Tensor): Labels of bboxes, has a shape
+              (num_instances, ).
+            - bboxes (Tensor): Has a shape (num_instances, 4),
+              the last dimension 4 arrange as (x1, y1, x2, y2).
+        """
+        img_feats = self.extract_feat(batch_inputs)
+        head_inputs_dict = self.forward_transformer(img_feats,
+                                                    batch_data_samples)
+        if self.as_two_stage:  # TODO: refine this
+            head_inputs_dict.pop('enc_outputs_class')
+            head_inputs_dict.pop('enc_outputs_coord')
+        results_list = self.bbox_head.predict(
+            **head_inputs_dict,
+            rescale=rescale,
+            batch_data_samples=batch_data_samples)
+        batch_data_samples = self.add_pred_to_datasample(
+            batch_data_samples, results_list)
+        return batch_data_samples
+
     def _forward(
             self,
             batch_inputs: Tensor,
@@ -561,7 +603,8 @@ class DeformableDETR(DetectionTransformer):
         img_feats = self.extract_feat(batch_inputs)
         head_inputs_dict = self.forward_transformer(img_feats,
                                                     batch_data_samples)
-        head_inputs_dict.pop('enc_outputs_class')
-        head_inputs_dict.pop('enc_outputs_coord')
+        if self.as_two_stage:  # TODO: refine this
+            head_inputs_dict.pop('enc_outputs_class')
+            head_inputs_dict.pop('enc_outputs_coord')
         results = self.bbox_head.forward(**head_inputs_dict)
         return results

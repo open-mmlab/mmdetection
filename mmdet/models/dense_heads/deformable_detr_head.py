@@ -249,8 +249,7 @@ class DeformableDETRHead(DETRHead):
                 hidden_states: Tensor,
                 references: List[Tensor],
                 batch_data_samples: SampleList,
-                rescale: bool = True,
-                **kwargs) -> InstanceList:
+                rescale: bool = True) -> InstanceList:
         """Perform forward propagation and loss calculation of the detection
         head on the queries of the upstream network.
 
