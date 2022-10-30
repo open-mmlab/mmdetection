@@ -37,5 +37,5 @@ __all__ = [
     'DetrTransformerEncoder', 'DetrTransformerDecoder',
     'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
     'DeformableDetrTransformerEncoderLayer',
-    'DeformableDetrTransformerDecoderLayer'
+    'DeformableDetrTransformerDecoderLayer', 'DinoTransformerDecoder'
 ]
