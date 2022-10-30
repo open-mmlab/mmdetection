@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
-from typing import Dict, Tuple, List, Union
+from typing import Dict, List, Tuple, Union
 
 import torch
 from torch import Tensor, nn
@@ -105,15 +105,18 @@ class DINO(DeformableDETR):
         """
         img_feats = self.extract_feat(batch_inputs)
         head_inputs_dict = self.forward_transformer(
-            img_feats, batch_data_samples, query_denoising=True)  # TODO: refine this  # noqa
+            img_feats, batch_data_samples,
+            query_denoising=True)  # TODO: refine this  # noqa
         losses = self.bbox_head.loss(
             **head_inputs_dict, batch_data_samples=batch_data_samples)
         return losses
 
-    def forward_transformer(self,
-                            img_feats: Tuple[Tensor],
-                            batch_data_samples: OptSampleList = None,
-                            query_denoising: bool = False) -> Dict:  # TODO: refine this  # noqa
+    def forward_transformer(
+            self,
+            img_feats: Tuple[Tensor],
+            batch_data_samples: OptSampleList = None,
+            query_denoising: bool = False
+    ) -> Dict:  # TODO: refine this  # noqa
         """Forward process of Transformer.
 
         The forward procedure of the transformer is defined as:
@@ -147,7 +150,8 @@ class DINO(DeformableDETR):
         encoder_outputs_dict = self.forward_encoder(**encoder_inputs_dict)
 
         tmp_dec_in, head_inputs_dict = self.pre_decoder(
-            **encoder_outputs_dict, batch_data_samples=batch_data_samples,
+            **encoder_outputs_dict,
+            batch_data_samples=batch_data_samples,
             query_denoising=query_denoising)  # TODO: refine this  # noqa
         decoder_inputs_dict.update(tmp_dec_in)
 
@@ -156,12 +160,13 @@ class DINO(DeformableDETR):
         return head_inputs_dict
 
     def pre_decoder(
-            self,
-            memory: Tensor,
-            memory_mask: Tensor,
-            spatial_shapes: Tensor,
-            batch_data_samples: OptSampleList = None,
-            query_denoising: bool = False) -> Tuple[Dict, Dict]:  # TODO: refine this  # noqa
+        self,
+        memory: Tensor,
+        memory_mask: Tensor,
+        spatial_shapes: Tensor,
+        batch_data_samples: OptSampleList = None,
+        query_denoising: bool = False
+    ) -> Tuple[Dict, Dict]:  # TODO: refine this  # noqa
         """Prepare intermediate variables before entering Transformer decoder,
         such as `query`, `query_pos`, and `reference_points`.
 
@@ -237,8 +242,8 @@ class DINO(DeformableDETR):
                 self.dn_generator(batch_data_samples, self.label_embedding)
 
             query = torch.cat([dn_label_query, query], dim=1)
-            reference_points = torch.cat(
-                [dn_bbox_query, topk_coords_unact], dim=1)
+            reference_points = torch.cat([dn_bbox_query, topk_coords_unact],
+                                         dim=1)
         else:
             reference_points = topk_coords_unact
         reference_points = reference_points.sigmoid()
@@ -250,19 +255,21 @@ class DINO(DeformableDETR):
             query=query,
             memory=memory,
             reference_points=reference_points,
-            dn_mask=dn_mask if query_denoising else None)  # TODO: refine this  # noqa
+            dn_mask=dn_mask
+            if query_denoising else None)  # TODO: refine this  # noqa
         head_inputs_dict = dict(
             enc_outputs_class=topk_score,
             enc_outputs_coord=topk_anchor,
-            dn_meta=dn_meta if query_denoising else None)  # TODO: refine this  # noqa
+            dn_meta=dn_meta
+            if query_denoising else None)  # TODO: refine this  # noqa
         return decoder_inputs_dict, head_inputs_dict
 
     def predict(self,
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> SampleList:
-        """Predict results from a batch of inputs and data samples with
-        post-processing.
+        """Predict results from a batch of inputs and data samples with post-
+        processing.
 
         Args:
             batch_inputs (Tensor): Inputs, has shape (bs, dim, H, W).

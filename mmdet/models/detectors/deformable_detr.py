@@ -3,12 +3,11 @@ import math
 from typing import Dict, List, Tuple
 
 import torch
+import torch.nn.functional as F
+from mmcv.cnn.bricks.transformer import MultiScaleDeformableAttention
+from mmengine.model import xavier_init
 from torch import Tensor, nn
 from torch.nn.init import normal_
-import torch.nn.functional as F
-
-from mmengine.model import xavier_init
-from mmcv.cnn.bricks.transformer import MultiScaleDeformableAttention
 
 from mmdet.registry import MODELS
 from mmdet.structures import OptSampleList, SampleList
@@ -545,8 +544,8 @@ class DeformableDETR(DetectionTransformer):
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> SampleList:
-        """Predict results from a batch of inputs and data samples with
-        post-processing.
+        """Predict results from a batch of inputs and data samples with post-
+        processing.
 
         Args:
             batch_inputs (Tensor): Inputs, has shape (bs, dim, H, W).
