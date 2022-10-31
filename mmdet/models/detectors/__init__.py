@@ -4,6 +4,7 @@ from .autoassign import AutoAssign
 from .base import BaseDetector
 from .cascade_rcnn import CascadeRCNN
 from .centernet import CenterNet
+from .condinst import CondInst
 from .cornernet import CornerNet
 from .ddod import DDOD
 from .deformable_detr import DeformableDETR
@@ -58,5 +59,5 @@ __all__ = [
     'SOLOv2', 'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
     'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector', 'SoftTeacher',
-    'RTMDet'
+    'RTMDet', 'CondInst'
 ]

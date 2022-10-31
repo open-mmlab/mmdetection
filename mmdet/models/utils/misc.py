@@ -1,12 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from functools import partial
-from typing import List, Sequence, Union
+from typing import List, Sequence, Tuple, Union
 
 import numpy as np
 import torch
 from mmengine.structures import InstanceData
 from mmengine.utils import digit_version
 from six.moves import map, zip
+from torch import Tensor
 from torch.autograd import Function
 from torch.nn import functional as F
 
@@ -560,3 +561,86 @@ def reweight_loss_dict(losses: dict, weight: float) -> dict:
             else:
                 losses[name] = loss * weight
     return losses
+
+
+def compute_locations(h: int, w: int, feat_stride: int, device: str) -> Tensor:
+    """Generate the coordinate with feat_stride.
+
+    Args:
+        h (int), w (int): The feature size of h and w.
+        feat_stride (int): The feat_stride of the input feature.
+        device (str): The device where the feature will be put on.
+    Returns:
+        coord_feat (Tensor): The coordinate feature, of shape (N, 2, W, H).
+    """
+
+    shifts_x = torch.arange(
+        0,
+        w * feat_stride,
+        step=feat_stride,
+        dtype=torch.float32,
+        device=device)
+    shifts_y = torch.arange(
+        0,
+        h * feat_stride,
+        step=feat_stride,
+        dtype=torch.float32,
+        device=device)
+    shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x)
+    shift_x = shift_x.reshape(-1)
+    shift_y = shift_y.reshape(-1)
+    locations = torch.stack((shift_x, shift_y), dim=1) + feat_stride // 2
+    return locations
+
+
+def relative_coordinate_maps(feat_sizes: Tuple[int], feat_stride: int,
+                             centers: Tensor, strides: Tensor,
+                             size_of_interest: int) -> Tensor:
+    """Generate the relative coordinate maps with feat_stride.
+
+    Args:
+        feat_sizes (Tuple[int]): The feature size, which has 4 dims.
+        feat_stride (int): The feat_stride of the input feature.
+        centers (Tensor): The prior points of a object in
+            all feature pyramid. It has shape (num_priors, 2)
+        strides (Tensor): The prior strides of a object in
+            all feature pyramid. It has shape (num_priors, 1)
+        size_of_interest (int): The size of the region used in rel coord.
+    Returns:
+        rel_coord_feat (Tensor): The coordinate feature, of shape (N, 2, W, H).
+    """
+
+    _, _, H, W = feat_sizes
+    locations = compute_locations(
+        H, W, feat_stride=feat_stride, device=centers.device)
+    rel_coordinates = centers.reshape(-1, 1, 2) - locations.reshape(1, -1, 2)
+    rel_coordinates = rel_coordinates.permute(0, 2, 1).float()
+    rel_coordinates = rel_coordinates / (
+        strides[:, None, None] * size_of_interest)
+    return rel_coordinates.reshape(-1, 2, H, W)
+
+
+def aligned_bilinear(tensor: Tensor, factor: int) -> Tensor:
+    """aligned bilinear, used in original implement in CondInst:
+
+    https://github.com/aim-uofa/AdelaiDet/blob/\
+    c0b2092ce72442b0f40972f7c6dda8bb52c46d16/adet/utils/comm.py#L23
+    """
+
+    assert tensor.dim() == 4
+    assert factor >= 1
+    assert int(factor) == factor
+
+    if factor == 1:
+        return tensor
+
+    h, w = tensor.size()[2:]
+    tensor = F.pad(tensor, pad=(0, 1, 0, 1), mode='replicate')
+    oh = factor * h + 1
+    ow = factor * w + 1
+    tensor = F.interpolate(
+        tensor, size=(oh, ow), mode='bilinear', align_corners=True)
+    tensor = F.pad(
+        tensor, pad=(factor // 2, 0, factor // 2, 0), mode='replicate')
+
+    return tensor[:, :, :oh - 1, :ow - 1]
