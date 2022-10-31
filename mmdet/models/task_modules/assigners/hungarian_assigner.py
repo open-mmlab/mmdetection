@@ -1,19 +1,15 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Optional, Union
+
 import torch
+from mmengine import ConfigDict
+from mmengine.structures import InstanceData
+from scipy.optimize import linear_sum_assignment
+from torch import Tensor
 
 from mmdet.registry import TASK_UTILS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
-
-try:
-    from scipy.optimize import linear_sum_assignment
-except ImportError:
-    linear_sum_assignment = None
-from typing import List, Optional, Union
-
-from mmengine import ConfigDict
-from mmengine.structures import InstanceData
-from torch import Tensor
 
 
 @TASK_UTILS.register_module()
