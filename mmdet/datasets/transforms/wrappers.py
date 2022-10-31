@@ -189,8 +189,11 @@ class ProposalBroadcaster(BaseTransform):
            the outputs with the `gt_bboxes` in the second .
 
     Args:
-         transforms (list[dict | callable]): Sequence of transform object or
-            config dict to be wrapped.
+         transforms (list, optional): Sequence of transform
+            object or config dict to be wrapped. Defaults to [].
+
+    Note: The `TransformBroadcaster` in MMCV can achieve the same operation as
+          ProposalBroadcaster`, but need to set more complex parameters.
 
     Examples:
         >>> pipeline = [
@@ -207,12 +210,7 @@ class ProposalBroadcaster(BaseTransform):
         >>>     dict(type='PackDetInputs')]
     """
 
-    def __init__(
-        self,
-        transforms: List[Union[dict, Callable[[dict], dict]]],
-    ):
-        if transforms is None:
-            transforms = []
+    def __init__(self, transforms: List[Union[dict, Callable]] = []) -> None:
         self.transforms = Compose(transforms)
 
     def transform(self, results: dict) -> dict:
