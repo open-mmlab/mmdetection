@@ -559,7 +559,7 @@ class SOLOV2Head(SOLOHead):
         if num_pos > 0:
             loss_mask = torch.cat(loss_mask).sum() / num_pos
         else:
-            loss_mask = torch.cat(loss_mask).mean()
+            loss_mask = mask_feats.sum() * 0
 
         # cate
         flatten_labels = [
