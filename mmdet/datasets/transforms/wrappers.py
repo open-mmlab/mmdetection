@@ -193,7 +193,7 @@ class ProposalBroadcaster(BaseTransform):
             object or config dict to be wrapped. Defaults to [].
 
     Note: The `TransformBroadcaster` in MMCV can achieve the same operation as
-          ProposalBroadcaster`, but need to set more complex parameters.
+          `ProposalBroadcaster`, but need to set more complex parameters.
 
     Examples:
         >>> pipeline = [
