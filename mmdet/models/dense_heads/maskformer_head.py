@@ -9,6 +9,7 @@ from mmengine.model import caffe2_xavier_init
 from mmengine.structures import InstanceData, PixelData
 from torch import Tensor
 
+from mmdet.models.layers.pixel_decoder import PixelDecoder
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures import SampleList
 from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
@@ -102,10 +103,10 @@ class MaskFormerHead(AnchorFreeHead):
         self.pixel_decoder = MODELS.build(pixel_decoder)
         self.transformer_decoder = MODELS.build(transformer_decoder)
         self.decoder_embed_dims = self.transformer_decoder.embed_dims
-        pixel_decoder_type = pixel_decoder.get('type')
-        if pixel_decoder_type.endswith('PixelDecoder') and (
-                self.decoder_embed_dims != in_channels[-1]
-                or enforce_decoder_input_project):
+        if isinstance(
+                self.pixel_decoder,
+                PixelDecoder) and (self.decoder_embed_dims != in_channels[-1]
+                                   or enforce_decoder_input_project):
             self.decoder_input_proj = Conv2d(
                 in_channels[-1], self.decoder_embed_dims, kernel_size=1)
         else:
