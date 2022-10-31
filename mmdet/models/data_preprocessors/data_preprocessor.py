@@ -620,7 +620,8 @@ class BatchResize(nn.Module):
 
         return inputs, data_samples
 
-    def get_target_size(self, height, width):
+    def get_target_size(self, height: int,
+                        width: int) -> Tuple[int, int, float]:
         """Get the target size of a batch of images based on data and scale."""
         im_size_min = np.min([height, width])
         im_size_max = np.max([height, width])
@@ -631,7 +632,7 @@ class BatchResize(nn.Module):
             round(width * scale))
         return target_height, target_width, scale
 
-    def get_padded_tensor(self, tensor, pad_value):
+    def get_padded_tensor(self, tensor: Tensor, pad_value: int) -> Tensor:
         """Pad images according to pad_size_divisor."""
         assert tensor.ndim == 4
         target_height, target_width = tensor.shape[-2], tensor.shape[-1]

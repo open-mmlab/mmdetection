@@ -226,14 +226,14 @@ class MultiInstanceBBoxHead(BBoxHead):
         Returns:
             tuple: A tuple of classification scores and bbox prediction.
 
-                - cls_score (Tensor): Classification scores for all \
-                    scale levels, each is a 4D-tensor, the channels number \
-                    is num_base_priors * num_classes.
-                - bbox_pred (Tensor): Box energies / deltas for all \
-                    scale levels, each is a 4D-tensor, the channels number \
-                    is num_base_priors * 4.
-                -cls_score_ref (Tensor): The cls_score after refine model.
-                -bbox_pred_ref (Tensor): The bbox_pred after refine model.
+                - cls_score (Tensor): Classification scores for all scale
+                  levels, each is a 4D-tensor, the channels number is
+                  num_base_priors * num_classes.
+                - bbox_pred (Tensor): Box energies / deltas for all scale
+                  levels, each is a 4D-tensor, the channels number is
+                  num_base_priors * 4.
+                - cls_score_ref (Tensor): The cls_score after refine model.
+                - bbox_pred_ref (Tensor): The bbox_pred after refine model.
         """
         # shared part
         if self.num_shared_convs > 0:
@@ -322,24 +322,23 @@ class MultiInstanceBBoxHead(BBoxHead):
             Tuple[Tensor]: Ground truth for proposals in a single image.
             Containing the following list of Tensors:
 
-            - labels (list[Tensor],Tensor): Gt_labels for all
-                proposals in a batch, each tensor in list has
-                shape (num_proposals,) when `concat=False`, otherwise
-                just a single tensor has shape (num_all_proposals,).
+            - labels (list[Tensor],Tensor): Gt_labels for all proposals in a
+              batch, each tensor in list has shape (num_proposals,) when
+              `concat=False`, otherwise just a single tensor has shape
+              (num_all_proposals,).
             - label_weights (list[Tensor]): Labels_weights for
-                all proposals in a batch, each tensor in list has
-                shape (num_proposals,) when `concat=False`, otherwise
-                just a single tensor has shape (num_all_proposals,).
-            - bbox_targets (list[Tensor],Tensor): Regression target
-                for all proposals in a batch, each tensor in list
-                has shape (num_proposals, 4) when `concat=False`,
-                otherwise just a single tensor has shape
-                (num_all_proposals, 4), the last dimension 4 represents
-                [tl_x, tl_y, br_x, br_y].
+              all proposals in a batch, each tensor in list has shape
+              (num_proposals,) when `concat=False`, otherwise just a single
+              tensor has shape (num_all_proposals,).
+            - bbox_targets (list[Tensor],Tensor): Regression target for all
+              proposals in a batch, each tensor in list has shape
+              (num_proposals, 4) when `concat=False`, otherwise just a single
+              tensor has shape (num_all_proposals, 4), the last dimension 4
+              represents [tl_x, tl_y, br_x, br_y].
             - bbox_weights (list[tensor],Tensor): Regression weights for
-                all proposals in a batch, each tensor in list has shape
-                (num_proposals, 4) when `concat=False`, otherwise just a
-                single tensor has shape (num_all_proposals, 4).
+              all proposals in a batch, each tensor in list has shape
+              (num_proposals, 4) when `concat=False`, otherwise just a
+              single tensor has shape (num_all_proposals, 4).
         """
         labels = []
         bbox_targets = []
@@ -413,13 +412,13 @@ class MultiInstanceBBoxHead(BBoxHead):
         """
         losses = dict()
         if bbox_pred.any():
-            loss0 = self.emd_loss(bbox_pred[:, 0:4], cls_score[:, 0:2],
-                                  bbox_pred[:, 4:8], cls_score[:, 2:4],
-                                  bbox_targets, labels)
-            loss1 = self.emd_loss(bbox_pred[:, 4:8], cls_score[:, 2:4],
-                                  bbox_pred[:, 0:4], cls_score[:, 0:2],
-                                  bbox_targets, labels)
-            loss = torch.cat([loss0, loss1], dim=1)
+            loss_0 = self.emd_loss(bbox_pred[:, 0:4], cls_score[:, 0:2],
+                                   bbox_pred[:, 4:8], cls_score[:, 2:4],
+                                   bbox_targets, labels)
+            loss_1 = self.emd_loss(bbox_pred[:, 4:8], cls_score[:, 2:4],
+                                   bbox_pred[:, 0:4], cls_score[:, 0:2],
+                                   bbox_targets, labels)
+            loss = torch.cat([loss_0, loss_1], dim=1)
             _, min_indices = loss.min(dim=1)
             loss_emd = loss[torch.arange(loss.shape[0]), min_indices]
             loss_emd = loss_emd.mean()
@@ -514,7 +513,7 @@ class MultiInstanceBBoxHead(BBoxHead):
                 Defaults to None
 
         Returns:
-            :obj:`InstanceData`: Detection results of each image\
+            :obj:`InstanceData`: Detection results of each image.
             Each item usually contains following keys.
 
                 - scores (Tensor): Classification scores, has a shape
@@ -590,6 +589,7 @@ class MultiInstanceBBoxHead(BBoxHead):
                 conflicted.
             max_num (int, optional): if there are more than max_num bboxes
                 after NMS, only top max_num will be kept. Default to -1.
+
         Returns:
             Tuple[Tensor, Tensor]: (bboxes, scores).
         """

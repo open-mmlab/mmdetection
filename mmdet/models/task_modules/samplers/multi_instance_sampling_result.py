@@ -44,6 +44,13 @@ class MultiInstanceSamplingResult(SamplingResult):
             self.neg_gt_bboxes = gt_and_ignore_bboxes[
                 self.neg_assigned_gt_inds.long(), :]
 
+        # To resist the minus 1 operation in `SamplingResult.init()`.
         assign_result.gt_inds += 1
-        super().__init__(pos_inds, neg_inds, priors, gt_and_ignore_bboxes,
-                         assign_result, gt_flags, avg_factor_with_neg)
+        super().__init__(
+            pos_inds=pos_inds,
+            neg_inds=neg_inds,
+            priors=priors,
+            gt_bboxes=gt_and_ignore_bboxes,
+            assign_result=assign_result,
+            gt_flags=gt_flags,
+            avg_factor_with_neg=avg_factor_with_neg)
