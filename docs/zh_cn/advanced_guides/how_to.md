@@ -213,8 +213,6 @@ for level_out in level_outputs:
 
 **注意：** 不能直接使用 `load_from` 来加载 Detectron2 的预训练模型，但可以通过 `tools/model_converters/detectron2_to_mmdet.py` 先对该预训练模型进行转换。
 
-## MMDetection 中加载 Detectron2 训练的权重进行测试
-
 在测试时，用户应该首先使用 `tools/model_converters/detectron2_to_mmdet.py` 将 Detectron2 的预训练权重转换为 MMDetection 可读取的结构。
 
 ```shell
