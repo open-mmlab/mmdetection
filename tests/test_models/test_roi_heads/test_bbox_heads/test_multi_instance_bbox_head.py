@@ -13,7 +13,7 @@ class TestMultiInstanceBBoxHead(TestCase):
     def test_init(self):
         bbox_head = MultiInstanceBBoxHead(
             num_instance=2,
-            refine_flag=True,
+            with_refine=True,
             num_shared_fcs=2,
             in_channels=1,
             fc_out_channels=1,

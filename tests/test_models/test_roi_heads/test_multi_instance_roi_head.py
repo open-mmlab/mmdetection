@@ -30,7 +30,7 @@ def _fake_roi_head():
                 featmap_strides=[4, 8, 16, 32]),
             bbox_head=dict(
                 type='MultiInstanceBBoxHead',
-                refine_flag=False,
+                with_refine=False,
                 num_shared_fcs=2,
                 in_channels=256,
                 fc_out_channels=1024,
