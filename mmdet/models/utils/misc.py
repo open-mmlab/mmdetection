@@ -127,7 +127,9 @@ def empty_instances(batch_img_metas: List[dict],
                     instance_results: OptInstanceList = None,
                     mask_thr_binary: Union[int, float] = 0,
                     box_type: Union[str, type] = 'hbox',
-                    use_box_type: bool = False) -> List[InstanceData]:
+                    use_box_type: bool = False,
+                    num_classes: int = 80,
+                    score_per_cls: bool = False) -> List[InstanceData]:
     """Handle predicted instances when RoI is empty.
 
     Note: If ``instance_results`` is not None, it will be modified
@@ -145,6 +147,10 @@ def empty_instances(batch_img_metas: List[dict],
         box_type (str or type): The empty box type. Defaults to `hbox`.
         use_box_type (bool): Whether to warp boxes with the box type.
             Defaults to False.
+        num_classes (int): num_classes of bbox_head. Defaults to 80.
+        score_per_cls (bool):  Whether to generate classwise score for
+            the empty instance. ``score_per_cls`` will be True when the model
+            needs to produce raw results without nms. Defaults to False.
 
     Returns:
         list[:obj:`InstanceData`]: Detection results of each image
@@ -169,7 +175,8 @@ def empty_instances(batch_img_metas: List[dict],
             if use_box_type:
                 bboxes = box_type(bboxes, clone=False)
             results.bboxes = bboxes
-            results.scores = torch.zeros((0, ), device=device)
+            score_shape = (0, num_classes + 1) if score_per_cls else (0, )
+            results.scores = torch.zeros(score_shape, device=device)
             results.labels = torch.zeros((0, ),
                                          device=device,
                                          dtype=torch.long)

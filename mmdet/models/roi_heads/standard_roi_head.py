@@ -323,7 +323,9 @@ class StandardRoIHead(BaseRoIHead):
                 batch_img_metas,
                 rois.device,
                 task_type='bbox',
-                box_type=self.bbox_head.predict_box_type)
+                box_type=self.bbox_head.predict_box_type,
+                num_classes=self.bbox_head.num_classes,
+                score_per_cls=rcnn_test_cfg is None)
 
         bbox_results = self._bbox_forward(x, rois)
 
