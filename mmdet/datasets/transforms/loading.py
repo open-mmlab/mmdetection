@@ -632,7 +632,7 @@ class LoadProposals(BaseTransform):
                or isinstance(proposals, BaseDataElement)
         bboxes = proposals['bboxes'].astype(np.float32)
         assert bboxes.shape[1] == 4, \
-            f'Proposals should have shapes (n, 4), but found {proposals.shape}'
+            f'Proposals should have shapes (n, 4), but found {bboxes.shape}'
 
         if 'scores' in proposals:
             scores = proposals['scores'].astype(np.float32)

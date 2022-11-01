@@ -4,6 +4,7 @@ import os.path as osp
 import unittest
 
 import numpy as np
+import torch
 from mmengine.structures import InstanceData, PixelData
 
 from mmdet.datasets.transforms import PackDetInputs
@@ -35,7 +36,8 @@ class TestPackDetInputs(unittest.TestCase):
             BitmapMasks(rng.rand(3, 300, 400), height=300, width=400),
             'gt_bboxes_labels': rng.rand(3, ),
             'gt_ignore_flags': np.array([0, 0, 1], dtype=np.bool),
-            'proposals': rng.rand(2, 4)
+            'proposals': rng.rand(2, 4),
+            'proposals_scores': rng.rand(2, )
         }
         self.results2 = {
             'img_id': 1,
@@ -49,7 +51,8 @@ class TestPackDetInputs(unittest.TestCase):
             'gt_masks':
             BitmapMasks(rng.rand(3, 300, 400), height=300, width=400),
             'gt_bboxes_labels': rng.rand(3, ),
-            'proposals': rng.rand(2, 4)
+            'proposals': rng.rand(2, 4),
+            'proposals_scores': rng.rand(2, )
         }
         self.meta_keys = ('img_id', 'img_path', 'ori_shape', 'scale_factor',
                           'flip')
@@ -69,7 +72,9 @@ class TestPackDetInputs(unittest.TestCase):
         self.assertIsInstance(results['data_samples'].proposals, InstanceData)
         self.assertEqual(len(results['data_samples'].proposals), 2)
         self.assertIsInstance(results['data_samples'].proposals.bboxes,
-                              np.ndarray)
+                              torch.Tensor)
+        self.assertIsInstance(results['data_samples'].proposals.scores,
+                              torch.Tensor)
 
     def test_transform_without_ignore(self):
         transform = PackDetInputs(meta_keys=self.meta_keys)
@@ -86,7 +91,9 @@ class TestPackDetInputs(unittest.TestCase):
         self.assertIsInstance(results['data_samples'].proposals, InstanceData)
         self.assertEqual(len(results['data_samples'].proposals), 2)
         self.assertIsInstance(results['data_samples'].proposals.bboxes,
-                              np.ndarray)
+                              torch.Tensor)
+        self.assertIsInstance(results['data_samples'].proposals.scores,
+                              torch.Tensor)
 
     def test_repr(self):
         transform = PackDetInputs(meta_keys=self.meta_keys)
