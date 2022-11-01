@@ -251,7 +251,9 @@ class DINOHead(DeformableDETRHead):
                         single_pad).long().cuda().unsqueeze(1) + t
             pos_inds = pos_inds.flatten()
         else:
-            pos_inds = pos_assigned_gt_inds = torch.tensor([]).long().cuda()
+            pos_inds = pos_assigned_gt_inds = \
+                dn_bbox_pred.new_tensor([], dtype=torch.long)
+
         neg_inds = pos_inds + single_pad // 2
 
         # label targets

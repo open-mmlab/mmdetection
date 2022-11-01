@@ -6,7 +6,7 @@ from .detr_transformer import (DetrTransformerDecoder,
                                DetrTransformerDecoderLayer,
                                DetrTransformerEncoder,
                                DetrTransformerEncoderLayer)
-from .dino_transformer import DinoTransformerDecoder
+from .dino_transformer import CdnQueryGenerator, DinoTransformerDecoder
 from .utils import (MLP, AdaptivePadding, DynamicConv, PatchEmbed,
                     PatchMerging, inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
 
@@ -17,5 +17,6 @@ __all__ = [
     'DetrTransformerEncoderLayer', 'DetrTransformerDecoderLayer',
     'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
     'DeformableDetrTransformerEncoderLayer',
-    'DeformableDetrTransformerDecoderLayer', 'DinoTransformerDecoder'
+    'DeformableDetrTransformerDecoderLayer', 'DinoTransformerDecoder',
+    'CdnQueryGenerator'
 ]
