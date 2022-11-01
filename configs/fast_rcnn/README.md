@@ -15,39 +15,51 @@ This paper proposes a Fast Region-based Convolutional Network method (Fast R-CNN
 ## Introduction
 
 Before training the Fast R-CNN, users should first train an [RPN](../rpn/README.md), and use the RPN to extract the region proposals.
-The region proposals result can be obtained by setting `DumpProposals` pseudo metric. The dumped results is a `dict(file_name: pred_instance)`.
-The `pred_instance` is a `InstanceData` with the ranked bboxes and scores calculate from RPN. We provide example of dumping proposals in [RPN config](../rpn/rpn_r50_fpn_1x_coco.py).
+The region proposals can be obtained by setting `DumpProposals` pseudo metric. The dumped results is a `dict(file_name: pred_instance)`.
+The `pred_instance` is an `InstanceData` containing the sorted boxes and scores predicted by RPN. We provide example of dumping proposals in [RPN config](../rpn/rpn_r50_fpn_1x_coco.py).
 
-- Firstly, it should be obtained the region proposals in both training and validation (or testing) set.
+- First, it should be obtained the region proposals in both training and validation (or testing) set.
   change the type of `test_evaluator` to `DumpProposals` in the RPN config to get the region proposals as below:
 
   The config of get training image region proposals can be set as below:
 
   ```python
   # For training set
-  test_dataloader = dict(
+  val_dataloader = dict(
       dataset=dict(
           ann_file='data/coco/annotations/instances_train2017.json',
           data_prefix=dict(img='val2017/')))
-  test_evaluator = dict(
+  val_dataloader = dict(
       _delete_=True,
       type='DumpProposals',
       output_dir='data/coco/proposals/',
-      proposals_file='rpn_r50_fpn_1x_val2017.pkl')
+      proposals_file='rpn_r50_fpn_1x_train2017.pkl')
+  test_dataloader = val_dataloader
+  test_evaluator = val_dataloader
   ```
 
   The config of get validation image region proposals can be set as below:
 
   ```python
   # For validation set
-  test_evaluator = dict(
+  val_dataloader = dict(
     _delete_=True,
     type='DumpProposals',
     output_dir='data/coco/proposals/',
     proposals_file='rpn_r50_fpn_1x_val2017.pkl')
+  test_evaluator = val_dataloader
   ```
 
-  Users can follow [test tutorial](https://mmdetection.readthedocs.io/en/3.x/user_guides/test.html) to obtain the region proposals file.
+  Extract the region proposals command can be set as below:
+
+  ```bash
+  ./tools/dist_test.sh \
+      configs/rpn_r50_fpn_1x_coco.py \
+      checkpoints/rpn_r50_fpn_1x_coco_20200218-5525fa2e.pth \
+      8
+  ```
+
+  Users can refer to [test tutorial](https://mmdetection.readthedocs.io/en/3.x/user_guides/test.html) for more details.
 
 - Then, modify the path of `proposal_file` in the dataset and using `ProposalBroadcaster` to process both ground truth bounding boxes and region proposals in pipelines.
   An example of Fast R-CNN important setting can be seen as below:
