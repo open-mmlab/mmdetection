@@ -280,7 +280,7 @@ class MultiInstanceBBoxHead(BBoxHead):
             cls_score_ref = list()
             bbox_pred_ref = list()
             for k in range(self.num_instance):
-                feat_ref = F.softmax(cls_score[k], dim=-1)
+                feat_ref = cls_score[k].softmax(dim=-1)
                 feat_ref = torch.cat((bbox_pred[k], feat_ref[:, 1][:, None]),
                                      dim=1).repeat(1, 4)
                 feat_ref = torch.cat((x_ref, feat_ref), dim=1)
@@ -478,14 +478,14 @@ class MultiInstanceBBoxHead(BBoxHead):
 
         # loss for regression
         loss_bbox = self.loss_bbox(bbox_pred, targets[fg_masks])
-        loss_bbox = torch.sum(loss_bbox, dim=1)
+        loss_bbox = loss_bbox.sum(dim=1)
 
         # loss for classification
         labels = labels * valid_masks
         loss_cls = self.loss_cls(cls_score, labels)
 
         loss_cls[fg_masks] = loss_cls[fg_masks] + loss_bbox
-        loss = loss_cls.reshape(-1, 2).sum(axis=1)
+        loss = loss_cls.reshape(-1, 2).sum(dim=1)
         return loss.reshape(-1, 1)
 
     def _predict_by_feat_single(
@@ -535,9 +535,7 @@ class MultiInstanceBBoxHead(BBoxHead):
                                    task_type='bbox',
                                    instance_results=[results])[0]
 
-        scores = F.softmax(
-            cls_score, dim=-1) if cls_score is not None else None
-
+        scores = cls_score.softmax(dim=-1) if cls_score is not None else None
         img_shape = img_meta['img_shape']
         bboxes = self.bbox_coder.decode(
             roi[..., 1:], bbox_pred, max_shape=img_shape)
