@@ -148,7 +148,7 @@ def empty_instances(batch_img_metas: List[dict],
         use_box_type (bool): Whether to warp boxes with the box type.
             Defaults to False.
         num_classes (int): num_classes of bbox_head. Defaults to 80.
-        score_per_cls (bool):  Whether to generate class-aware score for
+        score_per_cls (bool):  Whether to generate classwise score for
             the empty instance. ``score_per_cls`` will be True when the model
             needs to result the raw results without nms. Defaults to False.
 
