@@ -150,7 +150,7 @@ def empty_instances(batch_img_metas: List[dict],
         num_classes (int): num_classes of bbox_head. Defaults to 80.
         score_per_cls (bool):  Whether to generate classwise score for
             the empty instance. ``score_per_cls`` will be True when the model
-            needs to result the raw results without nms. Defaults to False.
+            needs to produce raw results without nms. Defaults to False.
 
     Returns:
         list[:obj:`InstanceData`]: Detection results of each image
