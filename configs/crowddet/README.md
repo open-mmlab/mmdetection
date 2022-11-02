@@ -14,10 +14,10 @@ We propose a simple yet effective proposal-based object detector, aiming at dete
 
 ## Results and Models
 
-| Backbone | RM    |  Style  | Mem (GB) | Inf time (fps) | box AP |                               Config                               |                 Download                 |
-| :------: | ----- | :-----: | :------: | :------------: | :----: | :----------------------------------------------------------------: | :--------------------------------------: |
-| R-50-FPN | False | pytorch |    -     |       -        |  90.0  |      [config](./crowddet-rcnn_r50_fpn_8xb2-30e_crowdhuman.py)      | [model](https://download.openmmlab.com/) |
-| R-50-FPN | True  | pytorch |    -     |       -        | 90.32  | [config](./crowddet-rcnn_refine_r50_fpn_8xb2-30e_crowdhuman.py.py) | [model](https://download.openmmlab.com/) |
+| Backbone |  RM   |  Style  | Mem (GB) | Inf time (fps) | box AP |                             Config                              |                                                                                                                                                                                            Download                                                                                                                                                                                            |
+| :------: | :---: | :-----: | :------: | :------------: | :----: | :-------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| R-50-FPN | False | pytorch |    -     |       -        |  90.0  |    [config](./crowddet-rcnn_r50_fpn_8xb2-30e_crowdhuman.py)     |               [model](https://download.openmmlab.com/mmdetection/v3.0/crowddet/crowddet-rcnn_r50_fpn_8xb2-30e_crowdhuman/crowddet-rcnn_r50_fpn_8xb2-30e_crowdhuman_20221023_174954-dc319c2d.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/crowddet/crowddet-rcnn_r50_fpn_8xb2-30e_crowdhuman/crowddet-rcnn_r50_fpn_8xb2-30e_crowdhuman_20221023_174954.log.json)               |
+| R-50-FPN | True  | pytorch |    -     |       -        | 90.32  | [config](./crowddet-rcnn_refine_r50_fpn_8xb2-30e_crowdhuman.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/crowddet/crowddet-rcnn_refine_r50_fpn_8xb2-30e_crowdhuman/crowddet-rcnn_refine_r50_fpn_8xb2-30e_crowdhuman_20221024_215917-45602806.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/crowddet/crowddet-rcnn_refine_r50_fpn_8xb2-30e_crowdhuman/crowddet-rcnn_refine_r50_fpn_8xb2-30e_crowdhuman_20221024_215917.log.json) |
 
 Note:
 

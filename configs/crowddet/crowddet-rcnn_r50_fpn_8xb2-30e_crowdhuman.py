@@ -131,7 +131,7 @@ model = dict(
             max_per_img=500)))
 
 dataset_type = 'CrowdHumanDataset'
-data_root = '/data/CrowdHuman/'
+data_root = 'data/CrowdHuman/'
 file_client_args = dict(backend='disk')
 train_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
@@ -144,8 +144,9 @@ train_pipeline = [
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
-    dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', scale=(1400, 800), keep_ratio=True),
+    # avoid bboxes being resized
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
