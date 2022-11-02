@@ -765,13 +765,15 @@ class CondInstMaskFeatModule(MaskFeatModule):
         feature_add_all_level = self.convs_all_levels[0](inputs[0])
         target_h, target_w = feature_add_all_level.size()[2:]
         for i in range(1, len(inputs)):
-            x_p = self.convs_all_levels[i](inputs[i])
+            input_p = inputs[i]
+            x_p = self.convs_all_levels[i](input_p)
             h, w = x_p.size()[2:]
             factor_h = target_h // h
             factor_w = target_w // w
             assert factor_h == factor_w
-            x_p = aligned_bilinear(x_p, factor_h)
-            feature_add_all_level += x_p
+            feature_per_level = aligned_bilinear(x_p, factor_h)
+            feature_add_all_level = feature_add_all_level + \
+                feature_per_level
 
         feature_add_all_level = self.conv_branch(feature_add_all_level)
         feature_pred = self.conv_pred(feature_add_all_level)
