@@ -5,8 +5,8 @@ from .base import BaseDetector
 from .cascade_rcnn import CascadeRCNN
 from .centernet import CenterNet
 from .cornernet import CornerNet
-from .d2_wrapper import Detectron2Wrapper
 from .crowddet import CrowdDet
+from .d2_wrapper import Detectron2Wrapper
 from .ddod import DDOD
 from .deformable_detr import DeformableDETR
 from .detr import DETR
