@@ -5,6 +5,7 @@ from .base import BaseDetector
 from .cascade_rcnn import CascadeRCNN
 from .centernet import CenterNet
 from .cornernet import CornerNet
+from .crowddet import CrowdDet
 from .d2_wrapper import Detectron2Wrapper
 from .ddod import DDOD
 from .deformable_detr import DeformableDETR
@@ -59,5 +60,5 @@ __all__ = [
     'SOLOv2', 'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
     'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector', 'SoftTeacher',
-    'RTMDet', 'Detectron2Wrapper'
+    'RTMDet', 'Detectron2Wrapper', 'RTMDet', 'CrowdDet'
 ]
