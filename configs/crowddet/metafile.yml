@@ -24,6 +24,7 @@ Models:
     In Collection: CrowdDet
     Config: configs/crowddet/crowddet-rcnn_refine_r50_fpn_8xb2-30e_crowdhuman.py
     Metadata:
+      Training Memory (GB): 4.8
       Epochs: 30
     Results:
       - Task: Object Detection
@@ -36,6 +37,7 @@ Models:
     In Collection: CrowdDet
     Config: configs/crowddet/crowddet-rcnn_r50_fpn_8xb2-30e_crowdhuman.py
     Metadata:
+      Training Memory (GB): 4.4
       Epochs: 30
     Results:
       - Task: Object Detection
