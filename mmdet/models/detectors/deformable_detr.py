@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -10,7 +10,7 @@ from torch import Tensor, nn
 from torch.nn.init import normal_
 
 from mmdet.registry import MODELS
-from mmdet.structures import OptSampleList, SampleList
+from mmdet.structures import OptSampleList
 from mmdet.utils import OptConfigType
 from ..layers import (DeformableDetrTransformerDecoder,
                       DeformableDetrTransformerEncoder, SinePositionalEncoding)
@@ -342,10 +342,14 @@ class DeformableDETR(DetectionTransformer):
             query_pos=query_pos,
             memory=memory,
             reference_points=reference_points)
-        head_inputs_dict = dict(
-            enc_outputs_class=enc_outputs_class if self.as_two_stage else None,
-            enc_outputs_coord=enc_outputs_coord_unact.sigmoid()
-            if self.as_two_stage else None)
+        if self.training:
+            head_inputs_dict = dict(
+                enc_outputs_class=enc_outputs_class
+                if self.as_two_stage else None,
+                enc_outputs_coord=enc_outputs_coord_unact.sigmoid()
+                if self.as_two_stage else None)
+        else:
+            head_inputs_dict = dict()
         return decoder_inputs_dict, head_inputs_dict
 
     def forward_decoder(self, query: Tensor, query_pos: Tensor, memory: Tensor,
@@ -539,71 +543,3 @@ class DeformableDETR(DetectionTransformer):
         pos = torch.stack((pos[:, :, :, 0::2].sin(), pos[:, :, :, 1::2].cos()),
                           dim=4).flatten(2)
         return pos
-
-    def predict(self,
-                batch_inputs: Tensor,
-                batch_data_samples: SampleList,
-                rescale: bool = True) -> SampleList:
-        """Predict results from a batch of inputs and data samples with post-
-        processing.
-
-        Args:
-            batch_inputs (Tensor): Inputs, has shape (bs, dim, H, W).
-            batch_data_samples (List[:obj:`DetDataSample`]): The batch
-                data samples. It usually includes information such
-                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
-            rescale (bool): Whether to rescale the results.
-                Defaults to True.
-
-        Returns:
-            list[:obj:`DetDataSample`]: Detection results of the input images.
-            Each DetDataSample usually contain 'pred_instances'. And the
-            `pred_instances` usually contains following keys.
-
-            - scores (Tensor): Classification scores, has a shape
-              (num_instance, )
-            - labels (Tensor): Labels of bboxes, has a shape
-              (num_instances, ).
-            - bboxes (Tensor): Has a shape (num_instances, 4),
-              the last dimension 4 arrange as (x1, y1, x2, y2).
-        """
-        img_feats = self.extract_feat(batch_inputs)
-        head_inputs_dict = self.forward_transformer(img_feats,
-                                                    batch_data_samples)
-        if self.as_two_stage:  # TODO: refine this
-            head_inputs_dict.pop('enc_outputs_class')
-            head_inputs_dict.pop('enc_outputs_coord')
-        results_list = self.bbox_head.predict(
-            **head_inputs_dict,
-            rescale=rescale,
-            batch_data_samples=batch_data_samples)
-        batch_data_samples = self.add_pred_to_datasample(
-            batch_data_samples, results_list)
-        return batch_data_samples
-
-    def _forward(
-            self,
-            batch_inputs: Tensor,
-            batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
-        """Network forward process. Usually includes backbone, neck and head
-        forward without any post-processing.Overwrite to pop
-        'enc_outputs_class' and 'enc_outputs_coord'.
-
-         Args:
-            batch_inputs (Tensor): Inputs, has shape (bs, dim, H, W).
-            batch_data_samples (List[:obj:`DetDataSample`], optional): The
-                batch data samples. It usually includes information such
-                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
-                Defaults to None.
-
-        Returns:
-            tuple[Tensor]: A tuple of features from ``bbox_head`` forward.
-        """
-        img_feats = self.extract_feat(batch_inputs)
-        head_inputs_dict = self.forward_transformer(img_feats,
-                                                    batch_data_samples)
-        if self.as_two_stage:  # TODO: refine this
-            head_inputs_dict.pop('enc_outputs_class')
-            head_inputs_dict.pop('enc_outputs_coord')
-        results = self.bbox_head.forward(**head_inputs_dict)
-        return results

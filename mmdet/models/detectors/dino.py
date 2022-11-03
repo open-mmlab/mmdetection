@@ -1,12 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, List, Tuple, Union
+from typing import Dict, Tuple
 
 import torch
 from torch import Tensor, nn
 from torch.nn.init import normal_
 
 from mmdet.registry import MODELS
-from mmdet.structures import OptSampleList, SampleList
+from mmdet.structures import OptSampleList
 from mmdet.utils import OptConfigType
 from ..layers import (CdnQueryGenerator, DeformableDetrTransformerEncoder,
                       DinoTransformerDecoder, SinePositionalEncoding)
@@ -79,34 +79,11 @@ class DINO(DeformableDETR):
         nn.init.xavier_uniform_(self.memory_trans_fc.weight)
         normal_(self.level_embed)
 
-    def loss(self, batch_inputs: Tensor,
-             batch_data_samples: SampleList) -> Union[dict, list]:
-        """Calculate losses from a batch of inputs and data samples.
-
-        Args:
-            batch_inputs (Tensor): Input images of shape (bs, dim, H, W).
-                These should usually be mean centered and std scaled.
-            batch_data_samples (List[:obj:`DetDataSample`]): The batch
-                data samples. It usually includes information such
-                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
-
-        Returns:
-            dict: A dictionary of loss components
-        """
-        img_feats = self.extract_feat(batch_inputs)
-        head_inputs_dict = self.forward_transformer(
-            img_feats, batch_data_samples,
-            query_denoising=True)  # TODO: refine this  # noqa
-        losses = self.bbox_head.loss(
-            **head_inputs_dict, batch_data_samples=batch_data_samples)
-        return losses
-
     def forward_transformer(
-            self,
-            img_feats: Tuple[Tensor],
-            batch_data_samples: OptSampleList = None,
-            query_denoising: bool = False
-    ) -> Dict:  # TODO: refine this  # noqa
+        self,
+        img_feats: Tuple[Tensor],
+        batch_data_samples: OptSampleList = None,
+    ) -> Dict:
         """Forward process of Transformer.
 
         The forward procedure of the transformer is defined as:
@@ -126,8 +103,6 @@ class DINO(DeformableDETR):
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
                 Defaults to None.
-            query_denoising (bool): Whether to calculate the denoising part.
-                Defaults to `False`.
 
         Returns:
             dict: The dictionary of bbox_head function inputs, which always
@@ -140,9 +115,7 @@ class DINO(DeformableDETR):
         encoder_outputs_dict = self.forward_encoder(**encoder_inputs_dict)
 
         tmp_dec_in, head_inputs_dict = self.pre_decoder(
-            **encoder_outputs_dict,
-            batch_data_samples=batch_data_samples,
-            query_denoising=query_denoising)  # TODO: refine this  # noqa
+            **encoder_outputs_dict, batch_data_samples=batch_data_samples)
         decoder_inputs_dict.update(tmp_dec_in)
 
         decoder_outputs_dict = self.forward_decoder(**decoder_inputs_dict)
@@ -155,8 +128,7 @@ class DINO(DeformableDETR):
         memory_mask: Tensor,
         spatial_shapes: Tensor,
         batch_data_samples: OptSampleList = None,
-        query_denoising: bool = False
-    ) -> Tuple[Dict, Dict]:  # TODO: refine this  # noqa
+    ) -> Tuple[Dict, Dict]:
         """Prepare intermediate variables before entering Transformer decoder,
         such as `query`, `query_pos`, and `reference_points`.
 
@@ -173,8 +145,6 @@ class DINO(DeformableDETR):
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
                 Defaults to None.
-            query_denoising (bool): Whether to calculate the denoising part.
-                Defaults to `False`.
 
         Returns:
             tuple[dict, dict]: The decoder_inputs_dict and head_inputs_dict.
@@ -227,10 +197,9 @@ class DINO(DeformableDETR):
         # NOTE the query_embed here is not spatial query as in DETR.
         # It is actually content query, which is named tgt in other
         # DETR-like models
-        if query_denoising:  # TODO: refine this  # noqa
+        if self.training:  # TODO: refine this  # noqa
             dn_label_query, dn_bbox_query, dn_mask, dn_meta = \
-                self.dn_query_generator(batch_data_samples,
-                                        self.label_embedding)
+                self.dn_query_generator(batch_data_samples)
 
             query = torch.cat([dn_label_query, query], dim=1)
             reference_points = torch.cat([dn_bbox_query, topk_coords_unact],
@@ -246,82 +215,15 @@ class DINO(DeformableDETR):
             query=query,
             memory=memory,
             reference_points=reference_points,
-            dn_mask=dn_mask
-            if query_denoising else None)  # TODO: refine this  # noqa
-        head_inputs_dict = dict(
-            enc_outputs_class=topk_score,
-            enc_outputs_coord=topk_anchor,
-            dn_meta=dn_meta
-            if query_denoising else None)  # TODO: refine this  # noqa
+            dn_mask=dn_mask)
+        if self.training:
+            head_inputs_dict = dict(
+                enc_outputs_class=topk_score,
+                enc_outputs_coord=topk_anchor,
+                dn_meta=dn_meta)
+        else:
+            head_inputs_dict = dict()
         return decoder_inputs_dict, head_inputs_dict
-
-    def predict(self,
-                batch_inputs: Tensor,
-                batch_data_samples: SampleList,
-                rescale: bool = True) -> SampleList:
-        """Predict results from a batch of inputs and data samples with post-
-        processing.
-
-        Args:
-            batch_inputs (Tensor): Inputs, has shape (bs, dim, H, W).
-            batch_data_samples (List[:obj:`DetDataSample`]): The batch
-                data samples. It usually includes information such
-                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
-            rescale (bool): Whether to rescale the results.
-                Defaults to True.
-
-        Returns:
-            list[:obj:`DetDataSample`]: Detection results of the input images.
-            Each DetDataSample usually contain 'pred_instances'. And the
-            `pred_instances` usually contains following keys.
-
-            - scores (Tensor): Classification scores, has a shape
-              (num_instance, )
-            - labels (Tensor): Labels of bboxes, has a shape
-              (num_instances, ).
-            - bboxes (Tensor): Has a shape (num_instances, 4),
-              the last dimension 4 arrange as (x1, y1, x2, y2).
-        """
-        img_feats = self.extract_feat(batch_inputs)
-        head_inputs_dict = self.forward_transformer(img_feats,
-                                                    batch_data_samples)
-        head_inputs_dict.pop('enc_outputs_class')
-        head_inputs_dict.pop('enc_outputs_coord')
-        head_inputs_dict.pop('dn_meta')  # TODO: refine this
-        results_list = self.bbox_head.predict(
-            **head_inputs_dict,
-            rescale=rescale,
-            batch_data_samples=batch_data_samples)
-        batch_data_samples = self.add_pred_to_datasample(
-            batch_data_samples, results_list)
-        return batch_data_samples
-
-    def _forward(
-            self,
-            batch_inputs: Tensor,
-            batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
-        """Network forward process. Usually includes backbone, neck and head
-        forward without any post-processing.Overwrite to pop
-        'enc_outputs_class' and 'enc_outputs_coord'.
-
-         Args:
-            batch_inputs (Tensor): Inputs, has shape (bs, dim, H, W).
-            batch_data_samples (List[:obj:`DetDataSample`], optional): The
-                batch data samples. It usually includes information such
-                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
-                Defaults to None.
-
-        Returns:
-            tuple[Tensor]: A tuple of features from ``bbox_head`` forward.
-        """
-        img_feats = self.extract_feat(batch_inputs)
-        head_inputs_dict = self.forward_transformer(img_feats,
-                                                    batch_data_samples)
-        head_inputs_dict.pop('enc_outputs_class')
-        head_inputs_dict.pop('enc_outputs_coord')
-        head_inputs_dict.pop('dn_meta')  # TODO: refine this
-        results = self.bbox_head.forward(**head_inputs_dict)
-        return results
 
     def forward_decoder(self, query: Tensor, memory: Tensor,
                         memory_mask: Tensor, reference_points: Tensor,
@@ -344,7 +246,8 @@ class DINO(DeformableDETR):
             # NOTE: If there is no target in the image, the parameters of
             # label_embedding won't be used in producing loss, which raises
             # RuntimeError when using distributed mode.
-            inter_states[0] += self.label_embedding.weight[0, 0] * 0.0
+            inter_states[0] += \
+                self.dn_query_generator.label_embedding.weight[0, 0] * 0.0  #
 
         decoder_outputs_dict = dict(
             hidden_states=inter_states, references=references)
