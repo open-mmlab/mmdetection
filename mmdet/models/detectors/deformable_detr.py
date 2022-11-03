@@ -295,7 +295,7 @@ class DeformableDETR(DetectionTransformer):
             - head_inputs_dict (dict): The keyword dictionary args of the
               bbox_head functions, which includes `enc_outputs_class` and
               `enc_outputs_class`. They are both `None` when 'as_two_stage'
-              is `False`.
+              is `False`. The dict is empty when `self.training` is `False`.
         """
         batch_size, _, c = memory.shape
         if self.as_two_stage:

@@ -37,14 +37,14 @@ class DINO(DeformableDETR):
                    'hidden_dim' not in dn_cfg, \
                 'The three keyword args `num_classes`, `num_query`, and ' \
                 '`hidden_dim` are set in `detector.__init__()`, users ' \
-                'should not set them in `bbox_head` config.'
+                'should not set them in `dn_cfg` config.'
             dn_cfg['num_classes'] = self.bbox_head.num_classes
             dn_cfg['num_query'] = self.num_query
             dn_cfg['hidden_dim'] = self.embed_dims
         self.dn_query_generator = CdnQueryGenerator(**dn_cfg)
 
     def _init_layers(self) -> None:
-        """Initialize weights for Transformer and other components."""
+        """Initialize layers except for backbone, neck and bbox_head."""
         self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding_cfg)
         self.encoder = DeformableDetrTransformerEncoder(**self.encoder)
@@ -150,15 +150,14 @@ class DINO(DeformableDETR):
             tuple[dict, dict]: The decoder_inputs_dict and head_inputs_dict.
 
             - decoder_inputs_dict (dict): The keyword dictionary args of
-              `self.forward_decoder()`, which includes 'query', 'query_pos',
-              'memory', and `reference_points`. The reference_points of
-              decoder input here are 4D boxes when `as_two_stage` is `True`,
-              otherwise 2D points, although it has `points` in its name.
-              The reference_points in encoder is always 2D points.
+              `self.forward_decoder()`, which includes 'query', 'memory',
+              `reference_points`, and `dn_mask`. The reference points of
+              decoder input here are 4D boxes, although it has `points`
+              in its name.
             - head_inputs_dict (dict): The keyword dictionary args of the
-              bbox_head functions, which includes `enc_outputs_class` and
-              `enc_outputs_class`. They are both `None` when 'as_two_stage'
-              is `False`.
+              bbox_head functions, which includes `enc_outputs_class`,
+              `enc_outputs_class`, and `dn_meta` when `self.training`
+              is `True`, else is empty.
         """
         bs, _, c = memory.shape
 
@@ -191,13 +190,12 @@ class DINO(DeformableDETR):
         # from detached topk_coords_unact, which is different with DINO.  # TODO: refine this  # noqa
         topk_coords_unact = topk_coords_unact.detach()
 
-        query = self.query_embedding.weight[:,
-                                            None, :].repeat(1, bs,
-                                                            1).transpose(0, 1)
+        query = self.query_embedding.weight[:, None, :]
+        query = query.repeat(1, bs, 1).transpose(0, 1)
         # NOTE the query_embed here is not spatial query as in DETR.
         # It is actually content query, which is named tgt in other
         # DETR-like models
-        if self.training:  # TODO: refine this  # noqa
+        if self.training:
             dn_label_query, dn_bbox_query, dn_mask, dn_meta = \
                 self.dn_query_generator(batch_data_samples)
 
@@ -229,6 +227,41 @@ class DINO(DeformableDETR):
                         memory_mask: Tensor, reference_points: Tensor,
                         spatial_shapes: Tensor, level_start_index: Tensor,
                         valid_ratios: Tensor, dn_mask: Tensor) -> Dict:
+        """Forward with Transformer decoder.
+
+        The forward procedure of the transformer is defined as:
+        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'
+        More details can be found at `TransformerDetector.forward_transformer`
+        in `mmdet/detector/base_detr.py`.
+
+        Args:
+            query (Tensor): The queries of decoder inputs, has shape
+                (num_query_total, bs, dim), where the `num_query_total` is the
+                sum of `num_query` and the number of the denoising queries.
+            memory (Tensor): The output embeddings of the Transformer encoder,
+                has shape (num_feat, bs, dim).
+            memory_mask (Tensor): ByteTensor, the padding mask of the memory,
+                has shape (bs, num_feat).
+            reference_points (Tensor): The initial reference, has shape
+                (bs, num_query_total, 4).
+            spatial_shapes (Tensor): Spatial shapes of features in all levels,
+                has shape (num_levels, 2), last dimension represents (h, w).
+            level_start_index (Tensor): The start index of each level.
+                A tensor has shape (num_levels, ) and can be represented
+                as [0, h_0*w_0, h_0*w_0+h_1*w_1, ...].
+            valid_ratios (Tensor): The ratios of the valid width and the valid
+                height relative to the width and the height of features in all
+                levels, has shape (bs, num_levels, 2).
+            dn_mask (Tensor): The attention mask to prevent information leakage
+                from different denoising groups and matching parts, will be
+                used as `self_attn_masks` of the `self.decoder`, has shape
+                (bs, num_query_total, num_query_total)  # TODO: check this
+
+        Returns:
+            dict: The dictionary of decoder outputs, which includes the
+            `hidden_states` of the decoder output and `references` including
+            the initial and intermediate reference_points.
+        """
         inter_states, references = self.decoder(
             query=query,
             value=memory,
