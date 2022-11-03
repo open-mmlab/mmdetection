@@ -1,6 +1,7 @@
 # 实用的钩子
 
-MMDetection and MMEngine provide users with various useful hooks including log hooks, `NumClassCheckHook`, etc. This tutorial introduces the functionalities and usages of hooks implemented in MMDetection. For using hooks in MMEngine, please read the [API documentation in MMEngine](https://github.com/open-mmlab/mmengine/tree/main/docs/en/tutorials/hook.md).
+MMDetection和MMEngine为用户提供了多种多样实用的钩子，包括`MemoryProfilerHook`、`NumClassCheckHook`等等。
+这篇教程介绍了MMDetection中实现的钩子功能及使用方式。若使用MMEngine定义的钩子请参考[MMEngine的钩子API文档](https://github.com/open-mmlab/mmengine/tree/main/docs/en/tutorials/hook.md).
 
 ## CheckInvalidLossHook
 
@@ -8,11 +9,12 @@ MMDetection and MMEngine provide users with various useful hooks including log h
 
 ## MemoryProfilerHook
 
-[Memory profiler hook](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/engine/hooks/memory_profiler_hook.py) records memory information including virtual memory, swap memory, and the memory of the current process. This hook helps grasp the memory usage of the system and discover potential memory leak bugs. To use this hook, users should install `memory_profiler` and `psutil` by `pip install memory_profiler psutil` first.
+[内存分析钩子](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/engine/hooks/memory_profiler_hook.py) 
+记录了包括虚拟内存、交换内存、当前进程在内的所有内存信息，它能够帮助捕捉系统的使用状况与发现隐藏的内存泄露问题。为了使用这个钩子，你需要先安装`pip install memory_profiler psutil`从而使用`memory_profiler`。 
 
-### Usage
+### 使用
 
-To use this hook, users should add the following code to the config file.
+为了使用这个钩子，使用者需要添加如下代码至config文件
 
 ```python
 custom_hooks = [
@@ -20,9 +22,10 @@ custom_hooks = [
 ]
 ```
 
-### Result
+### 结果
 
-During training, you can see the messages in the log recorded by `MemoryProfilerHook` as below. The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 MB) of swap memory in total. Currently 9407 MB (4.4%) of memory and 5740 MB (29.9%) of swap memory were consumed. And the current training process consumed 5434 MB of memory.
+在训练中，你会看到`MemoryProfilerHook`记录的如下信息：
+The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 MB) of swap memory in total. Currently 9407 MB (4.4%) of memory and 5740 MB (29.9%) of swap memory were consumed. And the current training process consumed 5434 MB of memory.
 
 ```text
 2022-04-21 08:49:56,881 - mmengine - INFO - Memory information available_memory: 246360 MB, used_memory: 9407 MB, memory_utilization: 4.4 %, available_swap_memory: 5740 MB, used_swap_memory: 2452 MB, swap_memory_utilization: 29.9 %, current_process_memory: 5434 MB
@@ -38,9 +41,9 @@ During training, you can see the messages in the log recorded by `MemoryProfiler
 
 ## YOLOXModeSwitchHook
 
-## How to implement a custom hook
+## 如何实现自定义钩子
 
-In general, there are 20 points where hooks can be inserted from the beginning to the end of model training. The users can implement custom hooks and insert them at different points in the process of training to do what they want.
+一般的，从模型训练的开始到结束共有20个地方可以被钩子嵌入，使用者可以实现自定义钩子并将他们嵌入在不同地点以便在训练中实现自定义操作。
 
 - global points: `before_run`, `after_run`
 - points in training: `before_train`, `before_train_epoch`, `before_train_iter`, `after_train_iter`, `after_train_epoch`, `after_train`
@@ -48,11 +51,11 @@ In general, there are 20 points where hooks can be inserted from the beginning t
 - points at testing: `before_test`, `before_test_epoch`, `before_test_iter`, `after_test_iter`, `after_test_epoch`,  `after_test`
 - other points: `before_save_checkpoint`, `after_save_checkpoint`
 
-For example, users can implement a hook to check loss and terminate training when loss goes NaN. To achieve that, there are three steps to go:
+比如，使用者可以实现一个检查损失的钩子，当损失为NaN时自动结束训练。为了实现它我们需要三步走：
 
-1. Implement a new hook that inherits the `Hook` class in MMEngine, and implement `after_train_iter` method which checks whether loss goes NaN after every `n` training iterations.
-2. The implemented hook should be registered in `HOOKS` by `@HOOKS.register_module()` as shown in the code below.
-3. Add `custom_hooks = [dict(type='MemoryProfilerHook', interval=50)]` in the config file.
+1. 在MMEngine实现一个继承于`Hook`类的新钩子，并实现`after_train_iter`方法用于检查每`n`次训练迭代后损失是否变为NaN。
+2. 使用`@HOOKS.register_module()`注册实现好了的自定义钩子，如下列代码所示。
+3. 在配置文件中添加`custom_hooks = [dict(type='MemoryProfilerHook', interval=50)]`
 
 ```python
 from typing import Optional
@@ -98,4 +101,4 @@ class CheckInvalidLossHook(Hook):
                 runner.logger.info('loss become infinite or NaN!')
 ```
 
-Please read [customize_runtime](../advanced_guides/customize_runtime.md) for more about implementing a custom hook.
+请参考 [自定义训练配置](../advanced_guides/customize_runtime.md) 了解更多与自定义钩子相关的内容。
