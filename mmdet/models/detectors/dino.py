@@ -22,10 +22,11 @@ class DINO(DeformableDETR):
     <https://github.com/IDEA-Research/DINO>`_.
 
     Args:
-        dn_cfg (:obj:`ConfigDict` or dict): Config of query de-noising.
+        dn_cfg (:obj:`ConfigDict` or dict, optional): Config of denoising
+            query generator. Defaults to `None`.
     """
 
-    def __init__(self, *args, dn_cfg: OptConfigType = None, **kwargs):
+    def __init__(self, *args, dn_cfg: OptConfigType = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         assert self.as_two_stage, 'as_two_stage must be True for DINO'
         assert self.with_box_refine, 'with_box_refine must be True for DINO'
@@ -40,7 +41,7 @@ class DINO(DeformableDETR):
             dn_cfg['num_classes'] = self.bbox_head.num_classes
             dn_cfg['num_query'] = self.num_query
             dn_cfg['hidden_dim'] = self.embed_dims
-        self.dn_generator = CdnQueryGenerator(**dn_cfg)
+        self.dn_query_generator = CdnQueryGenerator(**dn_cfg)
 
     def _init_layers(self) -> None:
         """Initialize weights for Transformer and other components."""
@@ -64,14 +65,6 @@ class DINO(DeformableDETR):
             torch.Tensor(self.num_feature_levels, self.embed_dims))
         self.memory_trans_fc = nn.Linear(self.embed_dims, self.embed_dims)
         self.memory_trans_norm = nn.LayerNorm(self.embed_dims)
-
-        # NOTE The original repo of DINO set the num_embeddings 92 for coco,
-        # 91 (0~90) of which represents target classes and the 92 (91)
-        # indicates `Unknown` class. However, the embedding of `unknown` class
-        # is not used in the original DINO.  # TODO
-        self.label_embedding = nn.Embedding(self.bbox_head.cls_out_channels,
-                                            self.embed_dims)
-        # TODO: Should `label_embedding` be moved to `dn_generator`?
 
     def init_weights(self) -> None:
         """Initialize weights for Transformer and other components."""
@@ -236,7 +229,8 @@ class DINO(DeformableDETR):
         # DETR-like models
         if query_denoising:  # TODO: refine this  # noqa
             dn_label_query, dn_bbox_query, dn_mask, dn_meta = \
-                self.dn_generator(batch_data_samples, self.label_embedding)
+                self.dn_query_generator(batch_data_samples,
+                                        self.label_embedding)
 
             query = torch.cat([dn_label_query, query], dim=1)
             reference_points = torch.cat([dn_bbox_query, topk_coords_unact],
@@ -346,11 +340,11 @@ class DINO(DeformableDETR):
 
         inter_states = inter_states.permute(0, 2, 1, 3)
 
-        # if dn_label_query is not None and dn_label_query.size(1) == 0:
-        #     # NOTE: If there is no target in the image, the parameters of
-        #     # label_embedding won't be used in producing loss, which raises
-        #     # RuntimeError when using distributed mode.
-        #     inter_states[0] += self.label_embedding.weight[0, 0] * 0.0
+        if len(query) == self.num_query:
+            # NOTE: If there is no target in the image, the parameters of
+            # label_embedding won't be used in producing loss, which raises
+            # RuntimeError when using distributed mode.
+            inter_states[0] += self.label_embedding.weight[0, 0] * 0.0
 
         decoder_outputs_dict = dict(
             hidden_states=inter_states, references=references)

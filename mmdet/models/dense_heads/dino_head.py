@@ -153,12 +153,12 @@ class DINOHead(DeformableDETRHead):
 
     def loss_dn(self, dn_cls_scores, dn_bbox_preds, batch_gt_instances_list,
                 batch_img_metas_list, dn_meta_list):
-        return multi_apply(self.loss_dn_single, dn_cls_scores, dn_bbox_preds,
+        return multi_apply(self._loss_dn_single, dn_cls_scores, dn_bbox_preds,
                            batch_gt_instances_list, batch_img_metas_list,
                            dn_meta_list)
 
-    def loss_dn_single(self, dn_cls_scores, dn_bbox_preds, batch_gt_instances,
-                       batch_img_metas, dn_meta):
+    def _loss_dn_single(self, dn_cls_scores, dn_bbox_preds, batch_gt_instances,
+                        batch_img_metas, dn_meta):
         num_imgs = dn_cls_scores.size(0)
         bbox_preds_list = [dn_bbox_preds[i] for i in range(num_imgs)]
         cls_reg_targets = self.get_dn_target(bbox_preds_list,
@@ -244,11 +244,13 @@ class DINOHead(DeformableDETRHead):
         num_bboxes = dn_bbox_pred.size(0)
 
         if len(gt_labels) > 0:
-            t = torch.range(0, len(gt_labels) - 1).long().cuda()
+            device = dn_bbox_pred.device
+            t = torch.range(
+                0, len(gt_labels) - 1, dtype=torch.long, device=device)
             t = t.unsqueeze(0).repeat(num_groups, 1)
             pos_assigned_gt_inds = t.flatten()
-            pos_inds = (torch.tensor(range(num_groups)) *
-                        single_pad).long().cuda().unsqueeze(1) + t
+            pos_inds = torch.range(
+                0, num_groups, dtype=torch.long, device=device) + t
             pos_inds = pos_inds.flatten()
         else:
             pos_inds = pos_assigned_gt_inds = \

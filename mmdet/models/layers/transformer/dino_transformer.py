@@ -2,6 +2,7 @@
 import math
 
 import torch
+from mmengine.model import BaseModule
 from torch import nn
 
 from mmdet.structures.bbox import bbox_xyxy_to_cxcywh
@@ -114,7 +115,7 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
         return output, reference_points
 
 
-class CdnQueryGenerator:
+class CdnQueryGenerator(BaseModule):
     # TODO: Should this encapsulation be broken?
 
     def __init__(self,
@@ -143,6 +144,13 @@ class CdnQueryGenerator:
         assert isinstance(self.num_dn, int) and self.num_dn >= 1, \
             f'Expected the num in group_cfg to have type int. ' \
             f'Found {type(self.num_dn)} '
+        # NOTE The original repo of DINO set the num_embeddings 92 for coco,
+        # 91 (0~90) of which represents target classes and the 92 (91)
+        # indicates `Unknown` class. However, the embedding of `unknown` class
+        # is not used in the original DINO.  # TODO
+        self.label_embedding = nn.Embedding(self.bbox_head.cls_out_channels,
+                                            self.embed_dims)
+        # TODO: Be careful the init of the label_embedding
 
     def get_num_groups(self, group_queries=None):
         """
@@ -163,12 +171,13 @@ class CdnQueryGenerator:
             num_groups = 1
         return int(num_groups)
 
-    def __call__(self, batch_data_samples, label_enc=None):
+    def __call__(self, batch_data_samples):
         """
         TODO: Update
         """
-        # TODO: temp assert gt_labels is not None and label_enc is not None
+        # TODO: add assert gt_labels is not None
         batch_size = len(batch_data_samples)
+        device = batch_data_samples.device
         # convert bbox
         gt_labels = []
         gt_bboxes = []
@@ -211,10 +220,12 @@ class CdnQueryGenerator:
         single_pad = int(max(known_num))  # TODO
 
         pad_size = int(single_pad * 2 * num_groups)
-        positive_idx = torch.tensor(range(
-            len(boxes))).long().cuda().unsqueeze(0).repeat(num_groups, 1)
-        positive_idx += (torch.tensor(range(num_groups)) * len(boxes) *
-                         2).long().cuda().unsqueeze(1)
+        positive_idx = torch.range(
+            0, len(bboxes), dtype=torch.long,
+            device=device)  # TODO: replace the `len(bboxes)`  # noqa
+        positive_idx = positive_idx.unsqueeze(0).repeat(num_groups, 1)
+        positive_idx += torch.range(
+            0, num_groups, dtype=torch.long, device=device) * len(boxes) * 2
         positive_idx = positive_idx.flatten()
         negative_idx = positive_idx + len(boxes)
         if self.box_noise_scale > 0:
@@ -234,25 +245,25 @@ class CdnQueryGenerator:
             rand_part = torch.rand_like(known_bboxs)
             rand_part[negative_idx] += 1.0
             rand_part *= rand_sign
-            known_bbox_ += \
-                torch.mul(rand_part, diff).cuda() * self.box_noise_scale
+            known_bbox_ += torch.mul(rand_part,
+                                     diff).to(device) * self.box_noise_scale
             known_bbox_ = known_bbox_.clamp(min=0.0, max=1.0)
             known_bbox_expand[:, :2] = \
                 (known_bbox_[:, :2] + known_bbox_[:, 2:]) / 2
             known_bbox_expand[:, 2:] = \
                 known_bbox_[:, 2:] - known_bbox_[:, :2]
 
-        m = known_labels_expand.long().to('cuda')
-        input_label_embed = label_enc(m)
+        m = known_labels_expand.long().to(device)
+        input_label_embed = self.label_embedding(m)
         input_bbox_embed = inverse_sigmoid(known_bbox_expand, eps=1e-3)
 
-        padding_label = torch.zeros(pad_size, self.hidden_dim).cuda()
-        padding_bbox = torch.zeros(pad_size, 4).cuda()
+        padding_label = torch.zeros(pad_size, self.hidden_dim, device=device)
+        padding_bbox = torch.zeros(pad_size, 4, device=device)
 
         input_query_label = padding_label.repeat(batch_size, 1, 1)
         input_query_bbox = padding_bbox.repeat(batch_size, 1, 1)
 
-        map_known_indice = torch.tensor([]).to('cuda')
+        map_known_indice = torch.tensor([], device=device)
         if len(known_num):
             map_known_indice = torch.cat(
                 [torch.tensor(range(num)) for num in known_num])
@@ -267,7 +278,7 @@ class CdnQueryGenerator:
                               map_known_indice)] = input_bbox_embed
 
         tgt_size = pad_size + self.num_query
-        attn_mask = torch.ones(tgt_size, tgt_size).to('cuda') < 0
+        attn_mask = torch.ones(tgt_size, tgt_size, device=device) < 0
         # match query cannot see the reconstruct
         attn_mask[pad_size:, :pad_size] = True
         # reconstruct cannot see each other
