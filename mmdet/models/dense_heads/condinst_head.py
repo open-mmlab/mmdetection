@@ -194,6 +194,8 @@ class CondInstBboxHead(FCOSHead):
             loss_bbox = pos_bbox_preds.sum()
             loss_centerness = pos_centerness.sum()
 
+        self._raw_positive_infos.update(cls_scores=cls_scores)
+        self._raw_positive_infos.update(centernesses=centernesses)
         self._raw_positive_infos.update(param_preds=param_preds)
         self._raw_positive_infos.update(all_level_points=all_level_points)
         self._raw_positive_infos.update(all_level_strides=all_level_strides)
@@ -399,22 +401,37 @@ class CondInstBboxHead(FCOSHead):
         pos_inds_list = self._raw_positive_infos['pos_inds_list']
         num_imgs = len(pos_gt_inds_list)
 
+        cls_score_list = []
+        centerness_list = []
         param_pred_list = []
         point_list = []
         stride_list = []
-        for param_pred_per_lvl, point_per_lvl, stride_per_lvl in \
-            zip(self._raw_positive_infos['param_preds'],
+        for cls_score_per_lvl, centerness_per_lvl, param_pred_per_lvl,\
+            point_per_lvl, stride_per_lvl in \
+            zip(self._raw_positive_infos['cls_scores'],
+                self._raw_positive_infos['centernesses'],
+                self._raw_positive_infos['param_preds'],
                 self._raw_positive_infos['all_level_points'],
                 self._raw_positive_infos['all_level_strides']):
+            cls_score_per_lvl = \
+                cls_score_per_lvl.permute(
+                    0, 2, 3, 1).reshape(num_imgs, -1, self.num_classes)
+            centerness_per_lvl = \
+                centerness_per_lvl.permute(
+                    0, 2, 3, 1).reshape(num_imgs, -1, 1)
             param_pred_per_lvl = \
                 param_pred_per_lvl.permute(
                     0, 2, 3, 1).reshape(num_imgs, -1, self.num_params)
             point_per_lvl = point_per_lvl.unsqueeze(0).repeat(num_imgs, 1, 1)
             stride_per_lvl = stride_per_lvl.unsqueeze(0).repeat(num_imgs, 1)
 
+            cls_score_list.append(cls_score_per_lvl)
+            centerness_list.append(centerness_per_lvl)
             param_pred_list.append(param_pred_per_lvl)
             point_list.append(point_per_lvl)
             stride_list.append(stride_per_lvl)
+        cls_scores = torch.cat(cls_score_list, dim=1)
+        centernesses = torch.cat(centerness_list, dim=1)
         param_preds = torch.cat(param_pred_list, dim=1)
         all_points = torch.cat(point_list, dim=1)
         all_strides = torch.cat(stride_list, dim=1)
@@ -425,6 +442,8 @@ class CondInstBboxHead(FCOSHead):
             pos_info = InstanceData()
             pos_info.points = all_points[i][pos_inds]
             pos_info.strides = all_strides[i][pos_inds]
+            pos_info.scores = cls_scores[i][pos_inds]
+            pos_info.centernesses = centernesses[i][pos_inds]
             pos_info.param_preds = param_preds[i][pos_inds]
             pos_info.pos_assigned_gt_inds = pos_gt_inds
             pos_info.pos_inds = pos_inds
@@ -808,7 +827,8 @@ class CondInstMaskHead(BaseMaskHead):
                  feat_channels: int = 8,
                  mask_out_stride: int = 4,
                  size_of_interest: int = 8,
-                 max_masks_to_train: int = 400,
+                 max_masks_to_train: int = -1,
+                 topk_masks_per_img: int = -1,
                  loss_mask: ConfigType = None,
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None) -> None:
@@ -821,6 +841,7 @@ class CondInstMaskHead(BaseMaskHead):
         self.size_of_interest = size_of_interest
         self.mask_out_stride = mask_out_stride
         self.max_masks_to_train = max_masks_to_train
+        self.topk_masks_per_img = topk_masks_per_img
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -947,7 +968,7 @@ class CondInstMaskHead(BaseMaskHead):
             dict[str, Tensor]: A dictionary of loss components.
         """
         assert positive_infos is not None, \
-            'positive_infos should not be None in `YOLACTProtonet`'
+            'positive_infos should not be None in `CondInstMaskHead`'
         losses = dict()
 
         loss_mask = 0.
@@ -1010,21 +1031,50 @@ class CondInstMaskHead(BaseMaskHead):
         device = gt_bboxes.device
         gt_masks = gt_instances.masks.to_tensor(
             dtype=torch.bool, device=device).float()
-        if gt_masks.size(0) == 0:
-            return mask_preds, None, 0
 
         # process with mask targets
         pos_assigned_gt_inds = positive_info.get('pos_assigned_gt_inds')
+        scores = positive_info.get('scores')
+        centernesses = positive_info.get('centernesses')
         num_pos = pos_assigned_gt_inds.size(0)
+
+        if gt_masks.size(0) == 0 or num_pos == 0:
+            return mask_preds, None, 0
         # Since we're producing (near) full image masks,
         # it'd take too much vram to backprop on every single mask.
         # Thus we select only a subset.
-        if num_pos > self.max_masks_to_train:
+        if (self.max_masks_to_train != -1) and \
+           (num_pos > self.max_masks_to_train):
             perm = torch.randperm(num_pos)
             select = perm[:self.max_masks_to_train]
             mask_preds = mask_preds[select]
             pos_assigned_gt_inds = pos_assigned_gt_inds[select]
             num_pos = self.max_masks_to_train
+        elif self.topk_masks_per_img != -1:
+            unique_gt_inds = pos_assigned_gt_inds.unique()
+            num_inst_per_gt = max(
+                int(self.topk_masks_per_img / len(unique_gt_inds)), 1)
+
+            keep_mask_preds = []
+            keep_pos_assigned_gt_inds = []
+            for gt_ind in unique_gt_inds:
+                per_inst_pos_inds = (pos_assigned_gt_inds == gt_ind)
+                mask_preds_per_inst = mask_preds[per_inst_pos_inds]
+                gt_inds_per_inst = pos_assigned_gt_inds[per_inst_pos_inds]
+                if sum(per_inst_pos_inds) > num_inst_per_gt:
+                    per_inst_scores = scores[per_inst_pos_inds].sigmoid().max(
+                        dim=1)[0]
+                    per_inst_centerness = centernesses[
+                        per_inst_pos_inds].sigmoid().reshape(-1, )
+                    select = (per_inst_scores * per_inst_centerness).topk(
+                        k=num_inst_per_gt, dim=0)[1]
+                    mask_preds_per_inst = mask_preds_per_inst[select]
+                    gt_inds_per_inst = gt_inds_per_inst[select]
+                keep_mask_preds.append(mask_preds_per_inst)
+                keep_pos_assigned_gt_inds.append(gt_inds_per_inst)
+            mask_preds = torch.cat(keep_mask_preds)
+            pos_assigned_gt_inds = torch.cat(keep_pos_assigned_gt_inds)
+            num_pos = pos_assigned_gt_inds.size(0)
 
         # Follow the origin implement
         start = int(self.mask_out_stride // 2)
