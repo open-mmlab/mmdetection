@@ -6,6 +6,7 @@ from .detr_transformer import (DetrTransformerDecoder,
                                DetrTransformerDecoderLayer,
                                DetrTransformerEncoder,
                                DetrTransformerEncoderLayer)
+from .conditional_transformer import ConditionalDetrTransformerDecoder, ConditionalDetrTransformerDecoderLayer
 from .utils import (MLP, AdaptivePadding, DynamicConv, PatchEmbed,
                     PatchMerging, inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
 
@@ -16,5 +17,6 @@ __all__ = [
     'DetrTransformerEncoderLayer', 'DetrTransformerDecoderLayer',
     'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
     'DeformableDetrTransformerEncoderLayer',
-    'DeformableDetrTransformerDecoderLayer'
+    'DeformableDetrTransformerDecoderLayer',
+    'ConditionalDetrTransformerDecoder', 'ConditionalDetrTransformerDecoderLayer'
 ]

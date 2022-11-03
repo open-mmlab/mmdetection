@@ -22,7 +22,9 @@ from .transformer import (MLP, DeformableDetrTransformerDecoder,
                           DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DetrTransformerEncoder, DetrTransformerEncoderLayer,
                           DynamicConv, PatchEmbed, PatchMerging,
-                          inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
+                          inverse_sigmoid, nchw_to_nlc, nlc_to_nchw,
+                          ConditionalDetrTransformerDecoder,
+                          ConditionalDetrTransformerDecoderLayer)
 
 __all__ = [
     'fast_nms', 'multiclass_nms', 'mask_matrix_nms', 'DropBlock',
@@ -37,5 +39,7 @@ __all__ = [
     'DetrTransformerEncoder', 'DetrTransformerDecoder',
     'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
     'DeformableDetrTransformerEncoderLayer',
-    'DeformableDetrTransformerDecoderLayer'
+    'DeformableDetrTransformerDecoderLayer',
+    'ConditionalDetrTransformerDecoder',
+    'ConditionalDetrTransformerDecoderLayer'
 ]
