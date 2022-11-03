@@ -14,7 +14,7 @@ import math
 import warnings
 
 from .detr_transformer import (
-    DetrTransformerDecoder, DetrTransformerDecoderLayer)
+       DetrTransformerDecoder, DetrTransformerDecoderLayer)
 from .utils import MLP
 
 def gen_sineembed_for_position(pos_tensor):
