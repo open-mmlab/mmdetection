@@ -241,7 +241,7 @@ class ProposalBroadcaster(BaseTransform):
             data (dict): The original input data.
 
         Returns:
-            list[dict, dict]: A list of input data.
+            list[dict]: A list of input data.
         """
         cp_data = copy.deepcopy(data)
         cp_data['gt_bboxes'] = cp_data['proposals']
@@ -255,8 +255,9 @@ class ProposalBroadcaster(BaseTransform):
             inputs (list[dict, dict]): list of input data.
 
         Returns:
-            list[dict, dict]: The output of the wrapped pipeline.
+            list[dict]: The output of the wrapped pipeline.
         """
+        assert len(inputs) == 2
         ctx = cache_random_params
         with ctx(self.transforms):
             output_scatters = [self.transforms(_input) for _input in inputs]
