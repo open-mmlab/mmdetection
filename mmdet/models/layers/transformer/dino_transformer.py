@@ -150,7 +150,7 @@ class CdnQueryGenerator(BaseModule):
         # is not used in the original DINO.  # TODO
         self.label_embedding = nn.Embedding(self.bbox_head.cls_out_channels,
                                             self.embed_dims)
-        # TODO: Be careful the init of the label_embedding
+        # TODO: Be careful with the init of the label_embedding
 
     def get_num_groups(self, group_queries=None):
         """
