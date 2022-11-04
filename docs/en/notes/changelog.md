@@ -1,5 +1,48 @@
 # Changelog of v3.x
 
+## v3.0.0rc2 (4/11/2022)
+
+### Highlights
+
+- Support training detection models in Detectron2
+
+#### New Features
+
+- Support training detection models in Detectron2 (#8672)
+- Support [CrowdDet](https://arxiv.org/abs/2003.09163) (#8744)
+- Support [EIoU Loss](https://ieeexplore.ieee.org/document/9429909) (#9086)
+
+#### Bug Fixes
+
+- Fix `XMLDataset` image size error (#9216)
+- Fix buugs of empty_instances when predicting without nms in roi_head (#9015)
+- Fix detr_r18_config (#9158)
+- Fix SOLOv2 cannot dealing with empty gt image (#9192)
+- Fix inference demo (#9153)
+- Add `ignore_key` in VOC `ConcatDataset` (#9058)
+
+#### Improvements
+
+- Refactor Fast R-CNN (#9132)
+- Clean requirements of mmcv-full due to SyncBN (#9207)
+- Support training detection models in detectron2 (#8672)
+- Add `box_type` support for `DynamicSoftLabelAssigner` (#9179)
+- Make scipy as a default dependency in runtime (#9187)
+- Update eval_metric (#9062)
+- Add `seg_map_suffix` in `BaseDetDataset` (#9088)
+
+## New Contributors
+
+- @Wwupup made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9086
+- @sanbuphy made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9153
+- @cxiang26 made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9158
+
+#### Contributors
+
+A total of 9 developers contributed to this release.
+
+Thanks @wanghonglie, @Wwupup, @sanbuphy, @BIGWangYuDong, @liuyanyi, @cxiang26, @jbwang1997, @ZwwWayne, @yuyoujiang
+
 ## v3.0.0rc2 (21/10/2022)
 
 ### Highlights
