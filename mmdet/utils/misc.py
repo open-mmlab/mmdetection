@@ -74,19 +74,3 @@ def update_data_root(cfg, logger=None):
 
     update(cfg.data, cfg.data_root, dst_root)
     cfg.data_root = dst_root
-
-
-def add_dump_metric(args, cfg):
-    dump_metric = dict(type='DumpResults', out_file_path=args.out)
-    if isinstance(cfg.test_evaluator, (list, tuple)):
-        cfg.test_evaluator = list(cfg.test_evaluator).append(dump_metric)
-    elif isinstance(cfg.test_evaluator, dict):
-        if isinstance(cfg.test_evaluator.metric, str):
-            cfg.test_evaluator = [cfg.test_evaluator, dump_metric]
-        elif isinstance(cfg.test_evaluator.metric, (list, tuple)):
-            cfg.test_evaluator.metric = list(
-                cfg.test_evaluator.metric).append(dump_metric)
-        else:
-            cfg.test_evaluator.metric = [
-                cfg.test_evaluator.metric, dump_metric
-            ]
