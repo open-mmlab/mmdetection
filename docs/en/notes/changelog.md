@@ -5,6 +5,7 @@
 ### Highlights
 
 - Support training detection models in Detectron2
+- Support [CrowdDet](https://arxiv.org/abs/2003.09163) (#8744)
 
 #### New Features
 
