@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 import torch
 from torch import Tensor, nn
@@ -195,7 +195,7 @@ class DINO(DeformableDETR):
         # NOTE the query_embed here is not spatial query as in DETR.
         # It is actually content query, which is named tgt in other
         # DETR-like models
-        if self.training:
+        if self.training:  # TODO: whether to transfer this to query_generator?
             dn_label_query, dn_bbox_query, dn_mask, dn_meta = \
                 self.dn_query_generator(batch_data_samples)
 
@@ -204,6 +204,7 @@ class DINO(DeformableDETR):
                                          dim=1)
         else:
             reference_points = topk_coords_unact
+            dn_mask, dn_meta = None, None
         reference_points = reference_points.sigmoid()
 
         query = query.permute(1, 0, 2)
@@ -223,10 +224,15 @@ class DINO(DeformableDETR):
             head_inputs_dict = dict()
         return decoder_inputs_dict, head_inputs_dict
 
-    def forward_decoder(self, query: Tensor, memory: Tensor,
-                        memory_mask: Tensor, reference_points: Tensor,
-                        spatial_shapes: Tensor, level_start_index: Tensor,
-                        valid_ratios: Tensor, dn_mask: Tensor) -> Dict:
+    def forward_decoder(self,
+                        query: Tensor,
+                        memory: Tensor,
+                        memory_mask: Tensor,
+                        reference_points: Tensor,
+                        spatial_shapes: Tensor,
+                        level_start_index: Tensor,
+                        valid_ratios: Tensor,
+                        dn_mask: Optional[Tensor] = None) -> Dict:
         """Forward with Transformer decoder.
 
         The forward procedure of the transformer is defined as:
@@ -237,7 +243,8 @@ class DINO(DeformableDETR):
         Args:
             query (Tensor): The queries of decoder inputs, has shape
                 (num_query_total, bs, dim), where the `num_query_total` is the
-                sum of `num_query` and the number of the denoising queries.
+                sum of `num_query` and the number of the denoising queries when
+                `self.training` is `True`, else `num_query`.
             memory (Tensor): The output embeddings of the Transformer encoder,
                 has shape (num_feat, bs, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
@@ -252,10 +259,11 @@ class DINO(DeformableDETR):
             valid_ratios (Tensor): The ratios of the valid width and the valid
                 height relative to the width and the height of features in all
                 levels, has shape (bs, num_levels, 2).
-            dn_mask (Tensor): The attention mask to prevent information leakage
-                from different denoising groups and matching parts, will be
-                used as `self_attn_masks` of the `self.decoder`, has shape
-                (bs, num_query_total, num_query_total)  # TODO: check this
+            dn_mask (Tensor, optional): The attention mask to prevent
+                information leakage from different denoising groups and
+                matching parts, will be used as `self_attn_mask` of the
+                `self.decoder`, has shape (num_query_total, num_query_total).
+                It is `None` when `self.training` is `False`.
 
         Returns:
             dict: The dictionary of decoder outputs, which includes the
@@ -266,22 +274,22 @@ class DINO(DeformableDETR):
             query=query,
             value=memory,
             key_padding_mask=memory_mask,
-            self_attn_masks=dn_mask,
+            self_attn_mask=dn_mask,
             reference_points=reference_points,
             spatial_shapes=spatial_shapes,
             level_start_index=level_start_index,
             valid_ratios=valid_ratios,
             reg_branches=self.bbox_head.reg_branches)
 
-        inter_states = inter_states.permute(0, 2, 1, 3)
+        # inter_states = inter_states.permute(0, 2, 1, 3)
 
         if len(query) == self.num_query:
             # NOTE: If there is no target in the image, the parameters of
             # label_embedding won't be used in producing loss, which raises
             # RuntimeError when using distributed mode.
             inter_states[0] += \
-                self.dn_query_generator.label_embedding.weight[0, 0] * 0.0  #
+                self.dn_query_generator.label_embedding.weight[0, 0] * 0.0  # TODO: refine this  # noqa
 
         decoder_outputs_dict = dict(
-            hidden_states=inter_states, references=references)
+            hidden_states=inter_states, references=list(references))
         return decoder_outputs_dict

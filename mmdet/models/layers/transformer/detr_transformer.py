@@ -297,8 +297,8 @@ class DetrTransformerDecoderLayer(BaseModule):
                 value: Tensor = None,
                 query_pos: Tensor = None,
                 key_pos: Tensor = None,
-                self_attn_masks: Tensor = None,
-                cross_attn_masks: Tensor = None,
+                self_attn_mask: Tensor = None,
+                cross_attn_mask: Tensor = None,
                 key_padding_mask: Tensor = None,
                 **kwargs) -> Tensor:
         """
@@ -319,10 +319,10 @@ class DetrTransformerDecoderLayer(BaseModule):
                 `key` before forward function. If None, and `query_pos` has the
                 same shape as `key`, then `query_pos` will be used for
                 `key_pos`. Defaults to None.
-            self_attn_masks (Tensor, optional): ByteTensor mask, has shape
+            self_attn_mask (Tensor, optional): ByteTensor mask, has shape
                 (num_query, num_key), as in `nn.MultiheadAttention.forward`.
                 Defaults to None.
-            cross_attn_masks (Tensor, optional): ByteTensor mask, has shape
+            cross_attn_mask (Tensor, optional): ByteTensor mask, has shape
                 (num_query, num_key), as in `nn.MultiheadAttention.forward`.
                 Defaults to None.
             key_padding_mask (Tensor, optional): The `key_padding_mask` of
@@ -340,7 +340,7 @@ class DetrTransformerDecoderLayer(BaseModule):
             value=query,
             query_pos=query_pos,
             key_pos=query_pos,
-            attn_mask=self_attn_masks,
+            attn_mask=self_attn_mask,
             **kwargs)
         query = self.norms[0](query)
         query = self.cross_attn(
@@ -349,7 +349,7 @@ class DetrTransformerDecoderLayer(BaseModule):
             value=value,
             query_pos=query_pos,
             key_pos=key_pos,
-            attn_mask=cross_attn_masks,
+            attn_mask=cross_attn_mask,
             key_padding_mask=key_padding_mask,
             **kwargs)
         query = self.norms[1](query)

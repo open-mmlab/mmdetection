@@ -244,12 +244,11 @@ class DINOHead(DeformableDETRHead):
 
         if len(gt_labels) > 0:
             device = dn_bbox_pred.device
-            t = torch.range(
-                0, len(gt_labels) - 1, dtype=torch.long, device=device)
+            t = torch.arange(len(gt_labels), dtype=torch.long, device=device)
             t = t.unsqueeze(0).repeat(num_groups, 1)
             pos_assigned_gt_inds = t.flatten()
-            pos_inds = torch.range(
-                0, num_groups, dtype=torch.long, device=device) + t
+            pos_inds = torch.arange(
+                num_groups, dtype=torch.long, device=device) + t
             pos_inds = pos_inds.flatten()
         else:
             pos_inds = pos_assigned_gt_inds = \

@@ -88,7 +88,7 @@ class DeformableDETRHead(DETRHead):
 
         Args:
             hidden_states (Tensor): Hidden states output from each decoder
-                layer, has shape (num_decoder_layers, num_query, bs, dim).
+                layer, has shape (num_decoder_layers, num_query, bs, dim).  # TODO: may need to unify the order of bs and num_query  # noqa
             references (list[Tensor]): List of the reference from the decoder.
                 The first reference is the `init_reference` (initial) and the
                 other num_decoder_layers(6) references are `inter_references`

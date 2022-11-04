@@ -3,7 +3,7 @@ import math
 
 import torch
 from mmengine.model import BaseModule
-from torch import nn
+from torch import Tensor, nn
 
 from mmdet.structures.bbox import bbox_xyxy_to_cxcywh
 from .deformable_detr_transformer import DeformableDetrTransformerDecoder
@@ -11,19 +11,18 @@ from .utils import MLP, inverse_sigmoid
 
 
 class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
+    """Transformer encoder of DINO."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._init_layers()
-
-    def _init_layers(self):
+    def _init_layers(self) -> None:
+        """Initialize decoder layers."""
         super()._init_layers()
         self.ref_point_head = MLP(self.embed_dims * 2, self.embed_dims,
                                   self.embed_dims, 2)
         self.norm = nn.LayerNorm(self.embed_dims)  # TODO: refine this
 
     @staticmethod
-    def gen_sineembed_for_position(pos_tensor):
+    def gen_sineembed_for_position(pos_tensor: Tensor):  # TODO: rename this
+        # TODO: Qizhi and Yiming seem add this function in utils.py
         # n_query, bs, _ = pos_tensor.size()
         # sineembed_tensor = torch.zeros(n_query, bs, 256)
         scale = 2 * math.pi
@@ -59,14 +58,48 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
                 pos_tensor.size(-1)))
         return pos
 
-    def forward(self,
-                query,
-                *args,
-                reference_points=None,
-                valid_ratios=None,
-                reg_branches=None,
-                **kwargs):
-        output = query
+    def forward(
+            self,
+            query: Tensor,
+            value: Tensor,
+            key_padding_mask: Tensor,
+            self_attn_mask: Tensor,
+            reference_points: Tensor,
+            spatial_shapes: Tensor,
+            level_start_index: Tensor,
+            valid_ratios: Tensor,
+            reg_branches: nn.
+        ModuleList,  # TODO: why not ModuleList in mmcv?  # noqa):
+            **kwargs) -> Tensor:
+        """Forward function of Transformer encoder.
+
+        Args:
+            query (Tensor): The input query, has shape (num_query, bs, dim).
+            value (Tensor): The input values, has shape (num_value, bs, dim).
+            key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
+                input. ByteTensor, has shape (num_query, bs).
+            self_attn_mask (Tensor): The attention mask to prevent information
+                leakage from different denoising groups and matching parts, has
+                shape (num_query_total, num_query_total). It is `None` when
+                `self.training` is `False`.
+            reference_points (Tensor): The initial reference, has shape
+                (bs, num_query, 4).
+            spatial_shapes (Tensor): Spatial shapes of features in all levels,
+                has shape (num_levels, 2), last dimension represents (h, w).
+            level_start_index (Tensor): The start index of each level.
+                A tensor has shape (num_levels, ) and can be represented
+                as [0, h_0*w_0, h_0*w_0+h_1*w_1, ...].
+            valid_ratios (Tensor): The ratios of the valid width and the valid
+                height relative to the width and the height of features in all
+                levels, has shape (bs, num_levels, 2).
+            reg_branches: (obj:`nn.ModuleList`): Used for refining the
+                regression results.
+
+        Returns:
+            Tensor: Output queries of Transformer encoder, which is also
+            called 'encoder output embeddings' or 'memory', has shape
+            (num_query, bs, dim)
+        """
         intermediate = []
         intermediate_reference_points = [reference_points]
         for lid, layer in enumerate(self.layers):
@@ -84,26 +117,30 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
             query_pos = self.ref_point_head(query_sine_embed)
 
             query_pos = query_pos.permute(1, 0, 2)
-            output = layer(
-                output,
-                *args,
+            query = layer(
+                query,
                 query_pos=query_pos,
+                value=value,
+                key_padding_mask=key_padding_mask,
+                spatial_shapes=spatial_shapes,
+                level_start_index=level_start_index,
+                valid_ratios=valid_ratios,
                 reference_points=reference_points_input,
                 **kwargs)
-            output = output.permute(1, 0, 2)
+            query = query.permute(1, 0, 2)
 
             if reg_branches is not None:
-                tmp = reg_branches[lid](output)
+                tmp = reg_branches[lid](query)
                 assert reference_points.shape[-1] == 4
-                # TODO: should do earlier
+                # TODO: should do earlier?
                 new_reference_points = tmp + inverse_sigmoid(
                     reference_points, eps=1e-3)
                 new_reference_points = new_reference_points.sigmoid()
                 reference_points = new_reference_points.detach()
 
-            output = output.permute(1, 0, 2)
+            query = query.permute(1, 0, 2)
             if self.return_intermediate:
-                intermediate.append(self.norm(output))
+                intermediate.append(self.norm(query))
                 intermediate_reference_points.append(new_reference_points)
                 # NOTE this is for the "Look Forward Twice" module,
                 # in the DeformDETR, reference_points was appended.
@@ -112,7 +149,7 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
             return torch.stack(intermediate), torch.stack(
                 intermediate_reference_points)
 
-        return output, reference_points
+        return query, reference_points
 
 
 class CdnQueryGenerator(BaseModule):
@@ -125,6 +162,7 @@ class CdnQueryGenerator(BaseModule):
                  noise_scale=dict(label=0.5, box=0.4),
                  group_cfg=dict(
                      dynamic=True, num_groups=None, num_dn_queries=None)):
+        super().__init__()
         self.num_query = num_query
         self.hidden_dim = hidden_dim
         self.num_classes = num_classes
@@ -148,8 +186,8 @@ class CdnQueryGenerator(BaseModule):
         # 91 (0~90) of which represents target classes and the 92 (91)
         # indicates `Unknown` class. However, the embedding of `unknown` class
         # is not used in the original DINO.  # TODO
-        self.label_embedding = nn.Embedding(self.bbox_head.cls_out_channels,
-                                            self.embed_dims)
+        self.label_embedding = nn.Embedding(self.num_classes + 1,
+                                            self.hidden_dim)
         # TODO: Be careful with the init of the label_embedding
 
     def get_num_groups(self, group_queries=None):
@@ -177,7 +215,7 @@ class CdnQueryGenerator(BaseModule):
         """
         # TODO: add assert gt_labels is not None
         batch_size = len(batch_data_samples)
-        device = batch_data_samples.device
+        device = batch_data_samples[0].gt_instances.bboxes.device
         # convert bbox
         gt_labels = []
         gt_bboxes = []
@@ -220,12 +258,12 @@ class CdnQueryGenerator(BaseModule):
         single_pad = int(max(known_num))  # TODO
 
         pad_size = int(single_pad * 2 * num_groups)
-        positive_idx = torch.range(
-            0, len(bboxes), dtype=torch.long,
+        positive_idx = torch.arange(
+            len(bboxes), dtype=torch.long,
             device=device)  # TODO: replace the `len(bboxes)`  # noqa
         positive_idx = positive_idx.unsqueeze(0).repeat(num_groups, 1)
-        positive_idx += torch.range(
-            0, num_groups, dtype=torch.long, device=device) * len(boxes) * 2
+        positive_idx += 2 * len(bboxes) * torch.arange(
+            num_groups, dtype=torch.long, device=device)[:, None]
         positive_idx = positive_idx.flatten()
         negative_idx = positive_idx + len(boxes)
         if self.box_noise_scale > 0:
