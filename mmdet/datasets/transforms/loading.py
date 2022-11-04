@@ -546,7 +546,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
             results (dict): Result dict from :obj:``mmdet.CustomDataset``.
         """
         # seg_map_path is None, when inference on the dataset without gts.
-        if results['seg_map_path'] is None:
+        if results.get('seg_map_path', None) is None:
             return
 
         img_bytes = self.file_client.get(results['seg_map_path'])
