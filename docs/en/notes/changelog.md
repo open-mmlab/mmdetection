@@ -15,7 +15,7 @@
 #### Bug Fixes
 
 - Fix `XMLDataset` image size error (#9216)
-- Fix buugs of empty_instances when predicting without nms in roi_head (#9015)
+- Fix bugs of empty_instances when predicting without nms in roi_head (#9015)
 - Fix detr_r18_config (#9158)
 - Fix SOLOv2 cannot dealing with empty gt image (#9192)
 - Fix inference demo (#9153)
