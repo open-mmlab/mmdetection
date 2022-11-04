@@ -720,6 +720,9 @@ def eval_map(det_results,
     print_map_summary(
         mean_ap, eval_results, dataset, area_ranges, logger=logger)
 
+    if isinstance(mean_ap, list):
+        mean_ap = np.array(mean_ap).mean().item()
+
     return mean_ap, eval_results
 
 
@@ -734,7 +737,7 @@ def print_map_summary(mean_ap,
     the mAP.
 
     Args:
-        mean_ap (float): Calculated from `eval_map()`.
+        mean_ap (list[float] | float): Calculated from `eval_map()`.
         results (list[dict]): Calculated from `eval_map()`.
         dataset (list[str] | str | None): Dataset name or dataset classes.
         scale_ranges (list[tuple] | None): Range of scales to be evaluated.
