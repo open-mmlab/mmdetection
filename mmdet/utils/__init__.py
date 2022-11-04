@@ -5,7 +5,7 @@ from .dist_utils import (all_reduce_dict, allreduce_grads, reduce_mean,
                          sync_random_seed)
 from .logger import get_caller_name, log_img_scale
 from .memory import AvoidCUDAOOM, AvoidOOM
-from .misc import add_dump_metric, find_latest_checkpoint, update_data_root
+from .misc import find_latest_checkpoint, update_data_root
 from .replace_cfg_vals import replace_cfg_vals
 from .setup_env import register_all_modules, setup_multi_processes
 from .split_batch import split_batch
@@ -20,5 +20,5 @@ __all__ = [
     'AvoidCUDAOOM', 'all_reduce_dict', 'allreduce_grads', 'reduce_mean',
     'sync_random_seed', 'ConfigType', 'InstanceList', 'MultiConfig',
     'OptConfigType', 'OptInstanceList', 'OptMultiConfig', 'OptPixelList',
-    'PixelList', 'RangeType', 'add_dump_metric'
+    'PixelList', 'RangeType'
 ]

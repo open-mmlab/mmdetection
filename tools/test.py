@@ -4,11 +4,12 @@ import os
 import os.path as osp
 
 from mmengine.config import Config, DictAction
+from mmengine.evaluator import DumpResults
 from mmengine.runner import Runner
 
 from mmdet.engine.hooks.utils import trigger_visualization_hook
 from mmdet.registry import RUNNERS
-from mmdet.utils import add_dump_metric, register_all_modules
+from mmdet.utils import register_all_modules
 
 
 # TODO: support fuse_conv_bn and format_only
@@ -82,12 +83,6 @@ def main():
     if args.show or args.show_dir:
         cfg = trigger_visualization_hook(cfg, args)
 
-    # Dump predictions
-    if args.out is not None:
-        assert args.out.endswith(('.pkl', '.pickle')), \
-            'The dump file must be a pkl file.'
-        add_dump_metric(args, cfg)
-
     # build the runner from config
     if 'runner_type' not in cfg:
         # build the default runner
@@ -96,6 +91,13 @@ def main():
         # build customized runner from the registry
         # if 'runner_type' is set in the cfg
         runner = RUNNERS.build(cfg)
+
+    # add `DumpResults` dummy metric
+    if args.out is not None:
+        assert args.out.endswith(('.pkl', '.pickle')), \
+            'The dump file must be a pkl file.'
+        runner.test_evaluator.metrics.append(
+            DumpResults(out_file_path=args.out))
 
     # start testing
     runner.test()
