@@ -2,9 +2,11 @@
 
 ## v3.0.0rc2 (4/11/2022)
 
+Upgrade the minimum version of mmengine to 0.3.0 due to the addition of `ignore_key` in VOC `ConcatDataset` (#9058)
+
 ### Highlights
 
-- Support training detection models in Detectron2
+- Support training detection models in Detectron2 (#8672)
 - Support [CrowdDet](https://arxiv.org/abs/2003.09163) (#8744)
 - Refactor Fast R-CNN (#9132)
 
@@ -22,6 +24,9 @@
 - Fix SOLOv2 cannot dealing with empty gt image (#9192)
 - Fix inference demo (#9153)
 - Add `ignore_key` in VOC `ConcatDataset` (#9058)
+- Fix dumping results issue in test scripts. (#9241)
+- Fix configs of training coco subsets on MMDet 3.x (#9225)
+- Fix corner2hbox of HorizontalBoxes for supporting empty bboxes (#9140)
 
 #### Improvements
 
@@ -38,12 +43,13 @@
 - @Wwupup made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9086
 - @sanbuphy made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9153
 - @cxiang26 made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9158
+- @JosonChan1998 made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9225
 
 #### Contributors
 
-A total of 11 developers contributed to this release.
+A total of 13 developers contributed to this release.
 
-Thanks @wanghonglie, @Wwupup, @sanbuphy, @BIGWangYuDong, @liuyanyi, @cxiang26, @jbwang1997, @ZwwWayne, @yuyoujiang, @RangiLyu, @hhaAndroid
+Thanks @wanghonglie, @Wwupup, @sanbuphy, @BIGWangYuDong, @liuyanyi, @cxiang26, @jbwang1997, @ZwwWayne, @yuyoujiang, @RangiLyu, @hhaAndroid, @JosonChan1998, @Czm369
 
 ## v3.0.0rc2 (21/10/2022)
 
