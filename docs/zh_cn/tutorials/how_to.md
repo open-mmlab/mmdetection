@@ -1,4 +1,5 @@
 # 教程 11: How to xxx
+
 本教程收集了任何如何使用 MMDetection 进行 xxx 的答案。 如果您遇到有关`如何做`的问题及答案，请随时更新此文档！
 
 ## 使用 MMClassification 的骨干网络
@@ -10,7 +11,7 @@ MMDet、MMCls、MMSeg 中的模型注册表都继承自 MMCV 中的根注册表�
 假设想将 `MobileNetV3-small` 作为 `RetinaNet` 的骨干网络，则配置文件如下。
 
 ```python
-通过 MMClassification 在 TIMM 中使用骨干网络_base_ = [
+_base_ = [
     '../_base_/models/retinanet_r50_fpn.py',
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
@@ -110,3 +111,93 @@ data = dict(
     train=train_dataset
     )
 ```
+
+## 在配置文件中冻结骨干网络后在训练中解冻骨干网络
+
+如果你在配置文件中已经冻结了骨干网络并希望在几个训练周期后解冻它，你可以通过 hook 来实现这个功能。以用 ResNet 为骨干网络的 Faster R-CNN 为例，你可以冻结一个骨干网络的一个层并在配置文件中添加如下 `custom_hooks`:
+
+```python
+_base_ = [
+    '../_base_/models/faster_rcnn_r50_fpn.py',
+    '../_base_/datasets/coco_detection.py',
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+]
+model = dict(
+    # freeze one stage of the backbone network.
+    backbone=dict(frozen_stages=1),
+)
+custom_hooks = [dict(type="UnfreezeBackboneEpochBasedHook", unfreeze_epoch=1)]
+```
+
+同时在 `mmdet/core/hook/unfreeze_backbone_epoch_based_hook.py` 当中书写 `UnfreezeBackboneEpochBasedHook` 类
+
+```python
+from mmcv.parallel import is_module_wrapper
+from mmcv.runner.hooks import HOOKS, Hook
+
+
+@HOOKS.register_module()
+class UnfreezeBackboneEpochBasedHook(Hook):
+    """Unfreeze backbone network Hook.
+
+    Args:
+        unfreeze_epoch (int): The epoch unfreezing the backbone network.
+    """
+
+    def __init__(self, unfreeze_epoch=1):
+        self.unfreeze_epoch = unfreeze_epoch
+
+    def before_train_epoch(self, runner):
+        # Unfreeze the backbone network.
+        # Only valid for resnet.
+        if runner.epoch == self.unfreeze_epoch:
+            model = runner.model
+            if is_module_wrapper(model):
+                model = model.module
+            backbone = model.backbone
+            if backbone.frozen_stages >= 0:
+                if backbone.deep_stem:
+                    backbone.stem.train()
+                    for param in backbone.stem.parameters():
+                        param.requires_grad = True
+                else:
+                    backbone.norm1.train()
+                    for m in [backbone.conv1, backbone.norm1]:
+                        for param in m.parameters():
+                            param.requires_grad = True
+
+            for i in range(1, backbone.frozen_stages + 1):
+                m = getattr(backbone, f'layer{i}')
+                m.train()
+                for param in m.parameters():
+                    param.requires_grad = True
+```
+
+## 获得新的骨干网络的通道数
+
+如果你想获得一个新骨干网络的通道数，你可以单独构建这个骨干网络并输入一个伪造的图片来获取每一个阶段的输出。
+
+以 `ResNet` 为例：
+
+```python
+from mmdet.models import ResNet
+import torch
+self = ResNet(depth=18)
+self.eval()
+inputs = torch.rand(1, 3, 32, 32)
+level_outputs = self.forward(inputs)
+for level_out in level_outputs:
+    print(tuple(level_out.shape))
+
+```
+
+以上脚本的输出为:
+
+```python
+(1, 64, 8, 8)
+(1, 128, 4, 4)
+(1, 256, 2, 2)
+(1, 512, 1, 1)
+```
+
+用户可以通过将脚本中的 `ResNet(depth=18)` 替换为自己的骨干网络配置来得到新的骨干网络的通道数。

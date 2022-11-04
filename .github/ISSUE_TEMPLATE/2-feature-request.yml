@@ -1,0 +1,31 @@
+name: 🚀 Feature request
+description: Suggest an idea for this project
+labels: "kind/enhancement,status/unconfirmed"
+title: "[Feature] "
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We strongly appreciate you creating a PR to implement this feature [here](https://github.com/open-mmlab/mmdetection/pulls)!
+        If you need our help, please fill in as much of the following form as you're able to.
+
+        **The less clear the description, the longer it will take to solve it.**
+
+  - type: textarea
+    attributes:
+      label: What's the feature?
+      description: |
+        Tell us more about the feature and how this feature can help.
+      placeholder: |
+        E.g., It is inconvenient when \[....\].
+        This feature can \[....\].
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Any other context?
+      description: |
+        Have you considered any alternative solutions or features? If so, what are they?
+        Also, feel free to add any other context or screenshots about the feature request here.

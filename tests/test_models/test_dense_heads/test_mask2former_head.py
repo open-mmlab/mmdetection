@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 import torch
 from mmcv import ConfigDict
 
@@ -6,15 +7,23 @@ from mmdet.core.mask import BitmapMasks
 from mmdet.models.dense_heads import Mask2FormerHead
 
 
-def test_mask2former_head_loss():
-    """Tests head loss when truth is empty and non-empty."""
-    base_channels = 64
+@pytest.mark.parametrize('num_stuff_classes, \
+     label_num', [(53, 100), (0, 80)])
+def test_mask2former_head_loss(num_stuff_classes, label_num):
+    """Tests head loss when truth is empty and non-empty.
+
+    Tests head loss as Panoptic Segmentation and Instance Segmentation. Tests
+    forward_train and simple_test with masks and None as gt_semantic_seg
+    """
+    self = _init_model(num_stuff_classes)
     img_metas = [{
         'batch_input_shape': (128, 160),
+        'pad_shape': (128, 160, 3),
         'img_shape': (126, 160, 3),
         'ori_shape': (63, 80, 3)
     }, {
         'batch_input_shape': (128, 160),
+        'pad_shape': (128, 160, 3),
         'img_shape': (120, 160, 3),
         'ori_shape': (60, 80, 3)
     }]
@@ -22,8 +31,83 @@ def test_mask2former_head_loss():
         torch.rand((2, 64 * 2**i, 4 * 2**(3 - i), 5 * 2**(3 - i)))
         for i in range(4)
     ]
+    all_cls_scores, all_mask_preds = self.forward(feats, img_metas)
+    # Test that empty ground truth encourages the network to predict background
+    gt_labels_list = [torch.LongTensor([]), torch.LongTensor([])]
+    gt_masks_list = [
+        torch.zeros((0, 128, 160)).long(),
+        torch.zeros((0, 128, 160)).long()
+    ]
+
+    empty_gt_losses = self.loss(all_cls_scores, all_mask_preds, gt_labels_list,
+                                gt_masks_list, img_metas)
+    # When there is no truth, the cls loss should be nonzero but there should
+    # be no mask loss.
+    for key, loss in empty_gt_losses.items():
+        if 'cls' in key:
+            assert loss.item() > 0, 'cls loss should be non-zero'
+        elif 'mask' in key:
+            assert loss.item(
+            ) == 0, 'there should be no mask loss when there are no true mask'
+        elif 'dice' in key:
+            assert loss.item(
+            ) == 0, 'there should be no dice loss when there are no true mask'
+
+    # when truth is non-empty then both cls, mask, dice loss should be nonzero
+    # random inputs
+    gt_labels_list = [
+        torch.tensor([10, label_num]).long(),
+        torch.tensor([label_num, 10]).long()
+    ]
+    mask1 = torch.zeros((2, 128, 160)).long()
+    mask1[0, :50] = 1
+    mask1[1, 50:] = 1
+    mask2 = torch.zeros((2, 128, 160)).long()
+    mask2[0, :, :50] = 1
+    mask2[1, :, 50:] = 1
+    gt_masks_list = [mask1, mask2]
+    two_gt_losses = self.loss(all_cls_scores, all_mask_preds, gt_labels_list,
+                              gt_masks_list, img_metas)
+    for loss in two_gt_losses.values():
+        assert loss.item() > 0, 'all loss should be non-zero'
+
+    # test forward_train
+    gt_bboxes = None
+    gt_labels = [
+        torch.tensor([10]).long(),
+        torch.tensor([10]).long(),
+    ]
+    thing_mask1 = np.zeros((1, 128, 160), dtype=np.int32)
+    thing_mask1[0, :50] = 1
+    thing_mask2 = np.zeros((1, 128, 160), dtype=np.int32)
+    thing_mask2[0, :, 50:] = 1
+    gt_masks = [
+        BitmapMasks(thing_mask1, 128, 160),
+        BitmapMasks(thing_mask2, 128, 160),
+    ]
+    stuff_mask1 = torch.zeros((1, 128, 160)).long()
+    stuff_mask1[0, :50] = 10
+    stuff_mask1[0, 50:] = 100
+    stuff_mask2 = torch.zeros((1, 128, 160)).long()
+    stuff_mask2[0, :, 50:] = 10
+    stuff_mask2[0, :, :50] = 100
+    gt_semantic_seg = [stuff_mask1, stuff_mask2]
+
+    self.forward_train(feats, img_metas, gt_bboxes, gt_labels, gt_masks,
+                       gt_semantic_seg)
+
+    # test when gt_semantic_seg is None
+    gt_semantic_seg = None
+    self.forward_train(feats, img_metas, gt_bboxes, gt_labels, gt_masks,
+                       gt_semantic_seg)
+
+    # test inference mode
+    self.simple_test(feats, img_metas)
+
+
+def _init_model(num_stuff_classes):
+    base_channels = 64
     num_things_classes = 80
-    num_stuff_classes = 53
     num_classes = num_things_classes + num_stuff_classes
     config = ConfigDict(
         dict(
@@ -147,70 +231,5 @@ def test_mask2former_head_loss():
                 iou_thr=0.8)))
     self = Mask2FormerHead(**config)
     self.init_weights()
-    all_cls_scores, all_mask_preds = self.forward(feats, img_metas)
-    # Test that empty ground truth encourages the network to predict background
-    gt_labels_list = [torch.LongTensor([]), torch.LongTensor([])]
-    gt_masks_list = [
-        torch.zeros((0, 128, 160)).long(),
-        torch.zeros((0, 128, 160)).long()
-    ]
 
-    empty_gt_losses = self.loss(all_cls_scores, all_mask_preds, gt_labels_list,
-                                gt_masks_list, img_metas)
-    # When there is no truth, the cls loss should be nonzero but there should
-    # be no mask loss.
-    for key, loss in empty_gt_losses.items():
-        if 'cls' in key:
-            assert loss.item() > 0, 'cls loss should be non-zero'
-        elif 'mask' in key:
-            assert loss.item(
-            ) == 0, 'there should be no mask loss when there are no true mask'
-        elif 'dice' in key:
-            assert loss.item(
-            ) == 0, 'there should be no dice loss when there are no true mask'
-
-    # when truth is non-empty then both cls, mask, dice loss should be nonzero
-    # random inputs
-    gt_labels_list = [
-        torch.tensor([10, 100]).long(),
-        torch.tensor([100, 10]).long()
-    ]
-    mask1 = torch.zeros((2, 128, 160)).long()
-    mask1[0, :50] = 1
-    mask1[1, 50:] = 1
-    mask2 = torch.zeros((2, 128, 160)).long()
-    mask2[0, :, :50] = 1
-    mask2[1, :, 50:] = 1
-    gt_masks_list = [mask1, mask2]
-    two_gt_losses = self.loss(all_cls_scores, all_mask_preds, gt_labels_list,
-                              gt_masks_list, img_metas)
-    for loss in two_gt_losses.values():
-        assert loss.item() > 0, 'all loss should be non-zero'
-
-    # test forward_train
-    gt_bboxes = None
-    gt_labels = [
-        torch.tensor([10]).long(),
-        torch.tensor([10]).long(),
-    ]
-    thing_mask1 = np.zeros((1, 128, 160), dtype=np.int32)
-    thing_mask1[0, :50] = 1
-    thing_mask2 = np.zeros((1, 128, 160), dtype=np.int32)
-    thing_mask2[0, :, 50:] = 1
-    gt_masks = [
-        BitmapMasks(thing_mask1, 128, 160),
-        BitmapMasks(thing_mask2, 128, 160),
-    ]
-    stuff_mask1 = torch.zeros((1, 128, 160)).long()
-    stuff_mask1[0, :50] = 10
-    stuff_mask1[0, 50:] = 100
-    stuff_mask2 = torch.zeros((1, 128, 160)).long()
-    stuff_mask2[0, :, 50:] = 10
-    stuff_mask2[0, :, :50] = 100
-    gt_semantic_seg = [stuff_mask1, stuff_mask2]
-
-    self.forward_train(feats, img_metas, gt_bboxes, gt_labels, gt_masks,
-                       gt_semantic_seg)
-
-    # test inference mode
-    self.simple_test(feats, img_metas)
+    return self

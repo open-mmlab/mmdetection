@@ -274,6 +274,16 @@ class GeneralData(NiceRepr):
         return new_data
 
     # Tensor-like methods
+    def mlu(self):
+        """Apply same name function to all tensors in data_fields."""
+        new_data = self.new()
+        for k, v in self.items():
+            if isinstance(v, torch.Tensor):
+                v = v.mlu()
+            new_data[k] = v
+        return new_data
+
+    # Tensor-like methods
     def cuda(self):
         """Apply same name function to all tensors in data_fields."""
         new_data = self.new()

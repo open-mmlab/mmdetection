@@ -1,0 +1,105 @@
+name: "🐞 Bug report"
+description: "Create a report to help us reproduce and fix the bug"
+labels: "kind/bug,status/unconfirmed"
+title: "[Bug] "
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If you have already identified the reason, we strongly appreciate you creating a new PR to fix it [here](https://github.com/open-mmlab/mmdetection/pulls)!
+        If this issue is about installing MMCV, please file an issue at [MMCV](https://github.com/open-mmlab/mmcv/issues/new/choose).
+        If you need our help, please fill in as much of the following form as you're able to.
+
+        **The less clear the description, the longer it will take to solve it.**
+
+  - type: checkboxes
+    attributes:
+      label: Prerequisite
+      description: Please check the following items before creating a new issue.
+      options:
+      - label: I have searched [Issues](https://github.com/open-mmlab/mmdetection/issues) and [Discussions](https://github.com/open-mmlab/mmdetection/discussions) but cannot get the expected help.
+        required: true
+      - label: I have read the [FAQ documentation](https://mmdetection.readthedocs.io/en/latest/faq.html) but cannot get the expected help.
+        required: true
+      - label: The bug has not been fixed in the [latest version (master)](https://github.com/open-mmlab/mmdetection) or [latest version (3.x)](https://github.com/open-mmlab/mmdetection/tree/dev-3.x).
+        required: true
+
+  - type: dropdown
+    id: task
+    attributes:
+      label: Task
+      description: The problem arises when
+      options:
+        - I'm using the official example scripts/configs for the officially supported tasks/models/datasets.
+        - I have modified the scripts/configs, or I'm working on my own tasks/models/datasets.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: branch
+    attributes:
+      label: Branch
+      description: The problem arises when I'm working on
+      options:
+        - master branch https://github.com/open-mmlab/mmdetection
+        - 3.x branch https://github.com/open-mmlab/mmdetection/tree/3.x
+    validations:
+      required: true
+
+
+  - type: textarea
+    attributes:
+      label: Environment
+      description: |
+        Please run `python mmdet/utils/collect_env.py` to collect necessary environment information and copy-paste it here.
+        You may add additional information that may be helpful for locating the problem, such as
+          - How you installed PyTorch \[e.g., pip, conda, source\]
+          - Other environment variables that may be related (such as `$PATH`, `$LD_LIBRARY_PATH`, `$PYTHONPATH`, etc.)
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Reproduces the problem - code sample
+      description: |
+        Please provide a code sample that reproduces the problem you ran into. It can be a Colab link or just a code snippet.
+      placeholder: |
+        ```python
+        # Sample code to reproduce the problem
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Reproduces the problem - command or script
+      description: |
+        What command or script did you run?
+      placeholder: |
+        ```shell
+        The command or script you run.
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Reproduces the problem - error message
+      description: |
+        Please provide the error message or logs you got, with the full traceback.
+      placeholder: |
+        ```
+        The error message or logs you got, with the full traceback.
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Additional information
+      description: Tell us anything else you think we should know.
+      placeholder: |
+        1. What's your expected result?
+        2. What dataset did you use?
+        3. What do you think might be the reason?

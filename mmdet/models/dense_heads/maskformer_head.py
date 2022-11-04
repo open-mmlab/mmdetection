@@ -116,10 +116,11 @@ class MaskFormerHead(AnchorFreeHead):
         self.test_cfg = test_cfg
         self.train_cfg = train_cfg
         if train_cfg:
-            self.assigner = build_assigner(train_cfg.assigner)
-            self.sampler = build_sampler(train_cfg.sampler, context=self)
+            self.assigner = build_assigner(train_cfg.get('assigner', None))
+            self.sampler = build_sampler(
+                train_cfg.get('sampler', None), context=self)
 
-        self.class_weight = loss_cls.class_weight
+        self.class_weight = loss_cls.get('class_weight', None)
         self.loss_cls = build_loss(loss_cls)
         self.loss_mask = build_loss(loss_mask)
         self.loss_dice = build_loss(loss_dice)
@@ -134,7 +135,8 @@ class MaskFormerHead(AnchorFreeHead):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-    def preprocess_gt(self, gt_labels_list, gt_masks_list, gt_semantic_segs):
+    def preprocess_gt(self, gt_labels_list, gt_masks_list, gt_semantic_segs,
+                      img_metas):
         """Preprocess the ground truth for all images.
 
         Args:
@@ -143,13 +145,12 @@ class MaskFormerHead(AnchorFreeHead):
             gt_masks_list (list[BitmapMasks]): Each is ground truth
                 masks of each instances of a image, shape
                 (num_gts, h, w).
-            gt_semantic_seg (Tensor): Ground truth of semantic
+            gt_semantic_seg (Tensor | None): Ground truth of semantic
                 segmentation with the shape (batch_size, n, h, w).
                 [0, num_thing_class - 1] means things,
                 [num_thing_class, num_class-1] means stuff,
-                255 means VOID.
-            target_shape (tuple[int]): Shape of output mask_preds.
-                Resize the masks to shape of mask_preds.
+                255 means VOID. It's None when training instance segmentation.
+            img_metas (list[dict]): List of image meta information.
 
         Returns:
             tuple: a tuple containing the following targets.
@@ -161,10 +162,12 @@ class MaskFormerHead(AnchorFreeHead):
         """
         num_things_list = [self.num_things_classes] * len(gt_labels_list)
         num_stuff_list = [self.num_stuff_classes] * len(gt_labels_list)
+        if gt_semantic_segs is None:
+            gt_semantic_segs = [None] * len(gt_labels_list)
 
         targets = multi_apply(preprocess_panoptic_gt, gt_labels_list,
                               gt_masks_list, gt_semantic_segs, num_things_list,
-                              num_stuff_list)
+                              num_stuff_list, img_metas)
         labels, masks = targets
         return labels, masks
 
@@ -494,11 +497,11 @@ class MaskFormerHead(AnchorFreeHead):
                 each box, shape (num_gts,).
             gt_masks (list[BitmapMasks]): Each element is masks of instances
                 of a image, shape (num_gts, h, w).
-            gt_semantic_seg (list[tensor]):Each element is the ground truth
-                of semantic segmentation with the shape (N, H, W).
+            gt_semantic_seg (list[tensor] | None): Each element is the ground
+                truth of semantic segmentation with the shape (N, H, W).
                 [0, num_thing_class - 1] means things,
                 [num_thing_class, num_class-1] means stuff,
-                255 means VOID.
+                255 means VOID. It's None when training instance segmentation.
             gt_bboxes_ignore (list[Tensor]): Ground truth bboxes to be
                 ignored. Defaults to None.
 
@@ -513,7 +516,7 @@ class MaskFormerHead(AnchorFreeHead):
 
         # preprocess ground truth
         gt_labels, gt_masks = self.preprocess_gt(gt_labels, gt_masks,
-                                                 gt_semantic_seg)
+                                                 gt_semantic_seg, img_metas)
 
         # loss
         losses = self.loss(all_cls_scores, all_mask_preds, gt_labels, gt_masks,

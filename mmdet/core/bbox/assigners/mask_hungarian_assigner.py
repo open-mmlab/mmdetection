@@ -1,15 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
+from scipy.optimize import linear_sum_assignment
 
 from mmdet.core.bbox.builder import BBOX_ASSIGNERS
 from mmdet.core.bbox.match_costs.builder import build_match_cost
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
-
-try:
-    from scipy.optimize import linear_sum_assignment
-except ImportError:
-    linear_sum_assignment = None
 
 
 @BBOX_ASSIGNERS.register_module()
@@ -54,7 +50,7 @@ class MaskHungarianAssigner(BaseAssigner):
         """Computes one-to-one matching based on the weighted costs.
 
         Args:
-            cls_pred (Tensor): Class prediction in shape
+            cls_pred (Tensor | None): Class prediction in shape
                 (num_query, cls_out_channels).
             mask_pred (Tensor): Mask prediction in shape (num_query, H, W).
             gt_labels (Tensor): Label of 'gt_mask'in shape = (num_gt, ).
@@ -70,15 +66,17 @@ class MaskHungarianAssigner(BaseAssigner):
         """
         assert gt_bboxes_ignore is None, \
             'Only case when gt_bboxes_ignore is None is supported.'
-        num_gt, num_query = gt_labels.shape[0], cls_pred.shape[0]
+        # K-Net sometimes passes cls_pred=None to this assigner.
+        # So we should use the shape of mask_pred
+        num_gt, num_query = gt_labels.shape[0], mask_pred.shape[0]
 
         # 1. assign -1 by default
-        assigned_gt_inds = cls_pred.new_full((num_query, ),
+        assigned_gt_inds = mask_pred.new_full((num_query, ),
+                                              -1,
+                                              dtype=torch.long)
+        assigned_labels = mask_pred.new_full((num_query, ),
                                              -1,
                                              dtype=torch.long)
-        assigned_labels = cls_pred.new_full((num_query, ),
-                                            -1,
-                                            dtype=torch.long)
         if num_gt == 0 or num_query == 0:
             # No ground truth or boxes, return empty assignment
             if num_gt == 0:
@@ -110,15 +108,12 @@ class MaskHungarianAssigner(BaseAssigner):
 
         # 3. do Hungarian matching on CPU using linear_sum_assignment
         cost = cost.detach().cpu()
-        if linear_sum_assignment is None:
-            raise ImportError('Please run "pip install scipy" '
-                              'to install scipy first.')
 
         matched_row_inds, matched_col_inds = linear_sum_assignment(cost)
         matched_row_inds = torch.from_numpy(matched_row_inds).to(
-            cls_pred.device)
+            mask_pred.device)
         matched_col_inds = torch.from_numpy(matched_col_inds).to(
-            cls_pred.device)
+            mask_pred.device)
 
         # 4. assign backgrounds and foregrounds
         # assign all indices to backgrounds first

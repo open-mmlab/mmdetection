@@ -333,7 +333,7 @@ dataset_A_train = dict(
     )
 ```
 
-You may refer to [source code](../../mmdet/datasets/dataset_wrappers.py) for details.
+You may refer to [source code](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/dataset_wrappers.py#L211) for details.
 
 ### Concatenate dataset
 
@@ -341,62 +341,62 @@ There are three ways to concatenate the dataset.
 
 1. If the datasets you want to concatenate are in the same type with different annotation files, you can concatenate the dataset configs like the following.
 
-    ```python
-    dataset_A_train = dict(
-        type='Dataset_A',
-        ann_file = ['anno_file_1', 'anno_file_2'],
-        pipeline=train_pipeline
-    )
-    ```
+   ```python
+   dataset_A_train = dict(
+       type='Dataset_A',
+       ann_file = ['anno_file_1', 'anno_file_2'],
+       pipeline=train_pipeline
+   )
+   ```
 
-    If the concatenated dataset is used for test or evaluation, this manner supports to evaluate each dataset separately. To test the concatenated datasets as a whole, you can set `separate_eval=False` as below.
+   If the concatenated dataset is used for test or evaluation, this manner supports to evaluate each dataset separately. To test the concatenated datasets as a whole, you can set `separate_eval=False` as below.
 
-    ```python
-    dataset_A_train = dict(
-        type='Dataset_A',
-        ann_file = ['anno_file_1', 'anno_file_2'],
-        separate_eval=False,
-        pipeline=train_pipeline
-    )
-    ```
+   ```python
+   dataset_A_train = dict(
+       type='Dataset_A',
+       ann_file = ['anno_file_1', 'anno_file_2'],
+       separate_eval=False,
+       pipeline=train_pipeline
+   )
+   ```
 
 2. In case the dataset you want to concatenate is different, you can concatenate the dataset configs like the following.
 
-    ```python
-    dataset_A_train = dict()
-    dataset_B_train = dict()
+   ```python
+   dataset_A_train = dict()
+   dataset_B_train = dict()
 
-    data = dict(
-        imgs_per_gpu=2,
-        workers_per_gpu=2,
-        train = [
-            dataset_A_train,
-            dataset_B_train
-        ],
-        val = dataset_A_val,
-        test = dataset_A_test
-        )
-    ```
+   data = dict(
+       imgs_per_gpu=2,
+       workers_per_gpu=2,
+       train = [
+           dataset_A_train,
+           dataset_B_train
+       ],
+       val = dataset_A_val,
+       test = dataset_A_test
+       )
+   ```
 
-    If the concatenated dataset is used for test or evaluation, this manner also supports to evaluate each dataset separately.
+   If the concatenated dataset is used for test or evaluation, this manner also supports to evaluate each dataset separately.
 
 3. We also support to define `ConcatDataset` explicitly as the following.
 
-    ```python
-    dataset_A_val = dict()
-    dataset_B_val = dict()
+   ```python
+   dataset_A_val = dict()
+   dataset_B_val = dict()
 
-    data = dict(
-        imgs_per_gpu=2,
-        workers_per_gpu=2,
-        train=dataset_A_train,
-        val=dict(
-            type='ConcatDataset',
-            datasets=[dataset_A_val, dataset_B_val],
-            separate_eval=False))
-    ```
+   data = dict(
+       imgs_per_gpu=2,
+       workers_per_gpu=2,
+       train=dataset_A_train,
+       val=dict(
+           type='ConcatDataset',
+           datasets=[dataset_A_val, dataset_B_val],
+           separate_eval=False))
+   ```
 
-    This manner allows users to evaluate all the datasets as a single one by setting `separate_eval=False`.
+   This manner allows users to evaluate all the datasets as a single one by setting `separate_eval=False`.
 
 **Note:**
 

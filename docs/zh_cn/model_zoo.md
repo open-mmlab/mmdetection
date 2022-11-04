@@ -17,10 +17,8 @@
 通过 ImageNet 分类任务预训练的主干网络进行初始化是很常见的操作。所有预训练模型的链接都可以在 [open_mmlab](https://github.com/open-mmlab/mmcv/blob/master/mmcv/model_zoo/open_mmlab.json) 中找到。根据 `img_norm_cfg` 和原始权重，我们可以将所有 ImageNet 预训练模型分为以下几种情况：
 
 - TorchVision：torchvision 模型权重，包含 ResNet50, ResNet101。`img_norm_cfg` 为 `dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)`。
-- Pycls：[pycls](https://github.com/facebookresearch/pycls) 模型权重，包含 RegNetX。`img_norm_cfg` 为 `dict(
-    mean=[103.530, 116.280, 123.675], std=[57.375, 57.12, 58.395], to_rgb=False)`。
-- MSRA styles：[MSRA](https://github.com/KaimingHe/deep-residual-networks) 模型权重，包含 ResNet50_Caffe，ResNet101_Caffe。`img_norm_cfg` 为 `dict(
-    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)`。
+- Pycls：[pycls](https://github.com/facebookresearch/pycls) 模型权重，包含 RegNetX。`img_norm_cfg` 为 `dict(   mean=[103.530, 116.280, 123.675], std=[57.375, 57.12, 58.395], to_rgb=False)`。
+- MSRA styles：[MSRA](https://github.com/KaimingHe/deep-residual-networks) 模型权重，包含 ResNet50_Caffe，ResNet101_Caffe。`img_norm_cfg` 为 `dict(   mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)`。
 - Caffe2 styles：现阶段只包含 ResNext101_32x8d。`img_norm_cfg` 为 `dict(mean=[103.530, 116.280, 123.675], std=[57.375, 57.120, 58.395], to_rgb=False)`。
 - Other styles: SSD 的 `img_norm_cfg` 为 `dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)`，YOLOv3 的 `img_norm_cfg` 为 `dict(mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=True)`。
 
@@ -258,21 +256,21 @@ MMdetection 常用到的主干网络细节如下表所示：
 我们与其他流行框架的 Mask R-CNN 训练速度进行比较（数据是从 [detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md/) 复制而来）。在 mmdetection 中，我们使用 [mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py) 进行基准测试。它与 detectron2 的 [mask_rcnn_R_50_FPN_noaug_1x.yaml](https://github.com/facebookresearch/detectron2/blob/master/configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml) 设置完全一样。同时，我们还提供了[模型权重](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_compare_20200518-10127928.pth)和[训练 log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_20200518_105755.log.json) 作为参考。为了跳过 GPU 预热时间，吞吐量按照100-500次迭代之间的平均吞吐量来计算。
 
 | 框架                                                                                   | 吞吐量 (img/s) |
-| -------------------------------------------------------------------------------------- | ------------------ |
-| [Detectron2](https://github.com/facebookresearch/detectron2)                           | 62                 |
-| [MMDetection](https://github.com/open-mmlab/mmdetection)                               | 61                 |
-| [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/)          | 53                 |
-| [tensorpack](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN) | 50                 |
-| [simpledet](https://github.com/TuSimple/simpledet/)                                    | 39                 |
-| [Detectron](https://github.com/facebookresearch/Detectron)                             | 19                 |
-| [matterport/Mask_RCNN](https://github.com/matterport/Mask_RCNN/)                       | 14                 |
+| -------------------------------------------------------------------------------------- | -------------- |
+| [Detectron2](https://github.com/facebookresearch/detectron2)                           | 62             |
+| [MMDetection](https://github.com/open-mmlab/mmdetection)                               | 61             |
+| [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/)          | 53             |
+| [tensorpack](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN) | 50             |
+| [simpledet](https://github.com/TuSimple/simpledet/)                                    | 39             |
+| [Detectron](https://github.com/facebookresearch/Detectron)                             | 19             |
+| [matterport/Mask_RCNN](https://github.com/matterport/Mask_RCNN/)                       | 14             |
 
 ### 推理时间基准
 
 我们提供 [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) 对推理时间进行基准测试。此脚本将推理 2000 张图片并计算忽略前 5 次推理的平均推理时间。可以通过设置 `LOG-INTERVAL` 来改变 log 输出间隔（默认为 50）。
 
 ```shell
-python toools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL]] [--fuse-conv-bn]
+python tools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL]] [--fuse-conv-bn]
 ```
 
 模型库中，所有模型在基准测量推理时间时都没设置 `fuse-conv-bn`, 此设置可以使推理时间更短。
@@ -297,11 +295,11 @@ python toools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVA
 
 ### 精度
 
-| 模型                                                                                                                                   | 训练策略 | Detectron2                                                                                                                             | mmdetection | 下载                                                                                                                                                                                                                                                                                                                                                                 |
-| -------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco.py) | 1x       | [37.9](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml)                 | 38.0        | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-5324cff8.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco_20200429_234554.log.json)             |
-| [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py)  | 1x       | [38.6 & 35.2](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml) | 38.8 & 35.4 | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco-dbecf295.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco_20200430_054239.log.json) |
-| [Retinanet](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_caffe_fpn_mstrain_1x_coco.py)        | 1x       | [36.5](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-Detection/retinanet_R_50_FPN_1x.yaml)                   | 37.0        | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco-586977a0.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco_20200430_014748.log.json)                     |
+| 模型                                                                                                                                   | 训练策略 | Detectron2                                                                                                                             | mmdetection | 下载                                                                                                                                                                                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco.py) | 1x       | [37.9](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml)                 | 38.0        | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-5324cff8.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco_20200429_234554.log.json)             |
+| [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py)  | 1x       | [38.6 & 35.2](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml) | 38.8 & 35.4 | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco-dbecf295.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco_20200430_054239.log.json) |
+| [Retinanet](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_caffe_fpn_mstrain_1x_coco.py)        | 1x       | [36.5](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-Detection/retinanet_R_50_FPN_1x.yaml)                   | 37.0        | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco-586977a0.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco_20200430_014748.log.json)                     |
 
 ### 训练速度
 
