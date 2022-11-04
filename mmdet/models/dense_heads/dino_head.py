@@ -121,6 +121,7 @@ class DINOHead(DeformableDETRHead):
 
         loss_dict = super().loss_by_feat(all_layers_matching_cls_scores,
                                          all_layers_matching_bbox_preds,
+                                         enc_cls_scores, enc_bbox_preds,
                                          batch_gt_instances, batch_img_metas,
                                          batch_gt_instances_ignore)
 
@@ -223,10 +224,12 @@ class DINOHead(DeformableDETRHead):
     def get_dn_target(self, dn_bbox_preds_list, batch_gt_instances, img_metas,
                       dn_meta):
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
-         pos_inds_list,
-         neg_inds_list) = multi_apply(self._get_dn_target_single,
-                                      dn_bbox_preds_list, batch_gt_instances,
-                                      img_metas, dn_meta)
+         pos_inds_list, neg_inds_list) = multi_apply(
+             self._get_dn_target_single,
+             dn_bbox_preds_list,
+             batch_gt_instances,
+             img_metas,
+             dn_meta=dn_meta)
         num_total_pos = sum((inds.numel() for inds in pos_inds_list))
         num_total_neg = sum((inds.numel() for inds in neg_inds_list))
         return (labels_list, label_weights_list, bbox_targets_list,
@@ -237,9 +240,7 @@ class DINOHead(DeformableDETRHead):
         gt_bboxes = gt_instances.bboxes
         gt_labels = gt_instances.labels
         num_groups = dn_meta['num_dn_group']
-        pad_size = dn_meta['pad_size']
-        assert pad_size % num_groups == 0
-        single_pad = pad_size // num_groups
+        single_pad = dn_meta['single_pad']
         num_bboxes = dn_bbox_pred.size(0)
 
         if len(gt_labels) > 0:
@@ -248,7 +249,8 @@ class DINOHead(DeformableDETRHead):
             t = t.unsqueeze(0).repeat(num_groups, 1)
             pos_assigned_gt_inds = t.flatten()
             pos_inds = torch.arange(
-                num_groups, dtype=torch.long, device=device) + t
+                num_groups, dtype=torch.long, device=device)
+            pos_inds = pos_inds.unsqueeze(1) * single_pad + t
             pos_inds = pos_inds.flatten()
         else:
             pos_inds = pos_assigned_gt_inds = \
@@ -286,14 +288,15 @@ class DINOHead(DeformableDETRHead):
                            all_layers_bbox_preds: Tensor,
                            dn_meta: Dict):  # TODO: Dict[what]
         if dn_meta is not None:
+            pad_size = dn_meta['single_pad'] * dn_meta['num_dn_group']
             all_layers_denoising_cls_scores = \
-                all_layers_cls_scores[:, :, : dn_meta['pad_size'], :]
+                all_layers_cls_scores[:, :, : pad_size, :]
             all_layers_denoising_bbox_preds = \
-                all_layers_bbox_preds[:, :, : dn_meta['pad_size'], :]
+                all_layers_bbox_preds[:, :, : pad_size, :]
             all_layers_matching_cls_scores = \
-                all_layers_cls_scores[:, :, dn_meta['pad_size']:, :]
+                all_layers_cls_scores[:, :, pad_size:, :]
             all_layers_matching_bbox_preds = \
-                all_layers_bbox_preds[:, :, dn_meta['pad_size']:, :]
+                all_layers_bbox_preds[:, :, pad_size:, :]
         else:
             all_layers_denoising_cls_scores = None
             all_layers_denoising_bbox_preds = None

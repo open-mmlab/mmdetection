@@ -35,12 +35,12 @@ class DINO(DeformableDETR):
             assert 'num_classes' not in dn_cfg and \
                    'num_query' not in dn_cfg and \
                    'hidden_dim' not in dn_cfg, \
-                'The three keyword args `num_classes`, `num_query`, and ' \
-                '`hidden_dim` are set in `detector.__init__()`, users ' \
-                'should not set them in `dn_cfg` config.'
+                'The three keyword args `num_classes`, `embed_dims`, and ' \
+                '`num_matching_query` are set in `detector.__init__()`, ' \
+                'users should not set them in `dn_cfg` config.'
             dn_cfg['num_classes'] = self.bbox_head.num_classes
-            dn_cfg['num_query'] = self.num_query
-            dn_cfg['hidden_dim'] = self.embed_dims
+            dn_cfg['embed_dims'] = self.embed_dims
+            dn_cfg['num_matching_query'] = self.num_query
         self.dn_query_generator = CdnQueryGenerator(**dn_cfg)
 
     def _init_layers(self) -> None:

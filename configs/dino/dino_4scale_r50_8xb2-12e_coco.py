@@ -71,7 +71,7 @@ model = dict(
         loss_bbox=dict(type='L1Loss', loss_weight=5.0),
         loss_iou=dict(type='GIoULoss', loss_weight=2.0)),
     dn_cfg=dict(
-        noise_scale=dict(label=0.5, box=1.0),  # 0.5, 0.4 for DN-DETR
+        noise_scales=dict(label=0.5, box=1.0),  # 0.5, 0.4 for DN-DETR
         group_cfg=dict(dynamic=True, num_groups=None, num_dn_queries=100)),
     # training and testing settings
     train_cfg=dict(
@@ -98,9 +98,12 @@ train_pipeline = [
             [
                 dict(
                     type='RandomChoiceResize',
-                    scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
-                            (608, 1333), (640, 1333), (672, 1333), (704, 1333),
-                            (736, 1333), (768, 1333), (800, 1333)],
+                    scales=[
+                        (480, 1333),
+                        # (512, 1333), (544, 1333), (576, 1333),
+                        # (608, 1333), (640, 1333), (672, 1333), (704, 1333),
+                        # (736, 1333), (768, 1333), (800, 1333)
+                    ],
                     keep_ratio=True)
             ],
             [
@@ -108,7 +111,10 @@ train_pipeline = [
                     type='RandomChoiceResize',
                     # The radio of all image in train dataset < 7
                     # follow the original implement
-                    scales=[(400, 4200), (500, 4200), (600, 4200)],
+                    scales=[
+                        (400, 4200),
+                        # (500, 4200), (600, 4200)
+                    ],
                     keep_ratio=True),
                 dict(
                     type='RandomCrop',
@@ -117,9 +123,12 @@ train_pipeline = [
                     allow_negative_crop=True),
                 dict(
                     type='RandomChoiceResize',
-                    scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
-                            (608, 1333), (640, 1333), (672, 1333), (704, 1333),
-                            (736, 1333), (768, 1333), (800, 1333)],
+                    scales=[
+                        (480, 1333),
+                        # (512, 1333), (544, 1333), (576, 1333),
+                        # (608, 1333), (640, 1333), (672, 1333), (704, 1333),
+                        # (736, 1333), (768, 1333), (800, 1333)
+                    ],
                     keep_ratio=True)
             ]
         ]),
