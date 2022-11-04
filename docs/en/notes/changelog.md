@@ -6,6 +6,7 @@
 
 - Support training detection models in Detectron2
 - Support [CrowdDet](https://arxiv.org/abs/2003.09163) (#8744)
+- Refactor Fast R-CNN (#9132)
 
 #### New Features
 
@@ -17,7 +18,7 @@
 
 - Fix `XMLDataset` image size error (#9216)
 - Fix bugs of empty_instances when predicting without nms in roi_head (#9015)
-- Fix detr_r18_config (#9158)
+- Fix the config file of DETR (#9158)
 - Fix SOLOv2 cannot dealing with empty gt image (#9192)
 - Fix inference demo (#9153)
 - Add `ignore_key` in VOC `ConcatDataset` (#9058)
@@ -40,9 +41,9 @@
 
 #### Contributors
 
-A total of 9 developers contributed to this release.
+A total of 11 developers contributed to this release.
 
-Thanks @wanghonglie, @Wwupup, @sanbuphy, @BIGWangYuDong, @liuyanyi, @cxiang26, @jbwang1997, @ZwwWayne, @yuyoujiang
+Thanks @wanghonglie, @Wwupup, @sanbuphy, @BIGWangYuDong, @liuyanyi, @cxiang26, @jbwang1997, @ZwwWayne, @yuyoujiang, @RangiLyu, @hhaAndroid
 
 ## v3.0.0rc2 (21/10/2022)
 
