@@ -411,7 +411,7 @@ class MultiInstanceBBoxHead(BBoxHead):
             dict: A dictionary of loss.
         """
         losses = dict()
-        if bbox_pred.any():
+        if bbox_pred.numel():
             loss_0 = self.emd_loss(bbox_pred[:, 0:4], cls_score[:, 0:2],
                                    bbox_pred[:, 4:8], cls_score[:, 2:4],
                                    bbox_targets, labels)
