@@ -12,7 +12,7 @@ from mmcv.cnn import fuse_conv_bn
 from mmcv.runner import (get_dist_info, init_dist, load_checkpoint,
                          wrap_fp16_model)
 
-from mmdet.apis import multi_gpu_test, single_gpu_test
+from mmdet.apis import multi_gpu_test, single_gpu_test, single_replica_ipu_test
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 from mmdet.models import build_detector
@@ -35,6 +35,7 @@ def parse_args():
         action='store_true',
         help='Whether to fuse conv and bn, this will slightly increase'
         'the inference speed')
+    parser.add_argument('--ipu', action='store_true', help='test model on IPU')
     parser.add_argument(
         '--gpu-ids',
         type=int,
@@ -221,7 +222,7 @@ def main():
     cfg.model.train_cfg = None
     model = build_detector(cfg.model, test_cfg=cfg.get('test_cfg'))
     fp16_cfg = cfg.get('fp16', None)
-    if fp16_cfg is not None:
+    if fp16_cfg is not None and not args.ipu:
         wrap_fp16_model(model)
     checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
     if args.fuse_conv_bn:
@@ -234,9 +235,16 @@ def main():
         model.CLASSES = dataset.CLASSES
 
     if not distributed:
-        model = build_dp(model, cfg.device, device_ids=cfg.gpu_ids)
-        outputs = single_gpu_test(model, data_loader, args.show, args.show_dir,
-                                  args.show_score_thr)
+        if args.ipu:
+            from mmcv.device.ipu import build_ipu_model
+            model = build_ipu_model(model, **cfg.runner)
+            outputs = single_replica_ipu_test(model, data_loader, args.show,
+                                              args.show_dir,
+                                              args.show_score_thr)
+        else:
+            model = build_dp(model, cfg.device, device_ids=cfg.gpu_ids)
+            outputs = single_gpu_test(model, data_loader, args.show,
+                                      args.show_dir, args.show_score_thr)
     else:
         model = build_ddp(
             model,

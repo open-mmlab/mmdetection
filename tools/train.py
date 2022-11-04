@@ -36,6 +36,11 @@ def parse_args():
         '--no-validate',
         action='store_true',
         help='whether not to evaluate the checkpoint during training')
+    parser.add_argument(
+        '--ipu-replicas',
+        type=int,
+        default=None,
+        help='num of IPU replicas to use, it is a option for IPU device')
     group_gpus = parser.add_mutually_exclusive_group()
     group_gpus.add_argument(
         '--gpus',
@@ -150,6 +155,9 @@ def main():
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
     cfg.auto_resume = args.auto_resume
+
+    cfg.ipu_replicas = args.ipu_replicas
+
     if args.gpus is not None:
         cfg.gpu_ids = range(1)
         warnings.warn('`--gpus` is deprecated because we only support '

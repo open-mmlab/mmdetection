@@ -122,3 +122,6 @@ work_dirs/
 *.pth
 *.py~
 *.sh~
+
+# IPU
+/engine_cache
