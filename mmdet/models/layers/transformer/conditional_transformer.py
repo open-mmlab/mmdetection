@@ -17,32 +17,32 @@ from .detr_transformer import (
        DetrTransformerDecoder, DetrTransformerDecoderLayer)
 from .utils import MLP
 
-def gen_sineembed_for_position(pos_tensor):
+def gen_sine_embed_for_ref(reference):
     # n_query, bs, _ = pos_tensor.size()
     # sineembed_tensor = torch.zeros(n_query, bs, 256)
     scale = 2 * math.pi
-    dim_t = torch.arange(128, dtype=torch.float32, device=pos_tensor.device)
+    dim_t = torch.arange(128, dtype=torch.float32, device=reference.device)
     dim_t = 10000 ** (2 * (dim_t // 2) / 128)
-    x_embed = pos_tensor[:, :, 0] * scale
-    y_embed = pos_tensor[:, :, 1] * scale
+    x_embed = reference[:, :, 0] * scale
+    y_embed = reference[:, :, 1] * scale
     pos_x = x_embed[:, :, None] / dim_t
     pos_y = y_embed[:, :, None] / dim_t
     pos_x = torch.stack((pos_x[:, :, 0::2].sin(), pos_x[:, :, 1::2].cos()), dim=3).flatten(2)
     pos_y = torch.stack((pos_y[:, :, 0::2].sin(), pos_y[:, :, 1::2].cos()), dim=3).flatten(2)
-    if pos_tensor.size(-1) == 2:
+    if reference.size(-1) == 2:
         pos = torch.cat((pos_y, pos_x), dim=2)
-    elif pos_tensor.size(-1) == 4:
-        w_embed = pos_tensor[:, :, 2] * scale
+    elif reference.size(-1) == 4:
+        w_embed = reference[:, :, 2] * scale
         pos_w = w_embed[:, :, None] / dim_t
         pos_w = torch.stack((pos_w[:, :, 0::2].sin(), pos_w[:, :, 1::2].cos()), dim=3).flatten(2)
 
-        h_embed = pos_tensor[:, :, 3] * scale
+        h_embed = reference[:, :, 3] * scale
         pos_h = h_embed[:, :, None] / dim_t
         pos_h = torch.stack((pos_h[:, :, 0::2].sin(), pos_h[:, :, 1::2].cos()), dim=3).flatten(2)
 
         pos = torch.cat((pos_y, pos_x, pos_w, pos_h), dim=2)
     else:
-        raise ValueError("Unknown pos_tensor shape(-1):{}".format(pos_tensor.size(-1)))
+        raise ValueError("Unknown pos_tensor shape(-1):{}".format(reference.size(-1)))
     return pos
 
 
@@ -55,7 +55,7 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
             for _ in range(self.num_layers)
         ])
         self.embed_dims = self.layers[0].embed_dims
-        self.post_norm = build_norm_layer(self.post_norm_cfg,self.embed_dims)[1]
+        self.post_norm = build_norm_layer(self.post_norm_cfg, self.embed_dims)[1]
         #conditional detr affline
         self.query_scale = MLP(self.embed_dims, self.embed_dims, self.embed_dims, 2)
         self.ref_point_head = MLP(self.embed_dims, self.embed_dims, 2, 2)
@@ -69,9 +69,9 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
                 query_pos: Tensor,
                 key_pos: Tensor,
                 key_padding_mask: Tensor):
-        reference_points_unsigmoid = self.ref_point_head(query_pos)  # [num_queries, batch_size, 2]
-        reference_points = reference_points_unsigmoid.sigmoid().transpose(0, 1)
-        obj_center = reference_points[..., :2].transpose(0, 1)
+        reference_unsigmoid = self.ref_point_head(query_pos)  # [num_queries, batch_size, 2]
+        reference = reference_unsigmoid.sigmoid().transpose(0, 1)
+        reference_xy = reference[..., :2].transpose(0, 1)
         intermediate = []
         for layer_id, layer in enumerate(self.layers):
             if layer_id == 0:
@@ -79,19 +79,19 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
             else:
                 pos_transformation = self.query_scale(query)
             # get sine embedding for the query vector
-            query_sine_embed = gen_sineembed_for_position(obj_center)
+            ref_sine_embed = gen_sine_embed_for_ref(reference_xy)
             # apply transformation
-            query_sine_embed = query_sine_embed * pos_transformation
-            query = layer(query, key=key, value=value , query_pos=query_pos, key_pos=key_pos,
-                          key_padding_mask=key_padding_mask,query_sine_embed=query_sine_embed,
+            ref_sine_embed = ref_sine_embed * pos_transformation
+            query = layer(query, key=key, value=value, query_pos=query_pos, key_pos=key_pos,
+                          key_padding_mask=key_padding_mask, ref_sine_embed=ref_sine_embed,
                           is_first=(layer_id == 0))
             if self.return_intermediate:
                 intermediate.append(self.post_norm(query))
 
         if self.return_intermediate:
-            return torch.stack(intermediate), reference_points
+            return torch.stack(intermediate), reference
 
-        return query, reference_points
+        return query, reference
 
 class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
 
@@ -114,18 +114,48 @@ class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
                 query_pos: Tensor = None,
                 key_pos: Tensor = None,
                 self_attn_masks: Tensor = None,
-                cross_attn_masks:Tensor = None,
+                cross_attn_masks: Tensor = None,
                 key_padding_mask: Tensor = None,
-                query_sine_embed: Tensor = None,
-                is_first=None,
-                **kwargs):
+                ref_sine_embed: Tensor = None,
+                is_first=None):
+        """
+        Args:
+            query (Tensor): The input query, has shape (num_query, bs, dim)
+                if `self.batch_first` is `False`, else (bs, num_query, dim).
+            key (Tensor, optional): The input key, has shape (num_key, bs, dim)
+                if `self.batch_first` is `False`, else (bs, num_key, dim).
+                If `None`, the `query` will be used. Defaults to `None`.
+            value (Tensor, optional): The input value, has the same shape as
+                `key`, as in `nn.MultiheadAttention.forward`. If `None`, the
+                `key` will be used. Defaults to `None`.
+            query_pos (Tensor, optional): The positional encoding for `query`,
+                has the same shape as `query`. If not `None`, it will be added
+                to `query` before forward function. Defaults to `None`.
+            key_pos (Tensor, optional): The positional encoding for `key`, has
+                the same shape as `key`. If not `None`, it will be added to
+                `key` before forward function. If None, and `query_pos` has the
+                same shape as `key`, then `query_pos` will be used for
+                `key_pos`. Defaults to None.
+            self_attn_masks (Tensor, optional): ByteTensor mask, has shape
+                (num_query, num_key), as in `nn.MultiheadAttention.forward`.
+                Defaults to None.
+            cross_attn_masks (Tensor, optional): ByteTensor mask, has shape
+                (num_query, num_key), as in `nn.MultiheadAttention.forward`.
+                Defaults to None.
+            key_padding_mask (Tensor, optional): The `key_padding_mask` of
+                `self_attn` input. ByteTensor, has shape (num_value, bs).
+                Defaults to None.
+
+        Returns:
+            Tensor: forwarded results, has shape (num_query, bs, dim) if
+            `self.batch_first` is `False`, else (bs, num_query, dim).
+        """
         query = self.self_attn(
             query=query,
             key=query,
             query_pos=query_pos,
             key_pos=query_pos,
-            attn_mask=self_attn_masks,
-            **kwargs)
+            attn_mask=self_attn_masks)
         query = self.norms[0](query)
         query = self.cross_attn(
             query=query,
@@ -134,9 +164,8 @@ class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
             key_pos=key_pos,
             attn_mask=cross_attn_masks,
             key_padding_mask=key_padding_mask,
-            query_sine_embed=query_sine_embed,
-            is_first=is_first,
-            **kwargs)
+            ref_sine_embed=ref_sine_embed,
+            is_first=is_first)
         query = self.norms[1](query)
         query = self.ffn(query)
         query = self.norms[2](query)
@@ -303,7 +332,7 @@ class ConditionalAttention(BaseModule):
             query: Tensor,  # tgt
             key: Tensor,  # memory
             query_pos: Tensor = None,
-            query_sine_embed: Tensor = None,
+            ref_sine_embed: Tensor = None,
             key_pos: Tensor = None,  # pos
             attn_mask: Tensor = None,
             key_padding_mask: Tensor = None,  # memory_key_padding_mask
@@ -326,7 +355,7 @@ class ConditionalAttention(BaseModule):
                 q = q_content
                 k = k_content
             q = q.view(nq, bs, self.num_heads, c // self.num_heads)
-            query_sine_embed = self.qpos_sine_proj(query_sine_embed)
+            query_sine_embed = self.qpos_sine_proj(ref_sine_embed)
             query_sine_embed = query_sine_embed.view(nq, bs, self.num_heads,
                                                      c // self.num_heads)
             q = torch.cat([q, query_sine_embed], dim=3).view(nq, bs, 2 * c)
