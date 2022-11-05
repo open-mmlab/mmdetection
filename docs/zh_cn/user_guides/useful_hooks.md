@@ -1,6 +1,6 @@
 # 实用的钩子
 
-MMDetection和MMEngine为用户提供了多种多样实用的钩子，包括`MemoryProfilerHook`、`NumClassCheckHook`等等。
+MMDetection和MMEngine为用户提供了多种多样实用的钩子，包括 `MemoryProfilerHook`、`NumClassCheckHook` 等等。
 这篇教程介绍了MMDetection中实现的钩子功能及使用方式。若使用MMEngine定义的钩子请参考[MMEngine的钩子API文档](https://github.com/open-mmlab/mmengine/tree/main/docs/en/tutorials/hook.md).
 
 ## CheckInvalidLossHook
@@ -10,7 +10,7 @@ MMDetection和MMEngine为用户提供了多种多样实用的钩子，包括`Mem
 ## MemoryProfilerHook
 
 [内存分析钩子](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/engine/hooks/memory_profiler_hook.py) 
-记录了包括虚拟内存、交换内存、当前进程在内的所有内存信息，它能够帮助捕捉系统的使用状况与发现隐藏的内存泄露问题。为了使用这个钩子，你需要先安装`pip install memory_profiler psutil`从而使用`memory_profiler`。 
+记录了包括虚拟内存、交换内存、当前进程在内的所有内存信息，它能够帮助捕捉系统的使用状况与发现隐藏的内存泄露问题。为了使用这个钩子，你需要先安装 `pip install memory_profiler psutil` 从而使用 `memory_profiler`。 
 
 ### 使用
 
@@ -24,7 +24,7 @@ custom_hooks = [
 
 ### 结果
 
-在训练中，你会看到`MemoryProfilerHook`记录的如下信息：
+在训练中，你会看到 `MemoryProfilerHook` 记录的如下信息：
 The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 MB) of swap memory in total. Currently 9407 MB (4.4%) of memory and 5740 MB (29.9%) of swap memory were consumed. And the current training process consumed 5434 MB of memory.
 
 ```text
@@ -53,9 +53,9 @@ The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 M
 
 比如，使用者可以实现一个检查损失的钩子，当损失为NaN时自动结束训练。为了实现它我们需要三步走：
 
-1. 在MMEngine实现一个继承于`Hook`类的新钩子，并实现`after_train_iter`方法用于检查每`n`次训练迭代后损失是否变为NaN。
-2. 使用`@HOOKS.register_module()`注册实现好了的自定义钩子，如下列代码所示。
-3. 在配置文件中添加`custom_hooks = [dict(type='MemoryProfilerHook', interval=50)]`
+1. 在MMEngine实现一个继承于 `Hook` 类的新钩子，并实现 `after_train_iter` 方法用于检查每 `n` 次训练迭代后损失是否变为 NaN。
+2. 使用 `@HOOKS.register_module()` 注册实现好了的自定义钩子，如下列代码所示。
+3. 在配置文件中添加 `custom_hooks = [dict(type='MemoryProfilerHook', interval=50)]`
 
 ```python
 from typing import Optional

@@ -17,13 +17,13 @@ python tools/analysis_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--eval-
   python tools/analysis_tools/analyze_logs.py plot_curve log.json --keys loss_cls --legend loss_cls
   ```
 
-- 绘制分类损失、回归损失曲线图，保存图片为对应的pdf文件
+- 绘制分类损失、回归损失曲线图，保存图片为对应的 pdf 文件
 
   ```shell
   python tools/analysis_tools/analyze_logs.py plot_curve log.json --keys loss_cls loss_bbox --out losses.pdf
   ```
 
-- 在相同图像中比较两次运行结果的bbox mAP
+- 在相同图像中比较两次运行结果的 bbox mAP
 
   ```shell
   python tools/analysis_tools/analyze_logs.py plot_curve log1.json log2.json --keys bbox_mAP --legend run1 run2
@@ -48,7 +48,7 @@ python tools/analysis_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--eval-
 
 ## 结果分析
 
-使用`tools/analysis_tools/analyze_results.py` 可计算每个图像mAP，随后根据真实标注框与预测框的比较结果，展示或保存最高与最低topk得分的预测图像
+使用 `tools/analysis_tools/analyze_results.py` 可计算每个图像 mAP，随后根据真实标注框与预测框的比较结果，展示或保存最高与最低 top-k 得分的预测图像
 
 **使用方法**
 
@@ -76,9 +76,9 @@ python tools/analysis_tools/analyze_results.py \
 - `--cfg-options`: 如果指定，可根据指定键值对覆盖更新配置文件的对应选项
 
 **样例**:
-假设你已经通过`tools/test.py` 得到了pickle格式的结果文件，其路径为'./result.pkl'。
+假设你已经通过 `tools/test.py` 得到了 pickle 格式的结果文件，其路径为 './result.pkl'。
 
-1. 测试Faster R-CNN并可视化结果，保存图片至`results/`
+1. 测试 Faster R-CNN 并可视化结果，保存图片至 `results/`
 
 ```shell
 python tools/analysis_tools/analyze_results.py \
@@ -88,7 +88,7 @@ python tools/analysis_tools/analyze_results.py \
        --show
 ```
 
-2. 测试Faster R-CNN并指定topk参数为50，保存结果图片至`results/`
+2. 测试 Faster R-CNN 并指定 top-k 参数为50，保存结果图片至 `results/`
 
 ```shell
 python tools/analysis_tools/analyze_results.py \
@@ -98,7 +98,7 @@ python tools/analysis_tools/analyze_results.py \
        --topk 50
 ```
 
-3. 如果你想过滤低概率的预测结果，指定`show-score-thr`参数
+3. 如果你想过滤低概率的预测结果，指定 `show-score-thr` 参数
 
 ```shell
 python tools/analysis_tools/analyze_results.py \
@@ -121,11 +121,11 @@ python tools/misc/browse_dataset.py ${CONFIG} [-h] [--skip-type ${SKIP_TYPE[SKIP
 
 ### 可视化模型
 
-首先，转换模型至ONNX
-[可参考](#convert-mmdetection-model-to-onnx-experimental).
-注意现在只支持RetinaNet，之后的版本将会支持其他模型
+在可视化之前，需要先转换模型至 ONNX 格式，
+[可参考此处](#convert-mmdetection-model-to-onnx-experimental)。
+注意，现在只支持 RetinaNet，之后的版本将会支持其他模型
 转换后的模型可以被其他工具可视化[Netron](https://github.com/lutzroeder/netron)。
 
 ### 可视化预测结果
 
-如果你想要一个轻量GUI可视化检测结果，你可以参考 [DetVisGUI project](https://github.com/Chien-Hung/DetVisGUI/tree/mmdetection)。
+如果你想要一个轻量 GUI 可视化检测结果，你可以参考 [DetVisGUI project](https://github.com/Chien-Hung/DetVisGUI/tree/mmdetection)。
