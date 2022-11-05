@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
+import warnings
 
 import torch
 from mmengine.model import BaseModule
@@ -187,32 +188,34 @@ class CdnQueryGenerator(BaseModule):
                  num_classes: int,
                  embed_dims: int,
                  num_matching_query: int,
-                 noise_scales: OptConfigType = None,
+                 label_noise_scale: float = 0.5,
+                 box_noise_scale: float = 1.0,
                  group_cfg: OptConfigType = None) -> None:
         super().__init__()
         self.num_classes = num_classes
         self.embed_dims = embed_dims
         self.num_matching_query = num_matching_query
-
-        _noise_scales = dict(label=0.5, box=0.4)
-        if noise_scales is not None:
-            _noise_scales.update(noise_scales)
-        self.label_noise_scale = _noise_scales['label']
-        self.box_noise_scale = _noise_scales['box']
+        self.label_noise_scale = label_noise_scale
+        self.box_noise_scale = box_noise_scale
 
         # prepare grouping strategy
-        self.dynamic_dn_groups = group_cfg.get('dynamic', False)
+        group_cfg = {} if group_cfg is None else group_cfg
+        self.dynamic_dn_groups = group_cfg.get('dynamic', True)
         if self.dynamic_dn_groups:
-            assert 'num_dn_queries' in group_cfg, \
-                'num_dn_queries should be set when using dynamic dn groups'
-            self.num_dn = group_cfg['num_dn_queries']
+            if 'num_dn_queries' not in group_cfg:
+                warnings.warn("'num_dn_queries' should be set when using "
+                              'dynamic dn groups, use 100 as default.')
+            self.num_dn_queries = group_cfg.get('num_dn_queries', 100)
+            assert isinstance(self.num_dn_queries, int), \
+                f'Expected the num_dn_queries to have type int, but got ' \
+                f'{self.num_dn_queries}({type(self.num_dn_queries)}). '
         else:
             assert 'num_groups' in group_cfg, \
                 'num_groups should be set when using static dn groups'
-            self.num_dn = group_cfg['num_groups']
-        assert isinstance(self.num_dn, int) and self.num_dn >= 1, \
-            f'Expected the num in group_cfg to have type int. ' \
-            f'Found {type(self.num_dn)} '  # TODO: rename num_dn
+            self.num_groups = group_cfg['num_groups']
+            assert isinstance(self.num_groups, int), \
+                f'Expected the num_groups to have type int, but got ' \
+                f'{self.num_groups}({type(self.num_groups)}). '
 
         # NOTE The original repo of DINO set the num_embeddings 92 for coco,
         # 91 (0~90) of which represents target classes and the 92 (91)
@@ -231,8 +234,23 @@ class CdnQueryGenerator(BaseModule):
                 `bboxes` and `labels`. The `bboxes` has unnormalized coordinate
                 format (x, y, x, y).
 
+        Returns:
+            tuple: The outputs of the dn query generator.
 
-            input_query_label, input_query_bbox, attn_mask, dn_meta
+            - dn_label_query (Tensor): The output content queries of denoising
+              part, has shape (bs, num_denoising_query, dim), where
+              `num_denoising_query = max_num_target * num_groups * 2`.
+            - dn_bbox_query (Tensor): The output positional queries of
+              denoising part, has shape (bs, num_denoising_query, 4).
+            - attn_mask (Tensor): The attention mask to prevent information
+              leakage from different denoising groups and matching parts,
+              will be used as `self_attn_mask` of the `decoder`, has shape
+              (num_query_total, num_query_total), where `num_query_total` is
+              the sum of `num_denoising_query` and `num_matching_query`.
+            - dn_meta (Dict[int]): The dictionary saves information about
+              grouping collation, including 'single_pad' and 'num_dn_group'.
+              It will be used for dn results extraction and loss calculation.
+              # TODO: explain what is 'single_pad' and 'max_num_targets' or rename it  # noqa
         """
         # convert bbox
         gt_labels_list = []
@@ -247,6 +265,7 @@ class CdnQueryGenerator(BaseModule):
             gt_labels_list.append(sample.gt_instances.labels)
         gt_labels = torch.cat(gt_labels_list)  # (num_target_total, 4)
         gt_bboxes = torch.cat(gt_bboxes_list)
+
         # The `batch_idx` saves the batch index of the corresponding sample
         # for each target, has shape (num_target_total).
         batch_idx = torch.cat([
@@ -259,7 +278,7 @@ class CdnQueryGenerator(BaseModule):
         """
         num_target_total = sum(num_target_list)
         num_noisy_targets = num_target_total * num_groups * 2
-        num_batch_query = max_num_target * num_groups * 2
+        num_denoising_query = max_num_target * num_groups * 2
         """
 
         dn_label_embed = self.generate_dn_label_embed(gt_labels, num_groups)
@@ -271,37 +290,42 @@ class CdnQueryGenerator(BaseModule):
         attn_mask = self.generate_dn_mask(
             max_num_target, num_groups, device=dn_label_query.device)
 
-        dn_meta = {
-            'single_pad': max_num_target,
-            'num_dn_group': num_groups,
-        }
+        dn_meta = dict(single_pad=max_num_target, num_dn_group=num_groups)
+
         return dn_label_query, dn_bbox_query, attn_mask, dn_meta
 
-    def get_num_groups(self, group_queries=None) -> int:
-        """Calculate denoising query groups number. Two grouping strategies,
-        'static dn groups' and 'dynamic dn groups', are supported. When
-        `self.dynamic_dn_groups` is `False`, the number of denoising query
-        groups will always be `self.num_dn`. When `self.dynamic_dn_groups` is
-        `True`, the group number will be dynamic to ensure that the denoising
-        queries number will not exceed `self.num_dn` to prevent large
-        fluctuations of memory.
+    def get_num_groups(self, max_num_target: int = None) -> int:
+        """Calculate denoising query groups number.
+
+        Two grouping strategies, 'static dn groups' and 'dynamic dn groups',
+        are supported. When `self.dynamic_dn_groups` is `False`, the number
+        of denoising query groups will always be `self.num_groups`. When
+        `self.dynamic_dn_groups` is `True`, the group number will be dynamic,
+        ensuring the denoising queries number will not exceed
+        `self.num_dn_queries` to prevent large fluctuations of memory.
+
+        NOTE The `num_group` is shared for different samples in a batch. When
+        the target numbers in the samples varies, the denoising queries of the
+        samples containing fewer targets are padded to the max length.
 
         Args:
-            group_queries (int): Number of dn queries in one group.
+            max_num_target (int, optional): The max target number in the batch
+                samples. It will only be used when `self.dynamic_dn_groups` is
+                `True`. Defaults to `None`.
 
         Returns:
-            TODO
+            int: The denoising group number of the current batch.
         """
         if self.dynamic_dn_groups:
-            assert group_queries is not None, \
+            assert max_num_target is not None, \
                 'group_queries should be provided when using ' \
                 'dynamic dn groups'
-            if group_queries == 0:
+            if max_num_target == 0:
                 num_groups = 1
             else:
-                num_groups = self.num_dn // group_queries
+                num_groups = self.num_dn_queries // max_num_target
         else:
-            num_groups = self.num_dn
+            num_groups = self.num_groups
         if num_groups < 1:
             num_groups = 1
         return int(num_groups)
@@ -325,7 +349,7 @@ class CdnQueryGenerator(BaseModule):
         known_bbox_expand = known_bboxs.clone()
         positive_idx = torch.arange(
             len(gt_bboxes), dtype=torch.long,
-            device=device)  # TODO: replace the `len(bboxes)`  # noqa
+            device=device)  # TODO: replace the `len(gt_bboxes)`  # noqa
         positive_idx = positive_idx.unsqueeze(0).repeat(num_groups, 1)
         positive_idx += 2 * len(gt_bboxes) * torch.arange(
             num_groups, dtype=torch.long, device=device)[:, None]
