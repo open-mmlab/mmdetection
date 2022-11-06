@@ -12,17 +12,19 @@ from .msdeformattn_pixel_decoder import MSDeformAttnPixelDecoder
 from .normed_predictor import NormedConv2d, NormedLinear
 from .pixel_decoder import PixelDecoder, TransformerEncoderPixelDecoder
 from .positional_encoding import (LearnedPositionalEncoding,
-                                  SinePositionalEncoding)
+                                  SinePositionalEncoding,
+                                  SinePositionalEncodingHW)
 from .res_layer import ResLayer, SimplifiedBasicBlock
 from .se_layer import ChannelAttention, DyReLU, SELayer
-from .transformer import (MLP, DeformableDetrTransformerDecoder,
-                          DeformableDetrTransformerDecoderLayer,
-                          DeformableDetrTransformerEncoder,
-                          DeformableDetrTransformerEncoderLayer,
-                          DetrTransformerDecoder, DetrTransformerDecoderLayer,
-                          DetrTransformerEncoder, DetrTransformerEncoderLayer,
-                          DynamicConv, PatchEmbed, PatchMerging,
-                          inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
+from .transformer import (
+    MLP, AdaptivePadding, ConditionalAttention, DabDetrTransformerDecoder,
+    DabDetrTransformerDecoderLayer, DabDetrTransformerEncoder,
+    DeformableDetrTransformerDecoder, DeformableDetrTransformerDecoderLayer,
+    DeformableDetrTransformerEncoder, DeformableDetrTransformerEncoderLayer,
+    DetrTransformerDecoder, DetrTransformerDecoderLayer,
+    DetrTransformerEncoder, DetrTransformerEncoderLayer, DynamicConv,
+    PatchEmbed, PatchMerging, gen_sineembed_for_position, inverse_sigmoid,
+    nchw_to_nlc, nlc_to_nchw)
 
 __all__ = [
     'fast_nms', 'multiclass_nms', 'mask_matrix_nms', 'DropBlock',
@@ -37,5 +39,8 @@ __all__ = [
     'DetrTransformerEncoder', 'DetrTransformerDecoder',
     'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
     'DeformableDetrTransformerEncoderLayer',
-    'DeformableDetrTransformerDecoderLayer'
+    'DeformableDetrTransformerDecoderLayer', 'AdaptivePadding',
+    'SinePositionalEncodingHW', 'gen_sineembed_for_position',
+    'ConditionalAttention', 'DabDetrTransformerDecoderLayer',
+    'DabDetrTransformerDecoder', 'DabDetrTransformerEncoder'
 ]

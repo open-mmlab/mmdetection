@@ -162,3 +162,88 @@ class LearnedPositionalEncoding(BaseModule):
         repr_str += f'row_num_embed={self.row_num_embed}, '
         repr_str += f'col_num_embed={self.col_num_embed})'
         return repr_str
+
+
+@MODELS.register_module()
+class SinePositionalEncodingHW(BaseModule):
+    """Position encoding with sine and cosine functions. Apply two separate
+    temperature on x and y axis.
+
+    Args:
+        num_feats (int): The feature dimension for each position
+            along x-axis or y-axis. Note the final returned dimension
+            for each position is 2 times of this value.
+        temperatureH (int, optional): The temperature used for scaling
+            the position embedding in y axis. Defaults to 10000.
+        temperatureW (int, optional): The temperature used for scaling
+            the position embedding in x axis. Defaults to 10000.
+        normalize (bool, optional): Whether to normalize the position
+            embedding. Defaults to False.
+        scale (float, optional): A scale factor that scales the position
+            embedding. The scale will be used only when `normalize` is True.
+            Defaults to 2*pi.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
+    """
+
+    def __init__(self,
+                 num_feats,
+                 temperatureH=10000,
+                 temperatureW=10000,
+                 normalize=False,
+                 scale=None,
+                 init_cfg=None):
+        super(SinePositionalEncodingHW, self).__init__(init_cfg)
+        self.num_feats = num_feats
+        self.temperatureH = temperatureH
+        self.temperatureW = temperatureW
+        self.normalize = normalize
+        if scale is not None and normalize is False:
+            raise ValueError('normalize should be True if scale is passed')
+        if scale is None:
+            scale = 2 * math.pi
+        self.scale = scale
+
+    def forward(self, mask):
+        """Forward function for `SinePositionalEncodingHW`.
+
+        Args:
+            mask (Tensor): ByteTensor mask. Non-zero values representing
+                ignored positions, while zero values means valid positions
+                for this image. Shape [bs, h, w].
+
+        Returns:
+            pos (Tensor): Returned position embedding with shape
+                [bs, num_feats*2, h, w].
+        """
+        assert mask is not None
+        mask = mask.to(torch.int)
+        not_mask = 1 - mask
+        y_embed = not_mask.cumsum(1, dtype=torch.float32)
+        x_embed = not_mask.cumsum(2, dtype=torch.float32)
+
+        if self.normalize:
+            eps = 1e-6
+            y_embed = y_embed / (y_embed[:, -1:, :] + eps) * self.scale
+            x_embed = x_embed / (x_embed[:, :, -1:] + eps) * self.scale
+
+        dim_tx = torch.arange(
+            self.num_feats, dtype=torch.float32, device=mask.device)
+        dim_tx = self.temperatureW**(2 * (dim_tx // 2) / self.num_feats)
+        pos_x = x_embed[:, :, :, None] / dim_tx
+
+        dim_ty = torch.arange(
+            self.num_feats, dtype=torch.float32, device=mask.device)
+        dim_ty = self.temperatureH**(2 * (dim_ty // 2) / self.num_feats)
+        pos_y = y_embed[:, :, :, None] / dim_ty
+
+        B, H, W = mask.size()
+        pos_x = torch.stack(
+            (pos_x[:, :, :, 0::2].sin(), pos_x[:, :, :, 1::2].cos()),
+            dim=4).view(B, H, W, -1)
+        pos_y = torch.stack(
+            (pos_y[:, :, :, 0::2].sin(), pos_y[:, :, :, 1::2].cos()),
+            dim=4).view(B, H, W, -1)
+        pos = torch.cat((pos_y, pos_x), dim=3).permute(0, 3, 1, 2)
+
+        return pos
