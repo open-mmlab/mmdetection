@@ -34,7 +34,7 @@ class ConditionalDETRHead(DETRHead):
 
     def forward(self,
                 hidden_states: Tensor,
-                reference_points: Tensor) -> Tuple[Tensor, Tensor]:
+                reference: Tensor) -> Tuple[Tensor, Tensor]:
         """"Forward function.
 
         Args:
@@ -54,18 +54,17 @@ class ConditionalDETRHead(DETRHead):
               (num_hidden_states, bs, num_query, 4).
         """
 
-        reference_before_sigmoid = inverse_sigmoid(reference_points)
-        outputs_coords = []
-        for lvl in range(hidden_states.shape[0]):
-            tmp = self.fc_reg(self.activate(self.reg_ffn(hidden_states[lvl])))
-            tmp[..., :2] += reference_before_sigmoid
-            outputs_coord = tmp.sigmoid()
-            outputs_coords.append(outputs_coord)
-        outputs_coord = torch.stack(outputs_coords)
+        reference_unsigmoid = inverse_sigmoid(reference)
+        layers_outputs_coords = []
+        for layer_id in range(hidden_states.shape[0]):
+            tmp_reg_preds = self.fc_reg(self.activate(self.reg_ffn(hidden_states[layer_id])))
+            tmp_reg_preds[..., :2] += reference_unsigmoid
+            outputs_coord = tmp_reg_preds.sigmoid()
+            layers_outputs_coords.append(outputs_coord)
+        layers_outputs_coords = torch.stack(layers_outputs_coords)
 
         layers_cls_scores = self.fc_cls(hidden_states)
-        layers_bbox_preds = outputs_coord
-        return layers_cls_scores, layers_bbox_preds
+        return layers_cls_scores, layers_outputs_coords
 
     def loss(self,
             hidden_states: Tensor,
