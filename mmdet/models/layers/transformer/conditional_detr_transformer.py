@@ -1,49 +1,20 @@
-from torch import Tensor
+# Copyright (c) OpenMMLab. All rights reserved.
+import warnings
 
 import torch
 import torch.nn as nn
-from torch.nn import ModuleList
 import torch.nn.functional as F
 from mmcv.cnn import Linear, build_norm_layer
+from mmcv.cnn.bricks.drop import Dropout
 from mmcv.cnn.bricks.transformer import FFN
 from mmengine.model import BaseModule
-from mmcv.cnn.bricks.drop import Dropout
+from torch import Tensor
+from torch.nn import ModuleList
+
 from mmdet.utils import OptMultiConfig
-
-import math
-import warnings
-
-from .detr_transformer import (
-       DetrTransformerDecoder, DetrTransformerDecoderLayer)
-from .utils import MLP
-
-def gen_sine_embed_for_ref(reference):
-    # n_query, bs, _ = pos_tensor.size()
-    # sineembed_tensor = torch.zeros(n_query, bs, 256)
-    scale = 2 * math.pi
-    dim_t = torch.arange(128, dtype=torch.float32, device=reference.device)
-    dim_t = 10000 ** (2 * (dim_t // 2) / 128)
-    x_embed = reference[:, :, 0] * scale
-    y_embed = reference[:, :, 1] * scale
-    pos_x = x_embed[:, :, None] / dim_t
-    pos_y = y_embed[:, :, None] / dim_t
-    pos_x = torch.stack((pos_x[:, :, 0::2].sin(), pos_x[:, :, 1::2].cos()), dim=3).flatten(2)
-    pos_y = torch.stack((pos_y[:, :, 0::2].sin(), pos_y[:, :, 1::2].cos()), dim=3).flatten(2)
-    if reference.size(-1) == 2:
-        pos = torch.cat((pos_y, pos_x), dim=2)
-    elif reference.size(-1) == 4:
-        w_embed = reference[:, :, 2] * scale
-        pos_w = w_embed[:, :, None] / dim_t
-        pos_w = torch.stack((pos_w[:, :, 0::2].sin(), pos_w[:, :, 1::2].cos()), dim=3).flatten(2)
-
-        h_embed = reference[:, :, 3] * scale
-        pos_h = h_embed[:, :, None] / dim_t
-        pos_h = torch.stack((pos_h[:, :, 0::2].sin(), pos_h[:, :, 1::2].cos()), dim=3).flatten(2)
-
-        pos = torch.cat((pos_y, pos_x, pos_w, pos_h), dim=2)
-    else:
-        raise ValueError("Unknown pos_tensor shape(-1):{}".format(reference.size(-1)))
-    return pos
+from .detr_transformer import (DetrTransformerDecoder,
+                               DetrTransformerDecoderLayer)
+from .utils import MLP, gen_sine_embed_for_ref
 
 
 class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
@@ -55,21 +26,19 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
             for _ in range(self.num_layers)
         ])
         self.embed_dims = self.layers[0].embed_dims
-        self.post_norm = build_norm_layer(self.post_norm_cfg, self.embed_dims)[1]
+        self.post_norm = build_norm_layer(self.post_norm_cfg,
+                                          self.embed_dims)[1]
         #conditional detr affline
-        self.query_scale = MLP(self.embed_dims, self.embed_dims, self.embed_dims, 2)
+        self.query_scale = MLP(self.embed_dims, self.embed_dims,
+                               self.embed_dims, 2)
         self.ref_point_head = MLP(self.embed_dims, self.embed_dims, 2, 2)
         for layer_id in range(self.num_layers - 1):
             self.layers[layer_id + 1].cross_attn.qpos_proj = None
 
-    def forward(self,
-                query: Tensor,
-                key: Tensor,
-                value: Tensor,
-                query_pos: Tensor,
-                key_pos: Tensor,
-                key_padding_mask: Tensor):
-        reference_unsigmoid = self.ref_point_head(query_pos)  # [num_queries, batch_size, 2]
+    def forward(self, query: Tensor, key: Tensor, value: Tensor,
+                query_pos: Tensor, key_pos: Tensor, key_padding_mask: Tensor):
+        reference_unsigmoid = self.ref_point_head(
+            query_pos)  # [num_queries, batch_size, 2]
         reference = reference_unsigmoid.sigmoid().transpose(0, 1)
         reference_xy = reference[..., :2].transpose(0, 1)
         intermediate = []
@@ -82,9 +51,15 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
             ref_sine_embed = gen_sine_embed_for_ref(reference_xy)
             # apply transformation
             ref_sine_embed = ref_sine_embed * pos_transformation
-            query = layer(query, key=key, value=value, query_pos=query_pos, key_pos=key_pos,
-                          key_padding_mask=key_padding_mask, ref_sine_embed=ref_sine_embed,
-                          is_first=(layer_id == 0))
+            query = layer(
+                query,
+                key=key,
+                value=value,
+                query_pos=query_pos,
+                key_pos=key_pos,
+                key_padding_mask=key_padding_mask,
+                ref_sine_embed=ref_sine_embed,
+                is_first=(layer_id == 0))
             if self.return_intermediate:
                 intermediate.append(self.post_norm(query))
 
@@ -92,6 +67,7 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
             return torch.stack(intermediate), reference
 
         return query, reference
+
 
 class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
 
@@ -172,6 +148,7 @@ class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
 
         return query
 
+
 class ConditionalAttention(BaseModule):
     """A wrapper of conditional attention, dropout and residual connection."""
 
@@ -231,7 +208,7 @@ class ConditionalAttention(BaseModule):
         v_head_dims = self.embed_dims // self.num_heads
         # assert head_dims * self.num_heads == hidden_dims, \
         #     f'{"hidden_dims must be divisible by num_heads"}'
-        scaling = float(head_dims) ** -0.5
+        scaling = float(head_dims)**-0.5
 
         q = query * scaling
         k = key
@@ -257,9 +234,9 @@ class ConditionalAttention(BaseModule):
                         'The size of the 2D attn_mask is not correct.')
             elif attn_mask.dim() == 3:
                 if list(attn_mask.size()) != [
-                    bsz * self.num_heads,
-                    query.size(0),
-                    key.size(0)
+                        bsz * self.num_heads,
+                        query.size(0),
+                        key.size(0)
                 ]:
                     raise RuntimeError(
                         'The size of the 3D attn_mask is not correct.')
@@ -380,9 +357,12 @@ class ConditionalAttention(BaseModule):
             q = q_content if q_pos is None else q_content + q_pos
             k = k_content if k_pos is None else k_content + k_pos
             if self.training:
-                q = torch.cat(q.split(num_queries // self.group_detr, dim=0), dim=1)
-                k = torch.cat(k.split(num_queries // self.group_detr, dim=0), dim=1)
-                v = torch.cat(v.split(num_queries // self.group_detr, dim=0), dim=1)
+                q = torch.cat(
+                    q.split(num_queries // self.group_detr, dim=0), dim=1)
+                k = torch.cat(
+                    k.split(num_queries // self.group_detr, dim=0), dim=1)
+                v = torch.cat(
+                    v.split(num_queries // self.group_detr, dim=0), dim=1)
             sa_output = self.forward_attn(
                 query=q,
                 key=k,
