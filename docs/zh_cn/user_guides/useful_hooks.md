@@ -43,7 +43,7 @@ The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 M
 
 ## 如何实现自定义钩子
 
-一般的，从模型训练的开始到结束共有20个地方可以被钩子嵌入，使用者可以实现自定义钩子并将他们嵌入在不同地点以便在训练中实现自定义操作。
+一般的，从模型训练的开始到结束共有20个地方可以被钩子嵌入，我们可以实现自定义钩子并将他们嵌入在不同地点以便在训练中实现自定义操作。
 
 - global points: `before_run`, `after_run`
 - points in training: `before_train`, `before_train_epoch`, `before_train_iter`, `after_train_iter`, `after_train_epoch`, `after_train`
@@ -51,7 +51,7 @@ The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 M
 - points at testing: `before_test`, `before_test_epoch`, `before_test_iter`, `after_test_iter`, `after_test_epoch`,  `after_test`
 - other points: `before_save_checkpoint`, `after_save_checkpoint`
 
-比如，使用者可以实现一个检查损失的钩子，当损失为NaN时自动结束训练。为了实现它我们需要三步走：
+比如，我们要实现一个检查 loss 的钩子，当损失为 NaN 时自动结束训练。我们可以把这个过程分为三步：
 
 1. 在MMEngine实现一个继承于 `Hook` 类的新钩子，并实现 `after_train_iter` 方法用于检查每 `n` 次训练迭代后损失是否变为 NaN。
 2. 使用 `@HOOKS.register_module()` 注册实现好了的自定义钩子，如下列代码所示。
