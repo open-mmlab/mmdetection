@@ -4,12 +4,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
-from mmdet.registry import MODELS
 from mmdet.models.necks.yolox_pafpn import YOLOXPAFPN
+from mmdet.registry import MODELS
 
 
 class ASFF(nn.Module):
     """Adaptively Spatial Feature Fusion (ASFF) module.
+
     This implementation is based on `ASFF <https://arxiv.org/abs/1911.09516>`_
     used in `YOLOX-PAI <https://arxiv.org/abs/2208.13040>`_.
     Args:
@@ -120,6 +121,7 @@ class ASFF(nn.Module):
 @MODELS.register_module()
 class YOLOXASFFPAFPN(YOLOXPAFPN):
     """Path Aggregation Network with ASFF used in YOLOX-PAI.
+
     See `YOLOX-PAI <https://arxiv.org/abs/2208.13040>`_ for details.
     Args:
         asff_channel (int): The hidden channel of the attention layer in

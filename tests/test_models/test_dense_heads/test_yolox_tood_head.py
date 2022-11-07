@@ -15,7 +15,10 @@ class TestYOLOXHead(TestCase):
 
     def test_init_weights(self):
         head = YOLOXTOODHead(
-            num_classes=4, in_channels=64, stacked_convs=1, use_depthwise=False)
+            num_classes=4,
+            in_channels=64,
+            stacked_convs=1,
+            use_depthwise=False)
         head.init_weights()
         bias_init = bias_init_with_prob(0.01)
         for conv_cls, conv_obj in zip(head.multi_level_conv_cls,

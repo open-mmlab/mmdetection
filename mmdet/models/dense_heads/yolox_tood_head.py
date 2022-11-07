@@ -4,15 +4,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
-from mmdet.registry import MODELS
 from mmdet.models.dense_heads import YOLOXHead
 from mmdet.models.dense_heads.tood_head import TaskDecomposition
+from mmdet.registry import MODELS
 from ..utils import multi_apply
 
 
 @MODELS.register_module()
 class YOLOXTOODHead(YOLOXHead):
     """YOLOXTOOD head used in `YOLOX-PAI <https://arxiv.org/abs/2208.13040>`_.
+
     Args:
         tood_stacked_convs (int): Number of conv layers in TOOD head.
             Default: 3.
@@ -86,6 +87,7 @@ class YOLOXTOODHead(YOLOXHead):
 
     def forward(self, feats):
         """Forward features from the upstream network.
+
         Args:
             feats (tuple[Tensor]): Features from the upstream network, each is
                 a 4D-tensor.

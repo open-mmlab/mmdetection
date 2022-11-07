@@ -3,10 +3,10 @@ import pytest
 import torch
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.utils import register_all_modules
 from mmdet.models.necks import (FPG, FPN, FPN_CARAFE, NASFCOS_FPN, NASFPN,
-                                YOLOXPAFPN, ChannelMapper, DilatedEncoder,
-                                DyHead, SSDNeck, YOLOV3Neck, YOLOXASFFPAFPN)
+                                YOLOXASFFPAFPN, YOLOXPAFPN, ChannelMapper,
+                                DilatedEncoder, DyHead, SSDNeck, YOLOV3Neck)
+from mmdet.utils import register_all_modules
 
 
 def test_fpn():
