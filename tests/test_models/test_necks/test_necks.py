@@ -3,9 +3,10 @@ import pytest
 import torch
 from torch.nn.modules.batchnorm import _BatchNorm
 
+from mmdet.utils import register_all_modules
 from mmdet.models.necks import (FPG, FPN, FPN_CARAFE, NASFCOS_FPN, NASFPN,
                                 YOLOXPAFPN, ChannelMapper, DilatedEncoder,
-                                DyHead, SSDNeck, YOLOV3Neck)
+                                DyHead, SSDNeck, YOLOV3Neck, YOLOXASFFPAFPN)
 
 
 def test_fpn():
@@ -380,6 +381,55 @@ def test_yolox_pafpn():
     from mmcv.cnn.bricks import DepthwiseSeparableConvModule
     assert isinstance(neck.downsamples[0], DepthwiseSeparableConvModule)
 
+    outs = neck(feats)
+    assert len(outs) == len(feats)
+    for i in range(len(feats)):
+        assert outs[i].shape[1] == out_channels
+        assert outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
+
+
+def test_yolox_asff_pafpn():
+    register_all_modules(init_default_scope=True)
+
+    # test the case that length of in_channels is 3
+    s = 32
+    in_channels = [8, 16, 32]
+    feat_sizes = [s // 2**i for i in range(3)]  # [32, 16, 8]
+    out_channels = 24
+    feats = [
+        torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i])
+        for i in range(len(in_channels))
+    ]
+    neck = YOLOXASFFPAFPN(in_channels=in_channels, out_channels=out_channels)
+    outs = neck(feats)
+    assert len(outs) == len(feats)
+    for i in range(len(feats)):
+        assert outs[i].shape[1] == out_channels
+        assert outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
+
+    # test depth-wise
+    neck = YOLOXASFFPAFPN(
+        in_channels=in_channels, out_channels=out_channels, use_depthwise=True)
+
+    from mmcv.cnn.bricks import DepthwiseSeparableConvModule
+    assert isinstance(neck.downsamples[0], DepthwiseSeparableConvModule)
+
+    outs = neck(feats)
+    assert len(outs) == len(feats)
+    for i in range(len(feats)):
+        assert outs[i].shape[1] == out_channels
+        assert outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
+
+    # test the case that length of in_channels is 4
+    s = 32
+    in_channels = [8, 16, 32, 64]
+    feat_sizes = [s // 2**i for i in range(4)]  # [64, 32, 16, 8]
+    out_channels = 24
+    feats = [
+        torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i])
+        for i in range(len(in_channels))
+    ]
+    neck = YOLOXASFFPAFPN(in_channels=in_channels, out_channels=out_channels)
     outs = neck(feats)
     assert len(outs) == len(feats)
     for i in range(len(feats)):

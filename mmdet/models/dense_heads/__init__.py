@@ -43,6 +43,7 @@ from .yolact_head import YOLACTHead, YOLACTProtonet
 from .yolo_head import YOLOV3Head
 from .yolof_head import YOLOFHead
 from .yolox_head import YOLOXHead
+from .yolox_tood_head import YOLOXTOODHead
 
 __all__ = [
     'AnchorFreeHead', 'AnchorHead', 'GuidedAnchorHead', 'FeatureAdaption',
@@ -56,5 +57,5 @@ __all__ = [
     'DeformableDETRHead', 'CenterNetHead', 'YOLOXHead', 'SOLOHead',
     'DecoupledSOLOHead', 'DecoupledSOLOLightHead', 'SOLOV2Head', 'LADHead',
     'TOODHead', 'MaskFormerHead', 'Mask2FormerHead', 'DDODHead',
-    'CenterNetUpdateHead', 'RTMDetHead', 'RTMDetSepBNHead'
+    'CenterNetUpdateHead', 'RTMDetHead', 'RTMDetSepBNHead', 'YOLOXTOODHead'
 ]

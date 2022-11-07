@@ -127,13 +127,13 @@ class YOLOXPAFPN(BaseModule):
         # top-down path
         inner_outs = [inputs[-1]]
         for idx in range(len(self.in_channels) - 1, 0, -1):
-            feat_heigh = inner_outs[0]
+            feat_high = inner_outs[0]
             feat_low = inputs[idx - 1]
-            feat_heigh = self.reduce_layers[len(self.in_channels) - 1 - idx](
-                feat_heigh)
-            inner_outs[0] = feat_heigh
+            feat_high = self.reduce_layers[len(self.in_channels) - 1 - idx](
+                feat_high)
+            inner_outs[0] = feat_high
 
-            upsample_feat = self.upsample(feat_heigh)
+            upsample_feat = self.upsample(feat_high)
 
             inner_out = self.top_down_blocks[len(self.in_channels) - 1 - idx](
                 torch.cat([upsample_feat, feat_low], 1))
@@ -143,10 +143,10 @@ class YOLOXPAFPN(BaseModule):
         outs = [inner_outs[0]]
         for idx in range(len(self.in_channels) - 1):
             feat_low = outs[-1]
-            feat_height = inner_outs[idx + 1]
+            feat_high = inner_outs[idx + 1]
             downsample_feat = self.downsamples[idx](feat_low)
             out = self.bottom_up_blocks[idx](
-                torch.cat([downsample_feat, feat_height], 1))
+                torch.cat([downsample_feat, feat_high], 1))
             outs.append(out)
 
         # out convs
