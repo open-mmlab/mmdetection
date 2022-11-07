@@ -19,12 +19,12 @@ Our conditional DETR learns a conditional spatial query from the decoder embeddi
 <img src="https://github.com/Atten4Vis/ConditionalDETR/raw/main/.github/convergence-curve.png" width="48%"/>
 </div>
 
-
 ## Results and Models
+
 We provide the config files and models for Conditional DETR: [Conditional DETR for Fast Training Convergence](https://arxiv.org/abs/2108.06152).
 
 | Backbone |      Model       | Lr schd | Mem (GB) | Inf time (fps) | box AP |                 Config                 |                                                                                                                                    Download                                                                                                                                    |
-| :------: |:----------------:|:-------:| :------: | :------------: |:------:| :------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| :------: | :--------------: | :-----: | :------: | :------------: | :----: | :------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 |   R-50   | Conditional DETR |   50e   |   7.9    |                |  41.0  | [config](./detr_r50_8xb2-150e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/detr/detr_r50_8x2_150e_coco/detr_r50_8x2_150e_coco_20201130_194835-2c4b8974.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/detr/detr_r50_8x2_150e_coco/detr_r50_8x2_150e_coco_20201130_194835.log.json) |
 
 ## Citation

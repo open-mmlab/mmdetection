@@ -1,6 +1,4 @@
-_base_ = [
-    '../detr/detr_r50_8xb2-150e_coco.py'
-]
+_base_ = ['../detr/detr_r50_8xb2-150e_coco.py']
 group_detr = 11
 model = dict(
     type='ConditionalDETR',
@@ -9,8 +7,14 @@ model = dict(
     decoder=dict(
         num_layers=6,
         layer_cfg=dict(
-            self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.1, cross_attn=False, group_detr=group_detr),
-            cross_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.1, cross_attn=True))),
+            self_attn_cfg=dict(
+                embed_dims=256,
+                num_heads=8,
+                dropout=0.1,
+                cross_attn=False,
+                group_detr=group_detr),
+            cross_attn_cfg=dict(
+                embed_dims=256, num_heads=8, dropout=0.1, cross_attn=True))),
     bbox_head=dict(
         type='ConditionalDETRHead',
         loss_cls=dict(
@@ -35,4 +39,3 @@ model = dict(
 max_epochs = 50,
 
 param_scheduler = [dict(type='MultiStepLR', milestones=[40])]
-
