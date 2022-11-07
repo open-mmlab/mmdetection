@@ -5,7 +5,6 @@ import os.path as osp
 
 from mmengine.config import Config, DictAction
 from mmengine.runner import Runner
-from mmengine.model.wrappers.test_time_aug import build_runner_with_tta
 
 from mmdet.registry import RUNNERS
 from mmdet.utils import register_all_modules
@@ -101,17 +100,18 @@ def main():
         cfg = trigger_visualization_hook(cfg, args)
 
     if args.tta:
-        runner = build_runner_with_tta(cfg)
+        cfg['test_dataloader']['dataset']['pipeline'] = cfg['tta_pipeline']
+        cfg['tta_model']['module'] = cfg.model
+        cfg.model = cfg['tta_model']
 
+    # build the runner from config
+    if 'runner_type' not in cfg:
+        # build the default runner
+        runner = Runner.from_cfg(cfg)
     else:
-        # build the runner from config
-        if 'runner_type' not in cfg:
-            # build the default runner
-            runner = Runner.from_cfg(cfg)
-        else:
-            # build customized runner from the registry
-            # if 'runner_type' is set in the cfg
-            runner = RUNNERS.build(cfg)
+        # build customized runner from the registry
+        # if 'runner_type' is set in the cfg
+        runner = RUNNERS.build(cfg)
 
     runner.test()
 

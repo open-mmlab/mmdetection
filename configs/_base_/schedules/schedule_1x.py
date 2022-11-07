@@ -5,15 +5,11 @@ test_cfg = dict(type='TestLoop')
 
 # learning rate
 param_scheduler = [
-    dict(
-        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
-    dict(
-        type='MultiStepLR',
-        begin=0,
-        end=12,
-        by_epoch=True,
-        milestones=[8, 11],
-        gamma=0.1)
+    dict(type='CosineRestartParamScheduler',
+         param_name='lr',
+         periods=[3, 3, 3, 3],
+         restart_weights=[1, 0.9, 0.9, 0.9],
+         eta_min_ratio=0.1)
 ]
 
 # optimizer

@@ -10,10 +10,10 @@ from mmdet.structures import DetDataSample
 from mmdet.structures.bbox import bbox_flip
 
 from mmengine.model import BaseTTAModel
-from mmengine.registry import MODEL_WRAPPERS
+from mmengine.registry import MODEL_WRAPPERS, MODELS
 
 
-@MODEL_WRAPPERS.register_module()
+@MODELS.register_module()
 class SingleStageTestTimeAugModel(BaseTTAModel):
     def merge_preds(self, data_samples_list: List[List[DetDataSample]]):
         aug_bboxes = []
