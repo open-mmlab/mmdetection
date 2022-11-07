@@ -103,10 +103,9 @@ class MaskFormerHead(AnchorFreeHead):
         self.pixel_decoder = MODELS.build(pixel_decoder)
         self.transformer_decoder = MODELS.build(transformer_decoder)
         self.decoder_embed_dims = self.transformer_decoder.embed_dims
-        if isinstance(
-                self.pixel_decoder,
-                PixelDecoder) and (self.decoder_embed_dims != in_channels[-1]
-                                   or enforce_decoder_input_project):
+        if type(self.pixel_decoder) == PixelDecoder and (
+                self.decoder_embed_dims != in_channels[-1]
+                or enforce_decoder_input_project):
             self.decoder_input_proj = Conv2d(
                 in_channels[-1], self.decoder_embed_dims, kernel_size=1)
         else:
