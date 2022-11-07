@@ -1,15 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import Dict, Tuple
-from torch import Tensor
-from .detr import DETR
 
 import torch
 import torch.nn as nn
-
-from ..layers import (DetrTransformerEncoder, ConditionalDetrTransformerDecoder,
-                      SinePositionalEncoding)
+from torch import Tensor
 
 from mmdet.registry import MODELS
+from ..layers import (ConditionalDetrTransformerDecoder,
+                      DetrTransformerEncoder, SinePositionalEncoding)
+from .detr import DETR
 
 
 @MODELS.register_module()
@@ -21,6 +20,7 @@ class ConditionalDETR(DETR):
     Code is modified from the `official github repo
     <https://github.com/Atten4Vis/ConditionalDETR>`_.
     """
+
     def __init__(self, *arg, group_detr=1, **kwargs) -> None:
         self.group_detr = group_detr
         super().__init__(*arg, **kwargs)
@@ -35,7 +35,8 @@ class ConditionalDETR(DETR):
         # NOTE The embed_dims is typically passed from the inside out.
         # For example in DETR, The embed_dims is passed as
         # self_attn -> the first encoder layer -> encoder -> detector.
-        self.query_embedding = nn.Embedding(self.num_query * self.group_detr, self.embed_dims)
+        self.query_embedding = nn.Embedding(self.num_query * self.group_detr,
+                                            self.embed_dims)
 
         num_feats = self.positional_encoding.num_feats
         assert num_feats * 2 == self.embed_dims, \
@@ -82,12 +83,8 @@ class ConditionalDETR(DETR):
         head_inputs_dict = dict()
         return decoder_inputs_dict, head_inputs_dict
 
-    def forward_decoder(self,
-                        query: Tensor,
-                        query_pos: Tensor,
-                        memory: Tensor,
-                        memory_mask: Tensor,
-                        memory_pos: Tensor) -> Dict:
+    def forward_decoder(self, query: Tensor, query_pos: Tensor, memory: Tensor,
+                        memory_mask: Tensor, memory_pos: Tensor) -> Dict:
         """Forward with Transformer decoder.
 
         Args:
@@ -115,7 +112,6 @@ class ConditionalDETR(DETR):
             key_pos=memory_pos,
             key_padding_mask=memory_mask)
         hidden_states = hidden_states.transpose(1, 2)
-        head_inputs_dict = dict(hidden_states=hidden_states, reference_points=reference_points)
+        head_inputs_dict = dict(
+            hidden_states=hidden_states, reference_points=reference_points)
         return head_inputs_dict
-
-
