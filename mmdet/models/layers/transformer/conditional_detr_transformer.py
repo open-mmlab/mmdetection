@@ -28,7 +28,7 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
         self.embed_dims = self.layers[0].embed_dims
         self.post_norm = build_norm_layer(self.post_norm_cfg,
                                           self.embed_dims)[1]
-        #conditional detr affline
+        # conditional detr affline
         self.query_scale = MLP(self.embed_dims, self.embed_dims,
                                self.embed_dims, 2)
         self.ref_point_head = MLP(self.embed_dims, self.embed_dims, 2, 2)
@@ -216,12 +216,12 @@ class ConditionalAttention(BaseModule):
 
         if attn_mask is not None:
             assert attn_mask.dtype == torch.float32 or \
-                   attn_mask.dtype == torch.float64 or \
-                   attn_mask.dtype == torch.float16 or \
-                   attn_mask.dtype == torch.uint8 or \
-                   attn_mask.dtype == torch.bool, \
-                'Only float, byte, and bool types are supported for \
-                 attn_mask'
+                    attn_mask.dtype == torch.float64 or \
+                    attn_mask.dtype == torch.float16 or \
+                    attn_mask.dtype == torch.uint8 or \
+                    attn_mask.dtype == torch.bool, \
+                    'Only float, byte, and bool types are supported for \
+                    attn_mask'
 
             if attn_mask.dtype == torch.uint8:
                 warnings.warn('Byte tensor for attn_mask is deprecated.\
