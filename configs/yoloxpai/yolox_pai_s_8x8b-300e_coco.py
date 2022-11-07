@@ -12,5 +12,3 @@ model = dict(
     ),
     neck=dict(act_cfg=dict(type='SiLU')),
     bbox_head=dict(act_cfg=dict(type='SiLU')))
-
-train_dataloader = dict(batch_size=32)
