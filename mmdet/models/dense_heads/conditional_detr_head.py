@@ -3,14 +3,15 @@ from typing import Tuple
 
 import torch
 import torch.nn as nn
+from mmengine.model import bias_init_with_prob
 from torch import Tensor
 
-from mmdet.structures import SampleList
-from mmengine.model import bias_init_with_prob
-from mmdet.registry import MODELS
-from .detr_head import DETRHead
-from mmdet.utils import InstanceList
 from mmdet.models.layers.transformer import inverse_sigmoid
+from mmdet.registry import MODELS
+from mmdet.structures import SampleList
+from mmdet.utils import InstanceList
+from .detr_head import DETRHead
+
 
 @MODELS.register_module()
 class ConditionalDETRHead(DETRHead):
@@ -31,9 +32,7 @@ class ConditionalDETRHead(DETRHead):
             bias_init = bias_init_with_prob(0.01)
             nn.init.constant_(self.fc_cls.bias, bias_init)
 
-
-    def forward(self,
-                hidden_states: Tensor,
+    def forward(self, hidden_states: Tensor,
                 reference: Tensor) -> Tuple[Tensor, Tensor]:
         """"Forward function.
 
@@ -57,7 +56,8 @@ class ConditionalDETRHead(DETRHead):
         reference_unsigmoid = inverse_sigmoid(reference)
         layers_outputs_coords = []
         for layer_id in range(hidden_states.shape[0]):
-            tmp_reg_preds = self.fc_reg(self.activate(self.reg_ffn(hidden_states[layer_id])))
+            tmp_reg_preds = self.fc_reg(
+                self.activate(self.reg_ffn(hidden_states[layer_id])))
             tmp_reg_preds[..., :2] += reference_unsigmoid
             outputs_coord = tmp_reg_preds.sigmoid()
             layers_outputs_coords.append(outputs_coord)
@@ -66,10 +66,8 @@ class ConditionalDETRHead(DETRHead):
         layers_cls_scores = self.fc_cls(hidden_states)
         return layers_cls_scores, layers_outputs_coords
 
-    def loss(self,
-            hidden_states: Tensor,
-            reference_points: Tensor,
-            batch_data_samples: SampleList) -> dict:
+    def loss(self, hidden_states: Tensor, reference_points: Tensor,
+             batch_data_samples: SampleList) -> dict:
         """Perform forward propagation and loss calculation of the detection
         head on the features of the upstream network.
 
@@ -96,9 +94,7 @@ class ConditionalDETRHead(DETRHead):
         return losses
 
     def loss_and_predict(
-            self,
-            hidden_states: Tuple[Tensor],
-            reference_points: Tensor,
+            self, hidden_states: Tuple[Tensor], reference_points: Tensor,
             batch_data_samples: SampleList) -> Tuple[dict, InstanceList]:
         """Perform forward propagation of the head, then calculate loss and
         predictions from the features and data samples. Over-write because

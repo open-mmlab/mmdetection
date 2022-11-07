@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import torch
 import numpy as np
+import torch
 
 from mmdet.registry import TASK_UTILS
 from .assign_result import AssignResult
@@ -16,17 +16,18 @@ from mmengine import ConfigDict
 from mmengine.structures import InstanceData
 from torch import Tensor
 
+
 @TASK_UTILS.register_module()
 class HungarianAssigner(BaseAssigner):
-    """Computes one-to-one matching between predictions and ground truth.
-    This class computes an assignment between the targets and the predictions
-    based on the costs. The costs are weighted sum of some components.
-    For DETR the costs are weighted sum of classification cost, regression L1
-    cost and regression iou cost. The targets don't include the no_object, so
-    generally there are more predictions than targets. After the one-to-one
-    matching, the un-matched are treated as backgrounds. Thus each query
-    prediction will be assigned with `0` or a positive integer indicating the
-    ground truth index:
+    """Computes one-to-one matching between predictions and ground truth. This
+    class computes an assignment between the targets and the predictions based
+    on the costs. The costs are weighted sum of some components. For DETR the
+    costs are weighted sum of classification cost, regression L1 cost and
+    regression iou cost. The targets don't include the no_object, so generally
+    there are more predictions than targets. After the one-to-one matching, the
+    un-matched are treated as backgrounds. Thus each query prediction will be
+    assigned with `0` or a positive integer indicating the ground truth index:
+
     - 0: negative sample, no assigned gt
     - positive integer: positive sample, index (1-based) of assigned gt
     Args:
@@ -55,6 +56,7 @@ class HungarianAssigner(BaseAssigner):
                img_meta: Optional[dict] = None,
                **kwargs) -> AssignResult:
         """Computes one-to-one matching based on the weighted costs.
+
         This method assign each query prediction to a ground truth or
         background. The `assigned_gt_inds` with -1 means don't care,
         0 means negative sample, and positive number is the index (1-based)
@@ -163,10 +165,10 @@ class GHungarianAssigner(BaseAssigner):
             List[Union[:obj:`ConfigDict`, dict]]): Match cost configs.
     """
 
-    def __init__(
-        self, match_costs: Union[List[Union[dict, ConfigDict]], dict,
-                                 ConfigDict], group_detr=1
-    ) -> None:
+    def __init__(self,
+                 match_costs: Union[List[Union[dict, ConfigDict]], dict,
+                                    ConfigDict],
+                 group_detr=1) -> None:
 
         if isinstance(match_costs, dict):
             match_costs = [match_costs]
@@ -264,12 +266,16 @@ class GHungarianAssigner(BaseAssigner):
         cost_list = cost.split(g_num_query, dim=0)
         for g_i in range(self.group_detr):
             cost_g = cost_list[g_i]
-            matched_row_inds_g, matched_col_inds_g = linear_sum_assignment(cost_g)
+            matched_row_inds_g, matched_col_inds_g = linear_sum_assignment(
+                cost_g)
             if g_i == 0:
-                matched_row_inds, matched_col_inds = matched_row_inds_g, matched_col_inds_g
+                matched_row_inds, matched_col_inds = \
+                    matched_row_inds_g, matched_col_inds_g
             else:
-                matched_row_inds = np.concatenate([matched_row_inds, matched_row_inds_g + g_num_query * g_i])
-                matched_col_inds = np.concatenate([matched_col_inds, matched_col_inds_g])
+                matched_row_inds = np.concatenate(
+                    [matched_row_inds, matched_row_inds_g + g_num_query * g_i])
+                matched_col_inds = np.concatenate(
+                    [matched_col_inds, matched_col_inds_g])
 
         matched_row_inds = torch.from_numpy(matched_row_inds).to(device)
         matched_col_inds = torch.from_numpy(matched_col_inds).to(device)
