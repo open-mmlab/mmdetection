@@ -25,6 +25,7 @@ custom_hooks = [
 ### 结果
 
 在训练中，你会看到 `MemoryProfilerHook` 记录的如下信息：
+
 ```text
 The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 MB) of swap memory in total. Currently 9407 MB (4.4%) of memory and 5740 MB (29.9%) of swap memory were consumed. And the current training process consumed 5434 MB of memory.
 ```
