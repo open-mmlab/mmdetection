@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import os
 import argparse
 
 from mmengine import Config, DictAction
