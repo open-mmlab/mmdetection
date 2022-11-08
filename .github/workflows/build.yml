@@ -128,6 +128,8 @@ jobs:
       - name: Install mmdet dependencies
         run: |
           python -V
+          export CFLAGS=`python -c 'import sysconfig;print("-I"+sysconfig.get_paths()["include"])'`
+          export CXXFLAGS="${CFLAGS}"
           python -m pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/torch${{matrix.mmcv}}/index.html
           python -m pip install pycocotools
           python -m pip install -r requirements/tests.txt -r requirements/optional.txt
@@ -206,6 +208,8 @@ jobs:
       - name: Install mmdet dependencies
         run: |
           python -V
+          export CFLAGS=`python -c 'import sysconfig;print("-I"+sysconfig.get_paths()["include"])'`
+          export CXXFLAGS="${CFLAGS}"
           python -m pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu102/torch${{matrix.mmcv}}/index.html
           python -m pip install pycocotools
           python -m pip install -r requirements/tests.txt -r requirements/optional.txt

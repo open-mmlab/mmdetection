@@ -1,26 +1,28 @@
 name: "💥 Reimplementation Questions"
 description: "Ask about questions during model reimplementation"
-
+labels: "kind/enhancement,status/unconfirmed"
+title: "[Reimplementation] "
 
 body:
   - type: markdown
     attributes:
       value: |
-        If you have already identified the reason, we strongly appreciate you creating a new PR to fix it [here](https://github.com/open-mmlab/mmdetection/pulls)!
+        We strongly appreciate you creating a PR to implement this feature [here](https://github.com/open-mmlab/mmdetection/pulls)!
+        If you need our help, please fill in as much of the following form as you're able to.
+
+        **The less clear the description, the longer it will take to solve it.**
 
   - type: checkboxes
     attributes:
       label: Prerequisite
       description: Please check the following items before creating a new issue.
       options:
-      - label: I have searched [the existing and past issues](https://github.com/open-mmlab/mmdetection/issues) but cannot get the expected help.
+      - label: I have searched [Issues](https://github.com/open-mmlab/mmdetection/issues) and [Discussions](https://github.com/open-mmlab/mmdetection/discussions) but cannot get the expected help.
         required: true
       - label: I have read the [FAQ documentation](https://mmdetection.readthedocs.io/en/latest/faq.html) but cannot get the expected help.
         required: true
-      - label: The bug has not been fixed in the [latest version](https://github.com/open-mmlab/mmdetection).
+      - label: The bug has not been fixed in the [latest version (master)](https://github.com/open-mmlab/mmdetection) or [latest version (3.x)](https://github.com/open-mmlab/mmdetection/tree/dev-3.x).
         required: true
-    validations:
-      required: true
 
   - type: textarea
     attributes:

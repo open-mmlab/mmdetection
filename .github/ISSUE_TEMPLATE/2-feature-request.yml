@@ -1,32 +1,31 @@
 name: 🚀 Feature request
 description: Suggest an idea for this project
-labels: [feature request]
+labels: "kind/enhancement,status/unconfirmed"
+title: "[Feature] "
 
 body:
   - type: markdown
     attributes:
       value: |
-        Thank you for suggesting an idea to make MMDetection better.
-        We strongly appreciate you creating a PR to implete this feature [here](https://github.com/open-mmlab/mmdetection/pulls)!
+        We strongly appreciate you creating a PR to implement this feature [here](https://github.com/open-mmlab/mmdetection/pulls)!
+        If you need our help, please fill in as much of the following form as you're able to.
 
-        If you need our help, please fill in as much of the following form as you're able.
+        **The less clear the description, the longer it will take to solve it.**
 
   - type: textarea
     attributes:
-      label: What is the problem this feature will solve?
+      label: What's the feature?
+      description: |
+        Tell us more about the feature and how this feature can help.
       placeholder: |
         E.g., It is inconvenient when \[....\].
+        This feature can \[....\].
     validations:
       required: true
 
   - type: textarea
     attributes:
-      label: What is the feature you are proposing to solve the problem?
-    validations:
-      required: true
-
-  - type: textarea
-    attributes:
-      label: What alternatives have you considered?
+      label: Any other context?
       description: |
-        Add any other context or screenshots about the feature request here.
+        Have you considered any alternative solutions or features? If so, what are they?
+        Also, feel free to add any other context or screenshots about the feature request here.

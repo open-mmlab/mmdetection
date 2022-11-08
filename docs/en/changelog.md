@@ -1,5 +1,33 @@
 ## Changelog
 
+### v2.25.3 (25/10/2022)
+
+#### Bug Fixes
+
+- Skip remote sync when wandb is offline (#8755)
+- Fix jpg to png bug when using seg maps (#9078)
+
+#### Improvements
+
+- Fix typo in warning (#8844)
+- Fix CI for timm, pycocotools, onnx (#9034)
+- Upgrade pre-commit hooks (#8964)
+
+#### Documents
+
+- Update BoundedIoULoss config in readme (#8808)
+- Fix Faster R-CNN Readme (#8803)
+- Update location of test_cfg and train_cfg (#8792)
+- Fix issue template (#8966)
+- Update random sampler docstring (#9033)
+- Fix wrong image link (#9054)
+- Fix FPG readme (#9041)
+
+#### Contributors
+
+A total of 13 developers contributed to this release.
+Thanks @Zheng-LinXiao, @i-aki-y, @fbagci, @sudoAimer, @Czm369, @DrRyanHuang, @RangiLyu, @wanghonglie, @shinya7y, @Ryoo72, @akshaygulabrao, @gy-7, @Neesky
+
 ### v2.25.2 (15/9/2022)
 
 #### Bug Fixes
@@ -639,7 +667,7 @@ Thanks @Boyden, @onnkeat, @st9007a, @vealocia, @yhcao6, @DapangpangX, @yellowdol
 - Support [PVT](https://arxiv.org/abs/2102.12122) and [PVTv2](https://arxiv.org/abs/2106.13797) (#5780)
 - Support [SOLO](https://arxiv.org/abs/1912.04488) (#5832)
 - Support large scale jittering and New Mask R-CNN baselines (#6132)
-- Add a general data structrue for the results of models (#5508)
+- Add a general data structure for the results of models (#5508)
 - Added a base class for one-stage instance segmentation (#5904)
 - Speed up `YOLOv3` inference (#5991)
 - Release Swin Transformer pre-trained models (#6100)

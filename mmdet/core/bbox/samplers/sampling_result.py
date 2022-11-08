@@ -117,7 +117,7 @@ class SamplingResult(util_mixins.NiceRepr):
         from mmdet.core.bbox.samplers.random_sampler import RandomSampler
         rng = demodata.ensure_rng(rng)
 
-        # make probabalistic?
+        # make probabilistic?
         num = 32
         pos_fraction = 0.5
         neg_pos_ub = -1
@@ -141,7 +141,7 @@ class SamplingResult(util_mixins.NiceRepr):
         if gt_labels is None:
             add_gt_as_proposals = False
         else:
-            add_gt_as_proposals = True  # make probabalistic?
+            add_gt_as_proposals = True  # make probabilistic?
 
         sampler = RandomSampler(
             num,
