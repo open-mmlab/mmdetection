@@ -348,7 +348,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             elif isinstance(gt_mask, dict) and \
                     not (gt_mask.get('counts') is not None and
                          gt_mask.get('size') is not None and
-                         isinstance(gt_mask['counts'], list)):
+                         isinstance(gt_mask['counts'], (list, str))):
                 # if gt_mask is a dict, it should include `counts` and `size`,
                 # so that `BitmapMasks` can uncompressed RLE
                 instance['ignore_flag'] = 1
