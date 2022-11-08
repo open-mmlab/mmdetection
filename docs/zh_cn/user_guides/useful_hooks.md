@@ -1,7 +1,7 @@
 # 实用的钩子
 
-MMDetection和MMEngine为用户提供了多种多样实用的钩子，包括 `MemoryProfilerHook`、`NumClassCheckHook` 等等。
-这篇教程介绍了MMDetection中实现的钩子功能及使用方式。若使用MMEngine定义的钩子请参考[MMEngine的钩子API文档](https://github.com/open-mmlab/mmengine/tree/main/docs/en/tutorials/hook.md).
+MMDetection 和 MMEngine 为用户提供了多种多样实用的钩子，包括 `MemoryProfilerHook`、`NumClassCheckHook` 等等。
+这篇教程介绍了 MMDetection 中实现的钩子功能及使用方式。若使用 MMEngine 定义的钩子请参考 [MMEngine 的钩子API文档](https://github.com/open-mmlab/mmengine/tree/main/docs/en/tutorials/hook.md).
 
 ## CheckInvalidLossHook
 
@@ -25,7 +25,9 @@ custom_hooks = [
 ### 结果
 
 在训练中，你会看到 `MemoryProfilerHook` 记录的如下信息：
+```text
 The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 MB) of swap memory in total. Currently 9407 MB (4.4%) of memory and 5740 MB (29.9%) of swap memory were consumed. And the current training process consumed 5434 MB of memory.
+```
 
 ```text
 2022-04-21 08:49:56,881 - mmengine - INFO - Memory information available_memory: 246360 MB, used_memory: 9407 MB, memory_utilization: 4.4 %, available_swap_memory: 5740 MB, used_swap_memory: 2452 MB, swap_memory_utilization: 29.9 %, current_process_memory: 5434 MB
@@ -43,7 +45,7 @@ The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 M
 
 ## 如何实现自定义钩子
 
-一般的，从模型训练的开始到结束共有20个地方可以被钩子嵌入，我们可以实现自定义钩子并将他们嵌入在不同地点以便在训练中实现自定义操作。
+一般的，从模型训练的开始到结束，共有20个点位可以执行钩子。我们可以实现自定义钩子在不同点位执行，以便在训练中实现自定义操作。
 
 - global points: `before_run`, `after_run`
 - points in training: `before_train`, `before_train_epoch`, `before_train_iter`, `after_train_iter`, `after_train_epoch`, `after_train`
