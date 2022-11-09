@@ -85,7 +85,7 @@ class ConditionalAttention(BaseModule):
                  cross_attn: bool = False,
                  keep_query_pos: bool = False,
                  init_cfg=None):
-        super().init(init_cfg=init_cfg)
+        super().__init__(init_cfg=init_cfg)
         self.batch_first = batch_first
         self.cross_attn = cross_attn
         self.keep_query_pos = keep_query_pos
@@ -475,10 +475,10 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
             'cond_elewise', 'cond_scalar', 'fix_elewise'
         ]
 
-        self.layers = ModuleList()
-        for i in range(self.num_layers):
-            self.layers.append(
-                DabDetrTransformerDecoderLayer(**self.layer_cfg[i]))
+        self.layers = ModuleList([
+            DabDetrTransformerDecoderLayer(**self.layer_cfg)
+            for _ in range(self.num_layers)
+        ])
 
         embed_dims = self.layers[0].embed_dims
         self.embed_dims = embed_dims
@@ -628,11 +628,12 @@ class DabDetrTransformerEncoder(DetrTransformerEncoder):
 
     def _init_layers(self):
         """Initialize encoder layers."""
-        self.layers = ModuleList()
-        for i in range(self.num_layers):
-            self.layers.append(
-                DetrTransformerEncoderLayer(**self.layer_cfg[i]))
+        self.layers = ModuleList([
+            DetrTransformerEncoderLayer(**self.layer_cfg)
+            for _ in range(self.num_layers)
+        ])
         embed_dims = self.layers[0].embed_dims
+        self.embed_dims = embed_dims
         self.query_scale = MLP(embed_dims, embed_dims, embed_dims, 2)
 
     def forward(self,

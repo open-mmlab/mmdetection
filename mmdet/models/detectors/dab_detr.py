@@ -51,8 +51,8 @@ class DABDETR(DETR):
         """Initialize layers except for backbone, neck and bbox_head."""
         self.positional_encoding = SinePositionalEncodingHW(
             **self.positional_encoding_cfg)
-        self.encoder = DabDetrTransformerEncoder(**self.encoder_cfg)
-        self.decoder = DabDetrTransformerDecoder(**self.decoder_cfg)
+        self.encoder = DabDetrTransformerEncoder(**self.encoder)
+        self.decoder = DabDetrTransformerDecoder(**self.decoder)
         self.embed_dims = self.encoder.embed_dims
         self.query_dim = self.decoder.query_dim
         self.query_embedding = nn.Embedding(self.num_query, self.query_dim)

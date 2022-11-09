@@ -19,7 +19,7 @@ model = dict(
         num_stages=4,
         out_indices=(3, ),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
         style='pytorch',
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
@@ -31,7 +31,7 @@ model = dict(
         act_cfg=None,
         norm_cfg=None,
         num_outs=1),
-    encoder_cfg=dict(
+    encoder=dict(
         num_layers=6,
         layer_cfg=dict(
             self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.),
@@ -41,7 +41,7 @@ model = dict(
                 num_fcs=2,
                 ffn_drop=0.,
                 act_cfg=dict(type='PReLU')))),
-    decoder_cfg=dict(
+    decoder=dict(
         num_layers=6,
         query_dim=4,
         query_scale_type='cond_elewise',
@@ -50,13 +50,13 @@ model = dict(
             self_attn_cfg=dict(
                 embed_dims=256,
                 num_heads=8,
-                attn_dropout=0.,
+                attn_drop=0.,
                 proj_drop=0.,
                 cross_attn=False),
             cross_attn_cfg=dict(
                 embed_dims=256,
                 num_heads=8,
-                attn_dropout=0.,
+                attn_drop=0.,
                 proj_drop=0.,
                 cross_attn=True),
             ffn_cfg=dict(
