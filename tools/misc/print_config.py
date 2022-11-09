@@ -11,7 +11,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Print the whole config')
     parser.add_argument('config', help='config file path')
     parser.add_argument(
-        '--save_path', default=None, help='save path of whole config, it can be suffixed with .py, .json, .yml')
+        '--save-path', default=None, help='save path of whole config, it can be suffixed with .py, .json, .yml')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
