@@ -226,7 +226,16 @@ class CdnQueryGenerator(BaseModule):
         # TODO: Be careful with the init of the label_embedding
 
     def __call__(self, batch_data_samples: SampleList) -> tuple:
-        """Generate contrastive denoising queries with ground truth.
+        """Generate contrastive denoising (cdn) queries with ground truth.
+
+        Descriptions of the Number Values in code and comments:
+            - num_target_total: the total target number of the input batch
+              samples.
+            - max_num_target: the max target number in the input batch samples.
+            - num_noisy_targets: the total targets number after adding noise,
+              i.e., num_target_total * num_groups * 2
+            - num_denoising_query: the length of the output batched queries,
+              i.e., max_num_target * num_groups * 2
 
         Args:
             batch_data_samples (list[:obj:`DetDataSample`]): List of the batch
@@ -252,7 +261,7 @@ class CdnQueryGenerator(BaseModule):
               It will be used for dn results extraction and loss calculation.
               # TODO: explain what is 'single_pad' and 'max_num_targets' or rename it  # noqa
         """
-        # convert bbox
+        # convert bbox and collate ground truth (gt)
         gt_labels_list = []
         gt_bboxes_list = []
         for sample in batch_data_samples:
@@ -275,17 +284,12 @@ class CdnQueryGenerator(BaseModule):
         num_target_list = [len(bboxes) for bboxes in gt_bboxes_list]
         max_num_target = max(num_target_list)
         num_groups = self.get_num_groups(max_num_target)
-        """
-        num_target_total = sum(num_target_list)
-        num_noisy_targets = num_target_total * num_groups * 2
-        num_denoising_query = max_num_target * num_groups * 2
-        """
 
-        dn_label_embed = self.generate_dn_label_embed(gt_labels, num_groups)
-        dn_bbox_embed = self.generate_dn_bbox_embed(gt_bboxes, num_groups)
+        dn_label_query = self.generate_dn_label_query(gt_labels, num_groups)
+        dn_bbox_query = self.generate_dn_bbox_query(gt_bboxes, num_groups)
 
         dn_label_query, dn_bbox_query = self.collate_dn_queries(
-            dn_label_embed, dn_bbox_embed, batch_idx, num_groups)
+            dn_label_query, dn_bbox_query, batch_idx, num_groups)
 
         attn_mask = self.generate_dn_mask(
             max_num_target, num_groups, device=dn_label_query.device)
@@ -330,20 +334,44 @@ class CdnQueryGenerator(BaseModule):
             num_groups = 1
         return int(num_groups)
 
-    def generate_dn_label_embed(self, gt_labels, num_groups):
-        device = gt_labels.device
-        known_labels_expand = gt_labels.repeat(2 * num_groups, 1).view(-1)
+    def generate_dn_label_query(self, gt_labels: Tensor,
+                                num_groups: int) -> Tensor:
+        """Generate noisy labels and their query embeddings.
+
+        The strategy for generating noise labels is: Randomly choose labels of
+        `self.label_noise_scale` proportion and override each of them with a
+        random object category label.
+
+        NOTE Not add noise to all labels. Besides, the `self.label_noise_scale`
+        arg is the ratio of the chosen positions, which is higher than the
+        actual proportion of noisy labels, because the labels to override may
+        be correct. And the gap becomes larger as the number of target
+        categories decreases. The users should notice this and modify the scale
+        arg or the corresponding logic according to specific dataset.
+
+        Args:
+            gt_labels (Tensor): The concatenated gt labels of all samples
+                in the batch, has shape (num_target_total, ) where
+                `num_target_total = sum(num_target_list)`.
+            num_groups (int): The number of denoising query groups.
+
+        Returns:
+            Tensor: The query embeddings of noisy labels, has shape
+            (num_noisy_targets, dim).
+        """
+        gt_labels_expand = gt_labels.repeat(2 * num_groups, 1).view(-1)
         if self.label_noise_scale > 0:
-            p = torch.rand_like(known_labels_expand.float())
+            p = torch.rand_like(gt_labels_expand.float())
             chosen_indice = torch.nonzero(
                 p < (self.label_noise_scale * 0.5)).view(-1)
-            new_label = torch.randint_like(chosen_indice, 0, self.num_classes)
-            known_labels_expand.scatter_(0, chosen_indice, new_label)
-        m = known_labels_expand.long().to(device)
-        dn_label_embed = self.label_embedding(m)
-        return dn_label_embed  # (num_noisy_targets, embed_dims)
+            new_labels = torch.randint_like(chosen_indice, 0, self.num_classes)
+            noisy_labels_expand = gt_labels_expand.scatter(
+                0, chosen_indice, new_labels)
+        dn_label_query = self.label_embedding(noisy_labels_expand)
+        return dn_label_query
 
-    def generate_dn_bbox_embed(self, gt_bboxes, num_groups):
+    def generate_dn_bbox_query(self, gt_bboxes, num_groups):
+        """Generate noisy bboxes and their query embeddings."""
         device = gt_bboxes.device
         known_bboxs = gt_bboxes.repeat(2 * num_groups, 1)
         known_bbox_expand = known_bboxs.clone()
@@ -379,12 +407,12 @@ class CdnQueryGenerator(BaseModule):
                 (known_bbox_[:, :2] + known_bbox_[:, 2:]) / 2
             known_bbox_expand[:, 2:] = \
                 known_bbox_[:, 2:] - known_bbox_[:, :2]
-        dn_bbox_embed = inverse_sigmoid(known_bbox_expand, eps=1e-3)
-        return dn_bbox_embed  # (num_noisy_targets, 4)
+        dn_bbox_query = inverse_sigmoid(known_bbox_expand, eps=1e-3)
+        return dn_bbox_query  # (num_noisy_targets, 4)
 
-    def collate_dn_queries(self, input_label_embed, input_bbox_embed,
+    def collate_dn_queries(self, input_label_query, input_bbox_query,
                            batch_idx, num_groups):
-        device = input_label_embed.device
+        device = input_label_query.device
         batch_size = batch_idx.max().item() + 1
         num_target_list = [
             torch.sum(batch_idx == idx) for idx in range(batch_size)
@@ -394,8 +422,8 @@ class CdnQueryGenerator(BaseModule):
         padding_label = torch.zeros(pad_size, self.embed_dims, device=device)
         padding_bbox = torch.zeros(pad_size, 4, device=device)
 
-        dn_label_query = padding_label.repeat(batch_size, 1, 1)
-        dn_bbox_query = padding_bbox.repeat(batch_size, 1, 1)
+        batched_label_query = padding_label.repeat(batch_size, 1, 1)
+        batched_bbox_query = padding_bbox.repeat(batch_size, 1, 1)
 
         map_known_indice = torch.tensor([], device=device)
         if len(num_target_list):
@@ -408,11 +436,11 @@ class CdnQueryGenerator(BaseModule):
             ]).long()
         batch_idx_expand = batch_idx.repeat(2 * num_groups, 1).view(-1)
         if len(batch_idx_expand):
-            dn_label_query[(batch_idx_expand.long(),
-                            map_known_indice)] = input_label_embed
-            dn_bbox_query[(batch_idx_expand.long(),
-                           map_known_indice)] = input_bbox_embed
-        return dn_label_query, dn_bbox_query
+            batched_label_query[(batch_idx_expand.long(),
+                                 map_known_indice)] = input_label_query
+            batched_bbox_query[(batch_idx_expand.long(),
+                                map_known_indice)] = input_bbox_query
+        return batched_label_query, batched_bbox_query
 
     def generate_dn_mask(self, single_pad, num_groups, device):
         pad_size = int(single_pad * 2 * num_groups)
