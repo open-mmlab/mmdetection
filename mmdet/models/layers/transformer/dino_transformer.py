@@ -168,10 +168,8 @@ class CdnQueryGenerator(BaseModule):
         embed_dims (int): The embedding dimensions of the generated queries.
         num_matching_query (int): The queries number of the matching part.
             Used for generating dn_mask.
-        noise_scales (:obj:`ConfigDict` or dict, optional): The config of the
-            noise scales including `label` and `noise`. The defaults of them
-            are 0.5 and 0.4. The users can set any one or both or `None` and
-            the others will load the default values. Defaults to `None`.
+        label_noise_scale (float): The scale of label noise, defaults to 0.5.
+        box_noise_scale (float): The scale of box noise, defaults to 1.0.
         group_cfg (:obj:`ConfigDict` or dict, optional): The config of the
             denoising queries grouping, includes `dynamic`, `num_dn_queries`,
             and `num_groups`. Two grouping strategies, 'static dn groups' and
@@ -237,6 +235,10 @@ class CdnQueryGenerator(BaseModule):
             - num_denoising_query: the length of the output batched queries,
               i.e., max_num_target * num_groups * 2
 
+        NOTE The format of input bboxes in batch_data_samples is unnormalized
+        (x, y, x, y), and the output bbox queries are embedded by normalized
+        (cx, cy, w, h) format bboxes going through inverse_sigmoid.
+
         Args:
             batch_data_samples (list[:obj:`DetDataSample`]): List of the batch
                 data samples, each includes `gt_instance` which has attributes
@@ -246,11 +248,13 @@ class CdnQueryGenerator(BaseModule):
         Returns:
             tuple: The outputs of the dn query generator.
 
-            - dn_label_query (Tensor): The output content queries of denoising
+            - dn_label_query (Tensor): The output content queries for denoising
               part, has shape (bs, num_denoising_query, dim), where
               `num_denoising_query = max_num_target * num_groups * 2`.
-            - dn_bbox_query (Tensor): The output positional queries of
-              denoising part, has shape (bs, num_denoising_query, 4).
+            - dn_bbox_query (Tensor): The output reference bboxes as positions
+              of queries for denoising part, which are embedded by normalized
+              (cx, cy, w, h) format bboxes going through inverse_sigmoid, has
+              shape (bs, num_denoising_query, 4).
             - attn_mask (Tensor): The attention mask to prevent information
               leakage from different denoising groups and matching parts,
               will be used as `self_attn_mask` of the `decoder`, has shape
@@ -261,7 +265,7 @@ class CdnQueryGenerator(BaseModule):
               It will be used for dn results extraction and loss calculation.
               # TODO: explain what is 'single_pad' and 'max_num_targets' or rename it  # noqa
         """
-        # convert bbox and collate ground truth (gt)
+        # normalize bbox and collate ground truth (gt)
         gt_labels_list = []
         gt_bboxes_list = []
         for sample in batch_data_samples:
@@ -269,7 +273,7 @@ class CdnQueryGenerator(BaseModule):
             bboxes = sample.gt_instances.bboxes
             factor = bboxes.new_tensor([img_w, img_h, img_w,
                                         img_h]).unsqueeze(0)
-            bboxes_normalized = bbox_xyxy_to_cxcywh(bboxes) / factor
+            bboxes_normalized = bboxes / factor
             gt_bboxes_list.append(bboxes_normalized)
             gt_labels_list.append(sample.gt_instances.labels)
         gt_labels = torch.cat(gt_labels_list)  # (num_target_total, 4)
@@ -338,14 +342,14 @@ class CdnQueryGenerator(BaseModule):
                                 num_groups: int) -> Tensor:
         """Generate noisy labels and their query embeddings.
 
-        The strategy for generating noise labels is: Randomly choose labels of
-        `self.label_noise_scale` proportion and override each of them with a
-        random object category label.
+        The strategy for generating noisy labels is: Randomly choose labels of
+        `self.label_noise_scale * 0.5` proportion and override each of them
+        with a random object category label.
 
-        NOTE Not add noise to all labels. Besides, the `self.label_noise_scale`
-        arg is the ratio of the chosen positions, which is higher than the
-        actual proportion of noisy labels, because the labels to override may
-        be correct. And the gap becomes larger as the number of target
+        NOTE Not add noise to all labels. Besides, the `self.label_noise_scale
+        * 0.5` arg is the ratio of the chosen positions, which is higher than
+        the actual proportion of noisy labels, because the labels to override
+        may be correct. And the gap becomes larger as the number of target
         categories decreases. The users should notice this and modify the scale
         arg or the corresponding logic according to specific dataset.
 
@@ -359,55 +363,106 @@ class CdnQueryGenerator(BaseModule):
             Tensor: The query embeddings of noisy labels, has shape
             (num_noisy_targets, dim).
         """
-        gt_labels_expand = gt_labels.repeat(2 * num_groups, 1).view(-1)
-        if self.label_noise_scale > 0:
-            p = torch.rand_like(gt_labels_expand.float())
-            chosen_indice = torch.nonzero(
-                p < (self.label_noise_scale * 0.5)).view(-1)
-            new_labels = torch.randint_like(chosen_indice, 0, self.num_classes)
-            noisy_labels_expand = gt_labels_expand.scatter(
-                0, chosen_indice, new_labels)
+        assert self.label_noise_scale > 0
+        gt_labels_expand = gt_labels.repeat(2 * num_groups,
+                                            1).view(-1)  # Note `* 2`  # noqa
+        p = torch.rand_like(gt_labels_expand.float())
+        chosen_indice = torch.nonzero(p < (self.label_noise_scale * 0.5)).view(
+            -1)  # Note `* 0.5`
+        new_labels = torch.randint_like(chosen_indice, 0, self.num_classes)
+        noisy_labels_expand = gt_labels_expand.scatter(0, chosen_indice,
+                                                       new_labels)
         dn_label_query = self.label_embedding(noisy_labels_expand)
         return dn_label_query
 
-    def generate_dn_bbox_query(self, gt_bboxes, num_groups):
-        """Generate noisy bboxes and their query embeddings."""
+    def generate_dn_bbox_query(self, gt_bboxes: Tensor,
+                               num_groups: int) -> Tensor:
+        """Generate noisy bboxes and their query embeddings.
+
+        The strategy for generating noisy bboxes is as follow:
+        .. code:: text
+
+            +--------------------+
+            |      negative      |
+            |    +----------+    |
+            |    | positive |    |
+            |    |    +-----|----+------------+
+            |    |    |     |    |            |
+            |    +----+-----+    |            |
+            |         |          |            |
+            +---------+----------+            |
+                      |                       |
+                      |        gt bbox        |
+                      |                       |
+                      |             +---------+----------+
+                      |             |         |          |
+                      |             |    +----+-----+    |
+                      |             |    |    |     |    |
+                      +-------------|--- +----+     |    |
+                                    |    | positive |    |
+                                    |    +----------+    |
+                                    |      negative      |
+                                    +--------------------+
+
+         The random noise is added to the top-left and down-right point
+         positions, hence, normalized (x, y, x, y) format of bboxes are
+         required. The noisy bboxes of positive queries have the points
+         both within the inner square, while those of negative queries
+         have the points both between the inner and outer squares.
+
+        Besides, the length of outer square is twice as long as that of
+        the inner square, i.e., self.box_noise_scale * 2 * w_or_h.
+        NOTE The noise is added to all the bboxes. Moreover, there is still
+        unconsidered case when one point is within the positive square and
+        the others is between the inner and outer squares.
+
+        Args:
+            gt_bboxes (Tensor): The concatenated gt bboxes of all samples
+                in the batch, has shape (num_target_total, 4) where
+                `num_target_total = sum(num_target_list)`.
+            num_groups (int): The number of denoising query groups.
+
+        Returns:
+            Tensor: The output noisy bboxes, which are embedded by normalized
+              (cx, cy, w, h) format bboxes going through inverse_sigmoid, has
+              shape (num_noisy_targets, 4).
+        """
+        assert self.box_noise_scale > 0
         device = gt_bboxes.device
-        known_bboxs = gt_bboxes.repeat(2 * num_groups, 1)
-        known_bbox_expand = known_bboxs.clone()
+
+        # expand gt_bboxes as groups
+        gt_bboxes_expand = gt_bboxes.repeat(2 * num_groups, 1)  # xyxy
+
+        # obtain index of negative queries in gt_bboxes_expand
         positive_idx = torch.arange(
-            len(gt_bboxes), dtype=torch.long,
-            device=device)  # TODO: replace the `len(gt_bboxes)`  # noqa
+            len(gt_bboxes), dtype=torch.long, device=device)
         positive_idx = positive_idx.unsqueeze(0).repeat(num_groups, 1)
         positive_idx += 2 * len(gt_bboxes) * torch.arange(
             num_groups, dtype=torch.long, device=device)[:, None]
         positive_idx = positive_idx.flatten()
         negative_idx = positive_idx + len(gt_bboxes)
-        if self.box_noise_scale > 0:
-            known_bbox_ = torch.zeros_like(known_bboxs)
-            known_bbox_[:, : 2] = \
-                known_bboxs[:, : 2] - known_bboxs[:, 2:] / 2
-            known_bbox_[:, 2:] = \
-                known_bboxs[:, :2] + known_bboxs[:, 2:] / 2
 
-            diff = torch.zeros_like(known_bboxs)
-            diff[:, :2] = known_bboxs[:, 2:] / 2
-            diff[:, 2:] = known_bboxs[:, 2:] / 2
+        # determine the sign of each element in rand_part
+        # to be positive or negative randomly.
+        rand_sign = torch.randint_like(
+            gt_bboxes_expand,
+            low=0,
+            high=2,  # [low, high)
+            dtype=torch.float32) * 2.0 - 1.0  # 1 or -1, randomly
 
-            rand_sign = torch.randint_like(
-                known_bboxs, low=0, high=2, dtype=torch.float32)
-            rand_sign = rand_sign * 2.0 - 1.0
-            rand_part = torch.rand_like(known_bboxs)
-            rand_part[negative_idx] += 1.0
-            rand_part *= rand_sign
-            known_bbox_ += torch.mul(rand_part,
-                                     diff).to(device) * self.box_noise_scale
-            known_bbox_ = known_bbox_.clamp(min=0.0, max=1.0)
-            known_bbox_expand[:, :2] = \
-                (known_bbox_[:, :2] + known_bbox_[:, 2:]) / 2
-            known_bbox_expand[:, 2:] = \
-                known_bbox_[:, 2:] - known_bbox_[:, :2]
-        dn_bbox_query = inverse_sigmoid(known_bbox_expand, eps=1e-3)
+        # calculate the random part of the added noise
+        rand_part = torch.rand_like(gt_bboxes_expand)  # [0, 1)
+        rand_part[negative_idx] += 1.0  # pos: [0, 1); neg: [1, 2)
+        rand_part *= rand_sign  # pos: (-1, 1); neg: (-2, 1] U [1, 2)
+
+        # add noise to the bboxes
+        bboxes_whwh = bbox_xyxy_to_cxcywh(gt_bboxes_expand)[:, 2:].repeat(1, 2)
+        noisy_bboxes_expand = gt_bboxes_expand + torch.mul(
+            rand_part, bboxes_whwh) * self.box_noise_scale / 2  # xyxy
+        noisy_bboxes_expand = noisy_bboxes_expand.clamp(min=0.0, max=1.0)
+        noisy_bboxes_expand = bbox_xyxy_to_cxcywh(noisy_bboxes_expand)
+
+        dn_bbox_query = inverse_sigmoid(noisy_bboxes_expand, eps=1e-3)
         return dn_bbox_query  # (num_noisy_targets, 4)
 
     def collate_dn_queries(self, input_label_query, input_bbox_query,
@@ -519,11 +574,11 @@ class CdnQueryGenerator(BaseModule):
         if self.box_noise_scale > 0:
             known_bbox_ = torch.zeros_like(known_bboxs)
             known_bbox_[:, : 2] = \
-                known_bboxs[:, : 2] - known_bboxs[:, 2:] / 2
+                known_bboxs[:, : 2] - known_bboxs[:, 2:] / 2  # cxcywh -> xyxy
             known_bbox_[:, 2:] = \
                 known_bboxs[:, :2] + known_bboxs[:, 2:] / 2
 
-            diff = torch.zeros_like(known_bboxs)
+            diff = torch.zeros_like(known_bboxs)  # whwh
             diff[:, :2] = known_bboxs[:, 2:] / 2
             diff[:, 2:] = known_bboxs[:, 2:] / 2
 
@@ -537,7 +592,7 @@ class CdnQueryGenerator(BaseModule):
                                      diff).to(device) * self.box_noise_scale
             known_bbox_ = known_bbox_.clamp(min=0.0, max=1.0)
             known_bbox_expand[:, :2] = \
-                (known_bbox_[:, :2] + known_bbox_[:, 2:]) / 2
+                (known_bbox_[:, :2] + known_bbox_[:, 2:]) / 2  # xyxy -> cxcywh
             known_bbox_expand[:, 2:] = \
                 known_bbox_[:, 2:] - known_bbox_[:, :2]
 
