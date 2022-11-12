@@ -361,7 +361,8 @@ class CdnQueryGenerator(BaseModule):
 
         Returns:
             Tensor: The query embeddings of noisy labels, has shape
-            (num_noisy_targets, dim).
+            (num_noisy_targets, dim), where `num_noisy_targets =
+            num_target_total * num_groups * 2`.
         """
         assert self.label_noise_scale > 0
         gt_labels_expand = gt_labels.repeat(2 * num_groups,
@@ -380,6 +381,7 @@ class CdnQueryGenerator(BaseModule):
         """Generate noisy bboxes and their query embeddings.
 
         The strategy for generating noisy bboxes is as follow:
+
         .. code:: text
 
             +--------------------+
@@ -424,8 +426,9 @@ class CdnQueryGenerator(BaseModule):
 
         Returns:
             Tensor: The output noisy bboxes, which are embedded by normalized
-              (cx, cy, w, h) format bboxes going through inverse_sigmoid, has
-              shape (num_noisy_targets, 4).
+            (cx, cy, w, h) format bboxes going through inverse_sigmoid, has
+            shape (num_noisy_targets, 4), where `num_noisy_targets =
+            num_target_total * num_groups * 2`.
         """
         assert self.box_noise_scale > 0
         device = gt_bboxes.device
@@ -444,10 +447,10 @@ class CdnQueryGenerator(BaseModule):
 
         # determine the sign of each element in rand_part
         # to be positive or negative randomly.
-        rand_sign = torch.randint_like(
+        rand_sign = torch.randint_like(  # [low, high)
             gt_bboxes_expand,
             low=0,
-            high=2,  # [low, high)
+            high=2,
             dtype=torch.float32) * 2.0 - 1.0  # 1 or -1, randomly
 
         # calculate the random part of the added noise
@@ -463,7 +466,7 @@ class CdnQueryGenerator(BaseModule):
         noisy_bboxes_expand = bbox_xyxy_to_cxcywh(noisy_bboxes_expand)
 
         dn_bbox_query = inverse_sigmoid(noisy_bboxes_expand, eps=1e-3)
-        return dn_bbox_query  # (num_noisy_targets, 4)
+        return dn_bbox_query
 
     def collate_dn_queries(self, input_label_query, input_bbox_query,
                            batch_idx, num_groups):
