@@ -1,6 +1,6 @@
 ## 日志分析
 
-`tools/analysis_tools/analyze_logs.py` 利用指定的训练log文件绘制 loss/mAP 曲线图，
+`tools/analysis_tools/analyze_logs.py` 可利用指定的训练log文件绘制 loss/mAP 曲线图，
 当第一次运行前请先运行 `pip install seaborn` 安装必要依赖.
 
 ```shell
@@ -111,7 +111,7 @@ python tools/analysis_tools/analyze_results.py \
 
 ### 可视化数据集
 
-`tools/analysis_tools/browse_dataset.py` 可帮助使用者浏览监测数据集（包括图像和标注），或保存图像至指定目录。
+`tools/analysis_tools/browse_dataset.py` 可帮助使用者检查所使用的检测数据集（包括图像和标注），或保存图像至指定目录。
 
 ```shell
 python tools/misc/browse_dataset.py ${CONFIG} [-h] [--skip-type ${SKIP_TYPE[SKIP_TYPE...]}] [--output-dir ${OUTPUT_DIR}] [--not-show] [--show-interval ${SHOW_INTERVAL}]
@@ -289,7 +289,7 @@ Params: 37.74 M
 ==============================
 ```
 
-**注意：**这个工具还只是实验性质，我们不保证这个数值是绝对正确的。你可以将他用于简单的比较，但如果用于科技论文报告需要再三检查确认。
+\*\*注意：\*\*这个工具还只是实验性质，我们不保证这个数值是绝对正确的。你可以将他用于简单的比较，但如果用于科技论文报告需要再三检查确认。
 
 1. FLOPs 与输入的形状大小相关，参数量没有这个关系，默认的输入形状大小为 (1, 3, 1280, 800) 。
 2. 一些算子并不计入 FLOPs，比如 GN 或其他自定义的算子。你可以参考 [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/dev-3.x/mmcv/cnn/utils/flops_counter.py) 查看更详细的说明。
@@ -334,7 +334,6 @@ python tools/model_converters/detectron2pytorch.py ${SRC} ${DST} ${DEPTH} [-h]
 1. 转换模型至 CPU 张量
 2. 删除优化器状态
 3. 计算 checkpoint 文件的 hash 值，并将 hash 号码记录至文件名。
-   Before you upload a model to AWS, you may want to
 
 ```shell
 python tools/model_converters/publish_model.py ${INPUT_FILENAME} ${OUTPUT_FILENAME}
@@ -346,7 +345,7 @@ python tools/model_converters/publish_model.py ${INPUT_FILENAME} ${OUTPUT_FILENA
 python tools/model_converters/publish_model.py work_dirs/faster_rcnn/latest.pth faster_rcnn_r50_fpn_1x_20190801.pth
 ```
 
-The final output filename will be `faster_rcnn_r50_fpn_1x_20190801-{hash id}.pth`.
+最后输出的文件名如下所示： `faster_rcnn_r50_fpn_1x_20190801-{hash id}.pth`.
 
 ## 数据集转换
 
@@ -371,11 +370,11 @@ python tools/misc/download_dataset.py --dataset-name lvis
 
 ### 鲁棒性测试基准
 
-`tools/analysis_tools/test_robustness.py` 及 `tools/analysis_tools/robustness_eval.py` 帮助使用者衡量模型的鲁棒性。其核心思想来源于 [Benchmarking Robustness in Object Detection: Autonomous Driving when Winter is Coming](https://arxiv.org/abs/1907.07484)。如果想了解如何评估模型在污损图像上的效果，以及该基准的一组标准模型，请参考 [robustness_benchmarking.md](robustness_benchmarking.md)。
+`tools/analysis_tools/test_robustness.py` 及 `tools/analysis_tools/robustness_eval.py` 帮助使用者衡量模型的鲁棒性。其核心思想来源于 [Benchmarking Robustness in Object Detection: Autonomous Driving when Winter is Coming](https://arxiv.org/abs/1907.07484)。如果你想了解如何在污损图像上评估模型的效果，以及参考该基准的一组标准模型，请参照 [robustness_benchmarking.md](robustness_benchmarking.md)。
 
 ### FPS 测试基准
 
-`tools/analysis_tools/benchmark.py` 帮助使用者计算 FPS，FPS 计算包括了模型向前传播与后处理过程。为了得到更精确的计算值，现在分布式计算模式只支持一个 GPU。
+`tools/analysis_tools/benchmark.py` 可帮助使用者计算 FPS，FPS 计算包括了模型向前传播与后处理过程。为了得到更精确的计算值，现在的分布式计算模式只支持一个 GPU。
 
 ```shell
 python -m torch.distributed.launch --nproc_per_node=1 --master_port=${PORT} tools/analysis_tools/benchmark.py \
@@ -410,7 +409,7 @@ python tools/analysis_tools/eval_metric.py ${CONFIG} ${PKL_RESULTS} [-h] [--form
 
 ### 打印全部 config
 
-`tools/misc/print_config.py` 将所有的配置文件打印，将所有继承关系展开。
+`tools/misc/print_config.py` 可将所有配置继承关系展开，完全打印相应的配置文件。
 
 ```shell
 python tools/misc/print_config.py ${CONFIG} [-h] [--options ${OPTIONS [OPTIONS...]}]

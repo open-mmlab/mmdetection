@@ -1,6 +1,6 @@
 # 实用的钩子
 
-MMDetection 和 MMEngine 为用户提供了多种多样实用的钩子，包括 `MemoryProfilerHook`、`NumClassCheckHook` 等等。
+MMDetection 和 MMEngine 为用户提供了多种多样实用的钩子（Hook），包括 `MemoryProfilerHook`、`NumClassCheckHook` 等等。
 这篇教程介绍了 MMDetection 中实现的钩子功能及使用方式。若使用 MMEngine 定义的钩子请参考 [MMEngine 的钩子API文档](https://github.com/open-mmlab/mmengine/tree/main/docs/en/tutorials/hook.md).
 
 ## CheckInvalidLossHook
