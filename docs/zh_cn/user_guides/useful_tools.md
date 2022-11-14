@@ -66,7 +66,7 @@ python tools/analysis_tools/analyze_results.py \
 各个参数选项的作用:
 
 - `config` : model config 文件的地址。
-- `prediction_path`:  使用`tools/test.py`输出的pickle格式结果文件。
+- `prediction_path`:  使用 `tools/test.py` 输出的 pickle 格式结果文件。
 - `show_dir`: 绘制标注框与预测框的图像保存地址。
 - `--show`：决定是否展示绘制box后的图片，默认值为`False`。
 - `--wait-time`: show时间的间隔，若为0表示持续显示。
