@@ -28,7 +28,7 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - "Microsoft Visual C++ 14.0 or graeter is required" during installation on Windows.
 
-  The reason is that the corresponding C ++ environment compilation dependencies are lacking, and you need to download it at Microsoft officials [visual-cpp-build-tools](https://visualstudio.microsoft.com/zh-hans/visual-cpp-build-tools/),
+  The reason is that there lacks corresponding C++ compilation dependencies in the environment and you need to download it at Microsoft officials [visual-cpp-build-tools](https://visualstudio.microsoft.com/zh-hans/visual-cpp-build-tools/),
   Select the "Use C ++ Desktop Development" option to install the minimum dependencies, and then re-install.
 
 - Using Albumentations
