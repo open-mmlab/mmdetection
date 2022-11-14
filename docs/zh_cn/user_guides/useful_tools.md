@@ -87,7 +87,7 @@ python tools/analysis_tools/analyze_results.py \
        --show
 ```
 
-2. 测试 Faster R-CNN 并指定 top-k 参数为50，保存结果图片至 `results/`
+2. 测试 Faster R-CNN 并指定 top-k 参数为 50，保存结果图片至 `results/`
 
 ```shell
 python tools/analysis_tools/analyze_results.py \
