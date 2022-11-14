@@ -9,8 +9,8 @@ MMDetection 和 MMEngine 为用户提供了多种多样实用的钩子，包括 
 
 ## MemoryProfilerHook
 
-[内存分析钩子](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/engine/hooks/memory_profiler_hook.py) 
-记录了包括虚拟内存、交换内存、当前进程在内的所有内存信息，它能够帮助捕捉系统的使用状况与发现隐藏的内存泄露问题。为了使用这个钩子，你需要先安装 `pip install memory_profiler psutil` 从而使用 `memory_profiler`。 
+[内存分析钩子](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/engine/hooks/memory_profiler_hook.py)
+记录了包括虚拟内存、交换内存、当前进程在内的所有内存信息，它能够帮助捕捉系统的使用状况与发现隐藏的内存泄露问题。为了使用这个钩子，你需要先安装 `pip install memory_profiler psutil` 从而使用 `memory_profiler`。
 
 ### 使用
 

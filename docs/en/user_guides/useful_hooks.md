@@ -22,7 +22,7 @@ custom_hooks = [
 
 ### Result
 
-During training, you can see the messages in the log recorded by `MemoryProfilerHook` as below. 
+During training, you can see the messages in the log recorded by `MemoryProfilerHook` as below.
 
 ```text
 The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 MB) of swap memory in total. Currently 9407 MB (4.4%) of memory and 5740 MB (29.9%) of swap memory were consumed. And the current training process consumed 5434 MB of memory.

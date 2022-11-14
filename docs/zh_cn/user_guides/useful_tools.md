@@ -45,7 +45,6 @@ python tools/analysis_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--eval-
   average iter time: 1.1959 s/iter
   ```
 
-
 ## 结果分析
 
 使用 `tools/analysis_tools/analyze_results.py` 可计算每个图像 mAP，随后根据真实标注框与预测框的比较结果，展示或保存最高与最低 top-k 得分的预测图像
@@ -108,7 +107,6 @@ python tools/analysis_tools/analyze_results.py \
        --show-score-thr 0.3
 ```
 
-
 ## 可视化
 
 ### 可视化数据集
@@ -130,8 +128,7 @@ python tools/misc/browse_dataset.py ${CONFIG} [-h] [--skip-type ${SKIP_TYPE[SKIP
 
 如果你想要一个轻量 GUI 可视化检测结果，你可以参考 [DetVisGUI project](https://github.com/Chien-Hung/DetVisGUI/tree/mmdetection)。
 
-
-## 误差分析 
+## 误差分析
 
 `tools/analysis_tools/coco_error_analysis.py` 使用不同标准分析每个类别的COCO评估结果。同时将一些有帮助的信息体现在图表上。
 
@@ -142,7 +139,6 @@ python tools/analysis_tools/coco_error_analysis.py ${RESULT} ${OUT_DIR} [-h] [--
 样例:
 
 假设你已经把 [Mask R-CNN checkpoint file](https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth) 放置在文件夹 'checkpoint' 中，对于其他模型请在 [model zoo](./model_zoo.md) 中获取。
-
 
 为了保存 bbox 结果信息，你可以用下列方式修改 `test_evaluator` 文件:
 
@@ -199,7 +195,7 @@ docker build -t mmdet-serve:latest docker/serve/
 
 检查[使用 docker 运行 TorchServe](https://github.com/pytorch/serve/blob/master/docker/README.md#running-torchserve-in-a-production-docker-environment) 官方文档。
 
-为了运行在 GPU 上，你需要安装  [nvidia-docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) ，如果想运行在 CPU 上则忽略 `--gpus` 参数。 
+为了运行在 GPU 上，你需要安装  [nvidia-docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) ，如果想运行在 CPU 上则忽略 `--gpus` 参数。
 
 样例:
 
@@ -213,7 +209,6 @@ mmdet-serve:latest
 ```
 
 阅读[这个文档](https://github.com/pytorch/serve/blob/072f5d088cce9bb64b2a18af065886c9b01b317b/docs/rest_api.md/)获取更多有关推理(8080)、管理(8081)、评估(8082)的 APis。
-
 
 ### 4. 测试部署效果
 
@@ -339,7 +334,7 @@ python tools/model_converters/detectron2pytorch.py ${SRC} ${DST} ${DEPTH} [-h]
 1. 转换模型至 CPU 张量
 2. 删除优化器状态
 3. 计算 checkpoint 文件的 hash 值，并将 hash 号码记录至文件名。
-Before you upload a model to AWS, you may want to
+   Before you upload a model to AWS, you may want to
 
 ```shell
 python tools/model_converters/publish_model.py ${INPUT_FILENAME} ${OUTPUT_FILENAME}
