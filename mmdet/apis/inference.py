@@ -11,7 +11,6 @@ from mmcv.ops import RoIPool
 from mmcv.transforms import Compose
 from mmengine.config import Config
 from mmengine.runner import load_checkpoint
-from mmdet.structures import DetDataSample
 from mmdet.models import BaseDetector
 from mmdet.visualization import DetLocalVisualizer
 
