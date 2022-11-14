@@ -102,6 +102,8 @@ def main():
                                '"auto_scale_lr.enable" or '
                                '"auto_scale_lr.base_batch_size" in your'
                                ' configuration file.')
+    if args.resume:
+        cfg.resume = args.resume
 
     # resume is determined in this priority: resume from > auto_resume
     cfg.resume = args.resume
