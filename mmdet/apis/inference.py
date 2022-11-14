@@ -6,10 +6,14 @@ from typing import Optional, Sequence, Union
 import numpy as np
 import torch
 import torch.nn as nn
+from mmcv import imread
 from mmcv.ops import RoIPool
 from mmcv.transforms import Compose
 from mmengine.config import Config
 from mmengine.runner import load_checkpoint
+from mmdet.structures import DetDataSample
+from mmdet.models import BaseDetector
+from mmdet.visualization import DetLocalVisualizer
 
 from ..evaluation import get_classes
 from ..models import build_detector
@@ -214,6 +218,7 @@ def show_result_pyplot(model: BaseDetector,
                        save_dir=None,
                        out_file=None):
     """Visualize the detection results on the image.
+    
     Args:
         model (nn.Module): The loaded detector.
         img (str or np.ndarray): Image filename or loaded image.
@@ -230,13 +235,14 @@ def show_result_pyplot(model: BaseDetector,
         show (bool): Whether to display the drawn image.
             Default to True.
         out_file (str, optional): Path to output file. Default to None.
+
     Returns:
         np.ndarray: the drawn image which channel is RGB.
     """
     if hasattr(model, 'module'):
         model = model.module
     if isinstance(img, str):
-        image = imread(img,channel_order="rgb")
+        image = imread(img)
     else:
         image = img.copy()
  
