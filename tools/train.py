@@ -106,7 +106,6 @@ def main():
         cfg.resume = args.resume
 
     # resume is determined in this priority: resume from > auto_resume
-    cfg.resume = args.resume
     if args.resume_from is not None:
         cfg.resume = True
         cfg.load_from = args.resume_from
