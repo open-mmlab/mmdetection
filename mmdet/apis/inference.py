@@ -11,9 +11,9 @@ from mmcv.ops import RoIPool
 from mmcv.transforms import Compose
 from mmengine.config import Config
 from mmengine.runner import load_checkpoint
+
 from mmdet.models import BaseDetector
 from mmdet.visualization import DetLocalVisualizer
-
 from ..evaluation import get_classes
 from ..models import build_detector
 from ..structures import DetDataSample, SampleList
@@ -204,7 +204,8 @@ async def async_inference_detector(model, imgs):
     torch.set_grad_enabled(False)
     results = await model.aforward_test(data, rescale=True)
     return results
-    
+
+
 def show_result_pyplot(model: BaseDetector,
                        img: Union[str, np.ndarray],
                        result: DetDataSample,
@@ -217,7 +218,7 @@ def show_result_pyplot(model: BaseDetector,
                        save_dir=None,
                        out_file=None):
     """Visualize the detection results on the image.
-    
+
     Args:
         model (nn.Module): The loaded detector.
         img (str or np.ndarray): Image filename or loaded image.
@@ -244,7 +245,7 @@ def show_result_pyplot(model: BaseDetector,
         image = imread(img)
     else:
         image = img.copy()
- 
+
     # init visualizer
     visualizer = DetLocalVisualizer(
         vis_backends=[dict(type='LocalVisBackend')],
