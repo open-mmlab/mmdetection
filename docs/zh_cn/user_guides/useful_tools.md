@@ -68,10 +68,10 @@ python tools/analysis_tools/analyze_results.py \
 - `config` : model config 文件的地址。
 - `prediction_path`:  使用 `tools/test.py` 输出的 pickle 格式结果文件。
 - `show_dir`: 绘制标注框与预测框的图像保存地址。
-- `--show`：决定是否展示绘制box后的图片，默认值为`False`。
-- `--wait-time`: show时间的间隔，若为0表示持续显示。
+- `--show`：决定是否展示绘制 box 后的图片，默认值为 `False`。
+- `--wait-time`: show 时间的间隔，若为 0 表示持续显示。
 - `--topk`: 根据最高或最低 `topk` 概率排序保存的图片数量，若不指定，默认设置为 `20`。
-- `--show-score-thr`: 能够展示的概率阈值，默认为`0`。
+- `--show-score-thr`: 能够展示的概率阈值，默认为 `0`。
 - `--cfg-options`: 如果指定，可根据指定键值对覆盖更新配置文件的对应选项
 
 **样例**:
@@ -130,7 +130,7 @@ python tools/misc/browse_dataset.py ${CONFIG} [-h] [--skip-type ${SKIP_TYPE[SKIP
 
 ## 误差分析
 
-`tools/analysis_tools/coco_error_analysis.py` 使用不同标准分析每个类别的COCO评估结果。同时将一些有帮助的信息体现在图表上。
+`tools/analysis_tools/coco_error_analysis.py` 使用不同标准分析每个类别的 COCO 评估结果。同时将一些有帮助的信息体现在图表上。
 
 ```shell
 python tools/analysis_tools/coco_error_analysis.py ${RESULT} ${OUT_DIR} [-h] [--ann ${ANN}] [--types ${TYPES[TYPES...]}]
@@ -144,7 +144,7 @@ python tools/analysis_tools/coco_error_analysis.py ${RESULT} ${OUT_DIR} [-h] [--
 
 1. 查找当前 config 文件相对应的  'configs/base/datasets' 数据集信息。
 2. 用当前数据集config中的 test_evaluator 以及 test_dataloader 替换原始文件的 test_evaluator 以及 test_dataloader。
-3. 使用以下命令得到 bbox 或 segmentation json 格式文件。
+3. 使用以下命令得到 bbox 或 segmentation 的 json 格式文件。
 
 ```shell
 python tools/test.py \
@@ -183,7 +183,7 @@ python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
 --model-name ${MODEL_NAME}
 ```
 
-**注释**: ${MODEL_STORE} 必须是目标文件夹的绝对路径.
+**注意**: ${MODEL_STORE} 必须是目标文件夹的绝对路径.
 
 ### 2. 构建 `mmdet-serve` docker 映像
 
@@ -208,7 +208,7 @@ docker run --rm \
 mmdet-serve:latest
 ```
 
-阅读[这个文档](https://github.com/pytorch/serve/blob/072f5d088cce9bb64b2a18af065886c9b01b317b/docs/rest_api.md/)获取更多有关推理(8080)、管理(8081)、评估(8082)的 APis。
+阅读[这个文档](https://github.com/pytorch/serve/blob/072f5d088cce9bb64b2a18af065886c9b01b317b/docs/rest_api.md/)获取更多有关推理(8080)、管理(8081)、评估(8082)的 APIs。
 
 ### 4. 测试部署效果
 
@@ -217,7 +217,7 @@ curl -O curl -O https://raw.githubusercontent.com/pytorch/serve/master/docs/imag
 curl http://127.0.0.1:8080/predictions/${MODEL_NAME} -T 3dogs.jpg
 ```
 
-你可以得到类似这样的json信息：
+你可以得到类似这样的 json 信息：
 
 ```json
 [
@@ -289,17 +289,17 @@ Params: 37.74 M
 ==============================
 ```
 
-**注释**：这个工具还只是实验性质，我们不保证这个数值是绝对正确的。你可以将他用于简单的比较，但如果用于科技论文报告需要再三检查确认。
+**注意：**这个工具还只是实验性质，我们不保证这个数值是绝对正确的。你可以将他用于简单的比较，但如果用于科技论文报告需要再三检查确认。
 
-1. FLOPs与输入的形状大小相关，参数量没有这个关系，默认的输入形状大小为 (1, 3, 1280, 800) 。
-2. 一些算子并不计入FLOPs，比如GN或其他自定义的算子。你可以参考 [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/dev-3.x/mmcv/cnn/utils/flops_counter.py) 查看更详细的说明。
+1. FLOPs 与输入的形状大小相关，参数量没有这个关系，默认的输入形状大小为 (1, 3, 1280, 800) 。
+2. 一些算子并不计入 FLOPs，比如 GN 或其他自定义的算子。你可以参考 [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/dev-3.x/mmcv/cnn/utils/flops_counter.py) 查看更详细的说明。
 3. 两阶段检测的 FLOPs 大小取决于 proposal 的数量。
 
 ## 模型转换
 
 ### MMDetection 模型转换至 ONNX 格式
 
-我们提供了一个脚本用于转换模型至  [ONNX](https://github.com/onnx/onnx) 格式。同时还支持比较 Pytorch 与 ONNX 模型的输出结果以便对照。更相信的内容可以参考 [mmdeploy](https://github.com/open-mmlab/mmdeploy)。
+我们提供了一个脚本用于转换模型至 [ONNX](https://github.com/onnx/onnx) 格式。同时还支持比较 Pytorch 与 ONNX 模型的输出结果以便对照。更相信的内容可以参考 [mmdeploy](https://github.com/open-mmlab/mmdeploy)。
 
 ### MMDetection 1.x 模型转换至 MMDetection 2.x 模型
 
