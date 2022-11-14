@@ -74,10 +74,11 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 最新进展
 
-**v3.0.0rc2** 版本已经在 2022.10.21 发布：
+**v3.0.0rc3** 版本已经在 2022.11.4 发布：
 
-- 支持在 [ImageNet 上预训练](configs/rtmdet/cspnext_imagenet_pretrain) RTMDet 的骨干网络。
-- 重构 Standard RoI Head 以支持 `box type`。
+- 支持了 [CrowdDet](configs/crowddet/) 和 EIoULoss
+- 支持训练 Detectron2 中的检测模型并提供了三个[样例](configs/misc)
+- 重构了 [Fast R-CNN](configs/fast_rcnn/)
 
 ## 安装
 

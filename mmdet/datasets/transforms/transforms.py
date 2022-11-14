@@ -2464,9 +2464,9 @@ class MixUp(BaseTransform):
         ori_img = results['img']
         origin_h, origin_w = out_img.shape[:2]
         target_h, target_w = ori_img.shape[:2]
-        padded_img = np.zeros(
-            (max(origin_h, target_h), max(origin_w,
-                                          target_w), 3)).astype(np.uint8)
+        padded_img = np.ones((max(origin_h, target_h), max(
+            origin_w, target_w), 3)) * self.pad_val
+        padded_img = padded_img.astype(np.uint8)
         padded_img[:origin_h, :origin_w] = out_img
 
         x_offset, y_offset = 0, 0
@@ -3512,9 +3512,9 @@ class CachedMixUp(BaseTransform):
         ori_img = results['img']
         origin_h, origin_w = out_img.shape[:2]
         target_h, target_w = ori_img.shape[:2]
-        padded_img = np.zeros(
-            (max(origin_h, target_h), max(origin_w,
-                                          target_w), 3)).astype(np.uint8)
+        padded_img = np.ones((max(origin_h, target_h), max(
+            origin_w, target_w), 3)) * self.pad_val
+        padded_img = padded_img.astype(np.uint8)
         padded_img[:origin_h, :origin_w] = out_img
 
         x_offset, y_offset = 0, 0

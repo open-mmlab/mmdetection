@@ -357,7 +357,12 @@ class CascadeRoIHead(BaseRoIHead):
 
         if rois.shape[0] == 0:
             return empty_instances(
-                batch_img_metas, rois.device, task_type='bbox')
+                batch_img_metas,
+                rois.device,
+                task_type='bbox',
+                box_type=self.bbox_head[-1].predict_box_type,
+                num_classes=self.bbox_head[-1].num_classes,
+                score_per_cls=rcnn_test_cfg is None)
 
         rois, cls_scores, bbox_preds = self._refine_roi(
             x=x,

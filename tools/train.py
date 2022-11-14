@@ -100,8 +100,8 @@ def main():
                                '"auto_scale_lr.enable" or '
                                '"auto_scale_lr.base_batch_size" in your'
                                ' configuration file.')
-
-    cfg.resume = args.resume
+    if args.resume:
+        cfg.resume = args.resume
 
     # build the runner from config
     if 'runner_type' not in cfg:
