@@ -28,7 +28,7 @@
 
   2. 安装 `mmcv` 根据 [安装说明](https://mmcv.readthedocs.io/zh_CN/2.x/get_started/installation.html)。
 
-- 在Windows环境下安装过程中遇到 "Microsoft Visual C++ 14.0 or graeter is required" error .
+- 在 Windows 环境下安装过程中遇到 "Microsoft Visual C++ 14.0 or graeter is required" error .
 
   原因是缺少对应 c++ 环境编译依赖，需要到微软官方下载[对应工具](https://visualstudio.microsoft.com/zh-hans/visual-cpp-build-tools/)，选择“使用 c++ 的桌面开发”选项安装最小依赖，随后重新安装即可成功。
 
