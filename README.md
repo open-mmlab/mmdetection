@@ -77,9 +77,9 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 
 **v3.0.0rc3** was released in 4/11/2022:
 
-- Support training detection models in Detectron2
-- Support CrowdDet
-- Refactor Fast R-CNN
+- Support [CrowdDet](configs/crowddet/) and EIoULoss
+- Support training detection models in Detectron2, see [examples](configs/misc)
+- Refactor [Fast R-CNN](configs/fast_rcnn/)
 
 ## Installation
 
