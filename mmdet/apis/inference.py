@@ -220,7 +220,7 @@ def show_result_pyplot(model: BaseDetector,
     """Visualize the detection results on the image.
 
     Args:
-        model (nn.Module): The loaded detector.
+        model (BaseDetector): The loaded detector.
         img (str or np.ndarray): Image filename or loaded image.
         result (DetDataSample): The prediction DetDataSample result.
         opacity(float): Opacity of painted detection map.
