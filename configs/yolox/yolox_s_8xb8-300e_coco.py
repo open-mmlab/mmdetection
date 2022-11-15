@@ -83,7 +83,7 @@ train_pipeline = [
     dict(
         type='RandomAffine',
         scaling_ratio_range=(0.1, 2),
-        border=(-img_scale[0] // 2, -img_scale[1] // 2)),
+        border=(-img_scale[1] // 2, -img_scale[0] // 2)),
     dict(
         type='MixUp',
         img_scale=img_scale,

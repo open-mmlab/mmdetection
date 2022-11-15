@@ -28,7 +28,7 @@ train_pipeline = [
     dict(
         type='RandomAffine',
         scaling_ratio_range=(0.5, 1.5),
-        border=(-img_scale[0] // 2, -img_scale[1] // 2)),
+        border=(-img_scale[1] // 2, -img_scale[0] // 2)),
     dict(type='YOLOXHSVRandomAug'),
     dict(type='RandomFlip', prob=0.5),
     # Resize and Pad are for the last 15 epochs when Mosaic and
