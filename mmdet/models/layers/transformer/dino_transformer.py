@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
 import warnings
+from typing import Tuple
 
 import torch
 from mmengine.model import BaseModule
@@ -361,7 +362,7 @@ class CdnQueryGenerator(BaseModule):
 
         Returns:
             Tensor: The query embeddings of noisy labels, has shape
-            (num_noisy_targets, dim), where `num_noisy_targets =
+            (num_noisy_targets, embed_dims), where `num_noisy_targets =
             num_target_total * num_groups * 2`.
         """
         assert self.label_noise_scale > 0
@@ -447,11 +448,9 @@ class CdnQueryGenerator(BaseModule):
 
         # determine the sign of each element in rand_part
         # to be positive or negative randomly.
-        rand_sign = torch.randint_like(  # [low, high)
-            gt_bboxes_expand,
-            low=0,
-            high=2,
-            dtype=torch.float32) * 2.0 - 1.0  # 1 or -1, randomly
+        rand_sign = torch.randint_like(
+            gt_bboxes_expand, low=0, high=2,
+            dtype=torch.float32) * 2.0 - 1.0  # [low, high), 1 or -1, randomly
 
         # calculate the random part of the added noise
         rand_part = torch.rand_like(gt_bboxes_expand)  # [0, 1)
@@ -468,30 +467,70 @@ class CdnQueryGenerator(BaseModule):
         dn_bbox_query = inverse_sigmoid(noisy_bboxes_expand, eps=1e-3)
         return dn_bbox_query
 
-    def collate_dn_queries(self, input_label_query, input_bbox_query,
-                           batch_idx, num_groups):
+    def collate_dn_queries(self, input_label_query: Tensor,
+                           input_bbox_query: Tensor, batch_idx: Tensor,
+                           num_groups: int) -> Tuple[Tensor, Tensor]:
+        """Collate generated queries to obtain batched dn queries.
+
+        The strategy for query collation is as follow:
+
+        .. code:: text
+
+                    input_queries (num_target_total, query_dim)
+            P_A1 P_B1 P_B2 N_A1 N_B1 N_B2 P'A1 P'B1 P'B2 N'A1 N'B1 N'B2
+              |________ group1 ________|    |________ group2 ________|
+                                         |
+                                         V
+                      P_A1 Pad0 N_A1 Pad0 P'A1 Pad0 N'A1 Pad0
+                      P_B1 P_B2 N_B1 N_B2 P'B1 P'B2 N'B1 N'B2
+                       |____ group1 ____| |____ group2 ____|
+             batched_queries (batch_size, max_num_target, query_dim)
+            where query_dim is 4 for bbox and self.embed_dims for label.
+            Notation: _-group 1; '-group 2;
+                      A-Sample1(has 1 target); B-sample2(has 2 targets)
+
+        Args:
+            input_label_query (Tensor): The generated label queries of all
+                targets, has shape (num_target_total, embed_dims) where
+                `num_target_total = sum(num_target_list)`.
+            input_bbox_query (Tensor): The generated bbox queries of all
+                targets, has shape (num_target_total, 4).
+            batch_idx (Tensor): The batch index of the corresponding sample
+                for each target, has shape (num_target_total).
+            num_groups (int): The number of denoising query groups.
+
+        Returns:
+            tuple[Tensor, Tensor]: Output batched label and bbox queries.
+            - batched_label_query (Tensor): The output batched label queries,
+              has shape (batch_size, max_num_target, embed_dims).
+            - batched_bbox_query (Tensor): The output batched bbox queries,
+              has shape (batch_size, max_num_target, 4).
+        """
         device = input_label_query.device
         batch_size = batch_idx.max().item() + 1
         num_target_list = [
             torch.sum(batch_idx == idx) for idx in range(batch_size)
         ]
-        single_pad = max(num_target_list)
-        pad_size = int(single_pad * 2 * num_groups)
-        padding_label = torch.zeros(pad_size, self.embed_dims, device=device)
-        padding_bbox = torch.zeros(pad_size, 4, device=device)
+        single_pad = max(num_target_list)  # max_num_target
+        pad_size = int(single_pad * 2 * num_groups)  # num_noisy_targets
+        """
+        - max_num_target: the max target number in the input batch samples.
+        - num_noisy_targets: the total targets number after adding noise,
+          i.e., num_target_total * num_groups * 2
+        """
 
-        batched_label_query = padding_label.repeat(batch_size, 1, 1)
-        batched_bbox_query = padding_bbox.repeat(batch_size, 1, 1)
+        batched_label_query = torch.zeros(
+            pad_size, self.embed_dims, device=device).repeat(batch_size, 1, 1)
+        batched_bbox_query = torch.zeros(
+            pad_size, 4, device=device).repeat(batch_size, 1, 1)
 
-        map_known_indice = torch.tensor([], device=device)
-        if len(num_target_list):
-            map_known_indice = torch.cat([
-                torch.tensor(range(num)).cuda() for num in num_target_list
-            ])  # TODO: rewrite
-            map_known_indice = torch.cat([
-                map_known_indice + single_pad * i
-                for i in range(2 * num_groups)
-            ]).long()
+        map_known_indice = torch.cat([
+            torch.arange(n, device=device) for n in num_target_list
+        ])  # TODO: rewrite
+        map_known_indice = torch.cat([
+            map_known_indice + single_pad * i for i in range(2 * num_groups)
+        ]).long()
+
         batch_idx_expand = batch_idx.repeat(2 * num_groups, 1).view(-1)
         if len(batch_idx_expand):
             batched_label_query[(batch_idx_expand.long(),
@@ -500,7 +539,23 @@ class CdnQueryGenerator(BaseModule):
                                 map_known_indice)] = input_bbox_query
         return batched_label_query, batched_bbox_query
 
-    def generate_dn_mask(self, single_pad, num_groups, device):
+    def generate_dn_mask(self, single_pad: int, num_groups: int,
+                         device) -> Tensor:
+        """Generate attention mask to prevent information leakage from
+        different denoising groups and matching parts.
+
+        Args:
+            single_pad (int):
+            num_groups (int):
+            device (?):
+
+        Returns:
+            Tensor: The attention mask to prevent information leakage from
+            different denoising groups and matching parts, will be used as
+            `self_attn_mask` of the `decoder`, has shape (num_query_total,
+            num_query_total), where `num_query_total` is the sum of
+            `num_denoising_query` and `num_matching_query`.
+        """
         pad_size = int(single_pad * 2 * num_groups)
         tgt_size = pad_size + self.num_matching_query
         attn_mask = torch.ones(tgt_size, tgt_size, device=device) < 0
@@ -522,6 +577,7 @@ class CdnQueryGenerator(BaseModule):
         return attn_mask
 
     def ori__call__(self, batch_data_samples: SampleList) -> tuple:
+        """For aligning with refactor __call__."""
         batch_size = len(batch_data_samples)
         device = batch_data_samples[0].gt_instances.bboxes.device
 
