@@ -4,8 +4,9 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmengine.model import BaseModule
 from mmengine.utils import is_tuple_of
+from torch import Tensor
 
-from mmdet.utils.typing import OptMultiConfig
+from mmdet.utils import MultiConfig, OptConfigType, OptMultiConfig
 
 
 class SELayer(BaseModule):
@@ -28,12 +29,13 @@ class SELayer(BaseModule):
     """
 
     def __init__(self,
-                 channels,
-                 ratio=16,
-                 conv_cfg=None,
-                 act_cfg=(dict(type='ReLU'), dict(type='Sigmoid')),
-                 init_cfg=None):
-        super(SELayer, self).__init__(init_cfg)
+                 channels: int,
+                 ratio: int = 16,
+                 conv_cfg: OptConfigType = None,
+                 act_cfg: MultiConfig = (dict(type='ReLU'),
+                                         dict(type='Sigmoid')),
+                 init_cfg: OptMultiConfig = None) -> None:
+        super().__init__(init_cfg=init_cfg)
         if isinstance(act_cfg, dict):
             act_cfg = (act_cfg, act_cfg)
         assert len(act_cfg) == 2
@@ -54,7 +56,7 @@ class SELayer(BaseModule):
             conv_cfg=conv_cfg,
             act_cfg=act_cfg[1])
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         out = self.global_avgpool(x)
         out = self.conv1(out)
         out = self.conv2(out)
@@ -88,12 +90,15 @@ class DyReLU(BaseModule):
     """
 
     def __init__(self,
-                 channels,
-                 ratio=4,
-                 conv_cfg=None,
-                 act_cfg=(dict(type='ReLU'),
-                          dict(type='HSigmoid', bias=3.0, divisor=6.0)),
-                 init_cfg=None):
+                 channels: int,
+                 ratio: int = 4,
+                 conv_cfg: OptConfigType = None,
+                 act_cfg: MultiConfig = (dict(type='ReLU'),
+                                         dict(
+                                             type='HSigmoid',
+                                             bias=3.0,
+                                             divisor=6.0)),
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         if isinstance(act_cfg, dict):
             act_cfg = (act_cfg, act_cfg)
@@ -117,7 +122,7 @@ class DyReLU(BaseModule):
             conv_cfg=conv_cfg,
             act_cfg=act_cfg[1])
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         """Forward function."""
         coeffs = self.global_avgpool(x)
         coeffs = self.conv1(coeffs)
@@ -139,12 +144,12 @@ class ChannelAttention(BaseModule):
     """
 
     def __init__(self, channels: int, init_cfg: OptMultiConfig = None) -> None:
-        super().__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         self.global_avgpool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Conv2d(channels, channels, 1, 1, 0, bias=True)
         self.act = nn.Hardsigmoid(inplace=True)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         out = self.global_avgpool(x)
         out = self.fc(out)
         out = self.act(out)
