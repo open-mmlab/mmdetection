@@ -11,7 +11,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Print the whole config')
     parser.add_argument('config', help='config file path')
     parser.add_argument(
-        '--save-path', default=None, help='save path of whole config, it can be suffixed with .py, .json, .yml')
+        '--save-path',
+        default=None,
+        help='save path of whole config, suffixed with .py, .json or .yml')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
@@ -47,6 +49,7 @@ def main():
         if not os.path.exists(os.path.split(save_path)[0]):
             os.makedirs(os.path.split(save_path)[0])
         cfg.dump(save_path)
+
 
 if __name__ == '__main__':
     main()
