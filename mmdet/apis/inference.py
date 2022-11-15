@@ -223,7 +223,7 @@ def show_result_pyplot(model: BaseDetector,
         model (BaseDetector): The loaded detector.
         img (str or np.ndarray): Image filename or loaded image.
         result (DetDataSample): The prediction DetDataSample result.
-        opacity(float): Opacity of painted detection map.
+        opacity (float): Opacity of painted detection map.
             Default 0.5. Must be in (0, 1] range.
         title (str): The title of pyplot figure.
             Default is ''.
