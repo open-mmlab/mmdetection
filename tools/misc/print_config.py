@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import os
 import argparse
+import os
 
 from mmengine import Config, DictAction
 
