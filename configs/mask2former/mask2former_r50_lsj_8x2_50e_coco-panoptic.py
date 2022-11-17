@@ -168,7 +168,7 @@ train_pipeline = [
         mean=[123.675, 116.28, 103.53],
         std=[58.395, 57.12, 57.375],
         to_rgb=True),
-    dict(type='Pad', size=(1024, 1024)),# we are forcing all image size to 1024x1024 from originnal image size
+    dict(type='Pad', size=(1024, 1024)),
     dict(type='DefaultFormatBundle', img_to_float=True),
     dict(
         type='Collect',
@@ -212,7 +212,7 @@ test_pipeline = [
 data_root = 'data/coco/'
 data = dict(
     samples_per_gpu=2,
-    workers_per_gpu=0,# num_workers = 0 to avoid bug:
+    workers_per_gpu=0,
     train=dict(
         type = 'CocoPanopticDataset',
         ann_file = data_root + 'annotations/panoptic_train2017.json',
@@ -237,12 +237,12 @@ data = dict(
         ins_ann_file=data_root + 'annotations/instances_val2017.json', # modified from 'annotations/instances_val2017.json' onlt
     ))
 # dataset val pipeline is same as the test. and workflow should only contain train.
-# if want to add val in workflow to monitor the loss, we need to set dataset val pipiline to be same as train, see at
+# if wang to add val in workflow to monitor the loss, we need to set dataset val pipiline to be same as train, see at
 # https://github.com/open-mmlab/mmdetection/issues/1493
 embed_multi = dict(lr_mult=1.0, decay_mult=0.0)
 # optimizer
 optimizer = dict(
-    type='AdamW',
+    type='AdamW',#AdamW->Adam
     lr=0.0001,
     weight_decay=0.03, # 0.05->0.03
     eps=1e-8,
@@ -268,7 +268,7 @@ lr_config = dict(
     warmup_ratio=1.0,  # no warmup
     warmup_iters=10)
 
-max_iters = 8000
+max_iters = 16000
 runner = dict(type='IterBasedRunner', max_iters=max_iters)
 
 log_config = dict(
@@ -277,7 +277,7 @@ log_config = dict(
         dict(type='TextLoggerHook', by_epoch=False),
         dict(type='TensorboardLoggerHook', by_epoch=False)
     ])
-interval = 20# for debugging
+interval = 8000
 workflow = [('train', interval)]
 checkpoint_config = dict(
     by_epoch=False, interval=interval, save_last=True, max_keep_ckpts=3)
@@ -287,6 +287,6 @@ checkpoint_config = dict(
 # which means that we do evaluation at the end of training.
 dynamic_intervals = [(max_iters // interval * interval + 1, max_iters)]
 evaluation = dict(
-    interval=20,#for debugging
+    interval=4000,#for debugging
     dynamic_intervals=dynamic_intervals,
     metric=['PQ', 'bbox', 'segm'])
