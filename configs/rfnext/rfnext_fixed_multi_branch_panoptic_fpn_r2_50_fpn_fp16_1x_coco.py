@@ -1,4 +1,4 @@
-_base_='../panoptic_fpn/panoptic_fpn_r2_50_fpn_fp16_1x_coco.py'
+_base_ = '../panoptic_fpn/panoptic_fpn_r2_50_fpn_fp16_1x_coco.py'
 model = dict(
     rfsearch_cfg=dict(
         mode='fixed_multi_branch',

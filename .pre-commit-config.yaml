@@ -1,4 +1,3 @@
-
 repos:
   - repo: https://github.com/PyCQA/flake8
     rev: 5.0.4
@@ -26,26 +25,11 @@ repos:
       - id: mixed-line-ending
         args: ["--fix=lf"]
   - repo: https://github.com/codespell-project/codespell
-<<<<<<< HEAD
-<<<<<<< HEAD
     rev: v2.2.1
     hooks:
       - id: codespell
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.9
-<<<<<<< HEAD
-=======
-    rev: v2.2.2
-=======
-    rev: v2.2.1
->>>>>>> solve conflicts
-    hooks:
-      - id: codespell
-  - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.16
->>>>>>> update pre-commit
-=======
->>>>>>> solve conflicts
     hooks:
       - id: mdformat
         args: ["--number"]
