@@ -18,12 +18,18 @@ python tools/train.py configs/ssd/ssd300_coco.py
 
 ## Verified Models
 
-|        Model        | box AP | mask AP | Config                                                                                                                        | Download  |
-| :-----------------: | :----: | :-----: | :---------------------------------------------------------------------------------------------------------------------------- | :-------- |
-|    [ssd300](<>)     |  25.6  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ssd300_fp16_coco.py)                               | [log](<>) |
-|    [ssd512](<>)     |  29.4  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ssd512_fp16_coco.py)                               | [log](<>) |
-| [retinanet-r50](<>) |  36.6  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_fpn_fp16_1x_coco.py)           | [log](<>) |
-|   [fcos-r50](<>)    |  36.1  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/fcos/fcos_r50_caffe_fpn_gn-head_fp16_1x_bs8x8_coco.py) | [log](<>) |
-|  [solov2-r50](<>)   |  ---   |  34.7   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/solov2/solov2_r50_fpn_1x_coco.py)                      | [log](<>) |
+|        Model         | box AP | mask AP | Config                                                                                                                        | Download  |
+| :------------------: | :----: | :-----: | :---------------------------------------------------------------------------------------------------------------------------- | :-------- |
+|     [ssd300](<>)     |  25.6  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ssd300_fp16_coco.py)                               | [log](<>) |
+|     [ssd512](<>)     |  29.4  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ssd512_fp16_coco.py)                               | [log](<>) |
+| [\*ssdlite-mbv2](<>) |  20.2  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ssdlite_mobilenetv2_scratch_600e_coco.py)          | [log](<>) |
+| [retinanet-r50](<>)  |  36.6  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_fpn_fp16_1x_coco.py)           | [log](<>) |
+|   [\*fcos-r50](<>)   |  36.1  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/fcos/fcos_r50_caffe_fpn_gn-head_fp16_1x_bs8x8_coco.py) | [log](<>) |
+|   [solov2-r50](<>)   |  ---   |  34.7   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/solov2/solov2_r50_fpn_1x_coco.py)                      | [log](<>) |
+
+**Notes:**
+
+- If not specially marked, the results are same between results on the NPU and results on the GPU with FP32.
+- (\*) The results on the NPU of these models are aligned with the results of the mixed-precision training on the GPU, but are lower than the results of the FP32. This situation is mainly related to the phase of the model itself in mixed-precision training, users please adjust the hyperparameters to achieve the best result by self.
 
 **All above models are provided by Huawei Ascend group.**
