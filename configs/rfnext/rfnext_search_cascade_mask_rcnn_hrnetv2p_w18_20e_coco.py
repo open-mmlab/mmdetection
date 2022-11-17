@@ -22,7 +22,7 @@ model = dict(
                 mmin=1,
                 mmax=24,
                 num_branches=2,
-                skip_layer=['stem', 'layer1'])),
+                skip_layer=['layer1'])),
     ))
 
 custom_hooks = [
