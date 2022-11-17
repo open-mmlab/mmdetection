@@ -268,7 +268,7 @@ lr_config = dict(
     warmup_ratio=1.0,  # no warmup
     warmup_iters=10)
 
-max_iters = 16000
+max_iters = 160000
 runner = dict(type='IterBasedRunner', max_iters=max_iters)
 
 log_config = dict(
@@ -287,6 +287,6 @@ checkpoint_config = dict(
 # which means that we do evaluation at the end of training.
 dynamic_intervals = [(max_iters // interval * interval + 1, max_iters)]
 evaluation = dict(
-    interval=4000,#for debugging
+    interval=interval,#for debugging
     dynamic_intervals=dynamic_intervals,
     metric=['PQ', 'bbox', 'segm'])
