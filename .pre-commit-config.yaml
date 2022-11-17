@@ -26,6 +26,7 @@ repos:
         args: ["--fix=lf"]
   - repo: https://github.com/codespell-project/codespell
 <<<<<<< HEAD
+<<<<<<< HEAD
     rev: v2.2.1
     hooks:
       - id: codespell
@@ -33,6 +34,9 @@ repos:
     rev: 0.7.9
 =======
     rev: v2.2.2
+=======
+    rev: v2.2.1
+>>>>>>> solve conflicts
     hooks:
       - id: codespell
   - repo: https://github.com/executablebooks/mdformat
