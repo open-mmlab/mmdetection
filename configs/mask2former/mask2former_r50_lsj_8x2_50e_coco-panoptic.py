@@ -154,24 +154,43 @@ train_pipeline = [
     # large scale jittering
     dict(
         type='Resize',
-        img_scale=image_size,
+        img_scale=(1024, 1024),
         ratio_range=(0.1, 2.0),
         multiscale_mode='range',
         keep_ratio=True),
     dict(
         type='RandomCrop',
-        crop_size=image_size,
+        crop_size=(1024, 1024),
         crop_type='absolute',
         recompute_bbox=True,
         allow_negative_crop=True),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size=image_size),
+    dict(type='Normalize',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        to_rgb=True),
+    dict(type='Pad', size=(1024, 1024)),# we are forcing all image size to 1024x1024 from originnal image size
     dict(type='DefaultFormatBundle', img_to_float=True),
     dict(
         type='Collect',
         keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg']),
 ]
-
+val_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(
+        type='MultiScaleFlipAug',
+        img_scale=(1333, 800),
+        flip=False,
+        transforms=[
+            dict(type='Resize', keep_ratio=True),
+            dict(type='RandomFlip'),
+            dict(type='Normalize', mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True),
+            dict(type='Pad', size_divisor=32),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img']),
+        ])
+]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
@@ -181,29 +200,33 @@ test_pipeline = [
         transforms=[
             dict(type='Resize', keep_ratio=True),
             dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
+            dict(type='Normalize', mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True),
             dict(type='Pad', size_divisor=32),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
         ])
 ]
+
 data_root = 'data/coco/'
 data = dict(
     samples_per_gpu=2,
-    workers_per_gpu=2,
+    workers_per_gpu=0,# num_workers = 0 to avoid bug:
     train=dict(
         type = 'CocoPanopticDataset',
         ann_file = data_root + 'annotations/panoptic_train2017.json',
         img_prefix = data_root + 'train2017/',
         seg_prefix = data_root + 'annotations/panoptic_train2017/',
         pipeline=train_pipeline),
+        ins_ann_file=data_root + 'annotations/instances_train2017.json',
     val=dict(
         type = 'CocoPanopticDataset',
         ann_file=data_root + 'annotations/panoptic_val2017.json',
         img_prefix=data_root + 'val2017/',
         seg_prefix=data_root + 'annotations/panoptic_val2017/',
-        pipeline=test_pipeline,
-        ins_ann_file=data_root + 'annotations/instance_val2017.json',# modified from 'annotations/panoptic_val2017.json'
+        pipeline=val_pipeline,
+        ins_ann_file=data_root + 'annotations/instances_val2017.json',# modified from 'annotations/instances_val2017.json', only
     ),
     test=dict(
         type = 'CocoPanopticDataset',
@@ -211,13 +234,15 @@ data = dict(
         img_prefix=data_root + 'val2017/',
         seg_prefix=data_root + 'annotations/panoptic_val2017/',
         pipeline=test_pipeline,
-        ins_ann_file=data_root + 'annotations/instances_val2017.json', # modified from 'annotations/panoptic_val2017.json'
+        ins_ann_file=data_root + 'annotations/instances_val2017.json', # modified from 'annotations/instances_val2017.json' onlt
     ))
-
+# dataset val pipeline is same as the test. and workflow should only contain train.
+# if want to add val in workflow to monitor the loss, we need to set dataset val pipiline to be same as train, see at
+# https://github.com/open-mmlab/mmdetection/issues/1493
 embed_multi = dict(lr_mult=1.0, decay_mult=0.0)
 # optimizer
 optimizer = dict(
-    type='AdamW',#AdamW->Adam
+    type='AdamW',
     lr=0.0001,
     weight_decay=0.03, # 0.05->0.03
     eps=1e-8,
@@ -252,8 +277,8 @@ log_config = dict(
         dict(type='TextLoggerHook', by_epoch=False),
         dict(type='TensorboardLoggerHook', by_epoch=False)
     ])
-interval = 20
-workflow = [('train', interval),( 'val', interval)]
+interval = 20# for debugging
+workflow = [('train', interval)]
 checkpoint_config = dict(
     by_epoch=False, interval=interval, save_last=True, max_keep_ckpts=3)
 
@@ -262,6 +287,6 @@ checkpoint_config = dict(
 # which means that we do evaluation at the end of training.
 dynamic_intervals = [(max_iters // interval * interval + 1, max_iters)]
 evaluation = dict(
-    interval=interval,
+    interval=20,#for debugging
     dynamic_intervals=dynamic_intervals,
     metric=['PQ', 'bbox', 'segm'])
