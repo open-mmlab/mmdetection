@@ -19,11 +19,9 @@ model = dict(
                 search_interval=1,
                 exp_rate=0.5,
                 init_alphas=0.01,
-                normlize='absavg',
                 mmin=1,
                 mmax=24,
-                S=2,
-                finetune=False,
+                num_branches=2,
                 skip_layer=['stem', 'layer1'])),
     ))
 

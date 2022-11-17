@@ -43,6 +43,14 @@ The source code is publicly available on [http://mmcheng.net/rfnext](http://mmch
 
 Note: the performance of multi-branch models listed above are evaluated during searching to save computional cost, retraining would achieve similar or better performance.
 
+### Res2Net on COCO panoptic
+
+| Backbone | Method | RFNext | Lr schd |  PQ  |  SQ  |  RQ  |                                                            Config                                                             |                                                                                                                                                                          Download                                                                                                                                                                          |
+| :-------: | :-----: | :-----: | :-----: | :--: | :--: | :--: | :---------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| Res2Net-50 | Panoptic FPN |  NO  |  1x  | 42.5 | 78.0 | 51.8 |     [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/panoptic_fpn/panoptic_fpn_r2_50_fpn_fp16_1x_coco.py)      |                   [model]() \| [log]()                   |
+| RF-Res2Net-50 | Panoptic FPN |  Single-Branch  |  1x  | 44.0 | 78.7 | 53.6 |     [search](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_search_panoptic_fpn_r2_50_fpn_fp16_1x_coco.py) [retrain](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_fixed_single_branch_panoptic_fpn_r2_50_fpn_fp16_1x_coco.py)      |                   [model]() \| [log]()                   |
+| RF-Res2Net-50 | Panoptic FPN |  Multiple-Branch  |  1x  | 44.4 | 79.0 | 54.0 |     [search](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_search_panoptic_fpn_r2_50_fpn_fp16_1x_coco.py) [retrain](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_fixed_multi_branch_panoptic_fpn_r2_50_fpn_fp16_1x_coco.py)      |                   [model]() \| [log]()                   |
+
 ## Configs
 
 If you want to search receptive fields on an existing model, you need to define `rfsearch_cfg` in the `model` of config file and then define a hook `RFSearch`.
@@ -59,11 +67,9 @@ rfsearch_cfg=dict(
             search_interval=1,
             exp_rate=0.5,
             init_alphas=0.01,
-            normlize='absavg',
             mmin=1,
             mmax=24,
-            S=2,
-            finetune=False,
+            num_branches=2,
             skip_layer=[])),
     )
 
@@ -82,7 +88,7 @@ Arguments:
 - `max_step`: The maximum number of steps to update the structures.
 - `search_interval`: The interval (epoch) between two updates.
 - `exp_rate`:  The controller of the sparsity of search space. For a conv with an initial dilation rate of `D`, dilation rates will be sampled with an interval of `exp_rate * D`.
-- `S`: The controller of the size of search space (the number of branches). If you set `S=3`, the dilations are `[D - exp_rate * D, D, D + exp_rate * D]` for three branches. If you set `S=2`, the dilations are `[D - exp_rate * D, D + exp_rate * D]`. With `S=2`, you can achieve similar performance with less MEMORY and FLOPS.
+- `num_branches`: The controller of the size of search space (the number of branches). If you set `S=3`, the dilations are `[D - exp_rate * D, D, D + exp_rate * D]` for three branches. If you set `num_branches=2`, the dilations are `[D - exp_rate * D, D + exp_rate * D]`. With `num_branches=2`, you can achieve similar performance with less MEMORY and FLOPS.
 - `skip_layer`: The modules in skip_layer will be ignored during the receptive field search.
 
 ## Training
@@ -101,8 +107,6 @@ bash ./tools/dist_train.sh \
 
 ### Training Jobs
 
-\*\* Warning
-
 Setting `rfsearch_cfg.rfstructure_file` to the searched structure file (.json) and setting `rfsearch_cfg.mode` to `fixed_single_branch` or `fixed_multi_branch`, you can retrain a model with the searched structure.
 You can launch fixed_single_branch/fixed_multi_branch training jobs by using config files with prefix `rfnext_fixed_single_branch` or `rfnext_fixed_multi_branch`.
 
@@ -118,7 +122,7 @@ bash ./tools/dist_train.sh \
 
 Note that the models after the searching stage is ready a `fixed_multi_branch` version, which achieves better performance than `fixed_single_branch`, without any retraining.
 
-**Warning: Do please change the settings in the config file, because we are using the hook that only apply the settings in config files.**
+**Warning: Please do not remove the `rfsearch_cfg` in the `model` of config file, because we are using the hook that only apply the settings in `rfsearch_cfg`.**
 
 ## Inference
 

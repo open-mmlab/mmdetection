@@ -12,7 +12,7 @@ model = dict(
     rfsearch_cfg=dict(
         mode='fixed_single_branch',
         rfstructure_file=  # noqa
-        './configs/rfnext/search_log/cascade_mask_rcnn_r2_101_fpn_20e_coco/local_search_config_step11.json',  # noqa
+        './configs/rfnext/search_log/cascade_mask_rcnn_hrnetv2p_w18_20e_coco/local_search_config_step11.json',  # noqa
         config=dict(
             search=dict(
                 step=0,
@@ -20,11 +20,9 @@ model = dict(
                 search_interval=1,
                 exp_rate=0.5,
                 init_alphas=0.01,
-                normlize='absavg',
                 mmin=1,
                 mmax=24,
-                S=2,
-                finetune=False,
+                num_branches=2,
                 skip_layer=['stem', 'layer1'])),
     ))
 
