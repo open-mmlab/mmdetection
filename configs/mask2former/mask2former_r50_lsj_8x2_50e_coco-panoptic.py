@@ -135,7 +135,7 @@ model = dict(
         max_per_image=100,
         iou_thr=0.8,
         # In Mask2Former's panoptic postprocessing,
-        # it will filter mask area where score is less than 0.5 .
+        # it will filter mask area where score is less than 0.5.
         filter_low_score=True),
     init_cfg=None)
 
@@ -171,6 +171,7 @@ train_pipeline = [
         type='Collect',
         keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg']),
 ]
+
 test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
@@ -190,24 +191,37 @@ data_root = 'data/coco/'
 data = dict(
     samples_per_gpu=2,
     workers_per_gpu=2,
-    train=dict(pipeline=train_pipeline),
+    train=dict(
+        type = 'CocoPanopticDataset',
+        ann_file = data_root + 'annotations/panoptic_train2017.json',
+        img_prefix = data_root + 'train2017/',
+        seg_prefix = data_root + 'annotations/panoptic_train2017/',
+        pipeline=train_pipeline),
     val=dict(
+        type = 'CocoPanopticDataset',
+        ann_file=data_root + 'annotations/panoptic_val2017.json',
+        img_prefix=data_root + 'val2017/',
+        seg_prefix=data_root + 'annotations/panoptic_val2017/',
         pipeline=test_pipeline,
-        ins_ann_file=data_root + 'annotations/instances_val2017.json',
+        ins_ann_file=data_root + 'annotations/instance_val2017.json',# modified from 'annotations/panoptic_val2017.json'
     ),
     test=dict(
+        type = 'CocoPanopticDataset',
+        ann_file=data_root + 'annotations/panoptic_val2017.json',
+        img_prefix=data_root + 'val2017/',
+        seg_prefix=data_root + 'annotations/panoptic_val2017/',
         pipeline=test_pipeline,
-        ins_ann_file=data_root + 'annotations/instances_val2017.json',
+        ins_ann_file=data_root + 'annotations/instances_val2017.json', # modified from 'annotations/panoptic_val2017.json'
     ))
 
 embed_multi = dict(lr_mult=1.0, decay_mult=0.0)
 # optimizer
 optimizer = dict(
-    type='AdamW',
+    type='AdamW',#AdamW->Adam
     lr=0.0001,
-    weight_decay=0.05,
+    weight_decay=0.03, # 0.05->0.03
     eps=1e-8,
-    betas=(0.9, 0.999),
+    betas=(0.9, 0.99),# 0.999->0.99
     paramwise_cfg=dict(
         custom_keys={
             'backbone': dict(lr_mult=0.1, decay_mult=1.0),
@@ -229,17 +243,17 @@ lr_config = dict(
     warmup_ratio=1.0,  # no warmup
     warmup_iters=10)
 
-max_iters = 368750
+max_iters = 8000
 runner = dict(type='IterBasedRunner', max_iters=max_iters)
 
 log_config = dict(
-    interval=50,
+    interval=200,
     hooks=[
         dict(type='TextLoggerHook', by_epoch=False),
         dict(type='TensorboardLoggerHook', by_epoch=False)
     ])
-interval = 5000
-workflow = [('train', interval)]
+interval = 20
+workflow = [('train', interval),( 'val', interval)]
 checkpoint_config = dict(
     by_epoch=False, interval=interval, save_last=True, max_keep_ckpts=3)
 
