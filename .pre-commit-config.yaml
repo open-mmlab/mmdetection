@@ -25,11 +25,19 @@ repos:
       - id: mixed-line-ending
         args: ["--fix=lf"]
   - repo: https://github.com/codespell-project/codespell
+<<<<<<< HEAD
     rev: v2.2.1
     hooks:
       - id: codespell
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.9
+=======
+    rev: v2.2.2
+    hooks:
+      - id: codespell
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.16
+>>>>>>> update pre-commit
     hooks:
       - id: mdformat
         args: ["--number"]
@@ -38,12 +46,12 @@ repos:
           - mdformat_frontmatter
           - linkify-it-py
   - repo: https://github.com/myint/docformatter
-    rev: v1.3.1
+    rev: v1.5.0
     hooks:
       - id: docformatter
         args: ["--in-place", "--wrap-descriptions", "79"]
   - repo: https://github.com/open-mmlab/pre-commit-hooks
-    rev: v0.2.0  # Use the ref you want to point at
+    rev: v0.4.0  # Use the ref you want to point at
     hooks:
       - id: check-algo-readme
       - id: check-copyright
