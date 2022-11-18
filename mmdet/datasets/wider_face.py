@@ -7,7 +7,7 @@ from mmengine.fileio import list_from_file
 from mmengine.utils import ProgressBar
 
 from mmdet.registry import DATASETS
-from mmdet.utils.typing import List
+from mmdet.utils.typing_utils import List
 from .xml_style import XMLDataset
 
 
