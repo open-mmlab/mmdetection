@@ -203,7 +203,7 @@ python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
 --model-name ${MODEL_NAME}
 ```
 
-### 3. Star `TorchServe`
+### 3. Start `TorchServe`
 
 ```shell
 torchserve --start --ncs \
@@ -276,6 +276,12 @@ configs/yolo/yolov3_d53_8xb8-320-273e_coco.py \
 checkpoint/yolov3_d53_320_273e_coco-421362b6.pth \
 yolov3 \
 --workdir ./workdir
+```
+
+### 5. Stop `TorchServe`
+
+```shell
+torchserve --stop
 ```
 
 ## Model Complexity
