@@ -131,7 +131,7 @@ class SimplifiedBasicBlock(BaseModule):
                  dcn: OptConfigType = None,
                  plugins: OptConfigType = None,
                  init_fg: OptMultiConfig = None) -> None:
-        super(SimplifiedBasicBlock, self).__init__(init_fg)
+        super().__init__(init_fg=init_fg)
         assert dcn is None, 'Not implemented yet.'
         assert plugins is None, 'Not implemented yet.'
         assert not with_cp, 'Not implemented yet.'
