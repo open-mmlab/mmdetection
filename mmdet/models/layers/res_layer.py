@@ -1,7 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional
+
 from mmcv.cnn import build_conv_layer, build_norm_layer
 from mmengine.model import BaseModule, Sequential
+from torch import Tensor
 from torch import nn as nn
+
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 
 
 class ResLayer(Sequential):
@@ -24,16 +29,16 @@ class ResLayer(Sequential):
     """
 
     def __init__(self,
-                 block,
-                 inplanes,
-                 planes,
-                 num_blocks,
-                 stride=1,
-                 avg_down=False,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN'),
-                 downsample_first=True,
-                 **kwargs):
+                 block: BaseModule,
+                 inplanes: int,
+                 planes: int,
+                 num_blocks: int,
+                 stride: int = 1,
+                 avg_down: bool = False,
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: ConfigType = dict(type='BN'),
+                 downsample_first: bool = True,
+                 **kwargs) -> None:
         self.block = block
 
         downsample = None
@@ -114,18 +119,18 @@ class SimplifiedBasicBlock(BaseModule):
     expansion = 1
 
     def __init__(self,
-                 inplanes,
-                 planes,
-                 stride=1,
-                 dilation=1,
-                 downsample=None,
-                 style='pytorch',
-                 with_cp=False,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN'),
-                 dcn=None,
-                 plugins=None,
-                 init_fg=None):
+                 inplanes: int,
+                 planes: int,
+                 stride: int = 1,
+                 dilation: int = 1,
+                 downsample: Optional[Sequential] = None,
+                 style: ConfigType = 'pytorch',
+                 with_cp: bool = False,
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: ConfigType = dict(type='BN'),
+                 dcn: OptConfigType = None,
+                 plugins: OptConfigType = None,
+                 init_fg: OptMultiConfig = None) -> None:
         super(SimplifiedBasicBlock, self).__init__(init_fg)
         assert dcn is None, 'Not implemented yet.'
         assert plugins is None, 'Not implemented yet.'
@@ -168,7 +173,7 @@ class SimplifiedBasicBlock(BaseModule):
         """nn.Module: normalization layer after the second convolution layer"""
         return getattr(self, self.norm2_name) if self.with_norm else None
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         """Forward function."""
 
         identity = x
