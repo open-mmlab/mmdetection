@@ -115,7 +115,7 @@ class CocoDataset(BaseDetDataset):
         if self.data_prefix.get('seg', None):
             seg_map_path = osp.join(
                 self.data_prefix['seg'],
-                img_info['file_name'].replace('jpg', 'png'))
+                img_info['file_name'].rsplit('.', 1)[0] + self.seg_map_suffix)
         else:
             seg_map_path = None
         data_info['img_path'] = img_path

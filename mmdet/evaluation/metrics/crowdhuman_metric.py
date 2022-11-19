@@ -8,16 +8,11 @@ from multiprocessing import Process, Queue
 from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
-
-try:
-    from scipy.sparse import csr_matrix
-    from scipy.sparse.csgraph import maximum_bipartite_matching
-except ImportError:
-    csr_matrix, maximum_bipartite_matching = None, None
-
 from mmengine.evaluator import BaseMetric
 from mmengine.fileio import FileClient, dump, load
 from mmengine.logging import MMLogger
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import maximum_bipartite_matching
 
 from mmdet.evaluation.functional.bbox_overlaps import bbox_overlaps
 from mmdet.registry import METRICS
@@ -82,10 +77,6 @@ class CrowdHumanMetric(BaseMetric):
                  mr_ref: str = 'CALTECH_-2',
                  num_ji_process: int = 10) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
-
-        if csr_matrix is None or maximum_bipartite_matching is None:
-            raise ImportError(
-                'Please run "pip install scipy" to install scipy first.')
 
         self.ann_file = ann_file
         # crowdhuman evaluation metrics

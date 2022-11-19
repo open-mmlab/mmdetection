@@ -11,11 +11,12 @@ from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DiceLoss,
                                  SmoothL1Loss, VarifocalLoss)
 from mmdet.models.losses.ghm_loss import GHMC, GHMR
 from mmdet.models.losses.iou_loss import (BoundedIoULoss, CIoULoss, DIoULoss,
-                                          GIoULoss, IoULoss)
+                                          EIoULoss, GIoULoss, IoULoss)
 
 
 @pytest.mark.parametrize(
-    'loss_class', [IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss])
+    'loss_class',
+    [IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss, EIoULoss])
 def test_iou_type_loss_zeros_weight(loss_class):
     pred = torch.rand((10, 4))
     target = torch.rand((10, 4))
@@ -27,9 +28,10 @@ def test_iou_type_loss_zeros_weight(loss_class):
 
 @pytest.mark.parametrize('loss_class', [
     BalancedL1Loss, BoundedIoULoss, CIoULoss, CrossEntropyLoss, DIoULoss,
-    FocalLoss, DistributionFocalLoss, MSELoss, SeesawLoss, GaussianFocalLoss,
-    GIoULoss, IoULoss, L1Loss, QualityFocalLoss, VarifocalLoss, GHMR, GHMC,
-    SmoothL1Loss, KnowledgeDistillationKLDivLoss, DiceLoss
+    EIoULoss, FocalLoss, DistributionFocalLoss, MSELoss, SeesawLoss,
+    GaussianFocalLoss, GIoULoss, IoULoss, L1Loss, QualityFocalLoss,
+    VarifocalLoss, GHMR, GHMC, SmoothL1Loss, KnowledgeDistillationKLDivLoss,
+    DiceLoss
 ])
 def test_loss_with_reduction_override(loss_class):
     pred = torch.rand((10, 4))
@@ -45,8 +47,8 @@ def test_loss_with_reduction_override(loss_class):
 
 
 @pytest.mark.parametrize('loss_class', [
-    IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss, MSELoss, L1Loss,
-    SmoothL1Loss, BalancedL1Loss
+    IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss, EIoULoss, MSELoss,
+    L1Loss, SmoothL1Loss, BalancedL1Loss
 ])
 @pytest.mark.parametrize('input_shape', [(10, 4), (0, 4)])
 def test_regression_losses(loss_class, input_shape):

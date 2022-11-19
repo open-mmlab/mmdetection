@@ -9,7 +9,6 @@ batch_augments = [
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 # Use MMSyncBN that handles empty tensor in head. It can be changed to
 # SyncBN after https://github.com/pytorch/pytorch/issues/36530 is fixed
-# Requires MMCV-full after  https://github.com/open-mmlab/mmcv/pull/1205.
 head_norm_cfg = dict(type='MMSyncBN', requires_grad=True)
 model = dict(
     # use caffe norm

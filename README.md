@@ -75,10 +75,11 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 
 ## What's New
 
-**v3.0.0rc2** was released in 21/10/2022:
+**v3.0.0rc3** was released in 4/11/2022:
 
-- Support [imagenet pre-training](configs/rtmdet/cspnext_imagenet_pretrain) for RTMDet's backbone.
-- Refactor standard roi head with `box type`.
+- Support [CrowdDet](configs/crowddet/) and EIoULoss
+- Support training detection models in Detectron2, see [examples](configs/misc)
+- Refactor [Fast R-CNN](configs/fast_rcnn/)
 
 ## Installation
 

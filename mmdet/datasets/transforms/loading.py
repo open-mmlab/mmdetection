@@ -9,6 +9,7 @@ from mmcv.transforms import BaseTransform
 from mmcv.transforms import LoadAnnotations as MMCV_LoadAnnotations
 from mmcv.transforms import LoadImageFromFile
 from mmengine.fileio import FileClient
+from mmengine.structures import BaseDataElement
 
 from mmdet.registry import TRANSFORMS
 from mmdet.structures.bbox import get_box_type
@@ -545,7 +546,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
             results (dict): Result dict from :obj:``mmdet.CustomDataset``.
         """
         # seg_map_path is None, when inference on the dataset without gts.
-        if results['seg_map_path'] is None:
+        if results.get('seg_map_path', None) is None:
             return
 
         img_bytes = self.file_client.get(results['seg_map_path'])
@@ -626,17 +627,30 @@ class LoadProposals(BaseTransform):
         """
 
         proposals = results['proposals']
-        assert proposals.shape[1] in (4, 5), ('proposals should have shapes '
-                                              '(n, 4) or (n, 5), but found'
-                                              f'{proposals.shape}')
-        proposals = proposals[:, :4].astype(np.float32)
+        # the type of proposals should be `dict` or `InstanceData`
+        assert isinstance(proposals, dict) \
+               or isinstance(proposals, BaseDataElement)
+        bboxes = proposals['bboxes'].astype(np.float32)
+        assert bboxes.shape[1] == 4, \
+            f'Proposals should have shapes (n, 4), but found {bboxes.shape}'
+
+        if 'scores' in proposals:
+            scores = proposals['scores'].astype(np.float32)
+            assert bboxes.shape[0] == scores.shape[0]
+        else:
+            scores = np.zeros(bboxes.shape[0], dtype=np.float32)
 
         if self.num_max_proposals is not None:
-            proposals = proposals[:self.num_max_proposals]
+            # proposals should sort by scores during dumping the proposals
+            bboxes = bboxes[:self.num_max_proposals]
+            scores = scores[:self.num_max_proposals]
 
-        if len(proposals) == 0:
-            proposals = np.array([[0, 0, 0, 0]], dtype=np.float32)
-        results['proposals'] = proposals
+        if len(bboxes) == 0:
+            bboxes = np.zeros((0, 4), dtype=np.float32)
+            scores = np.zeros(0, dtype=np.float32)
+
+        results['proposals'] = bboxes
+        results['proposals_scores'] = scores
         return results
 
     def __repr__(self):

@@ -1,18 +1,69 @@
 # Changelog of v3.x
 
+## v3.0.0rc3 (4/11/2022)
+
+Upgrade the minimum version requirement of MMEngine to 0.3.0 to use `ignore_key` of `ConcatDataset` for training VOC datasets (#9058)
+
+### Highlights
+
+- Support [CrowdDet](https://arxiv.org/abs/2003.09163) and [EIoU Loss](https://ieeexplore.ieee.org/document/9429909)
+- Support training detection models in Detectron2
+- Refactor Fast R-CNN
+
+### New Features
+
+- Support [CrowdDet](https://arxiv.org/abs/2003.09163) (#8744)
+- Support training detection models in Detectron2 with examples of Mask R-CNN, Faster R-CNN, and RetinaNet (#8672)
+- Support [EIoU Loss](https://ieeexplore.ieee.org/document/9429909) (#9086)
+
+### Bug Fixes
+
+- Fix `XMLDataset` image size error (#9216)
+- Fix bugs of empty_instances when predicting without nms in roi_head (#9015)
+- Fix the config file of DETR (#9158)
+- Fix SOLOv2 cannot dealing with empty gt image (#9192)
+- Fix inference demo (#9153)
+- Add `ignore_key` in VOC `ConcatDataset` (#9058)
+- Fix dumping results issue in test scripts. (#9241)
+- Fix configs of training coco subsets on MMDet 3.x (#9225)
+- Fix corner2hbox of HorizontalBoxes for supporting empty bboxes (#9140)
+
+### Improvements
+
+- Refactor Fast R-CNN (#9132)
+- Clean requirements of mmcv-full due to SyncBN (#9207)
+- Support training detection models in detectron2 (#8672)
+- Add `box_type` support for `DynamicSoftLabelAssigner` (#9179)
+- Make scipy as a default dependency in runtime (#9187)
+- Update eval_metric (#9062)
+- Add `seg_map_suffix` in `BaseDetDataset` (#9088)
+
+### New Contributors
+
+- @Wwupup made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9086>
+- @sanbuphy made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9153>
+- @cxiang26 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9158>
+- @JosonChan1998 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9225>
+
+### Contributors
+
+A total of 13 developers contributed to this release.
+
+Thanks @wanghonglie, @Wwupup, @sanbuphy, @BIGWangYuDong, @liuyanyi, @cxiang26, @jbwang1997, @ZwwWayne, @yuyoujiang, @RangiLyu, @hhaAndroid, @JosonChan1998, @Czm369
+
 ## v3.0.0rc2 (21/10/2022)
 
 ### Highlights
 
 - Support [imagenet pre-training](configs/rtmdet/cspnext_imagenet_pretrain) for RTMDet's backbone
 
-#### New Features
+### New Features
 
 - Support [imagenet pre-training](configs/rtmdet/cspnext_imagenet_pretrain) for RTMDet's backbone (#8887)
 - Add `CrowdHumanDataset` and Metric (#8430)
 - Add `FixShapeResize` to support resize of fixed shape (#8665)
 
-#### Bug Fixes
+### Bug Fixes
 
 - Fix `ConcatDataset` Import Error (#8909)
 - Fix `CircleCI` and `readthedoc` build failed (#8980, #8963)
@@ -24,7 +75,7 @@
 - Update memory occupation of `RTMDet` in metafile (#9098)
 - Fix wrong arguments of `OpenImageMetrics` in the config (#9061)
 
-#### Improvements
+### Improvements
 
 - Refactor standard roi head with `box type` (#8658)
 - Support mask concatenation in `BitmapMasks` and `PolygonMasks` (#9006)
@@ -36,16 +87,16 @@
 - Support jittering the color of different instances of the same class (#8988)
 - Add assertion for missing key in `PackDetInputs` (#8982)
 
-## New Contributors
+### New Contributors
 
-- @Chan-Sun made their first contribution in https://github.com/open-mmlab/mmdetection/pull/8909
-- @MambaWong made their first contribution in https://github.com/open-mmlab/mmdetection/pull/8913
-- @yuyoujiang made their first contribution in https://github.com/open-mmlab/mmdetection/pull/8437
-- @sltlls made their first contribution in https://github.com/open-mmlab/mmdetection/pull/8944
-- @Nioolek made their first contribution in https://github.com/open-mmlab/mmdetection/pull/8845
-- @wufan-tb made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9061
+- @Chan-Sun made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/8909>
+- @MambaWong made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/8913>
+- @yuyoujiang made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/8437>
+- @sltlls made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/8944>
+- @Nioolek made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/8845>
+- @wufan-tb made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9061>
 
-#### Contributors
+### Contributors
 
 A total of 13 developers contributed to this release.
 
@@ -57,7 +108,7 @@ Thanks @RangiLyu, @jbwang1997, @wanghonglie, @Chan-Sun, @RangeKing, @chhluo, @Ma
 
 - Release a high-precision, low-latency single-stage object detector [RTMDet](configs/rtmdet).
 
-#### Bug Fixes
+### Bug Fixes
 
 - Fix UT to be compatible with PyTorch 1.6 (#8707)
 - Fix `NumClassCheckHook` bug when model is wrapped (#8794)
@@ -66,7 +117,7 @@ Thanks @RangiLyu, @jbwang1997, @wanghonglie, @Chan-Sun, @RangeKing, @chhluo, @Ma
 - Fix some types and links (#8839, #8820, #8793, #8868)
 - Fix incorrect background fill values in `FSAF` and `RepPoints` Head (#8813)
 
-#### Improvements
+### Improvements
 
 - Refactored anchor head and base head with `box type` (#8625)
 - Refactored `SemiBaseDetector` and `SoftTeacher` (#8786)
@@ -76,7 +127,7 @@ Thanks @RangiLyu, @jbwang1997, @wanghonglie, @Chan-Sun, @RangeKing, @chhluo, @Ma
 - Check empty predictions in `DetLocalVisualizer._draw_instances` (#8830)
 - Fix `floordiv` warning in `SOLO` (#8738)
 
-#### Contributors
+### Contributors
 
 A total of 16 developers contributed to this release.
 

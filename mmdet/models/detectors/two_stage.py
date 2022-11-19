@@ -177,7 +177,6 @@ class TwoStageDetector(BaseDetector):
                     rpn_losses[f'rpn_{key}'] = rpn_losses.pop(key)
             losses.update(rpn_losses)
         else:
-            # TODO: Not support currently, should have a check at Fast R-CNN
             assert batch_data_samples[0].get('proposals', None) is not None
             # use pre-defined proposals in InstanceData for the second stage
             # to extract ROI features.
