@@ -18,6 +18,7 @@ model = dict(
         out_indices=[0, 1, 2, 3],
         drop_path_rate=0.1,
         with_cp=True,
+        spm_norm_cfg=dict(type='SyncBN'),
         init_cfg=dict(
             type='Pretrained', checkpoint=checkpoint_file,
             prefix='backbone.')),
@@ -58,10 +59,11 @@ train_pipeline = [
                                     (768, 1333), (800, 1333)],
                             keep_ratio=True)
                     ]]),
-    dict(type='RandomCrop',
-         crop_type='absolute_range',
-         crop_size=(1024, 1024),
-         allow_negative_crop=True),
+    dict(
+        type='RandomCrop',
+        crop_type='absolute_range',
+        crop_size=(1024, 1024),
+        allow_negative_crop=True),
     dict(type='PackDetInputs')
 ]
 train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
@@ -72,8 +74,7 @@ train_cfg = dict(max_epochs=max_epochs)
 # learning rate
 param_scheduler = [
     dict(
-        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
-        end=1000),
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
     dict(
         type='MultiStepLR',
         begin=0,
