@@ -14,6 +14,7 @@ from mmengine.runner import load_checkpoint
 from ..evaluation import get_classes
 from ..models import build_detector
 from ..structures import DetDataSample, SampleList
+from ..utils import get_test_pipeline_cfg
 
 
 def init_detector(
@@ -113,7 +114,7 @@ def inference_detector(
 
     if test_pipeline is None:
         cfg = cfg.copy()
-        test_pipeline = cfg.test_dataloader.dataset.pipeline
+        test_pipeline = get_test_pipeline_cfg(cfg)
         if isinstance(imgs[0], np.ndarray):
             # Calling this method across libraries will result
             # in module unregistered error if not prefixed with mmdet.

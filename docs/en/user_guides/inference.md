@@ -68,6 +68,8 @@ wait_time = 1
 
 video_reader = mmcv.VideoReader('video.mp4')
 
+cv2.namedWindow('video', 0)
+
 for frame in track_iter_progress(video_reader):
     result = inference_detector(model, frame, test_pipeline=test_pipeline)
     visualizer.add_datasample(
@@ -77,10 +79,9 @@ for frame in track_iter_progress(video_reader):
         draw_gt=False,
         show=False)
     frame = visualizer.get_image()
-
-    cv2.namedWindow('video', 0)
     mmcv.imshow(frame, 'video', wait_time)
 
+cv2.destroyAllWindows()
 ```
 
 A notebook demo can be found in [demo/inference_demo.ipynb](../../../demo/inference_demo.ipynb).

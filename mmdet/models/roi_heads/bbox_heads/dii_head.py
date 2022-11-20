@@ -13,8 +13,7 @@ from mmdet.models.losses import accuracy
 from mmdet.models.task_modules import SamplingResult
 from mmdet.models.utils import multi_apply
 from mmdet.registry import MODELS
-from mmdet.utils import reduce_mean
-from mmdet.utils.typing import ConfigType, OptConfigType
+from mmdet.utils import ConfigType, OptConfigType, reduce_mean
 from .bbox_head import BBoxHead
 
 
