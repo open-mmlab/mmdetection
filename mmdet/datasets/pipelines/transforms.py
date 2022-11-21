@@ -2366,7 +2366,7 @@ class MixUp:
         retrieve_img = retrieve_results['img']
 
         jit_factor = random.uniform(*self.ratio_range)
-        is_filp = random.uniform(0, 1) > self.flip_ratio
+        is_filp = random.uniform(0, 1) < self.flip_ratio
 
         if len(retrieve_img.shape) == 3:
             out_img = np.ones(
