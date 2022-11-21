@@ -1,0 +1,39 @@
+Collections:
+  - Name: ViT-Adapter
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - AdamW
+        - Weight Decay
+      Training Resources: 8x TITANXp GPUs
+      Architecture:
+        - ViT-Adapter
+        - FPN
+        - RPN
+        - RoIAlign
+    Paper:
+      URL: https://arxiv.org/abs/2205.08534
+      Title: 'Vision Transformer Adapter for Dense Predictions'
+    README: configs/vitadapter/README.md
+    Code:
+      URL:
+      Version:
+
+
+Models:
+  - Name: mask-rcnn_vitadapter-deit-t_fpn_3x_coco
+    In Collection: ViT-Adapter
+    Config: configs/vitadapter/mask-rcnn_vitadapter-deit-t_fpn_3x_coco.py
+    Metadata:
+      Training Memory (GB):
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP:
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP:
+    Weights:
