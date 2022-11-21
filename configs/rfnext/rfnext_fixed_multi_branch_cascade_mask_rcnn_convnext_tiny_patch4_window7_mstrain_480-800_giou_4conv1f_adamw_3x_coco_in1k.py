@@ -81,6 +81,8 @@ model = dict(
         mode='fixed_multi_branch',
         rfstructure_file=  # noqa
         './configs/rfnext/search_log/convnext_cascade_maskrcnn/local_search_config_step11.json',  # noqa
+        verbose=True,
+        by_epoch=True,
         config=dict(
             search=dict(
                 step=0,
@@ -101,6 +103,6 @@ custom_hooks = [
         type='RFSearchHook',
         config=model['rfsearch_cfg']['config'],
         mode=model['rfsearch_cfg']['mode'],
-        # priority='VERY_HIGH',
-    ),
+        verbose=model['rfsearch_cfg']['verbose'],
+        by_epoch=model['rfsearch_cfg']['by_epoch'])
 ]

@@ -4,6 +4,8 @@ model = dict(
         mode='fixed_multi_branch',
         rfstructure_file=  # noqa
         './configs/rfnext/search_log/panoptic_fpn_r2_50_fpn_fp16_1x_coco/local_search_config_step10.json',  # noqa
+        verbose=True,
+        by_epoch=True,
         config=dict(
             search=dict(
                 step=0,
@@ -22,5 +24,6 @@ custom_hooks = [
         type='RFSearchHook',
         config=model['rfsearch_cfg']['config'],
         mode=model['rfsearch_cfg']['mode'],
-    ),
+        verbose=model['rfsearch_cfg']['verbose'],
+        by_epoch=model['rfsearch_cfg']['by_epoch'])
 ]

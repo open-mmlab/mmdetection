@@ -63,11 +63,13 @@ def build_detector(cfg, train_cfg=None, test_cfg=None):
         cfg, default_args=dict(train_cfg=train_cfg, test_cfg=test_cfg))
     if rfsearch_cfg is not None:
         rfsearch_warp = RFSearchHook(
-            mode=rfsearch_cfg.get('mode', 'train'),
+            mode=rfsearch_cfg.get('mode', 'search'),
             config=rfsearch_cfg.get('config', None),
             rfstructure_file=rfsearch_cfg.get('rfstructure_file', None),
+            by_epoch=rfsearch_cfg.get('by_epoch', True),
+            verbose=rfsearch_cfg.get('verbose', True),
         )
         detector.init_weights()
-        rfsearch_warp.model_init(detector)
+        rfsearch_warp.init_model(detector)
 
     return detector

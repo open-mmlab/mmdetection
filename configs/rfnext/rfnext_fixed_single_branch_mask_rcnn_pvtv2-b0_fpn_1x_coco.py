@@ -23,6 +23,8 @@ model = dict(
         mode='fixed_single_branch',
         rfstructure_file=  # noqa
         './configs/rfnext/search_log/mask_rcnn_pvtv2-b0_fpn_1x_coco/local_search_config_step10.json',  # noqa
+        verbose=True,
+        by_epoch=True,
         config=dict(
             search=dict(
                 step=0,
@@ -45,5 +47,6 @@ custom_hooks = [
         type='RFSearchHook',
         config=model['rfsearch_cfg']['config'],
         mode=model['rfsearch_cfg']['mode'],
-    )
+        verbose=model['rfsearch_cfg']['verbose'],
+        by_epoch=model['rfsearch_cfg']['by_epoch'])
 ]

@@ -12,6 +12,8 @@ model = dict(
     rfsearch_cfg=dict(
         mode='search',
         rfstructure_file=None,
+        verbose=True,
+        by_epoch=True,
         config=dict(
             search=dict(
                 step=0,
@@ -28,8 +30,8 @@ model = dict(
 custom_hooks = [
     dict(
         type='RFSearchHook',
-        logdir=model['rfsearch_cfg']['logdir'],
         config=model['rfsearch_cfg']['config'],
         mode=model['rfsearch_cfg']['mode'],
-    ),
+        verbose=model['rfsearch_cfg']['verbose'],
+        by_epoch=model['rfsearch_cfg']['by_epoch'])
 ]
