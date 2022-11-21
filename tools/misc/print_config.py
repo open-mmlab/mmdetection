@@ -46,9 +46,14 @@ def main():
 
     if args.save_path is not None:
         save_path = args.save_path
+
+        suffix = os.path.splitext(save_path)[-1]
+        assert suffix in ['py', 'json', 'yml']
+
         if not os.path.exists(os.path.split(save_path)[0]):
             os.makedirs(os.path.split(save_path)[0])
         cfg.dump(save_path)
+        print(f'Config saving at {save_path}')
 
 
 if __name__ == '__main__':
