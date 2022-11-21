@@ -73,7 +73,8 @@ class CocoMetric(BaseMetric):
                  outfile_prefix: Optional[str] = None,
                  file_client_args: dict = dict(backend='disk'),
                  collect_device: str = 'cpu',
-                 prefix: Optional[str] = None) -> None:
+                 prefix: Optional[str] = None,
+                 cat_ids: List[int] = None) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
         # coco evaluation metrics
         self.metrics = metric if isinstance(metric, list) else [metric]
