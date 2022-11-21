@@ -18,14 +18,14 @@ python tools/train.py configs/ssd/ssd300_coco.py
 
 ## Verified Models
 
-|        Model         | box AP | mask AP | Config                                                                                                                        | Download  |
-| :------------------: | :----: | :-----: | :---------------------------------------------------------------------------------------------------------------------------- | :-------- |
-|     [ssd300](<>)     |  25.6  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ssd300_fp16_coco.py)                               | [log](<>) |
-|     [ssd512](<>)     |  29.4  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ssd512_fp16_coco.py)                               | [log](<>) |
-| [\*ssdlite-mbv2](<>) |  20.2  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ssdlite_mobilenetv2_scratch_600e_coco.py)          | [log](<>) |
-| [retinanet-r50](<>)  |  36.6  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_fpn_fp16_1x_coco.py)           | [log](<>) |
-|   [\*fcos-r50](<>)   |  36.1  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/fcos/fcos_r50_caffe_fpn_gn-head_fp16_1x_bs8x8_coco.py) | [log](<>) |
-|   [solov2-r50](<>)   |  ---   |  34.7   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/solov2/solov2_r50_fpn_1x_coco.py)                      | [log](<>) |
+|        Model         | box AP | mask AP | Config                                                                                                                        | Download                                                                                                     |
+| :------------------: | :----: | :-----: | :---------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
+|     [ssd300](<>)     |  25.6  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ssd300_fp16_coco.py)                               | [log](https://download.openmmlab.com/mmdetection/v2.0/npu/ssd300_coco.log.json)                              |
+|     [ssd512](<>)     |  29.4  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ssd512_fp16_coco.py)                               | [log](https://download.openmmlab.com/mmdetection/v2.0/npu/ssd512_coco.log.json)                              |
+| [\*ssdlite-mbv2](<>) |  20.2  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ssdlite_mobilenetv2_scratch_600e_coco.py)          | [log](https://download.openmmlab.com/mmdetection/v2.0/npu/ssdlite_mobilenetv2_scratch_600e_coco.log.json)    |
+| [retinanet-r50](<>)  |  36.6  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_fpn_fp16_1x_coco.py)           | [log](https://download.openmmlab.com/mmdetection/v2.0/npu/retinanet_r50_fpn_1x_coco.log.json)                |
+|   [\*fcos-r50](<>)   |  36.1  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/fcos/fcos_r50_caffe_fpn_gn-head_fp16_1x_bs8x8_coco.py) | [log](https://download.openmmlab.com/mmdetection/v2.0/npu/fcos_r50_caffe_fpn_gn-head_1x_coco_bs8x8.log.json) |
+|   [solov2-r50](<>)   |  ---   |  34.7   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/solov2/solov2_r50_fpn_1x_coco.py)                      | [log](https://download.openmmlab.com/mmdetection/v2.0/npu/solov2_r50_fpn_1x_coco.log.json)                   |
 
 **Notes:**
 
