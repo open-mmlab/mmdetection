@@ -421,7 +421,7 @@ python tools/misc/print_config.py ${CONFIG} [-h] [--options ${OPTIONS [OPTIONS..
 
 `tools/analysis_tools/optimize_anchors.py` 提供了两种方法优化 YOLO 的 anchors。
 
-其中一种方法使用K均值 anchor 聚类（k-means anchor cluster），源自 [darknet](https://github.com/AlexeyAB/darknet/blob/master/src/detector.c#L1421)。
+其中一种方法使用 K 均值 anchor 聚类（k-means anchor cluster），源自 [darknet](https://github.com/AlexeyAB/darknet/blob/master/src/detector.c#L1421)。
 
 ```shell
 python tools/analysis_tools/optimize_anchors.py ${CONFIG} --algorithm k-means --input-shape ${INPUT_SHAPE [WIDTH HEIGHT]} --output-dir ${OUTPUT_DIR}
