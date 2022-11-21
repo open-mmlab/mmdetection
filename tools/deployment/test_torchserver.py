@@ -90,7 +90,7 @@ def main(args):
     url = 'http://' + args.inference_addr + '/predictions/' + args.model_name
     with open(args.img, 'rb') as image:
         response = requests.post(url, image)
-
+    metainfo = pytorch_results.pred_instances.metainfo
     ts_results = align_ts_output(response.json(), metainfo, args.device)
 
     visualizer.add_datasample(
