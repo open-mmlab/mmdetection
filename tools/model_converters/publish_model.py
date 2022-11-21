@@ -16,9 +16,13 @@ def parse_args():
 
 def process_checkpoint(in_file, out_file):
     checkpoint = torch.load(in_file, map_location='cpu')
-    # remove optimizer for smaller file size
-    if 'optimizer' in checkpoint:
-        del checkpoint['optimizer']
+
+    # only keep `meta` and `state_dict` for smaller file size
+    ckpt_keys = list(checkpoint.keys())
+    for k in ckpt_keys:
+        if k not in ['meta', 'state_dict']:
+            checkpoint.pop(k, None)
+
     # if it is necessary to remove some sensitive data in checkpoint['meta'],
     # add the code here.
     if torch.__version__ >= '1.6':
