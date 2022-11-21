@@ -117,7 +117,7 @@ class CocoMetric(BaseMetric):
             self._coco_api = None
 
         # handle dataset lazy init
-        self.cat_ids = None
+        self.cat_ids = cat_ids
         self.img_ids = None
 
     def fast_eval_recall(self,
