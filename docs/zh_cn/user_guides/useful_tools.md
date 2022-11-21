@@ -152,7 +152,7 @@ python tools/test.py \
        checkpoint/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
 ```
 
-1. 得到每一类的 COCO bbox 误差结果，并保存分析结果图像至指定目录。。（在 [config](../../../configs/_base_/datasets/coco_instance.py) 中默认目录是 './work_dirs/coco_instance/test')
+1. 得到每一类的 COCO bbox 误差结果，并保存分析结果图像至指定目录。（在 [config](../../../configs/_base_/datasets/coco_instance.py) 中默认目录是 './work_dirs/coco_instance/test')
 
 ```shell
 python tools/analysis_tools/coco_error_analysis.py \
