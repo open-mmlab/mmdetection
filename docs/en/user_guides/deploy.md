@@ -1,19 +1,19 @@
-# MMDetection Deployment
+# Deployment
 
-- [MMDetection Deployment](#mmdetection-deployment)
-  - [Installation](#installation)
-    - [Install mmdet](#install-mmdet)
-    - [Install mmdeploy](#install-mmdeploy)
-  - [Convert model](#convert-model)
-  - [Model specification](#model-specification)
-  - [Model inference](#model-inference)
-    - [Backend model inference](#backend-model-inference)
-    - [SDK model inference](#sdk-model-inference)
-  - [Supported models](#supported-models)
+- [Installation](#installation)
+  - [Install mmdet](#install-mmdet)
+  - [Install mmdeploy](#install-mmdeploy)
+- [Convert model](#convert-model)
+- [Model specification](#model-specification)
+- [Model inference](#model-inference)
+  - [Backend model inference](#backend-model-inference)
+  - [SDK model inference](#sdk-model-inference)
+- [Supported models](#supported-models)
 
 ______________________________________________________________________
 
-[MMDetection](https://github.com/open-mmlab/mmdetection) aka `mmdet` is an open source object detection toolbox based on PyTorch. It is a part of the [OpenMMLab](https://openmmlab.com/) project.
+The deployment of OpenMMLab codebases, including MMDetection, MMClassification and so on are supported by [MMDeploy](https://github.com/open-mmlab/mmdeploy),
+who provides the fullest and latest deployment guides that can be found from [here](https://mmdeploy.readthedocs.io/en/dev-1.x/).
 
 ## Installation
 
@@ -32,10 +32,10 @@ There are several methods to install mmdeploy, among which you can choose an app
 **Method II:** Build using scripts
 
 If your target platform is **Ubuntu 18.04 or later version**, we encourage you to run
-[scripts](../01-how-to-build/build_from_script.md). For example, the following commands install mmdeploy as well as inference engine - `ONNX Runtime`.
+[scripts](https://mmdeploy.readthedocs.io/en/dev-1.x/01-how-to-build/build_from_script.html). For example, the following commands install mmdeploy as well as inference engine - `ONNX Runtime`.
 
 ```shell
-git clone --recursive -b 1.x https://github.com/open-mmlab/mmdeploy.git
+git clone --recursive -b dev-1.x https://github.com/open-mmlab/mmdeploy.git
 cd mmdeploy
 python3 tools/scripts/build_ubuntu_x64_ort.py $(nproc)
 export PYTHONPATH=$(pwd)/build/lib:$PYTHONPATH
@@ -44,11 +44,11 @@ export LD_LIBRARY_PATH=$(pwd)/../mmdeploy-dep/onnxruntime-linux-x64-1.8.1/lib/:$
 
 **Method III:** Build from source
 
-If neither **I** nor **II** meets your requirements, [building mmdeploy from source](../01-how-to-build/build_from_source.md) is the last option.
+If neither **I** nor **II** meets your requirements, [building mmdeploy from source](https://mmdeploy.readthedocs.io/en/dev-1.x/01-how-to-build/build_from_source.html) is the last option.
 
 ## Convert model
 
-You can use [tools/deploy.py](https://github.com/open-mmlab/mmdeploy/blob/1.x/tools/deploy.py) to convert mmdet models to the specified backend models. Its detailed usage can be learned from [here](../02-how-to-run/convert_model.md).
+You can use [tools/deploy.py](https://github.com/open-mmlab/mmdeploy/blob/dev-1.x/tools/deploy.py) to convert mmdet models to the specified backend models. Its detailed usage can be learned from [here](../02-how-to-run/convert_model.md).
 
 The command below shows an example about converting `Faster R-CNN` model to onnx model that can be inferred by ONNX Runtime.
 
@@ -68,7 +68,7 @@ python tools/deploy.py \
     --dump-info
 ```
 
-It is crucial to specify the correct deployment config during model conversion. We've already provided builtin deployment config [files](https://github.com/open-mmlab/mmdeploy/tree/1.x/configs/mmdet) of all supported backends for mmdetection, under which the config file path follows the pattern:
+It is crucial to specify the correct deployment config during model conversion. We've already provided builtin deployment config [files](https://github.com/open-mmlab/mmdeploy/tree/dev-1.x/configs/mmdet) of all supported backends for mmdetection, under which the config file path follows the pattern:
 
 ```
 {task}/{task}_{backend}-{precision}_{static | dynamic}_{shape}.py
@@ -90,7 +90,7 @@ It is crucial to specify the correct deployment config during model conversion. 
 
 - **{shape}:** input shape or shape range of a model
 
-Therefore, in the above example, you can also convert `faster r-cnn` to other backend models by changing the deployment config file `detection_onnxruntime_dynamic.py` to [others](https://github.com/open-mmlab/mmdeploy/tree/1.x/configs/mmdet/detection), e.g., converting to tensorrt-fp16 model by `detection_tensorrt-fp16_dynamic-320x320-1344x1344.py`.
+Therefore, in the above example, you can also convert `faster r-cnn` to other backend models by changing the deployment config file `detection_onnxruntime_dynamic.py` to [others](https://github.com/open-mmlab/mmdeploy/tree/dev-1.x/configs/mmdet/detection), e.g., converting to tensorrt-fp16 model by `detection_tensorrt-fp16_dynamic-320x320-1344x1344.py`.
 
 ```{tip}
 When converting mmdet models to tensorrt models, --device should be set to "cuda"
@@ -185,7 +185,7 @@ for index, bbox, label_id in zip(indices, bboxes, labels):
 cv2.imwrite('output_detection.png', img)
 ```
 
-Besides python API, mmdeploy SDK also provides other FFI (Foreign Function Interface), such as C, C++, C#, Java and so on. You can learn their usage from [demos](https://github.com/open-mmlab/mmdeploy/tree/1.x/demo).
+Besides python API, mmdeploy SDK also provides other FFI (Foreign Function Interface), such as C, C++, C#, Java and so on. You can learn their usage from [demos](https://github.com/open-mmlab/mmdeploy/tree/dev-1.x/demo).
 
 ## Supported models
 

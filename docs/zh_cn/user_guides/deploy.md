@@ -1,19 +1,19 @@
-# MMDetection 模型部署
+# 模型部署
 
-- [MMDetection 模型部署](#mmdetection-模型部署)
-  - [安装](#安装)
-    - [安装 mmdet](#安装-mmdet)
-    - [安装 mmdeploy](#安装-mmdeploy)
-  - [模型转换](#模型转换)
-  - [模型规范](#模型规范)
-  - [模型推理](#模型推理)
-  - [后端模型推理](#后端模型推理)
-  - [SDK 模型推理](#sdk-模型推理)
-  - [模型支持列表](#模型支持列表)
+- [安装](#安装)
+  - [安装 mmdet](#安装-mmdet)
+  - [安装 mmdeploy](#安装-mmdeploy)
+- [模型转换](#模型转换)
+- [模型规范](#模型规范)
+- [模型推理](#模型推理)
+- [后端模型推理](#后端模型推理)
+- [SDK 模型推理](#sdk-模型推理)
+- [模型支持列表](#模型支持列表)
 
 ______________________________________________________________________
 
-[MMDetection](https://github.com/open-mmlab/mmdetection) ，又称 `mmdet`， 是一个基于 PyTorch 的目标检测开源工具箱。它是 [OpenMMLab](https://openmmlab.com/) 项目的一部分。
+[MMDeploy](https://github.com/open-mmlab/mmdeploy) 是 OpenMMLab 的部署仓库，负责包括 MMClassification、MMDetection 等在内的各算法库的部署工作。
+你可以从[这里](https://mmdeploy.readthedocs.io/zh_CN/dev-1.x/)获取最全和最新的部署文档。
 
 ## 安装
 
@@ -31,11 +31,11 @@ mmdeploy 有以下几种安装方式:
 
 **方式二：** 一键式脚本安装
 
-如果部署平台是 **Ubuntu 18.04 及以上版本**， 请参考[脚本安装说明](../01-how-to-build/build_from_script.md)，完成安装过程。
+如果部署平台是 **Ubuntu 18.04 及以上版本**， 请参考[脚本安装说明](https://mmdeploy.readthedocs.io/zh_CN/dev-1.x/01-how-to-build/build_from_script.html)，完成安装过程。
 比如，以下命令可以安装 mmdeploy 以及配套的推理引擎——`ONNX Runtime`.
 
 ```shell
-git clone --recursive -b 1.x https://github.com/open-mmlab/mmdeploy.git
+git clone --recursive -b dev-1.x https://github.com/open-mmlab/mmdeploy.git
 cd mmdeploy
 python3 tools/scripts/build_ubuntu_x64_ort.py $(nproc)
 export PYTHONPATH=$(pwd)/build/lib:$PYTHONPATH
@@ -44,12 +44,12 @@ export LD_LIBRARY_PATH=$(pwd)/../mmdeploy-dep/onnxruntime-linux-x64-1.8.1/lib/:$
 
 **方式三：** 源码安装
 
-在方式一、二都满足不了的情况下，请参考[源码安装说明](../01-how-to-build/build_from_source.md) 安装 mmdeploy 以及所需推理引擎。
+在方式一、二都满足不了的情况下，请参考[源码安装说明](https://mmdeploy.readthedocs.io/zh_CN/dev-1.x/01-how-to-build/build_from_source.html) 安装 mmdeploy 以及所需推理引擎。
 
 ## 模型转换
 
-你可以使用 [tools/deploy.py](https://github.com/open-mmlab/mmdeploy/blob/1.x/tools/deploy.py) 把 mmdet 模型一键式转换为推理后端模型。
-该工具的详细使用说明请参考[这里](https://github.com/open-mmlab/mmdeploy/blob/master/docs/en/02-how-to-run/convert_model.md#usage).
+你可以使用 [tools/deploy.py](https://github.com/open-mmlab/mmdeploy/blob/dev-1.x/tools/deploy.py) 把 mmdet 模型一键式转换为推理后端模型。
+该工具的详细使用说明请参考[这里](https://mmdeploy.readthedocs.io/zh_CN/dev-1.x/02-how-to-run/convert_model.html#id3).
 
 以下，我们将演示如何把 `Faster R-CNN` 转换为 onnx 模型。
 
@@ -69,7 +69,7 @@ python tools/deploy.py \
     --dump-info
 ```
 
-转换的关键之一是使用正确的配置文件。项目中已内置了各后端部署[配置文件](https://github.com/open-mmlab/mmdeploy/tree/1.x/configs/mmdet)。
+转换的关键之一是使用正确的配置文件。项目中已内置了各后端部署[配置文件](https://github.com/open-mmlab/mmdeploy/tree/dev-1.x/configs/mmdet)。
 文件的命名模式是：
 
 ```
@@ -188,7 +188,7 @@ cv2.imwrite('output_detection.png', img)
 ```
 
 除了python API，mmdeploy SDK 还提供了诸如 C、C++、C#、Java等多语言接口。
-你可以参考[样例](https://github.com/open-mmlab/mmdeploy/tree/1.x/demo)学习其他语言接口的使用方法。
+你可以参考[样例](https://github.com/open-mmlab/mmdeploy/tree/dev-1.x/demo)学习其他语言接口的使用方法。
 
 ## 模型支持列表
 
