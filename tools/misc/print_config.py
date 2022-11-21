@@ -48,7 +48,7 @@ def main():
         save_path = args.save_path
 
         suffix = os.path.splitext(save_path)[-1]
-        assert suffix in ['py', 'json', 'yml']
+        assert suffix in ['.py', '.json', '.yml']
 
         if not os.path.exists(os.path.split(save_path)[0]):
             os.makedirs(os.path.split(save_path)[0])
