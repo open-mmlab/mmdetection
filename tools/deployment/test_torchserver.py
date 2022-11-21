@@ -59,15 +59,9 @@ def main(args):
     # build the model from a config file and a checkpoint file
     model = init_detector(args.config, args.checkpoint, device=args.device)
     # test a single image
-    results = inference_detector(model, args.img)
-    metainfo = results.pred_instances.metainfo
-    pred_instances = InstanceData(metainfo=metainfo)
-
-    indices = results.pred_instances.scores >= args.score_thr
-    pred_instances.scores = results.pred_instances.scores[indices]
-    pred_instances.labels = results.pred_instances.labels[indices]
-    pred_instances.bboxes = results.pred_instances.bboxes[indices, :]
-    pytorch_results = DetDataSample(pred_instances=pred_instances)
+    pytorch_results = inference_detector(model, args.img)
+    keep = pytorch_results.pred_instances.scores >= args.score_thr
+    pytorch_results.pred_instances = pytorch_results.pred_instances[keep]
 
     # init visualizer
     visualizer = VISUALIZERS.build(model.cfg.visualizer)
