@@ -1,21 +1,23 @@
-_base_ = [
-    '../_base_/datasets/coco_instance.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
-]
+_base_ = '../common/ms-poly-90k_coco-instance.py'
 
 train_pipeline = [
     dict(
         type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
-    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+        file_client_args={{_base_.file_client_args}},
+        imdecode_backend={{_base_.backend}}),
+    dict(
+        type='LoadAnnotations', with_bbox=True, with_mask=True,
+        poly2mask=True),
     dict(
         type='RandomChoiceResize',
-        scales=[(1333, 800), (1333, 768), (1333, 736), (1333, 704),
-                (1333, 672), (1333, 640)],
-        keep_ratio=True),
+        scales=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
+                (1333, 768), (1333, 800)],
+        keep_ratio=True,
+        backend={{_base_.backend}}),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]
+
 train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
 
 # model settings
@@ -74,7 +76,7 @@ model = dict(
         feat_channels=8,
         size_of_interest=8,
         mask_out_stride=4,
-        max_masks_to_train=250,
+        max_masks_to_train=300,
         mask_feature_head=dict(
             in_channels=256,
             feat_channels=128,
@@ -100,11 +102,4 @@ model = dict(
         mask_thr=0.5))
 
 # optimizer
-train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=12, val_interval=1)
-optim_wrapper = dict(
-    optimizer=dict(lr=0.01),
-    paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
-optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-
-val_evaluator = dict(metric=['bbox', 'segm'])
-test_evaluator = val_evaluator
+optim_wrapper = dict(optimizer=dict(lr=0.01))

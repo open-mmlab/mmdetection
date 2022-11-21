@@ -570,56 +570,30 @@ def reweight_loss_dict(losses: dict, weight: float) -> dict:
     return losses
 
 
-def compute_locations(h: int, w: int, feat_stride: int, device: str) -> Tensor:
-    """Generate the coordinate with feat_stride.
-
-    Args:
-        h (int), w (int): The feature size of h and w.
-        feat_stride (int): The feat_stride of the input feature.
-        device (str): The device where the feature will be put on.
-    Returns:
-        coord_feat (Tensor): The coordinate feature, of shape (N, 2, W, H).
-    """
-
-    shifts_x = torch.arange(
-        0,
-        w * feat_stride,
-        step=feat_stride,
-        dtype=torch.float32,
-        device=device)
-    shifts_y = torch.arange(
-        0,
-        h * feat_stride,
-        step=feat_stride,
-        dtype=torch.float32,
-        device=device)
-    shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x)
-    shift_x = shift_x.reshape(-1)
-    shift_y = shift_y.reshape(-1)
-    locations = torch.stack((shift_x, shift_y), dim=1) + feat_stride // 2
-    return locations
-
-
-def relative_coordinate_maps(feat_sizes: Tuple[int], feat_stride: int,
-                             centers: Tensor, strides: Tensor,
-                             size_of_interest: int) -> Tensor:
+def relative_coordinate_maps(
+    locations: Tensor,
+    centers: Tensor,
+    strides: Tensor,
+    size_of_interest: int,
+    feat_sizes: Tuple[int],
+) -> Tensor:
     """Generate the relative coordinate maps with feat_stride.
 
     Args:
-        feat_sizes (Tuple[int]): The feature size, which has 4 dims.
-        feat_stride (int): The feat_stride of the input feature.
+        locations (Tensor): The prior location of mask feature map.
+            It has shape (num_priors, 2).
         centers (Tensor): The prior points of a object in
-            all feature pyramid. It has shape (num_priors, 2)
+            all feature pyramid. It has shape (num_pos, 2)
         strides (Tensor): The prior strides of a object in
-            all feature pyramid. It has shape (num_priors, 1)
+            all feature pyramid. It has shape (num_pos, 1)
+        feat_sizes (Tuple[int]): The feature size H and W, which has 2 dims.
         size_of_interest (int): The size of the region used in rel coord.
     Returns:
-        rel_coord_feat (Tensor): The coordinate feature, of shape (N, 2, W, H).
+        rel_coord_feat (Tensor): The coordinate feature
+            of shape (num_pos, 2, H, W).
     """
 
-    _, _, H, W = feat_sizes
-    locations = compute_locations(
-        H, W, feat_stride=feat_stride, device=centers.device)
+    H, W = feat_sizes
     rel_coordinates = centers.reshape(-1, 1, 2) - locations.reshape(1, -1, 2)
     rel_coordinates = rel_coordinates.permute(0, 2, 1).float()
     rel_coordinates = rel_coordinates / (

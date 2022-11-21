@@ -7,20 +7,20 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale
 from mmengine.config import ConfigDict
-from mmengine.model import kaiming_init
+from mmengine.model import BaseModule, kaiming_init
 from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.structures.bbox import cat_boxes
-from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
+from mmdet.utils import (ConfigType, InstanceList, MultiConfig, OptConfigType,
                          OptInstanceList, reduce_mean)
+from ..task_modules.prior_generators import MlvlPointGenerator
 from ..utils import (aligned_bilinear, filter_scores_and_topk, multi_apply,
                      relative_coordinate_maps, select_single_mlvl)
 from ..utils.misc import empty_instances
 from .base_mask_head import BaseMaskHead
 from .fcos_head import FCOSHead
-from .solov2_head import MaskFeatModule
 
 INF = 1e8
 
@@ -30,7 +30,7 @@ class CondInstBboxHead(FCOSHead):
     """CondInst box head used in https://arxiv.org/abs/1904.02689.
 
     Note that CondInst Bbox Head is a extension of FCOS head.
-    Four differences are described as follows:
+    Two differences are described as follows:
 
     1. CondInst box head predicts a set of params for each instance.
     2. CondInst box head return the pos_gt_inds and pos_inds.
@@ -286,7 +286,9 @@ class CondInstBboxHead(FCOSHead):
 
         if num_gts == 0:
             return gt_labels.new_full((num_points,), self.num_classes), \
-                   gt_bboxes.new_zeros((num_points, 4))
+                   gt_bboxes.new_zeros((num_points, 4)), \
+                   gt_bboxes.new_zeros((0,), dtype=torch.int64), \
+                   gt_bboxes.new_zeros((0,), dtype=torch.int64)
 
         areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
             gt_bboxes[:, 3] - gt_bboxes[:, 1])
@@ -309,7 +311,8 @@ class CondInstBboxHead(FCOSHead):
         if self.center_sampling:
             # condition1: inside a `center bbox`
             radius = self.center_sample_radius
-            # if gt_mask not None, use gt mask to determine center region
+            # if gt_mask not None, use gt mask's centroid to determine
+            # the center region rather than gt_bbox center
             if gt_masks is None:
                 center_xs = (gt_bboxes[..., 0] + gt_bboxes[..., 2]) / 2
                 center_ys = (gt_bboxes[..., 1] + gt_bboxes[..., 3]) / 2
@@ -320,7 +323,8 @@ class CondInstBboxHead(FCOSHead):
                     0, h, dtype=torch.float32, device=masks.device)
                 xxs = torch.arange(
                     0, w, dtype=torch.float32, device=masks.device)
-
+                # m00/m10/m01 represent the moments of a contour
+                # centroid is computed by m00/m10 and m00/m01
                 m00 = masks.sum(dim=-1).sum(dim=-1).clamp(min=1e-6)
                 m10 = (masks * xxs).sum(dim=-1).sum(dim=-1)
                 m01 = (masks * yys[:, None]).sum(dim=-1).sum(dim=-1)
@@ -394,8 +398,7 @@ class CondInstBboxHead(FCOSHead):
             usually including positive bboxes, positive labels, positive
             priors, etc.
         """
-        if len(self._raw_positive_infos) == 0:
-            return None
+        assert len(self._raw_positive_infos) > 0
 
         pos_gt_inds_list = self._raw_positive_infos['pos_gt_inds_list']
         pos_inds_list = self._raw_positive_infos['pos_inds_list']
@@ -708,29 +711,60 @@ class CondInstBboxHead(FCOSHead):
             img_meta=img_meta)
 
 
-class CondInstMaskFeatModule(MaskFeatModule):
+class MaskFeatModule(BaseModule):
     """CondInst mask feature map branch used in \
-    https://arxiv.org/abs/1904.02689. Note that CondInst MaskFeatModule is a
-    extension of MaskFeatModule which is used in SOLOv2 Head.
-
-    Four differences are described as follows:
-
-    1. Simplified upsampling operation, using align_bilinear.
-    2. Add a conv branch before conv pred.
-    3. Do not need coord feat.
-    4. Last pred conv don't need norm and relu.
+    https://arxiv.org/abs/1904.02689.
 
     Args:
-        num_stacked_convs (int): Number of conv module in mask feat branch.
+        in_channels (int): Number of channels in the input feature map.
+        feat_channels (int): Number of hidden channels of the mask feature
+             map branch.
+        start_level (int): The starting feature map level from RPN that
+             will be used to predict the mask feature map.
+        end_level (int): The ending feature map level from rpn that
+             will be used to predict the mask feature map.
+        out_channels (int): Number of output channels of the mask feature
+             map branch. This is the channel count of the mask
+             feature map that to be dynamically convolved with the predicted
+             kernel.
+        mask_stride (int): Downsample factor of the mask feature map output.
+            Defaults to 4.
+        num_stacked_convs (int): Number of convs in mask feature branch.
+        conv_cfg (dict): Config dict for convolution layer. Default: None.
+        norm_cfg (dict): Config dict for normalization layer. Default: None.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
-    def __init__(self, *args, num_stacked_convs: int = 4, **kwargs) -> None:
+    def __init__(self,
+                 in_channels: int,
+                 feat_channels: int,
+                 start_level: int,
+                 end_level: int,
+                 out_channels: int,
+                 mask_stride: int = 4,
+                 num_stacked_convs: int = 4,
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: OptConfigType = None,
+                 init_cfg: MultiConfig = [
+                     dict(type='Normal', layer='Conv2d', std=0.01)
+                 ],
+                 **kwargs) -> None:
+        super().__init__(init_cfg=init_cfg)
+        self.in_channels = in_channels
+        self.feat_channels = feat_channels
+        self.start_level = start_level
+        self.end_level = end_level
+        self.mask_stride = mask_stride
         self.num_stacked_convs = num_stacked_convs
-        super().__init__(*args, **kwargs)
+        assert start_level >= 0 and end_level >= start_level
+        self.out_channels = out_channels
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+        self._init_layers()
+        self.fp16_enabled = False
 
     def _init_layers(self) -> None:
         """Initialize layers of the head."""
-        super()._init_layers()
         self.convs_all_levels = nn.ModuleList()
         for i in range(self.start_level, self.end_level + 1):
             convs_per_level = nn.Sequential()
@@ -833,7 +867,7 @@ class CondInstMaskHead(BaseMaskHead):
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None) -> None:
         super().__init__()
-        self.mask_feature_head = CondInstMaskFeatModule(**mask_feature_head)
+        self.mask_feature_head = MaskFeatModule(**mask_feature_head)
         self.mask_feat_stride = self.mask_feature_head.mask_stride
         self.in_channels = self.mask_feature_head.out_channels
         self.num_layers = num_layers
@@ -842,6 +876,7 @@ class CondInstMaskHead(BaseMaskHead):
         self.mask_out_stride = mask_out_stride
         self.max_masks_to_train = max_masks_to_train
         self.topk_masks_per_img = topk_masks_per_img
+        self.prior_generator = MlvlPointGenerator([self.mask_feat_stride])
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -889,8 +924,8 @@ class CondInstMaskHead(BaseMaskHead):
 
         return weight_splits, bias_splits
 
-    def mask_heads_forward(self, features: Tensor, weights: List[Tensor],
-                           biases: List[Tensor], num_insts: int) -> Tensor:
+    def dynamic_conv_forward(self, features: Tensor, weights: List[Tensor],
+                             biases: List[Tensor], num_insts: int) -> Tensor:
         """dynamic forward, each layer follow a relu."""
         n_layers = len(weights)
         x = features
@@ -930,16 +965,19 @@ class CondInstMaskHead(BaseMaskHead):
         if num_inst == 0:
             return (pos_param_preds.new_zeros((0, 1, H, W)), )
 
-        rel_coords = relative_coordinate_maps(mask_feat.size(),
-                                              self.mask_feat_stride,
-                                              pos_points, pos_strides,
-                                              self.size_of_interest)
+        locations = self.prior_generator.single_level_grid_priors(
+            mask_feat.size()[2:], 0, mask_feat.device)
+
+        rel_coords = relative_coordinate_maps(locations, pos_points,
+                                              pos_strides,
+                                              self.size_of_interest,
+                                              mask_feat.size()[2:])
         mask_head_inputs = torch.cat([rel_coords, mask_feat], dim=1)
         mask_head_inputs = mask_head_inputs.reshape(1, -1, H, W)
 
         weights, biases = self.parse_dynamic_params(pos_param_preds)
-        mask_preds = self.mask_heads_forward(mask_head_inputs, weights, biases,
-                                             num_inst)
+        mask_preds = self.dynamic_conv_forward(mask_head_inputs, weights,
+                                               biases, num_inst)
         mask_preds = mask_preds.reshape(-1, H, W)
         mask_preds = aligned_bilinear(
             mask_preds.unsqueeze(0),
@@ -1170,16 +1208,18 @@ class CondInstMaskHead(BaseMaskHead):
         ori_h, ori_w = img_meta['ori_shape'][:2]
 
         mask_preds = mask_preds.sigmoid().unsqueeze(0)
+        mask_preds = aligned_bilinear(mask_preds, self.mask_out_stride)
+        mask_preds = mask_preds[:, :, :img_h, :img_w]
         if rescale:  # in-placed rescale the bboxes
             scale_factor = bboxes.new_tensor(img_meta['scale_factor']).repeat(
                 (1, 2))
             bboxes /= scale_factor
 
-            mask_preds = aligned_bilinear(mask_preds, self.mask_out_stride)
-            mask_preds = mask_preds[:, :, :img_h, :img_w]
-
-        masks = F.interpolate(
-            mask_preds, (ori_h, ori_w), mode='bilinear',
-            align_corners=False).squeeze(0) > cfg.mask_thr
+            masks = F.interpolate(
+                mask_preds, (ori_h, ori_w),
+                mode='bilinear',
+                align_corners=False).squeeze(0) > cfg.mask_thr
+        else:
+            masks = mask_preds > cfg.mask_thr
 
         return masks
