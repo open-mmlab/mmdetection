@@ -28,6 +28,7 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - "Microsoft Visual C++ 14.0 or graeter is required" during installation on Windows.
 
+  This error will happen in installing pycocotools, something like `building 'pycocotools._mask' extension`.
   The reason is that there lacks corresponding C++ compilation dependencies in the environment and you need to download it at Microsoft officials [visual-cpp-build-tools](https://visualstudio.microsoft.com/zh-hans/visual-cpp-build-tools/),
   Select the "Use C ++ Desktop Development" option to install the minimum dependencies, and then re-install.
 
