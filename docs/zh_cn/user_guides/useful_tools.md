@@ -1,7 +1,7 @@
 ## 日志分析
 
 `tools/analysis_tools/analyze_logs.py` 可利用指定的训练log文件绘制 loss/mAP 曲线图，
-当第一次运行前请先运行 `pip install seaborn` 安装必要依赖.
+第一次运行前请先运行 `pip install seaborn` 安装必要依赖.
 
 ```shell
 python tools/analysis_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--eval-interval ${EVALUATION_INTERVAL}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
@@ -47,7 +47,7 @@ python tools/analysis_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--eval-
 
 ## 结果分析
 
-使用 `tools/analysis_tools/analyze_results.py` 可计算每个图像 mAP，随后根据真实标注框与预测框的比较结果，展示或保存最高与最低 top-k 得分的预测图像
+使用 `tools/analysis_tools/analyze_results.py` 可计算每个图像 mAP，随后根据真实标注框与预测框的比较结果，展示或保存最高与最低 top-k 得分的预测图像。
 
 **使用方法**
 
@@ -75,7 +75,7 @@ python tools/analysis_tools/analyze_results.py \
 - `--cfg-options`: 如果指定，可根据指定键值对覆盖更新配置文件的对应选项
 
 **样例**:
-假设你已经通过 `tools/test.py` 得到了 pickle 格式的结果文件，其路径为 './result.pkl'。
+假设你已经通过 `tools/test.py` 得到了 pickle 格式的结果文件，路径为 './result.pkl'。
 
 1. 测试 Faster R-CNN 并可视化结果，保存图片至 `results/`
 
@@ -119,8 +119,7 @@ python tools/misc/browse_dataset.py ${CONFIG} [-h] [--skip-type ${SKIP_TYPE[SKIP
 
 ### 可视化模型
 
-在可视化之前，需要先转换模型至 ONNX 格式，
-[可参考此处](#convert-mmdetection-model-to-onnx-experimental)。
+在可视化之前，需要先转换模型至 ONNX 格式，[可参考此处](#convert-mmdetection-model-to-onnx-experimental)。
 注意，现在只支持 RetinaNet，之后的版本将会支持其他模型
 转换后的模型可以被其他工具可视化[Netron](https://github.com/lutzroeder/netron)。
 
@@ -138,9 +137,9 @@ python tools/analysis_tools/coco_error_analysis.py ${RESULT} ${OUT_DIR} [-h] [--
 
 样例:
 
-假设你已经把 [Mask R-CNN checkpoint file](https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth) 放置在文件夹 'checkpoint' 中，对于其他模型请在 [model zoo](./model_zoo.md) 中获取。
+假设你已经把 [Mask R-CNN checkpoint file](https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth) 放置在文件夹 'checkpoint' 中（其他模型请在 [model zoo](./model_zoo.md) 中获取）。
 
-为了保存 bbox 结果信息，你可以用下列方式修改 `test_evaluator` 文件:
+为了保存 bbox 结果信息，我们需要用下列方式修改 `test_evaluator` :
 
 1. 查找当前 config 文件相对应的  'configs/base/datasets' 数据集信息。
 2. 用当前数据集config中的 test_evaluator 以及 test_dataloader 替换原始文件的 test_evaluator 以及 test_dataloader。
@@ -173,7 +172,7 @@ python tools/analysis_tools/coco_error_analysis.py \
 
 ## 模型服务部署
 
-为了使用 [`TorchServe`](https://pytorch.org/serve/) 搭建一个 `MMDetection` 模型服务，你可以参考以下步骤：
+如果你想使用 [`TorchServe`](https://pytorch.org/serve/) 搭建一个 `MMDetection` 模型服务，可以参考以下步骤：
 
 ### 1. 把 MMDetection 模型转换至 TorchServe
 
@@ -193,9 +192,9 @@ docker build -t mmdet-serve:latest docker/serve/
 
 ### 3. 运行 `mmdet-serve`
 
-检查[使用 docker 运行 TorchServe](https://github.com/pytorch/serve/blob/master/docker/README.md#running-torchserve-in-a-production-docker-environment) 官方文档。
+请先阅读[使用 docker 运行 TorchServe](https://github.com/pytorch/serve/blob/master/docker/README.md#running-torchserve-in-a-production-docker-environment) 官方文档。
 
-为了运行在 GPU 上，你需要安装  [nvidia-docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) ，如果想运行在 CPU 上则忽略 `--gpus` 参数。
+为了在 GPU 上运行服务，你需要安装  [nvidia-docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) ，如果想运行在 CPU 上则忽略 `--gpus` 参数。
 
 样例:
 
@@ -217,7 +216,7 @@ curl -O curl -O https://raw.githubusercontent.com/pytorch/serve/master/docs/imag
 curl http://127.0.0.1:8080/predictions/${MODEL_NAME} -T 3dogs.jpg
 ```
 
-你可以得到类似这样的 json 信息：
+你可以得到下列 json 信息：
 
 ```json
 [
@@ -273,13 +272,13 @@ yolov3
 
 ## 模型复杂度
 
-改编自 [flops-counter.pytorch](https://github.com/sovrasov/flops-counter.pytorch) 的 `tools/analysis_tools/get_flops.py` 工具可用于计算指定模型 FLOPs、参数量大小。
+`tools/analysis_tools/get_flops.py` 工具可用于计算指定模型的 FLOPs、参数量大小（改编自 [flops-counter.pytorch](https://github.com/sovrasov/flops-counter.pytorch) ）。
 
 ```shell
 python tools/analysis_tools/get_flops.py ${CONFIG_FILE} [--shape ${INPUT_SHAPE}]
 ```
 
-You will get the results like this.
+获得的结果如下：
 
 ```text
 ==============================
@@ -299,7 +298,7 @@ Params: 37.74 M
 
 ### MMDetection 模型转换至 ONNX 格式
 
-我们提供了一个脚本用于转换模型至 [ONNX](https://github.com/onnx/onnx) 格式。同时还支持比较 Pytorch 与 ONNX 模型的输出结果以便对照。更相信的内容可以参考 [mmdeploy](https://github.com/open-mmlab/mmdeploy)。
+我们提供了一个脚本用于转换模型至 [ONNX](https://github.com/onnx/onnx) 格式。同时还支持比较 Pytorch 与 ONNX 模型的输出结果以便对照。更详细的内容可以参考 [mmdeploy](https://github.com/open-mmlab/mmdeploy)。
 
 ### MMDetection 1.x 模型转换至 MMDetection 2.x 模型
 
@@ -317,7 +316,7 @@ python tools/model_converters/upgrade_model_version.py ${IN_FILE} ${OUT_FILE} [-
 python tools/model_converters/regnet2mmdet.py ${SRC} ${DST} [-h]
 ```
 
-### Detectron ResNet 模型转换至 Pytorch
+### Detectron ResNet 模型转换至 Pytorch 模型
 
 `tools/model_converters/detectron2pytorch.py` 将 detectron 的原始预训练 RegNet 模型转换为 MMDetection 风格。
 
@@ -397,7 +396,7 @@ python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500 tools/
 
 ## 更多工具
 
-### 以某种标准进行评估
+### 以某个评估标准进行评估
 
 `tools/analysis_tools/eval_metric.py` 根据配置文件中的评估方式对 pkl 结果文件进行评估。
 
