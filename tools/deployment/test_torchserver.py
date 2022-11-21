@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument(
         '--score-thr', type=float, default=0.5, help='bbox score threshold')
     parser.add_argument(
-        '--workdir',
+        '--work-dir',
         type=str,
         default=None,
         help='output directory to save drawn results.')
@@ -80,10 +80,10 @@ def main(args):
     img = mmcv.imconvert(img, 'bgr', 'rgb')
     pt_out_file = None
     ts_out_file = None
-    if args.workdir is not None:
-        os.makedirs(args.workdir, exist_ok=True)
-        pt_out_file = os.path.join(args.workdir, 'pytorch_result.png')
-        ts_out_file = os.path.join(args.workdir, 'torchserve_result.png')
+    if args.work_dir is not None:
+        os.makedirs(args.work_dir, exist_ok=True)
+        pt_out_file = os.path.join(args.work_dir, 'pytorch_result.png')
+        ts_out_file = os.path.join(args.work_dir, 'torchserve_result.png')
     visualizer.add_datasample(
         'pytorch_result',
         img.copy(),
