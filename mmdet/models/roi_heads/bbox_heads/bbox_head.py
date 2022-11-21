@@ -640,9 +640,11 @@ class BBoxHead(BaseModule):
             cls_scores = self.loss_cls.get_activation(cls_scores)
         if cls_scores.numel() == 0:
             return None
-
+        if cls_scores.shape[-1] > self.num_classes:
+            # remove background class
+            cls_scores = cls_scores[:, :-1]
         labels = torch.where(labels == self.num_classes,
-                             cls_scores[:, :-1].argmax(1), labels)
+                             cls_scores.argmax(1), labels)
 
         img_ids = rois[:, 0].long().unique(sorted=True)
         assert img_ids.numel() <= len(batch_img_metas)
