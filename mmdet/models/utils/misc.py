@@ -586,8 +586,8 @@ def relative_coordinate_maps(
             all feature pyramid. It has shape (num_pos, 2)
         strides (Tensor): The prior strides of a object in
             all feature pyramid. It has shape (num_pos, 1)
-        feat_sizes (Tuple[int]): The feature size H and W, which has 2 dims.
         size_of_interest (int): The size of the region used in rel coord.
+        feat_sizes (Tuple[int]): The feature size H and W, which has 2 dims.
     Returns:
         rel_coord_feat (Tensor): The coordinate feature
             of shape (num_pos, 2, H, W).

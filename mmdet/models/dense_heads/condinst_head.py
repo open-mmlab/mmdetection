@@ -761,7 +761,6 @@ class MaskFeatModule(BaseModule):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self._init_layers()
-        self.fp16_enabled = False
 
     def _init_layers(self) -> None:
         """Initialize layers of the head."""
@@ -799,6 +798,7 @@ class MaskFeatModule(BaseModule):
 
     def init_weights(self) -> None:
         """Initialize weights of the head."""
+        super().init_weights()
         kaiming_init(self.convs_all_levels, a=1, distribution='uniform')
         kaiming_init(self.conv_branch, a=1, distribution='uniform')
         kaiming_init(self.conv_pred, a=1, distribution='uniform')
@@ -966,7 +966,7 @@ class CondInstMaskHead(BaseMaskHead):
             return (pos_param_preds.new_zeros((0, 1, H, W)), )
 
         locations = self.prior_generator.single_level_grid_priors(
-            mask_feat.size()[2:], 0, mask_feat.device)
+            mask_feat.size()[2:], 0, device=mask_feat.device)
 
         rel_coords = relative_coordinate_maps(locations, pos_points,
                                               pos_strides,
