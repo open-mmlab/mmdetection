@@ -12,7 +12,7 @@ def parse_args():
     parser.add_argument('in_file', help='input checkpoint filename')
     parser.add_argument('out_file', help='output checkpoint filename')
     parser.add_argument(
-        '--saved-keys',
+        '--save-keys',
         nargs='+',
         type=str,
         default=['meta', 'state_dict'],
@@ -21,17 +21,17 @@ def parse_args():
     return args
 
 
-def process_checkpoint(in_file, out_file, saved_keys=['meta', 'state_dict']):
+def process_checkpoint(in_file, out_file, save_keys=['meta', 'state_dict']):
     checkpoint = torch.load(in_file, map_location='cpu')
 
     # only keep `meta` and `state_dict` for smaller file size
     ckpt_keys = list(checkpoint.keys())
     for k in ckpt_keys:
-        if k not in saved_keys:
+        if k not in save_keys:
             print_log(
                 f'Key `{k}` will be removed because it is not in '
-                f'saved_keys. If you want to keep it, '
-                f'please set --saved-keys.',
+                f'save_keys. If you want to keep it, '
+                f'please set --save-keys.',
                 logger='current')
             checkpoint.pop(k, None)
 
@@ -54,7 +54,7 @@ def process_checkpoint(in_file, out_file, saved_keys=['meta', 'state_dict']):
 
 def main():
     args = parse_args()
-    process_checkpoint(args.in_file, args.out_file, args.saved_keys)
+    process_checkpoint(args.in_file, args.out_file, args.save_keys)
 
 
 if __name__ == '__main__':
