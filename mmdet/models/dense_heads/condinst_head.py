@@ -1220,6 +1220,6 @@ class CondInstMaskHead(BaseMaskHead):
                 mode='bilinear',
                 align_corners=False).squeeze(0) > cfg.mask_thr
         else:
-            masks = mask_preds > cfg.mask_thr
+            masks = mask_preds.squeeze(0) > cfg.mask_thr
 
         return masks
