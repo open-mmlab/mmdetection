@@ -318,7 +318,8 @@ class CondInstBboxHead(FCOSHead):
                 center_ys = (gt_bboxes[..., 1] + gt_bboxes[..., 3]) / 2
             else:
                 h, w = gt_masks.height, gt_masks.width
-                masks = torch.from_numpy(gt_masks.masks).to(gt_bboxes.device)
+                masks = gt_masks.to_tensor(
+                    dtype=torch.bool, device=gt_bboxes.device)
                 yys = torch.arange(
                     0, h, dtype=torch.float32, device=masks.device)
                 xxs = torch.arange(

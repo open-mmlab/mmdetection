@@ -1,25 +1,5 @@
 _base_ = '../common/ms-poly-90k_coco-instance.py'
 
-train_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args=_base_.file_client_args,
-        imdecode_backend=_base_.backend),
-    dict(
-        type='LoadAnnotations', with_bbox=True, with_mask=True,
-        poly2mask=True),
-    dict(
-        type='RandomChoiceResize',
-        scales=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
-                (1333, 768), (1333, 800)],
-        keep_ratio=True,
-        backend=_base_.backend),
-    dict(type='RandomFlip', prob=0.5),
-    dict(type='PackDetInputs')
-]
-
-train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
-
 # model settings
 model = dict(
     type='CondInst',
