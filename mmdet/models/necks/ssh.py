@@ -23,14 +23,18 @@ class SSHContextModule(BaseModule):
             convolution layer. Defaults to None.
         norm_cfg (:obj:`ConfigDict` or dict): Config dict for normalization
             layer. Defaults to dict(type='BN').
+        init_cfg (:obj:`ConfigDict` or list[:obj:`ConfigDict`] or dict or
+            list[dict], optional): Initialization config dict.
+            Defaults to None.
     """
 
     def __init__(self,
                  in_channels: int,
                  out_channels: int,
                  conv_cfg: OptConfigType = None,
-                 norm_cfg: ConfigType = dict(type='BN')):
-        super().__init__()
+                 norm_cfg: ConfigType = dict(type='BN'),
+                 init_cfg: OptMultiConfig = None):
+        super().__init__(init_cfg=init_cfg)
         assert out_channels % 4 == 0
 
         self.in_channels = in_channels
