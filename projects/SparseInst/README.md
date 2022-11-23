@@ -57,9 +57,9 @@ Here we provide the baseline version of SparseInst with ResNet50 backbone.
 
 To find more variants, please visit the [official model zoo](https://github.com/hustvl/SparseInst#models).
 
-| Backbone |  Style  | Lr schd | Mem (GB) | FPS  | mask AP val2017 |                           Config                            |         Download         |
-| :------: | :-----: | :-----: | :------: | :--: | :-------------: | :---------------------------------------------------------: | :----------------------: |
-|   R-50   | PyTorch |  270k   |   8.7    | 44.3 |      32.9       | [config](./configs/sparseinst_r50_iam_8xb8-ms-270k_coco.py) | [model](<>) \| [log](<>) |
+| Backbone |  Style  | Lr schd | Mem (GB) | FPS  | mask AP val2017 |                           Config                            |                                                                                                                                                                    Download                                                                                                                                                                    |
+| :------: | :-----: | :-----: | :------: | :--: | :-------------: | :---------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|   R-50   | PyTorch |  270k   |   8.7    | 44.3 |      32.9       | [config](./configs/sparseinst_r50_iam_8xb8-ms-270k_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/sparseinst/sparseinst_r50_iam_8xb8-ms-270k_coco/sparseinst_r50_iam_8xb8-ms-270k_coco_20221111_181051-72c711cd.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/sparseinst/sparseinst_r50_iam_8xb8-ms-270k_coco/sparseinst_r50_iam_8xb8-ms-270k_coco_20221111_181051.json) |
 
 ## Citation
 
