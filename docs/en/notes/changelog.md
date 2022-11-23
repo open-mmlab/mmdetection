@@ -17,7 +17,7 @@
 - Fix `pixel_decoder_type` discrimination in MaskFormer Head. (#9176)
 - Fix wrong padding value in cached MixUp (#9259)
 - Rename `utils/typing.py` to `utils/typing_utils.py` to fix `collect_env` error (#9265)
-- Fix resume arg confilct (#9287)
+- Fix resume arg conflict (#9287)
 - Fix the configs of Faster R-CNN with caffe backbone (#9319)
 - Fix torchserve and update related documentation (#9343)
 - Fix bbox refine bug with sigmooid activation (#9538)
