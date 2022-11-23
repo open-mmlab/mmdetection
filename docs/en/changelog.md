@@ -27,8 +27,8 @@
 
 #### Contributors
 
-A total of 9 developers contributed to this release.
-Thanks @wangjiangben-hw, @motokimura, @AdorableJiang, @BainOuO, @JarvisKevin, @wanghonglie, @zytx121, @BIGWangYuDong, @RangiLyu
+A total of 11 developers contributed to this release.
+Thanks @wangjiangben-hw, @motokimura, @AdorableJiang, @BainOuO, @JarvisKevin, @wanghonglie, @zytx121, @BIGWangYuDong, @hhaAndroid, @RangiLyu, @ZwwWayne
 
 ### v2.25.3 (25/10/2022)
 
