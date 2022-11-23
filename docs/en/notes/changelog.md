@@ -40,9 +40,9 @@
 
 ### Contributors
 
-A total of 11 developers contributed to this release.
+A total of 12 developers contributed to this release.
 
-Thanks @sanbuphy, @Czm369, @Daa98, @jbwang1997, @BIGWangYuDong, @lvhan028, @RunningLeon, @RangiLyu, @Daa98, @ZwwWayne, @hhaAndroid
+Thanks @sanbuphy, @Czm369, @Daa98, @jbwang1997, @BIGWangYuDong, @JosonChan1998, @lvhan028, @RunningLeon, @RangiLyu, @Daa98, @ZwwWayne, @hhaAndroid
 
 ## v3.0.0rc3 (4/11/2022)
 
