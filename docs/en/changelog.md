@@ -1,5 +1,24 @@
 ## Changelog
 
+### v2.26.0 (23/11/2022)
+
+#### Bug Fixes
+
+-
+
+#### Improvements
+
+-
+
+#### Documents
+
+-
+
+#### Contributors
+
+A total of ? developers contributed to this release.
+Thanks
+
 ### v2.25.3 (25/10/2022)
 
 #### Bug Fixes
