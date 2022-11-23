@@ -12,7 +12,7 @@
 - Fix readthedocs by freezing the dependency versions (#9154)
 - Fix device argument error in MMDet_Tutorial.ipynb (#9112)
 - Fix solov2 cannot dealing with empty gt image (#9185)
-- Fix random flipping ratio compare of mixup image (#9336)
+- Fix random flipping ratio comparison of mixup image (#9336)
 
 #### Improvements
 
