@@ -78,7 +78,7 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 **v3.0.0rc4** was released in 23/11/2022:
 
 - Support [CondInst](https://arxiv.org/abs/2003.05664)
-- Add `projects/` folder, which will be a place for some experimental models/features
+- Add [`projects/`](./projects/) folder and give an [example](./projects/example_project/README.md) for communities to contribute their projects.
 
 ## Installation
 
