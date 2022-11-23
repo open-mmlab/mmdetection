@@ -30,8 +30,7 @@
 
 - 在 Windows 环境下安装过程中遇到 "Microsoft Visual C++ 14.0 or graeter is required" error .
 
-  这个错误发生在 pycocotools 的安装过程，详细报错包含了 `building 'pycocotools._mask' extension` 等信息。
-  其原因是缺少对应 C++ 环境编译依赖，需要到微软官方下载[对应工具](https://visualstudio.microsoft.com/zh-hans/visual-cpp-build-tools/)，选择“使用 c++ 的桌面开发”选项安装最小依赖，随后重新安装即可成功。
+  这个错误发生在 pycotools 的‘pycocotools.\_mask’扩展构建过程，其原因是缺少了对应 C++ 环境依赖。你需要到微软官方下载[对应工具](https://visualstudio.microsoft.com/zh-hans/visual-cpp-build-tools/)，选择“使用 C++ 的桌面开发”选项安装最小依赖，随后重新安装 pycocotools。
 
 - 使用 albumentations
 
