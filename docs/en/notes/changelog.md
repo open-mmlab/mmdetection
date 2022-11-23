@@ -4,10 +4,12 @@
 
 ### Highlights
 
+- Support [CondInst](https://arxiv.org/abs/2003.05664)
 - Add `projects/` folder, which will be a place for some experimental models/features.
 
 ### New Features
 
+- Support [CondInst](https://arxiv.org/abs/2003.05664) (#9223)
 - Add `projects/` folder, which will be a place for some experimental models/features (#9341)
 
 ### Bug Fixes
@@ -29,6 +31,7 @@
 - Update docs about video inference (#9305)
 - Update guide about model deployment (#9344)
 - Fix doc typos of useful tools (#9177)
+- Allow to resume from specific checkpoint in CLI (#9284)
 
 ### New Contributors
 
