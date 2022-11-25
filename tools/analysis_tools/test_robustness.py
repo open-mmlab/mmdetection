@@ -6,12 +6,13 @@ import os.path as osp
 
 from mmengine.config import Config, DictAction
 from mmengine.dist import get_dist_info
+from mmengine.evaluator import DumpResults
 from mmengine.fileio import dump
 from mmengine.runner import Runner
 
 from mmdet.engine.hooks.utils import trigger_visualization_hook
 from mmdet.registry import RUNNERS
-from mmdet.utils import add_dump_metric, register_all_modules
+from mmdet.utils import register_all_modules
 from tools.analysis_tools.robustness_eval import get_results
 
 
@@ -118,12 +119,6 @@ def main():
         cfg.work_dir = osp.join('./work_dirs',
                                 osp.splitext(osp.basename(args.config))[0])
 
-    # Dump predictions
-    if args.out is not None:
-        assert args.out.endswith(('.pkl', '.pickle')), \
-            'The dump file must be a pkl file.'
-        add_dump_metric(args, cfg)
-
     cfg.model.backbone.init_cfg.type = None
     cfg.test_dataloader.dataset.test_mode = True
 
@@ -139,6 +134,13 @@ def main():
         # build customized runner from the registry
         # if 'runner_type' is set in the cfg
         runner = RUNNERS.build(cfg)
+
+    # add `DumpResults` dummy metric
+    if args.out is not None:
+        assert args.out.endswith(('.pkl', '.pickle')), \
+            'The dump file must be a pkl file.'
+        runner.test_evaluator.metrics.append(
+            DumpResults(out_file_path=args.out))
 
     if 'all' in args.corruptions:
         corruptions = [

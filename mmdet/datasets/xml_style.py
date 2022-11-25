@@ -101,7 +101,7 @@ class XMLDataset(BaseDetDataset):
         else:
             img_bytes = self.file_client.get(img_path)
             img = mmcv.imfrombytes(img_bytes, backend='cv2')
-            width, height = img.shape[:2]
+            height, width = img.shape[:2]
             del img, img_bytes
 
         data_info['height'] = height

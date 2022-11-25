@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
+from typing import Tuple
 
 import cv2
 import mmcv
@@ -13,7 +14,6 @@ from mmdet.apis import init_detector
 from mmdet.registry import VISUALIZERS
 from mmdet.structures import DetDataSample
 from mmdet.utils import register_all_modules
-from mmdet.utils.typing import Tuple
 
 try:
     import ffmpegcv

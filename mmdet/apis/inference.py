@@ -14,6 +14,7 @@ from mmengine.runner import load_checkpoint
 from ..evaluation import get_classes
 from ..models import build_detector
 from ..structures import DetDataSample, SampleList
+from ..utils import get_test_pipeline_cfg
 
 
 def init_detector(
@@ -113,18 +114,13 @@ def inference_detector(
 
     if test_pipeline is None:
         cfg = cfg.copy()
-        test_pipeline = cfg.test_dataloader.dataset.pipeline
+        test_pipeline = get_test_pipeline_cfg(cfg)
         if isinstance(imgs[0], np.ndarray):
-            # set loading pipeline type
-            test_pipeline[0].type = 'LoadImageFromNDArray'
+            # Calling this method across libraries will result
+            # in module unregistered error if not prefixed with mmdet.
+            test_pipeline[0].type = 'mmdet.LoadImageFromNDArray'
 
-        new_test_pipeline = []
-        for pipeline in test_pipeline:
-            if pipeline['type'] != 'LoadAnnotations' and pipeline[
-                    'type'] != 'LoadPanopticAnnotations':
-                new_test_pipeline.append(pipeline)
-
-        test_pipeline = Compose(new_test_pipeline)
+        test_pipeline = Compose(test_pipeline)
 
     if model.data_preprocessor.device.type == 'cpu':
         for m in model.modules():
