@@ -28,6 +28,10 @@
 
   2. 安装 `mmcv` 根据 [安装说明](https://mmcv.readthedocs.io/zh_CN/2.x/get_started/installation.html)。
 
+- 在 Windows 环境下安装过程中遇到 "Microsoft Visual C++ 14.0 or graeter is required" error .
+
+  这个错误发生在 pycotools 的 'pycocotools.\_mask' 扩展构建过程，其原因是缺少了对应 C++ 环境依赖。你需要到微软官方下载[对应工具](https://visualstudio.microsoft.com/zh-hans/visual-cpp-build-tools/)，选择“使用 C++ 的桌面开发”选项安装最小依赖，随后重新安装 pycocotools。
+
 - 使用 albumentations
 
 如果你希望使用 `albumentations`，我们建议使用 `pip install -r requirements/albu.txt`

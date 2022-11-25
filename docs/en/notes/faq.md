@@ -26,6 +26,10 @@ We list some common troubles faced by many users and their corresponding solutio
   1. Uninstall existing `mmcv-lite` in the environment using `pip uninstall mmcv-lite`.
   2. Install `mmcv` following the [installation instruction](https://mmcv.readthedocs.io/en/2.x/get_started/installation.html).
 
+- "Microsoft Visual C++ 14.0 or graeter is required" during installation on Windows.
+
+  This error happens when building the 'pycocotools.\_mask' extension of pycocotools and the environment lacks corresponding C++ compilation dependencies. You need to download it at Microsoft officials [visual-cpp-build-tools](https://visualstudio.microsoft.com/zh-hans/visual-cpp-build-tools/),  select the "Use C ++ Desktop Development" option to install the minimum dependencies, and then reinstall pycocotools.
+
 - Using Albumentations
 
   If you would like to use `albumentations`, we suggest using `pip install -r requirements/albu.txt` or
