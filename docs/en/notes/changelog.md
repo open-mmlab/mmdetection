@@ -34,6 +34,7 @@
 - Update guide about model deployment (#9344)
 - Fix doc typos of useful tools (#9177)
 - Allow to resume from specific checkpoint in CLI (#9284)
+- Update FAQ about windows installation issues of pycocotools (#9292)
 
 ### New Contributors
 
