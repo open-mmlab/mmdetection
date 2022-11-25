@@ -4,12 +4,12 @@ from argparse import ArgumentParser
 import mmcv
 import requests
 import torch
+from mmengine.registry import init_default_scope
 from mmengine.structures import InstanceData
 
 from mmdet.apis import inference_detector, init_detector
 from mmdet.registry import VISUALIZERS
 from mmdet.structures import DetDataSample
-from mmdet.utils import register_all_modules
 
 
 def parse_args():
@@ -55,7 +55,7 @@ def align_ts_output(inputs, metainfo, device):
 
 
 def main(args):
-    register_all_modules()
+    init_default_scope('mmdet')
     # build the model from a config file and a checkpoint file
     model = init_detector(args.config, args.checkpoint, device=args.device)
     # test a single image

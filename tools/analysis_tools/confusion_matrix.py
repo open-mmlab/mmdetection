@@ -7,12 +7,12 @@ from matplotlib.ticker import MultipleLocator
 from mmcv.ops import nms
 from mmengine import Config, DictAction
 from mmengine.fileio import load
+from mmengine.registry import init_default_scope
 from mmengine.utils import ProgressBar
 
 from mmdet.evaluation import bbox_overlaps
 from mmdet.registry import DATASETS
-from mmdet.utils import (register_all_modules, replace_cfg_vals,
-                         update_data_root)
+from mmdet.utils import replace_cfg_vals, update_data_root
 
 
 def parse_args():
@@ -235,7 +235,6 @@ def plot_confusion_matrix(confusion_matrix,
 
 
 def main():
-    register_all_modules()
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
@@ -248,6 +247,8 @@ def main():
 
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
+
+    init_default_scope(cfg.get('default_scope', 'mmdet'))
 
     results = load(args.prediction_path)
 

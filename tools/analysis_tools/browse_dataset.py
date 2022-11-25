@@ -4,12 +4,12 @@ import os.path as osp
 
 import numpy as np
 from mmengine.config import Config, DictAction
+from mmengine.registry import init_default_scope
 from mmengine.utils import ProgressBar
 
 from mmdet.models.utils import mask2ndarray
 from mmdet.registry import DATASETS, VISUALIZERS
 from mmdet.structures.bbox import BaseBoxes
-from mmdet.utils import register_all_modules
 
 
 def parse_args():
@@ -47,7 +47,7 @@ def main():
         cfg.merge_from_dict(args.cfg_options)
 
     # register all modules in mmdet into the registries
-    register_all_modules()
+    init_default_scope(cfg.get('default_scope', 'mmdet'))
 
     dataset = DATASETS.build(cfg.train_dataloader.dataset)
     visualizer = VISUALIZERS.build(cfg.visualizer)
