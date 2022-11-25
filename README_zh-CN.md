@@ -78,8 +78,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 - 支持了 [CondInst](https://arxiv.org/abs/2003.05664)
 - 添加了 [`projects/`](./projects/) 文件夹并提供了[示例](./projects/example_project/README.md)，方便社区快速地贡献相关项目
-- 在 [`projects`](./projects/SparseInst/README.md) 中支持了 [SparseInst](https://arxiv.org/abs/2203.12827) 
-
+- 在 [`projects`](./projects/SparseInst/README.md) 中支持了 [SparseInst](https://arxiv.org/abs/2203.12827)
 
 ## 安装
 

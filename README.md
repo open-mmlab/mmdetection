@@ -79,7 +79,7 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 
 - Support [CondInst](https://arxiv.org/abs/2003.05664)
 - Add [`projects/`](./projects/) folder and give an [example](./projects/example_project/README.md) for communities to contribute their projects.
-- Support [SparseInst](https://arxiv.org/abs/2203.12827) in [`projects`](./projects/SparseInst/README.md) 
+- Support [SparseInst](https://arxiv.org/abs/2203.12827) in [`projects`](./projects/SparseInst/README.md)
 
 ## Installation
 
