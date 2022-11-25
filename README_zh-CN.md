@@ -74,7 +74,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 最新进展
 
-**v3.0.0rc4** 版本已经在 2022.11.28 发布：
+**v3.0.0rc4** 版本已经在 2022.11.25 发布：
 
 - 支持了 [CondInst](https://arxiv.org/abs/2003.05664)
 - 添加了 [`projects/`](./projects/) 文件夹并提供了[示例](./projects/example_project/README.md)，方便社区快速地贡献相关项目
