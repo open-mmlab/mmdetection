@@ -75,10 +75,11 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 
 ## What's New
 
-**v3.0.0rc4** was released in 23/11/2022:
+**v3.0.0rc4** was released in 25/11/2022:
 
 - Support [CondInst](https://arxiv.org/abs/2003.05664)
 - Add [`projects/`](./projects/) folder and give an [example](./projects/example_project/README.md) for communities to contribute their projects.
+- Support [SparseInst](https://arxiv.org/abs/2203.12827) in [`projects`](./projects/SparseInst/README.md) 
 
 ## Installation
 
@@ -203,6 +204,8 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/scnet">SCNet (AAAI'2021)</a></li>
           <li><a href="configs/queryinst">QueryInst (ICCV'2021)</a></li>
           <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
+          <li><a href="configs/condinst">CondInst (ECCV 2020)</a></li>
+          <li><a href="projects/SparseInst">SparseInst (CVPR 2022)</a></li>
         </ul>
       </td>
       <td>

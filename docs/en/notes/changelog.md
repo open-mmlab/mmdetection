@@ -6,11 +6,13 @@
 
 - Support [CondInst](https://arxiv.org/abs/2003.05664)
 - Add `projects/` folder, which will be a place for some experimental models/features.
+- Support [SparseInst](https://arxiv.org/abs/2203.12827) in [`projects`](./projects/SparseInst/README.md) 
 
 ### New Features
 
 - Support [CondInst](https://arxiv.org/abs/2003.05664) (#9223)
 - Add `projects/` folder, which will be a place for some experimental models/features (#9341)
+- Support [SparseInst](https://arxiv.org/abs/2203.12827) in [`projects`](./projects/SparseInst/README.md) (#9377)
 
 ### Bug Fixes
 
