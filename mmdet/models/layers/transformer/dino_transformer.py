@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
 import warnings
-from typing import Tuple
+from typing import Tuple, Union
 
 import torch
 from mmengine.model import BaseModule
@@ -230,11 +230,11 @@ class CdnQueryGenerator(BaseModule):
         Descriptions of the Number Values in code and comments:
             - num_target_total: the total target number of the input batch
               samples.
-            - max_num_target: the max target number in the input batch samples.
+            - max_num_target: the max target number of the input batch samples.
             - num_noisy_targets: the total targets number after adding noise,
-              i.e., num_target_total * num_groups * 2
+              i.e., num_target_total * num_groups * 2.
             - num_denoising_query: the length of the output batched queries,
-              i.e., max_num_target * num_groups * 2
+              i.e., max_num_target * num_groups * 2.
 
         NOTE The format of input bboxes in batch_data_samples is unnormalized
         (x, y, x, y), and the output bbox queries are embedded by normalized
@@ -318,7 +318,7 @@ class CdnQueryGenerator(BaseModule):
         samples containing fewer targets are padded to the max length.
 
         Args:
-            max_num_target (int, optional): The max target number in the batch
+            max_num_target (int, optional): The max target number of the batch
                 samples. It will only be used when `self.dynamic_dn_groups` is
                 `True`. Defaults to `None`.
 
@@ -446,8 +446,8 @@ class CdnQueryGenerator(BaseModule):
         positive_idx = positive_idx.flatten()
         negative_idx = positive_idx + len(gt_bboxes)
 
-        # determine the sign of each element in rand_part
-        # to be positive or negative randomly.
+        # determine the sign of each element in the random part of the added
+        # noise to be positive or negative randomly.
         rand_sign = torch.randint_like(
             gt_bboxes_expand, low=0, high=2,
             dtype=torch.float32) * 2.0 - 1.0  # [low, high), 1 or -1, randomly
@@ -485,6 +485,7 @@ class CdnQueryGenerator(BaseModule):
                       P_B1 P_B2 N_B1 N_B2 P'B1 P'B2 N'B1 N'B2
                        |____ group1 ____| |____ group2 ____|
              batched_queries (batch_size, max_num_target, query_dim)
+
             where query_dim is 4 for bbox and self.embed_dims for label.
             Notation: _-group 1; '-group 2;
                       A-Sample1(has 1 target); B-sample2(has 2 targets)
@@ -514,7 +515,7 @@ class CdnQueryGenerator(BaseModule):
         single_pad = max(num_target_list)  # max_num_target
         pad_size = int(single_pad * 2 * num_groups)  # num_noisy_targets
         """
-        - max_num_target: the max target number in the input batch samples.
+        - max_num_target: the max target number of the input batch samples.
         - num_noisy_targets: the total targets number after adding noise,
           i.e., num_target_total * num_groups * 2
         """
@@ -539,15 +540,37 @@ class CdnQueryGenerator(BaseModule):
                                 map_known_indice)] = input_bbox_query
         return batched_label_query, batched_bbox_query
 
-    def generate_dn_mask(self, single_pad: int, num_groups: int,
-                         device) -> Tensor:
+    def generate_dn_mask(self, max_num_target: int, num_groups: int,
+                         device: Union[torch.device, str]) -> Tensor:
         """Generate attention mask to prevent information leakage from
         different denoising groups and matching parts.
 
+        .. code:: text
+
+                        0 0 0 0 1 1 1 1 0 0 0 0 0
+                        0 0 0 0 1 1 1 1 0 0 0 0 0
+                        0 0 0 0 1 1 1 1 0 0 0 0 0
+                        0 0 0 0 1 1 1 1 0 0 0 0 0
+                        1 1 1 1 0 0 0 0 0 0 0 0 0
+                        1 1 1 1 0 0 0 0 0 0 0 0 0
+                        1 1 1 1 0 0 0 0 0 0 0 0 0
+                        1 1 1 1 0 0 0 0 0 0 0 0 0
+                        1 1 1 1 1 1 1 1 0 0 0 0 0
+                        1 1 1 1 1 1 1 1 0 0 0 0 0
+                        1 1 1 1 1 1 1 1 0 0 0 0 0
+                        1 1 1 1 1 1 1 1 0 0 0 0 0
+                        1 1 1 1 1 1 1 1 0 0 0 0 0
+         max_num_target |_|           |_________| num_matching_query
+                        |_____________| num_denoising_query
+
+               1 -> True  (Masked), means 'can not see'.
+               0 -> False (UnMasked), means 'can see'.
+
         Args:
-            single_pad (int):
-            num_groups (int):
-            device (?):
+            max_num_target (int): The max target number of the input batch
+                samples.
+            num_groups (int): The number of denoising query groups.
+            device (obj:`device` or str): The device of generated mask.
 
         Returns:
             Tensor: The attention mask to prevent information leakage from
@@ -556,24 +579,22 @@ class CdnQueryGenerator(BaseModule):
             num_query_total), where `num_query_total` is the sum of
             `num_denoising_query` and `num_matching_query`.
         """
-        pad_size = int(single_pad * 2 * num_groups)
-        tgt_size = pad_size + self.num_matching_query
-        attn_mask = torch.ones(tgt_size, tgt_size, device=device) < 0
-        # matching query cannot see the denoising groups
-        attn_mask[pad_size:, :pad_size] = True
-        # the denoising groups cannot see each other
+        num_denoising_query = int(max_num_target * 2 * num_groups)
+        num_query_total = num_denoising_query + self.num_matching_query
+        attn_mask = torch.zeros(
+            num_query_total, num_query_total, device=device, dtype=torch.bool)
+        # Make the matching part cannot see the denoising groups
+        attn_mask[num_denoising_query:, :num_denoising_query] = True
+        # Make the denoising groups cannot see each other
         for i in range(num_groups):
-            if i == 0:
-                attn_mask[single_pad * 2 * i:single_pad * 2 * (i + 1),
-                          single_pad * 2 * (i + 1):pad_size] = True
-            if i == num_groups - 1:
-                attn_mask[single_pad * 2 * i:single_pad * 2 *
-                          (i + 1), :single_pad * i * 2] = True
-            else:
-                attn_mask[single_pad * 2 * i:single_pad * 2 * (i + 1),
-                          single_pad * 2 * (i + 1):pad_size] = True
-                attn_mask[single_pad * 2 * i:single_pad * 2 *
-                          (i + 1), :single_pad * 2 * i] = True
+            # Mask one row per step.
+            row_scope = slice(max_num_target * 2 * i,
+                              max_num_target * 2 * (i + 1))
+            left_scope = slice(max_num_target * 2 * i)
+            right_scope = slice(max_num_target * 2 * (i + 1),
+                                num_denoising_query)
+            attn_mask[row_scope, right_scope] = True
+            attn_mask[row_scope, left_scope] = True
         return attn_mask
 
     def ori__call__(self, batch_data_samples: SampleList) -> tuple:
