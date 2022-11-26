@@ -512,32 +512,26 @@ class CdnQueryGenerator(BaseModule):
         num_target_list = [
             torch.sum(batch_idx == idx) for idx in range(batch_size)
         ]
-        single_pad = max(num_target_list)  # max_num_target
-        pad_size = int(single_pad * 2 * num_groups)  # num_noisy_targets
-        """
-        - max_num_target: the max target number of the input batch samples.
-        - num_noisy_targets: the total targets number after adding noise,
-          i.e., num_target_total * num_groups * 2
-        """
+        max_num_target = max(num_target_list)
+        num_denoising_query = int(max_num_target * 2 * num_groups)
+
+        map_query_index = torch.cat([
+            torch.arange(num_target, device=device)
+            for num_target in num_target_list
+        ])
+        map_query_index = torch.cat([
+            map_query_index + max_num_target * i for i in range(2 * num_groups)
+        ]).long()
+        batch_idx_expand = batch_idx.repeat(2 * num_groups, 1).view(-1)
+        mapper = (batch_idx_expand, map_query_index)
 
         batched_label_query = torch.zeros(
-            pad_size, self.embed_dims, device=device).repeat(batch_size, 1, 1)
+            batch_size, num_denoising_query, self.embed_dims, device=device)
         batched_bbox_query = torch.zeros(
-            pad_size, 4, device=device).repeat(batch_size, 1, 1)
+            batch_size, num_denoising_query, 4, device=device)
 
-        map_known_indice = torch.cat([
-            torch.arange(n, device=device) for n in num_target_list
-        ])  # TODO: rewrite
-        map_known_indice = torch.cat([
-            map_known_indice + single_pad * i for i in range(2 * num_groups)
-        ]).long()
-
-        batch_idx_expand = batch_idx.repeat(2 * num_groups, 1).view(-1)
-        if len(batch_idx_expand):
-            batched_label_query[(batch_idx_expand.long(),
-                                 map_known_indice)] = input_label_query
-            batched_bbox_query[(batch_idx_expand.long(),
-                                map_known_indice)] = input_bbox_query
+        batched_label_query[mapper] = input_label_query
+        batched_bbox_query[mapper] = input_bbox_query
         return batched_label_query, batched_bbox_query
 
     def generate_dn_mask(self, max_num_target: int, num_groups: int,
@@ -587,7 +581,7 @@ class CdnQueryGenerator(BaseModule):
         attn_mask[num_denoising_query:, :num_denoising_query] = True
         # Make the denoising groups cannot see each other
         for i in range(num_groups):
-            # Mask one row per step.
+            # Mask rows of one group per step.
             row_scope = slice(max_num_target * 2 * i,
                               max_num_target * 2 * (i + 1))
             left_scope = slice(max_num_target * 2 * i)
