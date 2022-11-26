@@ -261,10 +261,10 @@ class CdnQueryGenerator(BaseModule):
               will be used as `self_attn_mask` of the `decoder`, has shape
               (num_query_total, num_query_total), where `num_query_total` is
               the sum of `num_denoising_query` and `num_matching_query`.
-            - dn_meta (Dict[int]): The dictionary saves information about
-              grouping collation, including 'single_pad' and 'num_dn_group'.
-              It will be used for dn results extraction and loss calculation.
-              # TODO: explain what is 'single_pad' and 'max_num_targets' or rename it  # noqa
+            - dn_meta (Dict[str, int]): The dictionary saves information about
+              group collation, including 'num_denoising_query' and
+              'num_dn_group'. It will be used for dn results extraction and
+              loss calculation.
         """
         # normalize bbox and collate ground truth (gt)
         gt_labels_list = []
@@ -299,7 +299,9 @@ class CdnQueryGenerator(BaseModule):
         attn_mask = self.generate_dn_mask(
             max_num_target, num_groups, device=dn_label_query.device)
 
-        dn_meta = dict(single_pad=max_num_target, num_dn_group=num_groups)
+        dn_meta = dict(
+            num_denoising_query=int(max_num_target * 2 * num_groups),
+            num_dn_group=num_groups)
 
         return dn_label_query, dn_bbox_query, attn_mask, dn_meta
 

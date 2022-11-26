@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import torch
 from torch import Tensor
@@ -26,34 +26,32 @@ class DINOHead(DeformableDETRHead):
 
     def loss(self, hidden_states: Tensor, references: List[Tensor],
              enc_outputs_class: Tensor, enc_outputs_coord: Tensor,
-             batch_data_samples: SampleList,
-             dn_meta: Dict) -> dict:  # TODO: Dict[what]
+             batch_data_samples: SampleList, dn_meta: Dict[str, int]) -> dict:
         """Perform forward propagation and loss calculation of the detection
         head on the queries of the upstream network.
 
         Args:
             hidden_states (Tensor): Hidden states output from each decoder
-                layer, has shape (num_decoder_layers, num_query, bs, dim).
+                layer, has shape (num_decoder_layers, num_query_total, bs,
+                dim), where `num_query_total` is the sum of
+                `num_denoising_query` and `num_matching_query`.
             references (list[Tensor]): List of the reference from the decoder.
                 The first reference is the `init_reference` (initial) and the
                 other num_decoder_layers(6) references are `inter_references`
-                (intermediate). The `init_reference` has shape (bs, num_query,
-                4) when `as_two_stage` of the detector is `True`, otherwise
-                (bs, num_query, 2). Each `inter_reference` has shape
-                (bs, num_query, 4) when `with_box_refine` of the detector is
-                `True`, otherwise (bs, num_query, 2).
+                (intermediate). The `init_reference` has shape (bs,
+                num_query_total, 4) and each `inter_reference` has shape
+                (bs, num_query, 4).
             enc_outputs_class (Tensor): The score of each point on encode
                 feature map, has shape (bs, num_feat, cls_out_channels).
-                Only when `as_two_stage` is `True` it would be returned,
-                otherwise `None` would be returned.
             enc_outputs_coord (Tensor): The proposal generate from the
-                encode feature map, has shape (bs, num_feat, 4). Only when
-                `as_two_stage` is `True` it would be returned, otherwise
-                `None` would be returned.
+                encode feature map, has shape (bs, num_feat, 4).
             batch_data_samples (list[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
-            dn_meta (Dict): TODO: write doc
+            dn_meta (Dict[str, int]): The dictionary saves information about
+              group collation, including 'num_denoising_query' and
+              'num_dn_group'. It will be used for dn results extraction and
+              loss calculation.
 
         Returns:
             dict: A dictionary of loss components.
@@ -78,33 +76,33 @@ class DINOHead(DeformableDETRHead):
         enc_bbox_preds: Tensor,
         batch_gt_instances: InstanceList,
         batch_img_metas: List[dict],
-        dn_meta: Dict,  # TODO: Dict[what]
+        dn_meta: Dict[str, int],
         batch_gt_instances_ignore: OptInstanceList = None
     ) -> Dict[str, Tensor]:
         """Loss function.
 
         Args:
             all_layers_cls_scores (Tensor): Classification scores of all
-                decoder layers, has shape (num_decoder_layers, bs, num_query,
-                cls_out_channels).
+                decoder layers, has shape (num_decoder_layers, bs,
+                num_query_total, cls_out_channels), where `num_query_total` is
+                the sum of `num_denoising_query` and `num_matching_query`.
             all_layers_bbox_preds (Tensor): Regression outputs of all decode
                 layers. Each is a 4D-tensor with normalized coordinate format
                 (cx, cy, w, h) and has shape (num_decoder_layers, bs,
-                num_query, 4).
+                num_query_total, 4).
             enc_cls_scores (Tensor): The score of each point on encode
                 feature map, has shape (bs, num_feat, cls_out_channels).
-                Only when `as_two_stage` is `True` it would be returned,
-                otherwise `None` would be returned.
             enc_bbox_preds (Tensor): The proposal generate from the
-                encode feature map, has shape (bs, num_feat, 4). Only when
-                `as_two_stage` is `True` it would be returned, otherwise
-                `None` would be returned.
+                encode feature map, has shape (bs, num_feat, 4).
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
             batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            dn_meta (Dict): TODO: write doc
+            dn_meta (Dict[str, int]): The dictionary saves information about
+              group collation, including 'num_denoising_query' and
+              'num_dn_group'. It will be used for dn results extraction and
+              loss calculation.
             batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
                 Batch of gt_instances_ignore. It includes ``bboxes`` attribute
                 data that is ignored during training and testing.
@@ -148,7 +146,31 @@ class DINOHead(DeformableDETRHead):
     def loss_dn(self, all_layers_denoising_cls_scores: Tensor,
                 all_layers_denoising_bbox_preds: Tensor,
                 batch_gt_instances: InstanceList, batch_img_metas: List[dict],
-                dn_meta: Dict):  # TODO: Dict[what]
+                dn_meta: Dict[str, int]) -> Tuple[List[Tensor]]:
+        """Calculate denoising loss.
+
+        Args:
+            all_layers_denoising_cls_scores (Tensor): Classification scores of
+                all decoder layers in denoising part, has shape (
+                num_decoder_layers, bs, num_denoising_query, cls_out_channels).
+            all_layers_denoising_bbox_preds (Tensor): Regression outputs of all
+                decode layers in denoising part. Each is a 4D-tensor with
+                normalized coordinate format (cx, cy, w, h) and has shape
+                (num_decoder_layers, bs, num_denoising_query, 4).
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            dn_meta (Dict[str, int]): The dictionary saves information about
+              group collation, including 'num_denoising_query' and
+              'num_dn_group'. It will be used for dn results extraction and
+              loss calculation.
+
+        Returns:
+            Tuple[List[Tensor]]: The loss_dn_cls, loss_dn_bbox, and loss_dn_iou
+            of each decoder layers.
+        """
         return multi_apply(
             self._loss_dn_single,
             all_layers_denoising_cls_scores,
@@ -158,7 +180,7 @@ class DINOHead(DeformableDETRHead):
             dn_meta=dn_meta)
 
     def _loss_dn_single(self, dn_cls_scores, dn_bbox_preds, batch_gt_instances,
-                        batch_img_metas, dn_meta):  # TODO: refine the function
+                        batch_img_metas, dn_meta):
         num_imgs = dn_cls_scores.size(0)
         bbox_preds_list = [dn_bbox_preds[i] for i in range(num_imgs)]
         cls_reg_targets = self.get_dn_target(bbox_preds_list,
@@ -185,10 +207,9 @@ class DINOHead(DeformableDETRHead):
             loss_cls = self.loss_cls(
                 cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
         else:
-            loss_cls = torch.zeros(  # TODO: How to better return zero loss
-                1,
-                dtype=cls_scores.dtype,
-                device=cls_scores.device)
+            loss_cls = torch.zeros(
+                1, dtype=cls_scores.dtype, device=cls_scores.device)
+            # TODO: How to better return zero loss  # refine this
 
         # Compute the average number of gt boxes across all gpus, for
         # normalization purposes
@@ -240,7 +261,8 @@ class DINOHead(DeformableDETRHead):
         gt_bboxes = gt_instances.bboxes
         gt_labels = gt_instances.labels
         num_groups = dn_meta['num_dn_group']
-        single_pad = dn_meta['single_pad']
+        num_denoising_query = dn_meta['num_denoising_query']
+        group_num_query = int(num_denoising_query / num_groups)
         num_bboxes = dn_bbox_pred.size(0)
 
         if len(gt_labels) > 0:
@@ -250,13 +272,13 @@ class DINOHead(DeformableDETRHead):
             pos_assigned_gt_inds = t.flatten()
             pos_inds = torch.arange(
                 num_groups, dtype=torch.long, device=device)
-            pos_inds = pos_inds.unsqueeze(1) * single_pad + t
+            pos_inds = pos_inds.unsqueeze(1) * group_num_query + t
             pos_inds = pos_inds.flatten()
         else:
             pos_inds = pos_assigned_gt_inds = \
                 dn_bbox_pred.new_tensor([], dtype=torch.long)
 
-        neg_inds = pos_inds + single_pad // 2
+        neg_inds = pos_inds + group_num_query // 2
 
         # label targets
         labels = gt_bboxes.new_full((num_bboxes, ),
@@ -287,16 +309,19 @@ class DINOHead(DeformableDETRHead):
     def extract_dn_outputs(all_layers_cls_scores: Tensor,
                            all_layers_bbox_preds: Tensor,
                            dn_meta: Dict):  # TODO: Dict[what]
+        """
+        TODO: Doc
+        """
+        num_denoising_query = dn_meta['num_denoising_query']
         if dn_meta is not None:
-            pad_size = dn_meta['single_pad'] * dn_meta['num_dn_group']
             all_layers_denoising_cls_scores = \
-                all_layers_cls_scores[:, :, : pad_size, :]
+                all_layers_cls_scores[:, :, : num_denoising_query, :]
             all_layers_denoising_bbox_preds = \
-                all_layers_bbox_preds[:, :, : pad_size, :]
+                all_layers_bbox_preds[:, :, : num_denoising_query, :]
             all_layers_matching_cls_scores = \
-                all_layers_cls_scores[:, :, pad_size:, :]
+                all_layers_cls_scores[:, :, num_denoising_query:, :]
             all_layers_matching_bbox_preds = \
-                all_layers_bbox_preds[:, :, pad_size:, :]
+                all_layers_bbox_preds[:, :, num_denoising_query:, :]
         else:
             all_layers_denoising_cls_scores = None
             all_layers_denoising_bbox_preds = None
