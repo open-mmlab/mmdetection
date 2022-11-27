@@ -1,6 +1,7 @@
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+# data_root = 'data/coco/'
+data_root = '/home/ps/ssd/big_data/xqz/refactor-detr-3.x/data/coco/'
 
 # file_client_args = dict(
 #     backend='petrel',

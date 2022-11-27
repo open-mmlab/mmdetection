@@ -64,9 +64,6 @@ class ConditionalAttention(BaseModule):
             Default: 0.0.
         proj_drop: A Dropout layer after `nn.MultiheadAttention`.
             Default: 0.0.
-        batch_first (bool): When it is True,  Key, Query and Value are shape of
-            (batch, n, embed_dim), otherwise (n, batch, embed_dim).
-            Default: False.
         cross_attn (bool): Whether the attention module is for cross attention.
             Default: False
         keep_query_pos (bool): Whether to transform query_pos before cross
@@ -81,12 +78,10 @@ class ConditionalAttention(BaseModule):
                  num_heads: int,
                  attn_drop: float = 0.,
                  proj_drop: float = 0.,
-                 batch_first: bool = False,
                  cross_attn: bool = False,
                  keep_query_pos: bool = False,
                  init_cfg=None):
         super().__init__(init_cfg=init_cfg)
-        self.batch_first = batch_first
         self.cross_attn = cross_attn
         self.keep_query_pos = keep_query_pos
         self.embed_dims = embed_dims

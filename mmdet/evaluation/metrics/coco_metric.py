@@ -73,7 +73,8 @@ class CocoMetric(BaseMetric):
                  outfile_prefix: Optional[str] = None,
                  file_client_args: dict = dict(backend='disk'),
                  collect_device: str = 'cpu',
-                 prefix: Optional[str] = None) -> None:
+                 prefix: Optional[str] = None,
+                 cat_ids: List[int] = None) -> None:  # TODO: MODIFICATION
         super().__init__(collect_device=collect_device, prefix=prefix)
         # coco evaluation metrics
         self.metrics = metric if isinstance(metric, list) else [metric]
@@ -116,7 +117,8 @@ class CocoMetric(BaseMetric):
             self._coco_api = None
 
         # handle dataset lazy init
-        self.cat_ids = None
+        # self.cat_ids = None
+        self.cat_ids = cat_ids  # TODO: MODIFICATION
         self.img_ids = None
 
     def fast_eval_recall(self,
