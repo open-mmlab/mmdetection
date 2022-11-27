@@ -1,4 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional
+
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -7,10 +10,11 @@ from .utils import weighted_loss
 
 
 @weighted_loss
-def knowledge_distillation_kl_div_loss(pred,
-                                       soft_label,
-                                       T,
-                                       detach_target=True):
+def knowledge_distillation_kl_div_loss(
+        pred: torch.Tensor,
+        soft_label: torch.Tensor,
+        T: int,
+        detach_target: bool = True) -> torch.Tensor:
     r"""Loss function for knowledge distilling using KL divergence.
 
     Args:
@@ -44,19 +48,22 @@ class KnowledgeDistillationKLDivLoss(nn.Module):
         T (int): Temperature for distillation.
     """
 
-    def __init__(self, reduction='mean', loss_weight=1.0, T=10):
-        super(KnowledgeDistillationKLDivLoss, self).__init__()
+    def __init__(self,
+                 reduction: str = 'mean',
+                 loss_weight: float = 1.0,
+                 T: int = 10):
+        super().__init__()
         assert T >= 1
         self.reduction = reduction
         self.loss_weight = loss_weight
         self.T = T
 
     def forward(self,
-                pred,
-                soft_label,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None):
+                pred: torch.Tensor,
+                soft_label: torch.Tensor,
+                weight: Optional[torch.Tensor] = None,
+                avg_factor: Optional[int] = None,
+                reduction_override: Optional[str] = None):
         """Forward function.
 
         Args:

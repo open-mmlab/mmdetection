@@ -1,11 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import functools
+from typing import Callable, Optional
 
 import torch
 import torch.nn.functional as F
 
 
-def reduce_loss(loss, reduction):
+def reduce_loss(loss: torch.Tensor, reduction: str) -> torch.Tensor:
     """Reduce loss as specified.
 
     Args:
@@ -25,7 +26,10 @@ def reduce_loss(loss, reduction):
         return loss.sum()
 
 
-def weight_reduce_loss(loss, weight=None, reduction='mean', avg_factor=None):
+def weight_reduce_loss(loss: torch.Tensor,
+                       weight: Optional[torch.Tensor] = None,
+                       reduction: str = 'mean',
+                       avg_factor: Optional[float] = None) -> torch.Tensor:
     """Apply element-wise weight and reduce loss.
 
     Args:
@@ -57,7 +61,7 @@ def weight_reduce_loss(loss, weight=None, reduction='mean', avg_factor=None):
     return loss
 
 
-def weighted_loss(loss_func):
+def weighted_loss(loss_func: Callable) -> Callable:
     """Create a weighted version of a given loss function.
 
     To use this decorator, the loss function must have the signature like
@@ -89,12 +93,12 @@ def weighted_loss(loss_func):
     """
 
     @functools.wraps(loss_func)
-    def wrapper(pred,
-                target,
-                weight=None,
-                reduction='mean',
-                avg_factor=None,
-                **kwargs):
+    def wrapper(pred: torch.Tensor,
+                target: torch.Tensor,
+                weight: Optional[torch.Tensor] = None,
+                reduction: str = 'mean',
+                avg_factor: Optional[int] = None,
+                **kwargs) -> torch.Tensor:
         # get element-wise loss
         loss = loss_func(pred, target, **kwargs)
         loss = weight_reduce_loss(loss, weight, reduction, avg_factor)

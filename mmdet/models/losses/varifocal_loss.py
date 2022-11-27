@@ -1,4 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional
+
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -6,14 +9,14 @@ from mmdet.registry import MODELS
 from .utils import weight_reduce_loss
 
 
-def varifocal_loss(pred,
-                   target,
-                   weight=None,
-                   alpha=0.75,
-                   gamma=2.0,
-                   iou_weighted=True,
-                   reduction='mean',
-                   avg_factor=None):
+def varifocal_loss(pred: torch.Tensor,
+                   target: torch.Tensor,
+                   weight: Optional[torch.Tensor] = None,
+                   alpha: float = 0.75,
+                   gamma: float = 2.0,
+                   iou_weighted: bool = True,
+                   reduction: str = 'mean',
+                   avg_factor: Optional[int] = None) -> torch.Tensor:
     """`Varifocal Loss <https://arxiv.org/abs/2008.13367>`_
 
     Args:
@@ -58,12 +61,12 @@ def varifocal_loss(pred,
 class VarifocalLoss(nn.Module):
 
     def __init__(self,
-                 use_sigmoid=True,
-                 alpha=0.75,
-                 gamma=2.0,
-                 iou_weighted=True,
-                 reduction='mean',
-                 loss_weight=1.0):
+                 use_sigmoid: bool = True,
+                 alpha: float = 0.75,
+                 gamma: float = 2.0,
+                 iou_weighted: bool = True,
+                 reduction: str = 'mean',
+                 loss_weight: float = 1.0):
         """`Varifocal Loss <https://arxiv.org/abs/2008.13367>`_
 
         Args:
@@ -81,7 +84,7 @@ class VarifocalLoss(nn.Module):
                 "sum".
             loss_weight (float, optional): Weight of loss. Defaults to 1.0.
         """
-        super(VarifocalLoss, self).__init__()
+        super().__init__()
         assert use_sigmoid is True, \
             'Only sigmoid varifocal loss supported now.'
         assert alpha >= 0.0
@@ -93,11 +96,11 @@ class VarifocalLoss(nn.Module):
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred,
-                target,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None):
+                pred: torch.Tensor,
+                target: torch.Tensor,
+                weight: Optional[torch.Tensor] = None,
+                avg_factor: Optional[int] = None,
+                reduction_override: Optional[str] = None) -> torch.Tensor:
         """Forward function.
 
         Args:

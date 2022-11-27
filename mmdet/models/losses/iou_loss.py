@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
 import warnings
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -11,7 +12,11 @@ from .utils import weighted_loss
 
 
 @weighted_loss
-def iou_loss(pred, target, linear=False, mode='log', eps=1e-6):
+def iou_loss(pred: torch.Tensor,
+             target: torch.Tensor,
+             linear: bool = False,
+             mode: str = 'log',
+             eps: float = 1e-6) -> torch.Tensor:
     """IoU loss.
 
     Computing the IoU loss between a set of predicted bboxes and target bboxes.
@@ -49,7 +54,10 @@ def iou_loss(pred, target, linear=False, mode='log', eps=1e-6):
 
 
 @weighted_loss
-def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
+def bounded_iou_loss(pred: torch.Tensor,
+                     target: torch.Tensor,
+                     beta: float = 0.2,
+                     eps: float = 1e-3) -> torch.Tensor:
     """BIoULoss.
 
     This is an implementation of paper
@@ -59,8 +67,11 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
     Args:
         pred (torch.Tensor): Predicted bboxes.
         target (torch.Tensor): Target bboxes.
-        beta (float): beta parameter in smoothl1.
-        eps (float): eps to avoid NaN.
+        beta (float, optional): beta parameter in smoothl1.
+        eps (float, optional): eps to avoid NaN.
+
+    Return:
+        torch.Tensor: Loss tensor.
     """
     pred_ctrx = (pred[:, 0] + pred[:, 2]) * 0.5
     pred_ctry = (pred[:, 1] + pred[:, 3]) * 0.5
@@ -95,7 +106,9 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
 
 
 @weighted_loss
-def giou_loss(pred, target, eps=1e-7):
+def giou_loss(pred: torch.Tensor,
+              target: torch.Tensor,
+              eps: float = 1e-7) -> torch.Tensor:
     r"""`Generalized Intersection over Union: A Metric and A Loss for Bounding
     Box Regression <https://arxiv.org/abs/1902.09630>`_.
 
@@ -114,7 +127,9 @@ def giou_loss(pred, target, eps=1e-7):
 
 
 @weighted_loss
-def diou_loss(pred, target, eps=1e-7):
+def diou_loss(pred: torch.Tensor,
+              target: torch.Tensor,
+              eps: float = 1e-7) -> torch.Tensor:
     r"""`Implementation of Distance-IoU Loss: Faster and Better
     Learning for Bounding Box Regression, https://arxiv.org/abs/1911.08287`_.
 
@@ -168,7 +183,9 @@ def diou_loss(pred, target, eps=1e-7):
 
 
 @weighted_loss
-def ciou_loss(pred, target, eps=1e-7):
+def ciou_loss(pred: torch.Tensor,
+              target: torch.Tensor,
+              eps: float = 1e-7) -> torch.Tensor:
     r"""`Implementation of paper `Enhancing Geometric Factors into
     Model Learning and Inference for Object Detection and Instance
     Segmentation <https://arxiv.org/abs/2005.03572>`_.
@@ -232,7 +249,10 @@ def ciou_loss(pred, target, eps=1e-7):
 
 
 @weighted_loss
-def eiou_loss(pred, target, smooth_point=0.1, eps=1e-7):
+def eiou_loss(pred: torch.Tensor,
+              target: torch.Tensor,
+              smooth_point: float = 0.1,
+              eps: float = 1e-7) -> torch.Tensor:
     r"""Implementation of paper `Extended-IoU Loss: A Systematic
     IoU-Related Method: Beyond Simplified Regression for Better
     Localization <https://ieeexplore.ieee.org/abstract/document/9429909>`_
@@ -301,12 +321,12 @@ class IoULoss(nn.Module):
     """
 
     def __init__(self,
-                 linear=False,
-                 eps=1e-6,
-                 reduction='mean',
-                 loss_weight=1.0,
-                 mode='log'):
-        super(IoULoss, self).__init__()
+                 linear: bool = False,
+                 eps: float = 1e-6,
+                 reduction: str = 'mean',
+                 loss_weight: float = 1.0,
+                 mode: str = 'log'):
+        super().__init__()
         assert mode in ['linear', 'square', 'log']
         if linear:
             mode = 'linear'
@@ -320,11 +340,11 @@ class IoULoss(nn.Module):
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred,
-                target,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None,
+                pred: torch.Tensor,
+                target: torch.Tensor,
+                weight: Optional[torch.Tensor] = None,
+                avg_factor: Optional[int] = None,
+                reduction_override: Optional[str] = None,
                 **kwargs):
         """Forward function.
 
@@ -368,19 +388,23 @@ class IoULoss(nn.Module):
 @MODELS.register_module()
 class BoundedIoULoss(nn.Module):
 
-    def __init__(self, beta=0.2, eps=1e-3, reduction='mean', loss_weight=1.0):
-        super(BoundedIoULoss, self).__init__()
+    def __init__(self,
+                 beta: float = 0.2,
+                 eps: float = 1e-3,
+                 reduction: str = 'mean',
+                 loss_weight: float = 1.0):
+        super().__init__()
         self.beta = beta
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred,
-                target,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None,
+                pred: torch.Tensor,
+                target: torch.Tensor,
+                weight: Optional[torch.Tensor] = None,
+                avg_factor: Optional[int] = None,
+                reduction_override: Optional[str] = None,
                 **kwargs):
         if weight is not None and not torch.any(weight > 0):
             if pred.dim() == weight.dim() + 1:
@@ -404,18 +428,21 @@ class BoundedIoULoss(nn.Module):
 @MODELS.register_module()
 class GIoULoss(nn.Module):
 
-    def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
-        super(GIoULoss, self).__init__()
+    def __init__(self,
+                 eps: float = 1e-6,
+                 reduction: str = 'mean',
+                 loss_weight: float = 1.0):
+        super().__init__()
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred,
-                target,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None,
+                pred: torch.Tensor,
+                target: torch.Tensor,
+                weight: Optional[torch.Tensor] = None,
+                avg_factor: Optional[int] = None,
+                reduction_override: Optional[str] = None,
                 **kwargs):
         if weight is not None and not torch.any(weight > 0):
             if pred.dim() == weight.dim() + 1:
@@ -444,18 +471,21 @@ class GIoULoss(nn.Module):
 @MODELS.register_module()
 class DIoULoss(nn.Module):
 
-    def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
-        super(DIoULoss, self).__init__()
+    def __init__(self,
+                 eps: float = 1e-6,
+                 reduction: str = 'mean',
+                 loss_weight: float = 1.0):
+        super().__init__()
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred,
-                target,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None,
+                pred: torch.Tensor,
+                target: torch.Tensor,
+                weight: Optional[torch.Tensor] = None,
+                avg_factor: Optional[int] = None,
+                reduction_override: Optional[str] = None,
                 **kwargs):
         if weight is not None and not torch.any(weight > 0):
             if pred.dim() == weight.dim() + 1:
@@ -484,18 +514,21 @@ class DIoULoss(nn.Module):
 @MODELS.register_module()
 class CIoULoss(nn.Module):
 
-    def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
-        super(CIoULoss, self).__init__()
+    def __init__(self,
+                 eps: float = 1e-6,
+                 reduction: str = 'mean',
+                 loss_weight: float = 1.0):
+        super().__init__()
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred,
-                target,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None,
+                pred: torch.Tensor,
+                target: torch.Tensor,
+                weight: Optional[torch.Tensor] = None,
+                avg_factor: Optional[int] = None,
+                reduction_override: Optional[str] = None,
                 **kwargs):
         if weight is not None and not torch.any(weight > 0):
             if pred.dim() == weight.dim() + 1:
@@ -537,22 +570,22 @@ class EIoULoss(nn.Module):
     """
 
     def __init__(self,
-                 eps=1e-6,
-                 reduction='mean',
-                 loss_weight=1.0,
-                 smooth_point=0.1):
-        super(EIoULoss, self).__init__()
+                 eps: float = 1e-6,
+                 reduction: str = 'mean',
+                 loss_weight: float = 1.0,
+                 smooth_point: float = 0.1):
+        super().__init__()
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight
         self.smooth_point = smooth_point
 
     def forward(self,
-                pred,
-                target,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None,
+                pred: torch.Tensor,
+                target: torch.Tensor,
+                weight: Optional[torch.Tensor] = None,
+                avg_factor: Optional[int] = None,
+                reduction_override: Optional[str] = None,
                 **kwargs):
         if weight is not None and not torch.any(weight > 0):
             if pred.dim() == weight.dim() + 1:

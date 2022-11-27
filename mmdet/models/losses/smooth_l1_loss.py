@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional
+
 import torch
 import torch.nn as nn
 
@@ -7,7 +9,9 @@ from .utils import weighted_loss
 
 
 @weighted_loss
-def smooth_l1_loss(pred, target, beta=1.0):
+def smooth_l1_loss(pred: torch.Tensor,
+                   target: torch.Tensor,
+                   beta: float = 1.0) -> torch.Tensor:
     """Smooth L1 loss.
 
     Args:
@@ -31,7 +35,7 @@ def smooth_l1_loss(pred, target, beta=1.0):
 
 
 @weighted_loss
-def l1_loss(pred, target):
+def l1_loss(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """L1 loss.
 
     Args:
@@ -61,19 +65,22 @@ class SmoothL1Loss(nn.Module):
         loss_weight (float, optional): The weight of loss.
     """
 
-    def __init__(self, beta=1.0, reduction='mean', loss_weight=1.0):
-        super(SmoothL1Loss, self).__init__()
+    def __init__(self,
+                 beta: float = 1.0,
+                 reduction: str = 'mean',
+                 loss_weight: float = 1.0):
+        super().__init__()
         self.beta = beta
         self.reduction = reduction
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred,
-                target,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None,
-                **kwargs):
+                pred: torch.Tensor,
+                target: torch.Tensor,
+                weight: Optional[torch.Tensor] = None,
+                avg_factor: Optional[int] = None,
+                reduction_override: Optional[str] = None,
+                **kwargs) -> torch.Tensor:
         """Forward function.
 
         Args:
@@ -86,6 +93,9 @@ class SmoothL1Loss(nn.Module):
             reduction_override (str, optional): The reduction method used to
                 override the original reduction method of the loss.
                 Defaults to None.
+
+        Returns:
+            torch.Tensor: Calculated loss
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
@@ -111,17 +121,17 @@ class L1Loss(nn.Module):
         loss_weight (float, optional): The weight of loss.
     """
 
-    def __init__(self, reduction='mean', loss_weight=1.0):
-        super(L1Loss, self).__init__()
+    def __init__(self, reduction: str = 'mean', loss_weight: float = 1.0):
+        super().__init__()
         self.reduction = reduction
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred,
-                target,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None):
+                pred: torch.Tensor,
+                target: torch.Tensor,
+                weight: Optional[torch.Tensor] = None,
+                avg_factor: Optional[int] = None,
+                reduction_override: Optional[str] = None) -> torch.Tensor:
         """Forward function.
 
         Args:
@@ -134,6 +144,9 @@ class L1Loss(nn.Module):
             reduction_override (str, optional): The reduction method used to
                 override the original reduction method of the loss.
                 Defaults to None.
+
+        Returns:
+            torch.Tensor: Calculated loss
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (

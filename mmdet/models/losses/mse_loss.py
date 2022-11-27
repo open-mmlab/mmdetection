@@ -1,4 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional
+
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -7,8 +10,15 @@ from .utils import weighted_loss
 
 
 @weighted_loss
-def mse_loss(pred, target):
-    """Wrapper of mse loss."""
+def mse_loss(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    """Wrapper of mse loss.
+    Args:
+        pred (torch.Tensor): The prediction.
+        target (torch.Tensor): The learning target of the prediction.
+
+    Returns:
+        torch.Tensor: loss Tensor
+    """
     return F.mse_loss(pred, target, reduction='none')
 
 
@@ -22,17 +32,17 @@ class MSELoss(nn.Module):
         loss_weight (float, optional): The weight of the loss. Defaults to 1.0
     """
 
-    def __init__(self, reduction='mean', loss_weight=1.0):
+    def __init__(self, reduction: str = 'mean', loss_weight: float = 1.0):
         super().__init__()
         self.reduction = reduction
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred,
-                target,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None):
+                pred: torch.Tensor,
+                target: torch.Tensor,
+                weight: Optional[torch.Tensor] = None,
+                avg_factor: Optional[int] = None,
+                reduction_override: Optional[str] = None) -> torch.Tensor:
         """Forward function of loss.
 
         Args:
