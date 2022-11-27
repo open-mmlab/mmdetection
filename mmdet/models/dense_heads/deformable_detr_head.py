@@ -199,7 +199,7 @@ class DeformableDETRHead(DETRHead):
             all_layers_cls_scores (Tensor): Classification scores of all
                 decoder layers, has shape (num_decoder_layers, bs, num_query,
                 cls_out_channels).
-            all_layers_bbox_preds (Tensor): Regression outputs of all decode
+            all_layers_bbox_preds (Tensor): Regression outputs of all decoder
                 layers. Each is a 4D-tensor with normalized coordinate format
                 (cx, cy, w, h) and has shape (num_decoder_layers, bs,
                 num_query, 4).
@@ -296,7 +296,7 @@ class DeformableDETRHead(DETRHead):
             all_layers_cls_scores (Tensor): Classification scores of all
                 decoder layers, has shape (num_decoder_layers, bs, num_query,
                 cls_out_channels).
-            all_layers_bbox_preds (Tensor): Regression outputs of all decode
+            all_layers_bbox_preds (Tensor): Regression outputs of all decoder
                 layers. Each is a 4D-tensor with normalized coordinate format
                 (cx, cy, w, h) and shape (num_decoder_layers, bs,
                 num_query, 4).
