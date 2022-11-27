@@ -504,9 +504,9 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
                 query,
                 key,
                 query_pos,
+                reg_branches,
                 key_pos=None,
                 key_padding_mask=None,
-                reg_branches=None,
                 **kwargs) -> List[Tensor]:
         """Forward function of decoder.
 
@@ -519,6 +519,8 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
             query_pos (Tensor): The positional encoding for `query`, with the
                 same shape as `query`. If not `None`, it will be added to
                 `query` before forward function. Defaults to `None`.
+            reg_branches (nn.Module): The regression branch for dynamically
+                updating references in each layer.
             key_pos (Tensor): The positional encoding for `key`, with the
                 same shape as `key`. If not `None`, it will be added to
                 `key` before forward function. If `None`, and `query_pos`
@@ -577,13 +579,13 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
                 is_first=(layer_id == 0),
                 **kwargs)
             # iter update
-            if reg_branches is not None:
-                tmp = reg_branches(output)
-                tmp[..., :self.query_dim] += inverse_sigmoid(reference)
-                new_reference = tmp[..., :self.query_dim].sigmoid()
-                if layer_id != self.num_layers - 1:
-                    ref.append(new_reference)
-                reference = new_reference.detach()  # no grad_fn
+            tmp = reg_branches(output)
+            tmp[..., :self.query_dim] += inverse_sigmoid(reference)
+            new_reference = tmp[..., :self.query_dim].sigmoid()
+            if layer_id != self.num_layers - 1:
+                ref.append(new_reference)
+            reference = new_reference.detach()  # no grad_fn
+
             if self.return_intermediate:
                 if self.post_norm is not None:
                     intermediate.append(self.post_norm(output))
@@ -593,28 +595,16 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
         if self.post_norm is not None:
             output = self.post_norm(output)
 
-        if reg_branches is not None and self.return_intermediate:
+        if self.return_intermediate:
             return [
                 torch.stack(intermediate).transpose(1, 2),
                 torch.stack(ref).transpose(1, 2),
-            ]
-        elif reg_branches is None and self.return_intermediate:
-            return [
-                torch.stack(intermediate).transpose(
-                    1, 2),  # return_intermediate is True
-                reference.unsqueeze(0).transpose(1, 2)  # reg_branches is None
-            ]
-        elif reg_branches is None and not self.return_intermediate:
-            return [
-                output.unsqueeze(0).transpose(
-                    1, 2),  # return_intermediate is False
-                reference.unsqueeze(0).transpose(1, 2)  # reg_branches is None
             ]
         else:
             return [
                 output.unsqueeze(0).transpose(
                     1, 2),  # return_intermediate is False
-                torch.stack(ref).transpose(1, 2)  # reg_branches is not None
+                torch.stack(ref).transpose(1, 2)
             ]
 
 

@@ -4,7 +4,6 @@ _base_ = [
 model = dict(
     type='DABDETR',
     num_query=300,
-    iter_update=True,
     random_refpoints_xy=False,
     num_patterns=0,
     data_preprocessor=dict(

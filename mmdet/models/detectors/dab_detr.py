@@ -23,8 +23,6 @@ class DABDETR(DETR):
     <https://github.com/IDEA-Research/DAB-DETR>`_.
 
     Args:
-        iter_update (bool): Whether to update references layer-by-layer.
-            Defaults to True.
         random_refpoints_xy (bool): Whether to randomly initialize query
             embeddings and not update them during training.
             Defaults to False.
@@ -33,11 +31,9 @@ class DABDETR(DETR):
 
     def __init__(self,
                  *args,
-                 iter_update: bool = True,
                  random_refpoints_xy: bool = False,
                  num_patterns: int = 0,
                  **kwargs) -> None:
-        self.iter_update = iter_update
         self.random_refpoints_xy = random_refpoints_xy
         self.num_patterns = num_patterns
         if not isinstance(num_patterns, int):
@@ -109,7 +105,7 @@ class DABDETR(DETR):
                 .view(-1, batch_size, self.embed_dims)
             query_pos = query_pos.repeat(self.num_patterns, 1, 1)
         # iterative refinement for anchor boxes
-        reg_branches = self.bbox_head.fc_reg if self.iter_update else None
+        reg_branches = self.bbox_head.fc_reg
 
         decoder_inputs_dict = dict(
             query_pos=query_pos,
@@ -145,8 +141,8 @@ class DABDETR(DETR):
         hidden_states, references = self.decoder(
             query=query,
             key=memory,
-            key_pos=memory_pos,
             query_pos=query_pos,
+            key_pos=memory_pos,
             key_padding_mask=memory_mask,
             reg_branches=reg_branches)
         head_inputs_dict = dict(
