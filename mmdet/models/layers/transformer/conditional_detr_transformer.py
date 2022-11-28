@@ -19,6 +19,7 @@ from .utils import MLP, gen_sine_embed_for_ref
 
 
 class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
+    """Decoder of Conditional DETR."""
 
     def _init_layers(self) -> None:
         """Initialize decoder layers."""
@@ -38,6 +39,29 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
 
     def forward(self, query: Tensor, key: Tensor, value: Tensor,
                 query_pos: Tensor, key_pos: Tensor, key_padding_mask: Tensor):
+        """Forward function of decoder.
+
+        Args:
+            query (Tensor): The input query with shape
+                (num_queries, bs, dim).
+            key (Tensor): The input key with shape (num_key, bs, dim) If
+                `None`, the `query` will be used. Defaults to `None`.
+            value (Tensor): The input value with the same shape as
+                `key`. If `None`, the `key` will be used. Defaults to `None`.
+            query_pos (Tensor): The positional encoding for `query`, with the
+                same shape as `query`. If not `None`, it will be added to
+                `query` before forward function. Defaults to `None`.
+            reg_branches (nn.Module): The regression branch for dynamically
+                updating references in each layer.
+            key_pos (Tensor): The positional encoding for `key`, with the
+                same shape as `key`.
+            key_padding_mask (Tensor): ByteTensor with shape (bs, num_key).
+        Returns:
+            List[Tensor]: forwarded results with shape (num_decoder_layers,
+            bs, num_queries, dim) if `return_intermediate` is True, otherwise
+            with shape (1, bs, num_queries, dim). references with shape
+            (num_decoder_layers, bs, num_queries, 2).
+        """
         reference_unsigmoid = self.ref_point_head(
             query_pos)  # [num_queries, batch_size, 2]
         reference = reference_unsigmoid.sigmoid().transpose(0, 1)
@@ -71,9 +95,11 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
 
 
 class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
+    """Implements decoder layer in Conditional DETR transformer."""
 
     def _init_layers(self):
-        """Initialize self-attention, FFN, and normalization."""
+        """Initialize self-attention,  cross-attention, FFN, and
+        normalization."""
         self.self_attn = ConditionalAttention(**self.self_attn_cfg)
         self.cross_attn = ConditionalAttention(**self.cross_attn_cfg)
         self.embed_dims = self.self_attn.embed_dims  # TODO
@@ -98,34 +124,30 @@ class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
         """
         Args:
             query (Tensor): The input query, has shape (num_queries, bs, dim)
-                if `self.batch_first` is `False`, else (bs, num_queries, dim).
             key (Tensor, optional): The input key, has shape (num_key, bs, dim)
-                if `self.batch_first` is `False`, else (bs, num_key, dim).
                 If `None`, the `query` will be used. Defaults to `None`.
             value (Tensor, optional): The input value, has the same shape as
                 `key`, as in `nn.MultiheadAttention.forward`. If `None`, the
                 `key` will be used. Defaults to `None`.
             query_pos (Tensor, optional): The positional encoding for `query`,
-                has the same shape as `query`. If not `None`, it will be added
-                to `query` before forward function. Defaults to `None`.
+                has the same shape as `query`. If not `None`, it will be
+                added to `query` before forward function. Defaults to `None`.
             key_pos (Tensor, optional): The positional encoding for `key`, has
-                the same shape as `key`. If not `None`, it will be added to
-                `key` before forward function. If None, and `query_pos` has the
-                same shape as `key`, then `query_pos` will be used for
-                `key_pos`. Defaults to None.
+                the same shape as `key`.
             self_attn_masks (Tensor, optional): ByteTensor mask, has shape
-                (num_queries, num_key), as in `nn.MultiheadAttention.forward`.
-                Defaults to None.
+                (num_queries, num_key), Same in `nn.MultiheadAttention.
+                forward`. Defaults to None.
             cross_attn_masks (Tensor, optional): ByteTensor mask, has shape
-                (num_queries, num_key), as in `nn.MultiheadAttention.forward`.
-                Defaults to None.
+                (num_queries, num_key), Same in `nn.MultiheadAttention.
+                forward`. Defaults to None.
             key_padding_mask (Tensor, optional): The `key_padding_mask` of
-                `self_attn` input. ByteTensor, has shape (num_value, bs).
-                Defaults to None.
+                `cross_attn` input. ByteTensor, has shape (bs, num_key).
+            is_first (bool): A indicator to tell whether the current layer
+                is the first layer of the decoder.
+                Defaults to False.
 
         Returns:
-            Tensor: forwarded results, has shape (num_queries, bs, dim) if
-            `self.batch_first` is `False`, else (bs, num_queries, dim).
+            Tensor: forwarded results, has shape (num_queries, bs, dim).
         """
         query = self.self_attn(
             query=query,
