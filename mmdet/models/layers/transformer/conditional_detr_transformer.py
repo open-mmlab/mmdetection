@@ -158,16 +158,14 @@ class ConditionalAttention(BaseModule):
                  num_heads: int,
                  attn_drop: float = 0.,
                  proj_drop: float = 0.,
-                 batch_first: bool = False,
                  cross_attn: bool = False,
                  keep_query_pos: bool = False,
                  init_cfg: OptMultiConfig = None,
                  group_detr=1):
         super().__init__(init_cfg)
-        self.batch_first = batch_first  # indispensable
         self.cross_attn = cross_attn
         self.keep_query_pos = keep_query_pos
-        self.embed_dims = embed_dims  # output dims
+        self.embed_dims = embed_dims
         self.num_heads = num_heads
         self.attn_drop = Dropout(attn_drop)
         self.proj_drop = Dropout(proj_drop)
@@ -308,7 +306,7 @@ class ConditionalAttention(BaseModule):
             ref_sine_embed: Tensor = None,
             key_pos: Tensor = None,  # pos
             attn_mask: Tensor = None,
-            key_padding_mask: Tensor = None,  # memory_key_padding_mask
+            key_padding_mask: Tensor = None,
             is_first: bool = False) -> Tensor:
         """Forward function for `ConditionalAttention`.
         Args:
