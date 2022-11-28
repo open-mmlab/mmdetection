@@ -75,11 +75,9 @@ class ConditionalAttention(BaseModule):
 
         Args:
             query (Tensor): The input query with shape [num_queries, bs,
-                embed_dims] if self.batch_first is False, else
-                [bs, num_queries embed_dims].
+                embed_dims].
             key (Tensor): The key tensor with shape [num_keys, bs,
-                embed_dims] if self.batch_first is False, else
-                [bs, num_keys, embed_dims] .
+                embed_dims].
                 If None, the ``query`` will be used. Defaults to None.
             value (Tensor): The value tensor with same shape as `key`.
                 Same in `nn.MultiheadAttention.forward`. Defaults to None.
@@ -221,11 +219,9 @@ class ConditionalAttention(BaseModule):
 
         Args:
             query (Tensor): The input query with shape [num_queries, bs,
-                embed_dims] if self.batch_first is False, else
-                [bs, num_queries embed_dims].
+                embed_dims].
             key (Tensor): The key tensor with shape [num_keys, bs,
-                embed_dims] if self.batch_first is False, else
-                [bs, num_keys, embed_dims] .
+                embed_dims].
                 If None, the ``query`` will be used. Defaults to None.
             query_pos (Tensor): The positional encoding for query in self
                 attention, with the same shape as `x`. If not None, it will
@@ -251,9 +247,7 @@ class ConditionalAttention(BaseModule):
 
         Returns:
             Tensor: forwarded results with shape
-            [num_queries, bs, embed_dims]
-            if self.batch_first is False, else
-            [bs, num_queries embed_dims].
+            [num_queries, bs, embed_dims].
         """
 
         if self.cross_attn:
@@ -337,11 +331,9 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
         """
         Args:
             query (Tensor): The input query with shape [num_queries, bs,
-                embed_dims] if self.batch_first is False, else
-                [bs, num_queries, embed_dims].
+                embed_dims].
             key (Tensor): The key tensor with shape [num_keys, bs,
-                embed_dims] if self.batch_first is False, else
-                [bs, num_keys, embed_dims] .
+                embed_dims].
                 If None, the ``query`` will be used. Defaults to None.
             query_pos (Tensor): The positional encoding for query in self
                 attention, with the same shape as `x`. If not None,
@@ -370,9 +362,7 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
 
         Returns:
             Tensor: forwarded results with shape
-            [num_queries, bs, embed_dims]
-            if self.batch_first is False, else
-            [bs, num_queries embed_dims].
+            [num_queries, bs, embed_dims].
         """
 
         query = self.self_attn(
@@ -475,10 +465,8 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
         """Forward function of decoder.
 
         Args:
-            query (Tensor): The input query with shape (num_queries, bs, dim)
-                if `self.batch_first` is `False`, else (bs, num_queries, dim).
-            key (Tensor): The input key with shape (num_key, bs, dim) if
-                `self.batch_first` is `False`, else (bs, num_keys, dim). If
+            query (Tensor): The input query with shape (num_queries, bs, dim).
+            key (Tensor): The input key with shape (num_key, bs, dim) If
                 `None`, the `query` will be used. Defaults to `None`.
             query_pos (Tensor): The positional encoding for `query`, with the
                 same shape as `query`. If not `None`, it will be added to
@@ -601,8 +589,7 @@ class DabDetrTransformerEncoder(DetrTransformerEncoder):
                 of the queries, has shape (num_feat, bs).
 
         Returns:
-            Tensor: With shape (bs, num_queries, dim)
-            if `batch_first` is `True`, otherwise (num_queries, bs, dim).
+            Tensor: With shape (num_queries, bs, dim).
         """
 
         for layer in self.layers:
