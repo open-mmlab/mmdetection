@@ -6,9 +6,17 @@ model = dict(
         num_layers=6,
         layer_cfg=dict(
             self_attn_cfg=dict(
-                embed_dims=256, num_heads=8, dropout=0.1, cross_attn=False),
+                _delete_=True,
+                embed_dims=256,
+                num_heads=8,
+                attn_drop=0.1,
+                cross_attn=False),
             cross_attn_cfg=dict(
-                embed_dims=256, num_heads=8, dropout=0.1, cross_attn=True))),
+                _delete_=True,
+                embed_dims=256,
+                num_heads=8,
+                attn_drop=0.1,
+                cross_attn=True))),
     bbox_head=dict(
         type='ConditionalDETRHead',
         loss_cls=dict(
