@@ -1,7 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import Dict, Tuple
 
-import torch
 from mmengine.model import uniform_init
 from torch import Tensor, nn
 
@@ -35,11 +34,9 @@ class DABDETR(DETR):
                  num_patterns: int = 0,
                  **kwargs) -> None:
         self.random_refpoints_xy = random_refpoints_xy
+        assert isinstance(num_patterns, int), \
+            f'num_patterns should be int but {num_patterns}.'
         self.num_patterns = num_patterns
-        if not isinstance(num_patterns, int):
-            Warning('num_patterns should be int but {}'.format(
-                type(num_patterns)))
-            self.num_patterns = 0
 
         super().__init__(*args, **kwargs)
 
@@ -76,7 +73,7 @@ class DABDETR(DETR):
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat, bs, dim).
+                has shape (num_feat_points, bs, dim).
 
         Returns:
             tuple[dict, dict]: The first dict contains the inputs of decoder
@@ -94,11 +91,8 @@ class DABDETR(DETR):
         query_pos = self.query_embedding.weight
         query_pos = query_pos.unsqueeze(1).repeat(1, batch_size, 1)
         if self.num_patterns == 0:
-            query = torch.zeros(
-                self.num_queries,
-                batch_size,
-                self.embed_dims,
-                device=query_pos.device)
+            query = query_pos.new_zeros(self.num_query, batch_size,
+                                        self.embed_dims)
         else:
             query = self.patterns.weight[:, None, None, :]\
                 .repeat(1, self.num_queries, batch_size, 1)\

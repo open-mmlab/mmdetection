@@ -53,9 +53,9 @@ class ConditionalAttention(BaseModule):
         self.attn_drop = Dropout(attn_drop)
         self.proj_drop = Dropout(proj_drop)
 
-        self._init_proj()
+        self._init_layers()
 
-    def _init_proj(self):
+    def _init_layers(self):
         """Initialize layers for qkv projection."""
         embed_dims = self.embed_dims
         self.qcontent_proj = Linear(embed_dims, embed_dims)
@@ -92,12 +92,12 @@ class ConditionalAttention(BaseModule):
 
         Returns:
             Tuple[Tensor]: Attention outputs of shape :math:`(L, N, E)`,
-                where :math:`L` is the target sequence length,
-                :math:`N` is the batch size, and :math:`E` is the
-                embedding dimension ``embed_dim``. Attention weights per
-                head of shape :math:`(num_heads, L, S)`. where :math:`N` is
-                the batch size, :math:`L` is the target sequence length, and
-                :math:`S` is the source sequence length.
+            where :math:`L` is the target sequence length,
+            :math:`N` is the batch size, and :math:`E` is the
+            embedding dimension ``embed_dim``. Attention weights per
+            head of shape :math:`(num_heads, L, S)`. where :math:`N` is
+            the batch size, :math:`L` is the target sequence length, and
+            :math:`S` is the source sequence length.
         """
         assert key.size(0) == value.size(0), \
             f'{"key, value must have the same sequence length"}'
