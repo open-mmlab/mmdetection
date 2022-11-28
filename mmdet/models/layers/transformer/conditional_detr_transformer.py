@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
+from typing import Tuple
 
 import torch
 import torch.nn as nn
@@ -192,7 +193,7 @@ class ConditionalAttention(BaseModule):
                      key: Tensor,
                      value: Tensor,
                      attn_mask: Tensor,
-                     key_padding_mask: Tensor = None):
+                     key_padding_mask: Tensor = None) -> Tuple[Tensor]:
         assert key.size(0) == value.size(0), \
             f'{"key, value must have the same sequence length"}'
         assert query.size(1) == key.size(1) == value.size(1), \
@@ -308,7 +309,7 @@ class ConditionalAttention(BaseModule):
             key_pos: Tensor = None,  # pos
             attn_mask: Tensor = None,
             key_padding_mask: Tensor = None,  # memory_key_padding_mask
-            is_first: bool = False):
+            is_first: bool = False) -> Tensor:
         """Forward function for `ConditionalAttention`.
         Args:
             query (Tensor): The input query with shape [num_queries, bs,
