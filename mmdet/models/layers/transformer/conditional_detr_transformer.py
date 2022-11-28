@@ -155,8 +155,8 @@ class ConditionalAttention(BaseModule):
     def __init__(self,
                  embed_dims: int,
                  num_heads: int,
-                 dropout=0.,
-                 proj_drop=0.,
+                 attn_drop: float = 0.,
+                 proj_drop: float = 0.,
                  batch_first: bool = False,
                  cross_attn: bool = False,
                  keep_query_pos: bool = False,
@@ -168,7 +168,7 @@ class ConditionalAttention(BaseModule):
         self.keep_query_pos = keep_query_pos
         self.embed_dims = embed_dims  # output dims
         self.num_heads = num_heads
-        self.attn_dropout = Dropout(dropout)
+        self.attn_drop = Dropout(attn_drop)
         self.proj_drop = Dropout(proj_drop)
 
         self._init_proj()
@@ -192,7 +192,6 @@ class ConditionalAttention(BaseModule):
                      key: Tensor,
                      value: Tensor,
                      attn_mask: Tensor,
-                     need_weights: bool,
                      key_padding_mask: Tensor = None):
         assert key.size(0) == value.size(0), \
             f'{"key, value must have the same sequence length"}'
@@ -203,11 +202,11 @@ class ConditionalAttention(BaseModule):
         assert value.size(2) == self.embed_dims, \
             f'{"v_dims must be equal to embed_dims"}'
 
-        tgt_len, bsz, hidden_dims = query.size()
+        tgt_len, bs, hidden_dims = query.size()
         head_dims = hidden_dims // self.num_heads
         v_head_dims = self.embed_dims // self.num_heads
-        # assert head_dims * self.num_heads == hidden_dims, \
-        #     f'{"hidden_dims must be divisible by num_heads"}'
+        assert head_dims * self.num_heads == hidden_dims, \
+            f'{"hidden_dims must be divisible by num_heads"}'
         scaling = float(head_dims)**-0.5
 
         q = query * scaling
@@ -234,7 +233,7 @@ class ConditionalAttention(BaseModule):
                         'The size of the 2D attn_mask is not correct.')
             elif attn_mask.dim() == 3:
                 if list(attn_mask.size()) != [
-                        bsz * self.num_heads,
+                        bs * self.num_heads,
                         query.size(0),
                         key.size(0)
                 ]:
@@ -249,24 +248,24 @@ class ConditionalAttention(BaseModule):
         if key_padding_mask is not None and key_padding_mask.dtype == int:
             key_padding_mask = key_padding_mask.to(torch.bool)
 
-        q = q.contiguous().view(tgt_len, bsz * self.num_heads,
+        q = q.contiguous().view(tgt_len, bs * self.num_heads,
                                 head_dims).transpose(0, 1)
         if k is not None:
-            k = k.contiguous().view(-1, bsz * self.num_heads,
+            k = k.contiguous().view(-1, bs * self.num_heads,
                                     head_dims).transpose(0, 1)
         if v is not None:
-            v = v.contiguous().view(-1, bsz * self.num_heads,
+            v = v.contiguous().view(-1, bs * self.num_heads,
                                     v_head_dims).transpose(0, 1)
 
         src_len = k.size(1)
 
         if key_padding_mask is not None:
-            assert key_padding_mask.size(0) == bsz
+            assert key_padding_mask.size(0) == bs
             assert key_padding_mask.size(1) == src_len
 
         attn_output_weights = torch.bmm(q, k.transpose(1, 2))
         assert list(attn_output_weights.size()) == [
-            bsz * self.num_heads, tgt_len, src_len
+            bs * self.num_heads, tgt_len, src_len
         ]
 
         if attn_mask is not None:
@@ -277,44 +276,75 @@ class ConditionalAttention(BaseModule):
 
         if key_padding_mask is not None:
             attn_output_weights = attn_output_weights.view(
-                bsz, self.num_heads, tgt_len, src_len)
+                bs, self.num_heads, tgt_len, src_len)
             attn_output_weights = attn_output_weights.masked_fill(
                 key_padding_mask.unsqueeze(1).unsqueeze(2),
                 float('-inf'),
             )
             attn_output_weights = attn_output_weights.view(
-                bsz * self.num_heads, tgt_len, src_len)
+                bs * self.num_heads, tgt_len, src_len)
 
         attn_output_weights = F.softmax(attn_output_weights, dim=-1)
-        attn_output_weights = self.attn_dropout(attn_output_weights)
+        attn_output_weights = self.attn_drop(attn_output_weights)
 
         attn_output = torch.bmm(attn_output_weights, v)
-        assert list(attn_output.size()) == [
-            bsz * self.num_heads, tgt_len, v_head_dims
-        ]
+        assert list(
+            attn_output.size()) == [bs * self.num_heads, tgt_len, v_head_dims]
         attn_output = attn_output.transpose(0, 1).contiguous().view(
-            tgt_len, bsz, self.embed_dims)
+            tgt_len, bs, self.embed_dims)
         attn_output = self.out_proj(attn_output)
 
-        if need_weights:
-            # average attention weights over heads
-            attn_output_weights = attn_output_weights.view(
-                bsz, self.num_heads, tgt_len, src_len)
-            return attn_output, attn_output_weights.sum(dim=1) / self.num_heads
-        else:
-            return attn_output, None
+        # average attention weights over heads
+        attn_output_weights = attn_output_weights.view(bs, self.num_heads,
+                                                       tgt_len, src_len)
+        return attn_output, attn_output_weights.sum(dim=1) / self.num_heads
 
     def forward(
             self,
-            query: Tensor,  # tgt
-            key: Tensor,  # memory
+            query: Tensor,
+            key: Tensor,
             query_pos: Tensor = None,
             ref_sine_embed: Tensor = None,
             key_pos: Tensor = None,  # pos
             attn_mask: Tensor = None,
             key_padding_mask: Tensor = None,  # memory_key_padding_mask
-            need_weights: bool = True,
             is_first: bool = False):
+        """Forward function for `ConditionalAttention`.
+        Args:
+            query (Tensor): The input query with shape [num_queries, bs,
+                embed_dims] if self.batch_first is False, else
+                [bs, num_queries embed_dims].
+            key (Tensor): The key tensor with shape [num_keys, bs,
+                embed_dims] if self.batch_first is False, else
+                [bs, num_keys, embed_dims] .
+                If None, the ``query`` will be used. Defaults to None.
+            query_pos (Tensor): The positional encoding for query in self
+                attention, with the same shape as `x`. If not None, it will
+                be added to `x` before forward function.
+                Defaults to None.
+            query_sine_embed (Tensor): The positional encoding for query in
+                cross attention, with the same shape as `x`. If not None, it
+                will be added to `x` before forward function.
+                Defaults to None.
+            key_pos (Tensor): The positional encoding for `key`, with the
+                same shape as `key`. Defaults to None. If not None, it will
+                be added to `key` before forward function. If None, and
+                `query_pos` has the same shape as `key`, then `query_pos`
+                will be used for `key_pos`. Defaults to None.
+            attn_mask (Tensor): ByteTensor mask with shape [num_queries,
+                num_keys]. Same in `nn.MultiheadAttention.forward`.
+                Defaults to None.
+            key_padding_mask (Tensor): ByteTensor with shape [bs, num_keys].
+                Defaults to None.
+            is_first (bool): A indicator to tell whether the current layer
+                is the first layer of the decoder.
+                Defaults to False.
+        Returns:
+            Tensor: forwarded results with shape
+            [num_queries, bs, embed_dims]
+            if self.batch_first is False, else
+            [bs, num_queries embed_dims].
+        """
         if self.cross_attn:
             q_content = self.qcontent_proj(query)
             k_content = self.kcontent_proj(key)
@@ -344,8 +374,7 @@ class ConditionalAttention(BaseModule):
                 key=k,
                 value=v,
                 attn_mask=attn_mask,
-                key_padding_mask=key_padding_mask,
-                need_weights=need_weights)[0]
+                key_padding_mask=key_padding_mask)[0]
             query = query + self.proj_drop(ca_output)
         else:
             q_content = self.qcontent_proj(query)
@@ -364,11 +393,7 @@ class ConditionalAttention(BaseModule):
                 v = torch.cat(
                     v.split(num_queries // self.group_detr, dim=0), dim=1)
             sa_output = self.forward_attn(
-                query=q,
-                key=k,
-                value=v,
-                attn_mask=attn_mask,
-                need_weights=need_weights)[0]
+                query=q, key=k, value=v, attn_mask=attn_mask)[0]
             if self.training:
                 sa_output = torch.cat(sa_output.split(bs, dim=1), dim=0)
             query = query + self.proj_drop(sa_output)
