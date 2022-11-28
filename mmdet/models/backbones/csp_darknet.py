@@ -1,10 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
+from typing import Optional, Sequence, Union
 
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmcv.runner import BaseModule
+from torch import Tensor
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from ..builder import BACKBONES
@@ -28,13 +30,13 @@ class Focus(nn.Module):
     """
 
     def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_size=1,
-                 stride=1,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
-                 act_cfg=dict(type='Swish')):
+                 in_channels: int,
+                 out_channels: int,
+                 kernel_size: int = 1,
+                 stride: int = 1,
+                 conv_cfg: Optional[dict] = None,
+                 norm_cfg: dict = dict(type='BN', momentum=0.03, eps=0.001),
+                 act_cfg: dict = dict(type='Swish')):
         super().__init__()
         self.conv = ConvModule(
             in_channels * 4,
@@ -46,7 +48,7 @@ class Focus(nn.Module):
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         # shape of x (b,c,w,h) -> y(b,4c,w/2,h/2)
         patch_top_left = x[..., ::2, ::2]
         patch_top_right = x[..., ::2, 1::2]
@@ -83,13 +85,13 @@ class SPPBottleneck(BaseModule):
     """
 
     def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_sizes=(5, 9, 13),
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
-                 act_cfg=dict(type='Swish'),
-                 init_cfg=None):
+                 in_channels: int,
+                 out_channels: int,
+                 kernel_sizes: Sequence[int] = (5, 9, 13),
+                 conv_cfg: Optional[dict] = None,
+                 norm_cfg: dict = dict(type='BN', momentum=0.03, eps=0.001),
+                 act_cfg: dict = dict(type='Swish'),
+                 init_cfg: Optional[Union[dict, list[dict]]] = None):
         super().__init__(init_cfg)
         mid_channels = in_channels // 2
         self.conv1 = ConvModule(
@@ -113,7 +115,7 @@ class SPPBottleneck(BaseModule):
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         x = self.conv1(x)
         x = torch.cat([x] + [pooling(x) for pooling in self.poolings], dim=1)
         x = self.conv2(x)
@@ -175,19 +177,19 @@ class CSPDarknet(BaseModule):
     }
 
     def __init__(self,
-                 arch='P5',
-                 deepen_factor=1.0,
-                 widen_factor=1.0,
-                 out_indices=(2, 3, 4),
-                 frozen_stages=-1,
-                 use_depthwise=False,
-                 arch_ovewrite=None,
-                 spp_kernal_sizes=(5, 9, 13),
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
-                 act_cfg=dict(type='Swish'),
-                 norm_eval=False,
-                 init_cfg=dict(
+                 arch: str = 'P5',
+                 deepen_factor: float = 1.0,
+                 widen_factor: float = 1.0,
+                 out_indices: Sequence[int] = (2, 3, 4),
+                 frozen_stages: int = -1,
+                 use_depthwise: bool = False,
+                 arch_ovewrite: Optional[list] = None,
+                 spp_kernal_sizes: Sequence[int] = (5, 9, 13),
+                 conv_cfg: Optional[dict] = None,
+                 norm_cfg: dict = dict(type='BN', momentum=0.03, eps=0.001),
+                 act_cfg: dict = dict(type='Swish'),
+                 norm_eval: bool = False,
+                 init_cfg: dict = dict(
                      type='Kaiming',
                      layer='Conv2d',
                      a=math.sqrt(5),
@@ -266,7 +268,7 @@ class CSPDarknet(BaseModule):
                 for param in m.parameters():
                     param.requires_grad = False
 
-    def train(self, mode=True):
+    def train(self, mode: bool = True):
         super(CSPDarknet, self).train(mode)
         self._freeze_stages()
         if mode and self.norm_eval:
@@ -274,7 +276,7 @@ class CSPDarknet(BaseModule):
                 if isinstance(m, _BatchNorm):
                     m.eval()
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         outs = []
         for i, layer_name in enumerate(self.layers):
             layer = getattr(self, layer_name)
