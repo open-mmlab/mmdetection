@@ -161,6 +161,23 @@ class SSH(BaseModule):
             layer. Defaults to dict(type='BN').
         init_cfg (:obj:`ConfigDict` or list[:obj:`ConfigDict`] or dict or
             list[dict], optional): Initialization config dict.
+
+    Example:
+        >>> import torch
+        >>> in_channels = [8, 16, 32, 64]
+        >>> out_channels = [16, 32, 64, 128]
+        >>> scales = [340, 170, 84, 43]
+        >>> inputs = [torch.rand(1, c, s, s)
+        ...           for c, s in zip(in_channels, scales)]
+        >>> self = SSH(num_scales=4, in_channels=in_channels,
+        ...           out_channels=out_channels)
+        >>> outputs = self.forward(inputs)
+        >>> for i in range(len(outputs)):
+        ...     print(f'outputs[{i}].shape = {outputs[i].shape}')
+        outputs[0].shape = torch.Size([1, 16, 340, 340])
+        outputs[1].shape = torch.Size([1, 32, 170, 170])
+        outputs[2].shape = torch.Size([1, 64, 84, 84])
+        outputs[3].shape = torch.Size([1, 128, 43, 43])
     """
 
     def __init__(self,
