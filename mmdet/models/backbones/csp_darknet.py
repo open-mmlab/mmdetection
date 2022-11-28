@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
-from typing import Optional, Sequence, Union
-
+from typing import Optional, Sequence, Tuple
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig, MultiConfig
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
@@ -34,9 +34,11 @@ class Focus(nn.Module):
                  out_channels: int,
                  kernel_size: int = 1,
                  stride: int = 1,
-                 conv_cfg: Optional[dict] = None,
-                 norm_cfg: dict = dict(type='BN', momentum=0.03, eps=0.001),
-                 act_cfg: dict = dict(type='Swish')):
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: ConfigType = dict(
+                     type='BN', momentum=0.03, eps=0.001),
+                 act_cfg: ConfigType = dict(
+                     type='Swish')) -> None:
         super().__init__()
         self.conv = ConvModule(
             in_channels * 4,
@@ -87,11 +89,12 @@ class SPPBottleneck(BaseModule):
     def __init__(self,
                  in_channels: int,
                  out_channels: int,
-                 kernel_sizes: Sequence[int] = (5, 9, 13),
-                 conv_cfg: Optional[dict] = None,
-                 norm_cfg: dict = dict(type='BN', momentum=0.03, eps=0.001),
-                 act_cfg: dict = dict(type='Swish'),
-                 init_cfg: Optional[Union[dict, list[dict]]] = None):
+                 kernel_sizes: Tuple[int] = (5, 9, 13),
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: ConfigType = dict(
+                     type='BN', momentum=0.03, eps=0.001),
+                 act_cfg: ConfigType = dict(type='Swish'),
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg)
         mid_channels = in_channels // 2
         self.conv1 = ConvModule(
@@ -184,18 +187,18 @@ class CSPDarknet(BaseModule):
                  frozen_stages: int = -1,
                  use_depthwise: bool = False,
                  arch_ovewrite: Optional[list] = None,
-                 spp_kernal_sizes: Sequence[int] = (5, 9, 13),
-                 conv_cfg: Optional[dict] = None,
-                 norm_cfg: dict = dict(type='BN', momentum=0.03, eps=0.001),
-                 act_cfg: dict = dict(type='Swish'),
+                 spp_kernal_sizes: Tuple[int] = (5, 9, 13),
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: ConfigType = dict(type='BN', momentum=0.03, eps=0.001),
+                 act_cfg: ConfigType = dict(type='Swish'),
                  norm_eval: bool = False,
-                 init_cfg: dict = dict(
+                 init_cfg: MultiConfig = dict(
                      type='Kaiming',
                      layer='Conv2d',
                      a=math.sqrt(5),
                      distribution='uniform',
                      mode='fan_in',
-                     nonlinearity='leaky_relu')):
+                     nonlinearity='leaky_relu')) -> None:
         super().__init__(init_cfg)
         arch_setting = self.arch_settings[arch]
         if arch_ovewrite:
@@ -260,7 +263,7 @@ class CSPDarknet(BaseModule):
             self.add_module(f'stage{i + 1}', nn.Sequential(*stage))
             self.layers.append(f'stage{i + 1}')
 
-    def _freeze_stages(self):
+    def _freeze_stages(self) -> None:
         if self.frozen_stages >= 0:
             for i in range(self.frozen_stages + 1):
                 m = getattr(self, self.layers[i])
@@ -268,7 +271,7 @@ class CSPDarknet(BaseModule):
                 for param in m.parameters():
                     param.requires_grad = False
 
-    def train(self, mode: bool = True):
+    def train(self, mode: bool = True) -> None:
         super(CSPDarknet, self).train(mode)
         self._freeze_stages()
         if mode and self.norm_eval:
