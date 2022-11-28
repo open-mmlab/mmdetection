@@ -40,7 +40,7 @@ class ConditionalDETR(DETR):
 
         num_feats = self.positional_encoding.num_feats
         assert num_feats * 2 == self.embed_dims, \
-            'embed_dims should be exactly 2 times of num_feats. ' \
+            f'embed_dims should be exactly 2 times of num_feats. ' \
             f'Found {self.embed_dims} and {num_feats}.'
 
     def pre_decoder(self, memory: Tensor) -> Tuple[Dict, Dict]:
@@ -101,7 +101,7 @@ class ConditionalDETR(DETR):
 
         Returns:
             dict: The dictionary of decoder outputs, which includes the
-            `hidden_states` of the decoder output.#TODO
+            `hidden_states` and `references` of the decoder output.
         """
         # (num_decoder_layers, num_queries, bs, dim)
         hidden_states, references = self.decoder(
