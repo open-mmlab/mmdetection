@@ -378,7 +378,6 @@ class DetLocalVisualizer(Visualizer):
                     classes)
 
         if gt_img_data is not None and pred_img_data is not None:
-            print(gt_img_data.dtype, pred_img_data.dtype)
             drawn_img = np.concatenate((gt_img_data, pred_img_data), axis=1)
         elif gt_img_data is not None:
             drawn_img = gt_img_data
