@@ -2,8 +2,7 @@
 from .dab_detr_transformer import (ConditionalAttention,
                                    DabDetrTransformerDecoder,
                                    DabDetrTransformerDecoderLayer,
-                                   DabDetrTransformerEncoder,
-                                   gen_sineembed_for_position)
+                                   DabDetrTransformerEncoder)
 from .deformable_detr_transformer import (
     DeformableDetrTransformerDecoder, DeformableDetrTransformerDecoderLayer,
     DeformableDetrTransformerEncoder, DeformableDetrTransformerEncoderLayer)
@@ -12,7 +11,8 @@ from .detr_transformer import (DetrTransformerDecoder,
                                DetrTransformerEncoder,
                                DetrTransformerEncoderLayer)
 from .utils import (MLP, AdaptivePadding, DynamicConv, PatchEmbed,
-                    PatchMerging, inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
+                    PatchMerging, convert_coordinate_to_encoding,
+                    inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
 
 __all__ = [
     'nlc_to_nchw', 'nchw_to_nlc', 'AdaptivePadding', 'PatchEmbed',
@@ -21,7 +21,7 @@ __all__ = [
     'DetrTransformerEncoderLayer', 'DetrTransformerDecoderLayer',
     'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
     'DeformableDetrTransformerEncoderLayer',
-    'DeformableDetrTransformerDecoderLayer', 'gen_sineembed_for_position',
+    'DeformableDetrTransformerDecoderLayer', 'convert_coordinate_to_encoding',
     'ConditionalAttention', 'DabDetrTransformerDecoderLayer',
     'DabDetrTransformerDecoder', 'DabDetrTransformerEncoder'
 ]
