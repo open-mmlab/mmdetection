@@ -15,19 +15,17 @@ from .detr_head import DETRHead
 
 @MODELS.register_module()
 class ConditionalDETRHead(DETRHead):
-    """Implements the DETR transformer head.
+    """Head of Conditional DETR. Conditional DETR: Conditional DETR for Fast
+    Training Convergence. More details can be found in the `paper.
 
-    See `paper: End-to-End Object Detection with Transformers
-    <https://arxiv.org/pdf/2005.12872>`_ for details.
-
-    Args:
-        TODO
+    <https://arxiv.org/abs/2108.06152>`_ .
     """
 
     def init_weights(self):
         """Initialize weights of the transformer head."""
         super().init_weights()
-        # The initialization for transformer is important
+        # The initialization below for transformer head is very
+        # important as we use Focal loss for loss_cls
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             nn.init.constant_(self.fc_cls.bias, bias_init)
