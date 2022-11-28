@@ -118,11 +118,27 @@ class DINOHead(DeformableDETRHead):
             self.split_outputs(
                 all_layers_cls_scores, all_layers_bbox_preds, dn_meta)
 
-        loss_dict = super().loss_by_feat(all_layers_matching_cls_scores,
-                                         all_layers_matching_bbox_preds,
-                                         enc_cls_scores, enc_bbox_preds,
-                                         batch_gt_instances, batch_img_metas,
-                                         batch_gt_instances_ignore)
+        # loss_dict = super().loss_by_feat(all_layers_matching_cls_scores,
+        #                                  all_layers_matching_bbox_preds,
+        #                                  enc_cls_scores, enc_bbox_preds,
+        #                                  batch_gt_instances, batch_img_metas,
+        #                                  batch_gt_instances_ignore)
+        loss_dict = super(DeformableDETRHead, self).loss_by_feat(
+            all_layers_matching_cls_scores, all_layers_matching_bbox_preds,
+            batch_gt_instances, batch_img_metas, batch_gt_instances_ignore)
+
+        # loss of proposal generated from encode feature map.
+        if enc_cls_scores is not None:
+            # NOTE The enc_loss calculation of the DINO is
+            # different from that of Deformable DETR.
+            enc_loss_cls, enc_losses_bbox, enc_losses_iou = \
+                self.loss_by_feat_single(
+                    enc_cls_scores, enc_bbox_preds,
+                    batch_gt_instances=batch_gt_instances,
+                    batch_img_metas=batch_img_metas)
+            loss_dict['enc_loss_cls'] = enc_loss_cls
+            loss_dict['enc_loss_bbox'] = enc_losses_bbox
+            loss_dict['enc_loss_iou'] = enc_losses_iou
 
         if all_layers_denoising_cls_scores is not None:
             # calculate denoising loss from all decoder layers

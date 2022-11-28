@@ -73,7 +73,7 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
             level_start_index: Tensor,
             valid_ratios: Tensor,
             reg_branches: nn.
-        ModuleList,  # TODO: why not ModuleList in mmcv?  # noqa):
+        ModuleList,  # TODO: why not ModuleList in mmcv?  # noqa
             **kwargs) -> Tensor:
         """Forward function of Transformer encoder.
 
@@ -126,6 +126,7 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
                 query_pos=query_pos,
                 value=value,
                 key_padding_mask=key_padding_mask,
+                self_attn_mask=self_attn_mask,
                 spatial_shapes=spatial_shapes,
                 level_start_index=level_start_index,
                 valid_ratios=valid_ratios,
@@ -220,8 +221,7 @@ class CdnQueryGenerator(BaseModule):
         # 91 (0~90) of which represents target classes and the 92 (91)
         # indicates `Unknown` class. However, the embedding of `unknown` class
         # is not used in the original DINO.  # TODO: num_classes + 1 or num_classes ?  # noqa
-        self.label_embedding = nn.Embedding(self.num_classes + 1,
-                                            self.embed_dims)
+        self.label_embedding = nn.Embedding(self.num_classes, self.embed_dims)
         # TODO: Be careful with the init of the label_embedding
 
     def __call__(self, batch_data_samples: SampleList) -> tuple:
@@ -280,12 +280,6 @@ class CdnQueryGenerator(BaseModule):
         gt_labels = torch.cat(gt_labels_list)  # (num_target_total, 4)
         gt_bboxes = torch.cat(gt_bboxes_list)
 
-        # The `batch_idx` saves the batch index of the corresponding sample
-        # for each target, has shape (num_target_total).
-        batch_idx = torch.cat([
-            torch.full_like(t.long(), i) for i, t in enumerate(gt_labels_list)
-        ])
-
         num_target_list = [len(bboxes) for bboxes in gt_bboxes_list]
         max_num_target = max(num_target_list)
         num_groups = self.get_num_groups(max_num_target)
@@ -293,8 +287,14 @@ class CdnQueryGenerator(BaseModule):
         dn_label_query = self.generate_dn_label_query(gt_labels, num_groups)
         dn_bbox_query = self.generate_dn_bbox_query(gt_bboxes, num_groups)
 
+        # The `batch_idx` saves the batch index of the corresponding sample
+        # for each target, has shape (num_target_total).
+        batch_idx = torch.cat([
+            torch.full_like(t.long(), i) for i, t in enumerate(gt_labels_list)
+        ])
         dn_label_query, dn_bbox_query = self.collate_dn_queries(
-            dn_label_query, dn_bbox_query, batch_idx, num_groups)
+            dn_label_query, dn_bbox_query, batch_idx, len(batch_data_samples),
+            num_groups)
 
         attn_mask = self.generate_dn_mask(
             max_num_target, num_groups, device=dn_label_query.device)
@@ -471,7 +471,7 @@ class CdnQueryGenerator(BaseModule):
 
     def collate_dn_queries(self, input_label_query: Tensor,
                            input_bbox_query: Tensor, batch_idx: Tensor,
-                           num_groups: int) -> Tuple[Tensor, Tensor]:
+                           batch_size: int, num_groups: int) -> Tuple[Tensor]:
         """Collate generated queries to obtain batched dn queries.
 
         The strategy for query collation is as follow:
@@ -500,17 +500,17 @@ class CdnQueryGenerator(BaseModule):
                 targets, has shape (num_target_total, 4).
             batch_idx (Tensor): The batch index of the corresponding sample
                 for each target, has shape (num_target_total).
+            batch_size (int): The size of the input batch.
             num_groups (int): The number of denoising query groups.
 
         Returns:
-            tuple[Tensor, Tensor]: Output batched label and bbox queries.
+            tuple[Tensor]: Output batched label and bbox queries.
             - batched_label_query (Tensor): The output batched label queries,
               has shape (batch_size, max_num_target, embed_dims).
             - batched_bbox_query (Tensor): The output batched bbox queries,
               has shape (batch_size, max_num_target, 4).
         """
         device = input_label_query.device
-        batch_size = batch_idx.max().item() + 1
         num_target_list = [
             torch.sum(batch_idx == idx) for idx in range(batch_size)
         ]

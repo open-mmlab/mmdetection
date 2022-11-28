@@ -198,9 +198,6 @@ class DINO(DeformableDETR):
         if self.training:  # TODO: whether to transfer this to query_generator?
             dn_label_query, dn_bbox_query, dn_mask, dn_meta = \
                 self.dn_query_generator(batch_data_samples)
-            # dn_label_query, dn_bbox_query, dn_mask, dn_meta = \
-            #     self.dn_query_generator.ori__call__(batch_data_samples)  # TODO: delete this align test  # noqa
-
             query = torch.cat([dn_label_query, query], dim=1)
             reference_points = torch.cat([dn_bbox_query, topk_coords_unact],
                                          dim=1)
