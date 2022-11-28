@@ -6,7 +6,7 @@ from mmengine.model import uniform_init
 from torch import Tensor, nn
 
 from mmdet.registry import MODELS
-from ..layers import SinePositionalEncodingHW
+from ..layers import SinePositionalEncoding
 from ..layers.transformer import (DabDetrTransformerDecoder,
                                   DabDetrTransformerEncoder, inverse_sigmoid)
 from .detr import DETR
@@ -45,7 +45,7 @@ class DABDETR(DETR):
 
     def _init_layers(self) -> None:
         """Initialize layers except for backbone, neck and bbox_head."""
-        self.positional_encoding = SinePositionalEncodingHW(
+        self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding_cfg)
         self.encoder = DabDetrTransformerEncoder(**self.encoder)
         self.decoder = DabDetrTransformerDecoder(**self.decoder)

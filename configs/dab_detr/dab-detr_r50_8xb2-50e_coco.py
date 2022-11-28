@@ -66,7 +66,7 @@ model = dict(
                 act_cfg=dict(type='PReLU'))),
         return_intermediate=True),
     positional_encoding_cfg=dict(
-        num_feats=128, temperatureH=20, temperatureW=20, normalize=True),
+        num_feats=128, temperature=20, normalize=True),
     bbox_head=dict(
         type='DABDETRHead',
         num_classes=80,

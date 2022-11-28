@@ -12,8 +12,7 @@ from .msdeformattn_pixel_decoder import MSDeformAttnPixelDecoder
 from .normed_predictor import NormedConv2d, NormedLinear
 from .pixel_decoder import PixelDecoder, TransformerEncoderPixelDecoder
 from .positional_encoding import (LearnedPositionalEncoding,
-                                  SinePositionalEncoding,
-                                  SinePositionalEncodingHW)
+                                  SinePositionalEncoding)
 from .res_layer import ResLayer, SimplifiedBasicBlock
 from .se_layer import ChannelAttention, DyReLU, SELayer
 from .transformer import (
@@ -40,7 +39,7 @@ __all__ = [
     'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
     'DeformableDetrTransformerEncoderLayer',
     'DeformableDetrTransformerDecoderLayer', 'AdaptivePadding',
-    'SinePositionalEncodingHW', 'gen_sineembed_for_position',
-    'ConditionalAttention', 'DabDetrTransformerDecoderLayer',
-    'DabDetrTransformerDecoder', 'DabDetrTransformerEncoder'
+    'gen_sineembed_for_position', 'ConditionalAttention',
+    'DabDetrTransformerDecoderLayer', 'DabDetrTransformerDecoder',
+    'DabDetrTransformerEncoder'
 ]
