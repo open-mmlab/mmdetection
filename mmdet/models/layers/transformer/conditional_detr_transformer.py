@@ -339,10 +339,7 @@ class ConditionalAttention(BaseModule):
                 is the first layer of the decoder.
                 Defaults to False.
         Returns:
-            Tensor: forwarded results with shape
-            [num_queries, bs, embed_dims]
-            if self.batch_first is False, else
-            [bs, num_queries embed_dims].
+            Tensor: forwarded results with shape [num_queries, bs, embed_dims].
         """
         if self.cross_attn:
             q_content = self.qcontent_proj(query)
