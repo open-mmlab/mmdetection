@@ -104,7 +104,7 @@ class ConditionalDETR(DETR):
             `hidden_states` of the decoder output.#TODO
         """
         # (num_decoder_layers, num_queries, bs, dim)
-        hidden_states, reference_points = self.decoder(
+        hidden_states, references = self.decoder(
             query=query,
             key=memory,
             value=memory,
@@ -113,5 +113,5 @@ class ConditionalDETR(DETR):
             key_padding_mask=memory_mask)
         hidden_states = hidden_states.transpose(1, 2)
         head_inputs_dict = dict(
-            hidden_states=hidden_states, reference_points=reference_points)
+            hidden_states=hidden_states, references=references)
         return head_inputs_dict

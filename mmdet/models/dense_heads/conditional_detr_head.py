@@ -25,13 +25,13 @@ class ConditionalDETRHead(DETRHead):
         """Initialize weights of the transformer head."""
         super().init_weights()
         # The initialization below for transformer head is very
-        # important as we use Focal loss for loss_cls
+        # important as we use Focal_loss for loss_cls
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             nn.init.constant_(self.fc_cls.bias, bias_init)
 
     def forward(self, hidden_states: Tensor,
-                reference: Tensor) -> Tuple[Tensor, Tensor]:
+                references: Tensor) -> Tuple[Tensor, Tensor]:
         """"Forward function.
 
         Args:
@@ -40,7 +40,8 @@ class ConditionalDETRHead(DETRHead):
                 (num_hidden_states, bs, num_queries, dim), else has shape (1,
                 bs, num_queries, dim) which only contains the last layer
                 outputs.
-            reference_points (Tensor) has shape(1,300,2)
+            references (Tensor): References from transformer decoder,has
+                shape (1, bs, num_query, 2).
         Returns:
             tuple[Tensor]: results of head containing the following tensor.
 
@@ -52,12 +53,12 @@ class ConditionalDETRHead(DETRHead):
               (num_hidden_states, bs, num_queries, 4).
         """
 
-        reference_unsigmoid = inverse_sigmoid(reference)
+        references_unsigmoid = inverse_sigmoid(references)
         layers_outputs_coords = []
         for layer_id in range(hidden_states.shape[0]):
             tmp_reg_preds = self.fc_reg(
                 self.activate(self.reg_ffn(hidden_states[layer_id])))
-            tmp_reg_preds[..., :2] += reference_unsigmoid
+            tmp_reg_preds[..., :2] += references_unsigmoid
             outputs_coord = tmp_reg_preds.sigmoid()
             layers_outputs_coords.append(outputs_coord)
         layers_outputs_coords = torch.stack(layers_outputs_coords)
@@ -65,15 +66,16 @@ class ConditionalDETRHead(DETRHead):
         layers_cls_scores = self.fc_cls(hidden_states)
         return layers_cls_scores, layers_outputs_coords
 
-    def loss(self, hidden_states: Tensor, reference_points: Tensor,
+    def loss(self, hidden_states: Tensor, references: Tensor,
              batch_data_samples: SampleList) -> dict:
         """Perform forward propagation and loss calculation of the detection
         head on the features of the upstream network.
 
         Args:
             hidden_states (Tensor): Feature from the transformer decoder, has
-                shape (num_decoder_layers, bs, num_queries, cls_out_channels)
-                or (num_decoder_layers, num_queries, bs, cls_out_channels).
+                shape (num_decoder_layers, bs, num_queries, dim)
+            references (Tensor): references from the transformer decoder, has
+               shape (num_decoder_layers, bs, num_queries, 2).
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
@@ -87,20 +89,23 @@ class ConditionalDETRHead(DETRHead):
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
 
-        outs = self(hidden_states, reference_points)
+        outs = self(hidden_states, references)
         loss_inputs = outs + (batch_gt_instances, batch_img_metas)
         losses = self.loss_by_feat(*loss_inputs)
         return losses
 
     def loss_and_predict(
-            self, hidden_states: Tuple[Tensor], reference_points: Tensor,
+            self, hidden_states: Tensor, references: Tensor,
             batch_data_samples: SampleList) -> Tuple[dict, InstanceList]:
         """Perform forward propagation of the head, then calculate loss and
         predictions from the features and data samples. Over-write because
         img_metas are needed as inputs for bbox_head.
 
         Args:
-            hidden_states (tuple[Tensor]): Features from FPN.
+            hidden_states (Tensor): Feature from the transformer decoder, has
+                shape (num_decoder_layers, bs, num_queries, dim).
+            references (Tensor): references from the transformer decoder, has
+                shape (num_decoder_layers, bs, num_queries, 2).
             batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
                 the meta information of each image and corresponding
                 annotations.
@@ -118,7 +123,7 @@ class ConditionalDETRHead(DETRHead):
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
 
-        outs = self(hidden_states, reference_points)
+        outs = self(hidden_states, references)
         loss_inputs = outs + (batch_gt_instances, batch_img_metas)
         losses = self.loss_by_feat(*loss_inputs)
 
@@ -127,8 +132,8 @@ class ConditionalDETRHead(DETRHead):
         return losses, predictions
 
     def predict(self,
-                hidden_states: Tuple[Tensor],
-                reference_points: Tensor,
+                hidden_states: Tensor,
+                references: Tensor,
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> InstanceList:
         """Perform forward propagation of the detection head and predict
@@ -136,8 +141,10 @@ class ConditionalDETRHead(DETRHead):
         because img_metas are needed as inputs for bbox_head.
 
         Args:
-            hidden_states (tuple[Tensor]): Multi-level features from the
-                upstream network, each is a 4D-tensor.
+            hidden_states (Tensor): Feature from the transformer decoder, has
+                shape (num_decoder_layers, bs, num_queries, dim).
+            references (Tensor): references from the transformer decoder, has
+                shape (num_decoder_layers, bs, num_queries, 2).
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
@@ -153,7 +160,7 @@ class ConditionalDETRHead(DETRHead):
         ]
 
         last_layer_hidden_state = hidden_states[-1].unsqueeze(0)
-        outs = self(last_layer_hidden_state, reference_points)
+        outs = self(last_layer_hidden_state, references)
 
         predictions = self.predict_by_feat(
             *outs, batch_img_metas=batch_img_metas, rescale=rescale)
