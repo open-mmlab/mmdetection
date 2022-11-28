@@ -984,7 +984,7 @@ class PhotoMetricDistortion(BaseTransform):
             # For image(type=float32), after convert bgr to hsv by opencv,
             # valid saturation value range is [0, 1]
             if saturation_value > 1:
-                img[..., 1][img[..., 1] > 1] = 1
+                img[..., 1] = img[..., 1].clip(0, 1)
 
         # random hue
         if hue_flag:
