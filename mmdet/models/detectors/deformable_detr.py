@@ -76,7 +76,7 @@ class DeformableDETR(DetectionTransformer):
         self.decoder = DeformableDetrTransformerDecoder(**self.decoder)
         self.embed_dims = self.encoder.embed_dims
         if not self.as_two_stage:
-            self.query_embedding = nn.Embedding(self.num_query,
+            self.query_embedding = nn.Embedding(self.num_queries,
                                                 self.embed_dims * 2)
             # NOTE The query_embedding will be split into query and query_pos
             # in self.pre_decoder, hence, the embed_dims are doubled.
@@ -316,7 +316,7 @@ class DeformableDETR(DetectionTransformer):
             # See https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/dense_heads/deformable_detr_head.py#L241 # noqa
             # This follows the official implementation of Deformable DETR.
             topk_proposals = torch.topk(
-                enc_outputs_class[..., 0], self.num_query, dim=1)[1]
+                enc_outputs_class[..., 0], self.num_queries, dim=1)[1]
             topk_coords_unact = torch.gather(
                 enc_outputs_coord_unact, 1,
                 topk_proposals.unsqueeze(-1).repeat(1, 1, 4))
@@ -333,9 +333,9 @@ class DeformableDETR(DetectionTransformer):
             query = query.unsqueeze(0).expand(batch_size, -1, -1)
             reference_points = self.reference_points_fc(query_pos).sigmoid()
 
-        query = query.permute(1, 0, 2)  # (num_query, bs, dim)
+        query = query.permute(1, 0, 2)  # (num_queries, bs, dim)
         memory = memory.permute(1, 0, 2)  # (num_feat, bs, dim)
-        query_pos = query_pos.permute(1, 0, 2)  # (num_query, bs, dim)
+        query_pos = query_pos.permute(1, 0, 2)  # (num_queries, bs, dim)
 
         decoder_inputs_dict = dict(
             query=query,
@@ -361,16 +361,16 @@ class DeformableDETR(DetectionTransformer):
 
         Args:
             query (Tensor): The queries of decoder inputs, has shape
-                (num_query, bs, dim).
+                (num_queries, bs, dim).
             query_pos (Tensor): The positional queries of decoder inputs,
-                has shape (num_query, bs, dim).
+                has shape (num_queries, bs, dim).
             memory (Tensor): The output embeddings of the Transformer encoder,
                 has shape (num_feat, bs, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
                 has shape (bs, num_feat).
             reference_points (Tensor): The initial reference, has shape
-                (bs, num_query, 4) when `as_two_stage` is `True`,
-                otherwise has shape (bs, num_query, 2).
+                (bs, num_queries, 4) when `as_two_stage` is `True`,
+                otherwise has shape (bs, num_queries, 2).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
@@ -515,7 +515,7 @@ class DeformableDETR(DetectionTransformer):
 
         Args:
             proposals (Tensor): Not normalized proposals, has shape
-                (bs, num_query, 4).
+                (bs, num_queries, 4).
             num_pos_feats (int, optional): The feature dimension for each
                 position along x, y, w, and h-axis. Note the final returned
                 dimension for each position is 4 times of num_pos_feats.
@@ -525,7 +525,7 @@ class DeformableDETR(DetectionTransformer):
 
         Returns:
             Tensor: The position embedding of proposal, has shape
-            (bs, num_query, num_pos_feats * 4)
+            (bs, num_queries, num_pos_feats * 4)
         """
         scale = 2 * math.pi
         dim_t = torch.arange(

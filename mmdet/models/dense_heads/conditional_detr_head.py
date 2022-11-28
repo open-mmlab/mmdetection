@@ -37,18 +37,19 @@ class ConditionalDETRHead(DETRHead):
         Args:
             hidden_states (Tensor): Features from transformer decoder. If
                 `return_intermediate_dec` in detr.py is True output has shape
-                (num_hidden_states, bs, num_query, dim), else has shape (1,
-                bs, num_query, dim) which only contains the last layer outputs.
+                (num_hidden_states, bs, num_queries, dim), else has shape (1,
+                bs, num_queries, dim) which only contains the last layer
+                outputs.
             reference_points (Tensor) has shape(1,300,2)
         Returns:
             tuple[Tensor]: results of head containing the following tensor.
 
             - layers_cls_scores (Tensor): Outputs from the classification head,
-              shape (num_hidden_states, bs, num_query, cls_out_channels). Note
-              cls_out_channels should include background.
+              shape (num_hidden_states, bs, num_queries, cls_out_channels).
+              Note cls_out_channels should include background.
             - layers_bbox_preds (Tensor): Sigmoid outputs from the regression
               head with normalized coordinate format (cx, cy, w, h), has shape
-              (num_hidden_states, bs, num_query, 4).
+              (num_hidden_states, bs, num_queries, 4).
         """
 
         reference_unsigmoid = inverse_sigmoid(reference)
@@ -71,8 +72,8 @@ class ConditionalDETRHead(DETRHead):
 
         Args:
             hidden_states (Tensor): Feature from the transformer decoder, has
-                shape (num_decoder_layers, bs, num_query, cls_out_channels) or
-                (num_decoder_layers, num_query, bs, cls_out_channels).
+                shape (num_decoder_layers, bs, num_queries, cls_out_channels)
+                or (num_decoder_layers, num_queries, bs, cls_out_channels).
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.

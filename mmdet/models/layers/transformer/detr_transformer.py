@@ -46,15 +46,15 @@ class DetrTransformerEncoder(BaseModule):
 
         Args:
             query (Tensor): Input queries of encoder, has shape
-                (num_query, bs, dim).
+                (num_queries, bs, dim).
             query_pos (Tensor): The positional embeddings of the queries, has
-                shape (num_query, bs, dim).
+                shape (num_queries, bs, dim).
             key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
-                input. ByteTensor, has shape (num_query, bs).
+                input. ByteTensor, has shape (num_queries, bs).
 
         Returns:
-            Tensor: Has shape (bs, num_query, dim) if `batch_first` is `True`,
-            otherwise (num_query, bs, dim).
+            Tensor: Has shape (bs, num_queries, dim) if `batch_first` is
+                `True`, otherwise (num_queries, bs, dim).
         """
         for layer in self.layers:
             query = layer(query, query_pos, key_padding_mask, **kwargs)
@@ -104,8 +104,8 @@ class DetrTransformerDecoder(BaseModule):
                 **kwargs) -> Tensor:
         """Forward function of decoder
         Args:
-            query (Tensor): The input query, has shape (num_query, bs, dim)
-                if `batch_first` is `False`, else (bs, num_query, dim).
+            query (Tensor): The input query, has shape (num_queries, bs, dim)
+                if `batch_first` is `False`, else (bs, num_queries, dim).
             key (Tensor): The input key, has shape (num_key, bs, dim) if
                 `batch_first` is `False`, else (bs, num_key, dim). If
                 `None`, the `query` will be used. Defaults to `None`.
@@ -124,12 +124,12 @@ class DetrTransformerDecoder(BaseModule):
 
         Returns:
             Tensor: When `batch_first` is `False`. The forwarded results
-            will have shape (num_decoder_layers, num_query, bs, dim) if
-            `return_intermediate` is `True` else (num_query, bs, dim).
+            will have shape (num_decoder_layers, num_queries, bs, dim) if
+            `return_intermediate` is `True` else (num_queries, bs, dim).
 
             When `batch_first` is `True`. The forwarded results will
-            have shape (num_decoder_layers, bs, num_query, dim) if
-            `return_intermediate` is `True` else (bs, num_query, dim).
+            have shape (num_decoder_layers, bs, num_queries, dim) if
+            `return_intermediate` is `True` else (bs, num_queries, dim).
         """
         intermediate = []
         for layer in self.layers:
@@ -206,16 +206,16 @@ class DetrTransformerEncoderLayer(BaseModule):
         """Forward function of an encoder layer.
 
         Args:
-            query (Tensor): The input query, has shape (num_query, bs, dim)
-                if `batch_first` is `False`, else (bs, num_query, dim).
+            query (Tensor): The input query, has shape (num_queries, bs, dim)
+                if `batch_first` is `False`, else (bs, num_queries, dim).
             query_pos (Tensor): The positional encoding for query, with
                 the same shape as `query`. If not None, it will
                 be added to `query` before forward function. Defaults to None.
             key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
-                input. ByteTensor. has shape (num_query, bs).
+                input. ByteTensor. has shape (num_queries, bs).
         Returns:
-            Tensor: forwarded results, has shape (num_query, bs, dim) if
-            `self.batch_first` is `False`, else (bs, num_query, dim).
+            Tensor: forwarded results, has shape (num_queries, bs, dim) if
+            `self.batch_first` is `False`, else (bs, num_queries, dim).
         """
         query = self.self_attn(
             query=query,
@@ -303,8 +303,8 @@ class DetrTransformerDecoderLayer(BaseModule):
                 **kwargs) -> Tensor:
         """
         Args:
-            query (Tensor): The input query, has shape (num_query, bs, dim)
-                if `self.batch_first` is `False`, else (bs, num_query, dim).
+            query (Tensor): The input query, has shape (num_queries, bs, dim)
+                if `self.batch_first` is `False`, else (bs, num_queries, dim).
             key (Tensor, optional): The input key, has shape (num_key, bs, dim)
                 if `self.batch_first` is `False`, else (bs, num_key, dim).
                 If `None`, the `query` will be used. Defaults to `None`.
@@ -320,18 +320,18 @@ class DetrTransformerDecoderLayer(BaseModule):
                 same shape as `key`, then `query_pos` will be used for
                 `key_pos`. Defaults to None.
             self_attn_masks (Tensor, optional): ByteTensor mask, has shape
-                (num_query, num_key), as in `nn.MultiheadAttention.forward`.
+                (num_queries, num_key), as in `nn.MultiheadAttention.forward`.
                 Defaults to None.
             cross_attn_masks (Tensor, optional): ByteTensor mask, has shape
-                (num_query, num_key), as in `nn.MultiheadAttention.forward`.
+                (num_queries, num_key), as in `nn.MultiheadAttention.forward`.
                 Defaults to None.
             key_padding_mask (Tensor, optional): The `key_padding_mask` of
                 `self_attn` input. ByteTensor, has shape (num_value, bs).
                 Defaults to None.
 
         Returns:
-            Tensor: forwarded results, has shape (num_query, bs, dim) if
-            `self.batch_first` is `False`, else (bs, num_query, dim).
+            Tensor: forwarded results, has shape (num_queries, bs, dim) if
+            `self.batch_first` is `False`, else (bs, num_queries, dim).
         """
 
         query = self.self_attn(
