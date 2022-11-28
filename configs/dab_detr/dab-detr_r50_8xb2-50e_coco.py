@@ -3,7 +3,7 @@ _base_ = [
 ]
 model = dict(
     type='DABDETR',
-    num_query=300,
+    num_queries=300,
     random_refpoints_xy=False,
     num_patterns=0,
     data_preprocessor=dict(

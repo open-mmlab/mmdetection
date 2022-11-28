@@ -30,7 +30,7 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
             of the positional encoding module. Defaults to None.
         bbox_head (:obj:`ConfigDict` or dict, optional): Config for the
             bounding box head module. Defaults to None.
-        num_query (int, optional): Number of decoder query in Transformer.
+        num_queries (int, optional): Number of decoder query in Transformer.
             Defaults to 100.
         train_cfg (:obj:`ConfigDict` or dict, optional): Training config of
             the bounding box head module. Defaults to None.
@@ -51,7 +51,7 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
                  decoder: OptConfigType = None,
                  positional_encoding_cfg: OptConfigType = None,
                  bbox_head: OptConfigType = None,
-                 num_query: int = 100,
+                 num_queries: int = 100,
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None,
                  data_preprocessor: OptConfigType = None,
@@ -66,7 +66,7 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
         self.encoder = encoder
         self.decoder = decoder
         self.positional_encoding_cfg = positional_encoding_cfg
-        self.num_query = num_query
+        self.num_queries = num_queries
 
         # init model layers
         self.backbone = MODELS.build(backbone)
@@ -314,9 +314,9 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
 
         Args:
             query (Tensor): The queries of decoder inputs, has shape
-                (num_query, bs, dim).
+                (num_queries, bs, dim).
             query_pos (Tensor): The positional queries of decoder inputs,
-                has shape (num_query, bs, dim).
+                has shape (num_queries, bs, dim).
             memory (Tensor): The output embeddings of the Transformer encoder,
                 has shape (num_feat, bs, dim).
 

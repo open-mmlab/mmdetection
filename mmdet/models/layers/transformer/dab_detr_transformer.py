@@ -511,7 +511,7 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
         """Forward function of decoder.
 
         Args:
-            query (Tensor): The input query with shape (num_query, bs, dim)
+            query (Tensor): The input query with shape (num_queries, bs, dim)
                 if `self.batch_first` is `False`, else (bs, num_queries, dim).
             key (Tensor): The input key with shape (num_key, bs, dim) if
                 `self.batch_first` is `False`, else (bs, num_keys, dim). If
@@ -531,10 +531,10 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
 
         Returns:
             List[Tensor]: forwarded results with shape (num_decoder_layers,
-            bs, num_query, dim) if `return_intermediate` is True, otherwise
-            with shape (1, bs, num_query, dim). references with shape
-            (num_decoder_layers, bs, num_query, 2/4) if `reg_branches`
-            is not None, otherwise with shape (1, bs, num_query, 2/4).
+            bs, num_queries, dim) if `return_intermediate` is True, otherwise
+            with shape (1, bs, num_queries, dim). references with shape
+            (num_decoder_layers, bs, num_queries, 2/4) if `reg_branches`
+            is not None, otherwise with shape (1, bs, num_queries, 2/4).
         """
         output = query
         reference_unsigmoid = query_pos
@@ -630,15 +630,15 @@ class DabDetrTransformerEncoder(DetrTransformerEncoder):
 
         Args:
             query (Tensor): Input queries of encoder, has shape
-                (num_query, bs, dim).
+                (num_queries, bs, dim).
             query_pos (Tensor): The positional embeddings of the queries, has
                 shape (num_feat, bs, dim).
             query_key_padding_mask (Tensor): ByteTensor, the key padding mask
                 of the queries, has shape (num_feat, bs).
 
         Returns:
-            Tensor: With shape (bs, num_query, dim) if `batch_first` is `True`,
-            otherwise (num_query, bs, dim).
+            Tensor: With shape (bs, num_queries, dim)
+            if `batch_first` is `True`, otherwise (num_queries, bs, dim).
         """
 
         for layer in self.layers:

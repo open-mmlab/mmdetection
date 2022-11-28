@@ -3,7 +3,7 @@ _base_ = [
 ]
 model = dict(
     type='DETR',
-    num_query=100,
+    num_queries=100,
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],

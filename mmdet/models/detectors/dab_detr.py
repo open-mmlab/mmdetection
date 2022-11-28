@@ -51,7 +51,7 @@ class DABDETR(DETR):
         self.decoder = DabDetrTransformerDecoder(**self.decoder)
         self.embed_dims = self.encoder.embed_dims
         self.query_dim = self.decoder.query_dim
-        self.query_embedding = nn.Embedding(self.num_query, self.query_dim)
+        self.query_embedding = nn.Embedding(self.num_queries, self.query_dim)
         if self.num_patterns > 0:
             self.patterns = nn.Embedding(self.num_patterns, self.embed_dims)
         self.nb_dec = self.decoder.num_layers
@@ -95,13 +95,13 @@ class DABDETR(DETR):
         query_pos = query_pos.unsqueeze(1).repeat(1, batch_size, 1)
         if self.num_patterns == 0:
             query = torch.zeros(
-                self.num_query,
+                self.num_queries,
                 batch_size,
                 self.embed_dims,
                 device=query_pos.device)
         else:
             query = self.patterns.weight[:, None, None, :]\
-                .repeat(1, self.num_query, batch_size, 1)\
+                .repeat(1, self.num_queries, batch_size, 1)\
                 .view(-1, batch_size, self.embed_dims)
             query_pos = query_pos.repeat(self.num_patterns, 1, 1)
         # iterative refinement for anchor boxes
@@ -122,9 +122,9 @@ class DABDETR(DETR):
 
         Args:
             query (Tensor): The queries of decoder inputs, has shape
-                (num_query, bs, dim).
+                (num_queries, bs, dim).
             query_pos (Tensor): The positional queries of decoder inputs,
-                has shape (num_query, bs, dim).
+                has shape (num_queries, bs, dim).
             memory (Tensor): The output embeddings of the Transformer encoder,
                 has shape (num_feat, bs, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,

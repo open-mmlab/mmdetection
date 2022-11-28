@@ -410,9 +410,10 @@ class MLP(BaseModule):
 
         Args:
             x (Tensor): The input feature, has shape
-                (num_query, bs, input_dim).
+                (num_queries, bs, input_dim).
         Returns:
-            Tensor: The output feature, has shape (num_query, bs, output_dim).
+            Tensor: The output feature, has shape
+                (num_queries, bs, output_dim).
         """
         for i, layer in enumerate(self.layers):
             x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)

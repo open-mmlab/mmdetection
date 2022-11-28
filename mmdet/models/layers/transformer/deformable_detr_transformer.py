@@ -33,12 +33,12 @@ class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
         """Forward function of Transformer encoder.
 
         Args:
-            query (Tensor): The input query, has shape (num_query, bs, dim).
+            query (Tensor): The input query, has shape (num_queries, bs, dim).
             query_pos (Tensor): The positional encoding for query, has shape
-                (num_query, bs, dim). If not None, it will be added to the
+                (num_queries, bs, dim). If not None, it will be added to the
                 `query` before forward function. Defaults to None.
             key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
-                input. ByteTensor, has shape (num_query, bs).
+                input. ByteTensor, has shape (num_queries, bs).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
@@ -51,7 +51,7 @@ class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
         Returns:
             Tensor: Output queries of Transformer encoder, which is also
             called 'encoder output embeddings' or 'memory', has shape
-            (num_query, bs, dim)
+            (num_queries, bs, dim)
         """
         reference_points = self.get_encoder_reference_points(
             spatial_shapes, valid_ratios, device=query.device)
@@ -133,16 +133,17 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
         """Forward function of Transformer decoder.
 
         Args:
-            query (Tensor): The input queries, has shape (num_query, bs, dim).
+            query (Tensor): The input queries, has shape
+                (num_queries, bs, dim).
             query_pos (Tensor): The input positional query, has shape
-                (num_query, bs, dim). It will be added to `query` before
+                (num_queries, bs, dim). It will be added to `query` before
                 forward function.
             value (Tensor): The input values, has shape (num_value, bs, dim).
             key_padding_mask (Tensor): The `key_padding_mask` of `cross_attn`
                 input. ByteTensor, has shape (num_value, bs).
             reference_points (Tensor): The initial reference, has shape
-                (bs, num_query, 4) when `as_two_stage` is `True`,
-                otherwise has shape (bs, num_query, 2).
+                (bs, num_queries, 4) when `as_two_stage` is `True`,
+                otherwise has shape (bs, num_queries, 2).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
@@ -159,14 +160,14 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
             tuple[Tensor]: Outputs of Deformable Transformer Decoder.
 
             - output (Tensor): Output embeddings of the last decoder, has
-              shape (num_query, bs, embed_dims) when `return_intermediate`
+              shape (num_queries, bs, embed_dims) when `return_intermediate`
               is `False`. Otherwise, Intermediate output embeddings of all
-              decoder layers, has shape (num_decoder_layers, num_query, bs,
+              decoder layers, has shape (num_decoder_layers, num_queries, bs,
               embed_dims).
             - reference_points (Tensor): The reference of the last decoder
-              layer, has shape (bs, num_query, 4) when `return_intermediate`
+              layer, has shape (bs, num_queries, 4) when `return_intermediate`
               is `False`. Otherwise, Intermediate references of all decoder
-              layers, has shape (num_decoder_layers, bs, num_query, 4).
+              layers, has shape (num_decoder_layers, bs, num_queries, 4).
         """
         output = query
         intermediate = []
