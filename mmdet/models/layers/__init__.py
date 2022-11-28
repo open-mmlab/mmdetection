@@ -22,7 +22,7 @@ from .transformer import (
     DeformableDetrTransformerEncoder, DeformableDetrTransformerEncoderLayer,
     DetrTransformerDecoder, DetrTransformerDecoderLayer,
     DetrTransformerEncoder, DetrTransformerEncoderLayer, DynamicConv,
-    PatchEmbed, PatchMerging, gen_sineembed_for_position, inverse_sigmoid,
+    PatchEmbed, PatchMerging, convert_coordinate_to_encoding, inverse_sigmoid,
     nchw_to_nlc, nlc_to_nchw)
 
 __all__ = [
@@ -39,7 +39,7 @@ __all__ = [
     'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
     'DeformableDetrTransformerEncoderLayer',
     'DeformableDetrTransformerDecoderLayer', 'AdaptivePadding',
-    'gen_sineembed_for_position', 'ConditionalAttention',
+    'convert_coordinate_to_encoding', 'ConditionalAttention',
     'DabDetrTransformerDecoderLayer', 'DabDetrTransformerDecoder',
     'DabDetrTransformerEncoder'
 ]
