@@ -29,21 +29,25 @@ class BFP(BaseModule):
             multi-level features from bottom to top.
         refine_type (str): Type of the refine op, currently support
             [None, 'conv', 'non_local'].
-        conv_cfg (:obj:`ConfigDict` or dict, optional): The config dict for convolution layers.
-        norm_cfg (:obj:`ConfigDict` or dict, optional): The config dict for normalization layers.
-        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+        conv_cfg (:obj:`ConfigDict` or dict, optional): The config dict for
+            convolution layers.
+        norm_cfg (:obj:`ConfigDict` or dict, optional): The config dict for
+            normalization layers.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or
             dict]): Initialization config dict.
     """
 
-    def __init__(self,
-                 in_channels: int,
-                 num_levels: int,
-                 refine_level: int = 2,
-                 refine_type: str = None,
-                 conv_cfg: OptConfigType = None,
-                 norm_cfg: OptConfigType = None,
-                 init_cfg: OptMultiConfig = dict(
-                     type='Xavier', layer='Conv2d', distribution='uniform')):
+    def __init__(
+        self,
+        in_channels: int,
+        num_levels: int,
+        refine_level: int = 2,
+        refine_type: str = None,
+        conv_cfg: OptConfigType = None,
+        norm_cfg: OptConfigType = None,
+        init_cfg: OptMultiConfig = dict(
+            type='Xavier', layer='Conv2d', distribution='uniform')
+    ) -> None:
         super().__init__(init_cfg=init_cfg)
         assert refine_type in [None, 'conv', 'non_local']
 
