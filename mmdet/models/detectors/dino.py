@@ -77,6 +77,7 @@ class DINO(DeformableDETR):
             if isinstance(m, MultiScaleDeformableAttention):
                 m.init_weights()
         nn.init.xavier_uniform_(self.memory_trans_fc.weight)
+        nn.init.xavier_uniform_(self.query_embedding.weight)
         normal_(self.level_embed)
 
     def forward_transformer(
