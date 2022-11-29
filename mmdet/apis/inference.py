@@ -6,11 +6,14 @@ from typing import Optional, Sequence, Union
 import numpy as np
 import torch
 import torch.nn as nn
+from mmcv import imread
 from mmcv.ops import RoIPool
 from mmcv.transforms import Compose
 from mmengine.config import Config
 from mmengine.runner import load_checkpoint
 
+from mmdet.models import BaseDetector
+from mmdet.visualization import DetLocalVisualizer
 from ..evaluation import get_classes
 from ..models import build_detector
 from ..structures import DetDataSample, SampleList
@@ -202,3 +205,64 @@ async def async_inference_detector(model, imgs):
     torch.set_grad_enabled(False)
     results = await model.aforward_test(data, rescale=True)
     return results
+
+
+def show_result_pyplot(model: BaseDetector,
+                       img: Union[str, np.ndarray],
+                       result: DetDataSample,
+                       opacity: float = 0.5,
+                       title: str = '',
+                       draw_gt: bool = True,
+                       draw_pred: bool = True,
+                       wait_time: float = 0,
+                       show: bool = True,
+                       save_dir=None,
+                       out_file=None):
+    """Visualize the detection results on the image.
+
+    Args:
+        model (BaseDetector): The loaded detector.
+        img (str or np.ndarray): Image filename or loaded image.
+        result (DetDataSample): The prediction DetDataSample result.
+        opacity (float): Opacity of painted detection map.
+            Default 0.5. Must be in (0, 1] range.
+        title (str): The title of pyplot figure.
+            Default is ''.
+        draw_gt (bool): Whether to draw GT DetDataSample. Default to True.
+        draw_pred (bool): Whether to draw Prediction DetDataSample.
+            Defaults to True.
+        wait_time (float): The interval of show (s). 0 is the special value
+            that means "forever". Defaults to 0.
+        show (bool): Whether to display the drawn image.
+            Default to True.
+        out_file (str, optional): Path to output file. Default to None.
+
+    Returns:
+        np.ndarray: the drawn image which channel is RGB.
+    """
+    if hasattr(model, 'module'):
+        model = model.module
+    if isinstance(img, str):
+        image = imread(img)
+    else:
+        image = img.copy()
+
+    # init visualizer
+    visualizer = DetLocalVisualizer(
+        vis_backends=[dict(type='LocalVisBackend')],
+        save_dir=None,
+        alpha=opacity)
+    visualizer.dataset_meta = model.dataset_meta
+
+    visualizer.add_datasample(
+        name=title,
+        image=image,
+        data_sample=result,
+        draw_gt=draw_gt,
+        draw_pred=draw_pred,
+        wait_time=wait_time,
+        out_file=out_file,
+        show=show)
+    vis_img = visualizer.get_image()
+
+    return vis_img
