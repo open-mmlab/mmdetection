@@ -74,11 +74,11 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 最新进展
 
-**v3.0.0rc3** 版本已经在 2022.11.4 发布：
+**v3.0.0rc4** 版本已经在 2022.11.25 发布：
 
-- 支持了 [CrowdDet](configs/crowddet/) 和 EIoULoss
-- 支持训练 Detectron2 中的检测模型并提供了三个[样例](configs/misc)
-- 重构了 [Fast R-CNN](configs/fast_rcnn/)
+- 支持了 [CondInst](https://arxiv.org/abs/2003.05664)
+- 添加了 [`projects/`](./projects/) 文件夹并提供了[示例](./projects/example_project/README.md)，方便社区快速地贡献相关项目
+- 在 [`projects`](./projects/SparseInst/README.md) 中支持了 [SparseInst](https://arxiv.org/abs/2203.12827)
 
 ## 安装
 
@@ -205,6 +205,8 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/scnet">SCNet (AAAI'2021)</a></li>
           <li><a href="configs/queryinst">QueryInst (ICCV'2021)</a></li>
           <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
+          <li><a href="configs/condinst">CondInst (ECCV 2020)</a></li>
+          <li><a href="projects/SparseInst">SparseInst (CVPR 2022)</a></li>
         </ul>
       </td>
       <td>
