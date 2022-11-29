@@ -3,25 +3,24 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
+from torch import Tensor
 
 from mmdet.registry import MODELS
 from .utils import weighted_loss
 
 
 @weighted_loss
-def smooth_l1_loss(pred: torch.Tensor,
-                   target: torch.Tensor,
-                   beta: float = 1.0) -> torch.Tensor:
+def smooth_l1_loss(pred: Tensor, target: Tensor, beta: float = 1.0) -> Tensor:
     """Smooth L1 loss.
 
     Args:
-        pred (torch.Tensor): The prediction.
-        target (torch.Tensor): The learning target of the prediction.
+        pred (Tensor): The prediction.
+        target (Tensor): The learning target of the prediction.
         beta (float, optional): The threshold in the piecewise function.
             Defaults to 1.0.
 
     Returns:
-        torch.Tensor: Calculated loss
+        Tensor: Calculated loss
     """
     assert beta > 0
     if target.numel() == 0:
@@ -35,15 +34,15 @@ def smooth_l1_loss(pred: torch.Tensor,
 
 
 @weighted_loss
-def l1_loss(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+def l1_loss(pred: Tensor, target: Tensor) -> Tensor:
     """L1 loss.
 
     Args:
-        pred (torch.Tensor): The prediction.
-        target (torch.Tensor): The learning target of the prediction.
+        pred (Tensor): The prediction.
+        target (Tensor): The learning target of the prediction.
 
     Returns:
-        torch.Tensor: Calculated loss
+        Tensor: Calculated loss
     """
     if target.numel() == 0:
         return pred.sum() * 0
@@ -75,18 +74,18 @@ class SmoothL1Loss(nn.Module):
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred: torch.Tensor,
-                target: torch.Tensor,
-                weight: Optional[torch.Tensor] = None,
+                pred: Tensor,
+                target: Tensor,
+                weight: Optional[Tensor] = None,
                 avg_factor: Optional[int] = None,
                 reduction_override: Optional[str] = None,
-                **kwargs) -> torch.Tensor:
+                **kwargs) -> Tensor:
         """Forward function.
 
         Args:
-            pred (torch.Tensor): The prediction.
-            target (torch.Tensor): The learning target of the prediction.
-            weight (torch.Tensor, optional): The weight of loss for each
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction.
+            weight (Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
@@ -95,7 +94,7 @@ class SmoothL1Loss(nn.Module):
                 Defaults to None.
 
         Returns:
-            torch.Tensor: Calculated loss
+            Tensor: Calculated loss
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
@@ -127,17 +126,17 @@ class L1Loss(nn.Module):
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred: torch.Tensor,
-                target: torch.Tensor,
-                weight: Optional[torch.Tensor] = None,
+                pred: Tensor,
+                target: Tensor,
+                weight: Optional[Tensor] = None,
                 avg_factor: Optional[int] = None,
-                reduction_override: Optional[str] = None) -> torch.Tensor:
+                reduction_override: Optional[str] = None) -> Tensor:
         """Forward function.
 
         Args:
-            pred (torch.Tensor): The prediction.
-            target (torch.Tensor): The learning target of the prediction.
-            weight (torch.Tensor, optional): The weight of loss for each
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction.
+            weight (Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
@@ -146,7 +145,7 @@ class L1Loss(nn.Module):
                 Defaults to None.
 
         Returns:
-            torch.Tensor: Calculated loss
+            Tensor: Calculated loss
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (

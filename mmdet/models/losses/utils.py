@@ -4,9 +4,10 @@ from typing import Callable, Optional
 
 import torch
 import torch.nn.functional as F
+from torch import Tensor
 
 
-def reduce_loss(loss: torch.Tensor, reduction: str) -> torch.Tensor:
+def reduce_loss(loss: Tensor, reduction: str) -> Tensor:
     """Reduce loss as specified.
 
     Args:
@@ -26,10 +27,10 @@ def reduce_loss(loss: torch.Tensor, reduction: str) -> torch.Tensor:
         return loss.sum()
 
 
-def weight_reduce_loss(loss: torch.Tensor,
-                       weight: Optional[torch.Tensor] = None,
+def weight_reduce_loss(loss: Tensor,
+                       weight: Optional[Tensor] = None,
                        reduction: str = 'mean',
-                       avg_factor: Optional[float] = None) -> torch.Tensor:
+                       avg_factor: Optional[float] = None) -> Tensor:
     """Apply element-wise weight and reduce loss.
 
     Args:
@@ -93,12 +94,12 @@ def weighted_loss(loss_func: Callable) -> Callable:
     """
 
     @functools.wraps(loss_func)
-    def wrapper(pred: torch.Tensor,
-                target: torch.Tensor,
-                weight: Optional[torch.Tensor] = None,
+    def wrapper(pred: Tensor,
+                target: Tensor,
+                weight: Optional[Tensor] = None,
                 reduction: str = 'mean',
                 avg_factor: Optional[int] = None,
-                **kwargs) -> torch.Tensor:
+                **kwargs) -> Tensor:
         # get element-wise loss
         loss = loss_func(pred, target, **kwargs)
         loss = weight_reduce_loss(loss, weight, reduction, avg_factor)

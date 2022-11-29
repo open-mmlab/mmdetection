@@ -1,20 +1,19 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import Optional
 
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
 
 from mmdet.registry import MODELS
 from .utils import weighted_loss
 
 
 @weighted_loss
-def knowledge_distillation_kl_div_loss(
-        pred: torch.Tensor,
-        soft_label: torch.Tensor,
-        T: int,
-        detach_target: bool = True) -> torch.Tensor:
+def knowledge_distillation_kl_div_loss(pred: Tensor,
+                                       soft_label: Tensor,
+                                       T: int,
+                                       detach_target: bool = True) -> Tensor:
     r"""Loss function for knowledge distilling using KL divergence.
 
     Args:
@@ -24,7 +23,7 @@ def knowledge_distillation_kl_div_loss(
         detach_target (bool): Remove soft_label from automatic differentiation
 
     Returns:
-        torch.Tensor: Loss tensor with shape (N,).
+        Tensor: Loss tensor with shape (N,).
     """
     assert pred.size() == soft_label.size()
     target = F.softmax(soft_label / T, dim=1)
@@ -59,9 +58,9 @@ class KnowledgeDistillationKLDivLoss(nn.Module):
         self.T = T
 
     def forward(self,
-                pred: torch.Tensor,
-                soft_label: torch.Tensor,
-                weight: Optional[torch.Tensor] = None,
+                pred: Tensor,
+                soft_label: Tensor,
+                weight: Optional[Tensor] = None,
                 avg_factor: Optional[int] = None,
                 reduction_override: Optional[str] = None):
         """Forward function.
@@ -69,7 +68,7 @@ class KnowledgeDistillationKLDivLoss(nn.Module):
         Args:
             pred (Tensor): Predicted logits with shape (N, n + 1).
             soft_label (Tensor): Target logits with shape (N, N + 1).
-            weight (torch.Tensor, optional): The weight of loss for each
+            weight (Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.

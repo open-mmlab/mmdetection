@@ -1,30 +1,30 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import Optional
 
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
 
 from mmdet.registry import MODELS
 from .utils import weight_reduce_loss
 
 
-def varifocal_loss(pred: torch.Tensor,
-                   target: torch.Tensor,
-                   weight: Optional[torch.Tensor] = None,
+def varifocal_loss(pred: Tensor,
+                   target: Tensor,
+                   weight: Optional[Tensor] = None,
                    alpha: float = 0.75,
                    gamma: float = 2.0,
                    iou_weighted: bool = True,
                    reduction: str = 'mean',
-                   avg_factor: Optional[int] = None) -> torch.Tensor:
+                   avg_factor: Optional[int] = None) -> Tensor:
     """`Varifocal Loss <https://arxiv.org/abs/2008.13367>`_
 
     Args:
-        pred (torch.Tensor): The prediction with shape (N, C), C is the
+        pred (Tensor): The prediction with shape (N, C), C is the
             number of classes
-        target (torch.Tensor): The learning target of the iou-aware
+        target (Tensor): The learning target of the iou-aware
             classification score with shape (N, C), C is the number of classes.
-        weight (torch.Tensor, optional): The weight of loss for each
+        weight (Tensor, optional): The weight of loss for each
             prediction. Defaults to None.
         alpha (float, optional): A balance factor for the negative part of
             Varifocal Loss, which is different from the alpha of Focal Loss.
@@ -96,11 +96,11 @@ class VarifocalLoss(nn.Module):
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred: torch.Tensor,
-                target: torch.Tensor,
-                weight: Optional[torch.Tensor] = None,
+                pred: Tensor,
+                target: Tensor,
+                weight: Optional[Tensor] = None,
                 avg_factor: Optional[int] = None,
-                reduction_override: Optional[str] = None) -> torch.Tensor:
+                reduction_override: Optional[str] = None) -> Tensor:
         """Forward function.
 
         Args:

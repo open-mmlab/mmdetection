@@ -1,23 +1,23 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import Optional
 
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
 
 from mmdet.registry import MODELS
 from .utils import weighted_loss
 
 
 @weighted_loss
-def mse_loss(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+def mse_loss(pred: Tensor, target: Tensor) -> Tensor:
     """Wrapper of mse loss.
     Args:
-        pred (torch.Tensor): The prediction.
-        target (torch.Tensor): The learning target of the prediction.
+        pred (Tensor): The prediction.
+        target (Tensor): The learning target of the prediction.
 
     Returns:
-        torch.Tensor: loss Tensor
+        Tensor: loss Tensor
     """
     return F.mse_loss(pred, target, reduction='none')
 
@@ -38,17 +38,17 @@ class MSELoss(nn.Module):
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred: torch.Tensor,
-                target: torch.Tensor,
-                weight: Optional[torch.Tensor] = None,
+                pred: Tensor,
+                target: Tensor,
+                weight: Optional[Tensor] = None,
                 avg_factor: Optional[int] = None,
-                reduction_override: Optional[str] = None) -> torch.Tensor:
+                reduction_override: Optional[str] = None) -> Tensor:
         """Forward function of loss.
 
         Args:
-            pred (torch.Tensor): The prediction.
-            target (torch.Tensor): The learning target of the prediction.
-            weight (torch.Tensor, optional): Weight of the loss for each
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction.
+            weight (Tensor, optional): Weight of the loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
@@ -57,7 +57,7 @@ class MSELoss(nn.Module):
                 Defaults to None.
 
         Returns:
-            torch.Tensor: The calculated loss
+            Tensor: The calculated loss
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
