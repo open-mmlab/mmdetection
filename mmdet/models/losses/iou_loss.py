@@ -30,7 +30,7 @@ def iou_loss(pred: torch.Tensor,
             log scale. Default: False.
         mode (str): Loss scaling mode, including "linear", "square", and "log".
             Default: 'log'
-        eps (float): Eps to avoid log(0).
+        eps (float): Epsilon to avoid log(0).
 
     Return:
         torch.Tensor: Loss tensor.
@@ -67,8 +67,8 @@ def bounded_iou_loss(pred: torch.Tensor,
     Args:
         pred (torch.Tensor): Predicted bboxes.
         target (torch.Tensor): Target bboxes.
-        beta (float, optional): beta parameter in smoothl1.
-        eps (float, optional): eps to avoid NaN.
+        beta (float, optional): Beta parameter in smoothl1.
+        eps (float, optional): Epsilon to avoid NaN values.
 
     Return:
         torch.Tensor: Loss tensor.
@@ -116,7 +116,7 @@ def giou_loss(pred: torch.Tensor,
         pred (torch.Tensor): Predicted bboxes of format (x1, y1, x2, y2),
             shape (n, 4).
         target (torch.Tensor): Corresponding gt bboxes, shape (n, 4).
-        eps (float): Eps to avoid log(0).
+        eps (float): Epsilon to avoid log(0).
 
     Return:
         Tensor: Loss tensor.
@@ -139,7 +139,7 @@ def diou_loss(pred: torch.Tensor,
         pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
             shape (n, 4).
         target (Tensor): Corresponding gt bboxes, shape (n, 4).
-        eps (float): Eps to avoid log(0).
+        eps (float): Epsilon to avoid log(0).
     Return:
         Tensor: Loss tensor.
     """
@@ -196,7 +196,7 @@ def ciou_loss(pred: torch.Tensor,
         pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
             shape (n, 4).
         target (Tensor): Corresponding gt bboxes, shape (n, 4).
-        eps (float): Eps to avoid log(0).
+        eps (float): Epsilon to avoid log(0).
     Return:
         Tensor: Loss tensor.
     """
@@ -264,7 +264,7 @@ def eiou_loss(pred: torch.Tensor,
             shape (n, 4).
         target (Tensor): Corresponding gt bboxes, shape (n, 4).
         smooth_point (float): hyperparameter, default is 0.1.
-        eps (float): Eps to avoid log(0).
+        eps (float): Epsilon to avoid log(0).
     Return:
         Tensor: Loss tensor.
     """
@@ -313,7 +313,7 @@ class IoULoss(nn.Module):
     Args:
         linear (bool): If True, use linear scale of loss else determined
             by mode. Default: False.
-        eps (float): Eps to avoid log(0).
+        eps (float): Epsilon to avoid log(0).
         reduction (str): Options are "none", "mean" and "sum".
         loss_weight (float): Weight of loss.
         mode (str): Loss scaling mode, including "linear", "square", and "log".
@@ -563,7 +563,7 @@ class EIoULoss(nn.Module):
     Code is modified from https://github.com//ShiqiYu/libfacedetection.train.
 
     Args:
-        eps (float): Eps to avoid log(0).
+        eps (float): Epsilon to avoid log(0).
         reduction (str): Options are "none", "mean" and "sum".
         loss_weight (float): Weight of loss.
         smooth_point (float): hyperparameter, default is 0.1.
