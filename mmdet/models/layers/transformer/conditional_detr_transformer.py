@@ -34,6 +34,8 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
         self.query_scale = MLP(self.embed_dims, self.embed_dims,
                                self.embed_dims, 2)
         self.ref_point_head = MLP(self.embed_dims, self.embed_dims, 2, 2)
+        # we have substitute 'qpos_proj' with 'qpos_sine_proj' (exclude
+        # first decoder layer),so 'qpos_proj' should be deleted.
         for layer_id in range(self.num_layers - 1):
             self.layers[layer_id + 1].cross_attn.qpos_proj = None
 
