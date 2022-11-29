@@ -255,7 +255,8 @@ def show_result_pyplot(model: BaseDetector,
         draw_gt=draw_gt,
         draw_pred=draw_pred,
         wait_time=wait_time,
-        out_file=out_file)
+        out_file=out_file,
+        show=True)
 
     vis_img = visualizer.get_image()
 
