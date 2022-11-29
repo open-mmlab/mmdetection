@@ -22,7 +22,7 @@ class DABDETR(DETR):
     <https://github.com/IDEA-Research/DAB-DETR>`_.
 
     Args:
-        random_refpoints_xy (bool): Whether to randomly initialize query
+        with_random_refpoints (bool): Whether to randomly initialize query
             embeddings and not update them during training.
             Defaults to False.
         num_patterns (int): Inspired by Anchor-DETR. Defaults to 0.
@@ -30,10 +30,10 @@ class DABDETR(DETR):
 
     def __init__(self,
                  *args,
-                 random_refpoints_xy: bool = False,
+                 with_random_refpoints: bool = False,
                  num_patterns: int = 0,
                  **kwargs) -> None:
-        self.random_refpoints_xy = random_refpoints_xy
+        self.with_random_refpoints = with_random_refpoints
         assert isinstance(num_patterns, int), \
             f'num_patterns should be int but {num_patterns}.'
         self.num_patterns = num_patterns
@@ -51,7 +51,6 @@ class DABDETR(DETR):
         self.query_embedding = nn.Embedding(self.num_queries, self.query_dim)
         if self.num_patterns > 0:
             self.patterns = nn.Embedding(self.num_patterns, self.embed_dims)
-        self.nb_dec = self.decoder.num_layers
 
         num_feats = self.positional_encoding.num_feats
         assert num_feats * 2 == self.embed_dims, \
@@ -61,7 +60,7 @@ class DABDETR(DETR):
     def init_weights(self) -> None:
         """Initialize weights for Transformer and other components."""
         super(DABDETR, self).init_weights()
-        if self.random_refpoints_xy:
+        if self.with_random_refpoints:
             uniform_init(self.query_embedding)
             self.query_embedding.weight.data[:, :2] = \
                 inverse_sigmoid(self.query_embedding.weight.data[:, :2])

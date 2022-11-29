@@ -399,7 +399,7 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
             Defaults to 4.
         query_scale_type (str): Type of transformation applied
             to content query. Defaults to `cond_elewise`.
-        modulate_hw_attn (bool): Whether to inject h&w info
+        with_modulated_hw_attn (bool): Whether to inject h&w info
             during cross conditional attention. Defaults to True.
     """
 
@@ -407,12 +407,12 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
                  *args,
                  query_dim=4,
                  query_scale_type='cond_elewise',
-                 modulate_hw_attn=True,
+                 with_modulated_hw_attn=True,
                  **kwargs):
 
         self.query_dim = query_dim
         self.query_scale_type = query_scale_type
-        self.modulate_hw_attn = modulate_hw_attn
+        self.with_modulated_hw_attn = with_modulated_hw_attn
 
         super().__init__(*args, **kwargs)
 
@@ -446,7 +446,7 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
         self.ref_point_head = MLP(self.query_dim // 2 * embed_dims, embed_dims,
                                   embed_dims, 2)
 
-        if self.modulate_hw_attn and self.query_dim == 4:
+        if self.with_modulated_hw_attn and self.query_dim == 4:
             self.ref_anchor_head = MLP(embed_dims, embed_dims, 2, 2)
 
         self.keep_query_pos = self.layers[0].keep_query_pos
@@ -513,7 +513,7 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
             query_sine_embed = query_sine_embed[
                 ..., :self.embed_dims] * pos_transformation
             # modulated height and weight attention
-            if self.modulate_hw_attn:
+            if self.with_modulated_hw_attn:
                 assert obj_center.size(-1) == 4
                 ref_hw = self.ref_anchor_head(output).sigmoid()
                 query_sine_embed[..., self.embed_dims // 2:] *= \

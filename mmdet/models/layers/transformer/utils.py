@@ -44,10 +44,27 @@ def nchw_to_nlc(x):
     return x.flatten(2).transpose(1, 2).contiguous()
 
 
-def convert_coordinate_to_encoding(pos_tensor,
-                                   num_feats,
-                                   temperature=10000,
-                                   scale=2 * math.pi):
+def convert_coordinate_to_encoding(pos_tensor: Tensor,
+                                   num_feats: int,
+                                   temperature: int = 10000,
+                                   scale: float = 2 * math.pi):
+    """Convert coordinate tensor to positional encoding.
+
+    Args:
+        pos_tensor (Tensor): Coordinate tensor to be converted to
+            positional encoding. With the last dimension as 2 or 4.
+        num_feats (int): The feature dimension for each position
+            along x-axis or y-axis. Note the final returned dimension
+            for each position is 2 times of this value.
+        temperature (int, optional): The temperature used for scaling
+            the position embedding. Defaults to 10000.
+        scale (float, optional): A scale factor that scales the position
+            embedding. The scale will be used only when `normalize` is True.
+            Defaults to 2*pi.
+
+    Returns:
+    pos (Tensor): Returned encoded positional tensor.
+    """
     dim_t = torch.arange(
         num_feats, dtype=torch.float32, device=pos_tensor.device)
     dim_t = temperature**(2 * (dim_t // 2) / num_feats)
@@ -56,7 +73,7 @@ def convert_coordinate_to_encoding(pos_tensor,
     pos_x = x_embed[:, :, None] / dim_t
     pos_y = y_embed[:, :, None] / dim_t
     pos_x = torch.stack((pos_x[:, :, 0::2].sin(), pos_x[:, :, 1::2].cos()),
-                        dim=3).flatten(2)  # TODO: .view()
+                        dim=3).flatten(2)
     pos_y = torch.stack((pos_y[:, :, 0::2].sin(), pos_y[:, :, 1::2].cos()),
                         dim=3).flatten(2)
     if pos_tensor.size(-1) == 2:
