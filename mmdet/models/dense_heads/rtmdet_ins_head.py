@@ -20,7 +20,6 @@ from mmdet.registry import MODELS
 from mmdet.structures.bbox import (cat_boxes, distance2bbox, get_box_tensor,
                                    get_box_wh, scale_boxes)
 from mmdet.utils import ConfigType, InstanceList, OptInstanceList, reduce_mean
-from ..task_modules.samplers import MaskBoxPseudoSampler
 from .rtmdet_head import RTMDetHead
 
 
@@ -58,7 +57,6 @@ class RTMDetInsHead(RTMDetHead):
         self.use_condinst_coord = use_condinst_coord
         super().__init__(*args, **kwargs)
         self.loss_mask = MODELS.build(loss_mask)
-        self.sampler = MaskBoxPseudoSampler()
 
     def _init_layers(self):
         """Initialize layers of the head."""
@@ -561,20 +559,25 @@ class RTMDetInsHead(RTMDetHead):
         return x
 
     def loss_mask_by_feat(self, mask_feats, flatten_kernels,
-                          assign_metrics_list, sampling_results_list):
-        # import pdb; pdb.set_trace()
+                          sampling_results_list, batch_gt_instances):
         batch_pos_mask_logits = []
         pos_gt_masks = []
-        for idx, (mask_feat, kernels, sampling_results) in enumerate(
-                zip(mask_feats, flatten_kernels, sampling_results_list)):
+        for idx, (mask_feat, kernels, sampling_results,
+                  gt_instances) in enumerate(
+                      zip(mask_feats, flatten_kernels, sampling_results_list,
+                          batch_gt_instances)):
             pos_priors = sampling_results.pos_priors
             pos_inds = sampling_results.pos_inds
             pos_kernels = kernels[pos_inds]  # n_pos, num_gen_params
             pos_mask_logits = self._mask_predict_by_feat_single(
                 mask_feat, pos_kernels, pos_priors)
-
+            if gt_instances.masks.numel() == 0:
+                gt_masks = torch.empty_like(gt_instances.masks)
+            else:
+                gt_masks = gt_instances.masks[
+                    sampling_results.pos_assigned_gt_inds, :]
             batch_pos_mask_logits.append(pos_mask_logits)
-            pos_gt_masks.append(sampling_results.pos_gt_masks)
+            pos_gt_masks.append(gt_masks)
 
         pos_gt_masks = torch.cat(pos_gt_masks, 0)
         batch_pos_mask_logits = torch.cat(batch_pos_mask_logits, 0)
@@ -696,8 +699,8 @@ class RTMDetInsHead(RTMDetHead):
         losses_bbox = list(map(lambda x: x / bbox_avg_factor, losses_bbox))
 
         loss_mask = self.loss_mask_by_feat(mask_feat, flatten_kernels,
-                                           assign_metrics_list,
-                                           sampling_results_list)
+                                           sampling_results_list,
+                                           batch_gt_instances)
         loss = dict(
             loss_cls=losses_cls, loss_bbox=losses_bbox, loss_mask=loss_mask)
         return loss
