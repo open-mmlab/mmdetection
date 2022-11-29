@@ -21,10 +21,6 @@ class ConditionalDETR(DETR):
     <https://github.com/Atten4Vis/ConditionalDETR>`_.
     """
 
-    def __init__(self, *arg, group_detr=1, **kwargs) -> None:
-        self.group_detr = group_detr
-        super().__init__(*arg, **kwargs)
-
     def _init_layers(self) -> None:
         """Initialize layers except for backbone, neck and bbox_head."""
         self.positional_encoding = SinePositionalEncoding(
@@ -35,8 +31,7 @@ class ConditionalDETR(DETR):
         # NOTE The embed_dims is typically passed from the inside out.
         # For example in DETR, The embed_dims is passed as
         # self_attn -> the first encoder layer -> encoder -> detector.
-        self.query_embedding = nn.Embedding(self.num_queries * self.group_detr,
-                                            self.embed_dims)
+        self.query_embedding = nn.Embedding(self.num_queries, self.embed_dims)
 
         num_feats = self.positional_encoding.num_feats
         assert num_feats * 2 == self.embed_dims, \
