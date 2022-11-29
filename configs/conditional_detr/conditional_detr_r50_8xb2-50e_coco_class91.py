@@ -46,6 +46,3 @@ metainfo = dict(
 train_dataloader = dict(dataset=dict(metainfo=metainfo))
 val_dataloader = dict(dataset=dict(metainfo=metainfo))
 test_dataloader = dict(dataset=dict(metainfo=metainfo))
-
-val_evaluator = dict(cat_ids=[i for i in range(91)])
-test_evaluator = val_evaluator
