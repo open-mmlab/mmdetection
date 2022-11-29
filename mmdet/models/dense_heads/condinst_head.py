@@ -1158,8 +1158,8 @@ class CondInstMaskHead(BaseMaskHead):
             img_meta = batch_img_metas[img_id]
             results = results_list[img_id]
             bboxes = results.bboxes
-            mask_preds = mask_preds[img_id]
-            if bboxes.shape[0] == 0 or mask_preds.shape[0] == 0:
+            mask_pred = mask_preds[img_id]
+            if bboxes.shape[0] == 0 or mask_pred.shape[0] == 0:
                 results_list[img_id] = empty_instances(
                     [img_meta],
                     bboxes.device,
@@ -1167,7 +1167,7 @@ class CondInstMaskHead(BaseMaskHead):
                     instance_results=[results])[0]
             else:
                 im_mask = self._predict_by_feat_single(
-                    mask_preds=mask_preds,
+                    mask_preds=mask_pred,
                     bboxes=bboxes,
                     img_meta=img_meta,
                     rescale=rescale)
