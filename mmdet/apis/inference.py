@@ -6,14 +6,16 @@ from typing import Optional, Sequence, Union
 import numpy as np
 import torch
 import torch.nn as nn
+from matplotlib import pyplot as plt
 from mmcv import imread
 from mmcv.ops import RoIPool
 from mmcv.transforms import Compose
 from mmengine.config import Config
 from mmengine.runner import load_checkpoint
+from mmengine.visualization import Visualizer
 
 from mmdet.models import BaseDetector
-from mmdet.visualization import DetLocalVisualizer
+from mmdet.registry import VISUALIZERS
 from ..evaluation import get_classes
 from ..models import build_detector
 from ..structures import DetDataSample, SampleList
@@ -210,22 +212,17 @@ async def async_inference_detector(model, imgs):
 def show_result_pyplot(model: BaseDetector,
                        img: Union[str, np.ndarray],
                        result: DetDataSample,
-                       opacity: float = 0.5,
                        title: str = '',
-                       draw_gt: bool = True,
+                       draw_gt: bool = False,
                        draw_pred: bool = True,
                        wait_time: float = 0,
-                       show: bool = True,
-                       save_dir=None,
-                       out_file=None):
+                       out_file: str = None):
     """Visualize the detection results on the image.
 
     Args:
-        model (BaseDetector): The loaded detector.
+        model (nn.Module): The loaded detector.
         img (str or np.ndarray): Image filename or loaded image.
         result (DetDataSample): The prediction DetDataSample result.
-        opacity (float): Opacity of painted detection map.
-            Default 0.5. Must be in (0, 1] range.
         title (str): The title of pyplot figure.
             Default is ''.
         draw_gt (bool): Whether to draw GT DetDataSample. Default to True.
@@ -233,8 +230,6 @@ def show_result_pyplot(model: BaseDetector,
             Defaults to True.
         wait_time (float): The interval of show (s). 0 is the special value
             that means "forever". Defaults to 0.
-        show (bool): Whether to display the drawn image.
-            Default to True.
         out_file (str, optional): Path to output file. Default to None.
 
     Returns:
@@ -246,12 +241,11 @@ def show_result_pyplot(model: BaseDetector,
         image = imread(img)
     else:
         image = img.copy()
+    try:
+        visualizer = VISUALIZERS.build(model.cfg.visualizer)
+    except AssertionError:
+        visualizer = Visualizer.get_current_instance()
 
-    # init visualizer
-    visualizer = DetLocalVisualizer(
-        vis_backends=[dict(type='LocalVisBackend')],
-        save_dir=None,
-        alpha=opacity)
     visualizer.dataset_meta = model.dataset_meta
 
     visualizer.add_datasample(
@@ -261,8 +255,8 @@ def show_result_pyplot(model: BaseDetector,
         draw_gt=draw_gt,
         draw_pred=draw_pred,
         wait_time=wait_time,
-        out_file=out_file,
-        show=show)
+        out_file=out_file)
+
     vis_img = visualizer.get_image()
 
-    return vis_img
+    plt.imshow(vis_img)
