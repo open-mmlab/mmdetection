@@ -231,9 +231,6 @@ def show_result_pyplot(model: BaseDetector,
         wait_time (float): The interval of show (s). 0 is the special value
             that means "forever". Defaults to 0.
         out_file (str, optional): Path to output file. Default to None.
-
-    Returns:
-        np.ndarray: the drawn image which channel is RGB.
     """
     if hasattr(model, 'module'):
         model = model.module
