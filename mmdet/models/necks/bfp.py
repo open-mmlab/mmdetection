@@ -29,9 +29,10 @@ class BFP(BaseModule):
             multi-level features from bottom to top.
         refine_type (str): Type of the refine op, currently support
             [None, 'conv', 'non_local'].
-        conv_cfg (dict): The config dict for convolution layers.
-        norm_cfg (dict): The config dict for normalization layers.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        conv_cfg (:obj:`ConfigDict` or dict, optional): The config dict for convolution layers.
+        norm_cfg (:obj:`ConfigDict` or dict, optional): The config dict for normalization layers.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict]): Initialization config dict.
     """
 
     def __init__(self,
@@ -43,7 +44,7 @@ class BFP(BaseModule):
                  norm_cfg: OptConfigType = None,
                  init_cfg: OptMultiConfig = dict(
                      type='Xavier', layer='Conv2d', distribution='uniform')):
-        super(BFP, self).__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         assert refine_type in [None, 'conv', 'non_local']
 
         self.in_channels = in_channels
@@ -71,7 +72,7 @@ class BFP(BaseModule):
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg)
 
-    def forward(self, inputs=Tuple[Tensor]) -> Tuple[Tensor]:
+    def forward(self, inputs: Tuple[Tensor]) -> Tuple[Tensor]:
         """Forward function."""
         assert len(inputs) == self.num_levels
 
