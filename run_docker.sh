@@ -5,5 +5,6 @@ docker run \
     -it \
     -v /data/brummer/mmdet_all_data:/mmdetection/data \
     -v /data/mmdetection/:/mmdetection \
+    -v /data:/data \
     -w /mmdetection \
     mmdetection
