@@ -49,6 +49,7 @@ def plot_curve(log_dicts, args):
     assert len(legend) == (len(args.json_logs) * len(args.keys))
     metrics = args.keys
 
+    # TODO: support dynamic eval interval(e.g. RTMDet) when plotting mAP.
     num_metrics = len(metrics)
     for i, log_dict in enumerate(log_dicts):
         epochs = list(log_dict.keys())
