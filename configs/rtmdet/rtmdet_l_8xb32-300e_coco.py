@@ -115,8 +115,8 @@ test_pipeline = [
 ]
 
 train_dataloader = dict(
-    batch_size=2,
-    num_workers=1,
+    batch_size=32,
+    num_workers=10,
     batch_sampler=None,
     pin_memory=True,
     dataset=dict(pipeline=train_pipeline))
