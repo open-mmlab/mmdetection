@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import pdb
 import warnings
 from pathlib import Path
 
@@ -131,6 +132,8 @@ def inference_detector(model, imgs):
             data = dict(img_info=dict(filename=img), img_prefix=None)
         # build the data pipeline
         data = test_pipeline(data)
+
+        # conv_inp = np.array(data["img"][0].data)
         datas.append(data)
 
     data = collate(datas, samples_per_gpu=len(imgs))
@@ -149,7 +152,6 @@ def inference_detector(model, imgs):
     # forward the model
     with torch.no_grad():
         results = model(return_loss=False, rescale=True, **data)
-
     if not is_batch:
         return results[0]
     else:

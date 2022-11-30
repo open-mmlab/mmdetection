@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import os.path as osp
+import pdb
 import warnings
 from functools import partial
 
@@ -52,6 +53,7 @@ def pytorch2onnx(model,
 
         print(f'Successfully exported ONNX model without '
               f'post process: {output_file}')
+        np.info((np.array(one_img.detach())))
         return
 
     # replace original forward function
@@ -137,6 +139,7 @@ def pytorch2onnx(model,
 
         # prepare input once again
         one_img, one_meta = preprocess_example_input(input_config)
+        np.save("trt_input2", one_img.detach().numpy())
         img_list, img_meta_list = [one_img], [[one_meta]]
 
         # get pytorch output

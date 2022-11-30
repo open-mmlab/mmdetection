@@ -8,23 +8,21 @@ import os
 # config_file = 'configs/custom/my_retinanet_pvt-t_fpn_1x_coco.py'
 # checkpoint_file = 'work_dirs/my_retinanet_pvt-t_fpn_1x_coco/epoch_7.pth'
 
-# config_file = 'configs/custom/pvt_brummer_v2/amazon.py'
-# checkpoint_file = 'work_dirs/brummer/latest.pth'
+config_file = 'data/work_dirs/fstb0/old_logs/512_384_24ep_rot90/fstb0.py'
+checkpoint_file = 'data/work_dirs/fstb0/old_logs/512_384_24ep_rot90/epoch_24.pth'
 
 # config_file = 'configs/custom_yolo/yolox_s_8x8_300e_coco.py'
 # checkpoint_file = 'work_dirs/yolox_s_8x8_300e_coco/latest.pth'
 
-config_file = 'work_dirs/fstb0/fstb0.py'
-checkpoint_file = 'work_dirs/fstb0/latest.pth'
+# config_file = 'configs/custom/pvt_fst_v2/brummer.py'
+# checkpoint_file = 'work_dirs/fst/latest.pth'
 
-# config_file = 'work_dirs/amazonb0/amazonb0.py'
-# checkpoint_file = 'work_dirs/amazonb0/latest.pth'
 
-inf_dir = 'data/fst/random_select_/random_select_rotated'
-inf_out_dir = 'data/fst/random_select_/fstrot90'
+# inf_dir = 'data/fst/random_select_/random_select'
+# inf_out_dir = 'data/fst/random_select_/fstv2_first'
 
-# inf_dir = "data/amazon/220921_amazon_all"
-# inf_out_dir = 'data/amazon/220921_amazon_all_b0_384x384'
+inf_dir = "data/fst/random_select_/test_img/2"
+inf_out_dir = 'data/fst/random_select_/pytorch_rot90'
 
 class FPSLogger():
     def __init__(self):

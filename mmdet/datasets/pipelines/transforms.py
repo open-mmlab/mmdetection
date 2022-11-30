@@ -317,6 +317,8 @@ class Resize:
         self._resize_bboxes(results)
         self._resize_masks(results)
         self._resize_seg(results)
+        import time
+        cv2.imwrite(f"data/dump/{time.time()}.png", results["img"])
         return results
 
     def __repr__(self):
