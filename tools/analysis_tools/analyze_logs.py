@@ -26,10 +26,10 @@ def cal_train_time(log_dicts, args):
         fastest_epoch = epoch_ave_time.argmin()
         std_over_epoch = epoch_ave_time.std()
         print(f'slowest epoch {slowest_epoch + 1}, '
-              f'average time is {epoch_ave_time[slowest_epoch]:.4f} s')
+              f'average time is {epoch_ave_time[slowest_epoch]:.4f} s/iter')
         print(f'fastest epoch {fastest_epoch + 1}, '
-              f'average time is {epoch_ave_time[fastest_epoch]:.4f} s')
-        print(f'time std over epochs is {std_over_epoch:.2E}')
+              f'average time is {epoch_ave_time[fastest_epoch]:.4f} s/iter')
+        print(f'time std over epochs is {std_over_epoch:.4f}')
         print(f'average iter time: {np.mean(epoch_ave_time):.4f} s/iter\n')
 
 
