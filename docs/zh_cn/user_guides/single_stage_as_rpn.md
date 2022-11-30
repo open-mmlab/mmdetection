@@ -166,3 +166,4 @@ bash tools/dist_train.sh \
     8 \
     --work-dir ./work_dirs/faster-rcnn_r50-caffe_fpn_fcos-rpn_1x_coco
 ```
+
