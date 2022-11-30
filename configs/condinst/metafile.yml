@@ -29,4 +29,4 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 36.0
-    Weights: https://download.openmmlab.com/mmdetection/v3.0/condinst/condinst_r50_fpn_ms-poly-90k_coco_instance_20221129_125223-4c186406.pth
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/condinst/condinst_r50_fpn_ms-poly-90k_coco_instance/condinst_r50_fpn_ms-poly-90k_coco_instance_20221129_125223-4c186406.pth
