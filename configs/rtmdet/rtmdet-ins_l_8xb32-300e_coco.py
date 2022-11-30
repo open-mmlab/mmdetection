@@ -9,7 +9,7 @@ model = dict(
         share_conv=True,
         pred_kernel_size=1,
         feat_channels=256,
-        act_cfg=dict(type='SiLU'),
+        act_cfg=dict(type='SiLU', inplace=True),
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         anchor_generator=dict(
             type='MlvlPointGenerator', offset=0, strides=[8, 16, 32]),
@@ -21,7 +21,7 @@ model = dict(
             loss_weight=1.0),
         loss_bbox=dict(type='GIoULoss', loss_weight=2.0),
         loss_mask=dict(
-            type='DiceLoss', loss_weight=1.0, eps=5e-6, reduction='mean')),
+            type='DiceLoss', loss_weight=2.0, eps=5e-6, reduction='mean')),
     test_cfg=dict(mask_thr_binary=0.5),
 )
 
