@@ -1,6 +1,5 @@
 import json
 import os
-import pdb
 import shutil
 
 from auto_training.utils.kitti_conversion import read_files, is_image

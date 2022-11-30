@@ -3,8 +3,6 @@ import argparse
 import copy
 import os
 import os.path as osp
-import pdb
-import time
 import warnings
 
 import mmcv

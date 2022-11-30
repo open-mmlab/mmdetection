@@ -4,7 +4,6 @@ import io
 import itertools
 import logging
 import os.path as osp
-import pdb
 import tempfile
 import warnings
 from collections import OrderedDict

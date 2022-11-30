@@ -1,5 +1,3 @@
-#spec_base_path = "configs/auto/auto.py"
-import pdb
 
 from mmcv import Config
 from auto_training.utils.utils import parse_training_data_classes

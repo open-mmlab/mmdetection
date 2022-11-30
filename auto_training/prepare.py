@@ -1,7 +1,6 @@
 import argparse
 import json
 import os
-import pdb
 
 from auto_training.utils.kitti_conversion import convert_kitti_files
 from auto_training.utils.utils import copy_images
@@ -25,7 +24,6 @@ def make_coco_folder(cocos, coco_path, train_image_path, val_image_path):
 
 def main():
     args = parse_args()
-    pdb.set_trace()
 
     cocos = convert_kitti_files(args.kitti_train, args.kitti_val, args.target_class_map)
     make_coco_folder(cocos, args.coco_folder, args.kitti_train, args.kitti_val)

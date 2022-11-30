@@ -2,13 +2,7 @@
 import argparse
 import os
 import os.path as osp
-import pdb
 import warnings
-from functools import partial
-
-import numpy as np
-import onnx
-import torch
 from mmcv import Config, DictAction
 
 from auto_training.utils.export_specs import export_for_lv
