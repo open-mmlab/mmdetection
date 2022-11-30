@@ -23,50 +23,47 @@ Models:
     In Collection: Localization Distillation
     Config: configs/ld/ld_r18_gflv1_r101_fpn_coco_1x.py
     Metadata:
-      Teacher: R-101
+      Training Memory (GB): 1.8
+      Epochs: 12
     Results:
-      - Task: Object Detection
-        Dataset: COCO
-        Metrics:
-          box AP: 36.5
-          box AP@0.5: 52.9
-          box AP@0.75: 39.3
-
+    - Task: Object Detection
+      Dataset: COCO
+      Metrics:
+        box AP: 36.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ld/ld_r18_gflv1_r101_fpn_coco_1x/ld_r18_gflv1_r101_fpn_coco_1x_20220702_062206-330e6332.pth
   - Name: ld_r34_gflv1_r101_fpn_coco_1x
     In Collection: Localization Distillation
     Config: configs/ld/ld_r34_gflv1_r101_fpn_coco_1x.py
     Metadata:
-      Teacher: R-101
+      Training Memory (GB): 2.2
+      Epochs: 12
     Results:
-      - Task: Object Detection
-        Dataset: COCO
-        Metrics:
-          box AP: 39.8
-          box AP@0.5: 56.6
-          box AP@0.75: 43.1
-
+    - Task: Object Detection
+      Dataset: COCO
+      Metrics:
+        box AP: 39.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ld/ld_r34_gflv1_r101_fpn_coco_1x/ld_r34_gflv1_r101_fpn_coco_1x_20220630_134007-9bc69413.pth
   - Name: ld_r50_gflv1_r101_fpn_coco_1x
     In Collection: Localization Distillation
     Config: configs/ld/ld_r50_gflv1_r101_fpn_coco_1x.py
     Metadata:
-      Teacher: R-101
+      Training Memory (GB): 3.6
+      Epochs: 12
     Results:
-      - Task: Object Detection
-        Dataset: COCO
-        Metrics:
-          box AP: 41.1
-          box AP@0.5: 58.7
-          box AP@0.75: 44.9
-
-  - Name: ld_r101_gflv1_r101dcn_fpn_coco_1x
+    - Task: Object Detection
+      Dataset: COCO
+      Metrics:
+        box AP: 41.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ld/ld_r50_gflv1_r101_fpn_coco_1x/ld_r50_gflv1_r101_fpn_coco_1x_20220629_145355-8dc5bad8.pth
+  - Name: ld_r101_gflv1_r101dcn_fpn_coco_2x
     In Collection: Localization Distillation
-    Config: configs/ld/ld_r101_gflv1_r101dcn_fpn_coco_1x.py
+    Config: configs/ld/ld_r101_gflv1_r101dcn_fpn_coco_2x.py
     Metadata:
-      Teacher: R-101-DCN
+      Training Memory (GB): 5.5
+      Epochs: 24
     Results:
-      - Task: Object Detection
-        Dataset: COCO
-        Metrics:
-          box AP: 45.4
-          box AP@0.5: 63.1
-          box AP@0.75: 49.5
+    - Task: Object Detection
+      Dataset: COCO
+      Metrics:
+        box AP: 45.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ld/ld_r101_gflv1_r101dcn_fpn_coco_2x/ld_r101_gflv1_r101dcn_fpn_coco_2x_20220629_185920-9e658426.pth

@@ -336,7 +336,6 @@ class Collect:
                 - keys in``self.keys``
                 - ``img_metas``
         """
-
         data = {}
         img_meta = {}
         for key in self.meta_keys:

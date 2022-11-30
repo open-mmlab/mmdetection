@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from .auto_augment import (AutoAugment, BrightnessTransform, ColorTransform,
                            ContrastTransform, EqualizeTransform, Rotate, Shear,
-                           Translate)
+                           Translate, Rot90)
 from .compose import Compose
 from .formatting import (Collect, DefaultFormatBundle, ImageToTensor,
                          ToDataContainer, ToTensor, Transpose, to_tensor)
@@ -27,5 +27,5 @@ __all__ = [
     'AutoAugment', 'CutOut', 'Shear', 'Rotate', 'ColorTransform',
     'EqualizeTransform', 'BrightnessTransform', 'ContrastTransform',
     'Translate', 'RandomShift', 'Mosaic', 'MixUp', 'RandomAffine',
-    'YOLOXHSVRandomAug', 'CopyPaste'
+    'YOLOXHSVRandomAug', 'CopyPaste', 'Rot90'
 ]

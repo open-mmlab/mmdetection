@@ -19,6 +19,7 @@ Some of the papers are published in top-tier conferences (CVPR, ICCV, and ECCV),
 To make this list also a reference for the community to develop and compare new object detection algorithms, we list them following the time order of top-tier conferences.
 Methods already supported and maintained by MMDetection are not listed.
 
+- Anchor Pruning for Object Detection, CVIU 2022. [\[paper\]](https://doi.org/10.1016/j.cviu.2022.103445)[\[github\]](https://github.com/Mxbonn/anchor_pruning)
 - Involution: Inverting the Inherence of Convolution for Visual Recognition, CVPR21. [\[paper\]](https://arxiv.org/abs/2103.06255)[\[github\]](https://github.com/d-li14/involution)
 - Multiple Instance Active Learning for Object Detection, CVPR 2021. [\[paper\]](https://openaccess.thecvf.com/content/CVPR2021/papers/Yuan_Multiple_Instance_Active_Learning_for_Object_Detection_CVPR_2021_paper.pdf)[\[github\]](https://github.com/yuantn/MI-AOD)
 - Adaptive Class Suppression Loss for Long-Tail Object Detection, CVPR 2021. [\[paper\]](https://arxiv.org/abs/2104.00885)[\[github\]](https://github.com/CASIA-IVA-Lab/ACSL)

@@ -1,0 +1,1 @@
+python3 tools/train.py configs/custom/fst.py

@@ -1,0 +1,47 @@
+name: test-mim
+
+on:
+  push:
+    paths:
+      - 'model-index.yml'
+      - 'configs/**'
+
+  pull_request:
+    paths:
+      - 'model-index.yml'
+      - 'configs/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_cpu:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        python-version: [3.7]
+        torch: [1.8.0]
+        include:
+          - torch: 1.8.0
+            torch_version: torch1.8
+            torchvision: 0.9.0
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Upgrade pip
+        run: pip install pip --upgrade
+      - name: Install Pillow
+        run: pip install Pillow==6.2.2
+        if: ${{matrix.torchvision == '0.4.2'}}
+      - name: Install PyTorch
+        run: pip install torch==${{matrix.torch}}+cpu torchvision==${{matrix.torchvision}}+cpu -f https://download.pytorch.org/whl/torch_stable.html
+      - name: Install openmim
+        run: pip install openmim
+      - name: Build and install
+        run: rm -rf .eggs && mim install -e .
+      - name: test commands of mim
+        run: mim search mmdet

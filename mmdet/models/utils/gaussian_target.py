@@ -104,7 +104,7 @@ def gaussian_radius(det_size, min_overlap):
     .. math::
         \cfrac{(w-r)*(h-r)}{w*h+(w+h)r-r^2} \ge {iou} \quad\Rightarrow\quad
         {r^2-(w+h)r+\cfrac{1-iou}{1+iou}*w*h} \ge 0 \\
-        {a} = 1,\quad{b} = {-(w+h)},\quad{c} = {\cfrac{1-iou}{1+iou}*w*h}
+        {a} = 1,\quad{b} = {-(w+h)},\quad{c} = {\cfrac{1-iou}{1+iou}*w*h} \\
         {r} \le \cfrac{-b-\sqrt{b^2-4*a*c}}{2*a}
 
     - Case2: both two corners are inside the gt box.
@@ -128,7 +128,7 @@ def gaussian_radius(det_size, min_overlap):
     .. math::
         \cfrac{(w-2*r)*(h-2*r)}{w*h} \ge {iou} \quad\Rightarrow\quad
         {4r^2-2(w+h)r+(1-iou)*w*h} \ge 0 \\
-        {a} = 4,\quad {b} = {-2(w+h)},\quad {c} = {(1-iou)*w*h}
+        {a} = 4,\quad {b} = {-2(w+h)},\quad {c} = {(1-iou)*w*h} \\
         {r} \le \cfrac{-b-\sqrt{b^2-4*a*c}}{2*a}
 
     - Case3: both two corners are outside the gt box.

@@ -74,16 +74,25 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 最新进展
 
-最新的 **2.25.0** 版本已经在 2022.06.01 发布:
+### 💎 稳定版本
 
-- 支持功能更丰富的 `MMDetWandbHook`
-- 支持算法 [ConvNeXt](configs/convnext), [DDOD](configs/ddod) 和 [SOLOv2](configs/solov2)
-- [Mask2Former](configs/mask2former) 支持实例分割
-- 为了加入 Mask2Former 实例分割的模型，对 Mask2Former 原有的全景分割的配置文件进行了重命名
+最新的 **2.25.2** 版本已经在 2022.09.15 发布:
+
+- 修复 Dynamic Head 和 Swin Transformer 中的错误。
+- 优化注释和文档。
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/en/changelog.md)。
 
 如果想了解 MMDetection 不同版本之间的兼容性, 请参考[兼容性说明文档](docs/zh_cn/compatibility.md)。
+
+### 🌟 3.x 预览版本
+
+全新的 **v3.0.0rc0** 版本已经在 2022.8.31 发布：
+
+- 基于 [MMEngine](https://github.com/open-mmlab/mmengine) 统一了各组件接口。
+- 全面支持混合精度，训练测试速度更快。
+- 提供了更强的基线模型，并支持了通用的半监督目标检测框架，详见[半监督目标检测教程](https://mmdetection.readthedocs.io/zh_CN/v3.0.0rc0/user_guides/semi_det.html)。
+- 支持使用任意单阶段检测器作为二阶段模型的 RPN，详见[教程](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/single_stage_as_rpn.html)。
 
 ## 安装
 
@@ -148,7 +157,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
             <li><a href="configs/grid_rcnn">Grid R-CNN (CVPR'2019)</a></li>
             <li><a href="configs/guided_anchoring">Guided Anchoring (CVPR'2019)</a></li>
             <li><a href="configs/fsaf">FSAF (CVPR'2019)</a></li>
-            <li><a href="configs/centernet">CenterNet (CVPR'2019)</a></li>
+            <li><a href="configs/centernet">CenterNet (ArXiv'2019)</a></li>
             <li><a href="configs/libra_rcnn">Libra R-CNN (CVPR'2019)</a></li>
             <li><a href="configs/tridentnet">TridentNet (ICCV'2019)</a></li>
             <li><a href="configs/fcos">FCOS (ICCV'2019)</a></li>
@@ -168,7 +177,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
             <li><a href="configs/vfnet">VarifocalNet (CVPR'2021)</a></li>
             <li><a href="configs/sparse_rcnn">Sparse R-CNN (CVPR'2021)</a></li>
             <li><a href="configs/yolof">YOLOF (CVPR'2021)</a></li>
-            <li><a href="configs/yolox">YOLOX (CVPR'2021)</a></li>
+            <li><a href="configs/yolox">YOLOX (ArXiv'2021)</a></li>
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
             <li><a href="configs/ddod">DDOD (ACM MM'2021)</a></li>
@@ -184,18 +193,18 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/instaboost">InstaBoost (ICCV'2019)</a></li>
           <li><a href="configs/solo">SOLO (ECCV'2020)</a></li>
           <li><a href="configs/point_rend">PointRend (CVPR'2020)</a></li>
-          <li><a href="configs/detectors">DetectoRS (ArXiv'2020)</a></li>
+          <li><a href="configs/detectors">DetectoRS (CVPR'2021)</a></li>
           <li><a href="configs/solov2">SOLOv2 (NeurIPS'2020)</a></li>
           <li><a href="configs/scnet">SCNet (AAAI'2021)</a></li>
           <li><a href="configs/queryinst">QueryInst (ICCV'2021)</a></li>
-          <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
+          <li><a href="configs/mask2former">Mask2Former (CVPR'2022)</a></li>
         </ul>
       </td>
       <td>
         <ul>
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
           <li><a href="configs/maskformer">MaskFormer (NeurIPS'2021)</a></li>
-          <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
+          <li><a href="configs/mask2former">Mask2Former (CVPR'2022)</a></li>
         </ul>
       </td>
       <td>
@@ -255,12 +264,12 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
         <li><a href="configs/gcnet">GCNet (ICCVW'2019)</a></li>
         <li><a href="configs/res2net">Res2Net (TPAMI'2020)</a></li>
         <li><a href="configs/regnet">RegNet (CVPR'2020)</a></li>
-        <li><a href="configs/resnest">ResNeSt (ArXiv'2020)</a></li>
+        <li><a href="configs/resnest">ResNeSt (CVPRW'2022)</a></li>
         <li><a href="configs/pvt">PVT (ICCV'2021)</a></li>
-        <li><a href="configs/swin">Swin (CVPR'2021)</a></li>
-        <li><a href="configs/pvt">PVTv2 (ArXiv'2021)</a></li>
-        <li><a href="configs/resnet_strikes_back">ResNet strikes back (ArXiv'2021)</a></li>
-        <li><a href="configs/efficientnet">EfficientNet (ArXiv'2021)</a></li>
+        <li><a href="configs/swin">Swin (ICCV'2021)</a></li>
+        <li><a href="configs/pvt">PVTv2 (CVMJ'2022)</a></li>
+        <li><a href="configs/resnet_strikes_back">ResNet strikes back (NeurIPSW'2021)</a></li>
+        <li><a href="configs/efficientnet">EfficientNet (ICML'2019)</a></li>
         <li><a href="configs/convnext">ConvNeXt (CVPR'2022)</a></li>
       </ul>
       </td>
@@ -290,7 +299,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/gn+ws">Weight Standardization (ArXiv'2019)</a></li>
           <li><a href="configs/pisa">Prime Sample Attention (CVPR'2020)</a></li>
           <li><a href="configs/strong_baselines">Strong Baselines (CVPR'2021)</a></li>
-          <li><a href="configs/resnet_strikes_back">Resnet strikes back (ArXiv'2021)</a></li>
+          <li><a href="configs/resnet_strikes_back">Resnet strikes back (NeurIPSW'2021)</a></li>
         </ul>
       </td>
     </tr>
@@ -337,6 +346,7 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 
 ## OpenMMLab 的其他项目
 
+- [MMEngine](https://github.com/open-mmlab/mmengine): OpenMMLab 深度学习模型训练基础库
 - [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab 计算机视觉基础库
 - [MIM](https://github.com/open-mmlab/mim): MIM 是 OpenMMlab 项目、算法、模型的统一入口
 - [MMClassification](https://github.com/open-mmlab/mmclassification): OpenMMLab 图像分类工具箱
@@ -359,10 +369,10 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 
 ## 欢迎加入 OpenMMLab 社区
 
-扫描下方的二维码可关注 OpenMMLab 团队的 [知乎官方账号](https://www.zhihu.com/people/openmmlab)，加入 OpenMMLab 团队的 [官方交流 QQ 群](https://jq.qq.com/?_wv=1027&k=aCvMxdr3)
+扫描下方的二维码可关注 OpenMMLab 团队的 [知乎官方账号](https://www.zhihu.com/people/openmmlab)，加入 OpenMMLab 团队的官方交流 QQ 群
 
 <div align="center">
-<img src="resources/zhihu_qrcode.jpg" height="400" />  <img src="resources/qq_group_qrcode.jpg" height="400" />
+<img src="resources/zhihu_qrcode.jpg" height="400" />  <img src="https://cdn.vansin.top/OpenMMLab/q3.png" height="400" />
 </div>
 
 我们会在 OpenMMLab 社区为大家

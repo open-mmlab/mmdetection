@@ -72,7 +72,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             if self.with_semantic and 'mask' in self.semantic_fusion:
                 mask_semantic_feat = self.semantic_roi_extractor(
                     [semantic_feat], mask_rois)
-                mask_feats += mask_semantic_feat
+                mask_feats = mask_feats + mask_semantic_feat
             last_feat = None
             for i in range(self.num_stages):
                 mask_head = self.mask_head[i]
@@ -133,7 +133,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             if mask_semantic_feat.shape[-2:] != mask_feats.shape[-2:]:
                 mask_semantic_feat = F.adaptive_avg_pool2d(
                     mask_semantic_feat, mask_feats.shape[-2:])
-            mask_feats += mask_semantic_feat
+            mask_feats = mask_feats + mask_semantic_feat
 
         # mask information flow
         # forward all previous mask heads to obtain last_feat, and fuse it
@@ -167,7 +167,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             if bbox_semantic_feat.shape[-2:] != bbox_feats.shape[-2:]:
                 bbox_semantic_feat = adaptive_avg_pool2d(
                     bbox_semantic_feat, bbox_feats.shape[-2:])
-            bbox_feats += bbox_semantic_feat
+            bbox_feats = bbox_feats + bbox_semantic_feat
         cls_score, bbox_pred = bbox_head(bbox_feats)
 
         bbox_results = dict(cls_score=cls_score, bbox_pred=bbox_pred)
@@ -186,7 +186,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             if mask_semantic_feat.shape[-2:] != mask_feats.shape[-2:]:
                 mask_semantic_feat = F.adaptive_avg_pool2d(
                     mask_semantic_feat, mask_feats.shape[-2:])
-            mask_feats += mask_semantic_feat
+            mask_feats = mask_feats + mask_semantic_feat
         if self.mask_info_flow:
             last_feat = None
             last_pred = None
@@ -459,7 +459,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                 if self.with_semantic and 'mask' in self.semantic_fusion:
                     mask_semantic_feat = self.semantic_roi_extractor(
                         [semantic_feat], mask_rois)
-                    mask_feats += mask_semantic_feat
+                    mask_feats = mask_feats + mask_semantic_feat
                 last_feat = None
 
                 num_bbox_per_img = tuple(len(_bbox) for _bbox in _bboxes)
@@ -600,7 +600,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                                 -2:]:
                             mask_semantic_feat = F.adaptive_avg_pool2d(
                                 mask_semantic_feat, mask_feats.shape[-2:])
-                        mask_feats += mask_semantic_feat
+                        mask_feats = mask_feats + mask_semantic_feat
                     last_feat = None
                     for i in range(self.num_stages):
                         mask_head = self.mask_head[i]
