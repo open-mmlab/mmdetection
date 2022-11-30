@@ -69,7 +69,7 @@ bash tools/dist_train.sh configs/faster_rcnn/faster-rcnn_r50_fpn_fcos-rpn_1x_coc
     --work-dir ./work_dirs/faster-rcnn_r50_fpn_fcos-rpn_1x_coco
 ```
 
-##评估候选区域  
+## 评估候选区域  
 候选区域的质量对检测器的性能有重要影响，因此，我们也提供了一种评估候选区域的方法。和上面一样创建一个新的名为`configs/rpn/fcos-rpn_r50_fpn_1x_coco.py`的配置文件，并且在`configs/rpn/fcos-rpn_r50_fpn_1x_coco.py`中将' rpn_head '的设置替换为' bbox_head '的设置。
 ```python
 _base_ = [
