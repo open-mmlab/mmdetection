@@ -21,18 +21,16 @@ def cal_train_time(log_dicts, args):
             raise KeyError(
                 'Please reduce the log interval in the config so that'
                 'interval is less than iterations of one epoch.')
-        all_times = np.array(all_times)
-        epoch_ave_time = all_times.mean(-1)
+        epoch_ave_time = np.array(list(map(lambda x: np.mean(x), all_times)))
         slowest_epoch = epoch_ave_time.argmax()
         fastest_epoch = epoch_ave_time.argmin()
         std_over_epoch = epoch_ave_time.std()
         print(f'slowest epoch {slowest_epoch + 1}, '
-              f'average time is {epoch_ave_time[slowest_epoch]:.4f}')
+              f'average time is {epoch_ave_time[slowest_epoch]:.4f} s')
         print(f'fastest epoch {fastest_epoch + 1}, '
-              f'average time is {epoch_ave_time[fastest_epoch]:.4f}')
-        print(f'time std over epochs is {std_over_epoch:.4f}')
-        print(f'average iter time: {np.mean(all_times):.4f} s/iter')
-        print()
+              f'average time is {epoch_ave_time[fastest_epoch]:.4f} s')
+        print(f'time std over epochs is {std_over_epoch:.2E}')
+        print(f'average iter time: {np.mean(epoch_ave_time):.4f} s/iter\n')
 
 
 def plot_curve(log_dicts, args):
