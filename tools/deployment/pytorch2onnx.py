@@ -1,7 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import os.path as osp
-import pdb
 import warnings
 from functools import partial
 
@@ -139,7 +138,6 @@ def pytorch2onnx(model,
 
         # prepare input once again
         one_img, one_meta = preprocess_example_input(input_config)
-        np.save("trt_input2", one_img.detach().numpy())
         img_list, img_meta_list = [one_img], [[one_meta]]
 
         # get pytorch output
