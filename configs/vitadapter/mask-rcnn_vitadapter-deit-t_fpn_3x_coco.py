@@ -19,6 +19,7 @@ model = dict(
         drop_path_rate=0.1,
         with_cp=True,
         spm_norm_cfg=dict(type='SyncBN'),
+        layer_scale_init_value=0.0,
         init_cfg=dict(
             type='Pretrained', checkpoint=checkpoint_file,
             prefix='backbone.')),
