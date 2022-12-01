@@ -25,11 +25,11 @@ def seesaw_ce_loss(cls_score: Tensor,
     """Calculate the Seesaw CrossEntropy loss.
 
     Args:
-        cls_score (torch.Tensor): The prediction with shape (N, C),
+        cls_score (Tensor): The prediction with shape (N, C),
              C is the number of classes.
-        labels (torch.Tensor): The learning label of the prediction.
-        label_weights (torch.Tensor): Sample-wise loss weight.
-        cum_samples (torch.Tensor): Cumulative samples for each category.
+        labels (Tensor): The learning label of the prediction.
+        label_weights (Tensor): Sample-wise loss weight.
+        cum_samples (Tensor): Cumulative samples for each category.
         num_classes (int): The number of classes.
         p (float): The ``p`` in the mitigation factor.
         q (float): The ``q`` in the compenstation factor.
@@ -40,7 +40,7 @@ def seesaw_ce_loss(cls_score: Tensor,
             the loss. Defaults to None.
 
     Returns:
-        torch.Tensor: The calculated loss
+        Tensor: The calculated loss
     """
     assert cls_score.size(-1) == num_classes
     assert len(cum_samples) == num_classes

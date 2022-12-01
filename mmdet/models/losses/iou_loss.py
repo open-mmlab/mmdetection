@@ -24,9 +24,9 @@ def iou_loss(pred: Tensor,
     The loss is calculated as negative log of IoU.
 
     Args:
-        pred (torch.Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+        pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
             shape (n, 4).
-        target (torch.Tensor): Corresponding gt bboxes, shape (n, 4).
+        target (Tensor): Corresponding gt bboxes, shape (n, 4).
         linear (bool, optional): If True, use linear scale of loss instead of
             log scale. Default: False.
         mode (str): Loss scaling mode, including "linear", "square", and "log".
@@ -34,7 +34,7 @@ def iou_loss(pred: Tensor,
         eps (float): Epsilon to avoid log(0).
 
     Return:
-        torch.Tensor: Loss tensor.
+        Tensor: Loss tensor.
     """
     assert mode in ['linear', 'square', 'log']
     if linear:
@@ -66,13 +66,13 @@ def bounded_iou_loss(pred: Tensor,
     <https://arxiv.org/abs/1711.00164>`_.
 
     Args:
-        pred (torch.Tensor): Predicted bboxes.
-        target (torch.Tensor): Target bboxes.
+        pred (Tensor): Predicted bboxes.
+        target (Tensor): Target bboxes.
         beta (float, optional): Beta parameter in smoothl1.
         eps (float, optional): Epsilon to avoid NaN values.
 
     Return:
-        torch.Tensor: Loss tensor.
+        Tensor: Loss tensor.
     """
     pred_ctrx = (pred[:, 0] + pred[:, 2]) * 0.5
     pred_ctry = (pred[:, 1] + pred[:, 3]) * 0.5
@@ -112,9 +112,9 @@ def giou_loss(pred: Tensor, target: Tensor, eps: float = 1e-7) -> Tensor:
     Box Regression <https://arxiv.org/abs/1902.09630>`_.
 
     Args:
-        pred (torch.Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+        pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
             shape (n, 4).
-        target (torch.Tensor): Corresponding gt bboxes, shape (n, 4).
+        target (Tensor): Corresponding gt bboxes, shape (n, 4).
         eps (float): Epsilon to avoid log(0).
 
     Return:
@@ -344,9 +344,9 @@ class IoULoss(nn.Module):
         """Forward function.
 
         Args:
-            pred (torch.Tensor): The prediction.
-            target (torch.Tensor): The learning target of the prediction.
-            weight (torch.Tensor, optional): The weight of loss for each
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction.
+            weight (Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.

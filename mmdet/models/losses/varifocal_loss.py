@@ -104,9 +104,9 @@ class VarifocalLoss(nn.Module):
         """Forward function.
 
         Args:
-            pred (torch.Tensor): The prediction.
-            target (torch.Tensor): The learning target of the prediction.
-            weight (torch.Tensor, optional): The weight of loss for each
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction.
+            weight (Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
@@ -115,7 +115,7 @@ class VarifocalLoss(nn.Module):
                 Options are "none", "mean" and "sum".
 
         Returns:
-            torch.Tensor: The calculated loss
+            Tensor: The calculated loss
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
