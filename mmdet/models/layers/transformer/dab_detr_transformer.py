@@ -466,7 +466,7 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
 
         Args:
             query (Tensor): The input query with shape (num_queries, bs, dim).
-            key (Tensor): The input key with shape (num_key, bs, dim) If
+            key (Tensor): The input key with shape (num_keys, bs, dim) If
                 `None`, the `query` will be used. Defaults to `None`.
             query_pos (Tensor): The positional encoding for `query`, with the
                 same shape as `query`. If not `None`, it will be added to
@@ -478,7 +478,7 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
                 `key` before forward function. If `None`, and `query_pos`
                 has the same shape as `key`, then `query_pos` will be used
                 as `key_pos`. Defaults to `None`.
-            key_padding_mask (Tensor): ByteTensor with shape (bs, num_key).
+            key_padding_mask (Tensor): ByteTensor with shape (bs, num_keys).
                 Defaults to `None`.
 
         Returns:

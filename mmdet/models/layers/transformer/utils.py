@@ -45,7 +45,7 @@ def nchw_to_nlc(x):
 
 
 def convert_coordinate_to_encoding(pos_tensor: Tensor,
-                                   num_feats: int,
+                                   num_feats: int = 128,
                                    temperature: int = 10000,
                                    scale: float = 2 * math.pi):
     """Convert coordinate tensor to positional encoding.
@@ -53,9 +53,9 @@ def convert_coordinate_to_encoding(pos_tensor: Tensor,
     Args:
         pos_tensor (Tensor): Coordinate tensor to be converted to
             positional encoding. With the last dimension as 2 or 4.
-        num_feats (int): The feature dimension for each position
+        num_feats (int, optional): The feature dimension for each position
             along x-axis or y-axis. Note the final returned dimension
-            for each position is 2 times of this value.
+            for each position is 2 times of this value. Defaults to 128.
         temperature (int, optional): The temperature used for scaling
             the position embedding. Defaults to 10000.
         scale (float, optional): A scale factor that scales the position
