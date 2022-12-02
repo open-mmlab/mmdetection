@@ -143,8 +143,10 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
             key_padding_mask (Tensor): The `key_padding_mask` of `cross_attn`
                 input. ByteTensor, has shape (num_value, bs).
             reference_points (Tensor): The initial reference, has shape
-                (bs, num_queries, 4) when `as_two_stage` is `True`,
-                otherwise has shape (bs, num_queries, 2).
+                (bs, num_queries, 4) with the last dimension arranged as
+                (cx, cy, w, h) when `as_two_stage` is `True`, otherwise has
+                shape (bs, num_queries, 2) with the last dimension arranged
+                as (cx, cy).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
@@ -166,9 +168,10 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
               decoder layers, has shape (num_decoder_layers, num_queries, bs,
               embed_dims).
             - reference_points (Tensor): The reference of the last decoder
-              layer, has shape (bs, num_queries, 4) when `return_intermediate`
+              layer, has shape (bs, num_queries, 4)  when `return_intermediate`
               is `False`. Otherwise, Intermediate references of all decoder
-              layers, has shape (num_decoder_layers, bs, num_queries, 4).
+              layers, has shape (num_decoder_layers, bs, num_queries, 4). The
+              coordinates are arranged as (cx, cy, w, h)
         """
         output = query
         intermediate = []

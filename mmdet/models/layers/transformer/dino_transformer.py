@@ -48,7 +48,8 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
                 shape (num_queries_total, num_queries_total). It is `None` when
                 `self.training` is `False`.
             reference_points (Tensor): The initial reference, has shape
-                (bs, num_queries, 4).
+                (bs, num_queries, 4) with the last dimension arranged as
+                (cx, cy, w, h).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
@@ -215,7 +216,8 @@ class CdnQueryGenerator(BaseModule):
             - dn_bbox_query (Tensor): The output reference bboxes as positions
               of queries for denoising part, which are embedded by normalized
               (cx, cy, w, h) format bboxes going through inverse_sigmoid, has
-              shape (bs, num_denoising_queries, 4).
+              shape (bs, num_denoising_queries, 4) with the last dimension
+              arranged as (cx, cy, w, h).
             - attn_mask (Tensor): The attention mask to prevent information
               leakage from different denoising groups and matching parts,
               will be used as `self_attn_mask` of the `decoder`, has shape
@@ -383,15 +385,17 @@ class CdnQueryGenerator(BaseModule):
 
         Args:
             gt_bboxes (Tensor): The concatenated gt bboxes of all samples
-                in the batch, has shape (num_target_total, 4) where
+                in the batch, has shape (num_target_total, 4) with the last
+                dimension arranged as (cx, cy, w, h) where
                 `num_target_total = sum(num_target_list)`.
             num_groups (int): The number of denoising query groups.
 
         Returns:
             Tensor: The output noisy bboxes, which are embedded by normalized
             (cx, cy, w, h) format bboxes going through inverse_sigmoid, has
-            shape (num_noisy_targets, 4), where `num_noisy_targets =
-            num_target_total * num_groups * 2`.
+            shape (num_noisy_targets, 4) with the last dimension arranged as
+            (cx, cy, w, h), where
+            `num_noisy_targets = num_target_total * num_groups * 2`.
         """
         assert self.box_noise_scale > 0
         device = gt_bboxes.device
@@ -457,7 +461,8 @@ class CdnQueryGenerator(BaseModule):
                 targets, has shape (num_target_total, embed_dims) where
                 `num_target_total = sum(num_target_list)`.
             input_bbox_query (Tensor): The generated bbox queries of all
-                targets, has shape (num_target_total, 4).
+                targets, has shape (num_target_total, 4) with the last
+                dimension arranged as (cx, cy, w, h).
             batch_idx (Tensor): The batch index of the corresponding sample
                 for each target, has shape (num_target_total).
             batch_size (int): The size of the input batch.
@@ -468,7 +473,8 @@ class CdnQueryGenerator(BaseModule):
             - batched_label_query (Tensor): The output batched label queries,
               has shape (batch_size, max_num_target, embed_dims).
             - batched_bbox_query (Tensor): The output batched bbox queries,
-              has shape (batch_size, max_num_target, 4).
+              has shape (batch_size, max_num_target, 4) with the last dimension
+              arranged as (cx, cy, w, h).
         """
         device = input_label_query.device
         num_target_list = [

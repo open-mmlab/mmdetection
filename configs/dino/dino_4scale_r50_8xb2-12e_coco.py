@@ -3,7 +3,7 @@ _base_ = [
 ]
 model = dict(
     type='DINO',
-    num_query=900,
+    num_queries=900,  # num_matching_queries
     with_box_refine=True,
     as_two_stage=True,
     data_preprocessor=dict(

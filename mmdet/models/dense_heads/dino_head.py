@@ -42,11 +42,13 @@ class DINOHead(DeformableDETRHead):
                 other num_decoder_layers(6) references are `inter_references`
                 (intermediate). The `init_reference` has shape (bs,
                 num_queries_total, 4) and each `inter_reference` has shape
-                (bs, num_queries, 4).
+                (bs, num_queries, 4) with the last dimension arranged as
+                (cx, cy, w, h).
             enc_outputs_class (Tensor): The score of each point on encode
-                feature map, has shape (bs, num_feat, cls_out_channels).
+                feature map, has shape (bs, num_feat_points, cls_out_channels).
             enc_outputs_coord (Tensor): The proposal generate from the
-                encode feature map, has shape (bs, num_feat, 4).
+                encode feature map, has shape (bs, num_feat_points, 4) with the
+                last dimension arranged as (cx, cy, w, h).
             batch_data_samples (list[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
@@ -94,18 +96,19 @@ class DINOHead(DeformableDETRHead):
                 (cx, cy, w, h) and has shape (num_decoder_layers, bs,
                 num_queries_total, 4).
             enc_cls_scores (Tensor): The score of each point on encode
-                feature map, has shape (bs, num_feat, cls_out_channels).
-            enc_bbox_preds (Tensor): The proposal generate from the
-                encode feature map, has shape (bs, num_feat, 4).
+                feature map, has shape (bs, num_feat_points, cls_out_channels).
+            enc_bbox_preds (Tensor): The proposal generate from the encode
+                feature map, has shape (bs, num_feat_points, 4) with the last
+                dimension arranged as (cx, cy, w, h).
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
             batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
             dn_meta (Dict[str, int]): The dictionary saves information about
-              group collation, including 'num_denoising_queries' and
-              'num_denoising_groups'. It will be used for split outputs of
-              denoising and matching parts and loss calculation.
+                group collation, including 'num_denoising_queries' and
+                'num_denoising_groups'. It will be used for split outputs of
+                denoising and matching parts and loss calculation.
             batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
                 Batch of gt_instances_ignore. It includes ``bboxes`` attribute
                 data that is ignored during training and testing.
@@ -222,8 +225,8 @@ class DINOHead(DeformableDETRHead):
             Tuple[Tensor]: A tuple including `loss_cls`, `loss_box` and
             `loss_iou`.
         """
-        cls_reg_targets = self.get_dn_target(batch_gt_instances,
-                                             batch_img_metas, dn_meta)
+        cls_reg_targets = self.get_dn_targets(batch_gt_instances,
+                                              batch_img_metas, dn_meta)
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_pos, num_total_neg) = cls_reg_targets
         labels = torch.cat(labels_list, 0)
@@ -262,7 +265,7 @@ class DINOHead(DeformableDETRHead):
                                            img_h]).unsqueeze(0).repeat(
                                                bbox_pred.size(0), 1)
             factors.append(factor)
-        factors = torch.cat(factors, 0)
+        factors = torch.cat(factors)
 
         # DETR regress the relative position of boxes (cxcywh) in the image,
         # thus the learning target is normalized by the image size. So here
@@ -280,8 +283,9 @@ class DINOHead(DeformableDETRHead):
             bbox_preds, bbox_targets, bbox_weights, avg_factor=num_total_pos)
         return loss_cls, loss_bbox, loss_iou
 
-    def get_dn_target(self, batch_gt_instances: InstanceList,
-                      batch_img_metas: dict, dn_meta: Dict[str, int]) -> tuple:
+    def get_dn_targets(self, batch_gt_instances: InstanceList,
+                       batch_img_metas: dict, dn_meta: Dict[str,
+                                                            int]) -> tuple:
         """Get targets in denoising part for a batch of images.
 
         # TODO: refine this.
@@ -309,7 +313,7 @@ class DINOHead(DeformableDETRHead):
         """
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          pos_inds_list, neg_inds_list) = multi_apply(
-             self._get_dn_target_single,
+             self._get_dn_targets_single,
              batch_gt_instances,
              batch_img_metas,
              dn_meta=dn_meta)
@@ -318,8 +322,9 @@ class DINOHead(DeformableDETRHead):
         return (labels_list, label_weights_list, bbox_targets_list,
                 bbox_weights_list, num_total_pos, num_total_neg)
 
-    def _get_dn_target_single(self, gt_instances: InstanceData, img_meta: dict,
-                              dn_meta: Dict[str, int]) -> tuple:
+    def _get_dn_targets_single(self, gt_instances: InstanceData,
+                               img_meta: dict, dn_meta: Dict[str,
+                                                             int]) -> tuple:
         """Get targets in denoising part for one image.  # TODO: refine this.
 
         Args:
@@ -346,7 +351,7 @@ class DINOHead(DeformableDETRHead):
         gt_labels = gt_instances.labels
         num_groups = dn_meta['num_denoising_groups']
         num_denoising_queries = dn_meta['num_denoising_queries']
-        group_num_queries = int(num_denoising_queries / num_groups)
+        num_queries_each_group = int(num_denoising_queries / num_groups)
         device = gt_bboxes.device
 
         if len(gt_labels) > 0:
@@ -355,13 +360,13 @@ class DINOHead(DeformableDETRHead):
             pos_assigned_gt_inds = t.flatten()
             pos_inds = torch.arange(
                 num_groups, dtype=torch.long, device=device)
-            pos_inds = pos_inds.unsqueeze(1) * group_num_queries + t
+            pos_inds = pos_inds.unsqueeze(1) * num_queries_each_group + t
             pos_inds = pos_inds.flatten()
         else:
             pos_inds = pos_assigned_gt_inds = \
                 gt_bboxes.new_tensor([], dtype=torch.long)
 
-        neg_inds = pos_inds + group_num_queries // 2
+        neg_inds = pos_inds + num_queries_each_group // 2
 
         # label targets
         labels = gt_bboxes.new_full((num_denoising_queries, ),

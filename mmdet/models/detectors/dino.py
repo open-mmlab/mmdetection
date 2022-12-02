@@ -129,16 +129,16 @@ class DINO(DeformableDETR):
         memory_mask: Tensor,
         spatial_shapes: Tensor,
         batch_data_samples: OptSampleList = None,
-    ) -> Tuple[Dict, Dict]:
+    ) -> Tuple[Dict]:
         """Prepare intermediate variables before entering Transformer decoder,
         such as `query`, `query_pos`, and `reference_points`.
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (bs, num_feat, dim).
+                has shape (bs, num_feat_points, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
-                has shape (bs, num_feat). Will only be used when `as_two_stage`
-                is `True`.
+                has shape (bs, num_feat_points). Will only be used when
+                `as_two_stage` is `True`.
             spatial_shapes (Tensor): Spatial shapes of features in all levels.
                 With shape (num_levels, 2), last dimension represents (h, w).
                 Will only be used when `as_two_stage` is `True`.
@@ -148,7 +148,7 @@ class DINO(DeformableDETR):
                 Defaults to None.
 
         Returns:
-            tuple[dict, dict]: The decoder_inputs_dict and head_inputs_dict.
+            tuple[dict]: The decoder_inputs_dict and head_inputs_dict.
 
             - decoder_inputs_dict (dict): The keyword dictionary args of
               `self.forward_decoder()`, which includes 'query', 'memory',
@@ -156,11 +156,12 @@ class DINO(DeformableDETR):
               decoder input here are 4D boxes, although it has `points`
               in its name.
             - head_inputs_dict (dict): The keyword dictionary args of the
-              bbox_head functions, which includes `enc_outputs_class`,
-              `enc_outputs_class`, and `dn_meta` when `self.training`
-              is `True`, else is empty.
+              bbox_head functions, which includes `topk_score`, `topk_coords`,
+              and `dn_meta` when `self.training` is `True`, else is empty.
         """
         bs, _, c = memory.shape
+        cls_out_features = self.bbox_head.cls_branches[
+            self.decoder.num_layers].out_features
 
         output_memory, output_proposals = self.gen_encoder_output_proposals(
             memory, memory_mask, spatial_shapes)
@@ -169,33 +170,24 @@ class DINO(DeformableDETR):
                 output_memory)
         enc_outputs_coord_unact = self.bbox_head.reg_branches[
             self.decoder.num_layers](output_memory) + output_proposals
-        cls_out_features = self.bbox_head.cls_branches[
-            self.decoder.num_layers].out_features  # TODO: refine this  # noqa
-        topk = self.num_queries  # TODO: refine this  # noqa
-        # NOTE In DeformDETR, enc_outputs_class[..., 0] is used for topk  # TODO: refine this  # noqa
-        topk_indices = torch.topk(enc_outputs_class.max(-1)[0], topk, dim=1)[1]
-        # topk_proposal = torch.gather(
-        #     output_proposals, 1,
-        #     topk_indices.unsqueeze(-1).repeat(1, 1, 4)).sigmoid()
-        # topk_memory = torch.gather(
-        #     output_memory, 1,
-        #     topk_indices.unsqueeze(-1).repeat(1, 1, self.embed_dims))
+
+        # NOTE The DINO selects top-k proposals according to scores of
+        # multi-class classification, while DeformDETR, where the input
+        # is `enc_outputs_class[..., 0]` selects according to scores of
+        # binary classification.
+        topk_indices = torch.topk(
+            enc_outputs_class.max(-1)[0], k=self.num_queries, dim=1)[1]
         topk_score = torch.gather(
             enc_outputs_class, 1,
             topk_indices.unsqueeze(-1).repeat(1, 1, cls_out_features))
         topk_coords_unact = torch.gather(
             enc_outputs_coord_unact, 1,
             topk_indices.unsqueeze(-1).repeat(1, 1, 4))
-        topk_anchor = topk_coords_unact.sigmoid()
-        # NOTE In the original DeformDETR, init_reference_out is obtained
-        # from detached topk_coords_unact, which is different with DINO.  # TODO: refine this  # noqa
+        topk_coords = topk_coords_unact.sigmoid()
         topk_coords_unact = topk_coords_unact.detach()
 
         query = self.query_embedding.weight[:, None, :]
         query = query.repeat(1, bs, 1).transpose(0, 1)
-        # NOTE the query_embed here is not spatial query as in DETR.
-        # It is actually content query, which is named tgt in other
-        # DETR-like models
         if self.training:  # TODO: whether to transfer this to query_generator?
             dn_label_query, dn_bbox_query, dn_mask, dn_meta = \
                 self.dn_query_generator(batch_data_samples)
@@ -216,9 +208,12 @@ class DINO(DeformableDETR):
             reference_points=reference_points,
             dn_mask=dn_mask)
         if self.training:
+            # NOTE DINO calculates encoder losses on scores and coordinates
+            # of selected top-k encoder queries, while DeformDETR is of all
+            # encoder queries.
             head_inputs_dict = dict(
                 enc_outputs_class=topk_score,
-                enc_outputs_coord=topk_anchor,
+                enc_outputs_coord=topk_coords,
                 dn_meta=dn_meta)
         else:
             head_inputs_dict = dict()
@@ -246,11 +241,12 @@ class DINO(DeformableDETR):
                 sum of `num_denoising_queries` and `num_matching_queries` when
                 `self.training` is `True`, else `num_matching_queries`.
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat, bs, dim).
+                has shape (num_feat_points, bs, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
-                has shape (bs, num_feat).
+                has shape (bs, num_feat_points).
             reference_points (Tensor): The initial reference, has shape
-                (bs, num_queries_total, 4).
+                (bs, num_queries_total, 4) with the last dimension arranged as
+                (cx, cy, w, h).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
@@ -285,9 +281,10 @@ class DINO(DeformableDETR):
         # inter_states = inter_states.permute(0, 2, 1, 3)
 
         if len(query) == self.num_queries:
-            # NOTE: If there is no target in the image, the parameters of
-            # label_embedding won't be used in producing loss, which raises
-            # RuntimeError when using distributed mode.
+            # NOTE: This is to make sure label_embeding can be involved to
+            # produce loss even if there is no denoising query (no ground truth
+            # target in this GPU), otherwise, this will raise runtime error in
+            # distributed training.
             inter_states[0] += \
                 self.dn_query_generator.label_embedding.weight[0, 0] * 0.0  # TODO: refine this  # noqa
 
