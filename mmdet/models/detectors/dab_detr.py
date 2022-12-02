@@ -97,20 +97,14 @@ class DABDETR(DETR):
                 .repeat(1, self.num_queries, batch_size, 1)\
                 .view(-1, batch_size, self.embed_dims)
             query_pos = query_pos.repeat(self.num_patterns, 1, 1)
-        # iterative refinement for anchor boxes
-        reg_branches = self.bbox_head.fc_reg
 
         decoder_inputs_dict = dict(
-            query_pos=query_pos,
-            query=query,
-            memory=memory,
-            reg_branches=reg_branches)
+            query_pos=query_pos, query=query, memory=memory)
         head_inputs_dict = dict()
         return decoder_inputs_dict, head_inputs_dict
 
     def forward_decoder(self, query: Tensor, query_pos: Tensor, memory: Tensor,
-                        memory_mask: Tensor, memory_pos: Tensor,
-                        reg_branches: nn.Module) -> Dict:
+                        memory_mask: Tensor, memory_pos: Tensor) -> Dict:
         """Forward with Transformer decoder.
 
         Args:
@@ -124,20 +118,21 @@ class DABDETR(DETR):
                 has shape (bs, num_feat).
             memory_pos (Tensor): The positional embeddings of memory, has
                 shape (num_feat, bs, dim).
-            reg_branches (nn.Module): The regression branch for dynamically
-                updating references in each layer.
 
         Returns:
             dict: The dictionary of decoder outputs, which includes the
             `hidden_states` and `references` of the decoder output.
         """
+
         hidden_states, references = self.decoder(
             query=query,
             key=memory,
             query_pos=query_pos,
             key_pos=memory_pos,
             key_padding_mask=memory_mask,
-            reg_branches=reg_branches)
+            reg_branches=self.bbox_head.
+            fc_reg  # iterative refinement for anchor boxes
+        )
         head_inputs_dict = dict(
             hidden_states=hidden_states, references=references)
         return head_inputs_dict
