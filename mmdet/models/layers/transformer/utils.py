@@ -63,7 +63,7 @@ def convert_coordinate_to_encoding(pos_tensor: Tensor,
             Defaults to 2*pi.
 
     Returns:
-    pos (Tensor): Returned encoded positional tensor.
+    Tensor: Returned encoded positional tensor.
     """
     dim_t = torch.arange(
         num_feats, dtype=torch.float32, device=pos_tensor.device)
