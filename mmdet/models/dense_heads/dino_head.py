@@ -33,15 +33,16 @@ class DINOHead(DeformableDETRHead):
 
         Args:
             hidden_states (Tensor): Hidden states output from each decoder
-                layer, has shape (num_decoder_layers, num_query_total, bs,
-                dim), where `num_query_total` is the sum of
-                `num_denoising_query` and `num_matching_query`.
+                layer, has shape (num_decoder_layers, num_queries_total, bs,
+                dim), where `num_queries_total` is the sum of
+                `num_denoising_queries` and `num_matching_queries` when
+                `self.training` is `True`, else `num_matching_queries`.
             references (list[Tensor]): List of the reference from the decoder.
                 The first reference is the `init_reference` (initial) and the
                 other num_decoder_layers(6) references are `inter_references`
                 (intermediate). The `init_reference` has shape (bs,
-                num_query_total, 4) and each `inter_reference` has shape
-                (bs, num_query, 4).
+                num_queries_total, 4) and each `inter_reference` has shape
+                (bs, num_queries, 4).
             enc_outputs_class (Tensor): The score of each point on encode
                 feature map, has shape (bs, num_feat, cls_out_channels).
             enc_outputs_coord (Tensor): The proposal generate from the
@@ -50,9 +51,9 @@ class DINOHead(DeformableDETRHead):
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
             dn_meta (Dict[str, int]): The dictionary saves information about
-              group collation, including 'num_denoising_query' and
-              'num_dn_group'. It will be used for dn results extraction and
-              loss calculation.
+              group collation, including 'num_denoising_queries' and
+              'num_denoising_groups'. It will be used for split outputs of
+              denoising and matching parts and loss calculation.
 
         Returns:
             dict: A dictionary of loss components.
@@ -85,12 +86,13 @@ class DINOHead(DeformableDETRHead):
         Args:
             all_layers_cls_scores (Tensor): Classification scores of all
                 decoder layers, has shape (num_decoder_layers, bs,
-                num_query_total, cls_out_channels), where `num_query_total` is
-                the sum of `num_denoising_query` and `num_matching_query`.
+                num_queries_total, cls_out_channels), where
+                `num_queries_total` is the sum of `num_denoising_queries`
+                and `num_matching_queries`.
             all_layers_bbox_preds (Tensor): Regression outputs of all decoder
                 layers. Each is a 4D-tensor with normalized coordinate format
                 (cx, cy, w, h) and has shape (num_decoder_layers, bs,
-                num_query_total, 4).
+                num_queries_total, 4).
             enc_cls_scores (Tensor): The score of each point on encode
                 feature map, has shape (bs, num_feat, cls_out_channels).
             enc_bbox_preds (Tensor): The proposal generate from the
@@ -101,9 +103,9 @@ class DINOHead(DeformableDETRHead):
             batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
             dn_meta (Dict[str, int]): The dictionary saves information about
-              group collation, including 'num_denoising_query' and
-              'num_dn_group'. It will be used for dn results extraction and
-              loss calculation.
+              group collation, including 'num_denoising_queries' and
+              'num_denoising_groups'. It will be used for split outputs of
+              denoising and matching parts and loss calculation.
             batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
                 Batch of gt_instances_ignore. It includes ``bboxes`` attribute
                 data that is ignored during training and testing.
@@ -118,11 +120,6 @@ class DINOHead(DeformableDETRHead):
             self.split_outputs(
                 all_layers_cls_scores, all_layers_bbox_preds, dn_meta)
 
-        # loss_dict = super().loss_by_feat(all_layers_matching_cls_scores,
-        #                                  all_layers_matching_bbox_preds,
-        #                                  enc_cls_scores, enc_bbox_preds,
-        #                                  batch_gt_instances, batch_img_metas,
-        #                                  batch_gt_instances_ignore)
         loss_dict = super(DeformableDETRHead, self).loss_by_feat(
             all_layers_matching_cls_scores, all_layers_matching_bbox_preds,
             batch_gt_instances, batch_img_metas, batch_gt_instances_ignore)
@@ -169,20 +166,21 @@ class DINOHead(DeformableDETRHead):
         Args:
             all_layers_denoising_cls_scores (Tensor): Classification scores of
                 all decoder layers in denoising part, has shape (
-                num_decoder_layers, bs, num_denoising_query, cls_out_channels).
+                num_decoder_layers, bs, num_denoising_queries,
+                cls_out_channels).
             all_layers_denoising_bbox_preds (Tensor): Regression outputs of all
                 decoder layers in denoising part. Each is a 4D-tensor with
                 normalized coordinate format (cx, cy, w, h) and has shape
-                (num_decoder_layers, bs, num_denoising_query, 4).
+                (num_decoder_layers, bs, num_denoising_queries, 4).
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
             batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
             dn_meta (Dict[str, int]): The dictionary saves information about
-              group collation, including 'num_denoising_query' and
-              'num_dn_group'. It will be used for dn results extraction and
-              loss calculation.
+              group collation, including 'num_denoising_queries' and
+              'num_denoising_groups'. It will be used for split outputs of
+              denoising and matching parts and loss calculation.
 
         Returns:
             Tuple[List[Tensor]]: The loss_dn_cls, loss_dn_bbox, and loss_dn_iou
@@ -204,21 +202,21 @@ class DINOHead(DeformableDETRHead):
 
         Args:
             dn_cls_scores (Tensor): Classification scores of a single decoder
-                layer in denoising part, has shape (bs, num_denoising_query,
+                layer in denoising part, has shape (bs, num_denoising_queries,
                 cls_out_channels).
             dn_bbox_preds (Tensor): Regression outputs of a single decoder
                 layer in denoising part. Each is a 4D-tensor with normalized
                 coordinate format (cx, cy, w, h) and has shape
-                (bs, num_denoising_query, 4).
+                (bs, num_denoising_queries, 4).
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
             batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
             dn_meta (Dict[str, int]): The dictionary saves information about
-              group collation, including 'num_denoising_query' and
-              'num_dn_group'. It will be used for dn results extraction and
-              loss calculation.
+              group collation, including 'num_denoising_queries' and
+              'num_denoising_groups'. It will be used for split outputs of
+              denoising and matching parts and loss calculation.
 
         Returns:
             Tuple[Tensor]: A tuple including `loss_cls`, `loss_box` and
@@ -295,9 +293,9 @@ class DINOHead(DeformableDETRHead):
             batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
             dn_meta (Dict[str, int]): The dictionary saves information about
-              group collation, including 'num_denoising_query' and
-              'num_dn_group'. It will be used for dn results extraction and
-              loss calculation.
+              group collation, including 'num_denoising_queries' and
+              'num_denoising_groups'. It will be used for split outputs of
+              denoising and matching parts and loss calculation.
 
         Returns:
             tuple: a tuple containing the following targets.
@@ -330,9 +328,9 @@ class DINOHead(DeformableDETRHead):
                 attributes.
             img_meta (dict): Meta information for one image.
             dn_meta (Dict[str, int]): The dictionary saves information about
-              group collation, including 'num_denoising_query' and
-              'num_dn_group'. It will be used for dn results extraction and
-              loss calculation.
+              group collation, including 'num_denoising_queries' and
+              'num_denoising_groups'. It will be used for split outputs of
+              denoising and matching parts and loss calculation.
 
         Returns:
             tuple[Tensor]: a tuple containing the following for one image.
@@ -346,9 +344,9 @@ class DINOHead(DeformableDETRHead):
         """
         gt_bboxes = gt_instances.bboxes
         gt_labels = gt_instances.labels
-        num_groups = dn_meta['num_dn_group']
-        num_denoising_query = dn_meta['num_denoising_query']
-        group_num_query = int(num_denoising_query / num_groups)
+        num_groups = dn_meta['num_denoising_groups']
+        num_denoising_queries = dn_meta['num_denoising_queries']
+        group_num_queries = int(num_denoising_queries / num_groups)
         device = gt_bboxes.device
 
         if len(gt_labels) > 0:
@@ -357,24 +355,24 @@ class DINOHead(DeformableDETRHead):
             pos_assigned_gt_inds = t.flatten()
             pos_inds = torch.arange(
                 num_groups, dtype=torch.long, device=device)
-            pos_inds = pos_inds.unsqueeze(1) * group_num_query + t
+            pos_inds = pos_inds.unsqueeze(1) * group_num_queries + t
             pos_inds = pos_inds.flatten()
         else:
             pos_inds = pos_assigned_gt_inds = \
                 gt_bboxes.new_tensor([], dtype=torch.long)
 
-        neg_inds = pos_inds + group_num_query // 2
+        neg_inds = pos_inds + group_num_queries // 2
 
         # label targets
-        labels = gt_bboxes.new_full((num_denoising_query, ),
+        labels = gt_bboxes.new_full((num_denoising_queries, ),
                                     self.num_classes,
                                     dtype=torch.long)
         labels[pos_inds] = gt_labels[pos_assigned_gt_inds]
-        label_weights = gt_bboxes.new_ones(num_denoising_query)
+        label_weights = gt_bboxes.new_ones(num_denoising_queries)
 
         # bbox targets
-        bbox_targets = torch.zeros(num_denoising_query, 4, device=device)
-        bbox_weights = torch.zeros(num_denoising_query, 4, device=device)
+        bbox_targets = torch.zeros(num_denoising_queries, 4, device=device)
+        bbox_weights = torch.zeros(num_denoising_queries, 4, device=device)
         bbox_weights[pos_inds] = 1.0
         img_h, img_w = img_meta['img_shape']
 
@@ -396,52 +394,53 @@ class DINOHead(DeformableDETRHead):
                       dn_meta: Dict[str, int]) -> Tuple[Tensor]:
         """Split outputs of the denoising part and the matching part.
 
-        For the total outputs of `num_query_total` length, the former
-        `num_denoising_query` outputs are from denoising queries, and
-        the rest `num_matching_query` ones are from matching queries,
-        where `num_query_total` is the sum of `num_denoising_query` and
-        `num_matching_query`.
+        For the total outputs of `num_queries_total` length, the former
+        `num_denoising_queries` outputs are from denoising queries, and
+        the rest `num_matching_queries` ones are from matching queries,
+        where `num_queries_total` is the sum of `num_denoising_queries` and
+        `num_matching_queries`.
 
         Args:
             all_layers_cls_scores (Tensor): Classification scores of all
                 decoder layers, has shape (num_decoder_layers, bs,
-                num_query_total, cls_out_channels).
+                num_queries_total, cls_out_channels).
             all_layers_bbox_preds (Tensor): Regression outputs of all decoder
                 layers. Each is a 4D-tensor with normalized coordinate format
                 (cx, cy, w, h) and has shape (num_decoder_layers, bs,
-                num_query_total, 4).
+                num_queries_total, 4).
             dn_meta (Dict[str, int]): The dictionary saves information about
-              group collation, including 'num_denoising_query' and
-              'num_dn_group'.
+              group collation, including 'num_denoising_queries' and
+              'num_denoising_groups'.
 
         Returns:
             Tuple[Tensor]: a tuple containing the following outputs.
 
             - all_layers_matching_cls_scores (Tensor): Classification scores
               of all decoder layers in matching part, has shape
-              (num_decoder_layers, bs, num_matching_query, cls_out_channels).
+              (num_decoder_layers, bs, num_matching_queries, cls_out_channels).
             - all_layers_matching_bbox_preds (Tensor): Regression outputs of
               all decoder layers in matching part. Each is a 4D-tensor with
               normalized coordinate format (cx, cy, w, h) and has shape
-              (num_decoder_layers, bs, num_matching_query, 4).
+              (num_decoder_layers, bs, num_matching_queries, 4).
             - all_layers_denoising_cls_scores (Tensor): Classification scores
               of all decoder layers in denoising part, has shape
-              (num_decoder_layers, bs, num_denoising_query, cls_out_channels).
+              (num_decoder_layers, bs, num_denoising_queries,
+              cls_out_channels).
             - all_layers_denoising_bbox_preds (Tensor): Regression outputs of
               all decoder layers in denoising part. Each is a 4D-tensor with
               normalized coordinate format (cx, cy, w, h) and has shape
-              (num_decoder_layers, bs, num_denoising_query, 4).
+              (num_decoder_layers, bs, num_denoising_queries, 4).
         """
-        num_denoising_query = dn_meta['num_denoising_query']
+        num_denoising_queries = dn_meta['num_denoising_queries']
         if dn_meta is not None:
             all_layers_denoising_cls_scores = \
-                all_layers_cls_scores[:, :, : num_denoising_query, :]
+                all_layers_cls_scores[:, :, : num_denoising_queries, :]
             all_layers_denoising_bbox_preds = \
-                all_layers_bbox_preds[:, :, : num_denoising_query, :]
+                all_layers_bbox_preds[:, :, : num_denoising_queries, :]
             all_layers_matching_cls_scores = \
-                all_layers_cls_scores[:, :, num_denoising_query:, :]
+                all_layers_cls_scores[:, :, num_denoising_queries:, :]
             all_layers_matching_bbox_preds = \
-                all_layers_bbox_preds[:, :, num_denoising_query:, :]
+                all_layers_bbox_preds[:, :, num_denoising_queries:, :]
         else:
             all_layers_denoising_cls_scores = None
             all_layers_denoising_bbox_preds = None

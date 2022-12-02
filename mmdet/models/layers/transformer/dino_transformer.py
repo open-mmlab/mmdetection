@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import math
 import warnings
 from typing import Tuple, Union
 
@@ -11,7 +10,7 @@ from mmdet.structures import SampleList
 from mmdet.structures.bbox import bbox_xyxy_to_cxcywh
 from mmdet.utils import OptConfigType
 from .deformable_detr_transformer import DeformableDetrTransformerDecoder
-from .utils import MLP, inverse_sigmoid
+from .utils import MLP, convert_coordinate_to_encoding, inverse_sigmoid
 
 
 class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
@@ -23,44 +22,6 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
         self.ref_point_head = MLP(self.embed_dims * 2, self.embed_dims,
                                   self.embed_dims, 2)
         self.norm = nn.LayerNorm(self.embed_dims)  # TODO: refine this
-
-    @staticmethod
-    def gen_sineembed_for_position(pos_tensor: Tensor):  # TODO: rename this
-        # TODO: Qizhi and Yiming seem to add this function in utils.py
-        # n_query, bs, _ = pos_tensor.size()
-        # sineembed_tensor = torch.zeros(n_query, bs, 256)
-        scale = 2 * math.pi
-        dim_t = torch.arange(
-            128, dtype=torch.float32, device=pos_tensor.device)
-        dim_t = 10000**(2 * (dim_t // 2) / 128)
-        x_embed = pos_tensor[:, :, 0] * scale
-        y_embed = pos_tensor[:, :, 1] * scale
-        pos_x = x_embed[:, :, None] / dim_t
-        pos_y = y_embed[:, :, None] / dim_t
-        pos_x = torch.stack((pos_x[:, :, 0::2].sin(), pos_x[:, :, 1::2].cos()),
-                            dim=3).flatten(2)
-        pos_y = torch.stack((pos_y[:, :, 0::2].sin(), pos_y[:, :, 1::2].cos()),
-                            dim=3).flatten(2)
-        if pos_tensor.size(-1) == 2:
-            pos = torch.cat((pos_y, pos_x), dim=2)
-        elif pos_tensor.size(-1) == 4:
-            w_embed = pos_tensor[:, :, 2] * scale
-            pos_w = w_embed[:, :, None] / dim_t
-            pos_w = torch.stack(
-                (pos_w[:, :, 0::2].sin(), pos_w[:, :, 1::2].cos()),
-                dim=3).flatten(2)
-
-            h_embed = pos_tensor[:, :, 3] * scale
-            pos_h = h_embed[:, :, None] / dim_t
-            pos_h = torch.stack(
-                (pos_h[:, :, 0::2].sin(), pos_h[:, :, 1::2].cos()),
-                dim=3).flatten(2)
-
-            pos = torch.cat((pos_y, pos_x, pos_w, pos_h), dim=2)
-        else:
-            raise ValueError('Unknown pos_tensor shape(-1):{}'.format(
-                pos_tensor.size(-1)))
-        return pos
 
     def forward(
             self,
@@ -78,16 +39,16 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
         """Forward function of Transformer encoder.
 
         Args:
-            query (Tensor): The input query, has shape (num_query, bs, dim).
+            query (Tensor): The input query, has shape (num_queries, bs, dim).
             value (Tensor): The input values, has shape (num_value, bs, dim).
             key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
-                input. ByteTensor, has shape (num_query, bs).
+                input. ByteTensor, has shape (num_queries, bs).
             self_attn_mask (Tensor): The attention mask to prevent information
                 leakage from different denoising groups and matching parts, has
-                shape (num_query_total, num_query_total). It is `None` when
+                shape (num_queries_total, num_queries_total). It is `None` when
                 `self.training` is `False`.
             reference_points (Tensor): The initial reference, has shape
-                (bs, num_query, 4).
+                (bs, num_queries, 4).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
@@ -102,7 +63,7 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
         Returns:
             Tensor: Output queries of Transformer encoder, which is also
             called 'encoder output embeddings' or 'memory', has shape
-            (num_query, bs, dim)
+            (num_queries, bs, dim)
         """
         intermediate = []
         intermediate_reference_points = [reference_points]
@@ -116,7 +77,7 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
                 reference_points_input = \
                     reference_points[:, :, None] * valid_ratios[:, None]
 
-            query_sine_embed = self.gen_sineembed_for_position(
+            query_sine_embed = convert_coordinate_to_encoding(
                 reference_points_input[:, :, 0, :])
             query_pos = self.ref_point_head(query_sine_embed)
 
@@ -137,7 +98,6 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
             if reg_branches is not None:
                 tmp = reg_branches[lid](query)
                 assert reference_points.shape[-1] == 4
-                # TODO: should do earlier?
                 new_reference_points = tmp + inverse_sigmoid(
                     reference_points, eps=1e-3)
                 new_reference_points = new_reference_points.sigmoid()
@@ -168,7 +128,7 @@ class CdnQueryGenerator(BaseModule):
     Args:
         num_classes (int): Number of object classes.
         embed_dims (int): The embedding dimensions of the generated queries.
-        num_matching_query (int): The queries number of the matching part.
+        num_matching_queries (int): The queries number of the matching part.
             Used for generating dn_mask.
         label_noise_scale (float): The scale of label noise, defaults to 0.5.
         box_noise_scale (float): The scale of box noise, defaults to 1.0.
@@ -187,14 +147,14 @@ class CdnQueryGenerator(BaseModule):
     def __init__(self,
                  num_classes: int,
                  embed_dims: int,
-                 num_matching_query: int,
+                 num_matching_queries: int,
                  label_noise_scale: float = 0.5,
                  box_noise_scale: float = 1.0,
                  group_cfg: OptConfigType = None) -> None:
         super().__init__()
         self.num_classes = num_classes
         self.embed_dims = embed_dims
-        self.num_matching_query = num_matching_query
+        self.num_matching_queries = num_matching_queries
         self.label_noise_scale = label_noise_scale
         self.box_noise_scale = box_noise_scale
 
@@ -233,7 +193,7 @@ class CdnQueryGenerator(BaseModule):
             - max_num_target: the max target number of the input batch samples.
             - num_noisy_targets: the total targets number after adding noise,
               i.e., num_target_total * num_groups * 2.
-            - num_denoising_query: the length of the output batched queries,
+            - num_denoising_queries: the length of the output batched queries,
               i.e., max_num_target * num_groups * 2.
 
         NOTE The format of input bboxes in batch_data_samples is unnormalized
@@ -250,21 +210,21 @@ class CdnQueryGenerator(BaseModule):
             tuple: The outputs of the dn query generator.
 
             - dn_label_query (Tensor): The output content queries for denoising
-              part, has shape (bs, num_denoising_query, dim), where
-              `num_denoising_query = max_num_target * num_groups * 2`.
+              part, has shape (bs, num_denoising_queries, dim), where
+              `num_denoising_queries = max_num_target * num_groups * 2`.
             - dn_bbox_query (Tensor): The output reference bboxes as positions
               of queries for denoising part, which are embedded by normalized
               (cx, cy, w, h) format bboxes going through inverse_sigmoid, has
-              shape (bs, num_denoising_query, 4).
+              shape (bs, num_denoising_queries, 4).
             - attn_mask (Tensor): The attention mask to prevent information
               leakage from different denoising groups and matching parts,
               will be used as `self_attn_mask` of the `decoder`, has shape
-              (num_query_total, num_query_total), where `num_query_total` is
-              the sum of `num_denoising_query` and `num_matching_query`.
+              (num_queries_total, num_queries_total), where `num_queries_total`
+              is the sum of `num_denoising_queries` and `num_matching_queries`.
             - dn_meta (Dict[str, int]): The dictionary saves information about
-              group collation, including 'num_denoising_query' and
-              'num_dn_group'. It will be used for dn results extraction and
-              loss calculation.
+              group collation, including 'num_denoising_queries' and
+              'num_denoising_groups'. It will be used for split outputs of
+              denoising and matching parts and loss calculation.
         """
         # normalize bbox and collate ground truth (gt)
         gt_labels_list = []
@@ -300,8 +260,8 @@ class CdnQueryGenerator(BaseModule):
             max_num_target, num_groups, device=dn_label_query.device)
 
         dn_meta = dict(
-            num_denoising_query=int(max_num_target * 2 * num_groups),
-            num_dn_group=num_groups)
+            num_denoising_queries=int(max_num_target * 2 * num_groups),
+            num_denoising_groups=num_groups)
 
         return dn_label_query, dn_bbox_query, attn_mask, dn_meta
 
@@ -515,7 +475,7 @@ class CdnQueryGenerator(BaseModule):
             torch.sum(batch_idx == idx) for idx in range(batch_size)
         ]
         max_num_target = max(num_target_list)
-        num_denoising_query = int(max_num_target * 2 * num_groups)
+        num_denoising_queries = int(max_num_target * 2 * num_groups)
 
         map_query_index = torch.cat([
             torch.arange(num_target, device=device)
@@ -528,9 +488,9 @@ class CdnQueryGenerator(BaseModule):
         mapper = (batch_idx_expand, map_query_index)
 
         batched_label_query = torch.zeros(
-            batch_size, num_denoising_query, self.embed_dims, device=device)
+            batch_size, num_denoising_queries, self.embed_dims, device=device)
         batched_bbox_query = torch.zeros(
-            batch_size, num_denoising_query, 4, device=device)
+            batch_size, num_denoising_queries, 4, device=device)
 
         batched_label_query[mapper] = input_label_query
         batched_bbox_query[mapper] = input_bbox_query
@@ -556,8 +516,8 @@ class CdnQueryGenerator(BaseModule):
                         1 1 1 1 1 1 1 1 0 0 0 0 0
                         1 1 1 1 1 1 1 1 0 0 0 0 0
                         1 1 1 1 1 1 1 1 0 0 0 0 0
-         max_num_target |_|           |_________| num_matching_query
-                        |_____________| num_denoising_query
+         max_num_target |_|           |_________| num_matching_queries
+                        |_____________| num_denoising_queries
 
                1 -> True  (Masked), means 'can not see'.
                0 -> False (UnMasked), means 'can see'.
@@ -571,16 +531,19 @@ class CdnQueryGenerator(BaseModule):
         Returns:
             Tensor: The attention mask to prevent information leakage from
             different denoising groups and matching parts, will be used as
-            `self_attn_mask` of the `decoder`, has shape (num_query_total,
-            num_query_total), where `num_query_total` is the sum of
-            `num_denoising_query` and `num_matching_query`.
+            `self_attn_mask` of the `decoder`, has shape (num_queries_total,
+            num_queries_total), where `num_queries_total` is the sum of
+            `num_denoising_queries` and `num_matching_queries`.
         """
-        num_denoising_query = int(max_num_target * 2 * num_groups)
-        num_query_total = num_denoising_query + self.num_matching_query
+        num_denoising_queries = int(max_num_target * 2 * num_groups)
+        num_queries_total = num_denoising_queries + self.num_matching_queries
         attn_mask = torch.zeros(
-            num_query_total, num_query_total, device=device, dtype=torch.bool)
+            num_queries_total,
+            num_queries_total,
+            device=device,
+            dtype=torch.bool)
         # Make the matching part cannot see the denoising groups
-        attn_mask[num_denoising_query:, :num_denoising_query] = True
+        attn_mask[num_denoising_queries:, :num_denoising_queries] = True
         # Make the denoising groups cannot see each other
         for i in range(num_groups):
             # Mask rows of one group per step.
@@ -588,7 +551,7 @@ class CdnQueryGenerator(BaseModule):
                               max_num_target * 2 * (i + 1))
             left_scope = slice(max_num_target * 2 * i)
             right_scope = slice(max_num_target * 2 * (i + 1),
-                                num_denoising_query)
+                                num_denoising_queries)
             attn_mask[row_scope, right_scope] = True
             attn_mask[row_scope, left_scope] = True
         return attn_mask

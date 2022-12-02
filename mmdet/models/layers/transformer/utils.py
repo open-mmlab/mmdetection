@@ -44,6 +44,58 @@ def nchw_to_nlc(x):
     return x.flatten(2).transpose(1, 2).contiguous()
 
 
+def convert_coordinate_to_encoding(pos_tensor: Tensor,
+                                   num_feats: int = 128,
+                                   temperature: int = 10000,
+                                   scale: float = 2 * math.pi):
+    """Convert coordinate tensor to positional encoding.
+
+    Args:
+        pos_tensor (Tensor): Coordinate tensor to be converted to
+            positional encoding. With the last dimension as 2 or 4.
+        num_feats (int): The feature dimension for each position
+            along x-axis or y-axis. Note the final returned dimension
+            for each position is 2 times of this value.
+        temperature (int, optional): The temperature used for scaling
+            the position embedding. Defaults to 10000.
+        scale (float, optional): A scale factor that scales the position
+            embedding. The scale will be used only when `normalize` is True.
+            Defaults to 2*pi.
+
+    Returns:
+        Tensor: Returned encoded positional tensor.
+    """
+    dim_t = torch.arange(
+        num_feats, dtype=torch.float32, device=pos_tensor.device)
+    dim_t = temperature**(2 * (dim_t // 2) / num_feats)
+    x_embed = pos_tensor[:, :, 0] * scale
+    y_embed = pos_tensor[:, :, 1] * scale
+    pos_x = x_embed[:, :, None] / dim_t
+    pos_y = y_embed[:, :, None] / dim_t
+    pos_x = torch.stack((pos_x[:, :, 0::2].sin(), pos_x[:, :, 1::2].cos()),
+                        dim=3).flatten(2)
+    pos_y = torch.stack((pos_y[:, :, 0::2].sin(), pos_y[:, :, 1::2].cos()),
+                        dim=3).flatten(2)
+    if pos_tensor.size(-1) == 2:
+        pos = torch.cat((pos_y, pos_x), dim=2)
+    elif pos_tensor.size(-1) == 4:
+        w_embed = pos_tensor[:, :, 2] * scale
+        pos_w = w_embed[:, :, None] / dim_t
+        pos_w = torch.stack((pos_w[:, :, 0::2].sin(), pos_w[:, :, 1::2].cos()),
+                            dim=3).flatten(2)
+
+        h_embed = pos_tensor[:, :, 3] * scale
+        pos_h = h_embed[:, :, None] / dim_t
+        pos_h = torch.stack((pos_h[:, :, 0::2].sin(), pos_h[:, :, 1::2].cos()),
+                            dim=3).flatten(2)
+
+        pos = torch.cat((pos_y, pos_x, pos_w, pos_h), dim=2)
+    else:
+        raise ValueError('Unknown pos_tensor shape(-1):{}'.format(
+            pos_tensor.size(-1)))
+    return pos
+
+
 class AdaptivePadding(nn.Module):
     """Applies padding to input (if needed) so that input can get fully covered
     by filter you specified. It support two modes "same" and "corner". The
@@ -410,9 +462,10 @@ class MLP(BaseModule):
 
         Args:
             x (Tensor): The input feature, has shape
-                (num_query, bs, input_dim).
+                (num_queries, bs, input_dim).
         Returns:
-            Tensor: The output feature, has shape (num_query, bs, output_dim).
+            Tensor: The output feature, has shape (num_queries, bs,
+            output_dim).
         """
         for i, layer in enumerate(self.layers):
             x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)

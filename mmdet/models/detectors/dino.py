@@ -33,14 +33,14 @@ class DINO(DeformableDETR):
 
         if dn_cfg is not None:
             assert 'num_classes' not in dn_cfg and \
-                   'num_query' not in dn_cfg and \
+                   'num_queries' not in dn_cfg and \
                    'hidden_dim' not in dn_cfg, \
                 'The three keyword args `num_classes`, `embed_dims`, and ' \
-                '`num_matching_query` are set in `detector.__init__()`, ' \
+                '`num_matching_queries` are set in `detector.__init__()`, ' \
                 'users should not set them in `dn_cfg` config.'
             dn_cfg['num_classes'] = self.bbox_head.num_classes
             dn_cfg['embed_dims'] = self.embed_dims
-            dn_cfg['num_matching_query'] = self.num_query
+            dn_cfg['num_matching_queries'] = self.num_queries
         self.dn_query_generator = CdnQueryGenerator(**dn_cfg)
 
     def _init_layers(self) -> None:
@@ -50,7 +50,7 @@ class DINO(DeformableDETR):
         self.encoder = DeformableDetrTransformerEncoder(**self.encoder)
         self.decoder = DinoTransformerDecoder(**self.decoder)
         self.embed_dims = self.encoder.embed_dims
-        self.query_embedding = nn.Embedding(self.num_query, self.embed_dims)
+        self.query_embedding = nn.Embedding(self.num_queries, self.embed_dims)
         # NOTE In DINO, the query_embedding only contains content
         # queries, while in Deformable DETR, the query_embedding
         # contains both content and spatial queries, and in DETR,
@@ -171,7 +171,7 @@ class DINO(DeformableDETR):
             self.decoder.num_layers](output_memory) + output_proposals
         cls_out_features = self.bbox_head.cls_branches[
             self.decoder.num_layers].out_features  # TODO: refine this  # noqa
-        topk = self.num_query  # TODO: refine this  # noqa
+        topk = self.num_queries  # TODO: refine this  # noqa
         # NOTE In DeformDETR, enc_outputs_class[..., 0] is used for topk  # TODO: refine this  # noqa
         topk_indices = torch.topk(enc_outputs_class.max(-1)[0], topk, dim=1)[1]
         # topk_proposal = torch.gather(
@@ -242,15 +242,15 @@ class DINO(DeformableDETR):
 
         Args:
             query (Tensor): The queries of decoder inputs, has shape
-                (num_query_total, bs, dim), where the `num_query_total` is the
-                sum of `num_query` and the number of the denoising queries when
-                `self.training` is `True`, else `num_query`.
+                (num_queries_total, bs, dim), where `num_queries_total` is the
+                sum of `num_denoising_queries` and `num_matching_queries` when
+                `self.training` is `True`, else `num_matching_queries`.
             memory (Tensor): The output embeddings of the Transformer encoder,
                 has shape (num_feat, bs, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
                 has shape (bs, num_feat).
             reference_points (Tensor): The initial reference, has shape
-                (bs, num_query_total, 4).
+                (bs, num_queries_total, 4).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
@@ -262,7 +262,8 @@ class DINO(DeformableDETR):
             dn_mask (Tensor, optional): The attention mask to prevent
                 information leakage from different denoising groups and
                 matching parts, will be used as `self_attn_mask` of the
-                `self.decoder`, has shape (num_query_total, num_query_total).
+                `self.decoder`, has shape (num_queries_total,
+                num_queries_total).
                 It is `None` when `self.training` is `False`.
 
         Returns:
@@ -283,7 +284,7 @@ class DINO(DeformableDETR):
 
         # inter_states = inter_states.permute(0, 2, 1, 3)
 
-        if len(query) == self.num_query:
+        if len(query) == self.num_queries:
             # NOTE: If there is no target in the image, the parameters of
             # label_embedding won't be used in producing loss, which raises
             # RuntimeError when using distributed mode.
