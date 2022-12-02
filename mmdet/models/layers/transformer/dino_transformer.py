@@ -21,21 +21,13 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
         super()._init_layers()
         self.ref_point_head = MLP(self.embed_dims * 2, self.embed_dims,
                                   self.embed_dims, 2)
-        self.norm = nn.LayerNorm(self.embed_dims)  # TODO: refine this
+        self.norm = nn.LayerNorm(self.embed_dims)
 
-    def forward(
-            self,
-            query: Tensor,
-            value: Tensor,
-            key_padding_mask: Tensor,
-            self_attn_mask: Tensor,
-            reference_points: Tensor,
-            spatial_shapes: Tensor,
-            level_start_index: Tensor,
-            valid_ratios: Tensor,
-            reg_branches: nn.
-        ModuleList,  # TODO: why not ModuleList in mmcv?  # noqa
-            **kwargs) -> Tensor:
+    def forward(self, query: Tensor, value: Tensor, key_padding_mask: Tensor,
+                self_attn_mask: Tensor, reference_points: Tensor,
+                spatial_shapes: Tensor, level_start_index: Tensor,
+                valid_ratios: Tensor, reg_branches: nn.ModuleList,
+                **kwargs) -> Tensor:
         """Forward function of Transformer encoder.
 
         Args:
@@ -181,9 +173,9 @@ class CdnQueryGenerator(BaseModule):
         # NOTE The original repo of DINO set the num_embeddings 92 for coco,
         # 91 (0~90) of which represents target classes and the 92 (91)
         # indicates `Unknown` class. However, the embedding of `unknown` class
-        # is not used in the original DINO.  # TODO: num_classes + 1 or num_classes ?  # noqa
+        # is not used in the original DINO.
+        # TODO: num_classes + 1 or num_classes ?
         self.label_embedding = nn.Embedding(self.num_classes, self.embed_dims)
-        # TODO: Be careful with the init of the label_embedding
 
     def __call__(self, batch_data_samples: SampleList) -> tuple:
         """Generate contrastive denoising (cdn) queries with ground truth.

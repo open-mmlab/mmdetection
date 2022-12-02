@@ -250,7 +250,6 @@ class DINOHead(DeformableDETRHead):
         else:
             loss_cls = torch.zeros(
                 1, dtype=cls_scores.dtype, device=cls_scores.device)
-            # TODO: How to better return zero loss  # refine this
 
         # Compute the average number of gt boxes across all gpus, for
         # normalization purposes
@@ -288,8 +287,6 @@ class DINOHead(DeformableDETRHead):
                                                             int]) -> tuple:
         """Get targets in denoising part for a batch of images.
 
-        # TODO: refine this.
-
         Args:
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance. It usually includes ``bboxes`` and ``labels``
@@ -325,7 +322,7 @@ class DINOHead(DeformableDETRHead):
     def _get_dn_targets_single(self, gt_instances: InstanceData,
                                img_meta: dict, dn_meta: Dict[str,
                                                              int]) -> tuple:
-        """Get targets in denoising part for one image.  # TODO: refine this.
+        """Get targets in denoising part for one image.
 
         Args:
             gt_instances (:obj:`InstanceData`): Ground truth of instance

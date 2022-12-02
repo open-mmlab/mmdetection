@@ -286,7 +286,7 @@ class DINO(DeformableDETR):
             # target in this GPU), otherwise, this will raise runtime error in
             # distributed training.
             inter_states[0] += \
-                self.dn_query_generator.label_embedding.weight[0, 0] * 0.0  # TODO: refine this  # noqa
+                self.dn_query_generator.label_embedding.weight[0, 0] * 0.0
 
         decoder_outputs_dict = dict(
             hidden_states=inter_states, references=list(references))
