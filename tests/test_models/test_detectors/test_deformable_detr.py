@@ -15,7 +15,7 @@ class TestDeformableDETR(TestCase):
     def setUp(self):
         register_all_modules()
 
-    def test_detr_head_loss(self):
+    def test_deformable_detr_head_loss(self):
         """Tests transformer head loss when truth is empty and non-empty."""
         s = 256
         metainfo = {
@@ -88,6 +88,7 @@ class TestDeformableDETR(TestCase):
                     loss.item(), 0,
                     'cls loss, or box loss, or iou loss should be non-zero')
 
+            model.eval()
             # test _forward
             model._forward(
                 random_image, batch_data_samples=batch_data_samples2)
