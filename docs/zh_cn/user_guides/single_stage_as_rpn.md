@@ -64,8 +64,10 @@ param_scheduler = [
 
 ```python
 # training with 8 GPUS
-bash tools/dist_train.sh configs/faster_rcnn/faster-rcnn_r50_fpn_fcos-rpn_1x_coco.py \ 8 \
-    --work-dir ./work_dirs/faster-rcnn_r50_fpn_fcos-rpn_1x_coco
+bash  
+tools/dist_train.sh 
+configs/faster_rcnn/faster-rcnn_r50_fpn_fcos-rpn_1x_coco.py   
+--work-dir  /work_dirs/faster-rcnn_r50_fpn_fcos-rpn_1x_coco
 ```
 
 ## 评估候选区域
@@ -106,9 +108,10 @@ model = dict(
 
 ```python
 # testing with 8 GPUs
-bash tools/dist_test.sh \
-    configs/rpn/fcos-rpn_r50_fpn_1x_coco.py \
-    ./work_dirs/faster-rcnn_r50_fpn_fcos-rpn_1x_coco/epoch_12.pth \ 8
+bash 
+tools/dist_test.sh 
+configs/rpn/fcos-rpn_r50_fpn_1x_coco.py 
+--work_dirs /faster-rcnn_r50_fpn_fcos-rpn_1x_coco/epoch_12.pth 
 ```
 
 ## 用预先训练的FCOS训练定制的Faster R-CNN
@@ -159,7 +162,8 @@ load_from = 'https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r50_caffe
 训练命令如下。
 
 ```python
-bash tools/dist_train.sh \
-    configs/faster_rcnn/faster-rcnn_r50-caffe_fpn_fcos-rpn_1x_coco.py \ 8 \
-    --work-dir ./work_dirs/faster-rcnn_r50-caffe_fpn_fcos-rpn_1x_coco
+bash  
+tools/dist_train.sh   
+configs/faster_rcnn/faster-rcnn_r50-caffe_fpn_fcos-rpn_1x_coco.py  \
+--work-dir /work_dirs/faster-rcnn_r50-caffe_fpn_fcos-rpn_1x_coco
 ```
