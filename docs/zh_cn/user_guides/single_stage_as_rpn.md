@@ -1,4 +1,4 @@
-# 将单阶段检测器作为 RPN
+# 将单阶段检测器作为RPN
 
 候选区域网络作为[Faster R-CNN](https://arxiv.org/abs/1506.01497)的一个子模块，将为Faster R-CNN的第二阶段产生候选区域。在MMDetection里大多数的二阶段检测器使用[`RPN头`](../../../mmdet/models/dense_heads/rpn_head.py)作为候选区域网络来产生候选区域。然而，任何的单阶段检测器都可以作为候选区域网络，是因为他们对边界框的预测可以被视为是一种候选区域，并且因此能够在R-CNN中得到改进。因此在MMDetection v3.0中会支持将单阶段检测器作为RPN使用。
 
@@ -10,7 +10,7 @@
 2. 评估候选区域
 3. 用预先训练的FCOS训练定制的Faster R-CNN
 
-## 在Faster R-CNN中使用`FCOS头`作为`RPN头`  
+## 在Faster R-CNN中使用`FCOS头`作为`RPN头`
 
 为了在Faster R-CNN中使用`FCOS头`作为`RPN头`，我们应该创建一个名为`configs/faster_rcnn/faster-rcnn_r50_fpn_fcos-rpn_1x_coco.py`的配置文件，并且在`configs/faster_rcnn/faster-rcnn_r50_fpn_fcos-rpn_1x_coco.py`中将' rpn_head '的设置替换为' bbox_head '的设置，此外我们仍然使用FCOS的瓶颈设置，步幅为`[8,16,32,64,128]`，并且更新' bbox_roi_extractor '的' featmap_stride '为' [8,16,32,64,128]`。为了避免损失变慢，我们在前1000次迭代而不是前500次迭代中应用预热，这意味着lr增长得更慢。相关配置如下:
 
@@ -64,8 +64,7 @@ param_scheduler = [
 
 ```python
 # training with 8 GPUS
-bash tools/dist_train.sh configs/faster_rcnn/faster-rcnn_r50_fpn_fcos-rpn_1x_coco.py \
-    8 \
+bash tools/dist_train.sh configs/faster_rcnn/faster-rcnn_r50_fpn_fcos-rpn_1x_coco.py \ 8 \
     --work-dir ./work_dirs/faster-rcnn_r50_fpn_fcos-rpn_1x_coco
 ```
 
@@ -109,7 +108,7 @@ model = dict(
 # testing with 8 GPUs
 bash tools/dist_test.sh \
     configs/rpn/fcos-rpn_r50_fpn_1x_coco.py \
-    ./work_dirs/faster-rcnn_r50_fpn_fcos-rpn_1x_coco/epoch_12.pth \8
+    ./work_dirs/faster-rcnn_r50_fpn_fcos-rpn_1x_coco/epoch_12.pth \ 8
 ```
 
 ## 用预先训练的FCOS训练定制的Faster R-CNN
