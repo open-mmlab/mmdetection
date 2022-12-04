@@ -4,7 +4,7 @@
 
 下面几节介绍如何在COCO测试开发集上生成泛视分割模型的预测结果，并将预测提交到[COCO评估服务器](https://competitions.codalab.org/competitions/19507)
 
-### 前提条件 
+### 前提条件
 -下载[COCO测试数据集图像](http://images.cocodataset.org/zips/test2017.zip)，[测试图像信息](http://images.cocodataset.org/annotations/image_info_test2017.zip)，和[全景训练/相关注释](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip)，然后解压缩它们，把'test2017'放到' data/coco/ '，把json文件和注释文件放到' data/coco/annotations/ '。
 
 ```shell
@@ -28,7 +28,7 @@ rm -rf data/coco/test2017.zip data/coco/image_info_test2017.zip data/coco/panopt
 python tools/misc/gen_coco_panoptic_test_info.py data/coco/annotations
 ```
 
-在完成上述准备之后，你的“data”目录结构应该是这样：
+在完成上述准备之后，你的“data”目录结构应该是这样:
 
 ```text
 data
@@ -141,9 +141,7 @@ GPUS=8 tools/slurm_test.sh \
     test_evaluator.outfile_prefix=${WORK_DIR}/results
 ```
 
-例子
-
-假设我们使用预先训练的带有ResNet-50骨干网的MaskFormer对' test2017 '执行推断。
+例子:假设我们使用预先训练的带有ResNet-50骨干网的MaskFormer对' test2017 '执行推断。
 
 ```shell
 # test with single gpu
@@ -173,4 +171,3 @@ mv ./panoptic ./panoptic_test-dev2017_[algorithm_name]_results
 mv ./results.panoptic.json ./panoptic_test-dev2017_[algorithm_name]_results.json
 zip panoptic_test-dev2017_[algorithm_name]_results.zip -ur panoptic_test-dev2017_[algorithm_name]_results panoptic_test-dev2017_[algorithm_name]_results.json
 ```
-
