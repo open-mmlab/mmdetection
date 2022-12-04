@@ -1,4 +1,4 @@
-# 将单阶段检测器作为 RPN（待更新）
+# 将单阶段检测器作为 RPN
 
 候选区域网络作为[Faster R-CNN](https://arxiv.org/abs/1506.01497)的一个子模块，将为Faster R-CNN的第二阶段产生候选区域。在MMDetection里大多数的二阶段检测器使用[`RPN头`](../../../mmdet/models/dense_heads/rpn_head.py)作为候选区域网络来产生候选区域。然而，任何的单阶段检测器都可以作为候选区域网络，是因为他们对边界框的预测可以被视为是一种候选区域，并且因此能够在R-CNN中得到改进。因此在MMDetection v3.0中会支持将单阶段检测器作为RPN使用。 
 
