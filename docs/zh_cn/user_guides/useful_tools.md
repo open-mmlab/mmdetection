@@ -182,7 +182,7 @@ python tools/analysis_tools/coco_error_analysis.py \
 ```shell
 python -m pip install torchserve torch-model-archiver torch-workflow-archiver nvgpu
 ```
-**注意**: 如果你想在docker中使用`TorchServe`，请参考[torchserve docker](https://github.com/pytorch/serve/blob/master/docker/README.md)。
+**注意**: 如果你想在docker中使用 `TorchServe`，请参考[torchserve docker](https://github.com/pytorch/serve/blob/master/docker/README.md)。
 
 ### 2. 把 MMDetection 模型转换至 TorchServe
 
