@@ -21,8 +21,7 @@ class OHEMSampler(BaseSampler):
                  add_gt_as_proposals=True,
                  loss_key='loss_cls',
                  **kwargs):
-        super(OHEMSampler, self).__init__(num, pos_fraction, neg_pos_ub,
-                                          add_gt_as_proposals)
+        super().__init__(num, pos_fraction, neg_pos_ub, add_gt_as_proposals)
         self.context = context
         if not hasattr(self.context, 'num_stages'):
             self.bbox_head = self.context.bbox_head

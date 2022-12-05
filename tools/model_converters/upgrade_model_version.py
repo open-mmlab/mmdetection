@@ -142,7 +142,7 @@ def convert(in_file, out_file, num_classes):
         new_key = key
         new_val = val
         if is_two_stage and is_head(key):
-            new_key = 'roi_head.{}'.format(key)
+            new_key = f'roi_head.{key}'
 
         # classification
         if upgrade_rpn:

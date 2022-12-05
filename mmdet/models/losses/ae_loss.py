@@ -84,7 +84,7 @@ class AssociativeEmbeddingLoss(nn.Module):
     """
 
     def __init__(self, pull_weight=0.25, push_weight=0.25):
-        super(AssociativeEmbeddingLoss, self).__init__()
+        super().__init__()
         self.pull_weight = pull_weight
         self.push_weight = push_weight
 

@@ -267,7 +267,7 @@ class CSPDarknet(BaseModule):
                     param.requires_grad = False
 
     def train(self, mode=True):
-        super(CSPDarknet, self).train(mode)
+        super().train(mode)
         self._freeze_stages()
         if mode and self.norm_eval:
             for m in self.modules():

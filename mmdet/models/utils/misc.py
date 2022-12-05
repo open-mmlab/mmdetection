@@ -6,7 +6,6 @@ import numpy as np
 import torch
 from mmengine.structures import InstanceData
 from mmengine.utils import digit_version
-from six.moves import map, zip
 from torch import Tensor
 from torch.autograd import Function
 from torch.nn import functional as F

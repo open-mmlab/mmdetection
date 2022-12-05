@@ -177,7 +177,7 @@ class FPG(BaseModule):
                          ],
                          val=1.0)
                  ]):
-        super(FPG, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels

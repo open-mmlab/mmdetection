@@ -39,7 +39,7 @@ class TridentConv(BaseModule):
                  test_branch_idx=1,
                  bias=False,
                  init_cfg=None):
-        super(TridentConv, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         self.num_branch = len(trident_dilations)
         self.with_bias = bias
         self.test_branch_idx = test_branch_idx
@@ -106,7 +106,7 @@ class TridentBottleneck(Bottleneck):
     def __init__(self, trident_dilations, test_branch_idx, concat_output,
                  **kwargs):
 
-        super(TridentBottleneck, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.trident_dilations = trident_dilations
         self.num_branch = len(trident_dilations)
         self.concat_output = concat_output
@@ -241,7 +241,7 @@ class TridentResNet(ResNet):
 
                                / stage3(b0) \
     x - stem - stage1 - stage2 - stage3(b1) - output
-                               \ stage3(b2) /
+                               \\ stage3(b2) /
 
     Args:
         depth (int): Depth of resnet, from {50, 101, 152}.
@@ -258,7 +258,7 @@ class TridentResNet(ResNet):
 
         assert num_branch == len(trident_dilations)
         assert depth in (50, 101, 152)
-        super(TridentResNet, self).__init__(depth, **kwargs)
+        super().__init__(depth, **kwargs)
         assert self.num_stages == 3
         self.test_branch_idx = test_branch_idx
         self.num_branch = num_branch

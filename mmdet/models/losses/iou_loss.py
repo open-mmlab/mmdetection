@@ -306,7 +306,7 @@ class IoULoss(nn.Module):
                  reduction='mean',
                  loss_weight=1.0,
                  mode='log'):
-        super(IoULoss, self).__init__()
+        super().__init__()
         assert mode in ['linear', 'square', 'log']
         if linear:
             mode = 'linear'
@@ -369,7 +369,7 @@ class IoULoss(nn.Module):
 class BoundedIoULoss(nn.Module):
 
     def __init__(self, beta=0.2, eps=1e-3, reduction='mean', loss_weight=1.0):
-        super(BoundedIoULoss, self).__init__()
+        super().__init__()
         self.beta = beta
         self.eps = eps
         self.reduction = reduction
@@ -405,7 +405,7 @@ class BoundedIoULoss(nn.Module):
 class GIoULoss(nn.Module):
 
     def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
-        super(GIoULoss, self).__init__()
+        super().__init__()
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight
@@ -445,7 +445,7 @@ class GIoULoss(nn.Module):
 class DIoULoss(nn.Module):
 
     def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
-        super(DIoULoss, self).__init__()
+        super().__init__()
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight
@@ -485,7 +485,7 @@ class DIoULoss(nn.Module):
 class CIoULoss(nn.Module):
 
     def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
-        super(CIoULoss, self).__init__()
+        super().__init__()
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight
@@ -541,7 +541,7 @@ class EIoULoss(nn.Module):
                  reduction='mean',
                  loss_weight=1.0,
                  smooth_point=0.1):
-        super(EIoULoss, self).__init__()
+        super().__init__()
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight

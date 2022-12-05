@@ -92,7 +92,7 @@ class DiceLoss(nn.Module):
             eps (float): Avoid dividing by zero. Defaults to 1e-3.
         """
 
-        super(DiceLoss, self).__init__()
+        super().__init__()
         self.use_sigmoid = use_sigmoid
         self.reduction = reduction
         self.naive_dice = naive_dice

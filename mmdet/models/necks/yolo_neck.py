@@ -43,7 +43,7 @@ class DetectionBlock(BaseModule):
                  act_cfg: ConfigType = dict(
                      type='LeakyReLU', negative_slope=0.1),
                  init_cfg: OptMultiConfig = None) -> None:
-        super(DetectionBlock, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         double_out_channels = out_channels * 2
 
         # shortcut
@@ -102,7 +102,7 @@ class YOLOV3Neck(BaseModule):
                  act_cfg: ConfigType = dict(
                      type='LeakyReLU', negative_slope=0.1),
                  init_cfg: OptMultiConfig = None) -> None:
-        super(YOLOV3Neck, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         assert (num_scales == len(in_channels) == len(out_channels))
         self.num_scales = num_scales
         self.in_channels = in_channels

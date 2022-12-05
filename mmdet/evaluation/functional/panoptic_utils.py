@@ -85,7 +85,7 @@ def pq_compute_single_core(proc_id,
         pred_segms = {el['id']: el for el in pred_ann['segments_info']}
 
         # predicted segments area calculation + prediction sanity checks
-        pred_labels_set = set(el['id'] for el in pred_ann['segments_info'])
+        pred_labels_set = {el['id'] for el in pred_ann['segments_info']}
         labels, labels_cnt = np.unique(pan_pred, return_counts=True)
         for label, label_cnt in zip(labels, labels_cnt):
             if label not in pred_segms:

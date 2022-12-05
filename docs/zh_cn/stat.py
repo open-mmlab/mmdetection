@@ -17,12 +17,14 @@ num_ckpts = 0
 for f in files:
     url = osp.dirname(f.replace('../', url_prefix))
 
-    with open(f, 'r') as content_file:
+    with open(f) as content_file:
         content = content_file.read()
 
     title = content.split('\n')[0].replace('# ', '').strip()
-    ckpts = set(x.lower().strip()
-                for x in re.findall(r'\[model\]\((https?.*)\)', content))
+    ckpts = {
+        x.lower().strip()
+        for x in re.findall(r'\[model\]\((https?.*)\)', content)
+    }
 
     if len(ckpts) == 0:
         continue
@@ -31,7 +33,7 @@ for f in files:
     assert len(_papertype) > 0
     papertype = _papertype[0]
 
-    paper = set([(papertype, title)])
+    paper = {(papertype, title)}
 
     titles.append(title)
     num_ckpts += len(ckpts)

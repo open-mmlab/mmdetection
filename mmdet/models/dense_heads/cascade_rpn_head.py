@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from __future__ import division
 import copy
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -986,7 +985,7 @@ class CascadeRPNHead(BaseDenseHead):
                                bbox_pred, batch_gt_instances, batch_img_metas)
             stage_loss = stage.loss_by_feat(*rpn_loss_inputs)
             for name, value in stage_loss.items():
-                losses['s{}.{}'.format(i, name)] = value
+                losses[f's{i}.{name}'] = value
 
             # refine boxes
             if i < self.num_stages - 1:
@@ -1044,7 +1043,7 @@ class CascadeRPNHead(BaseDenseHead):
                                bbox_pred, batch_gt_instances, batch_img_metas)
             stage_loss = stage.loss_by_feat(*rpn_loss_inputs)
             for name, value in stage_loss.items():
-                losses['s{}.{}'.format(i, name)] = value
+                losses[f's{i}.{name}'] = value
 
             # refine boxes
             if i < self.num_stages - 1:

@@ -285,7 +285,7 @@ class FreeAnchorRetinaHead(RetinaHead):
             bag_prob, torch.ones_like(bag_prob), reduction='none')
 
     def negative_bag_loss(self, cls_prob: Tensor, box_prob: Tensor) -> Tensor:
-        """Compute negative bag loss.
+        r"""Compute negative bag loss.
 
         :math:`FL((1 - P_{a_{j} \in A_{+}}) * (1 - P_{j}^{bg}))`.
 

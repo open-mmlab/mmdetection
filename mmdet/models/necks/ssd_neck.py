@@ -47,7 +47,7 @@ class SSDNeck(BaseModule):
                          layer='Conv2d'),
                      dict(type='Constant', val=1, layer='BatchNorm2d'),
                  ]):
-        super(SSDNeck, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         assert len(out_channels) > len(in_channels)
         assert len(out_channels) - len(in_channels) == len(level_strides)
         assert len(level_strides) == len(level_paddings)
@@ -114,7 +114,7 @@ class L2Norm(nn.Module):
             eps (float, optional): Used to avoid division by zero.
                 Defaults to 1e-10.
         """
-        super(L2Norm, self).__init__()
+        super().__init__()
         self.n_dims = n_dims
         self.weight = nn.Parameter(torch.Tensor(self.n_dims))
         self.eps = eps

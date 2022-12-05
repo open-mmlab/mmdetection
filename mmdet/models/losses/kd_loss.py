@@ -45,7 +45,7 @@ class KnowledgeDistillationKLDivLoss(nn.Module):
     """
 
     def __init__(self, reduction='mean', loss_weight=1.0, T=10):
-        super(KnowledgeDistillationKLDivLoss, self).__init__()
+        super().__init__()
         assert T >= 1
         self.reduction = reduction
         self.loss_weight = loss_weight

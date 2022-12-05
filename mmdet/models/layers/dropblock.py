@@ -24,7 +24,7 @@ class DropBlock(nn.Module):
     """
 
     def __init__(self, drop_prob, block_size, warmup_iters=2000, **kwargs):
-        super(DropBlock, self).__init__()
+        super().__init__()
         assert block_size % 2 == 1
         assert 0 < drop_prob <= 1
         assert warmup_iters >= 0

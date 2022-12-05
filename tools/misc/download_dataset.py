@@ -39,17 +39,17 @@ def download(url, dir, unzip=True, delete=False, threads=1):
         if Path(url).is_file():
             Path(url).rename(f)
         elif not f.exists():
-            print('Downloading {} to {}'.format(url, f))
+            print(f'Downloading {url} to {f}')
             torch.hub.download_url_to_file(url, f, progress=True)
         if unzip and f.suffix in ('.zip', '.tar'):
-            print('Unzipping {}'.format(f.name))
+            print(f'Unzipping {f.name}')
             if f.suffix == '.zip':
                 ZipFile(f).extractall(path=dir)
             elif f.suffix == '.tar':
                 TarFile(f).extractall(path=dir)
             if delete:
                 f.unlink()
-                print('Delete {}'.format(f))
+                print(f'Delete {f}')
 
     dir = Path(dir)
     if threads > 1:

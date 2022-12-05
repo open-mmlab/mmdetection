@@ -56,7 +56,7 @@ class PAFPN(FPN):
                  act_cfg=None,
                  init_cfg=dict(
                      type='Xavier', layer='Conv2d', distribution='uniform')):
-        super(PAFPN, self).__init__(
+        super().__init__(
             in_channels,
             out_channels,
             num_outs,

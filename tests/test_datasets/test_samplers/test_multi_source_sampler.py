@@ -101,7 +101,6 @@ class TestGroupMultiSourceSampler(TestCase):
             groups.append(group)
         flags_gt = ['a', 'b', 'b', 'b', 'b'] * 20
         self.assertEqual(flags, flags_gt)
-        groups = set(
-            [sum(x) for x in (groups[k:k + 5] for k in range(0, 100, 5))])
-        groups_gt = set([0, 5])
+        groups = {sum(x) for x in (groups[k:k + 5] for k in range(0, 100, 5))}
+        groups_gt = {0, 5}
         self.assertEqual(groups, groups_gt)

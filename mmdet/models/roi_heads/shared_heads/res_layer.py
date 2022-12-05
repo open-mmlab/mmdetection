@@ -24,7 +24,7 @@ class ResLayer(BaseModule):
                  dcn=None,
                  pretrained=None,
                  init_cfg=None):
-        super(ResLayer, self).__init__(init_cfg)
+        super().__init__(init_cfg)
 
         self.norm_eval = norm_eval
         self.norm_cfg = norm_cfg
@@ -72,7 +72,7 @@ class ResLayer(BaseModule):
         return out
 
     def train(self, mode=True):
-        super(ResLayer, self).train(mode)
+        super().train(mode)
         if self.norm_eval:
             for m in self.modules():
                 if isinstance(m, nn.BatchNorm2d):

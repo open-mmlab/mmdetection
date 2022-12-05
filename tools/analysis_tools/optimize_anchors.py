@@ -164,7 +164,7 @@ class YOLOKMeansAnchorOptimizer(BaseAnchorOptimizer):
 
     def __init__(self, num_anchors, iters, **kwargs):
 
-        super(YOLOKMeansAnchorOptimizer, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.num_anchors = num_anchors
         self.iters = iters
 
@@ -270,7 +270,7 @@ class YOLODEAnchorOptimizer(BaseAnchorOptimizer):
                  recombination=0.7,
                  **kwargs):
 
-        super(YOLODEAnchorOptimizer, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.num_anchors = num_anchors
         self.iters = iters

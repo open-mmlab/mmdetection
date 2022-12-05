@@ -171,7 +171,7 @@ class CocoDataset(BaseDetDataset):
         min_size = self.filter_cfg.get('min_size', 0)
 
         # obtain images that contain annotation
-        ids_with_ann = set(data_info['img_id'] for data_info in self.data_list)
+        ids_with_ann = {data_info['img_id'] for data_info in self.data_list}
         # obtain images that contain annotations of the required categories
         ids_in_cat = set()
         for i, class_id in enumerate(self.cat_ids):

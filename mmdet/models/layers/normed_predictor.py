@@ -20,7 +20,7 @@ class NormedLinear(nn.Linear):
     """
 
     def __init__(self, *args, tempearture=20, power=1.0, eps=1e-6, **kwargs):
-        super(NormedLinear, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.tempearture = tempearture
         self.power = power
         self.eps = eps
@@ -60,7 +60,7 @@ class NormedConv2d(nn.Conv2d):
                  eps=1e-6,
                  norm_over_kernel=False,
                  **kwargs):
-        super(NormedConv2d, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.tempearture = tempearture
         self.power = power
         self.norm_over_kernel = norm_over_kernel

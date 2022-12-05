@@ -177,7 +177,7 @@ class AutoAssignHead(FCOSHead):
         regression conv's bias
         """
 
-        super(AutoAssignHead, self).init_weights()
+        super().init_weights()
         bias_cls = bias_init_with_prob(0.02)
         normal_init(self.conv_cls, std=0.01, bias=bias_cls)
         normal_init(self.conv_reg, std=0.01, bias=4.0)

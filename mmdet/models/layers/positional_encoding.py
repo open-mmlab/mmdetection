@@ -42,7 +42,7 @@ class SinePositionalEncoding(BaseModule):
                  eps=1e-6,
                  offset=0.,
                  init_cfg=None):
-        super(SinePositionalEncoding, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         if normalize:
             assert isinstance(scale, (float, int)), 'when normalize is set,' \
                 'scale should be provided and in float or int type, ' \
@@ -124,7 +124,7 @@ class LearnedPositionalEncoding(BaseModule):
                  row_num_embed=50,
                  col_num_embed=50,
                  init_cfg=dict(type='Uniform', layer='Embedding')):
-        super(LearnedPositionalEncoding, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         self.row_embed = nn.Embedding(row_num_embed, num_feats)
         self.col_embed = nn.Embedding(col_num_embed, num_feats)
         self.num_feats = num_feats

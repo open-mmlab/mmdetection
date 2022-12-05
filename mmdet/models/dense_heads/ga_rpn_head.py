@@ -41,7 +41,7 @@ class GARPNHead(GuidedAnchorHead):
         """Initialize layers of the head."""
         self.rpn_conv = nn.Conv2d(
             self.in_channels, self.feat_channels, 3, padding=1)
-        super(GARPNHead, self)._init_layers()
+        super()._init_layers()
 
     def forward_single(self, x: Tensor) -> Tuple[Tensor]:
         """Forward feature of a single scale level."""

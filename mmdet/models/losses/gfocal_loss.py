@@ -146,7 +146,7 @@ class QualityFocalLoss(nn.Module):
                  reduction='mean',
                  loss_weight=1.0,
                  activated=False):
-        super(QualityFocalLoss, self).__init__()
+        super().__init__()
         assert use_sigmoid is True, 'Only sigmoid in QFL supported now.'
         self.use_sigmoid = use_sigmoid
         self.beta = beta
@@ -208,7 +208,7 @@ class DistributionFocalLoss(nn.Module):
     """
 
     def __init__(self, reduction='mean', loss_weight=1.0):
-        super(DistributionFocalLoss, self).__init__()
+        super().__init__()
         self.reduction = reduction
         self.loss_weight = loss_weight
 

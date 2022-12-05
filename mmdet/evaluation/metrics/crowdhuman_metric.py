@@ -403,7 +403,7 @@ class CrowdHumanMetric(BaseMetric):
             for p in procs:
                 p.join()
             line, mean_ratio = self.gather(results)
-            line = 'score_thr:{:.1f}, {}'.format(score_thr, line)
+            line = f'score_thr:{score_thr:.1f}, {line}'
             res_line.append(line)
             res_ji.append(mean_ratio)
         return max(res_ji)
@@ -510,7 +510,7 @@ class CrowdHumanMetric(BaseMetric):
             return 0
 
 
-class Image(object):
+class Image:
     """Data structure for evaluation of CrowdHuman.
 
     Note:

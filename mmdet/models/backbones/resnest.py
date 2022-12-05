@@ -75,7 +75,7 @@ class SplitAttentionConv2d(BaseModule):
                  norm_cfg=dict(type='BN'),
                  dcn=None,
                  init_cfg=None):
-        super(SplitAttentionConv2d, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         inter_channels = max(in_channels * radix // reduction_factor, 32)
         self.radix = radix
         self.groups = groups
@@ -181,7 +181,7 @@ class Bottleneck(_Bottleneck):
                  avg_down_stride=True,
                  **kwargs):
         """Bottleneck block for ResNeSt."""
-        super(Bottleneck, self).__init__(inplanes, planes, **kwargs)
+        super().__init__(inplanes, planes, **kwargs)
 
         if groups == 1:
             width = self.planes
@@ -308,7 +308,7 @@ class ResNeSt(ResNetV1d):
         self.radix = radix
         self.reduction_factor = reduction_factor
         self.avg_down_stride = avg_down_stride
-        super(ResNeSt, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def make_res_layer(self, **kwargs):
         """Pack all blocks in a stage into a ``ResLayer``."""
