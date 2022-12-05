@@ -545,7 +545,7 @@ class Pad(MMCV_Pad):
 
     Args:
         size (tuple, optional): Fixed padding size.
-            Expected padding shape (w, h). Defaults to None.
+            Expected padding shape (width, height). Defaults to None.
         size_divisor (int, optional): The divisor of padded size. Defaults to
             None.
         pad_to_square (bool): Whether to pad the image into a square.
@@ -630,7 +630,7 @@ class RandomCrop(BaseTransform):
 
     Args:
         crop_size (tuple): The relative ratio or absolute pixels of
-            width and height.
+            (width, height).
         crop_type (str, optional): One of "relative_range", "relative",
             "absolute", "absolute_range". "relative" randomly crops
             (h * crop_size[0], w * crop_size[1]) part from an input of size
@@ -1664,7 +1664,7 @@ class RandomCenterCropPad(BaseTransform):
 
     Args:
         crop_size (tuple, optional): expected size after crop, final size will
-            computed according to ratio. Requires (w, h) in train mode, and
+            computed according to ratio. Requires  (width, height) in train mode, and
             None in test mode.
         ratios (tuple, optional): random select a ratio from tuple and crop
             image to (crop_size[0] * ratio) * (crop_size[1] * ratio).
@@ -2564,7 +2564,7 @@ class RandomAffine(BaseTransform):
             scaling transform. Defaults to (0.5, 1.5).
         max_shear_degree (float): Maximum degrees of shear
             transform. Defaults to 2.
-        border (tuple[int]): Distance from height and width sides of input
+        border (tuple[int]): Distance from width and height sides of input
             image to adjust output shape. Only used in mosaic dataset.
             Defaults to (0, 0).
         border_val (tuple[int]): Border padding values of 3 channels.
