@@ -2,7 +2,7 @@
 
 ## 日志分析
 
-`tools/analysis_tools/analyze_logs.py` 可利用指定的训练log文件绘制 loss/mAP 曲线图，
+`tools/analysis_tools/analyze_logs.py` 可利用指定的训练 log 文件绘制 loss/mAP 曲线图，
 第一次运行前请先运行 `pip install seaborn` 安装必要依赖.
 
 ```shell
