@@ -2,10 +2,10 @@
 
 ## 全景分割测试结果提交
 
-下面几节介绍如何在COCO测试开发集上生成泛视分割模型的预测结果，并将预测提交到[COCO评估服务器](https://competitions.codalab.org/competitions/19507)
+下面几节介绍如何在 COCO 测试开发集上生成泛视分割模型的预测结果，并将预测提交到 [COCO评估服务器](https://competitions.codalab.org/competitions/19507)
 
 ### 前提条件
-- 下载[COCO测试数据集图像](http://images.cocodataset.org/zips/test2017.zip)，[测试图像信息](http://images.cocodataset.org/annotations/image_info_test2017.zip)，和[全景训练/相关注释](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip)，然后解压缩它们，把'test2017'放到' data/coco/ '，把json文件和注释文件放到' data/coco/annotations/ '。
+- 下载 [COCO测试数据集图像](http://images.cocodataset.org/zips/test2017.zip)，[测试图像信息](http://images.cocodataset.org/annotations/image_info_test2017.zip)，和[全景训练/相关注释](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip)，然后解压缩它们，把 `test2017` 放到 ` data/coco/ ` ，把 json 文件和注释文件放到 `data/coco/annotations/` 。
 
 ```shell
 # suppose data/coco/ does not exist
@@ -22,13 +22,13 @@ unzip data/coco/panoptic_annotations_trainval2017.zip -d data/coco/
 rm -rf data/coco/test2017.zip data/coco/image_info_test2017.zip data/coco/panoptic_annotations_trainval2017.zip
 ```
 
-- 运行以下代码更新测试图像信息中的类别信息。由于'image_info_test-dev2017.json'的类别信息中缺少属性' isthing '，我们需要用“panoptic_val2017.json”中的类别信息更新它。
+- 运行以下代码更新测试图像信息中的类别信息。由于 `image_info_test-dev2017.json` 的类别信息中缺少属性 `isthing` ，我们需要用 `panoptic_val2017.json` 中的类别信息更新它。
 
 ```shell
 python tools/misc/gen_coco_panoptic_test_info.py data/coco/annotations
 ```
 
-在完成上述准备之后，你的“data”目录结构应该是这样:
+在完成上述准备之后，你的 `data` 目录结构应该是这样:
 
 ```text
 data
@@ -44,13 +44,13 @@ data
     `-- test2017
 ```
 
-### coco测试开发的推理
+### coco 测试开发的推理
 
-要在coco test-dev上进行推断，我们应该首先更新' test_dataloder '和' test_evaluator '的设置。有两种方法可以做到这一点:1. 在配置文件中更新它们;2. 在命令行中更新它们。
+要在 coco test-dev 上进行推断，我们应该首先更新 `test_dataloder` 和 `test_evaluator` 的设置。有两种方法可以做到这一点:1. 在配置文件中更新它们;2. 在命令行中更新它们。
 
 #### 在配置文件中更新它们
 
-相关的设置在' configs/_base_/datasets/ coco_panoptical .py '的末尾，如下所示。
+相关的设置在 `configs/_base_/datasets/ coco_panoptical .py` 的末尾，如下所示。
 
 ```python
 test_dataloader = dict(
@@ -73,9 +73,9 @@ test_evaluator = dict(
     outfile_prefix='./work_dirs/coco_panoptic/test')
 ```
 
-以下任何一种方法都可以用于更新coco test-dev集上的推理设置
+以下任何一种方法都可以用于更新 coco test-dev 集上的推理设置
 
-情况1:直接取消注释' configs/_base_/datasets/ coco_panoptical .py '中的设置。
+情况1:直接取消注释 `configs/_base_/datasets/ coco_panoptical .py` 中的设置。
 
 情况2:将以下设置复制到您现在使用的配置文件中。
 
@@ -90,7 +90,7 @@ test_evaluator = dict(
     outfile_prefix='./work_dirs/coco_panoptic/test')
 ```
 
-然后通过以下命令对coco test-dev et进行推断。
+然后通过以下命令对 coco test-dev et 进行推断。
 
 ```shell
 python tools/test.py \
@@ -100,7 +100,7 @@ python tools/test.py \
 
 #### 在命令行中更新它们
 
-coco test-dev上更新相关设置和推理的命令如下所示。
+coco test-dev 上更新相关设置和推理的命令如下所示。
 
 ```shell
 # test with single gpu
@@ -141,7 +141,7 @@ GPUS=8 tools/slurm_test.sh \
     test_evaluator.outfile_prefix=${WORK_DIR}/results
 ```
 
-例子:假设我们使用预先训练的带有ResNet-50骨干网的MaskFormer对' test2017 '执行推断。
+例子:假设我们使用预先训练的带有 ResNet-50 骨干网的 MaskFormer 对 `test2017` 执行推断。
 
 ```shell
 # test with single gpu
@@ -159,7 +159,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/test.py \
 
 ### 重命名文件并压缩结果
 
-推理之后，全景分割结果(一个json文件和一个存储掩码的目录)将在' WORK_DIR '中。我们应该按照[COCO's Website](https://cocodataset.org/#upload)上的命名约定重新命名它们。最后，我们需要将json和存储掩码的目录压缩到zip文件中，并根据命名约定重命名该zip文件。注意，zip文件应该**直接**包含上述两个文件。
+推理之后，全景分割结果(一个 json 文件和一个存储掩码的目录)将在 `WORK_DIR` 中。我们应该按照 [COCO's Website](https://cocodataset.org/#upload)上的命名约定重新命名它们。最后，我们需要将 json 和存储掩码的目录压缩到 zip 文件中，并根据命名约定重命名该 zip 文件。注意， zip 文件应该**直接**包含上述两个文件。
 
 重命名文件和压缩结果的命令:
 
