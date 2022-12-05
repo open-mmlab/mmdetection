@@ -184,7 +184,7 @@ class FocalLoss(nn.Module):
                 treated as probabilities. Else, it should be treated as logits.
                 Defaults to False.
         """
-        super(FocalLoss, self).__init__()
+        super().__init__()
         assert use_sigmoid is True, 'Only sigmoid focal loss supported now.'
         self.use_sigmoid = use_sigmoid
         self.gamma = gamma

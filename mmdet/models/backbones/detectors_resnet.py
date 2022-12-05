@@ -40,8 +40,7 @@ class Bottleneck(_Bottleneck):
                  sac=None,
                  init_cfg=None,
                  **kwargs):
-        super(Bottleneck, self).__init__(
-            inplanes, planes, init_cfg=init_cfg, **kwargs)
+        super().__init__(inplanes, planes, init_cfg=init_cfg, **kwargs)
 
         assert sac is None or isinstance(sac, dict)
         self.sac = sac
@@ -205,7 +204,7 @@ class ResLayer(Sequential):
                     norm_cfg=norm_cfg,
                     **kwargs))
 
-        super(ResLayer, self).__init__(*layers)
+        super().__init__(*layers)
 
 
 @MODELS.register_module()
@@ -255,7 +254,7 @@ class DetectoRS_ResNet(ResNet):
         self.stage_with_sac = stage_with_sac
         self.rfp_inplanes = rfp_inplanes
         self.output_img = output_img
-        super(DetectoRS_ResNet, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.inplanes = self.stem_channels
         self.res_layers = []
@@ -328,7 +327,7 @@ class DetectoRS_ResNet(ResNet):
 
     def forward(self, x):
         """Forward function."""
-        outs = list(super(DetectoRS_ResNet, self).forward(x))
+        outs = list(super().forward(x))
         if self.output_img:
             outs.insert(0, x)
         return tuple(outs)

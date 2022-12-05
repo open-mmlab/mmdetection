@@ -56,9 +56,9 @@ def autolabel(ax, rects):
     for rect in rects:
         height = rect.get_height()
         if height > 0 and height <= 1:  # for percent values
-            text_label = '{:2.0f}'.format(height * 100)
+            text_label = f'{height * 100:2.0f}'
         else:
-            text_label = '{:2.0f}'.format(height)
+            text_label = f'{height:2.0f}'
         ax.annotate(
             text_label,
             xy=(rect.get_x() + rect.get_width() / 2, height),

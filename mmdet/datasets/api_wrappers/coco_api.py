@@ -60,7 +60,7 @@ class COCOPanoptic(COCO):
     """
 
     def __init__(self, annotation_file: Optional[str] = None) -> None:
-        super(COCOPanoptic, self).__init__(annotation_file)
+        super().__init__(annotation_file)
 
     def createIndex(self) -> None:
         """Create index."""

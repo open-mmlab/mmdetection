@@ -48,7 +48,7 @@ class YOLOXPAFPN(BaseModule):
                      distribution='uniform',
                      mode='fan_in',
                      nonlinearity='leaky_relu')):
-        super(YOLOXPAFPN, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         self.in_channels = in_channels
         self.out_channels = out_channels
 

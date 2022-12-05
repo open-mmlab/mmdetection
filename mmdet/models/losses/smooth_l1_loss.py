@@ -62,7 +62,7 @@ class SmoothL1Loss(nn.Module):
     """
 
     def __init__(self, beta=1.0, reduction='mean', loss_weight=1.0):
-        super(SmoothL1Loss, self).__init__()
+        super().__init__()
         self.beta = beta
         self.reduction = reduction
         self.loss_weight = loss_weight
@@ -112,7 +112,7 @@ class L1Loss(nn.Module):
     """
 
     def __init__(self, reduction='mean', loss_weight=1.0):
-        super(L1Loss, self).__init__()
+        super().__init__()
         self.reduction = reduction
         self.loss_weight = loss_weight
 

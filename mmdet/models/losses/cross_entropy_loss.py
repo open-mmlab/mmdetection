@@ -225,7 +225,7 @@ class CrossEntropyLoss(nn.Module):
             avg_non_ignore (bool): The flag decides to whether the loss is
                 only averaged over non-ignored targets. Default: False.
         """
-        super(CrossEntropyLoss, self).__init__()
+        super().__init__()
         assert (use_sigmoid is False) or (use_mask is False)
         self.use_sigmoid = use_sigmoid
         self.use_mask = use_mask

@@ -27,7 +27,7 @@ class BasicBlock(BaseModule):
                  dcn=None,
                  plugins=None,
                  init_cfg=None):
-        super(BasicBlock, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         assert dcn is None, 'Not implemented yet.'
         assert plugins is None, 'Not implemented yet.'
 
@@ -115,7 +115,7 @@ class Bottleneck(BaseModule):
         If style is "pytorch", the stride-two layer is the 3x3 conv layer, if
         it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
-        super(Bottleneck, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         assert style in ['pytorch', 'caffe']
         assert dcn is None or isinstance(dcn, dict)
         assert plugins is None or isinstance(plugins, list)
@@ -389,7 +389,7 @@ class ResNet(BaseModule):
                  zero_init_residual=True,
                  pretrained=None,
                  init_cfg=None):
-        super(ResNet, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         self.zero_init_residual = zero_init_residual
         if depth not in self.arch_settings:
             raise KeyError(f'invalid depth {depth} for resnet')
@@ -648,7 +648,7 @@ class ResNet(BaseModule):
     def train(self, mode=True):
         """Convert the model into training mode while keep normalization layer
         freezed."""
-        super(ResNet, self).train(mode)
+        super().train(mode)
         self._freeze_stages()
         if mode and self.norm_eval:
             for m in self.modules():
@@ -668,5 +668,4 @@ class ResNetV1d(ResNet):
     """
 
     def __init__(self, **kwargs):
-        super(ResNetV1d, self).__init__(
-            deep_stem=True, avg_down=True, **kwargs)
+        super().__init__(deep_stem=True, avg_down=True, **kwargs)

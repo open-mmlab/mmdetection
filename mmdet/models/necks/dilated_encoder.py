@@ -26,7 +26,7 @@ class Bottleneck(nn.Module):
                  mid_channels,
                  dilation,
                  norm_cfg=dict(type='BN', requires_grad=True)):
-        super(Bottleneck, self).__init__()
+        super().__init__()
         self.conv1 = ConvModule(
             in_channels, mid_channels, 1, norm_cfg=norm_cfg)
         self.conv2 = ConvModule(
@@ -67,7 +67,7 @@ class DilatedEncoder(nn.Module):
 
     def __init__(self, in_channels, out_channels, block_mid_channels,
                  num_residual_blocks, block_dilations):
-        super(DilatedEncoder, self).__init__()
+        super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.block_mid_channels = block_mid_channels

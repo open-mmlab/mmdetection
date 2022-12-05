@@ -18,7 +18,7 @@ def _recalls(all_ious, proposal_nums, thrs):
         tmp_ious = np.zeros(0)
         for i in range(img_num):
             ious = all_ious[i][:, :proposal_num].copy()
-            gt_ious = np.zeros((ious.shape[0]))
+            gt_ious = np.zeros(ious.shape[0])
             if ious.size == 0:
                 tmp_ious = np.hstack((tmp_ious, gt_ious))
                 continue

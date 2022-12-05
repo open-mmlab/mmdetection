@@ -222,7 +222,7 @@ class CocoPanopticMetric(BaseMetric):
                 "somepath/xxx.panoptic.json" and name of the directory is
                 "somepath/xxx.panoptic".
         """
-        label2cat = dict((v, k) for (k, v) in self.cat2label.items())
+        label2cat = {v: k for (k, v) in self.cat2label.items()}
         pred_annotations = []
         for idx in range(len(results)):
             result = results[idx]
@@ -480,8 +480,7 @@ class CocoPanopticMetric(BaseMetric):
                 'file_name': imgs[k]['segm_file']
             } for k, v in gt_json.items()]
             pred_json = load(json_filename)
-            pred_json = dict(
-                (el['image_id'], el) for el in pred_json['annotations'])
+            pred_json = {el['image_id']: el for el in pred_json['annotations']}
 
             # match the gt_anns and pred_anns in the same image
             matched_annotations_list = []

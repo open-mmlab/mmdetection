@@ -52,7 +52,7 @@ class FPN_CARAFE(BaseModule):
                  init_cfg=None):
         assert init_cfg is None, 'To prevent abnormal initialization ' \
                                  'behavior, init_cfg is not allowed to be set'
-        super(FPN_CARAFE, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -208,7 +208,7 @@ class FPN_CARAFE(BaseModule):
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weights(self):
         """Initialize the weights of module."""
-        super(FPN_CARAFE, self).init_weights()
+        super().init_weights()
         for m in self.modules():
             if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
                 xavier_init(m, distribution='uniform')

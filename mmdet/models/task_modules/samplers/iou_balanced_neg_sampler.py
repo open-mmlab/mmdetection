@@ -34,8 +34,7 @@ class IoUBalancedNegSampler(RandomSampler):
                  floor_fraction=0,
                  num_bins=3,
                  **kwargs):
-        super(IoUBalancedNegSampler, self).__init__(num, pos_fraction,
-                                                    **kwargs)
+        super().__init__(num, pos_fraction, **kwargs)
         assert floor_thr >= 0 or floor_thr == -1
         assert 0 <= floor_fraction <= 1
         assert num_bins >= 1

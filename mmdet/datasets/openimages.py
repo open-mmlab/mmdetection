@@ -67,7 +67,7 @@ class OpenImagesDataset(BaseDetDataset):
 
         data_list = []
         with self.file_client.get_local_path(self.ann_file) as local_path:
-            with open(local_path, 'r') as f:
+            with open(local_path) as f:
                 reader = csv.reader(f)
                 last_img_id = None
                 instances = []
@@ -168,7 +168,7 @@ class OpenImagesDataset(BaseDetDataset):
         index_list = []
         classes_names = []
         with self.file_client.get_local_path(label_file) as local_path:
-            with open(local_path, 'r') as f:
+            with open(local_path) as f:
                 reader = csv.reader(f)
                 for line in reader:
                     # self.cat2label[line[0]] = line[1]
@@ -202,7 +202,7 @@ class OpenImagesDataset(BaseDetDataset):
 
         item_lists = defaultdict(list)
         with self.file_client.get_local_path(img_level_ann_file) as local_path:
-            with open(local_path, 'r') as f:
+            with open(local_path) as f:
                 reader = csv.reader(f)
                 for i, line in enumerate(reader):
                     if i == 0:
@@ -337,7 +337,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
 
         data_list = []
         with self.file_client.get_local_path(self.ann_file) as local_path:
-            with open(local_path, 'r') as f:
+            with open(local_path) as f:
                 lines = f.readlines()
         i = 0
         while i < len(lines):
@@ -414,7 +414,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         id_list = []
         index_mapping = {}
         with self.file_client.get_local_path(label_file) as local_path:
-            with open(local_path, 'r') as f:
+            with open(local_path) as f:
                 reader = csv.reader(f)
                 for line in reader:
                     label_name = line[0]
@@ -447,7 +447,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         item_lists = defaultdict(list)
         with self.file_client.get_local_path(
                 image_level_ann_file) as local_path:
-            with open(local_path, 'r') as f:
+            with open(local_path) as f:
                 reader = csv.reader(f)
                 i = -1
                 for line in reader:

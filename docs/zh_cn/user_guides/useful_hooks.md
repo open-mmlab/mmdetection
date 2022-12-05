@@ -10,7 +10,7 @@ MMDetection 和 MMEngine 为用户提供了多种多样实用的钩子（Hook）
 ## MemoryProfilerHook
 
 [内存分析钩子](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/engine/hooks/memory_profiler_hook.py)
-记录了包括虚拟内存、交换内存、当前进程在内的所有内存信息，它能够帮助捕捉系统的使用状况与发现隐藏的内存泄露问题。为了使用这个钩子，你需要先安装 `pip install memory_profiler psutil` 从而使用 `memory_profiler`。
+记录了包括虚拟内存、交换内存、当前进程在内的所有内存信息，它能够帮助捕捉系统的使用状况与发现隐藏的内存泄露问题。为了使用这个钩子，你需要先通过 `pip install memory_profiler psutil` 命令安装 `memory_profiler` 和 `psutil`。
 
 ### 使用
 
@@ -46,7 +46,7 @@ The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 M
 
 ## 如何实现自定义钩子
 
-一般的，从模型训练的开始到结束，共有20个点位可以执行钩子。我们可以实现自定义钩子在不同点位执行，以便在训练中实现自定义操作。
+通常，从模型训练的开始到结束，共有20个点位可以执行钩子。我们可以实现自定义钩子在不同点位执行，以便在训练中实现自定义操作。
 
 - global points: `before_run`, `after_run`
 - points in training: `before_train`, `before_train_epoch`, `before_train_iter`, `after_train_iter`, `after_train_epoch`, `after_train`

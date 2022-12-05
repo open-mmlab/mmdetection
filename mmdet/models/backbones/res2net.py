@@ -28,7 +28,7 @@ class Bottle2neck(_Bottleneck):
         If style is "pytorch", the stride-two layer is the 3x3 conv layer, if
         it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
-        super(Bottle2neck, self).__init__(inplanes, planes, **kwargs)
+        super().__init__(inplanes, planes, **kwargs)
         assert scales > 1, 'Res2Net degenerates to ResNet when scales = 1.'
         width = int(math.floor(self.planes * (base_width / base_channels)))
 
@@ -236,7 +236,7 @@ class Res2Layer(Sequential):
                     scales=scales,
                     base_width=base_width,
                     **kwargs))
-        super(Res2Layer, self).__init__(*layers)
+        super().__init__(*layers)
 
 
 @MODELS.register_module()
@@ -311,7 +311,7 @@ class Res2Net(ResNet):
                  **kwargs):
         self.scales = scales
         self.base_width = base_width
-        super(Res2Net, self).__init__(
+        super().__init__(
             style='pytorch',
             deep_stem=True,
             avg_down=True,

@@ -75,7 +75,7 @@ class BalancedL1Loss(nn.Module):
                  beta=1.0,
                  reduction='mean',
                  loss_weight=1.0):
-        super(BalancedL1Loss, self).__init__()
+        super().__init__()
         self.alpha = alpha
         self.gamma = gamma
         self.beta = beta

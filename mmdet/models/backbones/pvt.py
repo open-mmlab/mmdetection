@@ -53,7 +53,7 @@ class MixFFN(BaseModule):
                  dropout_layer=None,
                  use_conv=False,
                  init_cfg=None):
-        super(MixFFN, self).__init__(init_cfg=init_cfg)
+        super().__init__(init_cfg=init_cfg)
 
         self.embed_dims = embed_dims
         self.feedforward_channels = feedforward_channels
@@ -256,7 +256,7 @@ class PVTEncoderLayer(BaseModule):
                  sr_ratio=1,
                  use_conv_ffn=False,
                  init_cfg=None):
-        super(PVTEncoderLayer, self).__init__(init_cfg=init_cfg)
+        super().__init__(init_cfg=init_cfg)
 
         # The ret[0] of build_norm_layer is norm name.
         self.norm1 = build_norm_layer(norm_cfg, embed_dims)[1]
@@ -583,7 +583,7 @@ class PyramidVisionTransformerV2(PyramidVisionTransformer):
     Transformer <https://arxiv.org/pdf/2106.13797.pdf>`_."""
 
     def __init__(self, **kwargs):
-        super(PyramidVisionTransformerV2, self).__init__(
+        super().__init__(
             patch_sizes=[7, 3, 3, 3],
             paddings=[3, 1, 1, 1],
             use_abs_pos_embed=False,

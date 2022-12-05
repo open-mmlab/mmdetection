@@ -282,7 +282,7 @@ class LVISMetric(CocoMetric):
                     metric_items = ['AR@300', 'ARs@300', 'ARm@300', 'ARl@300']
                 for k, v in lvis_eval.get_results().items():
                     if k in metric_items:
-                        val = float('{:.3f}'.format(float(v)))
+                        val = float(f'{float(v):.3f}')
                         eval_results[k] = val
 
             else:
@@ -335,8 +335,8 @@ class LVISMetric(CocoMetric):
 
                 for k, v in lvis_results.items():
                     if k in metric_items:
-                        key = '{}_{}'.format(metric, k)
-                        val = float('{:.3f}'.format(float(v)))
+                        key = f'{metric}_{k}'
+                        val = float(f'{float(v):.3f}')
                         eval_results[key] = val
 
             lvis_eval.print_results()

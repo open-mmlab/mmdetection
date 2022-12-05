@@ -81,7 +81,7 @@ class VarifocalLoss(nn.Module):
                 "sum".
             loss_weight (float, optional): Weight of loss. Defaults to 1.0.
         """
-        super(VarifocalLoss, self).__init__()
+        super().__init__()
         assert use_sigmoid is True, \
             'Only sigmoid varifocal loss supported now.'
         assert alpha >= 0.0

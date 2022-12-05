@@ -42,7 +42,7 @@ def parse_args():
 def get_metas_from_csv_style_ann_file(ann_file):
     data_infos = []
     cp_filename = None
-    with open(ann_file, 'r') as f:
+    with open(ann_file) as f:
         reader = csv.reader(f)
         for i, line in enumerate(reader):
             if i == 0:

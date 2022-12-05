@@ -143,7 +143,7 @@ def cvt_to_coco_json(annotations):
 
     for category_id, name in enumerate(voc_classes()):
         category_item = dict()
-        category_item['supercategory'] = str('none')
+        category_item['supercategory'] = 'none'
         category_item['id'] = int(category_id)
         category_item['name'] = str(name)
         coco['categories'].append(category_item)
@@ -209,7 +209,7 @@ def main():
     if '2007' in years and '2012' in years:
         years.append(['2007', '2012'])
     if not years:
-        raise IOError(f'The devkit path {devkit_path} contains neither '
+        raise OSError(f'The devkit path {devkit_path} contains neither '
                       '"VOC2007" nor "VOC2012" subfolder')
     out_fmt = f'.{args.out_format}'
     if args.out_format == 'coco':

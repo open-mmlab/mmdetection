@@ -61,7 +61,7 @@ def main():
     commands.append('\n')
     commands.append('\n')
 
-    with open(args.txt_path, 'r') as f:
+    with open(args.txt_path) as f:
         model_cfgs = f.readlines()
         for i, cfg in enumerate(model_cfgs):
             cfg = cfg.strip()

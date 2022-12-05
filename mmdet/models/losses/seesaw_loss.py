@@ -109,7 +109,7 @@ class SeesawLoss(nn.Module):
                  reduction='mean',
                  loss_weight=1.0,
                  return_dict=True):
-        super(SeesawLoss, self).__init__()
+        super().__init__()
         assert not use_sigmoid
         self.use_sigmoid = False
         self.p = p

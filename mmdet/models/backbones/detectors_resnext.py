@@ -23,7 +23,7 @@ class Bottleneck(_Bottleneck):
         If style is "pytorch", the stride-two layer is the 3x3 conv layer, if
         it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
-        super(Bottleneck, self).__init__(inplanes, planes, **kwargs)
+        super().__init__(inplanes, planes, **kwargs)
 
         if groups == 1:
             width = self.planes
@@ -113,7 +113,7 @@ class DetectoRS_ResNeXt(DetectoRS_ResNet):
     def __init__(self, groups=1, base_width=4, **kwargs):
         self.groups = groups
         self.base_width = base_width
-        super(DetectoRS_ResNeXt, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def make_res_layer(self, **kwargs):
         return super().make_res_layer(

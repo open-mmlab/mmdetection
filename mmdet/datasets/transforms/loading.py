@@ -246,7 +246,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
                  poly2mask: bool = True,
                  box_type: str = 'hbox',
                  **kwargs) -> None:
-        super(LoadAnnotations, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.with_mask = with_mask
         self.poly2mask = poly2mask
         self.box_type = box_type
@@ -525,7 +525,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
                 'panopticapi.git.')
         self.rgb2id = utils.rgb2id
 
-        super(LoadPanopticAnnotations, self).__init__(
+        super().__init__(
             with_bbox=with_bbox,
             with_label=with_label,
             with_mask=with_mask,

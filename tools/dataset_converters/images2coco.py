@@ -58,7 +58,7 @@ def cvt_to_coco_json(img_infos, classes):
 
     for category_id, name in enumerate(classes):
         category_item = dict()
-        category_item['supercategory'] = str('none')
+        category_item['supercategory'] = 'none'
         category_item['id'] = int(category_id)
         category_item['name'] = str(name)
         coco['categories'].append(category_item)

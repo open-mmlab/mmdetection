@@ -451,8 +451,8 @@ class DETRHead(AnchorFreeHead):
          neg_inds_list) = multi_apply(self._get_targets_single,
                                       cls_scores_list, bbox_preds_list,
                                       batch_gt_instances, batch_img_metas)
-        num_total_pos = sum((inds.numel() for inds in pos_inds_list))
-        num_total_neg = sum((inds.numel() for inds in neg_inds_list))
+        num_total_pos = sum(inds.numel() for inds in pos_inds_list)
+        num_total_neg = sum(inds.numel() for inds in neg_inds_list)
         return (labels_list, label_weights_list, bbox_targets_list,
                 bbox_weights_list, num_total_pos, num_total_neg)
 

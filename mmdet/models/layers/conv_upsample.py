@@ -34,7 +34,7 @@ class ConvUpsample(BaseModule):
                  norm_cfg=None,
                  init_cfg=None,
                  **kwargs):
-        super(ConvUpsample, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         if num_upsample is None:
             num_upsample = num_layers
         assert num_upsample <= num_layers, \

@@ -89,7 +89,7 @@ class AdaptivePadding(nn.Module):
 
     def __init__(self, kernel_size=1, stride=1, dilation=1, padding='corner'):
 
-        super(AdaptivePadding, self).__init__()
+        super().__init__()
 
         assert padding in ('same', 'corner')
 
@@ -170,7 +170,7 @@ class PatchEmbed(BaseModule):
         input_size=None,
         init_cfg=None,
     ):
-        super(PatchEmbed, self).__init__(init_cfg=init_cfg)
+        super().__init__(init_cfg=init_cfg)
 
         self.embed_dims = embed_dims
         if stride is None:
@@ -433,7 +433,7 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
                  norm_cfg=dict(type='LN'),
                  ffn_num_fcs=2,
                  **kwargs):
-        super(DetrTransformerDecoderLayer, self).__init__(
+        super().__init__(
             attn_cfgs=attn_cfgs,
             feedforward_channels=feedforward_channels,
             ffn_dropout=ffn_dropout,
@@ -443,8 +443,9 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
             ffn_num_fcs=ffn_num_fcs,
             **kwargs)
         assert len(operation_order) == 6
-        assert set(operation_order) == set(
-            ['self_attn', 'norm', 'cross_attn', 'ffn'])
+        assert set(operation_order) == {
+            'self_attn', 'norm', 'cross_attn', 'ffn'
+        }
 
 
 @MODELS.register_module()
@@ -457,7 +458,7 @@ class DetrTransformerEncoder(TransformerLayerSequence):
     """
 
     def __init__(self, *args, post_norm_cfg=dict(type='LN'), **kwargs):
-        super(DetrTransformerEncoder, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if post_norm_cfg is not None:
             self.post_norm = build_norm_layer(
                 post_norm_cfg, self.embed_dims)[1] if self.pre_norm else None
@@ -473,7 +474,7 @@ class DetrTransformerEncoder(TransformerLayerSequence):
         Returns:
             Tensor: forwarded results with shape [num_query, bs, embed_dims].
         """
-        x = super(DetrTransformerEncoder, self).forward(*args, **kwargs)
+        x = super().forward(*args, **kwargs)
         if self.post_norm is not None:
             x = self.post_norm(x)
         return x
@@ -495,7 +496,7 @@ class DetrTransformerDecoder(TransformerLayerSequence):
                  return_intermediate=False,
                  **kwargs):
 
-        super(DetrTransformerDecoder, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.return_intermediate = return_intermediate
         if post_norm_cfg is not None:
             self.post_norm = build_norm_layer(post_norm_cfg,
@@ -556,7 +557,7 @@ class Transformer(BaseModule):
     """
 
     def __init__(self, encoder=None, decoder=None, init_cfg=None):
-        super(Transformer, self).__init__(init_cfg=init_cfg)
+        super().__init__(init_cfg=init_cfg)
         self.encoder = build_transformer_layer_sequence(encoder)
         self.decoder = build_transformer_layer_sequence(decoder)
         self.embed_dims = self.encoder.embed_dims
@@ -630,7 +631,7 @@ class DeformableDetrTransformerDecoder(TransformerLayerSequence):
 
     def __init__(self, *args, return_intermediate=False, **kwargs):
 
-        super(DeformableDetrTransformerDecoder, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.return_intermediate = return_intermediate
 
     def forward(self,
@@ -724,7 +725,7 @@ class DeformableDetrTransformer(Transformer):
                  num_feature_levels=4,
                  two_stage_num_proposals=300,
                  **kwargs):
-        super(DeformableDetrTransformer, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.as_two_stage = as_two_stage
         self.num_feature_levels = num_feature_levels
         self.two_stage_num_proposals = two_stage_num_proposals
@@ -1093,7 +1094,7 @@ class DynamicConv(BaseModule):
                  act_cfg=dict(type='ReLU', inplace=True),
                  norm_cfg=dict(type='LN'),
                  init_cfg=None):
-        super(DynamicConv, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.out_channels_raw = out_channels

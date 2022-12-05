@@ -53,7 +53,7 @@ class InvertedResidual(BaseModule):
                  drop_path_rate=0.,
                  with_cp=False,
                  init_cfg=None):
-        super(InvertedResidual, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         self.with_res_shortcut = (stride == 1 and in_channels == out_channels)
         assert stride in [1, 2], f'stride must in [1, 2]. ' \
             f'But received {stride}.'

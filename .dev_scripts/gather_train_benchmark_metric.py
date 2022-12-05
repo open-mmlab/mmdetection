@@ -68,7 +68,7 @@ if __name__ == '__main__':
     metrics_out = args.out
 
     result_dict = {}
-    with open(args.txt_path, 'r') as f:
+    with open(args.txt_path) as f:
         model_cfgs = f.readlines()
         for i, config in enumerate(model_cfgs):
             config = config.strip()

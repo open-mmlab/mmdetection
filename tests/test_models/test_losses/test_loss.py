@@ -185,7 +185,7 @@ def test_dice_loss(naive_dice):
     loss_class = DiceLoss
     pred = torch.rand((10, 4, 4))
     target = torch.rand((10, 4, 4))
-    weight = torch.rand((10))
+    weight = torch.rand(10)
 
     # Test loss forward
     loss = loss_class(naive_dice=naive_dice)(pred, target)
@@ -230,5 +230,5 @@ def test_dice_loss(naive_dice):
 
     # Test loss forward with len(weight) != len(pred)
     with pytest.raises(AssertionError):
-        weight = torch.rand((8))
+        weight = torch.rand(8)
         loss_class(naive_dice=naive_dice)(pred, target, weight)

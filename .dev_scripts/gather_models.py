@@ -45,7 +45,7 @@ def process_checkpoint(in_file, out_file):
     else:
         torch.save(checkpoint, out_file)
     sha = subprocess.check_output(['sha256sum', out_file]).decode()
-    final_file = out_file.rstrip('.pth') + '-{}.pth'.format(sha[:8])
+    final_file = out_file.rstrip('.pth') + f'-{sha[:8]}.pth'
     subprocess.Popen(['mv', out_file, final_file])
     return final_file
 
@@ -92,7 +92,7 @@ def get_final_results(log_json_path,
     last_train_line = None
     last_val_line_idx = -1
     last_train_line_idx = -1
-    with open(log_json_path, 'r') as f:
+    with open(log_json_path) as f:
         for i, line in enumerate(f.readlines()):
             log_line = json.loads(line)
             if 'mode' not in log_line.keys():

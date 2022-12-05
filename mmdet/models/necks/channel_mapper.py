@@ -53,7 +53,7 @@ class ChannelMapper(BaseModule):
                  num_outs=None,
                  init_cfg=dict(
                      type='Xavier', layer='Conv2d', distribution='uniform')):
-        super(ChannelMapper, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.extra_convs = None
         if num_outs is None:

@@ -39,7 +39,7 @@ class BFP(BaseModule):
                  norm_cfg=None,
                  init_cfg=dict(
                      type='Xavier', layer='Conv2d', distribution='uniform')):
-        super(BFP, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         assert refine_type in [None, 'conv', 'non_local']
 
         self.in_channels = in_channels

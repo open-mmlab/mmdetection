@@ -14,7 +14,7 @@ if sys.version_info >= (3, 7):
     from mmdet.utils.contextmanagers import completed
 
 
-class BBoxTestMixin(object):
+class BBoxTestMixin:
     """Mixin class for testing det bboxes via DenseHead."""
 
     def simple_test_bboxes(self, feats, img_metas, rescale=False):

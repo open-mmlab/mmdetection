@@ -54,7 +54,7 @@ class EdgeResidual(BaseModule):
                  with_cp=False,
                  init_cfg=None,
                  **kwargs):
-        super(EdgeResidual, self).__init__(init_cfg=init_cfg)
+        super().__init__(init_cfg=init_cfg)
         assert stride in [1, 2]
         self.with_cp = with_cp
         self.drop_path = DropPath(
@@ -269,7 +269,7 @@ class EfficientNet(BaseModule):
                          layer=['_BatchNorm', 'GroupNorm'],
                          val=1)
                  ]):
-        super(EfficientNet, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         assert arch in self.arch_settings, \
             f'"{arch}" is not one of the arch_settings ' \
             f'({", ".join(self.arch_settings.keys())})'
@@ -410,7 +410,7 @@ class EfficientNet(BaseModule):
                 param.requires_grad = False
 
     def train(self, mode=True):
-        super(EfficientNet, self).train(mode)
+        super().train(mode)
         self._freeze_stages()
         if mode and self.norm_eval:
             for m in self.modules():

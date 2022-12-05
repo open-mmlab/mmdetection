@@ -42,7 +42,7 @@ class GHMC(nn.Module):
                  use_sigmoid=True,
                  loss_weight=1.0,
                  reduction='mean'):
-        super(GHMC, self).__init__()
+        super().__init__()
         self.bins = bins
         self.momentum = momentum
         edges = torch.arange(bins + 1).float() / bins
@@ -141,7 +141,7 @@ class GHMR(nn.Module):
                  momentum=0,
                  loss_weight=1.0,
                  reduction='mean'):
-        super(GHMR, self).__init__()
+        super().__init__()
         self.mu = mu
         self.bins = bins
         edges = torch.arange(bins + 1).float() / bins

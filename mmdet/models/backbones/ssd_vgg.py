@@ -58,7 +58,7 @@ class SSDVGG(VGG, BaseModule):
                  input_size=None,
                  l2_norm_scale=None):
         # TODO: in_channels for mmcv.VGG
-        super(SSDVGG, self).__init__(
+        super().__init__(
             depth,
             with_last_pool=with_last_pool,
             ceil_mode=ceil_mode,
@@ -122,7 +122,7 @@ class SSDVGG(VGG, BaseModule):
 class L2Norm(ssd_neck.L2Norm):
 
     def __init__(self, **kwargs):
-        super(L2Norm, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         warnings.warn('DeprecationWarning: L2Norm in ssd_vgg.py '
                       'is deprecated, please use L2Norm in '
                       'mmdet/models/necks/ssd_neck.py instead')

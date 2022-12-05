@@ -20,7 +20,7 @@ class WIDERFaceDataset(XMLDataset):
     PALETTE = [(0, 255, 0)]
 
     def __init__(self, **kwargs):
-        super(WIDERFaceDataset, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def load_annotations(self, ann_file):
         """Load annotation from WIDERFace XML style annotation file.

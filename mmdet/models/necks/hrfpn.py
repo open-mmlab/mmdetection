@@ -40,7 +40,7 @@ class HRFPN(BaseModule):
                  with_cp=False,
                  stride=1,
                  init_cfg=dict(type='Caffe2Xavier', layer='Conv2d')):
-        super(HRFPN, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels

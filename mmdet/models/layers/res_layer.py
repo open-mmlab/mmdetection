@@ -101,7 +101,7 @@ class ResLayer(Sequential):
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                     **kwargs))
-        super(ResLayer, self).__init__(*layers)
+        super().__init__(*layers)
 
 
 class SimplifiedBasicBlock(BaseModule):
@@ -126,7 +126,7 @@ class SimplifiedBasicBlock(BaseModule):
                  dcn=None,
                  plugins=None,
                  init_fg=None):
-        super(SimplifiedBasicBlock, self).__init__(init_fg)
+        super().__init__(init_fg)
         assert dcn is None, 'Not implemented yet.'
         assert plugins is None, 'Not implemented yet.'
         assert not with_cp, 'Not implemented yet.'

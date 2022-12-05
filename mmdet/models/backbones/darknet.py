@@ -36,7 +36,7 @@ class ResBlock(BaseModule):
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
                  init_cfg=None):
-        super(ResBlock, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         assert in_channels % 2 == 0  # ensure the in_channels is even
         half_in_channels = in_channels // 2
 
@@ -108,7 +108,7 @@ class Darknet(BaseModule):
                  norm_eval=True,
                  pretrained=None,
                  init_cfg=None):
-        super(Darknet, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         if depth not in self.arch_settings:
             raise KeyError(f'invalid depth {depth} for darknet')
 
@@ -169,7 +169,7 @@ class Darknet(BaseModule):
                     param.requires_grad = False
 
     def train(self, mode=True):
-        super(Darknet, self).train(mode)
+        super().train(mode)
         self._freeze_stages()
         if mode and self.norm_eval:
             for m in self.modules():
@@ -208,6 +208,5 @@ class Darknet(BaseModule):
             ConvModule(
                 in_channels, out_channels, 3, stride=2, padding=1, **cfg))
         for idx in range(res_repeat):
-            model.add_module('res{}'.format(idx),
-                             ResBlock(out_channels, **cfg))
+            model.add_module(f'res{idx}', ResBlock(out_channels, **cfg))
         return model

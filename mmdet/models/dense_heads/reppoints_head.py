@@ -94,8 +94,8 @@ class RepPointsHead(AnchorFreeHead):
                              self.dcn_pad + 1).astype(np.float64)
         dcn_base_y = np.repeat(dcn_base, self.dcn_kernel)
         dcn_base_x = np.tile(dcn_base, self.dcn_kernel)
-        dcn_base_offset = np.stack([dcn_base_y, dcn_base_x], axis=1).reshape(
-            (-1))
+        dcn_base_offset = np.stack([dcn_base_y, dcn_base_x],
+                                   axis=1).reshape(-1)
         self.dcn_base_offset = torch.tensor(dcn_base_offset).view(1, -1, 1, 1)
 
         super().__init__(

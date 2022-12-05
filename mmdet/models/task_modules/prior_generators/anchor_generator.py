@@ -735,7 +735,7 @@ class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
                  input_size=300,
                  scale_major=True,
                  use_box_type=False):
-        super(LegacySSDAnchorGenerator, self).__init__(
+        super().__init__(
             strides=strides,
             ratios=ratios,
             basesize_ratio_range=basesize_ratio_range,
