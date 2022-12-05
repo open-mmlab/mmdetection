@@ -20,7 +20,7 @@ from ..utils import get_test_pipeline_cfg
 def init_detector(
     config: Union[str, Path, Config],
     checkpoint: Optional[str] = None,
-    palette: str = 'coco',
+    palette: str = 'none',
     device: str = 'cuda:0',
     cfg_options: Optional[dict] = None,
 ) -> nn.Module:
@@ -34,7 +34,7 @@ def init_detector(
         palette (str): Color palette used for visualization. If palette
             is stored in checkpoint, use checkpoint's palette first, otherwise
             use externally passed palette. Currently, supports 'coco', 'voc',
-            'citys' and 'random'. Defaults to coco.
+            'citys' and 'random'. Defaults to none.
         device (str): The device where the anchors will be put on.
             Defaults to cuda:0.
         cfg_options (dict, optional): Options to override some settings in
@@ -65,16 +65,31 @@ def init_detector(
         elif 'CLASSES' in checkpoint_meta:
             # < mmdet 3.x
             classes = checkpoint_meta['CLASSES']
-            model.dataset_meta = {'CLASSES': classes, 'PALETTE': palette}
+            model.dataset_meta = {'CLASSES': classes}
         else:
             warnings.simplefilter('once')
             warnings.warn(
                 'dataset_meta or class names are not saved in the '
                 'checkpoint\'s meta data, use COCO classes by default.')
-            model.dataset_meta = {
-                'CLASSES': get_classes('coco'),
-                'PALETTE': palette
-            }
+            model.dataset_meta = {'CLASSES': get_classes('coco')}
+
+    # Priority: config -> args.palette -> checkpoint
+    metainfo = config.test_dataloader.dataset.get('metainfo', {})
+    cfg_palette = metainfo.get('PALETTE', None)
+    if cfg_palette is not None:
+        model.dataset_meta['PALETTE'] = cfg_palette
+        if palette != 'none':
+            warnings.warn(
+                f'You set the PALETTE={palette}, but PALETTE={cfg_palette} '
+                'also exists in config. PALETTE Parameters '
+                'in config have higher priority!')
+    elif palette != 'none':
+        model.dataset_meta['PALETTE'] = palette
+    else:
+        if 'PALETTE' not in model.dataset_meta:
+            warnings.warn('PALETTE does not exist, coco is used by default. '
+                          'You can also set the palette to customize.')
+            model.dataset_meta['PALETTE'] = 'coco'
 
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
