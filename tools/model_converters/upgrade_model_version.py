@@ -5,7 +5,7 @@ import tempfile
 from collections import OrderedDict
 
 import torch
-from mmengine import Config, DictAction
+from mmengine import Config
 
 
 def is_head(key):

@@ -4,7 +4,7 @@ import tempfile
 from collections import OrderedDict
 
 import torch
-from mmengine import Config, DictAction
+from mmengine import Config
 
 
 def parse_config(config_strings):
