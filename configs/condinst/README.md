@@ -24,9 +24,9 @@ the COCO dataset, we outperform a few recent methods including welltuned Mask R-
 
 ## Results and Models
 
-| Backbone |  Style  | MS train | Lr schd | bbox AP | mask AP |                          Config                           |              Download              |
-| :------: | :-----: | :------: | :-----: | :-----: | :-----: | :-------------------------------------------------------: | :--------------------------------: |
-|   R-50   | pytorch |    Y     |   1x    |  39.9   |  35.5   | [config](./condinst_r50_fpn_ms-poly-90k_coco_instance.py) | [model](<>)           \| [log](<>) |
+| Backbone |  Style  | MS train | Lr schd | bbox AP | mask AP |                          Config                           |                                                                                                                                                                              Download                                                                                                                                                                              |
+| :------: | :-----: | :------: | :-----: | :-----: | :-----: | :-------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|   R-50   | pytorch |    Y     |   1x    |  39.8   |  36.0   | [config](./condinst_r50_fpn_ms-poly-90k_coco_instance.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/condinst/condinst_r50_fpn_ms-poly-90k_coco_instance/condinst_r50_fpn_ms-poly-90k_coco_instance_20221129_125223-4c186406.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/condinst/condinst_r50_fpn_ms-poly-90k_coco_instance/condinst_r50_fpn_ms-poly-90k_coco_instance_20221129_125223.json) |
 
 ## Citation
 
