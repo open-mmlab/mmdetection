@@ -151,7 +151,7 @@ class SemiBaseDetector(BaseDetector):
             batch_inputs, batch_data_samples, rescale=False)
         batch_info = {}
         for data_samples, results in zip(batch_data_samples, results_list):
-            data_samples.gt_instances = results
+            data_samples.gt_instances = results.pred_instances
             data_samples.gt_instances.bboxes = bbox_project(
                 data_samples.gt_instances.bboxes,
                 torch.from_numpy(data_samples.homography_matrix).inverse().to(
