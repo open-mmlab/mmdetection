@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -76,7 +76,7 @@ class DeformableDETR(DetectionTransformer):
         self.decoder = DeformableDetrTransformerDecoder(**self.decoder)
         self.embed_dims = self.encoder.embed_dims
         if not self.as_two_stage:
-            self.query_embedding = nn.Embedding(self.num_query,
+            self.query_embedding = nn.Embedding(self.num_queries,
                                                 self.embed_dims * 2)
             # NOTE The query_embedding will be split into query and query_pos
             # in self.pre_decoder, hence, the embed_dims are doubled.
@@ -185,12 +185,12 @@ class DeformableDETR(DetectionTransformer):
             feat_flatten.append(feat)
             mask_flatten.append(mask)
 
-        # (bs, num_feat), where num_feat = sum_lvl(h_lvl*w_lvl)
+        # (bs, num_feat_points), where num_feat_points = sum_lvl(h_lvl*w_lvl)
         mask_flatten = torch.cat(mask_flatten, 1)
-        # (bs, num_feat, dim)
+        # (bs, num_feat_points, dim)
         feat_flatten = torch.cat(feat_flatten, 1)
         lvl_pos_embed_flatten = torch.cat(lvl_pos_embed_flatten, 1)
-        # (num_feat, bs, dim)
+        # (num_feat_points, bs, dim)
         feat_flatten = feat_flatten.permute(1, 0, 2)
         lvl_pos_embed_flatten = lvl_pos_embed_flatten.permute(1, 0, 2)
 
@@ -231,11 +231,12 @@ class DeformableDETR(DetectionTransformer):
         in `mmdet/detector/base_detr.py`.
 
         Args:
-            feat (Tensor): Sequential features, has shape (num_feat, bs, dim).
+            feat (Tensor): Sequential features, has shape (num_feat_points, bs,
+                dim).
             feat_mask (Tensor): ByteTensor, the padding mask of the features,
-                has shape (num_feat, bs).
+                has shape (num_feat_points, bs).
             feat_pos (Tensor): The positional embeddings of the features, has
-                shape (num_feat, bs, dim).
+                shape (num_feat_points, bs, dim).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
@@ -255,8 +256,8 @@ class DeformableDETR(DetectionTransformer):
             key_padding_mask=feat_mask,  # for self_attn
             spatial_shapes=spatial_shapes,
             level_start_index=level_start_index,
-            valid_ratios=valid_ratios)  # (num_feat, bs, dim)
-        memory = memory.permute(1, 0, 2)  # (bs, num_feat, dim)
+            valid_ratios=valid_ratios)  # (num_feat_points, bs, dim)
+        memory = memory.permute(1, 0, 2)  # (bs, num_feat_points, dim)
         encoder_outputs_dict = dict(
             memory=memory,
             memory_mask=feat_mask,
@@ -275,9 +276,9 @@ class DeformableDETR(DetectionTransformer):
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (bs, num_feat, dim).
+                has shape (bs, num_feat_points, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
-                has shape (bs, num_feat). It will only be used when
+                has shape (bs, num_feat_points). It will only be used when
                 `as_two_stage` is `True`.
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
@@ -294,8 +295,8 @@ class DeformableDETR(DetectionTransformer):
               The reference_points in encoder is always 2D points.
             - head_inputs_dict (dict): The keyword dictionary args of the
               bbox_head functions, which includes `enc_outputs_class` and
-              `enc_outputs_class`. They are both `None` when 'as_two_stage'
-              is `False`.
+              `enc_outputs_coord`. They are both `None` when 'as_two_stage'
+              is `False`. The dict is empty when `self.training` is `False`.
         """
         batch_size, _, c = memory.shape
         if self.as_two_stage:
@@ -316,7 +317,7 @@ class DeformableDETR(DetectionTransformer):
             # See https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/dense_heads/deformable_detr_head.py#L241 # noqa
             # This follows the official implementation of Deformable DETR.
             topk_proposals = torch.topk(
-                enc_outputs_class[..., 0], self.num_query, dim=1)[1]
+                enc_outputs_class[..., 0], self.num_queries, dim=1)[1]
             topk_coords_unact = torch.gather(
                 enc_outputs_coord_unact, 1,
                 topk_proposals.unsqueeze(-1).repeat(1, 1, 4))
@@ -333,19 +334,23 @@ class DeformableDETR(DetectionTransformer):
             query = query.unsqueeze(0).expand(batch_size, -1, -1)
             reference_points = self.reference_points_fc(query_pos).sigmoid()
 
-        query = query.permute(1, 0, 2)  # (num_query, bs, dim)
-        memory = memory.permute(1, 0, 2)  # (num_feat, bs, dim)
-        query_pos = query_pos.permute(1, 0, 2)  # (num_query, bs, dim)
+        query = query.permute(1, 0, 2)  # (num_queries, bs, dim)
+        memory = memory.permute(1, 0, 2)  # (num_feat_points, bs, dim)
+        query_pos = query_pos.permute(1, 0, 2)  # (num_queries, bs, dim)
 
         decoder_inputs_dict = dict(
             query=query,
             query_pos=query_pos,
             memory=memory,
             reference_points=reference_points)
-        head_inputs_dict = dict(
-            enc_outputs_class=enc_outputs_class if self.as_two_stage else None,
-            enc_outputs_coord=enc_outputs_coord_unact.sigmoid()
-            if self.as_two_stage else None)
+        if self.training:
+            head_inputs_dict = dict(
+                enc_outputs_class=enc_outputs_class
+                if self.as_two_stage else None,
+                enc_outputs_coord=enc_outputs_coord_unact.sigmoid()
+                if self.as_two_stage else None)
+        else:
+            head_inputs_dict = dict()
         return decoder_inputs_dict, head_inputs_dict
 
     def forward_decoder(self, query: Tensor, query_pos: Tensor, memory: Tensor,
@@ -361,16 +366,18 @@ class DeformableDETR(DetectionTransformer):
 
         Args:
             query (Tensor): The queries of decoder inputs, has shape
-                (num_query, bs, dim).
+                (num_queries, bs, dim).
             query_pos (Tensor): The positional queries of decoder inputs,
-                has shape (num_query, bs, dim).
+                has shape (num_queries, bs, dim).
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat, bs, dim).
+                has shape (num_feat_points, bs, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
-                has shape (bs, num_feat).
+                has shape (bs, num_feat_points).
             reference_points (Tensor): The initial reference, has shape
-                (bs, num_query, 4) when `as_two_stage` is `True`,
-                otherwise has shape (bs, num_query, 2).
+                (bs, num_queries, 4) with the last dimension arranged as
+                (cx, cy, w, h) when `as_two_stage` is `True`, otherwise has
+                shape (bs, num_queries, 2) with the last dimension arranged as
+                (cx, cy).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
@@ -407,19 +414,19 @@ class DeformableDETR(DetectionTransformer):
 
         .. code:: text
 
-                    |---> valid_H <---|
+                    |---> valid_W <---|
                  ---+-----------------+-----+---
                   A |                 |     | A
                   | |                 |     | |
                   | |                 |     | |
-            valid_W |                 |     | |
-                  | |                 |     | W
+            valid_H |                 |     | |
+                  | |                 |     | H
                   | |                 |     | |
                   V |                 |     | |
                  ---+-----------------+     | |
                     |                       | V
                     +-----------------------+---
-                    |---------> H <---------|
+                    |---------> W <---------|
 
           The valid_ratios are defined as:
                 r_h = valid_H / H,  r_w = valid_W / W
@@ -448,9 +455,9 @@ class DeformableDETR(DetectionTransformer):
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat, bs, dim).
+                has shape (num_feat_points, bs, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
-                has shape (bs, num_feat).
+                has shape (bs, num_feat_points).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
 
@@ -458,17 +465,18 @@ class DeformableDETR(DetectionTransformer):
             tuple: A tuple of transformed memory and proposals.
 
             - output_memory (Tensor): The transformed memory for obtaining
-              top-k proposals, has shape (bs, num_feat, dim).
+              top-k proposals, has shape (bs, num_feat_points, dim).
             - output_proposals (Tensor): The inverse-normalized proposal, has
-              shape (batch_size, num_keys, 4).
+              shape (batch_size, num_keys, 4) with the last dimension arranged
+              as (cx, cy, w, h).
         """
 
-        num_feat = memory.size(0)
+        num_feat_points = memory.size(0)
         proposals = []
         _cur = 0  # start index in the sequence of the current level
         for lvl, (H, W) in enumerate(spatial_shapes):
             mask_flatten_ = memory_mask[:, _cur:(_cur + H * W)].view(
-                num_feat, H, W, 1)
+                num_feat_points, H, W, 1)
             valid_H = torch.sum(~mask_flatten_[:, :, 0, 0], 1).unsqueeze(-1)
             valid_W = torch.sum(~mask_flatten_[:, 0, :, 0], 1).unsqueeze(-1)
 
@@ -479,11 +487,12 @@ class DeformableDETR(DetectionTransformer):
                     0, W - 1, W, dtype=torch.float32, device=memory.device))
             grid = torch.cat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], -1)
 
-            scale = torch.cat([valid_W, valid_H], 1).view(num_feat, 1, 1, 2)
-            grid = (grid.unsqueeze(0).expand(num_feat, -1, -1, -1) +
+            scale = torch.cat([valid_W, valid_H],
+                              1).view(num_feat_points, 1, 1, 2)
+            grid = (grid.unsqueeze(0).expand(num_feat_points, -1, -1, -1) +
                     0.5) / scale
             wh = torch.ones_like(grid) * 0.05 * (2.0**lvl)
-            proposal = torch.cat((grid, wh), -1).view(num_feat, -1, 4)
+            proposal = torch.cat((grid, wh), -1).view(num_feat_points, -1, 4)
             proposals.append(proposal)
             _cur += (H * W)
         output_proposals = torch.cat(proposals, 1)
@@ -515,7 +524,8 @@ class DeformableDETR(DetectionTransformer):
 
         Args:
             proposals (Tensor): Not normalized proposals, has shape
-                (bs, num_query, 4).
+                (bs, num_queries, 4) with the last dimension arranged as
+                (cx, cy, w, h).
             num_pos_feats (int, optional): The feature dimension for each
                 position along x, y, w, and h-axis. Note the final returned
                 dimension for each position is 4 times of num_pos_feats.
@@ -525,7 +535,8 @@ class DeformableDETR(DetectionTransformer):
 
         Returns:
             Tensor: The position embedding of proposal, has shape
-            (bs, num_query, num_pos_feats * 4)
+            (bs, num_queries, num_pos_feats * 4), with the last dimension
+            arranged as (cx, cy, w, h)
         """
         scale = 2 * math.pi
         dim_t = torch.arange(
@@ -539,29 +550,3 @@ class DeformableDETR(DetectionTransformer):
         pos = torch.stack((pos[:, :, :, 0::2].sin(), pos[:, :, :, 1::2].cos()),
                           dim=4).flatten(2)
         return pos
-
-    def _forward(
-            self,
-            batch_inputs: Tensor,
-            batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
-        """Network forward process. Usually includes backbone, neck and head
-        forward without any post-processing.Overwrite to pop
-        'enc_outputs_class' and 'enc_outputs_coord'.
-
-         Args:
-            batch_inputs (Tensor): Inputs, has shape (bs, dim, H, W).
-            batch_data_samples (List[:obj:`DetDataSample`], optional): The
-                batch data samples. It usually includes information such
-                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
-                Defaults to None.
-
-        Returns:
-            tuple[Tensor]: A tuple of features from ``bbox_head`` forward.
-        """
-        img_feats = self.extract_feat(batch_inputs)
-        head_inputs_dict = self.forward_transformer(img_feats,
-                                                    batch_data_samples)
-        head_inputs_dict.pop('enc_outputs_class')
-        head_inputs_dict.pop('enc_outputs_coord')
-        results = self.bbox_head.forward(**head_inputs_dict)
-        return results
