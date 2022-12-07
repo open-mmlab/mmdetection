@@ -43,7 +43,6 @@ class RTMDetInsHead(RTMDetHead):
                  dyconv_channels: int = 8,
                  num_dyconvs: int = 3,
                  mask_loss_stride: int = 4,
-                 use_condinst_coord=True,
                  loss_mask=dict(
                      type='DiceLoss',
                      loss_weight=1.0,
@@ -54,7 +53,6 @@ class RTMDetInsHead(RTMDetHead):
         self.num_dyconvs = num_dyconvs
         self.dyconv_channels = dyconv_channels
         self.mask_loss_stride = mask_loss_stride
-        self.use_condinst_coord = use_condinst_coord
         super().__init__(*args, **kwargs)
         self.loss_mask = MODELS.build(loss_mask)
 
