@@ -32,7 +32,9 @@ class MSELoss(nn.Module):
         loss_weight (float, optional): The weight of the loss. Defaults to 1.0
     """
 
-    def __init__(self, reduction: str = 'mean', loss_weight: float = 1.0):
+    def __init__(self,
+                 reduction: str = 'mean',
+                 loss_weight: float = 1.0) -> None:
         super().__init__()
         self.reduction = reduction
         self.loss_weight = loss_weight
@@ -57,7 +59,7 @@ class MSELoss(nn.Module):
                 Defaults to None.
 
         Returns:
-            Tensor: The calculated loss
+            Tensor: The calculated loss.
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (

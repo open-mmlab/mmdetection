@@ -50,7 +50,7 @@ class KnowledgeDistillationKLDivLoss(nn.Module):
     def __init__(self,
                  reduction: str = 'mean',
                  loss_weight: float = 1.0,
-                 T: int = 10):
+                 T: int = 10) -> None:
         super().__init__()
         assert T >= 1
         self.reduction = reduction
@@ -62,7 +62,7 @@ class KnowledgeDistillationKLDivLoss(nn.Module):
                 soft_label: Tensor,
                 weight: Optional[Tensor] = None,
                 avg_factor: Optional[int] = None,
-                reduction_override: Optional[str] = None):
+                reduction_override: Optional[str] = None) -> Tensor:
         """Forward function.
 
         Args:
@@ -75,6 +75,9 @@ class KnowledgeDistillationKLDivLoss(nn.Module):
             reduction_override (str, optional): The reduction method used to
                 override the original reduction method of the loss.
                 Defaults to None.
+
+        Returns:
+            Tensor: Loss tensor.
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
 

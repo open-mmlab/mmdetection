@@ -320,7 +320,7 @@ class IoULoss(nn.Module):
                  eps: float = 1e-6,
                  reduction: str = 'mean',
                  loss_weight: float = 1.0,
-                 mode: str = 'log'):
+                 mode: str = 'log') -> None:
         super().__init__()
         assert mode in ['linear', 'square', 'log']
         if linear:
@@ -340,7 +340,7 @@ class IoULoss(nn.Module):
                 weight: Optional[Tensor] = None,
                 avg_factor: Optional[int] = None,
                 reduction_override: Optional[str] = None,
-                **kwargs):
+                **kwargs) -> Tensor:
         """Forward function.
 
         Args:
@@ -353,6 +353,9 @@ class IoULoss(nn.Module):
             reduction_override (str, optional): The reduction method used to
                 override the original reduction method of the loss.
                 Defaults to None. Options are "none", "mean" and "sum".
+
+        Return:
+            Tensor: Loss tensor.
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
@@ -382,12 +385,24 @@ class IoULoss(nn.Module):
 
 @MODELS.register_module()
 class BoundedIoULoss(nn.Module):
+    """BIoULoss.
+
+    This is an implementation of paper
+    `Improving Object Localization with Fitness NMS and Bounded IoU Loss.
+    <https://arxiv.org/abs/1711.00164>`_.
+
+    Args:
+        beta (float, optional): Beta parameter in smoothl1.
+        eps (float, optional): Epsilon to avoid NaN values.
+        reduction (str): Options are "none", "mean" and "sum".
+        loss_weight (float): Weight of loss.
+    """
 
     def __init__(self,
                  beta: float = 0.2,
                  eps: float = 1e-3,
                  reduction: str = 'mean',
-                 loss_weight: float = 1.0):
+                 loss_weight: float = 1.0) -> None:
         super().__init__()
         self.beta = beta
         self.eps = eps
@@ -400,7 +415,23 @@ class BoundedIoULoss(nn.Module):
                 weight: Optional[Tensor] = None,
                 avg_factor: Optional[int] = None,
                 reduction_override: Optional[str] = None,
-                **kwargs):
+                **kwargs) -> Tensor:
+        """Forward function.
+
+        Args:
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction.
+            weight (Optional[Tensor], optional): The weight of loss for each
+                prediction. Defaults to None.
+            avg_factor (Optional[int], optional): Average factor that is used
+                to average the loss. Defaults to None.
+            reduction_override (Optional[str], optional): The reduction method
+                used to override the original reduction method of the loss.
+                Defaults to None. Options are "none", "mean" and "sum".
+
+        Returns:
+            Tensor: Loss tensor.
+        """
         if weight is not None and not torch.any(weight > 0):
             if pred.dim() == weight.dim() + 1:
                 weight = weight.unsqueeze(1)
@@ -422,11 +453,19 @@ class BoundedIoULoss(nn.Module):
 
 @MODELS.register_module()
 class GIoULoss(nn.Module):
+    r"""`Generalized Intersection over Union: A Metric and A Loss for Bounding
+    Box Regression <https://arxiv.org/abs/1902.09630>`_.
+
+    Args:
+        eps (float): Epsilon to avoid log(0).
+        reduction (str): Options are "none", "mean" and "sum".
+        loss_weight (float): Weight of loss.
+    """
 
     def __init__(self,
                  eps: float = 1e-6,
                  reduction: str = 'mean',
-                 loss_weight: float = 1.0):
+                 loss_weight: float = 1.0) -> None:
         super().__init__()
         self.eps = eps
         self.reduction = reduction
@@ -438,7 +477,23 @@ class GIoULoss(nn.Module):
                 weight: Optional[Tensor] = None,
                 avg_factor: Optional[int] = None,
                 reduction_override: Optional[str] = None,
-                **kwargs):
+                **kwargs) -> Tensor:
+        """Forward function.
+
+        Args:
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction.
+            weight (Optional[Tensor], optional): The weight of loss for each
+                prediction. Defaults to None.
+            avg_factor (Optional[int], optional): Average factor that is used
+                to average the loss. Defaults to None.
+            reduction_override (Optional[str], optional): The reduction method
+                used to override the original reduction method of the loss.
+                Defaults to None. Options are "none", "mean" and "sum".
+
+        Returns:
+            Tensor: Loss tensor.
+        """
         if weight is not None and not torch.any(weight > 0):
             if pred.dim() == weight.dim() + 1:
                 weight = weight.unsqueeze(1)
@@ -465,11 +520,21 @@ class GIoULoss(nn.Module):
 
 @MODELS.register_module()
 class DIoULoss(nn.Module):
+    r"""`Implementation of Distance-IoU Loss: Faster and Better
+    Learning for Bounding Box Regression, https://arxiv.org/abs/1911.08287`_.
+
+    Code is modified from https://github.com/Zzh-tju/DIoU.
+
+    Args:
+        eps (float): Epsilon to avoid log(0).
+        reduction (str): Options are "none", "mean" and "sum".
+        loss_weight (float): Weight of loss.
+    """
 
     def __init__(self,
                  eps: float = 1e-6,
                  reduction: str = 'mean',
-                 loss_weight: float = 1.0):
+                 loss_weight: float = 1.0) -> None:
         super().__init__()
         self.eps = eps
         self.reduction = reduction
@@ -481,7 +546,23 @@ class DIoULoss(nn.Module):
                 weight: Optional[Tensor] = None,
                 avg_factor: Optional[int] = None,
                 reduction_override: Optional[str] = None,
-                **kwargs):
+                **kwargs) -> Tensor:
+        """Forward function.
+
+        Args:
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction.
+            weight (Optional[Tensor], optional): The weight of loss for each
+                prediction. Defaults to None.
+            avg_factor (Optional[int], optional): Average factor that is used
+                to average the loss. Defaults to None.
+            reduction_override (Optional[str], optional): The reduction method
+                used to override the original reduction method of the loss.
+                Defaults to None. Options are "none", "mean" and "sum".
+
+        Returns:
+            Tensor: Loss tensor.
+        """
         if weight is not None and not torch.any(weight > 0):
             if pred.dim() == weight.dim() + 1:
                 weight = weight.unsqueeze(1)
@@ -508,11 +589,22 @@ class DIoULoss(nn.Module):
 
 @MODELS.register_module()
 class CIoULoss(nn.Module):
+    r"""`Implementation of paper `Enhancing Geometric Factors into
+    Model Learning and Inference for Object Detection and Instance
+    Segmentation <https://arxiv.org/abs/2005.03572>`_.
+
+    Code is modified from https://github.com/Zzh-tju/CIoU.
+
+    Args:
+        eps (float): Epsilon to avoid log(0).
+        reduction (str): Options are "none", "mean" and "sum".
+        loss_weight (float): Weight of loss.
+    """
 
     def __init__(self,
                  eps: float = 1e-6,
                  reduction: str = 'mean',
-                 loss_weight: float = 1.0):
+                 loss_weight: float = 1.0) -> None:
         super().__init__()
         self.eps = eps
         self.reduction = reduction
@@ -524,7 +616,23 @@ class CIoULoss(nn.Module):
                 weight: Optional[Tensor] = None,
                 avg_factor: Optional[int] = None,
                 reduction_override: Optional[str] = None,
-                **kwargs):
+                **kwargs) -> Tensor:
+        """Forward function.
+
+        Args:
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction.
+            weight (Optional[Tensor], optional): The weight of loss for each
+                prediction. Defaults to None.
+            avg_factor (Optional[int], optional): Average factor that is used
+                to average the loss. Defaults to None.
+            reduction_override (Optional[str], optional): The reduction method
+                used to override the original reduction method of the loss.
+                Defaults to None. Options are "none", "mean" and "sum".
+
+        Returns:
+            Tensor: Loss tensor.
+        """
         if weight is not None and not torch.any(weight > 0):
             if pred.dim() == weight.dim() + 1:
                 weight = weight.unsqueeze(1)
@@ -568,7 +676,7 @@ class EIoULoss(nn.Module):
                  eps: float = 1e-6,
                  reduction: str = 'mean',
                  loss_weight: float = 1.0,
-                 smooth_point: float = 0.1):
+                 smooth_point: float = 0.1) -> None:
         super().__init__()
         self.eps = eps
         self.reduction = reduction
@@ -581,7 +689,23 @@ class EIoULoss(nn.Module):
                 weight: Optional[Tensor] = None,
                 avg_factor: Optional[int] = None,
                 reduction_override: Optional[str] = None,
-                **kwargs):
+                **kwargs) -> Tensor:
+        """Forward function.
+
+        Args:
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction.
+            weight (Optional[Tensor], optional): The weight of loss for each
+                prediction. Defaults to None.
+            avg_factor (Optional[int], optional): Average factor that is used
+                to average the loss. Defaults to None.
+            reduction_override (Optional[str], optional): The reduction method
+                used to override the original reduction method of the loss.
+                Defaults to None. Options are "none", "mean" and "sum".
+
+        Returns:
+            Tensor: Loss tensor.
+        """
         if weight is not None and not torch.any(weight > 0):
             if pred.dim() == weight.dim() + 1:
                 weight = weight.unsqueeze(1)

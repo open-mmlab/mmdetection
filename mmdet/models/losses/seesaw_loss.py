@@ -111,7 +111,7 @@ class SeesawLoss(nn.Module):
                  eps: float = 1e-2,
                  reduction: str = 'mean',
                  loss_weight: float = 1.0,
-                 return_dict: bool = True):
+                 return_dict: bool = True) -> None:
         super().__init__()
         assert not use_sigmoid
         self.use_sigmoid = False
@@ -139,6 +139,15 @@ class SeesawLoss(nn.Module):
         self.custom_accuracy = True
 
     def _split_cls_score(self, cls_score: Tensor) -> Tuple[Tensor, Tensor]:
+        """split cls_score.
+
+        Args:
+            cls_score (Tensor): The prediction with shape (N, C + 2).
+
+        Returns:
+            Tuple[Tensor, Tensor]: The score for classes and objectness,
+                 respectively
+        """
         # split cls_score to cls_score_classes and cls_score_objectness
         assert cls_score.size(-1) == self.num_classes + 2
         cls_score_classes = cls_score[..., :-2]

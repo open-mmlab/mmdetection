@@ -38,6 +38,9 @@ def varifocal_loss(pred: Tensor,
             "sum".
         avg_factor (int, optional): Average factor that is used to average
             the loss. Defaults to None.
+
+    Returns:
+        Tensor: Loss tensor.
     """
     # pred and target should be of the same size
     assert pred.size() == target.size()
@@ -66,7 +69,7 @@ class VarifocalLoss(nn.Module):
                  gamma: float = 2.0,
                  iou_weighted: bool = True,
                  reduction: str = 'mean',
-                 loss_weight: float = 1.0):
+                 loss_weight: float = 1.0) -> None:
         """`Varifocal Loss <https://arxiv.org/abs/2008.13367>`_
 
         Args:
