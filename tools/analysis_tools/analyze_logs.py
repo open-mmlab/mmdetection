@@ -21,18 +21,16 @@ def cal_train_time(log_dicts, args):
             raise KeyError(
                 'Please reduce the log interval in the config so that'
                 'interval is less than iterations of one epoch.')
-        all_times = np.array(all_times)
-        epoch_ave_time = all_times.mean(-1)
+        epoch_ave_time = np.array(list(map(lambda x: np.mean(x), all_times)))
         slowest_epoch = epoch_ave_time.argmax()
         fastest_epoch = epoch_ave_time.argmin()
         std_over_epoch = epoch_ave_time.std()
         print(f'slowest epoch {slowest_epoch + 1}, '
-              f'average time is {epoch_ave_time[slowest_epoch]:.4f}')
+              f'average time is {epoch_ave_time[slowest_epoch]:.4f} s/iter')
         print(f'fastest epoch {fastest_epoch + 1}, '
-              f'average time is {epoch_ave_time[fastest_epoch]:.4f}')
+              f'average time is {epoch_ave_time[fastest_epoch]:.4f} s/iter')
         print(f'time std over epochs is {std_over_epoch:.4f}')
-        print(f'average iter time: {np.mean(all_times):.4f} s/iter')
-        print()
+        print(f'average iter time: {np.mean(epoch_ave_time):.4f} s/iter\n')
 
 
 def plot_curve(log_dicts, args):
@@ -49,6 +47,7 @@ def plot_curve(log_dicts, args):
     assert len(legend) == (len(args.json_logs) * len(args.keys))
     metrics = args.keys
 
+    # TODO: support dynamic eval interval(e.g. RTMDet) when plotting mAP.
     num_metrics = len(metrics)
     for i, log_dict in enumerate(log_dicts):
         epochs = list(log_dict.keys())
@@ -59,7 +58,9 @@ def plot_curve(log_dicts, args):
                     raise KeyError(
                         f'{args.json_logs[i]} does not contain metric '
                         f'{metric}. Please check if "--no-validate" is '
-                        'specified when you trained the model.')
+                        'specified when you trained the model. Or check '
+                        f'if the eval_interval {args.eval_interval} in args '
+                        'is equal to the eval_interval during training.')
                 raise KeyError(
                     f'{args.json_logs[i]} does not contain metric {metric}. '
                     'Please reduce the log interval in the config so that '
@@ -70,7 +71,8 @@ def plot_curve(log_dicts, args):
                 ys = []
                 for epoch in epochs:
                     ys += log_dict[epoch][metric]
-                    xs += [epoch]
+                    if log_dict[epoch][metric]:
+                        xs += [epoch]
                 plt.xlabel('epoch')
                 plt.plot(xs, ys, label=legend[i * num_metrics + j], marker='o')
             else:
