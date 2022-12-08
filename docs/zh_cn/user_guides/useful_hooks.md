@@ -56,7 +56,7 @@ The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 M
 
 比如，我们要实现一个检查 loss 的钩子，当损失为 NaN 时自动结束训练。我们可以把这个过程分为三步：
 
-1. 在MMEngine实现一个继承于 `Hook` 类的新钩子，并实现 `after_train_iter` 方法用于检查每 `n` 次训练迭代后损失是否变为 NaN 。
+1. 在 MMEngine 实现一个继承于 `Hook` 类的新钩子，并实现 `after_train_iter` 方法用于检查每 `n` 次训练迭代后损失是否变为 NaN 。
 2. 使用 `@HOOKS.register_module()` 注册实现好了的自定义钩子，如下列代码所示。
 3. 在配置文件中添加 `custom_hooks = [dict(type='MemoryProfilerHook', interval=50)]`
 
