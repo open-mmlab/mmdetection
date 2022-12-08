@@ -144,7 +144,7 @@ python tools/analysis_tools/coco_error_analysis.py ${RESULT} ${OUT_DIR} [-h] [--
 为了保存 bbox 结果信息，我们需要用下列方式修改 `test_evaluator` :
 
 1. 查找当前 config 文件相对应的  'configs/base/datasets' 数据集信息。
-2. 用当前数据集config中的 test_evaluator 以及 test_dataloader 替换原始文件的 test_evaluator 以及 test_dataloader。
+2. 用当前数据集 config 中的 test_evaluator 以及 test_dataloader 替换原始文件的 test_evaluator 以及 test_dataloader。
 3. 使用以下命令得到 bbox 或 segmentation 的 json 格式文件。
 
 ```shell
@@ -184,7 +184,7 @@ python tools/analysis_tools/coco_error_analysis.py \
 python -m pip install torchserve torch-model-archiver torch-workflow-archiver nvgpu
 ```
 
-**注意**: 如果你想在docker中使用`TorchServe`，请参考[torchserve docker](https://github.com/pytorch/serve/blob/master/docker/README.md)。
+**注意**: 如果你想在 docker 中使用`TorchServe`，请参考[torchserve docker](https://github.com/pytorch/serve/blob/master/docker/README.md)。
 
 ### 2. 把 MMDetection 模型转换至 TorchServe
 
