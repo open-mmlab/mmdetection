@@ -137,6 +137,7 @@ def diou_loss(pred: Tensor, target: Tensor, eps: float = 1e-7) -> Tensor:
             shape (n, 4).
         target (Tensor): Corresponding gt bboxes, shape (n, 4).
         eps (float): Epsilon to avoid log(0).
+
     Return:
         Tensor: Loss tensor.
     """
@@ -192,6 +193,7 @@ def ciou_loss(pred: Tensor, target: Tensor, eps: float = 1e-7) -> Tensor:
             shape (n, 4).
         target (Tensor): Corresponding gt bboxes, shape (n, 4).
         eps (float): Epsilon to avoid log(0).
+
     Return:
         Tensor: Loss tensor.
     """
@@ -260,6 +262,7 @@ def eiou_loss(pred: Tensor,
         target (Tensor): Corresponding gt bboxes, shape (n, 4).
         smooth_point (float): hyperparameter, default is 0.1.
         eps (float): Epsilon to avoid log(0).
+
     Return:
         Tensor: Loss tensor.
     """

@@ -227,6 +227,7 @@ class SeesawLoss(nn.Module):
                  the loss. Defaults to None.
             reduction (str, optional): The method used to reduce the loss.
                  Options are "none", "mean" and "sum".
+
         Returns:
             Tensor | Dict [str, Tensor]:
                  if return_dict == False: The calculated loss |

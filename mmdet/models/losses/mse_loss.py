@@ -11,7 +11,7 @@ from .utils import weighted_loss
 
 @weighted_loss
 def mse_loss(pred: Tensor, target: Tensor) -> Tensor:
-    """Wrapper of mse loss.
+    """A Wrapper of MSE loss.
     Args:
         pred (Tensor): The prediction.
         target (Tensor): The learning target of the prediction.
