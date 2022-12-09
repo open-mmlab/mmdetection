@@ -76,7 +76,7 @@ class AnchorGenerator:
                  scales_per_octave: Optional[int] = None,
                  centers: Optional[List[Tuple[float, float]]] = None,
                  center_offset: float = 0.,
-                 use_box_type: bool = True) -> None:
+                 use_box_type: bool = False) -> None:
         # check center and center_offset
         if center_offset != 0:
             assert centers is None, 'center cannot be set when center_offset' \
