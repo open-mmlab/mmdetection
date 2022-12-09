@@ -173,6 +173,13 @@ class DetrTransformerEncoderLayer(BaseModule):
         super().__init__(init_cfg=init_cfg)
 
         self.self_attn_cfg = self_attn_cfg
+        if 'batch_first' not in self.self_attn_cfg:
+            self.self_attn_cfg['batch_first'] = True
+        else:
+            assert self.self_attn_cfg['batch_first'] is True, 'First \
+            dimension of all DETRs in mmdet is `batch`, \
+            please set `batch_first` flag.'
+
         self.ffn_cfg = ffn_cfg
         self.norm_cfg = norm_cfg
         self._init_layers()
@@ -258,6 +265,20 @@ class DetrTransformerDecoderLayer(BaseModule):
 
         self.self_attn_cfg = self_attn_cfg
         self.cross_attn_cfg = cross_attn_cfg
+        if 'batch_first' not in self.self_attn_cfg:
+            self.self_attn_cfg['batch_first'] = True
+        else:
+            assert self.self_attn_cfg['batch_first'] is True, 'First \
+            dimension of all DETRs in mmdet is `batch`, \
+            please set `batch_first` flag.'
+
+        if 'batch_first' not in self.cross_attn_cfg:
+            self.cross_attn_cfg['batch_first'] = True
+        else:
+            assert self.cross_attn_cfg['batch_first'] is True, 'First \
+            dimension of all DETRs in mmdet is `batch`, \
+            please set `batch_first` flag.'
+
         self.ffn_cfg = ffn_cfg
         self.norm_cfg = norm_cfg
         self._init_layers()
