@@ -463,7 +463,7 @@ class DeformableDETR(DetectionTransformer):
               as (cx, cy, w, h).
         """
 
-        bs = memory.size(1)
+        bs = memory.size(0)
         proposals = []
         _cur = 0  # start index in the sequence of the current level
         for lvl, (H, W) in enumerate(spatial_shapes):
