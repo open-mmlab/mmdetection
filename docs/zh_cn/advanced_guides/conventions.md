@@ -2,6 +2,10 @@
 
 如果你想把 MMDetection 修改为自己的项目，请遵循下面的约定。
 
+## 图片 pipeline 输入 shape
+
+在 OpenMMLab 2.0 中图片处理 pipeline 输入参数中关于 shape 值都是 `(weight, height)`, pipeline 输出的 shape 值都是 `(height, weight)`.
+
 ## 损失
 
 在 MMDetection 中，`model(**data)` 的返回值是一个字典，包含着所有的损失和评价指标，他们将会由 `model(**data)` 返回。

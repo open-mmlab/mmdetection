@@ -2,6 +2,10 @@
 
 Please check the following conventions if you would like to modify MMDetection as your own project.
 
+## Image pipeline input shape
+
+The image pipeline input shape is `(weight, height)`, and the shape of the pipeline output is `(height, weight)` in OpenMMLab 2.0.
+
 ## Loss
 
 In MMDetection, a `dict` containing losses and metrics will be returned by `model(**data)`.
