@@ -447,7 +447,7 @@ class DeformableDETR(DetectionTransformer):
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat_points, bs, dim).
+                has shape (bs, num_feat_points, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
                 has shape (bs, num_feat_points).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
@@ -463,12 +463,12 @@ class DeformableDETR(DetectionTransformer):
               as (cx, cy, w, h).
         """
 
-        num_feat_points = memory.size(0)  # TODO: memory.size(1)?
+        bs = memory.size(1)
         proposals = []
         _cur = 0  # start index in the sequence of the current level
         for lvl, (H, W) in enumerate(spatial_shapes):
-            mask_flatten_ = memory_mask[:, _cur:(_cur + H * W)].view(
-                num_feat_points, H, W, 1)
+            mask_flatten_ = memory_mask[:,
+                                        _cur:(_cur + H * W)].view(bs, H, W, 1)
             valid_H = torch.sum(~mask_flatten_[:, :, 0, 0], 1).unsqueeze(-1)
             valid_W = torch.sum(~mask_flatten_[:, 0, :, 0], 1).unsqueeze(-1)
 
@@ -479,12 +479,10 @@ class DeformableDETR(DetectionTransformer):
                     0, W - 1, W, dtype=torch.float32, device=memory.device))
             grid = torch.cat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], -1)
 
-            scale = torch.cat([valid_W, valid_H],
-                              1).view(num_feat_points, 1, 1, 2)
-            grid = (grid.unsqueeze(0).expand(num_feat_points, -1, -1, -1) +
-                    0.5) / scale
+            scale = torch.cat([valid_W, valid_H], 1).view(bs, 1, 1, 2)
+            grid = (grid.unsqueeze(0).expand(bs, -1, -1, -1) + 0.5) / scale
             wh = torch.ones_like(grid) * 0.05 * (2.0**lvl)
-            proposal = torch.cat((grid, wh), -1).view(num_feat_points, -1, 4)
+            proposal = torch.cat((grid, wh), -1).view(bs, -1, 4)
             proposals.append(proposal)
             _cur += (H * W)
         output_proposals = torch.cat(proposals, 1)
