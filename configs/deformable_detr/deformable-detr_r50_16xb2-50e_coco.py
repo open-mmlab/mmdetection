@@ -35,7 +35,8 @@ model = dict(
         num_layers=6,
         layer_cfg=dict(  # DeformableDetrTransformerEncoderLayer
             self_attn_cfg=dict(  # MultiScaleDeformableAttention
-                embed_dims=256),
+                embed_dims=256,
+                batch_first=True),
             ffn_cfg=dict(
                 embed_dims=256, feedforward_channels=1024, ffn_drop=0.1))),
     decoder=dict(  # DeformableDetrTransformerDecoder
@@ -48,7 +49,8 @@ model = dict(
                 dropout=0.1,
                 batch_first=True),
             cross_attn_cfg=dict(  # MultiScaleDeformableAttention
-                embed_dims=256),
+                embed_dims=256,
+                batch_first=True),
             ffn_cfg=dict(
                 embed_dims=256, feedforward_channels=1024, ffn_drop=0.1)),
         post_norm_cfg=None),
