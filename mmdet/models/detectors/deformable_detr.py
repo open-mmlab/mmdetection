@@ -190,9 +190,6 @@ class DeformableDETR(DetectionTransformer):
         # (bs, num_feat_points, dim)
         feat_flatten = torch.cat(feat_flatten, 1)
         lvl_pos_embed_flatten = torch.cat(lvl_pos_embed_flatten, 1)
-        # (num_feat_points, bs, dim)
-        feat_flatten = feat_flatten.permute(1, 0, 2)
-        lvl_pos_embed_flatten = lvl_pos_embed_flatten.permute(1, 0, 2)
 
         spatial_shapes = torch.as_tensor(  # (num_level, 2)
             spatial_shapes,
@@ -231,12 +228,12 @@ class DeformableDETR(DetectionTransformer):
         in `mmdet/detector/base_detr.py`.
 
         Args:
-            feat (Tensor): Sequential features, has shape (num_feat_points, bs,
+            feat (Tensor): Sequential features, has shape (bs, num_feat_points,
                 dim).
             feat_mask (Tensor): ByteTensor, the padding mask of the features,
-                has shape (num_feat_points, bs).
+                has shape (bs, num_feat_points).
             feat_pos (Tensor): The positional embeddings of the features, has
-                shape (num_feat_points, bs, dim).
+                shape (bs, num_feat_points, dim).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
@@ -256,8 +253,7 @@ class DeformableDETR(DetectionTransformer):
             key_padding_mask=feat_mask,  # for self_attn
             spatial_shapes=spatial_shapes,
             level_start_index=level_start_index,
-            valid_ratios=valid_ratios)  # (num_feat_points, bs, dim)
-        memory = memory.permute(1, 0, 2)  # (bs, num_feat_points, dim)
+            valid_ratios=valid_ratios)
         encoder_outputs_dict = dict(
             memory=memory,
             memory_mask=feat_mask,
@@ -334,10 +330,6 @@ class DeformableDETR(DetectionTransformer):
             query = query.unsqueeze(0).expand(batch_size, -1, -1)
             reference_points = self.reference_points_fc(query_pos).sigmoid()
 
-        query = query.permute(1, 0, 2)  # (num_queries, bs, dim)
-        memory = memory.permute(1, 0, 2)  # (num_feat_points, bs, dim)
-        query_pos = query_pos.permute(1, 0, 2)  # (num_queries, bs, dim)
-
         decoder_inputs_dict = dict(
             query=query,
             query_pos=query_pos,
@@ -366,11 +358,11 @@ class DeformableDETR(DetectionTransformer):
 
         Args:
             query (Tensor): The queries of decoder inputs, has shape
-                (num_queries, bs, dim).
+                (bs, num_queries, dim).
             query_pos (Tensor): The positional queries of decoder inputs,
-                has shape (num_queries, bs, dim).
+                has shape (bs, num_queries, dim).
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat_points, bs, dim).
+                has shape (bs, num_feat_points, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
                 has shape (bs, num_feat_points).
             reference_points (Tensor): The initial reference, has shape
@@ -471,7 +463,7 @@ class DeformableDETR(DetectionTransformer):
               as (cx, cy, w, h).
         """
 
-        num_feat_points = memory.size(0)
+        num_feat_points = memory.size(0)  # TODO: memory.size(1)?
         proposals = []
         _cur = 0  # start index in the sequence of the current level
         for lvl, (H, W) in enumerate(spatial_shapes):
