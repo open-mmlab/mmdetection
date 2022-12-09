@@ -30,15 +30,7 @@ class COCO(_COCO):
         return self.getAnnIds(img_ids, cat_ids, area_rng, iscrowd)
 
     def get_cat_ids(self, cat_names=[], sup_names=[], cat_ids=[]):
-        # return self.getCatIds(cat_names, sup_names, cat_ids)
-        # TODO: MODIFICATION to support 91 cls temporarily
-        cat_ids_coco = self.getCatIds(cat_names, sup_names, cat_ids)
-        index = [i for i, v in enumerate(cat_names) if v is not None]
-        cat_ids = list(range(len(cat_names)))
-        for i in range(len(index)):
-            cat_ids[index[i]] = cat_ids_coco[i]
-        return cat_ids
-        # TODO: MODIFICATION to support 91 cls temporarily
+        return self.getCatIds(cat_names, sup_names, cat_ids)
 
     def get_img_ids(self, img_ids=[], cat_ids=[]):
         return self.getImgIds(img_ids, cat_ids)
