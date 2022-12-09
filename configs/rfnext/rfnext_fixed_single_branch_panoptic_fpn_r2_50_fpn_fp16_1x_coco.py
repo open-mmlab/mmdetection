@@ -1,6 +1,8 @@
 _base_ = '../panoptic_fpn/panoptic_fpn_r2_50_fpn_fp16_1x_coco.py'
-model = dict(
-    rfsearch_cfg=dict(
+
+custom_hooks = [
+    dict(
+        type='RFSearchHook',
         mode='fixed_single_branch',
         rfstructure_file=  # noqa
         './configs/rfnext/search_log/panoptic_fpn_r2_50_fpn_fp16_1x_coco/local_search_config_step10.json',  # noqa
@@ -16,14 +18,5 @@ model = dict(
                 mmin=1,
                 mmax=24,
                 num_branches=2,
-                skip_layer=['stem', 'layer1'])),
-    ))
-
-custom_hooks = [
-    dict(
-        type='RFSearchHook',
-        config=model['rfsearch_cfg']['config'],
-        mode=model['rfsearch_cfg']['mode'],
-        verbose=model['rfsearch_cfg']['verbose'],
-        by_epoch=model['rfsearch_cfg']['by_epoch'])
+                skip_layer=['stem', 'layer1'])))
 ]

@@ -4,11 +4,6 @@ import warnings
 from mmcv.cnn import MODELS as MMCV_MODELS
 from mmcv.utils import Registry
 
-try:
-    from mmcv.cnn import RFSearchHook
-except ImportError:
-    RFSearchHook = None
-
 MODELS = Registry('models', parent=MMCV_MODELS)
 
 BACKBONES = MODELS
@@ -60,21 +55,5 @@ def build_detector(cfg, train_cfg=None, test_cfg=None):
         'train_cfg specified in both outer field and model field '
     assert cfg.get('test_cfg') is None or test_cfg is None, \
         'test_cfg specified in both outer field and model field '
-
-    rfsearch_cfg = cfg.pop('rfsearch_cfg', None)
-
-    detector = DETECTORS.build(
+    return DETECTORS.build(
         cfg, default_args=dict(train_cfg=train_cfg, test_cfg=test_cfg))
-    if rfsearch_cfg is not None:
-        assert RFSearchHook is not None, 'Please install mmcv > 1.7.0'
-        rfsearch_warp = RFSearchHook(
-            mode=rfsearch_cfg.get('mode', 'search'),
-            config=rfsearch_cfg.get('config', None),
-            rfstructure_file=rfsearch_cfg.get('rfstructure_file', None),
-            by_epoch=rfsearch_cfg.get('by_epoch', True),
-            verbose=rfsearch_cfg.get('verbose', True),
-        )
-        detector.init_weights()
-        rfsearch_warp.init_model(detector)
-
-    return detector

@@ -1,4 +1,5 @@
 _base_ = '../cascade_rcnn/cascade_mask_rcnn_r50_fpn_20e_coco.py'
+
 model = dict(
     backbone=dict(
         type='Res2Net',
@@ -7,8 +8,12 @@ model = dict(
         base_width=26,
         init_cfg=dict(
             type='Pretrained',
-            checkpoint='open-mmlab://res2net101_v1d_26w_4s')),
-    rfsearch_cfg=dict(
+            checkpoint='open-mmlab://res2net101_v1d_26w_4s')))
+
+custom_hooks = [
+    dict(type='NumClassCheckHook'),
+    dict(
+        type='RFSearchHook',
         mode='fixed_multi_branch',
         rfstructure_file=  # noqa
         './configs/rfnext/search_log/cascade_mask_rcnn_r2_101_fpn_20e_coco/local_search_config_step11.json',  # noqa
@@ -24,15 +29,5 @@ model = dict(
                 mmin=1,
                 mmax=24,
                 num_branches=2,
-                skip_layer=['stem', 'layer1'])),
-    ))
-
-custom_hooks = [
-    dict(type='NumClassCheckHook'),
-    dict(
-        type='RFSearchHook',
-        config=model['rfsearch_cfg']['config'],
-        mode=model['rfsearch_cfg']['mode'],
-        verbose=model['rfsearch_cfg']['verbose'],
-        by_epoch=model['rfsearch_cfg']['by_epoch'])
+                skip_layer=['stem', 'layer1'])))
 ]
