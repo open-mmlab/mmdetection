@@ -54,6 +54,7 @@ def init_detector(
         config.model.backbone.init_cfg = None
     config.model.train_cfg = None
     model = build_detector(config.model)
+    model.dataset_meta = {}
     if checkpoint is not None:
         checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
         # Weights converted from elsewhere may not have meta fields.
@@ -84,9 +85,9 @@ def init_detector(
         else:
             if 'PALETTE' not in model.dataset_meta:
                 warnings.warn(
-                    'PALETTE does not exist, coco is used by default. '
+                    'PALETTE does not exist, random is used by default. '
                     'You can also set the palette to customize.')
-                model.dataset_meta['PALETTE'] = 'coco'
+                model.dataset_meta['PALETTE'] = 'random'
 
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
