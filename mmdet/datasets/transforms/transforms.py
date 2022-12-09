@@ -1664,8 +1664,8 @@ class RandomCenterCropPad(BaseTransform):
 
     Args:
         crop_size (tuple, optional): expected size after crop, final size will
-            computed according to ratio. Requires  (width, height) in train mode, and
-            None in test mode.
+            computed according to ratio. Requires  (width, height)
+            in train mode, and None in test mode.
         ratios (tuple, optional): random select a ratio from tuple and crop
             image to (crop_size[0] * ratio) * (crop_size[1] * ratio).
             Only available in train mode. Defaults to (0.9, 1.0, 1.1).
