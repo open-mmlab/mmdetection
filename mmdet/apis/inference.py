@@ -73,23 +73,20 @@ def init_detector(
                 'checkpoint\'s meta data, use COCO classes by default.')
             model.dataset_meta = {'CLASSES': get_classes('coco')}
 
-    # Priority: config -> args.palette -> checkpoint
-    metainfo = config.test_dataloader.dataset.get('metainfo', {})
-    cfg_palette = metainfo.get('PALETTE', None)
-    if cfg_palette is not None:
-        model.dataset_meta['PALETTE'] = cfg_palette
-        if palette != 'none':
-            warnings.warn(
-                f'You set the PALETTE={palette}, but PALETTE={cfg_palette} '
-                'also exists in config. PALETTE Parameters '
-                'in config have higher priority!')
-    elif palette != 'none':
+    # Priority:  args.palette -> config -> checkpoint
+    if palette != 'none':
         model.dataset_meta['PALETTE'] = palette
     else:
-        if 'PALETTE' not in model.dataset_meta:
-            warnings.warn('PALETTE does not exist, coco is used by default. '
-                          'You can also set the palette to customize.')
-            model.dataset_meta['PALETTE'] = 'coco'
+        metainfo = config.test_dataloader.dataset.get('metainfo', {})
+        cfg_palette = metainfo.get('PALETTE', None)
+        if cfg_palette is not None:
+            model.dataset_meta['PALETTE'] = cfg_palette
+        else:
+            if 'PALETTE' not in model.dataset_meta:
+                warnings.warn(
+                    'PALETTE does not exist, coco is used by default. '
+                    'You can also set the palette to customize.')
+                model.dataset_meta['PALETTE'] = 'coco'
 
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
