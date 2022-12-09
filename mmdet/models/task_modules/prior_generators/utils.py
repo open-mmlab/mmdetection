@@ -2,14 +2,15 @@
 from typing import Optional, Tuple
 
 import torch
+from torch import Tensor
 
 from mmdet.structures.bbox import BaseBoxes
 
 
-def anchor_inside_flags(flat_anchors: torch.Tensor,
-                        valid_flags: torch.Tensor,
+def anchor_inside_flags(flat_anchors: Tensor,
+                        valid_flags: Tensor,
                         img_shape: Tuple[int],
-                        allowed_border: int = 0) -> torch.Tensor:
+                        allowed_border: int = 0) -> Tensor:
     """Check whether the anchors are inside the border.
 
     Args:
@@ -41,9 +42,9 @@ def anchor_inside_flags(flat_anchors: torch.Tensor,
     return inside_flags
 
 
-def calc_region(bbox: torch.Tensor,
+def calc_region(bbox: Tensor,
                 ratio: float,
-                featmap_size: Optional[Tuple] = None) -> Tuple(int):
+                featmap_size: Optional[Tuple] = None) -> Tuple[int]:
     """Calculate a proportional bbox region.
 
     The bbox center are fixed and the new h' and w' is h * ratio and w * ratio.
@@ -52,7 +53,7 @@ def calc_region(bbox: torch.Tensor,
         bbox (Tensor): Bboxes to calculate regions, shape (n, 4).
         ratio (float): Ratio of the output region.
         featmap_size (tuple, Optional): Feature map size used for
-            clipping the boundary.
+            clipping the boundary. Defaults to None.
 
     Returns:
         tuple: x1, y1, x2, y2
