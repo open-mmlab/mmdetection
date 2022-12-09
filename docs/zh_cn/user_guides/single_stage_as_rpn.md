@@ -1,6 +1,6 @@
-# 将单阶段检测器作为RPN
+# 将单阶段检测器作为 RPN
 
-候选区域网络作为 [Faster R-CNN](https://arxiv.org/abs/1506.01497) 的一个子模块，将为 Faster R-CNN 的第二阶段产生候选区域。在 MMDetection 里大多数的二阶段检测器使用[`RPN头`](../../../mmdet/models/dense_heads/rpn_head.py)作为候选区域网络来产生候选区域。然而，任何的单阶段检测器都可以作为候选区域网络，是因为他们对边界框的预测可以被视为是一种候选区域，并且因此能够在 R-CNN 中得到改进。因此在 MMDetection v3.0 中会支持将单阶段检测器作为 RPN 使用。
+候选区域网络 (Region Proposal Network, RPN) 作为 [Faster R-CNN](https://arxiv.org/abs/1506.01497) 的一个子模块，将为 Faster R-CNN 的第二阶段产生候选区域。在 MMDetectio n里大多数的二阶段检测器使用 [`RPN 头`](../../../mmdet/models/dense_heads/rpn_head.py)作为候选区域网络来产生候选区域。然而，任何的单阶段检测器都可以作为候选区域网络，是因为他们对边界框的预测可以被视为是一种候选区域，并且因此能够在 R-CNN 中得到改进。因此在 MMDetection v3.0 中会支持将单阶段检测器作为 RPN 使用。
 
 接下来我们通过一个例子，即如何在 [Faster R-CNN](../../../configs/faster_rcnn/faster-rcnn_r50_fpn_fcos-rpn_1x_coco.py) 中使用一个无锚框的单阶段的检测器模型 [FCOS](../../../configs/fcos/fcos_r50-caffe_fpn_gn-head_1x_coco.py) 作为 RPN ，详细阐述具体的全部流程。
 
@@ -60,7 +60,7 @@ param_scheduler = [
 ]
 ```
 
-然后，我们可以使用下面的命令来训练我们的定制模型。更多训练命令，请参考 [这里](train.md)。
+然后，我们可以使用下面的命令来训练我们的定制模型。更多训练命令，请参考[这里](train.md)。
 
 ```python
 # training with 8 GPUS
