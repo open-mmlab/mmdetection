@@ -58,10 +58,10 @@ train_dataloader = dict(
         # so the actual epoch = 12 * 10 = 120.
         times=10,
         dataset=dict(  # ConcatDataset
-            # VOCDataset will add different `DATASET_TYPE` in dataset.metainfo,
+            # VOCDataset will add different `dataset_type` in dataset.metainfo,
             # which will get error if using ConcatDataset. Adding
             # `ignore_keys` can avoid this error.
-            ignore_keys=['DATASET_TYPE'],
+            ignore_keys=['dataset_type'],
             datasets=[
                 dict(
                     type=dataset_type,
