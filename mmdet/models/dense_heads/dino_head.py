@@ -126,6 +126,9 @@ class DINOHead(DeformableDETRHead):
         loss_dict = super(DeformableDETRHead, self).loss_by_feat(
             all_layers_matching_cls_scores, all_layers_matching_bbox_preds,
             batch_gt_instances, batch_img_metas, batch_gt_instances_ignore)
+        # NOTE DETRHead.loss_by_feat but not DeformableDETRHead.loss_by_feat
+        # is called, because the encoder loss calculations are different
+        # between DINO and DeformableDETR.
 
         # loss of proposal generated from encode feature map.
         if enc_cls_scores is not None:
