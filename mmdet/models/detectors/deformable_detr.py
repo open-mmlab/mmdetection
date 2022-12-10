@@ -304,6 +304,7 @@ class DeformableDETR(DetectionTransformer):
                     output_memory)
             enc_outputs_coord_unact = self.bbox_head.reg_branches[
                 self.decoder.num_layers](output_memory) + output_proposals
+            enc_outputs_coord = enc_outputs_coord_unact.sigmoid()
             # We only use the first channel in enc_outputs_class as foreground,
             # the other (num_classes - 1) channels are actually not used.
             # Its targets are set to be 0s, which indicates the first
@@ -324,6 +325,7 @@ class DeformableDETR(DetectionTransformer):
             pos_trans_out = self.pos_trans_norm(pos_trans_out)
             query_pos, query = torch.split(pos_trans_out, c, dim=2)
         else:
+            enc_outputs_class, enc_outputs_coord = None, None
             query_embed = self.query_embedding.weight
             query_pos, query = torch.split(query_embed, c, dim=1)
             query_pos = query_pos.unsqueeze(0).expand(batch_size, -1, -1)
@@ -335,14 +337,9 @@ class DeformableDETR(DetectionTransformer):
             query_pos=query_pos,
             memory=memory,
             reference_points=reference_points)
-        if self.training:
-            head_inputs_dict = dict(
-                enc_outputs_class=enc_outputs_class
-                if self.as_two_stage else None,
-                enc_outputs_coord=enc_outputs_coord_unact.sigmoid()
-                if self.as_two_stage else None)
-        else:
-            head_inputs_dict = dict()
+        head_inputs_dict = dict(
+            enc_outputs_class=enc_outputs_class,
+            enc_outputs_coord=enc_outputs_coord) if self.training else dict()
         return decoder_inputs_dict, head_inputs_dict
 
     def forward_decoder(self, query: Tensor, query_pos: Tensor, memory: Tensor,
