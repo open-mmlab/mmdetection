@@ -43,22 +43,23 @@ class DABDETRHead(DETRHead):
         Args:
             hidden_states (Tensor): Features from transformer decoder. If
                 `return_intermediate_dec` in detr.py is True output has shape
-                (num_hidden_states, bs, num_query, dim), else has shape (1,
-                bs, num_query, dim) which only contains the last layer outputs.
+                (num_decoder_layers, bs, num_queries, dim), else has shape (1,
+                bs, num_queries, dim) which only contains the last layer
+                outputs.
             references (Tensor): References from transformer decoder. If
                 `return_intermediate_dec` in detr.py is True output has shape
-                (num_hidden_states, bs, num_query, 2/4), else has shape (1,
-                bs, num_query, 2/4)
+                (num_decoder_layers, bs, num_queries, 2/4), else has shape (1,
+                bs, num_queries, 2/4)
                 which only contains the last layer reference.
         Returns:
             tuple[Tensor]: results of head containing the following tensor.
 
             - layers_cls_scores (Tensor): Outputs from the classification head,
-              shape (num_hidden_states, bs, num_query, cls_out_channels). Note
-              cls_out_channels should include background.
+              shape (num_decoder_layers, bs, num_queries, cls_out_channels).
+              Note cls_out_channels should include background.
             - layers_bbox_preds (Tensor): Sigmoid outputs from the regression
               head with normalized coordinate format (cx, cy, w, h), has shape
-              (num_hidden_states, bs, num_query, 4).
+              (num_decoder_layers, bs, num_queries, 4).
         """
         layers_cls_scores = self.fc_cls(hidden_states)
         references_before_sigmoid = inverse_sigmoid(references, eps=1e-3)
@@ -75,9 +76,9 @@ class DABDETRHead(DETRHead):
 
         Args:
             hidden_states (Tensor): Feature from the transformer decoder, has
-                shape (num_decoder_layers, bs, num_query, dim).
+                shape (num_decoder_layers, bs, num_queries, dim).
             references (Tensor): references from the transformer decoder, has
-                shape (num_decoder_layers, bs, num_query, 2/4).
+                shape (num_decoder_layers, bs, num_queries, 2/4).
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
@@ -107,9 +108,9 @@ class DABDETRHead(DETRHead):
 
         Args:
             hidden_states (Tensor): Feature from the transformer decoder, has
-                shape (num_decoder_layers, bs, num_query, cls_out_channels).
+                shape (num_decoder_layers, bs, num_queries, cls_out_channels).
             references (Tensor): references from the transformer decoder, has
-                shape (num_decoder_layers, bs, num_query, 2/4).
+                shape (num_decoder_layers, bs, num_queries, 2/4).
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.

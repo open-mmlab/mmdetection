@@ -33,7 +33,8 @@ model = dict(
     encoder=dict(
         num_layers=6,
         layer_cfg=dict(
-            self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.),
+            self_attn_cfg=dict(
+                embed_dims=256, num_heads=8, dropout=0., batch_first=True),
             ffn_cfg=dict(
                 embed_dims=256,
                 feedforward_channels=2048,

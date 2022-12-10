@@ -74,11 +74,11 @@ class ConditionalAttention(BaseModule):
         """Forward process for `ConditionalAttention`.
 
         Args:
-            query (Tensor): The input query with shape [num_queries, bs,
+            query (Tensor): The input query with shape [bs, num_queries,
                 embed_dims].
-            key (Tensor): The key tensor with shape [num_keys, bs,
+            key (Tensor): The key tensor with shape [bs, num_keys,
                 embed_dims].
-                If None, the ``query`` will be used. Defaults to None.
+                If None, the `query` will be used. Defaults to None.
             value (Tensor): The value tensor with same shape as `key`.
                 Same in `nn.MultiheadAttention.forward`. Defaults to None.
                 If None, the `key` will be used.
@@ -89,24 +89,25 @@ class ConditionalAttention(BaseModule):
                 Defaults to None.
 
         Returns:
-            Tuple[Tensor]: Attention outputs of shape :math:`(L, N, E)`,
-            where :math:`L` is the target sequence length,
-            :math:`N` is the batch size, and :math:`E` is the
-            embedding dimension ``embed_dim``. Attention weights per
-            head of shape :math:`(num_heads, L, S)`. where :math:`N` is
-            the batch size, :math:`L` is the target sequence length, and
-            :math:`S` is the source sequence length.
+            Tuple[Tensor]: Attention outputs of shape :math:`(N, L, E)`,
+            where :math:`N` is the batch size, :math:`L` is the target
+            sequence length , and :math:`E` is the embedding dimension
+            `embed_dim`. Attention weights per head of shape :math:`
+            (num_heads, L, S)`. where :math:`N` is batch size, :math:`L`
+            is target sequence length, and :math:`S` is the source sequence
+            length.
         """
-        assert key.size(0) == value.size(0), \
+        assert key.size(1) == value.size(1), \
             f'{"key, value must have the same sequence length"}'
-        assert query.size(1) == key.size(1) == value.size(1), \
+        assert query.size(0) == key.size(0) == value.size(1), \
             f'{"batch size must be equal for query, key, value"}'
         assert query.size(2) == key.size(2), \
             f'{"q_dims, k_dims must be equal"}'
         assert value.size(2) == self.embed_dims, \
             f'{"v_dims must be equal to embed_dims"}'
 
-        tgt_len, bs, hidden_dims = query.size()
+        bs, tgt_len, hidden_dims = query.size()
+        _, src_len, _ = key.size()
         head_dims = hidden_dims // self.num_heads
         v_head_dims = self.embed_dims // self.num_heads
         assert head_dims * self.num_heads == hidden_dims, \
@@ -132,14 +133,14 @@ class ConditionalAttention(BaseModule):
                 attn_mask = attn_mask.to(torch.bool)
             if attn_mask.dim() == 2:
                 attn_mask = attn_mask.unsqueeze(0)
-                if list(attn_mask.size()) != [1, query.size(0), key.size(0)]:
+                if list(attn_mask.size()) != [1, query.size(1), key.size(1)]:
                     raise RuntimeError(
                         'The size of the 2D attn_mask is not correct.')
             elif attn_mask.dim() == 3:
                 if list(attn_mask.size()) != [
                         bs * self.num_heads,
-                        query.size(0),
-                        key.size(0)
+                        query.size(1),
+                        key.size(1)
                 ]:
                     raise RuntimeError(
                         'The size of the 3D attn_mask is not correct.')
@@ -152,16 +153,16 @@ class ConditionalAttention(BaseModule):
         if key_padding_mask is not None and key_padding_mask.dtype == int:
             key_padding_mask = key_padding_mask.to(torch.bool)
 
-        q = q.contiguous().view(tgt_len, bs * self.num_heads,
-                                head_dims).transpose(0, 1)
+        q = q.contiguous().view(bs, tgt_len, self.num_heads,
+                                head_dims).permute(0, 2, 1, 3).flatten(0, 1)
         if k is not None:
-            k = k.contiguous().view(-1, bs * self.num_heads,
-                                    head_dims).transpose(0, 1)
+            k = k.contiguous().view(bs, src_len, self.num_heads,
+                                    head_dims).permute(0, 2, 1,
+                                                       3).flatten(0, 1)
         if v is not None:
-            v = v.contiguous().view(-1, bs * self.num_heads,
-                                    v_head_dims).transpose(0, 1)
-
-        src_len = k.size(1)
+            v = v.contiguous().view(bs, src_len, self.num_heads,
+                                    v_head_dims).permute(0, 2, 1,
+                                                         3).flatten(0, 1)
 
         if key_padding_mask is not None:
             assert key_padding_mask.size(0) == bs
@@ -197,8 +198,9 @@ class ConditionalAttention(BaseModule):
         attn_output = torch.bmm(attn_output_weights, v)
         assert list(
             attn_output.size()) == [bs * self.num_heads, tgt_len, v_head_dims]
-        attn_output = attn_output.transpose(0, 1).contiguous().view(
-            tgt_len, bs, self.embed_dims)
+        attn_output = attn_output.view(bs, self.num_heads, tgt_len,
+                                       v_head_dims).permute(0, 2, 1,
+                                                            3).flatten(2)
         attn_output = self.out_proj(attn_output)
 
         # average attention weights over heads
@@ -218,11 +220,11 @@ class ConditionalAttention(BaseModule):
         """Forward function for `ConditionalAttention`.
 
         Args:
-            query (Tensor): The input query with shape [num_queries, bs,
+            query (Tensor): The input query with shape [bs, num_queries,
                 embed_dims].
-            key (Tensor): The key tensor with shape [num_keys, bs,
+            key (Tensor): The key tensor with shape [bs, num_keys,
                 embed_dims].
-                If None, the ``query`` will be used. Defaults to None.
+                If None, the `query` will be used. Defaults to None.
             query_pos (Tensor): The positional encoding for query in self
                 attention, with the same shape as `x`. If not None, it will
                 be added to `x` before forward function.
@@ -247,7 +249,7 @@ class ConditionalAttention(BaseModule):
 
         Returns:
             Tensor: forwarded results with shape
-            [num_queries, bs, embed_dims].
+            [bs, num_queries, embed_dims].
         """
 
         if self.cross_attn:
@@ -255,8 +257,8 @@ class ConditionalAttention(BaseModule):
             k_content = self.kcontent_proj(key)
             v = self.v_proj(key)
 
-            nq, bs, c = q_content.size()
-            hw, _, _ = k_content.size()
+            bs, nq, c = q_content.size()
+            _, hw, _ = k_content.size()
 
             k_pos = self.kpos_proj(key_pos)
             if is_first or self.keep_query_pos:
@@ -266,14 +268,14 @@ class ConditionalAttention(BaseModule):
             else:
                 q = q_content
                 k = k_content
-            q = q.view(nq, bs, self.num_heads, c // self.num_heads)
+            q = q.view(bs, nq, self.num_heads, c // self.num_heads)
             query_sine_embed = self.qpos_sine_proj(query_sine_embed)
-            query_sine_embed = query_sine_embed.view(nq, bs, self.num_heads,
+            query_sine_embed = query_sine_embed.view(bs, nq, self.num_heads,
                                                      c // self.num_heads)
-            q = torch.cat([q, query_sine_embed], dim=3).view(nq, bs, 2 * c)
-            k = k.view(hw, bs, self.num_heads, c // self.num_heads)
-            k_pos = k_pos.view(hw, bs, self.num_heads, c // self.num_heads)
-            k = torch.cat([k, k_pos], dim=3).view(hw, bs, 2 * c)
+            q = torch.cat([q, query_sine_embed], dim=3).view(bs, nq, 2 * c)
+            k = k.view(bs, hw, self.num_heads, c // self.num_heads)
+            k_pos = k_pos.view(bs, hw, self.num_heads, c // self.num_heads)
+            k = torch.cat([k, k_pos], dim=3).view(bs, hw, 2 * c)
             ca_output = self.forward_attn(
                 query=q,
                 key=k,
@@ -330,11 +332,11 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
                 **kwargs) -> Tensor:
         """
         Args:
-            query (Tensor): The input query with shape [num_queries, bs,
+            query (Tensor): The input query with shape [bs, num_queries,
                 embed_dims].
-            key (Tensor): The key tensor with shape [num_keys, bs,
+            key (Tensor): The key tensor with shape [bs, num_keys,
                 embed_dims].
-                If None, the ``query`` will be used. Defaults to None.
+                If None, the `query` will be used. Defaults to None.
             query_pos (Tensor): The positional encoding for query in self
                 attention, with the same shape as `x`. If not None,
                 it will be added to `x` before forward function.
@@ -362,7 +364,7 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
 
         Returns:
             Tensor: forwarded results with shape
-            [num_queries, bs, embed_dims].
+            [bs, num_queries, embed_dims].
         """
 
         query = self.self_attn(
@@ -465,8 +467,8 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
         """Forward function of decoder.
 
         Args:
-            query (Tensor): The input query with shape (num_queries, bs, dim).
-            key (Tensor): The input key with shape (num_keys, bs, dim) If
+            query (Tensor): The input query with shape (bs, num_queries, dim).
+            key (Tensor): The input key with shape (bs, num_keys, dim) If
                 `None`, the `query` will be used. Defaults to `None`.
             query_pos (Tensor): The positional encoding for `query`, with the
                 same shape as `query`. If not `None`, it will be added to
@@ -500,7 +502,7 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
             query_sine_embed = convert_coordinate_to_encoding(
                 pos_tensor=obj_center, num_feats=self.embed_dims // 2)
             query_pos = self.ref_point_head(
-                query_sine_embed)  # [nq, bs, 2c] -> [nq, bs, c]
+                query_sine_embed)  # [bs, nq, 2c] -> [bs, nq, c]
             # For the first decoder layer, do not apply transformation
             if self.query_scale_type != 'fix_elewise':
                 if layer_id == 0:
@@ -536,7 +538,7 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
             new_reference = tmp[..., :self.query_dim].sigmoid()
             if layer_id != self.num_layers - 1:
                 ref.append(new_reference)
-            reference = new_reference.detach()  # no grad_fn
+            reference = new_reference.detach()
 
             if self.return_intermediate:
                 if self.post_norm is not None:
@@ -549,15 +551,11 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
 
         if self.return_intermediate:
             return [
-                torch.stack(intermediate).transpose(1, 2),
-                torch.stack(ref).transpose(1, 2),
+                torch.stack(intermediate),
+                torch.stack(ref),
             ]
         else:
-            return [
-                output.unsqueeze(0).transpose(
-                    1, 2),  # return_intermediate is False
-                torch.stack(ref).transpose(1, 2)
-            ]
+            return [output.unsqueeze(0), torch.stack(ref)]
 
 
 class DabDetrTransformerEncoder(DetrTransformerEncoder):
@@ -582,11 +580,11 @@ class DabDetrTransformerEncoder(DetrTransformerEncoder):
 
         Args:
             query (Tensor): Input queries of encoder, has shape
-                (num_queries, bs, dim).
+                (bs, num_queries, dim).
             query_pos (Tensor): The positional embeddings of the queries, has
-                shape (num_feat, bs, dim).
+                shape (bs, num_feat_points, dim).
             query_key_padding_mask (Tensor): ByteTensor, the key padding mask
-                of the queries, has shape (num_feat, bs).
+                of the queries, has shape (bs, num_feat_points).
 
         Returns:
             Tensor: With shape (num_queries, bs, dim).

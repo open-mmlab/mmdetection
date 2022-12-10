@@ -72,7 +72,7 @@ class DABDETR(DETR):
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat_points, bs, dim).
+                has shape (bs, num_feat_points, dim).
 
         Returns:
             tuple[dict, dict]: The first dict contains the inputs of decoder
@@ -86,17 +86,18 @@ class DABDETR(DETR):
                 `enc_outputs_class` and `enc_outputs_class` when the detector
                 support 'two stage' or 'query selection' strategies.
         """
-        batch_size = memory.size(1)
+        batch_size = memory.size(0)
         query_pos = self.query_embedding.weight
-        query_pos = query_pos.unsqueeze(1).repeat(1, batch_size, 1)
+        query_pos = query_pos.unsqueeze(0).repeat(batch_size, 1, 1)
         if self.num_patterns == 0:
-            query = query_pos.new_zeros(self.num_queries, batch_size,
+            query = query_pos.new_zeros(batch_size, self.num_queries,
                                         self.embed_dims)
         else:
             query = self.patterns.weight[:, None, None, :]\
-                .repeat(1, self.num_queries, batch_size, 1)\
-                .view(-1, batch_size, self.embed_dims)
-            query_pos = query_pos.repeat(self.num_patterns, 1, 1)
+                .repeat(1, batch_size, self.num_queries, 1)\
+                .view(-1, batch_size, self.embed_dims)\
+                .permute(1, 0, 2)
+            query_pos = query_pos.repeat(1, self.num_patterns, 1)
 
         decoder_inputs_dict = dict(
             query_pos=query_pos, query=query, memory=memory)
@@ -109,15 +110,15 @@ class DABDETR(DETR):
 
         Args:
             query (Tensor): The queries of decoder inputs, has shape
-                (num_queries, bs, dim).
+                (bs, num_queries, dim).
             query_pos (Tensor): The positional queries of decoder inputs,
-                has shape (num_queries, bs, dim).
+                has shape (bs, num_queries, dim).
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat, bs, dim).
+                has shape (bs, num_feat_points, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
-                has shape (bs, num_feat).
+                has shape (bs, num_feat_points).
             memory_pos (Tensor): The positional embeddings of memory, has
-                shape (num_feat, bs, dim).
+                shape (bs, num_feat_points, dim).
 
         Returns:
             dict: The dictionary of decoder outputs, which includes the
