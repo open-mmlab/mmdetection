@@ -1,3 +1,20 @@
+Collections:
+  - Name: RF-Next
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - RF-Next
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RF-Next
+    Paper:
+      URL: http://mftp.mmcheng.net/Papers/22TPAMI-ActionSeg.pdf
+      Title: "RF-Next: Efficient Receptive Field Search for Convolutional Neural Networks"
+    README: configs/rfnext/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/mmdet/utils/rfnext.py
+      Version: v2.27.0
+
 Models:
   - Name: rfnext_search_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k
     In Collection: RF-Next
