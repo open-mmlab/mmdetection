@@ -33,7 +33,7 @@ class ConditionalAttention(BaseModule):
         keep_query_pos (bool): Whether to transform query_pos before cross
             attention.
             Default: False.
-        batch_first (bool): When it is True,  Key, Query and Value are shape of
+        batch_first (bool): When it is True, Key, Query and Value are shape of
             (batch, n, embed_dim), otherwise (n, batch, embed_dim).
              Default: True.
         init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
@@ -47,10 +47,14 @@ class ConditionalAttention(BaseModule):
                  proj_drop: float = 0.,
                  cross_attn: bool = False,
                  keep_query_pos: bool = False,
-                 batch_first=True,
+                 batch_first: bool = True,
                  init_cfg=None):
         super().__init__(init_cfg=init_cfg)
-        assert batch_first is True
+
+        assert batch_first is True, 'First \
+        dimension of all DETRs in mmdet is \
+        `batch`, please set `batch_first` flag.'
+
         self.cross_attn = cross_attn
         self.keep_query_pos = keep_query_pos
         self.embed_dims = embed_dims
