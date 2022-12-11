@@ -33,6 +33,9 @@ class ConditionalAttention(BaseModule):
         keep_query_pos (bool): Whether to transform query_pos before cross
             attention.
             Default: False.
+        batch_first (bool): When it is True,  Key, Query and Value are shape of
+            (batch, n, embed_dim), otherwise (n, batch, embed_dim).
+             Default: True.
         init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
             Default: None.
     """
@@ -44,8 +47,10 @@ class ConditionalAttention(BaseModule):
                  proj_drop: float = 0.,
                  cross_attn: bool = False,
                  keep_query_pos: bool = False,
+                 batch_first=True,
                  init_cfg=None):
         super().__init__(init_cfg=init_cfg)
+        assert batch_first is True
         self.cross_attn = cross_attn
         self.keep_query_pos = keep_query_pos
         self.embed_dims = embed_dims
@@ -99,7 +104,7 @@ class ConditionalAttention(BaseModule):
         """
         assert key.size(1) == value.size(1), \
             f'{"key, value must have the same sequence length"}'
-        assert query.size(0) == key.size(0) == value.size(1), \
+        assert query.size(0) == key.size(0) == value.size(0), \
             f'{"batch size must be equal for query, key, value"}'
         assert query.size(2) == key.size(2), \
             f'{"q_dims, k_dims must be equal"}'
