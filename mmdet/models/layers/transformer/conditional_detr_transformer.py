@@ -423,6 +423,6 @@ class ConditionalAttention(BaseModule):
             sa_output = self.forward_attn(
                 query=q, key=k, value=v, attn_mask=attn_mask)[0]
             if self.training:
-                sa_output = torch.cat(sa_output.split(bs, dim=1), dim=0)
+                sa_output = torch.cat(sa_output.split(bs, dim=0), dim=0)
             query = query + self.proj_drop(sa_output)
         return query
