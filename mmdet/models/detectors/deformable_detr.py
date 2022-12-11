@@ -190,9 +190,6 @@ class DeformableDETR(DetectionTransformer):
         # (bs, num_feat_points, dim)
         feat_flatten = torch.cat(feat_flatten, 1)
         lvl_pos_embed_flatten = torch.cat(lvl_pos_embed_flatten, 1)
-        # (num_feat_points, bs, dim)
-        feat_flatten = feat_flatten.permute(1, 0, 2)
-        lvl_pos_embed_flatten = lvl_pos_embed_flatten.permute(1, 0, 2)
 
         spatial_shapes = torch.as_tensor(  # (num_level, 2)
             spatial_shapes,
@@ -231,12 +228,12 @@ class DeformableDETR(DetectionTransformer):
         in `mmdet/detector/base_detr.py`.
 
         Args:
-            feat (Tensor): Sequential features, has shape (num_feat_points, bs,
+            feat (Tensor): Sequential features, has shape (bs, num_feat_points,
                 dim).
             feat_mask (Tensor): ByteTensor, the padding mask of the features,
-                has shape (num_feat_points, bs).
+                has shape (bs, num_feat_points).
             feat_pos (Tensor): The positional embeddings of the features, has
-                shape (num_feat_points, bs, dim).
+                shape (bs, num_feat_points, dim).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
@@ -256,8 +253,7 @@ class DeformableDETR(DetectionTransformer):
             key_padding_mask=feat_mask,  # for self_attn
             spatial_shapes=spatial_shapes,
             level_start_index=level_start_index,
-            valid_ratios=valid_ratios)  # (num_feat_points, bs, dim)
-        memory = memory.permute(1, 0, 2)  # (bs, num_feat_points, dim)
+            valid_ratios=valid_ratios)
         encoder_outputs_dict = dict(
             memory=memory,
             memory_mask=feat_mask,
@@ -308,6 +304,7 @@ class DeformableDETR(DetectionTransformer):
                     output_memory)
             enc_outputs_coord_unact = self.bbox_head.reg_branches[
                 self.decoder.num_layers](output_memory) + output_proposals
+            enc_outputs_coord = enc_outputs_coord_unact.sigmoid()
             # We only use the first channel in enc_outputs_class as foreground,
             # the other (num_classes - 1) channels are actually not used.
             # Its targets are set to be 0s, which indicates the first
@@ -328,29 +325,21 @@ class DeformableDETR(DetectionTransformer):
             pos_trans_out = self.pos_trans_norm(pos_trans_out)
             query_pos, query = torch.split(pos_trans_out, c, dim=2)
         else:
+            enc_outputs_class, enc_outputs_coord = None, None
             query_embed = self.query_embedding.weight
             query_pos, query = torch.split(query_embed, c, dim=1)
             query_pos = query_pos.unsqueeze(0).expand(batch_size, -1, -1)
             query = query.unsqueeze(0).expand(batch_size, -1, -1)
             reference_points = self.reference_points_fc(query_pos).sigmoid()
 
-        query = query.permute(1, 0, 2)  # (num_queries, bs, dim)
-        memory = memory.permute(1, 0, 2)  # (num_feat_points, bs, dim)
-        query_pos = query_pos.permute(1, 0, 2)  # (num_queries, bs, dim)
-
         decoder_inputs_dict = dict(
             query=query,
             query_pos=query_pos,
             memory=memory,
             reference_points=reference_points)
-        if self.training:
-            head_inputs_dict = dict(
-                enc_outputs_class=enc_outputs_class
-                if self.as_two_stage else None,
-                enc_outputs_coord=enc_outputs_coord_unact.sigmoid()
-                if self.as_two_stage else None)
-        else:
-            head_inputs_dict = dict()
+        head_inputs_dict = dict(
+            enc_outputs_class=enc_outputs_class,
+            enc_outputs_coord=enc_outputs_coord) if self.training else dict()
         return decoder_inputs_dict, head_inputs_dict
 
     def forward_decoder(self, query: Tensor, query_pos: Tensor, memory: Tensor,
@@ -366,11 +355,11 @@ class DeformableDETR(DetectionTransformer):
 
         Args:
             query (Tensor): The queries of decoder inputs, has shape
-                (num_queries, bs, dim).
+                (bs, num_queries, dim).
             query_pos (Tensor): The positional queries of decoder inputs,
-                has shape (num_queries, bs, dim).
+                has shape (bs, num_queries, dim).
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat_points, bs, dim).
+                has shape (bs, num_feat_points, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
                 has shape (bs, num_feat_points).
             reference_points (Tensor): The initial reference, has shape
@@ -455,7 +444,7 @@ class DeformableDETR(DetectionTransformer):
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat_points, bs, dim).
+                has shape (bs, num_feat_points, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
                 has shape (bs, num_feat_points).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
@@ -471,12 +460,12 @@ class DeformableDETR(DetectionTransformer):
               as (cx, cy, w, h).
         """
 
-        num_feat_points = memory.size(0)
+        bs = memory.size(0)
         proposals = []
         _cur = 0  # start index in the sequence of the current level
         for lvl, (H, W) in enumerate(spatial_shapes):
-            mask_flatten_ = memory_mask[:, _cur:(_cur + H * W)].view(
-                num_feat_points, H, W, 1)
+            mask_flatten_ = memory_mask[:,
+                                        _cur:(_cur + H * W)].view(bs, H, W, 1)
             valid_H = torch.sum(~mask_flatten_[:, :, 0, 0], 1).unsqueeze(-1)
             valid_W = torch.sum(~mask_flatten_[:, 0, :, 0], 1).unsqueeze(-1)
 
@@ -487,12 +476,10 @@ class DeformableDETR(DetectionTransformer):
                     0, W - 1, W, dtype=torch.float32, device=memory.device))
             grid = torch.cat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], -1)
 
-            scale = torch.cat([valid_W, valid_H],
-                              1).view(num_feat_points, 1, 1, 2)
-            grid = (grid.unsqueeze(0).expand(num_feat_points, -1, -1, -1) +
-                    0.5) / scale
+            scale = torch.cat([valid_W, valid_H], 1).view(bs, 1, 1, 2)
+            grid = (grid.unsqueeze(0).expand(bs, -1, -1, -1) + 0.5) / scale
             wh = torch.ones_like(grid) * 0.05 * (2.0**lvl)
-            proposal = torch.cat((grid, wh), -1).view(num_feat_points, -1, 4)
+            proposal = torch.cat((grid, wh), -1).view(bs, -1, 4)
             proposals.append(proposal)
             _cur += (H * W)
         output_proposals = torch.cat(proposals, 1)

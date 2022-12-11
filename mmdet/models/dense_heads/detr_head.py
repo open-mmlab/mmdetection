@@ -80,7 +80,7 @@ class DETRHead(BaseModule):
             assert isinstance(class_weight, float), 'Expected ' \
                 'class_weight to have type float. Found ' \
                 f'{type(class_weight)}.'
-            # NOTE following the official DETR rep0, bg_cls_weight means
+            # NOTE following the official DETR repo, bg_cls_weight means
             # relative classification weight of the no-object class.
             bg_cls_weight = loss_cls.get('bg_cls_weight', class_weight)
             assert isinstance(bg_cls_weight, float), 'Expected ' \
@@ -132,11 +132,8 @@ class DETRHead(BaseModule):
             add_residual=False)
         # NOTE the activations of reg_branch here is the same as
         # those in transformer, but they are actually different
-        # in DAB DETR (prelu in transformer and relu in reg_branch)
+        # in DAB-DETR (prelu in transformer and relu in reg_branch)
         self.fc_reg = Linear(self.embed_dims, 4)
-
-    # Note function _load_from_state_dict is deleted without
-    # supporting refactor-DETR in mmdetection2.0
 
     def forward(self, hidden_states: Tensor) -> Tuple[Tensor]:
         """"Forward function.
@@ -144,18 +141,18 @@ class DETRHead(BaseModule):
         Args:
             hidden_states (Tensor): Features from transformer decoder. If
                 `return_intermediate_dec` in detr.py is True output has shape
-                (num_hidden_states, bs, num_queries, dim), else has shape
+                (num_decoder_layers, bs, num_queries, dim), else has shape
                 (1, bs, num_queries, dim) which only contains the last layer
                 outputs.
         Returns:
             tuple[Tensor]: results of head containing the following tensor.
 
             - layers_cls_scores (Tensor): Outputs from the classification head,
-              shape (num_hidden_states, bs, num_queries, cls_out_channels).
+              shape (num_decoder_layers, bs, num_queries, cls_out_channels).
               Note cls_out_channels should include background.
             - layers_bbox_preds (Tensor): Sigmoid outputs from the regression
               head with normalized coordinate format (cx, cy, w, h), has shape
-              (num_hidden_states, bs, num_queries, 4).
+              (num_decoder_layers, bs, num_queries, 4).
         """
         layers_cls_scores = self.fc_cls(hidden_states)
         layers_bbox_preds = self.fc_reg(

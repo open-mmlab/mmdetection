@@ -272,12 +272,12 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
         """Forward with Transformer encoder.
 
         Args:
-            feat (Tensor): Sequential features, has shape (num_feat_points, bs,
+            feat (Tensor): Sequential features, has shape (bs, num_feat_points,
                 dim).
             feat_mask (Tensor): ByteTensor, the padding mask of the features,
-                has shape (num_feat_points, bs).
+                has shape (bs, num_feat_points).
             feat_pos (Tensor): The positional embeddings of the features, has
-                shape (num_feat_points, bs, dim).
+                shape (bs, num_feat_points, dim).
 
         Returns:
             dict: The dictionary of encoder outputs, which includes the
@@ -293,7 +293,7 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat_points, bs, dim).
+                has shape (bs, num_feat_points, dim).
 
         Returns:
             tuple[dict, dict]: The first dict contains the inputs of decoder
@@ -316,11 +316,11 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
 
         Args:
             query (Tensor): The queries of decoder inputs, has shape
-                (num_queries, bs, dim).
+                (bs, num_queries, dim).
             query_pos (Tensor): The positional queries of decoder inputs,
-                has shape (num_queries, bs, dim).
+                has shape (bs, num_queries, dim).
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat_points, bs, dim).
+                has shape (bs, num_feat_points, dim).
 
         Returns:
             dict: The dictionary of decoder outputs, which includes the

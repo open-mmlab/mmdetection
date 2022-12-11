@@ -33,12 +33,12 @@ class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
         """Forward function of Transformer encoder.
 
         Args:
-            query (Tensor): The input query, has shape (num_queries, bs, dim).
+            query (Tensor): The input query, has shape (bs, num_queries, dim).
             query_pos (Tensor): The positional encoding for query, has shape
-                (num_queries, bs, dim). If not None, it will be added to the
+                (bs, num_queries, dim). If not None, it will be added to the
                 `query` before forward function. Defaults to None.
             key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
-                input. ByteTensor, has shape (num_queries, bs).
+                input. ByteTensor, has shape (bs, num_queries).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
             level_start_index (Tensor): The start index of each level.
@@ -51,7 +51,7 @@ class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
         Returns:
             Tensor: Output queries of Transformer encoder, which is also
             called 'encoder output embeddings' or 'memory', has shape
-            (num_queries, bs, dim)
+            (bs, num_queries, dim)
         """
         reference_points = self.get_encoder_reference_points(
             spatial_shapes, valid_ratios, device=query.device)
@@ -134,14 +134,14 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
         """Forward function of Transformer decoder.
 
         Args:
-            query (Tensor): The input queries, has shape (num_queries, bs,
+            query (Tensor): The input queries, has shape (bs, num_queries,
                 dim).
             query_pos (Tensor): The input positional query, has shape
-                (num_queries, bs, dim). It will be added to `query` before
+                (bs, num_queries, dim). It will be added to `query` before
                 forward function.
-            value (Tensor): The input values, has shape (num_value, bs, dim).
+            value (Tensor): The input values, has shape (bs, num_value, dim).
             key_padding_mask (Tensor): The `key_padding_mask` of `cross_attn`
-                input. ByteTensor, has shape (num_value, bs).
+                input. ByteTensor, has shape (bs, num_value).
             reference_points (Tensor): The initial reference, has shape
                 (bs, num_queries, 4) with the last dimension arranged as
                 (cx, cy, w, h) when `as_two_stage` is `True`, otherwise has
@@ -196,7 +196,6 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
                 valid_ratios=valid_ratios,
                 reference_points=reference_points_input,
                 **kwargs)
-            output = output.permute(1, 0, 2)
 
             if reg_branches is not None:
                 tmp = reg_branches[layer_id](output)
@@ -212,7 +211,6 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
                     new_reference_points = new_reference_points.sigmoid()
                 reference_points = new_reference_points.detach()
 
-            output = output.permute(1, 0, 2)
             if self.return_intermediate:
                 intermediate.append(output)
                 intermediate_reference_points.append(reference_points)
