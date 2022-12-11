@@ -188,7 +188,7 @@ class DINO(DeformableDETR):
 
         query = self.query_embedding.weight[:, None, :]
         query = query.repeat(1, bs, 1).transpose(0, 1)
-        if self.training:  # TODO: whether to transfer this to query_generator?
+        if self.training:
             dn_label_query, dn_bbox_query, dn_mask, dn_meta = \
                 self.dn_query_generator(batch_data_samples)
             query = torch.cat([dn_label_query, query], dim=1)
@@ -199,24 +199,18 @@ class DINO(DeformableDETR):
             dn_mask, dn_meta = None, None
         reference_points = reference_points.sigmoid()
 
-        query = query.permute(1, 0, 2)
-        memory = memory.permute(1, 0, 2)
-
         decoder_inputs_dict = dict(
             query=query,
             memory=memory,
             reference_points=reference_points,
             dn_mask=dn_mask)
-        if self.training:
-            # NOTE DINO calculates encoder losses on scores and coordinates
-            # of selected top-k encoder queries, while DeformDETR is of all
-            # encoder queries.
-            head_inputs_dict = dict(
-                enc_outputs_class=topk_score,
-                enc_outputs_coord=topk_coords,
-                dn_meta=dn_meta)
-        else:
-            head_inputs_dict = dict()
+        # NOTE DINO calculates encoder losses on scores and coordinates
+        # of selected top-k encoder queries, while DeformDETR is of all
+        # encoder queries.
+        head_inputs_dict = dict(
+            enc_outputs_class=topk_score,
+            enc_outputs_coord=topk_coords,
+            dn_meta=dn_meta) if self.training else dict()
         return decoder_inputs_dict, head_inputs_dict
 
     def forward_decoder(self,
@@ -237,11 +231,11 @@ class DINO(DeformableDETR):
 
         Args:
             query (Tensor): The queries of decoder inputs, has shape
-                (num_queries_total, bs, dim), where `num_queries_total` is the
+                (bs, num_queries_total, dim), where `num_queries_total` is the
                 sum of `num_denoising_queries` and `num_matching_queries` when
                 `self.training` is `True`, else `num_matching_queries`.
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat_points, bs, dim).
+                has shape (bs, num_feat_points, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
                 has shape (bs, num_feat_points).
             reference_points (Tensor): The initial reference, has shape
@@ -277,8 +271,6 @@ class DINO(DeformableDETR):
             level_start_index=level_start_index,
             valid_ratios=valid_ratios,
             reg_branches=self.bbox_head.reg_branches)
-
-        # inter_states = inter_states.permute(0, 2, 1, 3)
 
         if len(query) == self.num_queries:
             # NOTE: This is to make sure label_embeding can be involved to

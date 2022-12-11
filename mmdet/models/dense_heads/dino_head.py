@@ -33,7 +33,7 @@ class DINOHead(DeformableDETRHead):
 
         Args:
             hidden_states (Tensor): Hidden states output from each decoder
-                layer, has shape (num_decoder_layers, num_queries_total, bs,
+                layer, has shape (num_decoder_layers, bs, num_queries_total,
                 dim), where `num_queries_total` is the sum of
                 `num_denoising_queries` and `num_matching_queries` when
                 `self.training` is `True`, else `num_matching_queries`.

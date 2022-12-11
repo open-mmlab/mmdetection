@@ -74,7 +74,6 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
                 reference_points_input[:, :, 0, :])
             query_pos = self.ref_point_head(query_sine_embed)
 
-            query_pos = query_pos.permute(1, 0, 2)
             query = layer(
                 query,
                 query_pos=query_pos,
@@ -86,7 +85,6 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
                 valid_ratios=valid_ratios,
                 reference_points=reference_points_input,
                 **kwargs)
-            query = query.permute(1, 0, 2)
 
             if reg_branches is not None:
                 tmp = reg_branches[lid](query)
@@ -96,7 +94,6 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
                 new_reference_points = new_reference_points.sigmoid()
                 reference_points = new_reference_points.detach()
 
-            query = query.permute(1, 0, 2)
             if self.return_intermediate:
                 intermediate.append(self.norm(query))
                 intermediate_reference_points.append(new_reference_points)
