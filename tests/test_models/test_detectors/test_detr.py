@@ -76,6 +76,7 @@ class TestDETR(TestCase):
                 loss.item(), 0,
                 'cls loss, or box loss, or iou loss should be non-zero')
 
+        model.eval()
         # test _forward
         model._forward(random_image, batch_data_samples=batch_data_samples2)
         # test only predict

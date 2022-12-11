@@ -46,15 +46,15 @@ class DetrTransformerEncoder(BaseModule):
 
         Args:
             query (Tensor): Input queries of encoder, has shape
-                (num_query, bs, dim).
+                (bs, num_queries, dim).
             query_pos (Tensor): The positional embeddings of the queries, has
-                shape (num_query, bs, dim).
+                shape (bs, num_queries, dim).
             key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
-                input. ByteTensor, has shape (num_query, bs).
+                input. ByteTensor, has shape (bs, num_queries).
 
         Returns:
-            Tensor: Has shape (bs, num_query, dim) if `batch_first` is `True`,
-            otherwise (num_query, bs, dim).
+            Tensor: Has shape (bs, num_queries, dim) if `batch_first` is
+            `True`, otherwise (num_queries, bs, dim).
         """
         for layer in self.layers:
             query = layer(query, query_pos, key_padding_mask, **kwargs)
@@ -104,10 +104,8 @@ class DetrTransformerDecoder(BaseModule):
                 **kwargs) -> Tensor:
         """Forward function of decoder
         Args:
-            query (Tensor): The input query, has shape (num_query, bs, dim)
-                if `batch_first` is `False`, else (bs, num_query, dim).
-            key (Tensor): The input key, has shape (num_key, bs, dim) if
-                `batch_first` is `False`, else (bs, num_key, dim). If
+            query (Tensor): The input query, has shape (bs, num_queries, dim).
+            key (Tensor): The input key, has shape (bs, num_keys, dim). If
                 `None`, the `query` will be used. Defaults to `None`.
             value (Tensor): The input value with the same shape as `key`.
                 If `None`, the `key` will be used. Defaults to `None`.
@@ -120,16 +118,12 @@ class DetrTransformerDecoder(BaseModule):
                 has the same shape as `key`, then `query_pos` will be used
                 as `key_pos`. Defaults to `None`.
             key_padding_mask (Tensor): The `key_padding_mask` of `cross_attn`
-                input. ByteTensor, has shape (num_value, bs).
+                input. ByteTensor, has shape (bs, num_value).
 
         Returns:
-            Tensor: When `batch_first` is `False`. The forwarded results
-            will have shape (num_decoder_layers, num_query, bs, dim) if
-            `return_intermediate` is `True` else (num_query, bs, dim).
-
-            When `batch_first` is `True`. The forwarded results will
-            have shape (num_decoder_layers, bs, num_query, dim) if
-            `return_intermediate` is `True` else (bs, num_query, dim).
+            Tensor: The forwarded results will have shape
+            (num_decoder_layers, bs, num_queries, dim) if
+            `return_intermediate` is `True` else (bs, num_queries, dim).
         """
         intermediate = []
         for layer in self.layers:
@@ -162,8 +156,6 @@ class DetrTransformerEncoderLayer(BaseModule):
             config. Defaults to `LN`.
         init_cfg (:obj:`ConfigDict` or dict, optional): Config to control
             the initialization. Defaults to None.
-        batch_first (bool, optional): If `True`, the output will have shape
-            (bs, h*w, dim), otherwise (h*w, bs, dim). Defaults to False.
     """
 
     def __init__(self,
@@ -176,16 +168,18 @@ class DetrTransformerEncoderLayer(BaseModule):
                      ffn_drop=0.,
                      act_cfg=dict(type='ReLU', inplace=True)),
                  norm_cfg: OptConfigType = dict(type='LN'),
-                 init_cfg: OptConfigType = None,
-                 batch_first: bool = False) -> None:
+                 init_cfg: OptConfigType = None) -> None:
 
         super().__init__(init_cfg=init_cfg)
-        if 'batch_first' in self_attn_cfg:
-            assert batch_first == self_attn_cfg['batch_first']
-        else:
-            self_attn_cfg['batch_first'] = batch_first
-        self.batch_first = batch_first
+
         self.self_attn_cfg = self_attn_cfg
+        if 'batch_first' not in self.self_attn_cfg:
+            self.self_attn_cfg['batch_first'] = True
+        else:
+            assert self.self_attn_cfg['batch_first'] is True, 'First \
+            dimension of all DETRs in mmdet is `batch`, \
+            please set `batch_first` flag.'
+
         self.ffn_cfg = ffn_cfg
         self.norm_cfg = norm_cfg
         self._init_layers()
@@ -206,16 +200,14 @@ class DetrTransformerEncoderLayer(BaseModule):
         """Forward function of an encoder layer.
 
         Args:
-            query (Tensor): The input query, has shape (num_query, bs, dim)
-                if `batch_first` is `False`, else (bs, num_query, dim).
+            query (Tensor): The input query, has shape (bs, num_queries, dim).
             query_pos (Tensor): The positional encoding for query, with
                 the same shape as `query`. If not None, it will
                 be added to `query` before forward function. Defaults to None.
             key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
-                input. ByteTensor. has shape (num_query, bs).
+                input. ByteTensor. has shape (bs, num_queries).
         Returns:
-            Tensor: forwarded results, has shape (num_query, bs, dim) if
-            `self.batch_first` is `False`, else (bs, num_query, dim).
+            Tensor: forwarded results, has shape (bs, num_queries, dim).
         """
         query = self.self_attn(
             query=query,
@@ -246,15 +238,19 @@ class DetrTransformerDecoderLayer(BaseModule):
             config. Defaults to `LN`.
         init_cfg (:obj:`ConfigDict` or dict, optional): Config to control
             the initialization. Defaults to None.
-        batch_first (bool, optional): If `True`, the output will have shape
-            (bs, h*w, dim), otherwise (h*w, bs, dim). Defaults to False.
     """
 
     def __init__(self,
                  self_attn_cfg: OptConfigType = dict(
-                     embed_dims=256, num_heads=8, dropout=0.0),
+                     embed_dims=256,
+                     num_heads=8,
+                     dropout=0.0,
+                     batch_first=True),
                  cross_attn_cfg: OptConfigType = dict(
-                     embed_dims=256, num_heads=8, dropout=0.0),
+                     embed_dims=256,
+                     num_heads=8,
+                     dropout=0.0,
+                     batch_first=True),
                  ffn_cfg: OptConfigType = dict(
                      embed_dims=256,
                      feedforward_channels=1024,
@@ -263,18 +259,26 @@ class DetrTransformerDecoderLayer(BaseModule):
                      act_cfg=dict(type='ReLU', inplace=True),
                  ),
                  norm_cfg: OptConfigType = dict(type='LN'),
-                 init_cfg: OptConfigType = None,
-                 batch_first: bool = False) -> None:
+                 init_cfg: OptConfigType = None) -> None:
 
         super().__init__(init_cfg=init_cfg)
-        for attn_cfg in (self_attn_cfg, cross_attn_cfg):
-            if 'batch_first' in attn_cfg:
-                assert batch_first == attn_cfg['batch_first']
-            else:
-                attn_cfg['batch_first'] = batch_first
-        self.batch_first = batch_first
+
         self.self_attn_cfg = self_attn_cfg
         self.cross_attn_cfg = cross_attn_cfg
+        if 'batch_first' not in self.self_attn_cfg:
+            self.self_attn_cfg['batch_first'] = True
+        else:
+            assert self.self_attn_cfg['batch_first'] is True, 'First \
+            dimension of all DETRs in mmdet is `batch`, \
+            please set `batch_first` flag.'
+
+        if 'batch_first' not in self.cross_attn_cfg:
+            self.cross_attn_cfg['batch_first'] = True
+        else:
+            assert self.cross_attn_cfg['batch_first'] is True, 'First \
+            dimension of all DETRs in mmdet is `batch`, \
+            please set `batch_first` flag.'
+
         self.ffn_cfg = ffn_cfg
         self.norm_cfg = norm_cfg
         self._init_layers()
@@ -297,17 +301,15 @@ class DetrTransformerDecoderLayer(BaseModule):
                 value: Tensor = None,
                 query_pos: Tensor = None,
                 key_pos: Tensor = None,
-                self_attn_masks: Tensor = None,
-                cross_attn_masks: Tensor = None,
+                self_attn_mask: Tensor = None,
+                cross_attn_mask: Tensor = None,
                 key_padding_mask: Tensor = None,
                 **kwargs) -> Tensor:
         """
         Args:
-            query (Tensor): The input query, has shape (num_query, bs, dim)
-                if `self.batch_first` is `False`, else (bs, num_query, dim).
-            key (Tensor, optional): The input key, has shape (num_key, bs, dim)
-                if `self.batch_first` is `False`, else (bs, num_key, dim).
-                If `None`, the `query` will be used. Defaults to `None`.
+            query (Tensor): The input query, has shape (bs, num_queries, dim).
+            key (Tensor, optional): The input key, has shape (bs, num_keys,
+                dim). If `None`, the `query` will be used. Defaults to `None`.
             value (Tensor, optional): The input value, has the same shape as
                 `key`, as in `nn.MultiheadAttention.forward`. If `None`, the
                 `key` will be used. Defaults to `None`.
@@ -319,19 +321,18 @@ class DetrTransformerDecoderLayer(BaseModule):
                 `key` before forward function. If None, and `query_pos` has the
                 same shape as `key`, then `query_pos` will be used for
                 `key_pos`. Defaults to None.
-            self_attn_masks (Tensor, optional): ByteTensor mask, has shape
-                (num_query, num_key), as in `nn.MultiheadAttention.forward`.
+            self_attn_mask (Tensor, optional): ByteTensor mask, has shape
+                (num_queries, num_keys), as in `nn.MultiheadAttention.forward`.
                 Defaults to None.
-            cross_attn_masks (Tensor, optional): ByteTensor mask, has shape
-                (num_query, num_key), as in `nn.MultiheadAttention.forward`.
+            cross_attn_mask (Tensor, optional): ByteTensor mask, has shape
+                (num_queries, num_keys), as in `nn.MultiheadAttention.forward`.
                 Defaults to None.
             key_padding_mask (Tensor, optional): The `key_padding_mask` of
-                `self_attn` input. ByteTensor, has shape (num_value, bs).
+                `self_attn` input. ByteTensor, has shape (bs, num_value).
                 Defaults to None.
 
         Returns:
-            Tensor: forwarded results, has shape (num_query, bs, dim) if
-            `self.batch_first` is `False`, else (bs, num_query, dim).
+            Tensor: forwarded results, has shape (bs, num_queries, dim).
         """
 
         query = self.self_attn(
@@ -340,7 +341,7 @@ class DetrTransformerDecoderLayer(BaseModule):
             value=query,
             query_pos=query_pos,
             key_pos=query_pos,
-            attn_mask=self_attn_masks,
+            attn_mask=self_attn_mask,
             **kwargs)
         query = self.norms[0](query)
         query = self.cross_attn(
@@ -349,7 +350,7 @@ class DetrTransformerDecoderLayer(BaseModule):
             value=value,
             query_pos=query_pos,
             key_pos=key_pos,
-            attn_mask=cross_attn_masks,
+            attn_mask=cross_attn_mask,
             key_padding_mask=key_padding_mask,
             **kwargs)
         query = self.norms[1](query)

@@ -32,7 +32,7 @@ class DETR(DetectionTransformer):
         # NOTE The embed_dims is typically passed from the inside out.
         # For example in DETR, The embed_dims is passed as
         # self_attn -> the first encoder layer -> encoder -> detector.
-        self.query_embedding = nn.Embedding(self.num_query, self.embed_dims)
+        self.query_embedding = nn.Embedding(self.num_queries, self.embed_dims)
 
         num_feats = self.positional_encoding.num_feats
         assert num_feats * 2 == self.embed_dims, \
@@ -99,9 +99,9 @@ class DETR(DetectionTransformer):
         pos_embed = self.positional_encoding(masks)
 
         # use `view` instead of `flatten` for dynamically exporting to ONNX
-        # [bs, c, h, w] -> [h*w, bs, c]
-        feat = feat.view(batch_size, feat_dim, -1).permute(2, 0, 1)
-        pos_embed = pos_embed.view(batch_size, feat_dim, -1).permute(2, 0, 1)
+        # [bs, c, h, w] -> [bs, h*w, c]
+        feat = feat.view(batch_size, feat_dim, -1).permute(0, 2, 1)
+        pos_embed = pos_embed.view(batch_size, feat_dim, -1).permute(0, 2, 1)
         # [bs, h, w] -> [bs, h*w]
         masks = masks.view(batch_size, -1)
 
@@ -121,11 +121,12 @@ class DETR(DetectionTransformer):
         in `mmdet/detector/base_detr.py`.
 
         Args:
-            feat (Tensor): Sequential features, has shape (num_feat, bs, dim).
+            feat (Tensor): Sequential features, has shape (bs, num_feat_points,
+                dim).
             feat_mask (Tensor): ByteTensor, the padding mask of the features,
-                has shape (num_feat, bs).
+                has shape (bs, num_feat_points).
             feat_pos (Tensor): The positional embeddings of the features, has
-                shape (num_feat, bs, dim).
+                shape (bs, num_feat_points, dim).
 
         Returns:
             dict: The dictionary of encoder outputs, which includes the
@@ -148,7 +149,7 @@ class DETR(DetectionTransformer):
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat, bs, dim).
+                has shape (bs, num_feat_points, dim).
 
         Returns:
             tuple[dict, dict]: The first dict contains the inputs of decoder
@@ -163,10 +164,10 @@ class DETR(DetectionTransformer):
               support 'two stage' or 'query selection' strategies.
         """
 
-        batch_size = memory.size(1)
+        batch_size = memory.size(0)  # (bs, num_feat_points, dim)
         query_pos = self.query_embedding.weight
-        # (num_query, dim) -> (num_query, bs, dim)
-        query_pos = query_pos.unsqueeze(1).repeat(1, batch_size, 1)
+        # (num_queries, dim) -> (bs, num_queries, dim)
+        query_pos = query_pos.unsqueeze(0).repeat(batch_size, 1, 1)
         query = torch.zeros_like(query_pos)
 
         decoder_inputs_dict = dict(
@@ -185,21 +186,21 @@ class DETR(DetectionTransformer):
 
         Args:
             query (Tensor): The queries of decoder inputs, has shape
-                (num_query, bs, dim).
+                (bs, num_queries, dim).
             query_pos (Tensor): The positional queries of decoder inputs,
-                has shape (num_query, bs, dim).
+                has shape (bs, num_queries, dim).
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat, bs, dim).
+                has shape (bs, num_feat_points, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
-                has shape (bs, num_feat).
+                has shape (bs, num_feat_points).
             memory_pos (Tensor): The positional embeddings of memory, has
-                shape (num_feat, bs, dim).
+                shape (bs, num_feat_points, dim).
 
         Returns:
             dict: The dictionary of decoder outputs, which includes the
             `hidden_states` of the decoder output.
         """
-        # (num_decoder_layers, num_query, bs, dim)
+        # (num_decoder_layers, bs, num_queries, dim)
         hidden_states = self.decoder(
             query=query,
             key=memory,
@@ -207,6 +208,6 @@ class DETR(DetectionTransformer):
             query_pos=query_pos,
             key_pos=memory_pos,
             key_padding_mask=memory_mask)  # for cross_attn
-        hidden_states = hidden_states.transpose(1, 2)
+
         head_inputs_dict = dict(hidden_states=hidden_states)
         return head_inputs_dict

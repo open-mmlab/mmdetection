@@ -3,7 +3,7 @@ _base_ = [
 ]
 model = dict(
     type='DeformableDETR',
-    num_query=300,
+    num_queries=300,
     num_feature_levels=4,
     with_box_refine=False,
     as_two_stage=False,
@@ -35,7 +35,8 @@ model = dict(
         num_layers=6,
         layer_cfg=dict(  # DeformableDetrTransformerEncoderLayer
             self_attn_cfg=dict(  # MultiScaleDeformableAttention
-                embed_dims=256),
+                embed_dims=256,
+                batch_first=True),
             ffn_cfg=dict(
                 embed_dims=256, feedforward_channels=1024, ffn_drop=0.1))),
     decoder=dict(  # DeformableDetrTransformerDecoder
@@ -45,9 +46,11 @@ model = dict(
             self_attn_cfg=dict(  # MultiheadAttention
                 embed_dims=256,
                 num_heads=8,
-                dropout=0.1),
+                dropout=0.1,
+                batch_first=True),
             cross_attn_cfg=dict(  # MultiScaleDeformableAttention
-                embed_dims=256),
+                embed_dims=256,
+                batch_first=True),
             ffn_cfg=dict(
                 embed_dims=256, feedforward_channels=1024, ffn_drop=0.1)),
         post_norm_cfg=None),
