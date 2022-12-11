@@ -15,16 +15,17 @@ from .positional_encoding import (LearnedPositionalEncoding,
                                   SinePositionalEncoding)
 from .res_layer import ResLayer, SimplifiedBasicBlock
 from .se_layer import ChannelAttention, DyReLU, SELayer
-from .transformer import (MLP, DeformableDetrTransformerDecoder,
+# yapf: disable
+from .transformer import (MLP, ConditionalDetrTransformerDecoder,
+                          ConditionalDetrTransformerDecoderLayer,
+                          DeformableDetrTransformerDecoder,
                           DeformableDetrTransformerDecoderLayer,
                           DeformableDetrTransformerEncoder,
                           DeformableDetrTransformerEncoderLayer,
                           DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DetrTransformerEncoder, DetrTransformerEncoderLayer,
                           DynamicConv, PatchEmbed, PatchMerging,
-                          inverse_sigmoid, nchw_to_nlc, nlc_to_nchw,
-                          ConditionalDetrTransformerDecoder,
-                          ConditionalDetrTransformerDecoderLayer)
+                          inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
 
 __all__ = [
     'fast_nms', 'multiclass_nms', 'mask_matrix_nms', 'DropBlock',

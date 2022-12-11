@@ -64,13 +64,13 @@ class ConditionalDETR(DETR):
               support 'two stage' or 'query selection' strategies.
         """
 
-        batch_size = memory.size(1)
+        batch_size = memory.size(0)
         if self.training:
             query_pos = self.query_embedding.weight
         else:
             query_pos = self.query_embedding.weight[:self.num_queries]
-        # (num_queries, dim) -> (num_queries, bs, dim)
-        query_pos = query_pos.unsqueeze(1).repeat(1, batch_size, 1)
+        # (num_queries, dim) -> (bs, num_queries, dim)
+        query_pos = query_pos.unsqueeze(0).repeat(batch_size, 1, 1)
         query = torch.zeros_like(query_pos)
 
         decoder_inputs_dict = dict(
@@ -98,7 +98,7 @@ class ConditionalDETR(DETR):
             dict: The dictionary of decoder outputs, which includes the
             `hidden_states` and `references` of the decoder output.
         """
-        # (num_decoder_layers, num_queries, bs, dim)
+        # (num_decoder_layers, bs, num_queries, dim)
         hidden_states, references = self.decoder(
             query=query,
             key=memory,
@@ -106,7 +106,7 @@ class ConditionalDETR(DETR):
             query_pos=query_pos,
             key_pos=memory_pos,
             key_padding_mask=memory_mask)
-        hidden_states = hidden_states.transpose(1, 2)
+        references = references.transpose(0, 1)
         head_inputs_dict = dict(
             hidden_states=hidden_states, references=references)
         return head_inputs_dict

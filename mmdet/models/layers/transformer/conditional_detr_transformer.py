@@ -184,9 +184,15 @@ class ConditionalAttention(BaseModule):
                  proj_drop: float = 0.,
                  cross_attn: bool = False,
                  keep_query_pos: bool = False,
+                 batch_first: bool = True,
                  init_cfg: OptMultiConfig = None,
                  group_detr=1):
-        super().__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
+
+        assert batch_first is True, 'First \
+        dimension of all DETRs in mmdet is \
+        `batch`, please set `batch_first` flag.'
+
         self.cross_attn = cross_attn
         self.keep_query_pos = keep_query_pos
         self.embed_dims = embed_dims
@@ -194,10 +200,10 @@ class ConditionalAttention(BaseModule):
         self.attn_drop = Dropout(attn_drop)
         self.proj_drop = Dropout(proj_drop)
 
-        self._init_proj()
+        self._init_layers()
         self.group_detr = group_detr
 
-    def _init_proj(self):
+    def _init_layers(self):
         embed_dims = self.embed_dims
         self.qcontent_proj = Linear(embed_dims, embed_dims)
         self.qpos_proj = Linear(embed_dims, embed_dims)
@@ -216,16 +222,17 @@ class ConditionalAttention(BaseModule):
                      value: Tensor,
                      attn_mask: Tensor,
                      key_padding_mask: Tensor = None) -> Tuple[Tensor]:
-        assert key.size(0) == value.size(0), \
+        assert key.size(1) == value.size(1), \
             f'{"key, value must have the same sequence length"}'
-        assert query.size(1) == key.size(1) == value.size(1), \
+        assert query.size(0) == key.size(0) == value.size(0), \
             f'{"batch size must be equal for query, key, value"}'
         assert query.size(2) == key.size(2), \
             f'{"q_dims, k_dims must be equal"}'
         assert value.size(2) == self.embed_dims, \
             f'{"v_dims must be equal to embed_dims"}'
 
-        tgt_len, bs, hidden_dims = query.size()
+        bs, tgt_len, hidden_dims = query.size()
+        _, src_len, _ = key.size()
         head_dims = hidden_dims // self.num_heads
         v_head_dims = self.embed_dims // self.num_heads
         assert head_dims * self.num_heads == hidden_dims, \
@@ -257,8 +264,8 @@ class ConditionalAttention(BaseModule):
             elif attn_mask.dim() == 3:
                 if list(attn_mask.size()) != [
                         bs * self.num_heads,
-                        query.size(0),
-                        key.size(0)
+                        query.size(1),
+                        key.size(1)
                 ]:
                     raise RuntimeError(
                         'The size of the 3D attn_mask is not correct.')
@@ -271,16 +278,16 @@ class ConditionalAttention(BaseModule):
         if key_padding_mask is not None and key_padding_mask.dtype == int:
             key_padding_mask = key_padding_mask.to(torch.bool)
 
-        q = q.contiguous().view(tgt_len, bs * self.num_heads,
-                                head_dims).transpose(0, 1)
+        q = q.contiguous().view(bs, tgt_len, self.num_heads,
+                                head_dims).permute(0, 2, 1, 3).flatten(0, 1)
         if k is not None:
-            k = k.contiguous().view(-1, bs * self.num_heads,
-                                    head_dims).transpose(0, 1)
+            k = k.contiguous().view(bs, src_len, self.num_heads,
+                                    head_dims).permute(0, 2, 1,
+                                                       3).flatten(0, 1)
         if v is not None:
-            v = v.contiguous().view(-1, bs * self.num_heads,
-                                    v_head_dims).transpose(0, 1)
-
-        src_len = k.size(1)
+            v = v.contiguous().view(bs, src_len, self.num_heads,
+                                    v_head_dims).permute(0, 2, 1,
+                                                         3).flatten(0, 1)
 
         if key_padding_mask is not None:
             assert key_padding_mask.size(0) == bs
@@ -313,8 +320,9 @@ class ConditionalAttention(BaseModule):
         attn_output = torch.bmm(attn_output_weights, v)
         assert list(
             attn_output.size()) == [bs * self.num_heads, tgt_len, v_head_dims]
-        attn_output = attn_output.transpose(0, 1).contiguous().view(
-            tgt_len, bs, self.embed_dims)
+        attn_output = attn_output.view(bs, self.num_heads, tgt_len,
+                                       v_head_dims).permute(0, 2, 1,
+                                                            3).flatten(2)
         attn_output = self.out_proj(attn_output)
 
         # average attention weights over heads
@@ -370,8 +378,8 @@ class ConditionalAttention(BaseModule):
             k_content = self.kcontent_proj(key)
             v = self.v_proj(key)
 
-            nq, bs, c = q_content.size()
-            hw, _, _ = k_content.size()
+            bs, nq, c = q_content.size()
+            _, hw, _ = k_content.size()
 
             k_pos = self.kpos_proj(key_pos)
             if is_first or self.keep_query_pos:
@@ -381,14 +389,14 @@ class ConditionalAttention(BaseModule):
             else:
                 q = q_content
                 k = k_content
-            q = q.view(nq, bs, self.num_heads, c // self.num_heads)
+            q = q.view(bs, nq, self.num_heads, c // self.num_heads)
             query_sine_embed = self.qpos_sine_proj(ref_sine_embed)
-            query_sine_embed = query_sine_embed.view(nq, bs, self.num_heads,
+            query_sine_embed = query_sine_embed.view(bs, nq, self.num_heads,
                                                      c // self.num_heads)
-            q = torch.cat([q, query_sine_embed], dim=3).view(nq, bs, 2 * c)
-            k = k.view(hw, bs, self.num_heads, c // self.num_heads)
-            k_pos = k_pos.view(hw, bs, self.num_heads, c // self.num_heads)
-            k = torch.cat([k, k_pos], dim=3).view(hw, bs, 2 * c)
+            q = torch.cat([q, query_sine_embed], dim=3).view(bs, nq, 2 * c)
+            k = k.view(bs, hw, self.num_heads, c // self.num_heads)
+            k_pos = k_pos.view(bs, hw, self.num_heads, c // self.num_heads)
+            k = torch.cat([k, k_pos], dim=3).view(bs, hw, 2 * c)
             ca_output = self.forward_attn(
                 query=q,
                 key=k,
@@ -402,7 +410,7 @@ class ConditionalAttention(BaseModule):
             k_content = self.kcontent_proj(query)
             k_pos = self.kpos_proj(query_pos)
             v = self.v_proj(query)
-            num_queries, bs, _ = q_content.shape
+            bs, num_queries, _ = q_content.shape
             q = q_content if q_pos is None else q_content + q_pos
             k = k_content if k_pos is None else k_content + k_pos
             if self.training:
