@@ -80,7 +80,7 @@ class DETRHead(BaseModule):
             assert isinstance(class_weight, float), 'Expected ' \
                 'class_weight to have type float. Found ' \
                 f'{type(class_weight)}.'
-            # NOTE following the official DETR rep0, bg_cls_weight means
+            # NOTE following the official DETR repo, bg_cls_weight means
             # relative classification weight of the no-object class.
             bg_cls_weight = loss_cls.get('bg_cls_weight', class_weight)
             assert isinstance(bg_cls_weight, float), 'Expected ' \
@@ -132,11 +132,8 @@ class DETRHead(BaseModule):
             add_residual=False)
         # NOTE the activations of reg_branch here is the same as
         # those in transformer, but they are actually different
-        # in DAB DETR (prelu in transformer and relu in reg_branch)
+        # in DAB-DETR (prelu in transformer and relu in reg_branch)
         self.fc_reg = Linear(self.embed_dims, 4)
-
-    # Note function _load_from_state_dict is deleted without
-    # supporting refactor-DETR in mmdetection2.0
 
     def forward(self, hidden_states: Tensor) -> Tuple[Tensor]:
         """"Forward function.
@@ -144,17 +141,18 @@ class DETRHead(BaseModule):
         Args:
             hidden_states (Tensor): Features from transformer decoder. If
                 `return_intermediate_dec` in detr.py is True output has shape
-                (num_hidden_states, bs, num_query, dim), else has shape (1,
-                bs, num_query, dim) which only contains the last layer outputs.
+                (num_decoder_layers, bs, num_queries, dim), else has shape
+                (1, bs, num_queries, dim) which only contains the last layer
+                outputs.
         Returns:
             tuple[Tensor]: results of head containing the following tensor.
 
             - layers_cls_scores (Tensor): Outputs from the classification head,
-              shape (num_hidden_states, bs, num_query, cls_out_channels). Note
-              cls_out_channels should include background.
+              shape (num_decoder_layers, bs, num_queries, cls_out_channels).
+              Note cls_out_channels should include background.
             - layers_bbox_preds (Tensor): Sigmoid outputs from the regression
               head with normalized coordinate format (cx, cy, w, h), has shape
-              (num_hidden_states, bs, num_query, 4).
+              (num_decoder_layers, bs, num_queries, 4).
         """
         layers_cls_scores = self.fc_cls(hidden_states)
         layers_bbox_preds = self.fc_reg(
@@ -168,8 +166,8 @@ class DETRHead(BaseModule):
 
         Args:
             hidden_states (Tensor): Feature from the transformer decoder, has
-                shape (num_decoder_layers, bs, num_query, cls_out_channels) or
-                (num_decoder_layers, num_query, bs, cls_out_channels).
+                shape (num_decoder_layers, bs, num_queries, cls_out_channels)
+                or (num_decoder_layers, num_queries, bs, cls_out_channels).
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
@@ -204,11 +202,11 @@ class DETRHead(BaseModule):
         Args:
             all_layers_cls_scores (Tensor): Classification outputs
                 of each decoder layers. Each is a 4D-tensor, has shape
-                (num_decoder_layers, bs, num_query, cls_out_channels).
+                (num_decoder_layers, bs, num_queries, cls_out_channels).
             all_layers_bbox_preds (Tensor): Sigmoid regression
                 outputs of each decoder layers. Each is a 4D-tensor with
                 normalized coordinate format (cx, cy, w, h) and shape
-                (num_decoder_layers, bs, num_query, 4).
+                (num_decoder_layers, bs, num_queries, 4).
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
@@ -256,10 +254,10 @@ class DETRHead(BaseModule):
 
         Args:
             cls_scores (Tensor): Box score logits from a single decoder layer
-                for all images, has shape (bs, num_query, cls_out_channels).
+                for all images, has shape (bs, num_queries, cls_out_channels).
             bbox_preds (Tensor): Sigmoid outputs from a single decoder layer
                 for all images, with normalized coordinate (cx, cy, w, h) and
-                shape (bs, num_query, 4).
+                shape (bs, num_queries, 4).
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
@@ -336,11 +334,11 @@ class DETRHead(BaseModule):
 
         Args:
             cls_scores_list (list[Tensor]): Box score logits from a single
-                decoder layer for each image, has shape [num_query,
+                decoder layer for each image, has shape [num_queries,
                 cls_out_channels].
             bbox_preds_list (list[Tensor]): Sigmoid outputs from a single
                 decoder layer for each image, with normalized coordinate
-                (cx, cy, w, h) and shape [num_query, 4].
+                (cx, cy, w, h) and shape [num_queries, 4].
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
@@ -376,10 +374,10 @@ class DETRHead(BaseModule):
 
         Args:
             cls_score (Tensor): Box score logits from a single decoder layer
-                for one image. Shape [num_query, cls_out_channels].
+                for one image. Shape [num_queries, cls_out_channels].
             bbox_pred (Tensor): Sigmoid outputs from a single decoder layer
                 for one image, with normalized coordinate (cx, cy, w, h) and
-                shape [num_query, 4].
+                shape [num_queries, 4].
             gt_instances (:obj:`InstanceData`): Ground truth of instance
                 annotations. It should includes ``bboxes`` and ``labels``
                 attributes.
@@ -517,11 +515,11 @@ class DETRHead(BaseModule):
         Args:
             layer_cls_scores (Tensor): Classification outputs of the last or
                 all decoder layer. Each is a 4D-tensor, has shape
-                (num_decoder_layers, bs, num_query, cls_out_channels).
+                (num_decoder_layers, bs, num_queries, cls_out_channels).
             layer_bbox_preds (Tensor): Sigmoid regression outputs of the last
                 or all decoder layer. Each is a 4D-tensor with normalized
                 coordinate format (cx, cy, w, h) and shape
-                (num_decoder_layers, bs, num_query, 4).
+                (num_decoder_layers, bs, num_queries, 4).
             batch_img_metas (list[dict]): Meta information of each image.
             rescale (bool, optional): If `True`, return boxes in original
                 image space. Defaults to `True`.
@@ -562,10 +560,10 @@ class DETRHead(BaseModule):
 
         Args:
             cls_score (Tensor): Box score logits from the last decoder layer
-                for each image. Shape [num_query, cls_out_channels].
+                for each image. Shape [num_queries, cls_out_channels].
             bbox_pred (Tensor): Sigmoid outputs from the last decoder layer
                 for each image, with coordinate format (cx, cy, w, h) and
-                shape [num_query, 4].
+                shape [num_queries, 4].
             img_meta (dict): Image meta info.
             rescale (bool): If True, return boxes in original image
                 space. Default True.
@@ -582,7 +580,7 @@ class DETRHead(BaseModule):
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                   the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        assert len(cls_score) == len(bbox_pred)  # num_query
+        assert len(cls_score) == len(bbox_pred)  # num_queries
         max_per_img = self.test_cfg.get('max_per_img', len(cls_score))
         img_shape = img_meta['img_shape']
         # exclude background

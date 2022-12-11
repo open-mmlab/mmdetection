@@ -88,28 +88,29 @@ class DeformableDETRHead(DETRHead):
 
         Args:
             hidden_states (Tensor): Hidden states output from each decoder
-                layer, has shape (num_decoder_layers, num_query, bs, dim).
+                layer, has shape (num_decoder_layers, bs, num_queries, dim).
             references (list[Tensor]): List of the reference from the decoder.
                 The first reference is the `init_reference` (initial) and the
                 other num_decoder_layers(6) references are `inter_references`
-                (intermediate). The `init_reference` has shape (bs, num_query,
-                4) when `as_two_stage` of the detector is `True`, otherwise
-                (bs, num_query, 2). Each `inter_reference` has shape
-                (bs, num_query, 4) when `with_box_refine` of the detector is
-                `True`, otherwise (bs, num_query, 2).
+                (intermediate). The `init_reference` has shape (bs,
+                num_queries, 4) when `as_two_stage` of the detector is `True`,
+                otherwise (bs, num_queries, 2). Each `inter_reference` has
+                shape (bs, num_queries, 4) when `with_box_refine` of the
+                detector is `True`, otherwise (bs, num_queries, 2). The
+                coordinates are arranged as (cx, cy) when the last dimension is
+                2, and (cx, cy, w, h) when it is 4.
 
         Returns:
             tuple[Tensor]: results of head containing the following tensor.
 
             - all_layers_outputs_classes (Tensor): Outputs from the
               classification head, has shape (num_decoder_layers, bs,
-              num_query, cls_out_channels).
+              num_queries, cls_out_channels).
             - all_layers_outputs_coords (Tensor): Sigmoid outputs from the
               regression head with normalized coordinate format (cx, cy, w,
-              h), has shape (num_decoder_layers, bs, num_query, 4).
+              h), has shape (num_decoder_layers, bs, num_queries, 4) with the
+              last dimension arranged as (cx, cy, w, h).
         """
-        # (num_decoder_layers, bs, num_query, dim)
-        hidden_states = hidden_states.permute(0, 2, 1, 3)
         all_layers_outputs_classes = []
         all_layers_outputs_coords = []
 
@@ -147,23 +148,25 @@ class DeformableDETRHead(DETRHead):
 
         Args:
             hidden_states (Tensor): Hidden states output from each decoder
-                layer, has shape (num_decoder_layers, num_query, bs, dim).
+                layer, has shape (num_decoder_layers, num_queries, bs, dim).
             references (list[Tensor]): List of the reference from the decoder.
                 The first reference is the `init_reference` (initial) and the
                 other num_decoder_layers(6) references are `inter_references`
-                (intermediate). The `init_reference` has shape (bs, num_query,
-                4) when `as_two_stage` of the detector is `True`, otherwise
-                (bs, num_query, 2). Each `inter_reference` has shape
-                (bs, num_query, 4) when `with_box_refine` of the detector is
-                `True`, otherwise (bs, num_query, 2).
+                (intermediate). The `init_reference` has shape (bs,
+                num_queries, 4) when `as_two_stage` of the detector is `True`,
+                otherwise (bs, num_queries, 2). Each `inter_reference` has
+                shape (bs, num_queries, 4) when `with_box_refine` of the
+                detector is `True`, otherwise (bs, num_queries, 2). The
+                coordinates are arranged as (cx, cy) when the last dimension is
+                2, and (cx, cy, w, h) when it is 4.
             enc_outputs_class (Tensor): The score of each point on encode
-                feature map, has shape (bs, num_feat, cls_out_channels).
-                Only when `as_two_stage` is `True` it would be returned,
-                otherwise `None` would be returned.
-            enc_outputs_coord (Tensor): The proposal generate from the
-                encode feature map, has shape (bs, num_feat, 4). Only when
-                `as_two_stage` is `True` it would be returned, otherwise
-                `None` would be returned.
+                feature map, has shape (bs, num_feat_points, cls_out_channels).
+                Only when `as_two_stage` is `True` it would be passed in,
+                otherwise it would be `None`.
+            enc_outputs_coord (Tensor): The proposal generate from the encode
+                feature map, has shape (bs, num_feat_points, 4) with the last
+                dimension arranged as (cx, cy, w, h). Only when `as_two_stage`
+                is `True` it would be passed in, otherwise it would be `None`.
             batch_data_samples (list[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
@@ -197,20 +200,21 @@ class DeformableDETRHead(DETRHead):
 
         Args:
             all_layers_cls_scores (Tensor): Classification scores of all
-                decoder layers, has shape (num_decoder_layers, bs, num_query,
+                decoder layers, has shape (num_decoder_layers, bs, num_queries,
                 cls_out_channels).
-            all_layers_bbox_preds (Tensor): Regression outputs of all decode
+            all_layers_bbox_preds (Tensor): Regression outputs of all decoder
                 layers. Each is a 4D-tensor with normalized coordinate format
                 (cx, cy, w, h) and has shape (num_decoder_layers, bs,
-                num_query, 4).
+                num_queries, 4) with the last dimension arranged as
+                (cx, cy, w, h).
             enc_cls_scores (Tensor): The score of each point on encode
-                feature map, has shape (bs, num_feat, cls_out_channels).
-                Only when `as_two_stage` is `True` it would be returned,
-                otherwise `None` would be returned.
-            enc_bbox_preds (Tensor): The proposal generate from the
-                encode feature map, has shape (bs, num_feat, 4). Only when
-                `as_two_stage` is `True` it would be returned, otherwise
-                `None` would be returned.
+                feature map, has shape (bs, num_feat_points, cls_out_channels).
+                Only when `as_two_stage` is `True` it would be passes in,
+                otherwise, it would be `None`.
+            enc_bbox_preds (Tensor): The proposal generate from the encode
+                feature map, has shape (bs, num_feat_points, 4) with the last
+                dimension arranged as (cx, cy, w, h). Only when `as_two_stage`
+                is `True` it would be passed in, otherwise it would be `None`.
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
@@ -249,22 +253,23 @@ class DeformableDETRHead(DETRHead):
                 hidden_states: Tensor,
                 references: List[Tensor],
                 batch_data_samples: SampleList,
-                rescale: bool = True,
-                **kwargs) -> InstanceList:
+                rescale: bool = True) -> InstanceList:
         """Perform forward propagation and loss calculation of the detection
         head on the queries of the upstream network.
 
         Args:
             hidden_states (Tensor): Hidden states output from each decoder
-                layer, has shape (num_decoder_layers, num_query, bs, dim).
+                layer, has shape (num_decoder_layers, num_queries, bs, dim).
             references (list[Tensor]): List of the reference from the decoder.
                 The first reference is the `init_reference` (initial) and the
                 other num_decoder_layers(6) references are `inter_references`
-                (intermediate). The `init_reference` has shape (bs, num_query,
-                4) when `as_two_stage` of the detector is `True`, otherwise
-                (bs, num_query, 2). Each `inter_reference` has shape
-                (bs, num_query, 4) when `with_box_refine` of the detector is
-                `True`, otherwise (bs, num_query, 2).
+                (intermediate). The `init_reference` has shape (bs,
+                num_queries, 4) when `as_two_stage` of the detector is `True`,
+                otherwise (bs, num_queries, 2). Each `inter_reference` has
+                shape (bs, num_queries, 4) when `with_box_refine` of the
+                detector is `True`, otherwise (bs, num_queries, 2). The
+                coordinates are arranged as (cx, cy) when the last dimension is
+                2, and (cx, cy, w, h) when it is 4.
             batch_data_samples (list[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
@@ -295,12 +300,12 @@ class DeformableDETRHead(DETRHead):
 
         Args:
             all_layers_cls_scores (Tensor): Classification scores of all
-                decoder layers, has shape (num_decoder_layers, bs, num_query,
+                decoder layers, has shape (num_decoder_layers, bs, num_queries,
                 cls_out_channels).
-            all_layers_bbox_preds (Tensor): Regression outputs of all decode
+            all_layers_bbox_preds (Tensor): Regression outputs of all decoder
                 layers. Each is a 4D-tensor with normalized coordinate format
-                (cx, cy, w, h) and shape (num_decoder_layers, bs,
-                num_query, 4).
+                (cx, cy, w, h) and shape (num_decoder_layers, bs, num_queries,
+                4) with the last dimension arranged as (cx, cy, w, h).
             batch_img_metas (list[dict]): Meta information of each image.
             rescale (bool, optional): If `True`, return boxes in original
                 image space. Default `False`.
