@@ -1,6 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from .base_det_dataset import BaseDetDataset
-from .builder import DATASETS, PIPELINES, build_dataset
 from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
 from .coco_panoptic import CocoPanopticDataset
@@ -19,7 +18,7 @@ from .xml_style import XMLDataset
 __all__ = [
     'XMLDataset', 'CocoDataset', 'DeepFashionDataset', 'VOCDataset',
     'CityscapesDataset', 'LVISDataset', 'LVISV05Dataset', 'LVISV1Dataset',
-    'WIDERFaceDataset', 'DATASETS', 'PIPELINES', 'build_dataset',
+    'WIDERFaceDataset',
     'get_loading_pipeline', 'CocoPanopticDataset', 'MultiImageMixDataset',
     'OpenImagesDataset', 'OpenImagesChallengeDataset',
     'AspectRatioBatchSampler', 'ClassAwareSampler', 'MultiSourceSampler',
