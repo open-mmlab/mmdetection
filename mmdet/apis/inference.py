@@ -12,9 +12,9 @@ from mmengine.config import Config
 from mmengine.runner import load_checkpoint
 
 from ..evaluation import get_classes
+from ..registry import MODELS
 from ..structures import DetDataSample, SampleList
 from ..utils import get_test_pipeline_cfg
-from ..registry import MODELS
 
 
 def init_detector(

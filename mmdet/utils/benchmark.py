@@ -18,8 +18,7 @@ from mmengine.runner import Runner, load_checkpoint
 from mmengine.utils.dl_utils import set_multi_processing
 from torch.nn.parallel import DistributedDataParallel
 
-from mmdet.registry import MODELS
-from mmdet.registry import DATASETS
+from mmdet.registry import DATASETS, MODELS
 
 try:
     import psutil
