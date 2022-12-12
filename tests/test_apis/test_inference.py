@@ -9,6 +9,7 @@ from mmdet.apis import inference_detector, init_detector
 from mmdet.structures import DetDataSample
 from mmdet.utils import register_all_modules
 
+# TODO: Waiting to fix multiple call error bug
 register_all_modules()
 
 

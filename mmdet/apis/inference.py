@@ -64,8 +64,8 @@ def init_detector(
         if 'dataset_meta' in checkpoint_meta:
             # mmdet 3.x
             dataset_meta = checkpoint_meta['dataset_meta']
-            dataset_meta.setdefault('classes',
-                                    dataset_meta.get('CLASSES', None))
+            dataset_meta.setdefault(
+                'classes', dataset_meta.get('CLASSES', get_classes('coco')))
             dataset_meta.setdefault('palette',
                                     dataset_meta.get('PALETTE', 'random'))
             model.dataset_meta = dataset_meta
