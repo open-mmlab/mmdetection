@@ -1,6 +1,8 @@
+除了训练和测试脚本，我们还在 `tools/` 目录下提供了许多有用的工具。
+
 ## 日志分析
 
-`tools/analysis_tools/analyze_logs.py` 可利用指定的训练log文件绘制 loss/mAP 曲线图，
+`tools/analysis_tools/analyze_logs.py` 可利用指定的训练 log 文件绘制 loss/mAP 曲线图，
 第一次运行前请先运行 `pip install seaborn` 安装必要依赖.
 
 ```shell
@@ -65,9 +67,9 @@ python tools/analysis_tools/analyze_results.py \
 
 各个参数选项的作用:
 
-- `config` : model config 文件的地址。
+- `config`: model config 文件的路径。
 - `prediction_path`:  使用 `tools/test.py` 输出的 pickle 格式结果文件。
-- `show_dir`: 绘制标注框与预测框的图像保存地址。
+- `show_dir`: 绘制真实标注框与预测框的图像存放目录。
 - `--show`：决定是否展示绘制 box 后的图片，默认值为 `False`。
 - `--wait-time`: show 时间的间隔，若为 0 表示持续显示。
 - `--topk`: 根据最高或最低 `topk` 概率排序保存的图片数量，若不指定，默认设置为 `20`。
@@ -142,7 +144,7 @@ python tools/analysis_tools/coco_error_analysis.py ${RESULT} ${OUT_DIR} [-h] [--
 为了保存 bbox 结果信息，我们需要用下列方式修改 `test_evaluator` :
 
 1. 查找当前 config 文件相对应的  'configs/base/datasets' 数据集信息。
-2. 用当前数据集config中的 test_evaluator 以及 test_dataloader 替换原始文件的 test_evaluator 以及 test_dataloader。
+2. 用当前数据集 config 中的 test_evaluator 以及 test_dataloader 替换原始文件的 test_evaluator 以及 test_dataloader。
 3. 使用以下命令得到 bbox 或 segmentation 的 json 格式文件。
 
 ```shell
@@ -174,7 +176,17 @@ python tools/analysis_tools/coco_error_analysis.py \
 
 如果你想使用 [`TorchServe`](https://pytorch.org/serve/) 搭建一个 `MMDetection` 模型服务，可以参考以下步骤：
 
-### 1. 把 MMDetection 模型转换至 TorchServe
+### 1. 安装 TorchServe
+
+假设你已经成功安装了包含 `PyTorch` 和 `MMDetection` 的 `Python` 环境，那么你可以运行以下命令来安装 `TorchServe` 及其依赖项。有关更多其他安装选项，请参考[快速入门](https://github.com/pytorch/serve/blob/master/README.md#serve-a-model)。
+
+```shell
+python -m pip install torchserve torch-model-archiver torch-workflow-archiver nvgpu
+```
+
+**注意**: 如果你想在 docker 中使用`TorchServe`，请参考[torchserve docker](https://github.com/pytorch/serve/blob/master/docker/README.md)。
+
+### 2. 把 MMDetection 模型转换至 TorchServe
 
 ```shell
 python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
@@ -182,32 +194,13 @@ python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
 --model-name ${MODEL_NAME}
 ```
 
-**注意**: ${MODEL_STORE} 必须是目标文件夹的绝对路径.
-
-### 2. 构建 `mmdet-serve` docker 映像
+### 3. 启动 `TorchServe`
 
 ```shell
-docker build -t mmdet-serve:latest docker/serve/
+torchserve --start --ncs \
+  --model-store ${MODEL_STORE} \
+  --models  ${MODEL_NAME}.mar
 ```
-
-### 3. 运行 `mmdet-serve`
-
-请先阅读[使用 docker 运行 TorchServe](https://github.com/pytorch/serve/blob/master/docker/README.md#running-torchserve-in-a-production-docker-environment) 官方文档。
-
-为了在 GPU 上运行服务，你需要安装  [nvidia-docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) ，如果想运行在 CPU 上则忽略 `--gpus` 参数。
-
-样例:
-
-```shell
-docker run --rm \
---cpus 8 \
---gpus device=0 \
--p8080:8080 -p8081:8081 -p8082:8082 \
---mount type=bind,source=$MODEL_STORE,target=/home/model-server/model-store \
-mmdet-serve:latest
-```
-
-阅读[这个文档](https://github.com/pytorch/serve/blob/072f5d088cce9bb64b2a18af065886c9b01b317b/docs/rest_api.md/)获取更多有关推理(8080)、管理(8081)、评估(8082)的 APIs。
 
 ### 4. 测试部署效果
 
@@ -221,6 +214,7 @@ curl http://127.0.0.1:8080/predictions/${MODEL_NAME} -T 3dogs.jpg
 ```json
 [
   {
+    "class_label": 16,
     "class_name": "dog",
     "bbox": [
       294.63409423828125,
@@ -231,6 +225,7 @@ curl http://127.0.0.1:8080/predictions/${MODEL_NAME} -T 3dogs.jpg
     "score": 0.9987992644309998
   },
   {
+    "class_label": 16,
     "class_name": "dog",
     "bbox": [
       404.26019287109375,
@@ -241,6 +236,7 @@ curl http://127.0.0.1:8080/predictions/${MODEL_NAME} -T 3dogs.jpg
     "score": 0.9979367256164551
   },
   {
+    "class_label": 16,
     "class_name": "dog",
     "bbox": [
       197.2144775390625,
@@ -253,11 +249,13 @@ curl http://127.0.0.1:8080/predictions/${MODEL_NAME} -T 3dogs.jpg
 ]
 ```
 
-你也可以使用 `test_torchserver.py` 来比较 torchserver 和 pytorch 的结果，并可视化：
+#### 结果对比
+
+你也可以使用 `test_torchserver.py` 来比较 `TorchServe` 和 `PyTorch` 的结果，并可视化：
 
 ```shell
 python tools/deployment/test_torchserver.py ${IMAGE_FILE} ${CONFIG_FILE} ${CHECKPOINT_FILE} ${MODEL_NAME}
-[--inference-addr ${INFERENCE_ADDR}] [--device ${DEVICE}] [--score-thr ${SCORE_THR}]
+[--inference-addr ${INFERENCE_ADDR}] [--device ${DEVICE}] [--score-thr ${SCORE_THR}] [--work-dir ${WORK_DIR}]
 ```
 
 样例:
@@ -267,7 +265,14 @@ python tools/deployment/test_torchserver.py \
 demo/demo.jpg \
 configs/yolo/yolov3_d53_8xb8-320-273e_coco.py \
 checkpoint/yolov3_d53_320_273e_coco-421362b6.pth \
-yolov3
+yolov3 \
+--work-dir ./work-dir
+```
+
+### 5. 停止 `TorchServe`
+
+```shell
+torchserve --stop
 ```
 
 ## 模型复杂度
@@ -330,7 +335,7 @@ python tools/model_converters/detectron2pytorch.py ${SRC} ${DST} ${DEPTH} [-h]
 
 在发布模型至 AWS 之前，你可能需要：
 
-1. 转换模型至 CPU 张量
+1. 将模型转换至 CPU 张量
 2. 删除优化器状态
 3. 计算 checkpoint 文件的 hash 值，并将 hash 号码记录至文件名。
 

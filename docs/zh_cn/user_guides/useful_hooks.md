@@ -10,11 +10,11 @@ MMDetection 和 MMEngine 为用户提供了多种多样实用的钩子（Hook）
 ## MemoryProfilerHook
 
 [内存分析钩子](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/engine/hooks/memory_profiler_hook.py)
-记录了包括虚拟内存、交换内存、当前进程在内的所有内存信息，它能够帮助捕捉系统的使用状况与发现隐藏的内存泄露问题。为了使用这个钩子，你需要先安装 `pip install memory_profiler psutil` 从而使用 `memory_profiler`。
+记录了包括虚拟内存、交换内存、当前进程在内的所有内存信息，它能够帮助捕捉系统的使用状况与发现隐藏的内存泄露问题。为了使用这个钩子，你需要先通过 `pip install memory_profiler psutil` 命令安装 `memory_profiler` 和 `psutil`。
 
 ### 使用
 
-为了使用这个钩子，使用者需要添加如下代码至config文件
+为了使用这个钩子，使用者需要添加如下代码至 config 文件
 
 ```python
 custom_hooks = [
@@ -46,7 +46,7 @@ The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 M
 
 ## 如何实现自定义钩子
 
-一般的，从模型训练的开始到结束，共有20个点位可以执行钩子。我们可以实现自定义钩子在不同点位执行，以便在训练中实现自定义操作。
+通常，从模型训练的开始到结束，共有20个点位可以执行钩子。我们可以实现自定义钩子在不同点位执行，以便在训练中实现自定义操作。
 
 - global points: `before_run`, `after_run`
 - points in training: `before_train`, `before_train_epoch`, `before_train_iter`, `after_train_iter`, `after_train_epoch`, `after_train`
@@ -56,7 +56,7 @@ The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 M
 
 比如，我们要实现一个检查 loss 的钩子，当损失为 NaN 时自动结束训练。我们可以把这个过程分为三步：
 
-1. 在MMEngine实现一个继承于 `Hook` 类的新钩子，并实现 `after_train_iter` 方法用于检查每 `n` 次训练迭代后损失是否变为 NaN。
+1. 在 MMEngine 实现一个继承于 `Hook` 类的新钩子，并实现 `after_train_iter` 方法用于检查每 `n` 次训练迭代后损失是否变为 NaN 。
 2. 使用 `@HOOKS.register_module()` 注册实现好了的自定义钩子，如下列代码所示。
 3. 在配置文件中添加 `custom_hooks = [dict(type='MemoryProfilerHook', interval=50)]`
 
