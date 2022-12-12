@@ -5,8 +5,14 @@ on:
     # check issue and pull request once every day
     - cron: '25 11 * * *'
 
+permissions:
+  contents: read
+
 jobs:
   invalid-stale-close:
+    permissions:
+      issues: write
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/stale@v4
