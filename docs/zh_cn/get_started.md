@@ -172,7 +172,7 @@ MMDetection 可以在 CPU 环境中构建。在 CPU 模式下，可以进行模�
 
 #### 在 Google Colab 中安装
 
-[Google Colab](https://research.google.com/) 通常已经包含了 PyTorch 环境，因此我们只需要安装 MMEngine，MMCV 和 MMDetection 即可，命令如下：
+[Google Colab](https://colab.research.google.com/) 通常已经包含了 PyTorch 环境，因此我们只需要安装 MMEngine，MMCV 和 MMDetection 即可，命令如下：
 
 **步骤 1.** 使用 [MIM](https://github.com/open-mmlab/mim) 安装 [MMEngine](https://github.com/open-mmlab/mmengine) 和 [MMCV](https://github.com/open-mmlab/mmcv)。
 
