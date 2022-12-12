@@ -59,35 +59,45 @@ def init_detector(
         checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
         # Weights converted from elsewhere may not have meta fields.
         checkpoint_meta = checkpoint.get('meta', {})
+
         # save the dataset_meta in the model for convenience
         if 'dataset_meta' in checkpoint_meta:
             # mmdet 3.x
-            model.dataset_meta = checkpoint_meta['dataset_meta']
+            dataset_meta = checkpoint_meta['dataset_meta']
+            dataset_meta.setdefault('classes',
+                                    dataset_meta.get('CLASSES', None))
+            dataset_meta.setdefault('palette',
+                                    dataset_meta.get('PALETTE', 'random'))
+            model.dataset_meta = dataset_meta
         elif 'CLASSES' in checkpoint_meta:
             # < mmdet 3.x
             classes = checkpoint_meta['CLASSES']
-            model.dataset_meta = {'CLASSES': classes}
+            model.dataset_meta = {'classes': classes}
+        elif 'classes' in checkpoint_meta:
+            # < mmdet 3.x
+            classes = checkpoint_meta['classes']
+            model.dataset_meta = {'classes': classes}
         else:
             warnings.simplefilter('once')
             warnings.warn(
                 'dataset_meta or class names are not saved in the '
                 'checkpoint\'s meta data, use COCO classes by default.')
-            model.dataset_meta = {'CLASSES': get_classes('coco')}
+            model.dataset_meta = {'classes': get_classes('coco')}
 
     # Priority:  args.palette -> config -> checkpoint
     if palette != 'none':
-        model.dataset_meta['PALETTE'] = palette
+        model.dataset_meta['palette'] = palette
     else:
         metainfo = config.test_dataloader.dataset.get('metainfo', {})
-        cfg_palette = metainfo.get('PALETTE', None)
+        cfg_palette = metainfo.get('palette', None)
         if cfg_palette is not None:
-            model.dataset_meta['PALETTE'] = cfg_palette
+            model.dataset_meta['palette'] = cfg_palette
         else:
-            if 'PALETTE' not in model.dataset_meta:
+            if 'palette' not in model.dataset_meta:
                 warnings.warn(
-                    'PALETTE does not exist, random is used by default. '
+                    'palette does not exist, random is used by default. '
                     'You can also set the palette to customize.')
-                model.dataset_meta['PALETTE'] = 'random'
+                model.dataset_meta['palette'] = 'random'
 
     model.cfg = config  # save the config in the model for convenience
     model.to(device)

@@ -67,7 +67,7 @@ class CocoPanopticDataset(CocoDataset):
     """
 
     METAINFO = {
-        'CLASSES':
+        'classes':
         ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
          'truck', 'boat', 'traffic light', 'fire hydrant', 'stop sign',
          'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep',
@@ -92,7 +92,7 @@ class CocoPanopticDataset(CocoDataset):
          'pavement-merged', 'mountain-merged', 'grass-merged', 'dirt-merged',
          'paper-merged', 'food-other-merged', 'building-other-merged',
          'rock-merged', 'wall-other-merged', 'rug-merged'),
-        'THING_CLASSES':
+        'thing_classes':
         ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
          'truck', 'boat', 'traffic light', 'fire hydrant', 'stop sign',
          'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep',
@@ -106,7 +106,7 @@ class CocoPanopticDataset(CocoDataset):
          'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave',
          'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
          'scissors', 'teddy bear', 'hair drier', 'toothbrush'),
-        'STUFF_CLASSES':
+        'stuff_classes':
         ('banner', 'blanket', 'bridge', 'cardboard', 'counter', 'curtain',
          'door-stuff', 'floor-wood', 'flower', 'fruit', 'gravel', 'house',
          'light', 'mirror-stuff', 'net', 'pillow', 'platform', 'playingfield',
@@ -118,7 +118,7 @@ class CocoPanopticDataset(CocoDataset):
          'pavement-merged', 'mountain-merged', 'grass-merged', 'dirt-merged',
          'paper-merged', 'food-other-merged', 'building-other-merged',
          'rock-merged', 'wall-other-merged', 'rug-merged'),
-        'PALETTE':
+        'palette':
         [(220, 20, 60), (119, 11, 32), (0, 0, 142), (0, 0, 230), (106, 0, 228),
          (0, 60, 100), (0, 80, 100), (0, 0, 70), (0, 0, 192), (250, 170, 30),
          (100, 170, 30), (220, 220, 0), (175, 116, 175), (250, 0, 30),

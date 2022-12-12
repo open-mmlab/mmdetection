@@ -164,9 +164,9 @@ class TestCocoPanopticDataset(unittest.TestCase):
         dump(fake_json, self.json_name)
 
         self.metainfo = dict(
-            CLASSES=('person', 'car', 'wall'),
-            THING_CLASSES=('person', 'car'),
-            STUFF_CLASSES=('wall', ))
+            classes=('person', 'car', 'wall'),
+            thing_classes=('person', 'car'),
+            stuff_classes=('wall', ))
 
     def tearDown(self):
         os.remove(self.json_name)
@@ -179,11 +179,11 @@ class TestCocoPanopticDataset(unittest.TestCase):
             metainfo=self.metainfo,
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
             pipeline=[])
-        self.assertEqual(dataset.metainfo['CLASSES'], self.metainfo['CLASSES'])
-        self.assertEqual(dataset.metainfo['THING_CLASSES'],
-                         self.metainfo['THING_CLASSES'])
-        self.assertEqual(dataset.metainfo['STUFF_CLASSES'],
-                         self.metainfo['STUFF_CLASSES'])
+        self.assertEqual(dataset.metainfo['classes'], self.metainfo['classes'])
+        self.assertEqual(dataset.metainfo['thing_classes'],
+                         self.metainfo['thing_classes'])
+        self.assertEqual(dataset.metainfo['stuff_classes'],
+                         self.metainfo['stuff_classes'])
         dataset.full_init()
         # filter images of small size and images
         # with all illegal annotations
@@ -198,11 +198,11 @@ class TestCocoPanopticDataset(unittest.TestCase):
             test_mode=True,
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
             pipeline=[])
-        self.assertEqual(dataset.metainfo['CLASSES'], self.metainfo['CLASSES'])
-        self.assertEqual(dataset.metainfo['THING_CLASSES'],
-                         self.metainfo['THING_CLASSES'])
-        self.assertEqual(dataset.metainfo['STUFF_CLASSES'],
-                         self.metainfo['STUFF_CLASSES'])
+        self.assertEqual(dataset.metainfo['classes'], self.metainfo['classes'])
+        self.assertEqual(dataset.metainfo['thing_classes'],
+                         self.metainfo['thing_classes'])
+        self.assertEqual(dataset.metainfo['stuff_classes'],
+                         self.metainfo['stuff_classes'])
         dataset.full_init()
         # filter images of small size and images
         # with all illegal annotations
@@ -217,11 +217,11 @@ class TestCocoPanopticDataset(unittest.TestCase):
             metainfo=self.metainfo,
             filter_cfg=None,
             pipeline=[])
-        self.assertEqual(dataset.metainfo['CLASSES'], self.metainfo['CLASSES'])
-        self.assertEqual(dataset.metainfo['THING_CLASSES'],
-                         self.metainfo['THING_CLASSES'])
-        self.assertEqual(dataset.metainfo['STUFF_CLASSES'],
-                         self.metainfo['STUFF_CLASSES'])
+        self.assertEqual(dataset.metainfo['classes'], self.metainfo['classes'])
+        self.assertEqual(dataset.metainfo['thing_classes'],
+                         self.metainfo['thing_classes'])
+        self.assertEqual(dataset.metainfo['stuff_classes'],
+                         self.metainfo['stuff_classes'])
         dataset.full_init()
         # filter images of small size and images
         # with all illegal annotations
@@ -237,11 +237,11 @@ class TestCocoPanopticDataset(unittest.TestCase):
             filter_cfg=None,
             test_mode=True,
             pipeline=[])
-        self.assertEqual(dataset.metainfo['CLASSES'], self.metainfo['CLASSES'])
-        self.assertEqual(dataset.metainfo['THING_CLASSES'],
-                         self.metainfo['THING_CLASSES'])
-        self.assertEqual(dataset.metainfo['STUFF_CLASSES'],
-                         self.metainfo['STUFF_CLASSES'])
+        self.assertEqual(dataset.metainfo['classes'], self.metainfo['classes'])
+        self.assertEqual(dataset.metainfo['thing_classes'],
+                         self.metainfo['thing_classes'])
+        self.assertEqual(dataset.metainfo['stuff_classes'],
+                         self.metainfo['stuff_classes'])
         dataset.full_init()
         # filter images of small size and images
         # with all illegal annotations

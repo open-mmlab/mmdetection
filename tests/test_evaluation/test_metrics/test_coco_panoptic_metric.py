@@ -164,9 +164,9 @@ class TestCocoPanopticMetric(unittest.TestCase):
         self._create_panoptic_gt_annotations(self.gt_json_path,
                                              self.gt_seg_dir)
         self.dataset_meta = {
-            'CLASSES': ('person', 'dog', 'wall'),
-            'THING_CLASSES': ('person', 'dog'),
-            'STUFF_CLASSES': ('wall', )
+            'classes': ('person', 'dog', 'wall'),
+            'thing_classes': ('person', 'dog'),
+            'stuff_classes': ('wall', )
         }
         self.target = {
             'coco_panoptic/PQ': 67.86874803219071,
