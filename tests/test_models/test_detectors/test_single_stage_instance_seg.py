@@ -27,8 +27,8 @@ class TestSingleStageInstanceSegmentor(TestCase):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
 
-        from mmdet.models import build_detector
-        detector = build_detector(model)
+        from mmdet.registry import MODELS
+        detector = MODELS.build(model)
         self.assertTrue(detector.backbone)
         self.assertTrue(detector.neck)
         self.assertTrue(detector.mask_head)
@@ -50,11 +50,11 @@ class TestSingleStageInstanceSegmentor(TestCase):
         model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
-        from mmdet.models import build_detector
+        from mmdet.registry import MODELS
         assert all([device in ['cpu', 'cuda'] for device in devices])
 
         for device in devices:
-            detector = build_detector(model)
+            detector = MODELS.build(model)
             detector.init_weights()
 
             if device == 'cuda':
@@ -83,11 +83,11 @@ class TestSingleStageInstanceSegmentor(TestCase):
         model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
-        from mmdet.models import build_detector
+        from mmdet.registry import MODELS
         assert all([device in ['cpu', 'cuda'] for device in devices])
 
         for device in devices:
-            detector = build_detector(model)
+            detector = MODELS.build(model)
 
             if device == 'cuda':
                 if not torch.cuda.is_available():
@@ -116,11 +116,11 @@ class TestSingleStageInstanceSegmentor(TestCase):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
 
-        from mmdet.models import build_detector
+        from mmdet.registry import MODELS
         assert all([device in ['cpu', 'cuda'] for device in devices])
 
         for device in devices:
-            detector = build_detector(model)
+            detector = MODELS.build(model)
 
             if device == 'cuda':
                 if not torch.cuda.is_available():
