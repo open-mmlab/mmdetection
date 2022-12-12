@@ -1,5 +1,52 @@
 # Changelog of v3.x
 
+## v3.0.0rc4 (23/11/2022)
+
+### Highlights
+
+- Support [CondInst](https://arxiv.org/abs/2003.05664)
+- Add `projects/` folder, which will be a place for some experimental models/features.
+- Support [SparseInst](https://arxiv.org/abs/2203.12827) in [`projects`](./projects/SparseInst/README.md)
+
+### New Features
+
+- Support [CondInst](https://arxiv.org/abs/2003.05664) (#9223)
+- Add `projects/` folder, which will be a place for some experimental models/features (#9341)
+- Support [SparseInst](https://arxiv.org/abs/2203.12827) in [`projects`](./projects/SparseInst/README.md) (#9377)
+
+### Bug Fixes
+
+- Fix `pixel_decoder_type` discrimination in MaskFormer Head. (#9176)
+- Fix wrong padding value in cached MixUp (#9259)
+- Rename `utils/typing.py` to `utils/typing_utils.py` to fix `collect_env` error (#9265)
+- Fix resume arg conflict (#9287)
+- Fix the configs of Faster R-CNN with caffe backbone (#9319)
+- Fix torchserve and update related documentation (#9343)
+- Fix bbox refine bug with sigmooid activation (#9538)
+
+### Improvements
+
+- Update the docs of GIoU Loss in README (#8810)
+- Handle dataset wrapper in `inference_detector` (#9144)
+- Update the type of `counts` in COCO’s compressed RLE (#9274)
+- Support saving config file in `print_config` (#9276)
+- Update docs about video inference (#9305)
+- Update guide about model deployment (#9344)
+- Fix doc typos of useful tools (#9177)
+- Allow to resume from specific checkpoint in CLI (#9284)
+- Update FAQ about windows installation issues of pycocotools (#9292)
+
+### New Contributors
+
+- @Daa98 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9274>
+- @lvhan028 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9344>
+
+### Contributors
+
+A total of 12 developers contributed to this release.
+
+Thanks @sanbuphy, @Czm369, @Daa98, @jbwang1997, @BIGWangYuDong, @JosonChan1998, @lvhan028, @RunningLeon, @RangiLyu, @Daa98, @ZwwWayne, @hhaAndroid
+
 ## v3.0.0rc3 (4/11/2022)
 
 Upgrade the minimum version requirement of MMEngine to 0.3.0 to use `ignore_key` of `ConcatDataset` for training VOC datasets (#9058)

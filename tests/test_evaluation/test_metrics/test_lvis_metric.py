@@ -131,7 +131,7 @@ class TestLVISMetric(unittest.TestCase):
             classwise=False,
             outfile_prefix=f'{self.tmp_dir.name}/test')
         lvis_metric.dataset_meta = dict(
-            CLASSES=['aerosol_can', 'air_conditioner'])
+            classes=['aerosol_can', 'air_conditioner'])
         lvis_metric.process(
             {},
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
@@ -158,7 +158,7 @@ class TestLVISMetric(unittest.TestCase):
             classwise=False,
             outfile_prefix=f'{self.tmp_dir.name}/test')
         lvis_metric.dataset_meta = dict(
-            CLASSES=['aerosol_can', 'air_conditioner'])
+            classes=['aerosol_can', 'air_conditioner'])
         lvis_metric.process(
             {},
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
@@ -201,7 +201,7 @@ class TestLVISMetric(unittest.TestCase):
         # test custom metric_items
         lvis_metric = LVISMetric(ann_file=fake_json_file, metric_items=['APm'])
         lvis_metric.dataset_meta = dict(
-            CLASSES=['aerosol_can', 'air_conditioner'])
+            classes=['aerosol_can', 'air_conditioner'])
         lvis_metric.process(
             {},
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
@@ -222,7 +222,7 @@ class TestLVISMetric(unittest.TestCase):
         lvis_metric = LVISMetric(
             ann_file=fake_json_file, metric='bbox', classwise=True)
         lvis_metric.dataset_meta = dict(
-            CLASSES=['aerosol_can', 'air_conditioner'])
+            classes=['aerosol_can', 'air_conditioner'])
         lvis_metric.process(
             {},
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
@@ -252,7 +252,7 @@ class TestLVISMetric(unittest.TestCase):
         lvis_metric = LVISMetric(
             ann_file=fake_json_file, metric='bbox', iou_thrs=[0.3, 0.6])
         lvis_metric.dataset_meta = dict(
-            CLASSES=['aerosol_can', 'air_conditioner'])
+            classes=['aerosol_can', 'air_conditioner'])
         self.assertEqual(lvis_metric.iou_thrs, [0.3, 0.6])
 
     @unittest.skipIf(lvis is None, 'lvis is not installed.')
@@ -266,7 +266,7 @@ class TestLVISMetric(unittest.TestCase):
         lvis_metric = LVISMetric(
             ann_file=fake_json_file, metric='proposal_fast')
         lvis_metric.dataset_meta = dict(
-            CLASSES=['aerosol_can', 'air_conditioner'])
+            classes=['aerosol_can', 'air_conditioner'])
         lvis_metric.process(
             {},
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
@@ -280,7 +280,7 @@ class TestLVISMetric(unittest.TestCase):
             metric='proposal_fast',
             proposal_nums=(2, 4))
         lvis_metric.dataset_meta = dict(
-            CLASSES=['aerosol_can', 'air_conditioner'])
+            classes=['aerosol_can', 'air_conditioner'])
         lvis_metric.process(
             {},
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
@@ -297,7 +297,7 @@ class TestLVISMetric(unittest.TestCase):
 
         lvis_metric = LVISMetric(ann_file=fake_json_file, metric='proposal')
         lvis_metric.dataset_meta = dict(
-            CLASSES=['aerosol_can', 'air_conditioner'])
+            classes=['aerosol_can', 'air_conditioner'])
         lvis_metric.process(
             {},
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
@@ -317,7 +317,7 @@ class TestLVISMetric(unittest.TestCase):
         self._create_dummy_lvis_json(fake_json_file)
         lvis_metric = LVISMetric(ann_file=fake_json_file, metric='bbox')
         lvis_metric.dataset_meta = dict(
-            CLASSES=['aerosol_can', 'air_conditioner'])
+            classes=['aerosol_can', 'air_conditioner'])
         bboxes = np.zeros((0, 4))
         labels = np.array([])
         scores = np.array([])
@@ -354,7 +354,7 @@ class TestLVISMetric(unittest.TestCase):
             format_only=True,
             outfile_prefix=f'{self.tmp_dir.name}/test')
         lvis_metric.dataset_meta = dict(
-            CLASSES=['aerosol_can', 'air_conditioner'])
+            classes=['aerosol_can', 'air_conditioner'])
         lvis_metric.process(
             {},
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])

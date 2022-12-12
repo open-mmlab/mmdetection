@@ -640,9 +640,15 @@ class BBoxHead(BaseModule):
             cls_scores = self.loss_cls.get_activation(cls_scores)
         if cls_scores.numel() == 0:
             return None
-
-        labels = torch.where(labels == self.num_classes,
-                             cls_scores[:, :-1].argmax(1), labels)
+        if cls_scores.shape[-1] == self.num_classes + 1:
+            # remove background class
+            cls_scores = cls_scores[:, :-1]
+        elif cls_scores.shape[-1] != self.num_classes:
+            raise ValueError('The last dim of `cls_scores` should equal to '
+                             '`num_classes` or `num_classes + 1`,'
+                             f'but got {cls_scores.shape[-1]}.')
+        labels = torch.where(labels == self.num_classes, cls_scores.argmax(1),
+                             labels)
 
         img_ids = rois[:, 0].long().unique(sorted=True)
         assert img_ids.numel() <= len(batch_img_metas)

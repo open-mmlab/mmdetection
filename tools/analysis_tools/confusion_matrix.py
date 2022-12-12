@@ -77,7 +77,7 @@ def calculate_confusion_matrix(dataset,
         tp_iou_thr (float|optional): IoU threshold to be considered as matched.
             Default: 0.5.
     """
-    num_classes = len(dataset.metainfo['CLASSES'])
+    num_classes = len(dataset.metainfo['classes'])
     confusion_matrix = np.zeros(shape=[num_classes + 1, num_classes + 1])
     assert len(dataset) == len(results)
     prog_bar = ProgressBar(len(results))
@@ -262,7 +262,7 @@ def main():
                                                   args.tp_iou_thr)
     plot_confusion_matrix(
         confusion_matrix,
-        dataset.metainfo['CLASSES'] + ('background', ),
+        dataset.metainfo['classes'] + ('background', ),
         save_dir=args.save_dir,
         show=args.show,
         color_theme=args.color_theme)

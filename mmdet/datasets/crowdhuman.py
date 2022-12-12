@@ -30,9 +30,9 @@ class CrowdHumanDataset(BaseDetDataset):
     """
 
     METAINFO = {
-        'CLASSES': ('person', ),
-        # PALETTE is a list of color tuples, which is used for visualization.
-        'PALETTE': [(220, 20, 60)]
+        'classes': ('person', ),
+        # palette is a list of color tuples, which is used for visualization.
+        'palette': [(220, 20, 60)]
     }
 
     def __init__(self, data_root, ann_file, extra_ann_file=None, **kwargs):
@@ -122,11 +122,11 @@ class CrowdHumanDataset(BaseDetDataset):
         instances = []
         for i, ann in enumerate(raw_data_info['gtboxes']):
             instance = {}
-            if ann['tag'] not in self.metainfo['CLASSES']:
+            if ann['tag'] not in self.metainfo['classes']:
                 instance['bbox_label'] = -1
                 instance['ignore_flag'] = 1
             else:
-                instance['bbox_label'] = self.metainfo['CLASSES'].index(
+                instance['bbox_label'] = self.metainfo['classes'].index(
                     ann['tag'])
                 instance['ignore_flag'] = 0
             if 'extra' in ann:
