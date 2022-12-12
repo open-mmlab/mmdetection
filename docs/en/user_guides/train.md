@@ -399,8 +399,8 @@ model = dict(
 # Modify dataset related settings
 data_root = 'data/balloon/'
 metainfo = {
-    'CLASSES': ('balloon', ),
-    'PALETTE': [
+    'classes': ('balloon', ),
+    'palette': [
         (220, 20, 60),
     ]
 }

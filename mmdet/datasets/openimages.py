@@ -30,7 +30,7 @@ class OpenImagesDataset(BaseDetDataset):
             Defaults to ``dict(backend='disk')``.
     """
 
-    METAINFO: dict = dict(DATASET_TYPE='oid_v6')
+    METAINFO: dict = dict(dataset_type='oid_v6')
 
     def __init__(self,
                  label_file: str,
@@ -52,7 +52,7 @@ class OpenImagesDataset(BaseDetDataset):
         """
         classes_names, label_id_mapping = self._parse_label_file(
             self.label_file)
-        self._metainfo['CLASSES'] = classes_names
+        self._metainfo['classes'] = classes_names
         self.label_id_mapping = label_id_mapping
 
         if self.image_level_ann_file is not None:
@@ -233,7 +233,7 @@ class OpenImagesDataset(BaseDetDataset):
             hierarchy_file,
             file_format='json',
             file_client_args=self.file_client_args)
-        class_num = len(self._metainfo['CLASSES'])
+        class_num = len(self._metainfo['classes'])
         relation_matrix = np.eye(class_num, class_num)
         relation_matrix = self._convert_hierarchy_tree(hierarchy,
                                                        relation_matrix)
@@ -305,7 +305,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         ann_file (str): Open Images Challenge box annotation in txt format.
     """
 
-    METAINFO: dict = dict(DATASET_TYPE='oid_challenge')
+    METAINFO: dict = dict(dataset_type='oid_challenge')
 
     def __init__(self, ann_file: str, **kwargs) -> None:
         if not ann_file.endswith('txt'):
@@ -322,7 +322,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         """
         classes_names, label_id_mapping = self._parse_label_file(
             self.label_file)
-        self._metainfo['CLASSES'] = classes_names
+        self._metainfo['classes'] = classes_names
         self.label_id_mapping = label_id_mapping
 
         if self.image_level_ann_file is not None:

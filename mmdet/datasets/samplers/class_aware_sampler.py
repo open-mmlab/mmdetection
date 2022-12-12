@@ -75,9 +75,9 @@ class ClassAwareSampler(Sampler):
             the item of the dict indicates a label index,
             corresponds to the image index that contains the label.
         """
-        classes = self.dataset.metainfo.get('CLASSES', None)
+        classes = self.dataset.metainfo.get('classes', None)
         if classes is None:
-            raise ValueError('dataset metainfo must contain CLASSES')
+            raise ValueError('dataset metainfo must contain `classes`')
         # sort the label index
         cat2imgs = {i: [] for i in range(len(classes))}
         for i in range(len(self.dataset)):

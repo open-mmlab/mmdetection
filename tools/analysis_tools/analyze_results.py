@@ -248,7 +248,7 @@ class ResultVisualizer:
             pred_labels = pred['labels'].cpu().numpy()
 
             dets = []
-            for label in range(len(dataset.metainfo['CLASSES'])):
+            for label in range(len(dataset.metainfo['classes'])):
                 index = np.where(pred_labels == label)[0]
                 pred_bbox_scores = np.hstack(
                     [pred_bboxes[index], pred_scores[index].reshape((-1, 1))])

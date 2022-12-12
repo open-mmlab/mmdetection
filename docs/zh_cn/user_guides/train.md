@@ -401,8 +401,8 @@ model = dict(
 # 修改数据集相关配置
 data_root = 'data/balloon/'
 metainfo = {
-    'CLASSES': ('balloon', ),
-    'PALETTE': [
+    'classes': ('balloon', ),
+    'palette': [
         (220, 20, 60),
     ]
 }

@@ -98,7 +98,7 @@ class VOCMetric(BaseMetric):
             pred_labels = pred['labels'].cpu().numpy()
 
             dets = []
-            for label in range(len(self.dataset_meta['CLASSES'])):
+            for label in range(len(self.dataset_meta['classes'])):
                 index = np.where(pred_labels == label)[0]
                 pred_bbox_scores = np.hstack(
                     [pred_bboxes[index], pred_scores[index].reshape((-1, 1))])
@@ -121,7 +121,7 @@ class VOCMetric(BaseMetric):
         eval_results = OrderedDict()
         if self.metric == 'mAP':
             assert isinstance(self.iou_thrs, list)
-            dataset_type = self.dataset_meta.get('DATASET_TYPE')
+            dataset_type = self.dataset_meta.get('dataset_type')
             if dataset_type in ['VOC2007', 'VOC2012']:
                 dataset_name = 'voc'
                 if dataset_type == 'VOC2007' and self.eval_mode != '11points':
@@ -133,7 +133,7 @@ class VOCMetric(BaseMetric):
                                   'evaluate mode, but you are using '
                                   f'{self.eval_mode}.')
             else:
-                dataset_name = self.dataset_meta['CLASSES']
+                dataset_name = self.dataset_meta['classes']
 
             mean_aps = []
             for iou_thr in self.iou_thrs:
