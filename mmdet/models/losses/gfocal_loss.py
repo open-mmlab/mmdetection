@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -116,8 +117,9 @@ def distribution_focal_loss(pred, label):
     dis_right = dis_left + 1
     weight_left = dis_right.float() - label
     weight_right = label - dis_left.float()
-    loss = F.cross_entropy(pred, dis_left, reduction='none') * weight_left \
-        + F.cross_entropy(pred, dis_right, reduction='none') * weight_right
+    loss = F.cross_entropy(
+        pred, dis_left, reduction='none') * weight_left + F.cross_entropy(
+            pred, dis_right, reduction='none') * weight_right
     return loss
 
 
@@ -184,6 +186,18 @@ class QualityFocalLoss(nn.Module):
                 calculate_loss_func = quality_focal_loss_with_prob
             else:
                 calculate_loss_func = quality_focal_loss
+
+            if isinstance(target, torch.Tensor):
+                # this means that target is already in One-Hot form.
+                assert pred.dim() == target.dim()
+                B, N, W, H = target.shape
+                pred = pred.reshape(B, N, -1).permute(0, 2, 1).reshape(-1, N)
+                target = target.reshape(B, N, -1).permute(0, 2,
+                                                          1).reshape(-1, N)
+                pos_ind, pos_value = torch.max(target, dim=-1)
+                pos_ind[pos_value > 0] = N
+                target = tuple(pos_ind, pos_value)
+
             loss_cls = self.loss_weight * calculate_loss_func(
                 pred,
                 target,

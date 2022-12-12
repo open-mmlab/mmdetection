@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import pytest
 import torch
+import torch.nn.functional as F
 from mmengine.utils import digit_version
 
 from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DiceLoss,
@@ -29,13 +30,27 @@ def test_iou_type_loss_zeros_weight(loss_class):
 @pytest.mark.parametrize('loss_class', [
     BalancedL1Loss, BoundedIoULoss, CIoULoss, CrossEntropyLoss, DIoULoss,
     EIoULoss, FocalLoss, DistributionFocalLoss, MSELoss, SeesawLoss,
-    GaussianFocalLoss, GIoULoss, IoULoss, L1Loss, QualityFocalLoss,
-    VarifocalLoss, GHMR, GHMC, SmoothL1Loss, KnowledgeDistillationKLDivLoss,
-    DiceLoss
+    GaussianFocalLoss, GIoULoss, IoULoss, L1Loss, VarifocalLoss, GHMR, GHMC,
+    SmoothL1Loss, KnowledgeDistillationKLDivLoss, DiceLoss
 ])
 def test_loss_with_reduction_override(loss_class):
     pred = torch.rand((10, 4))
     target = torch.rand((10, 4)),
+    weight = None
+
+    with pytest.raises(AssertionError):
+        # only reduction_override from [None, 'none', 'mean', 'sum']
+        # is not allowed
+        reduction_override = True
+        loss_class()(
+            pred, target, weight, reduction_override=reduction_override)
+
+
+@pytest.mark.parametrize('loss_class', [QualityFocalLoss])
+@pytest.mark.parametrize('input_shape', [(10, 4), (3, 4, 40, 40)])
+def test_QualityFocalLoss_Loss(loss_class, input_shape):
+    pred = torch.rand(input_shape)
+    target = torch.rand(input_shape),
     weight = None
 
     with pytest.raises(AssertionError):
@@ -86,7 +101,7 @@ def test_regression_losses(loss_class, input_shape):
         assert isinstance(loss, torch.Tensor)
 
 
-@pytest.mark.parametrize('loss_class', [FocalLoss, CrossEntropyLoss])
+@pytest.mark.parametrize('loss_class', [CrossEntropyLoss])
 @pytest.mark.parametrize('input_shape', [(10, 5), (0, 5)])
 def test_classification_losses(loss_class, input_shape):
     if input_shape[0] == 0 and digit_version(
@@ -97,6 +112,42 @@ def test_classification_losses(loss_class, input_shape):
 
     pred = torch.rand(input_shape)
     target = torch.randint(0, 5, (input_shape[0], ))
+
+    # Test loss forward
+    loss = loss_class()(pred, target)
+    assert isinstance(loss, torch.Tensor)
+
+    # Test loss forward with reduction_override
+    loss = loss_class()(pred, target, reduction_override='mean')
+    assert isinstance(loss, torch.Tensor)
+
+    # Test loss forward with avg_factor
+    loss = loss_class()(pred, target, avg_factor=10)
+    assert isinstance(loss, torch.Tensor)
+
+    with pytest.raises(ValueError):
+        # loss can evaluate with avg_factor only if
+        # reduction is None, 'none' or 'mean'.
+        reduction_override = 'sum'
+        loss_class()(
+            pred, target, avg_factor=10, reduction_override=reduction_override)
+
+    # Test loss forward with avg_factor and reduction
+    for reduction_override in [None, 'none', 'mean']:
+        loss_class()(
+            pred, target, avg_factor=10, reduction_override=reduction_override)
+        assert isinstance(loss, torch.Tensor)
+
+
+@pytest.mark.parametrize('loss_class', [FocalLoss])
+@pytest.mark.parametrize('input_shape', [(10, 5), (3, 5, 40, 40)])
+def test_FocalLoss_loss(loss_class, input_shape):
+    pred = torch.rand(input_shape)
+    target = torch.randint(0, 5, (input_shape[0], ))
+    if len(input_shape) == 4:
+        B, N, W, H = input_shape
+        target = F.one_hot(torch.randint(0, 5, (B * W * H, )),
+                           5).reshape(B, W, H, N).permute(0, 3, 1, 2)
 
     # Test loss forward
     loss = loss_class()(pred, target)
