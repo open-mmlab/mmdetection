@@ -140,7 +140,7 @@ class ChannelAttention(BaseModule):
     Args:
         channels (int): The input (and output) channels of the attention layer.
         init_cfg (dict or list[dict], optional): Initialization config dict.
-            Defaults to None.
+            Defaults: None
     """
 
     def __init__(self, channels: int, init_cfg: OptMultiConfig = None) -> None:
