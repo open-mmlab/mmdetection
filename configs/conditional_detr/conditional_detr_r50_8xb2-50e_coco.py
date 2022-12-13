@@ -10,15 +10,13 @@ model = dict(
                 embed_dims=256,
                 num_heads=8,
                 attn_drop=0.1,
-                cross_attn=False,
-                batch_first=True),
+                cross_attn=False),
             cross_attn_cfg=dict(
                 _delete_=True,
                 embed_dims=256,
                 num_heads=8,
                 attn_drop=0.1,
-                cross_attn=True,
-                batch_first=True))),
+                cross_attn=True))),
     bbox_head=dict(
         type='ConditionalDETRHead',
         loss_cls=dict(
@@ -42,3 +40,4 @@ model = dict(
 train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=50, val_interval=1)
 
 param_scheduler = [dict(type='MultiStepLR', end=50, milestones=[40])]
+randomness = dict(seed=42, deterministic=True)
