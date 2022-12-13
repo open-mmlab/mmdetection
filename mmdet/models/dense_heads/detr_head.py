@@ -446,7 +446,8 @@ class DETRHead(BaseModule):
         img_metas are needed as inputs for bbox_head.
 
         Args:
-            hidden_states (tuple[Tensor]): Features from FPN.
+            hidden_states (tuple[Tensor]): Feature from the transformer
+                decoder, has shape (num_decoder_layers, bs, num_queries, dim).
             batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
                 the meta information of each image and corresponding
                 annotations.
@@ -454,9 +455,9 @@ class DETRHead(BaseModule):
         Returns:
             tuple: the return value is a tuple contains:
 
-                - losses: (dict[str, Tensor]): A dictionary of loss components.
-                - predictions (list[:obj:`InstanceData`]): Detection
-                  results of each image after the post process.
+            - losses: (dict[str, Tensor]): A dictionary of loss components.
+            - predictions (list[:obj:`InstanceData`]): Detection
+              results of each image after the post process.
         """
         batch_gt_instances = []
         batch_img_metas = []

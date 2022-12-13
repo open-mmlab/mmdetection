@@ -37,34 +37,34 @@ class ConditionalDETRHead(DETRHead):
         Args:
             hidden_states (Tensor): Features from transformer decoder. If
                 `return_intermediate_dec` in detr.py is True output has shape
-                (num_hidden_states, bs, num_queries, dim), else has shape (1,
+                (num_decoder_layers, bs, num_queries, dim), else has shape (1,
                 bs, num_queries, dim) which only contains the last layer
                 outputs.
             references (Tensor): References from transformer decoder,has
-                shape (1, bs, num_query, 2).
+                shape (bs, num_query, 2).
         Returns:
             tuple[Tensor]: results of head containing the following tensor.
 
             - layers_cls_scores (Tensor): Outputs from the classification head,
-              shape (num_hidden_states, bs, num_queries, cls_out_channels).
+              shape (num_decoder_layers, bs, num_queries, cls_out_channels).
               Note cls_out_channels should include background.
             - layers_bbox_preds (Tensor): Sigmoid outputs from the regression
               head with normalized coordinate format (cx, cy, w, h), has shape
-              (num_hidden_states, bs, num_queries, 4).
+              (num_decoder_layers, bs, num_queries, 4).
         """
 
         references_unsigmoid = inverse_sigmoid(references)
-        layers_outputs_coords = []
+        layers_bbox_preds = []
         for layer_id in range(hidden_states.shape[0]):
             tmp_reg_preds = self.fc_reg(
                 self.activate(self.reg_ffn(hidden_states[layer_id])))
             tmp_reg_preds[..., :2] += references_unsigmoid
             outputs_coord = tmp_reg_preds.sigmoid()
-            layers_outputs_coords.append(outputs_coord)
-        layers_outputs_coords = torch.stack(layers_outputs_coords)
+            layers_bbox_preds.append(outputs_coord)
+        layers_bbox_preds = torch.stack(layers_bbox_preds)
 
         layers_cls_scores = self.fc_cls(hidden_states)
-        return layers_cls_scores, layers_outputs_coords
+        return layers_cls_scores, layers_bbox_preds
 
     def loss(self, hidden_states: Tensor, references: Tensor,
              batch_data_samples: SampleList) -> dict:
@@ -73,7 +73,7 @@ class ConditionalDETRHead(DETRHead):
 
         Args:
             hidden_states (Tensor): Feature from the transformer decoder, has
-                shape (num_decoder_layers, bs, num_queries, dim)
+                shape (num_decoder_layers, bs, num_queries, dim).
             references (Tensor): references from the transformer decoder, has
                shape (num_decoder_layers, bs, num_queries, 2).
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
@@ -113,9 +113,9 @@ class ConditionalDETRHead(DETRHead):
         Returns:
             tuple: the return value is a tuple contains:
 
-                - losses: (dict[str, Tensor]): A dictionary of loss components.
-                - predictions (list[:obj:`InstanceData`]): Detection
-                  results of each image after the post process.
+            - losses: (dict[str, Tensor]): A dictionary of loss components.
+            - predictions (list[:obj:`InstanceData`]): Detection
+              results of each image after the post process.
         """
         batch_gt_instances = []
         batch_img_metas = []

@@ -96,7 +96,7 @@ class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
         normalization."""
         self.self_attn = ConditionalAttention(**self.self_attn_cfg)
         self.cross_attn = ConditionalAttention(**self.cross_attn_cfg)
-        self.embed_dims = self.self_attn.embed_dims  # TODO
+        self.embed_dims = self.self_attn.embed_dims
         self.ffn = FFN(**self.ffn_cfg)
         norms_list = [
             build_norm_layer(self.norm_cfg, self.embed_dims)[1]
