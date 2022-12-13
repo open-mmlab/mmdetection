@@ -63,10 +63,10 @@ class DABDETRHead(DETRHead):
         """
         layers_cls_scores = self.fc_cls(hidden_states)
         references_before_sigmoid = inverse_sigmoid(references, eps=1e-3)
-        tmp = self.fc_reg(hidden_states)
-        tmp[..., :references_before_sigmoid.
-            size(-1)] += references_before_sigmoid
-        layers_bbox_preds = tmp.sigmoid()
+        tmp_reg_preds = self.fc_reg(hidden_states)
+        tmp_reg_preds[..., :references_before_sigmoid.
+                      size(-1)] += references_before_sigmoid
+        layers_bbox_preds = tmp_reg_preds.sigmoid()
         return layers_cls_scores, layers_bbox_preds
 
     def loss(self, hidden_states: Tensor, references: Tensor,

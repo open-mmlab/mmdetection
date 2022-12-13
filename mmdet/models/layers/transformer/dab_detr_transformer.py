@@ -34,15 +34,15 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
         self.keep_query_pos = self.cross_attn.keep_query_pos
 
     def forward(self,
-                query,
-                key=None,
-                query_pos=None,
-                ref_sine_embed=None,
-                key_pos=None,
-                self_attn_masks=None,
-                cross_attn_masks=None,
-                key_padding_mask=None,
-                is_first=False,
+                query: Tensor,
+                key: Tensor = None,
+                query_pos: Tensor = None,
+                ref_sine_embed: Tensor = None,
+                key_pos: Tensor = None,
+                self_attn_masks: Tensor = None,
+                cross_attn_masks: Tensor = None,
+                key_padding_mask: Tensor = None,
+                is_first: bool = False,
                 **kwargs) -> Tensor:
         """
         Args:
@@ -121,9 +121,9 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
 
     def __init__(self,
                  *args,
-                 query_dim=4,
-                 query_scale_type='cond_elewise',
-                 with_modulated_hw_attn=True,
+                 query_dim: int = 4,
+                 query_scale_type: str = 'cond_elewise',
+                 with_modulated_hw_attn: bool = True,
                  **kwargs):
 
         self.query_dim = query_dim
@@ -171,24 +171,24 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
                 self.layers[layer_id + 1].cross_attn.qpos_proj = None
 
     def forward(self,
-                query,
-                key,
-                query_pos,
-                reg_branches,
-                key_pos=None,
+                query: Tensor,
+                reg_branches: nn.Module,
+                key: Tensor = None,
+                query_pos: Tensor = None,
+                key_pos: Tensor = None,
                 key_padding_mask=None,
                 **kwargs) -> List[Tensor]:
         """Forward function of decoder.
 
         Args:
             query (Tensor): The input query with shape (bs, num_queries, dim).
+            reg_branches (nn.Module): The regression branch for dynamically
+                updating references in each layer.
             key (Tensor): The input key with shape (bs, num_keys, dim) If
                 `None`, the `query` will be used. Defaults to `None`.
             query_pos (Tensor): The positional encoding for `query`, with the
                 same shape as `query`. If not `None`, it will be added to
                 `query` before forward function. Defaults to `None`.
-            reg_branches (nn.Module): The regression branch for dynamically
-                updating references in each layer.
             key_pos (Tensor): The positional encoding for `key`, with the
                 same shape as `key`. If not `None`, it will be added to
                 `key` before forward function. If `None`, and `query_pos`
@@ -201,8 +201,7 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
             List[Tensor]: forwarded results with shape (num_decoder_layers,
             bs, num_queries, dim) if `return_intermediate` is True, otherwise
             with shape (1, bs, num_queries, dim). references with shape
-            (num_decoder_layers, bs, num_queries, 2/4) if `reg_branches`
-            is not None, otherwise with shape (1, bs, num_queries, 2/4).
+            (num_decoder_layers, bs, num_queries, 2/4).
         """
         output = query
         reference_unsigmoid = query_pos
@@ -247,9 +246,9 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
                 is_first=(layer_id == 0),
                 **kwargs)
             # iter update
-            tmp = reg_branches(output)
-            tmp[..., :self.query_dim] += inverse_sigmoid(reference)
-            new_reference = tmp[..., :self.query_dim].sigmoid()
+            tmp_reg_preds = reg_branches(output)
+            tmp_reg_preds[..., :self.query_dim] += inverse_sigmoid(reference)
+            new_reference = tmp_reg_preds[..., :self.query_dim].sigmoid()
             if layer_id != self.num_layers - 1:
                 ref.append(new_reference)
             reference = new_reference.detach()
@@ -286,9 +285,9 @@ class DabDetrTransformerEncoder(DetrTransformerEncoder):
         self.query_scale = MLP(embed_dims, embed_dims, embed_dims, 2)
 
     def forward(self,
-                query,
-                query_pos=None,
-                query_key_padding_mask=None,
+                query: Tensor,
+                query_pos: Tensor = None,
+                query_key_padding_mask: Tensor = None,
                 **kwargs):
         """Forward function of encoder.
 

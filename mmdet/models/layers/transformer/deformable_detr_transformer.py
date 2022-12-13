@@ -198,15 +198,15 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
                 **kwargs)
 
             if reg_branches is not None:
-                tmp = reg_branches[layer_id](output)
+                tmp_reg_preds = reg_branches[layer_id](output)
                 if reference_points.shape[-1] == 4:
-                    new_reference_points = tmp + inverse_sigmoid(
+                    new_reference_points = tmp_reg_preds + inverse_sigmoid(
                         reference_points)
                     new_reference_points = new_reference_points.sigmoid()
                 else:
                     assert reference_points.shape[-1] == 2
-                    new_reference_points = tmp
-                    new_reference_points[..., :2] = tmp[
+                    new_reference_points = tmp_reg_preds
+                    new_reference_points[..., :2] = tmp_reg_preds[
                         ..., :2] + inverse_sigmoid(reference_points)
                     new_reference_points = new_reference_points.sigmoid()
                 reference_points = new_reference_points.detach()
