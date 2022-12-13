@@ -67,7 +67,7 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
                 pos_transformation = 1
             else:
                 pos_transformation = self.query_scale(query)
-            # get sine embedding for the query vector
+            # get sine embedding for the query reference
             ref_sine_embed = convert_coordinate_to_encoding(reference_xy)
             # apply transformation
             ref_sine_embed = ref_sine_embed * pos_transformation
@@ -86,9 +86,7 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
         if self.return_intermediate:
             return torch.stack(intermediate), reference
 
-        if self.post_norm is not None:
-            query = self.post_norm(query)
-
+        query = self.post_norm(query)
         return query.unsqueeze(0), reference
 
 

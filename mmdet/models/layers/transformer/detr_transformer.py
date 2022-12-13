@@ -141,8 +141,7 @@ class DetrTransformerDecoder(BaseModule):
         if self.return_intermediate:
             return torch.stack(intermediate)
 
-        if self.post_norm is not None:
-            query = self.post_norm(query)
+        query = self.post_norm(query)
 
         return query.unsqueeze(0)
 
