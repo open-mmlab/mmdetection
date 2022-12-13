@@ -168,9 +168,10 @@ class QualityFocalLoss(nn.Module):
                 classification and quality (IoU) estimation with shape (N, C),
                 C is the number of classes.
             target (Union(tuple([torch.Tensor]),Torch.Tensor)): The type is
-                tuple ,it should be includedTarget category label with
+                tuple, it should be included Target category label with
                 shape (N,) and target quality label with shape (N,).The type
-                is torch.Tensor, target should be One-Hot form.
+                is torch.Tensor, the target should be one-hot form with
+                soft weights.
             weight (torch.Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
