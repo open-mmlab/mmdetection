@@ -420,28 +420,46 @@ class MLP(BaseModule):
         return x
 
 
-def gen_sine_embed_for_ref(reference: Tensor):
-    # n_query, bs, _ = pos_tensor.size()
-    scale = 2 * math.pi
-    dim_t = torch.arange(128, dtype=torch.float32, device=reference.device)
-    dim_t = 10000**(2 * (dim_t // 2) / 128)
-    x_embed = reference[:, :, 0] * scale
-    y_embed = reference[:, :, 1] * scale
+def convert_coordinate_to_encoding(pos_tensor: Tensor,
+                                   num_feats: int = 128,
+                                   temperature: int = 10000,
+                                   scale: float = 2 * math.pi):
+    """Convert coordinate tensor to positional encoding.
+
+    Args:
+        pos_tensor (Tensor): Coordinate tensor to be converted to
+            positional encoding. With the last dimension as 2 or 4.
+        num_feats (int, optional): The feature dimension for each position
+            along x-axis or y-axis. Note the final returned dimension
+            for each position is 2 times of this value. Defaults to 128.
+        temperature (int, optional): The temperature used for scaling
+            the position embedding. Defaults to 10000.
+        scale (float, optional): A scale factor that scales the position
+            embedding. The scale will be used only when `normalize` is True.
+            Defaults to 2*pi.
+    Returns:
+        Tensor: Returned encoded positional tensor.
+    """
+    dim_t = torch.arange(
+        num_feats, dtype=torch.float32, device=pos_tensor.device)
+    dim_t = temperature**(2 * (dim_t // 2) / num_feats)
+    x_embed = pos_tensor[:, :, 0] * scale
+    y_embed = pos_tensor[:, :, 1] * scale
     pos_x = x_embed[:, :, None] / dim_t
     pos_y = y_embed[:, :, None] / dim_t
     pos_x = torch.stack((pos_x[:, :, 0::2].sin(), pos_x[:, :, 1::2].cos()),
                         dim=3).flatten(2)
     pos_y = torch.stack((pos_y[:, :, 0::2].sin(), pos_y[:, :, 1::2].cos()),
                         dim=3).flatten(2)
-    if reference.size(-1) == 2:
+    if pos_tensor.size(-1) == 2:
         pos = torch.cat((pos_y, pos_x), dim=2)
-    elif reference.size(-1) == 4:
-        w_embed = reference[:, :, 2] * scale
+    elif pos_tensor.size(-1) == 4:
+        w_embed = pos_tensor[:, :, 2] * scale
         pos_w = w_embed[:, :, None] / dim_t
         pos_w = torch.stack((pos_w[:, :, 0::2].sin(), pos_w[:, :, 1::2].cos()),
                             dim=3).flatten(2)
 
-        h_embed = reference[:, :, 3] * scale
+        h_embed = pos_tensor[:, :, 3] * scale
         pos_h = h_embed[:, :, None] / dim_t
         pos_h = torch.stack((pos_h[:, :, 0::2].sin(), pos_h[:, :, 1::2].cos()),
                             dim=3).flatten(2)
@@ -449,7 +467,7 @@ def gen_sine_embed_for_ref(reference: Tensor):
         pos = torch.cat((pos_y, pos_x, pos_w, pos_h), dim=2)
     else:
         raise ValueError('Unknown pos_tensor shape(-1):{}'.format(
-            reference.size(-1)))
+            pos_tensor.size(-1)))
     return pos
 
 
