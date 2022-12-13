@@ -15,7 +15,7 @@ from torch.nn import ModuleList
 from mmdet.utils import OptMultiConfig
 from .detr_transformer import (DetrTransformerDecoder,
                                DetrTransformerDecoderLayer)
-from .utils import MLP, gen_sine_embed_for_ref
+from .utils import MLP, convert_coordinate_to_encoding
 
 
 class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
@@ -45,8 +45,8 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
 
         Args:
             query (Tensor): The input query with shape
-                (num_queries, bs, dim).
-            key (Tensor): The input key with shape (num_key, bs, dim) If
+                (bs, num_queries, dim).
+            key (Tensor): The input key with shape (bs, num_key, dim) If
                 `None`, the `query` will be used. Defaults to `None`.
             value (Tensor): The input value with the same shape as
                 `key`. If `None`, the `key` will be used. Defaults to `None`.
@@ -75,7 +75,7 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
             else:
                 pos_transformation = self.query_scale(query)
             # get sine embedding for the query vector
-            ref_sine_embed = gen_sine_embed_for_ref(reference_xy)
+            ref_sine_embed = convert_coordinate_to_encoding(reference_xy)
             # apply transformation
             ref_sine_embed = ref_sine_embed * pos_transformation
             query = layer(
@@ -125,8 +125,8 @@ class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
                 is_first=None):
         """
         Args:
-            query (Tensor): The input query, has shape (num_queries, bs, dim)
-            key (Tensor, optional): The input key, has shape (num_key, bs, dim)
+            query (Tensor): The input query, has shape (bs, num_queries, dim)
+            key (Tensor, optional): The input key, has shape (bs, num_key, dim)
                 If `None`, the `query` will be used. Defaults to `None`.
             value (Tensor, optional): The input value, has the same shape as
                 `key`, as in `nn.MultiheadAttention.forward`. If `None`, the
@@ -149,7 +149,7 @@ class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
                 Defaults to False.
 
         Returns:
-            Tensor: forwarded results, has shape (num_queries, bs, dim).
+            Tensor: forwarded results, has shape (bs, num_queries, dim).
         """
         query = self.self_attn(
             query=query,
@@ -175,7 +175,26 @@ class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
 
 
 class ConditionalAttention(BaseModule):
-    """A wrapper of conditional attention, dropout and residual connection."""
+    """A wrapper of conditional attention, dropout and residual connection.
+
+    Args:
+        embed_dims (int): The embedding dimension.
+        num_heads (int): Parallel attention heads.
+        attn_drop (float): A Dropout layer on attn_output_weights.
+            Default: 0.0.
+        proj_drop: A Dropout layer after `nn.MultiheadAttention`.
+            Default: 0.0.
+        cross_attn (bool): Whether the attention module is for cross attention.
+            Default: False
+        keep_query_pos (bool): Whether to transform query_pos before cross
+            attention.
+            Default: False.
+        batch_first (bool): When it is True, Key, Query and Value are shape of
+            (batch, n, embed_dim), otherwise (n, batch, embed_dim).
+             Default: True.
+        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+            Default: None.
+    """
 
     def __init__(self,
                  embed_dims: int,
@@ -185,8 +204,7 @@ class ConditionalAttention(BaseModule):
                  cross_attn: bool = False,
                  keep_query_pos: bool = False,
                  batch_first: bool = True,
-                 init_cfg: OptMultiConfig = None,
-                 group_detr=1):
+                 init_cfg: OptMultiConfig = None):
         super().__init__(init_cfg=init_cfg)
 
         assert batch_first is True, 'First \
@@ -201,9 +219,9 @@ class ConditionalAttention(BaseModule):
         self.proj_drop = Dropout(proj_drop)
 
         self._init_layers()
-        self.group_detr = group_detr
 
     def _init_layers(self):
+        """Initialize layers for qkv projection."""
         embed_dims = self.embed_dims
         self.qcontent_proj = Linear(embed_dims, embed_dims)
         self.qpos_proj = Linear(embed_dims, embed_dims)
@@ -214,7 +232,7 @@ class ConditionalAttention(BaseModule):
             self.qpos_sine_proj = Linear(embed_dims, embed_dims)
         self.out_proj = Linear(embed_dims, embed_dims)
 
-        nn.init.constant_(self.out_proj.bias, 0.)  # init out_proj
+        nn.init.constant_(self.out_proj.bias, 0.)
 
     def forward_attn(self,
                      query: Tensor,
@@ -222,6 +240,31 @@ class ConditionalAttention(BaseModule):
                      value: Tensor,
                      attn_mask: Tensor,
                      key_padding_mask: Tensor = None) -> Tuple[Tensor]:
+        """Forward process for `ConditionalAttention`.
+
+        Args:
+            query (Tensor): The input query with shape [bs, num_queries,
+                embed_dims].
+            key (Tensor): The key tensor with shape [bs, num_keys,
+                embed_dims].
+                If None, the `query` will be used. Defaults to None.
+            value (Tensor): The value tensor with same shape as `key`.
+                Same in `nn.MultiheadAttention.forward`. Defaults to None.
+                If None, the `key` will be used.
+            attn_mask (Tensor): ByteTensor mask with shape [num_queries,
+                num_keys]. Same in `nn.MultiheadAttention.forward`.
+                Defaults to None.
+            key_padding_mask (Tensor): ByteTensor with shape [bs, num_keys].
+                Defaults to None.
+        Returns:
+            Tuple[Tensor]: Attention outputs of shape :math:`(N, L, E)`,
+            where :math:`N` is the batch size, :math:`L` is the target
+            sequence length , and :math:`E` is the embedding dimension
+            `embed_dim`. Attention weights per head of shape :math:`
+            (num_heads, L, S)`. where :math:`N` is batch size, :math:`L`
+            is target sequence length, and :math:`S` is the source sequence
+            length.
+        """
         assert key.size(1) == value.size(1), \
             f'{"key, value must have the same sequence length"}'
         assert query.size(0) == key.size(0) == value.size(0), \
@@ -245,11 +288,11 @@ class ConditionalAttention(BaseModule):
 
         if attn_mask is not None:
             assert attn_mask.dtype == torch.float32 or \
-                    attn_mask.dtype == torch.float64 or \
-                    attn_mask.dtype == torch.float16 or \
-                    attn_mask.dtype == torch.uint8 or \
-                    attn_mask.dtype == torch.bool, \
-                    'Only float, byte, and bool types are supported for \
+                   attn_mask.dtype == torch.float64 or \
+                   attn_mask.dtype == torch.float16 or \
+                   attn_mask.dtype == torch.uint8 or \
+                   attn_mask.dtype == torch.bool, \
+                   'Only float, byte, and bool types are supported for \
                     attn_mask'
 
             if attn_mask.dtype == torch.uint8:
@@ -258,7 +301,7 @@ class ConditionalAttention(BaseModule):
                 attn_mask = attn_mask.to(torch.bool)
             if attn_mask.dim() == 2:
                 attn_mask = attn_mask.unsqueeze(0)
-                if list(attn_mask.size()) != [1, query.size(0), key.size(0)]:
+                if list(attn_mask.size()) != [1, query.size(1), key.size(1)]:
                     raise RuntimeError(
                         'The size of the 2D attn_mask is not correct.')
             elif attn_mask.dim() == 3:
@@ -314,7 +357,10 @@ class ConditionalAttention(BaseModule):
             attn_output_weights = attn_output_weights.view(
                 bs * self.num_heads, tgt_len, src_len)
 
-        attn_output_weights = F.softmax(attn_output_weights, dim=-1)
+        attn_output_weights = F.softmax(
+            attn_output_weights -
+            attn_output_weights.max(dim=-1, keepdim=True)[0],
+            dim=-1)
         attn_output_weights = self.attn_drop(attn_output_weights)
 
         attn_output = torch.bmm(attn_output_weights, v)
@@ -342,13 +388,11 @@ class ConditionalAttention(BaseModule):
             is_first: bool = False) -> Tensor:
         """Forward function for `ConditionalAttention`.
         Args:
-            query (Tensor): The input query with shape [num_queries, bs,
-                embed_dims] if self.batch_first is False, else
-                [bs, num_queries embed_dims].
-            key (Tensor): The key tensor with shape [num_keys, bs,
-                embed_dims] if self.batch_first is False, else
-                [bs, num_keys, embed_dims] .
-                If None, the ``query`` will be used. Defaults to None.
+            query (Tensor): The input query with shape [bs, num_queries,
+                embed_dims].
+            key (Tensor): The key tensor with shape [bs, num_keys,
+                embed_dims].
+                If None, the `query` will be used. Defaults to None.
             query_pos (Tensor): The positional encoding for query in self
                 attention, with the same shape as `x`. If not None, it will
                 be added to `x` before forward function.
@@ -371,8 +415,10 @@ class ConditionalAttention(BaseModule):
                 is the first layer of the decoder.
                 Defaults to False.
         Returns:
-            Tensor: forwarded results with shape [num_queries, bs, embed_dims].
+            Tensor: forwarded results with shape
+            [bs, num_queries, embed_dims].
         """
+
         if self.cross_attn:
             q_content = self.qcontent_proj(query)
             k_content = self.kcontent_proj(key)
@@ -410,19 +456,14 @@ class ConditionalAttention(BaseModule):
             k_content = self.kcontent_proj(query)
             k_pos = self.kpos_proj(query_pos)
             v = self.v_proj(query)
-            bs, num_queries, _ = q_content.shape
             q = q_content if q_pos is None else q_content + q_pos
             k = k_content if k_pos is None else k_content + k_pos
-            if self.training:
-                q = torch.cat(
-                    q.split(num_queries // self.group_detr, dim=0), dim=1)
-                k = torch.cat(
-                    k.split(num_queries // self.group_detr, dim=0), dim=1)
-                v = torch.cat(
-                    v.split(num_queries // self.group_detr, dim=0), dim=1)
             sa_output = self.forward_attn(
-                query=q, key=k, value=v, attn_mask=attn_mask)[0]
-            if self.training:
-                sa_output = torch.cat(sa_output.split(bs, dim=0), dim=0)
+                query=q,
+                key=k,
+                value=v,
+                attn_mask=attn_mask,
+                key_padding_mask=key_padding_mask)[0]
             query = query + self.proj_drop(sa_output)
+
         return query
