@@ -199,7 +199,7 @@ class QualityFocalLoss(nn.Module):
                 target = target.reshape(-1, target.shape[-1])
 
                 pos_ind, pos_value = torch.max(target, dim=-1)
-                pos_ind[pos_value > 0] = target.shape[-1]
+                pos_ind[~(pos_value > 0)] = target.shape[-1]
                 target = (pos_ind.long(), pos_value.type(pred.dtype))
 
             loss_cls = self.loss_weight * calculate_loss_func(
