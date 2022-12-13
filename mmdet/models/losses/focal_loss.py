@@ -72,6 +72,7 @@ def py_focal_loss_with_prob(pred,
         pred (torch.Tensor): The prediction probability with shape (N, C),
             C is the number of classes.
         target (torch.Tensor): The learning label of the prediction.
+            The target support One-Hot label.
         weight (torch.Tensor, optional): Sample-wise loss weight.
         gamma (float, optional): The gamma for calculating the modulating
             factor. Defaults to 2.0.
@@ -205,6 +206,7 @@ class FocalLoss(nn.Module):
         Args:
             pred (torch.Tensor): The prediction.
             target (torch.Tensor): The learning label of the prediction.
+                The target support One-Hot label.
             weight (torch.Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
