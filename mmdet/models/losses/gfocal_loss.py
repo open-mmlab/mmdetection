@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from mmdet.models.losses.utils import weighted_loss
 from mmdet.registry import MODELS
-from .utils import weighted_loss
 
 
 @weighted_loss
@@ -45,6 +45,39 @@ def quality_focal_loss(pred, target, beta=2.0):
     scale_factor = score[pos] - pred_sigmoid[pos, pos_label]
     loss[pos, pos_label] = F.binary_cross_entropy_with_logits(
         pred[pos, pos_label], score[pos],
+        reduction='none') * scale_factor.abs().pow(beta)
+
+    loss = loss.sum(dim=1, keepdim=False)
+    return loss
+
+
+@weighted_loss
+def quality_focal_loss_tensor_target(pred, target, beta=2.0):
+    """`QualityFocal Loss <https://arxiv.org/abs/2008.13367>`_
+    Args:
+        pred (torch.Tensor): The prediction with shape (N, C), C is the
+            number of classes
+        target (torch.Tensor): The learning target of the iou-aware
+            classification score with shape (N, C), C is the number of classes.
+        beta (float): The beta parameter for calculating the modulating factor.
+            Defaults to 2.0.
+    """
+    # pred and target should be of the same size
+    assert pred.size() == target.size()
+
+    pred_sigmoid = pred.sigmoid()
+
+    scale_factor = pred_sigmoid
+    target = target.type_as(pred)
+
+    zerolabel = scale_factor.new_zeros(pred.shape)
+    loss = F.binary_cross_entropy_with_logits(
+        pred, zerolabel, reduction='none') * scale_factor.pow(beta)
+
+    pos = (target != 0)
+    scale_factor = target[pos] - pred_sigmoid[pos]
+    loss[pos] = F.binary_cross_entropy_with_logits(
+        pred[pos], target[pos],
         reduction='none') * scale_factor.abs().pow(beta)
 
     loss = loss.sum(dim=1, keepdim=False)
@@ -188,23 +221,8 @@ class QualityFocalLoss(nn.Module):
                 calculate_loss_func = quality_focal_loss_with_prob
             else:
                 calculate_loss_func = quality_focal_loss
-
-            if isinstance(target, torch.Tensor):
-                # this means that target is already in One-Hot form.
-                assert pred.dim() == target.dim()
-                if target.dim() == 4:
-                    # the target shape with (B,C,W,H), C means classes
-                    pred = pred.permute(0, 2, 3, 1)
-                    target = target.permute(0, 2, 3, 1)
-                # adjust the shape to (N,C)
-                pred = pred.reshape(-1, target.shape[-1])
-                target = target.reshape(-1, target.shape[-1])
-
-                # get category label and quality label info
-                pos_ind, pos_value = torch.max(target, dim=-1)
-                # set bg label
-                pos_ind[~(pos_value > 0)] = target.shape[-1]
-                target = (pos_ind.long(), pos_value.type(pred.dtype))
+                if isinstance(target, torch.Tensor):
+                    calculate_loss_func = quality_focal_loss_tensor_target
 
             loss_cls = self.loss_weight * calculate_loss_func(
                 pred,

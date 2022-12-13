@@ -48,21 +48,20 @@ def test_loss_with_reduction_override(loss_class):
 
 
 @pytest.mark.parametrize('loss_class', [QualityFocalLoss])
-@pytest.mark.parametrize('input_shape', [(3, 16, 20), (3, 4, 40, 40)])
-def test_QualityFocalLoss_Loss(loss_class, input_shape):
+def test_QualityFocalLoss_Loss(loss_class):
+    input_shape = (4, 5)
     pred = torch.rand(input_shape)
-    target = torch.rand(input_shape)
-    weight = None
+    label = torch.Tensor([0, 1, 2, 0]).long()
+    quality_label = torch.rand(input_shape[0])
+
+    loss = loss_class()(pred, (label, quality_label))
+    assert isinstance(loss, torch.Tensor)
+
+    target = torch.nn.functional.one_hot(label, 5)
+    target = target * quality_label.reshape(input_shape[0], 1)
 
     loss = loss_class()(pred, target)
     assert isinstance(loss, torch.Tensor)
-
-    with pytest.raises(AssertionError):
-        # only reduction_override from [None, 'none', 'mean', 'sum']
-        # is not allowed
-        reduction_override = True
-        loss_class()(
-            pred, target, weight, reduction_override=reduction_override)
 
 
 @pytest.mark.parametrize('loss_class', [
