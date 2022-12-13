@@ -14,7 +14,7 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
     """Decoder of Conditional DETR."""
 
     def _init_layers(self) -> None:
-        """Initialize decoder layers."""
+        """Initialize decoder layers and other layers."""
         self.layers = ModuleList([
             ConditionalDetrTransformerDecoderLayer(**self.layer_cfg)
             for _ in range(self.num_layers)
@@ -26,8 +26,9 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
         self.query_scale = MLP(self.embed_dims, self.embed_dims,
                                self.embed_dims, 2)
         self.ref_point_head = MLP(self.embed_dims, self.embed_dims, 2, 2)
-        # we have substitute 'qpos_proj' with 'qpos_sine_proj' (exclude
-        # first decoder layer),so 'qpos_proj' should be deleted.
+        # we have substitute 'qpos_proj' with 'qpos_sine_proj' except for
+        # the first decoder layer), so 'qpos_proj' should be deleted
+        # in other layers.
         for layer_id in range(self.num_layers - 1):
             self.layers[layer_id + 1].cross_attn.qpos_proj = None
 
@@ -85,7 +86,10 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
         if self.return_intermediate:
             return torch.stack(intermediate), reference
 
-        return query, reference
+        if self.post_norm is not None:
+            query = self.post_norm(query)
+
+        return query.unsqueeze(0), reference
 
 
 class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):

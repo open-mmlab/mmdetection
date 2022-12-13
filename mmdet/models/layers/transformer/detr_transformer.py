@@ -123,7 +123,7 @@ class DetrTransformerDecoder(BaseModule):
         Returns:
             Tensor: The forwarded results will have shape
             (num_decoder_layers, bs, num_queries, dim) if
-            `return_intermediate` is `True` else (bs, num_queries, dim).
+            `return_intermediate` is `True` else (1, bs, num_queries, dim).
         """
         intermediate = []
         for layer in self.layers:
@@ -141,7 +141,10 @@ class DetrTransformerDecoder(BaseModule):
         if self.return_intermediate:
             return torch.stack(intermediate)
 
-        return query
+        if self.post_norm is not None:
+            query = self.post_norm(query)
+
+        return query.unsqueeze(0)
 
 
 class DetrTransformerEncoderLayer(BaseModule):
