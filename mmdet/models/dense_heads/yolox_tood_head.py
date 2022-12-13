@@ -17,7 +17,7 @@ class YOLOXTOODHead(YOLOXHead):
     Args:
         tood_stacked_convs (int): Number of conv layers in TOOD head.
             Default: 3.
-        la_down_rate (int): Downsample rate of layer attention.
+        layer_attn_down_rate (int): Downsample rate of layer attention.
             Default: 32.
         tood_norm_cfg (dict): Config dict for normalization layer in TOOD head.
             Default: dict(type='GN', num_groups=32, requires_grad=True).
@@ -26,13 +26,13 @@ class YOLOXTOODHead(YOLOXHead):
     def __init__(self,
                  *args,
                  tood_stacked_convs=3,
-                 la_down_rate=32,
+                 layer_attn_down_rate=32,
                  tood_norm_cfg=dict(
                      type='GN', num_groups=32, requires_grad=True),
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.tood_stacked_convs = tood_stacked_convs
-        self.la_down_rate = la_down_rate
+        self.layer_attn_down_rate = layer_attn_down_rate
         self.tood_norm_cfg = tood_norm_cfg
 
         self._build_tood_layers()
@@ -54,13 +54,15 @@ class YOLOXTOODHead(YOLOXHead):
         self.multi_level_reg_decomps = nn.ModuleList()
         for _ in self.strides:
             self.multi_level_cls_decomps.append(
-                TaskDecomposition(self.in_channels, self.tood_stacked_convs,
-                                  self.tood_stacked_convs * self.la_down_rate,
-                                  self.conv_cfg, self.tood_norm_cfg))
+                TaskDecomposition(
+                    self.in_channels, self.tood_stacked_convs,
+                    self.tood_stacked_convs * self.layer_attn_down_rate,
+                    self.conv_cfg, self.tood_norm_cfg))
             self.multi_level_reg_decomps.append(
-                TaskDecomposition(self.in_channels, self.tood_stacked_convs,
-                                  self.tood_stacked_convs * self.la_down_rate,
-                                  self.conv_cfg, self.tood_norm_cfg))
+                TaskDecomposition(
+                    self.in_channels, self.tood_stacked_convs,
+                    self.tood_stacked_convs * self.layer_attn_down_rate,
+                    self.conv_cfg, self.tood_norm_cfg))
 
     def forward_single(self, x, cls_convs, reg_convs, conv_cls, conv_reg,
                        conv_obj, cls_decomp, reg_decomp):
