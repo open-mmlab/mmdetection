@@ -130,3 +130,39 @@ class DABDETRHead(DETRHead):
         predictions = self.predict_by_feat(
             *outs, batch_img_metas=batch_img_metas, rescale=rescale)
         return predictions
+
+    def loss_and_predict(self, hidden_states: Tensor, references: Tensor,
+                         batch_data_samples: SampleList) -> dict:
+        """Perform forward propagation of the head, then calculate loss and
+        predictions from the features and data samples. Over-write because
+        img_metas are needed as inputs for bbox_head.
+
+        Args:
+            hidden_states (Tensor): Feature from the transformer decoder, has
+                shape (num_decoder_layers, bs, num_queries, dim).
+            references (Tensor): references from the transformer decoder, has
+                shape (num_decoder_layers, bs, num_queries, 2/4).
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+
+        Returns:
+            tuple: the return value is a tuple contains:
+
+                - losses: (dict[str, Tensor]): A dictionary of loss components.
+                - predictions (list[:obj:`InstanceData`]): Detection
+                  results of each image after the post process.
+        """
+        batch_gt_instances = []
+        batch_img_metas = []
+        for data_sample in batch_data_samples:
+            batch_img_metas.append(data_sample.metainfo)
+            batch_gt_instances.append(data_sample.gt_instances)
+
+        outs = self(hidden_states, references)
+        loss_inputs = outs + (batch_gt_instances, batch_img_metas)
+        losses = self.loss_by_feat(*loss_inputs)
+
+        predictions = self.predict_by_feat(
+            *outs, batch_img_metas=batch_img_metas)
+        return losses, predictions
