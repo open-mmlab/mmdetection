@@ -54,6 +54,7 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
                 has the same shape as `key`, then `query_pos` will be used
                 as `key_pos`. Defaults to `None`.
             key_padding_mask (Tensor): ByteTensor with shape (bs, num_keys).
+                Defaults to `None`.
         Returns:
             List[Tensor]: forwarded results with shape (num_decoder_layers,
             bs, num_queries, dim) if `return_intermediate` is True, otherwise
