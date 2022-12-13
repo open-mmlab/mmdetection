@@ -1,12 +1,16 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Tuple
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
+from torch import Tensor
 
 from mmdet.models.dense_heads import YOLOXHead
 from mmdet.models.dense_heads.tood_head import TaskDecomposition
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType
 from ..utils import multi_apply
 
 
@@ -19,17 +23,18 @@ class YOLOXTOODHead(YOLOXHead):
             Default: 3.
         layer_attn_down_rate (int): Downsample rate of layer attention.
             Default: 32.
-        tood_norm_cfg (dict): Config dict for normalization layer in TOOD head.
+        tood_norm_cfg (:obj:`ConfigDict` or dict):
+            Config dict for normalization layer in TOOD head.
             Default: dict(type='GN', num_groups=32, requires_grad=True).
     """
 
     def __init__(self,
                  *args,
-                 tood_stacked_convs=3,
-                 layer_attn_down_rate=32,
-                 tood_norm_cfg=dict(
+                 tood_stacked_convs: int = 3,
+                 layer_attn_down_rate: int = 32,
+                 tood_norm_cfg: ConfigType = dict(
                      type='GN', num_groups=32, requires_grad=True),
-                 **kwargs):
+                 **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.tood_stacked_convs = tood_stacked_convs
         self.layer_attn_down_rate = layer_attn_down_rate
@@ -37,7 +42,7 @@ class YOLOXTOODHead(YOLOXHead):
 
         self._build_tood_layers()
 
-    def _build_tood_layers(self):
+    def _build_tood_layers(self) -> None:
         self.inter_convs = nn.ModuleList()
         for _ in range(self.tood_stacked_convs):
             self.inter_convs.append(
@@ -64,8 +69,11 @@ class YOLOXTOODHead(YOLOXHead):
                     self.tood_stacked_convs * self.layer_attn_down_rate,
                     self.conv_cfg, self.tood_norm_cfg))
 
-    def forward_single(self, x, cls_convs, reg_convs, conv_cls, conv_reg,
-                       conv_obj, cls_decomp, reg_decomp):
+    def forward_single(self, x: Tensor, cls_convs: nn.Module,
+                       reg_convs: nn.Module, conv_cls: nn.Module,
+                       conv_reg: nn.Module, conv_obj: nn.Module,
+                       cls_decomp: nn.Module,
+                       reg_decomp: nn.Module) -> Tuple[Tensor, Tensor, Tensor]:
         """Forward feature of a single scale level."""
 
         inter_feats = []
@@ -87,7 +95,7 @@ class YOLOXTOODHead(YOLOXHead):
 
         return cls_score, bbox_pred, objectness
 
-    def forward(self, feats):
+    def forward(self, feats: Tuple[Tensor]) -> Tuple[Tensor]:
         """Forward features from the upstream network.
 
         Args:

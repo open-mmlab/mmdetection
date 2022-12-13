@@ -1,11 +1,15 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Tuple
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
+from torch import Tensor
 
 from mmdet.models.necks.yolox_pafpn import YOLOXPAFPN
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType
 
 
 class ASFF(nn.Module):
@@ -20,19 +24,21 @@ class ASFF(nn.Module):
             ASFF. Default: 2.
         expand_kernel (int): Expand kernel size of the expand layer.
             Default: 3.
-        norm_cfg (dict): Config dict for normalization layer.
-            Default: dict(type='BN', momentum=0.03, eps=0.001)
-        act_cfg (dict): Config dict for activation layer.
+        norm_cfg (:obj:`ConfigDict` or dict): Config dict for normalization
+            layer. Default: dict(type='BN', momentum=0.03, eps=0.001)
+        act_cfg (:obj:`ConfigDict` or dict): Config dict for activation layer.
             Default: dict(type='SiLU')
     """
 
-    def __init__(self,
-                 in_channels,
-                 level,
-                 asff_channel=2,
-                 expand_kernel=3,
-                 norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
-                 act_cfg=dict(type='SiLU')):
+    def __init__(
+        self,
+        in_channels: List[int],
+        level: int,
+        asff_channel: int = 2,
+        expand_kernel: int = 3,
+        norm_cfg: ConfigType = dict(type='BN', momentum=0.03, eps=0.001),
+        act_cfg: ConfigType = dict(type='SiLU')
+    ) -> None:
         super(ASFF, self).__init__()
         self.in_channels = in_channels
         self.level = level
@@ -88,7 +94,7 @@ class ASFF(nn.Module):
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
 
-    def forward(self, x):
+    def forward(self, x: Tuple[Tensor]) -> Tuple[Tensor]:
         assert len(x) == len(self.in_channels)
 
         mlvl_feats = []
@@ -128,19 +134,20 @@ class YOLOXASFFPAFPN(YOLOXPAFPN):
             ASFF. Default: 2.
         expand_kernel (int): Expand kernel size of the expand layer.
             Default: 3.
-        norm_cfg (dict): Config dict for normalization layer.
-            Default: dict(type='BN', momentum=0.03, eps=0.001)
-        act_cfg (dict): Config dict for activation layer.
+        norm_cfg (:obj:`ConfigDict` or dict): Config dict for normalization
+            layer. Default: dict(type='BN', momentum=0.03, eps=0.001)
+        act_cfg (:obj:`ConfigDict` or dict): Config dict for activation layer.
             Default: dict(type='SiLU')
     """
 
     def __init__(self,
                  *args,
-                 asff_channel=2,
-                 expand_kernel=3,
-                 norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
-                 act_cfg=dict(type='SiLU'),
-                 **kwargs):
+                 asff_channel: int = 2,
+                 expand_kernel: int = 3,
+                 norm_cfg: ConfigType = dict(
+                     type='BN', momentum=0.03, eps=0.001),
+                 act_cfg: ConfigType = dict(type='SiLU'),
+                 **kwargs) -> None:
         super().__init__(*args, norm_cfg=norm_cfg, act_cfg=act_cfg, **kwargs)
 
         self.asffs = nn.ModuleList()
@@ -155,7 +162,7 @@ class YOLOXASFFPAFPN(YOLOXPAFPN):
                     act_cfg=act_cfg,
                 ))
 
-    def forward(self, inputs):
+    def forward(self, inputs: Tuple[Tensor]) -> Tuple[Tensor]:
         assert len(inputs) == len(self.in_channels)
 
         # top-down path
