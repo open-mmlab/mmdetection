@@ -19,7 +19,7 @@ class ASFF(nn.Module):
     used in `YOLOX-PAI <https://arxiv.org/abs/2208.13040>`_.
     Args:
         in_channels (List[int]): Number of input channels per scale.
-        level (int): The level of the input feature.
+        level_index (int): The level of the input feature.
         asff_channel (int): The hidden channel of the attention layer in
             ASFF. Default: 2.
         expand_kernel (int): Expand kernel size of the expand layer.
@@ -33,7 +33,7 @@ class ASFF(nn.Module):
     def __init__(
         self,
         in_channels: List[int],
-        level: int,
+        level_index: int,
         asff_channel: int = 2,
         expand_kernel: int = 3,
         norm_cfg: ConfigType = dict(type='BN', momentum=0.03, eps=0.001),
@@ -41,14 +41,14 @@ class ASFF(nn.Module):
     ) -> None:
         super(ASFF, self).__init__()
         self.in_channels = in_channels
-        self.level = level
+        self.level_index = level_index
         self.mlvl_feat_convs = nn.ModuleList()
         self.mlvl_importance_convs = nn.ModuleList()
-        self.inter_dim = in_channels[level]
+        self.inter_dim = in_channels[level_index]
         for i, in_channel in enumerate(in_channels):
-            if i == self.level:
+            if i == self.level_index:
                 self.mlvl_feat_convs.append(nn.Identity())
-            elif i < self.level:
+            elif i < self.level_index:
                 self.mlvl_feat_convs.append(
                     ConvModule(
                         in_channel,
@@ -58,7 +58,7 @@ class ASFF(nn.Module):
                         padding=1,
                         norm_cfg=norm_cfg,
                         act_cfg=act_cfg))
-            elif i > self.level:
+            elif i > self.level_index:
                 self.mlvl_feat_convs.append(
                     ConvModule(
                         in_channel,
@@ -100,12 +100,14 @@ class ASFF(nn.Module):
         mlvl_feats = []
         mlvl_importance = []  # spatial importance map
         for i, feat in enumerate(x):
-            for _ in range(self.level - i - 1):
+            for _ in range(self.level_index - i - 1):
                 feat = F.max_pool2d(feat, 3, stride=2, padding=1)
             feat = self.mlvl_feat_convs[i](feat)
-            if i > self.level:
+            if i > self.level_index:
                 feat = F.interpolate(
-                    feat, scale_factor=2**(i - self.level), mode='nearest')
+                    feat,
+                    scale_factor=2**(i - self.level_index),
+                    mode='nearest')
             mlvl_feats.append(feat)
             mlvl_importance.append(self.mlvl_importance_convs[i](feat))
 
@@ -155,7 +157,7 @@ class YOLOXASFFPAFPN(YOLOXPAFPN):
             self.asffs.append(
                 ASFF(
                     self.in_channels,
-                    level=i,
+                    level_index=i,
                     asff_channel=asff_channel,
                     expand_kernel=expand_kernel,
                     norm_cfg=norm_cfg,
