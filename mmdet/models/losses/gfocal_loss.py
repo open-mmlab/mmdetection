@@ -117,9 +117,8 @@ def distribution_focal_loss(pred, label):
     dis_right = dis_left + 1
     weight_left = dis_right.float() - label
     weight_right = label - dis_left.float()
-    loss = F.cross_entropy(
-        pred, dis_left, reduction='none') * weight_left + F.cross_entropy(
-            pred, dis_right, reduction='none') * weight_right
+    loss = F.cross_entropy(pred, dis_left, reduction='none') * weight_left \
+        + F.cross_entropy(pred, dis_right, reduction='none') * weight_right
     return loss
 
 
@@ -194,11 +193,13 @@ class QualityFocalLoss(nn.Module):
                     # the target shape with (B,C,W,H), C means classes
                     pred = pred.permute(0, 2, 3, 1)
                     target = target.permute(0, 2, 3, 1)
-
+                # adjust the shape to (N,C)
                 pred = pred.reshape(-1, target.shape[-1])
                 target = target.reshape(-1, target.shape[-1])
 
+                # get category label and quality label info
                 pos_ind, pos_value = torch.max(target, dim=-1)
+                # set bg label
                 pos_ind[~(pos_value > 0)] = target.shape[-1]
                 target = (pos_ind.long(), pos_value.type(pred.dtype))
 
