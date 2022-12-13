@@ -84,15 +84,15 @@ class ConditionalDETR(DETR):
 
         Args:
             query (Tensor): The queries of decoder inputs, has shape
-                (num_queries, bs, dim).
+                (bs, num_queries, dim).
             query_pos (Tensor): The positional queries of decoder inputs,
-                has shape (num_queries, bs, dim).
+                has shape (bs, num_queries, dim).
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat, bs, dim).
+                has shape (bs, num_feat, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
                 has shape (bs, num_feat).
             memory_pos (Tensor): The positional embeddings of memory, has
-                shape (num_feat, bs, dim).
+                shape (bs, num_feat, dim).
 
         Returns:
             dict: The dictionary of decoder outputs, which includes the

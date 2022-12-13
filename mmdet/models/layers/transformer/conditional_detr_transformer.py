@@ -46,7 +46,7 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
         Args:
             query (Tensor): The input query with shape
                 (bs, num_queries, dim).
-            key (Tensor): The input key with shape (bs, num_key, dim) If
+            key (Tensor): The input key with shape (bs, num_keys, dim) If
                 `None`, the `query` will be used. Defaults to `None`.
             value (Tensor): The input value with the same shape as
                 `key`. If `None`, the `key` will be used. Defaults to `None`.
@@ -57,7 +57,7 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
                 updating references in each layer.
             key_pos (Tensor): The positional encoding for `key`, with the
                 same shape as `key`.
-            key_padding_mask (Tensor): ByteTensor with shape (bs, num_key).
+            key_padding_mask (Tensor): ByteTensor with shape (bs, num_keys).
         Returns:
             List[Tensor]: forwarded results with shape (num_decoder_layers,
             bs, num_queries, dim) if `return_intermediate` is True, otherwise
@@ -126,8 +126,8 @@ class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
         """
         Args:
             query (Tensor): The input query, has shape (bs, num_queries, dim)
-            key (Tensor, optional): The input key, has shape (bs, num_key, dim)
-                If `None`, the `query` will be used. Defaults to `None`.
+            key (Tensor, optional): The input key, has shape (bs, num_keys,
+                dim). If `None`, the `query` will be used. Defaults to `None`.
             value (Tensor, optional): The input value, has the same shape as
                 `key`, as in `nn.MultiheadAttention.forward`. If `None`, the
                 `key` will be used. Defaults to `None`.
@@ -137,13 +137,13 @@ class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
             key_pos (Tensor, optional): The positional encoding for `key`, has
                 the same shape as `key`.
             self_attn_masks (Tensor, optional): ByteTensor mask, has shape
-                (num_queries, num_key), Same in `nn.MultiheadAttention.
+                (num_queries, num_keys), Same in `nn.MultiheadAttention.
                 forward`. Defaults to None.
             cross_attn_masks (Tensor, optional): ByteTensor mask, has shape
-                (num_queries, num_key), Same in `nn.MultiheadAttention.
+                (num_queries, num_keys), Same in `nn.MultiheadAttention.
                 forward`. Defaults to None.
             key_padding_mask (Tensor, optional): The `key_padding_mask` of
-                `cross_attn` input. ByteTensor, has shape (bs, num_key).
+                `cross_attn` input. ByteTensor, has shape (bs, num_keys).
             is_first (bool): A indicator to tell whether the current layer
                 is the first layer of the decoder.
                 Defaults to False.
