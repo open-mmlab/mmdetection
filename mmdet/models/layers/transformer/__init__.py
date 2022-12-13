@@ -1,6 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .dab_detr_transformer import (ConditionalAttention,
-                                   DabDetrTransformerDecoder,
+from .dab_detr_transformer import (DabDetrTransformerDecoder,
                                    DabDetrTransformerDecoderLayer,
                                    DabDetrTransformerEncoder)
 from .deformable_detr_transformer import (
@@ -10,8 +9,8 @@ from .detr_transformer import (DetrTransformerDecoder,
                                DetrTransformerDecoderLayer,
                                DetrTransformerEncoder,
                                DetrTransformerEncoderLayer)
-from .utils import (MLP, AdaptivePadding, DynamicConv, PatchEmbed,
-                    PatchMerging, convert_coordinate_to_encoding,
+from .utils import (MLP, AdaptivePadding, ConditionalAttention, DynamicConv,
+                    PatchEmbed, PatchMerging, convert_coordinate_to_encoding,
                     inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
 
 __all__ = [
