@@ -49,7 +49,10 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
             reg_branches (nn.Module): The regression branch for dynamically
                 updating references in each layer.
             key_pos (Tensor): The positional encoding for `key`, with the
-                same shape as `key`.
+                same shape as `key`. If not `None`, it will be added to
+                `key` before forward function. If `None`, and `query_pos`
+                has the same shape as `key`, then `query_pos` will be used
+                as `key_pos`. Defaults to `None`.
             key_padding_mask (Tensor): ByteTensor with shape (bs, num_keys).
         Returns:
             List[Tensor]: forwarded results with shape (num_decoder_layers,
