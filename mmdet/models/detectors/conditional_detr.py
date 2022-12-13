@@ -1,7 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, Tuple
+from typing import Dict
 
-import torch
 import torch.nn as nn
 from torch import Tensor
 
@@ -38,46 +37,6 @@ class ConditionalDETR(DETR):
             f'embed_dims should be exactly 2 times of num_feats. ' \
             f'Found {self.embed_dims} and {num_feats}.'
 
-    def pre_decoder(self, memory: Tensor) -> Tuple[Dict, Dict]:
-        """Prepare intermediate variables before entering Transformer decoder,
-        such as `query`, `query_pos`.
-
-        The forward procedure of the transformer is defined as:
-        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'
-        More details can be found at `TransformerDetector.forward_transformer`
-        in `mmdet/detector/base_detr.py`.
-
-        Args:
-            memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat, bs, dim).
-
-        Returns:
-            tuple[dict, dict]: The first dict contains the inputs of decoder
-            and the second dict contains the inputs of the bbox_head function.
-
-            - decoder_inputs_dict (dict): The keyword args dictionary of
-              `self.forward_decoder()`, which includes 'query', 'query_pos',
-              'memory'.
-            - head_inputs_dict (dict): The keyword args dictionary of the
-              bbox_head functions, which is usually empty, or includes
-              `enc_outputs_class` and `enc_outputs_class` when the detector
-              support 'two stage' or 'query selection' strategies.
-        """
-
-        batch_size = memory.size(0)
-        if self.training:
-            query_pos = self.query_embedding.weight
-        else:
-            query_pos = self.query_embedding.weight[:self.num_queries]
-        # (num_queries, dim) -> (bs, num_queries, dim)
-        query_pos = query_pos.unsqueeze(0).repeat(batch_size, 1, 1)
-        query = torch.zeros_like(query_pos)
-
-        decoder_inputs_dict = dict(
-            query_pos=query_pos, query=query, memory=memory)
-        head_inputs_dict = dict()
-        return decoder_inputs_dict, head_inputs_dict
-
     def forward_decoder(self, query: Tensor, query_pos: Tensor, memory: Tensor,
                         memory_mask: Tensor, memory_pos: Tensor) -> Dict:
         """Forward with Transformer decoder.
@@ -88,17 +47,22 @@ class ConditionalDETR(DETR):
             query_pos (Tensor): The positional queries of decoder inputs,
                 has shape (bs, num_queries, dim).
             memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (bs, num_feat, dim).
+                has shape (bs, num_feat_points, dim).
             memory_mask (Tensor): ByteTensor, the padding mask of the memory,
-                has shape (bs, num_feat).
+                has shape (bs, num_feat_points).
             memory_pos (Tensor): The positional embeddings of memory, has
-                shape (bs, num_feat, dim).
+                shape (bs, num_feat_points, dim).
 
         Returns:
             dict: The dictionary of decoder outputs, which includes the
             `hidden_states` and `references` of the decoder output.
+
+            - hidden_states (Tensor): Has shape
+                (num_decoder_layers, bs, num_queries, dim)
+            - references (Tensor): Has shape
+                (bs, num_queries, 2)
         """
-        # (num_decoder_layers, bs, num_queries, dim)
+
         hidden_states, references = self.decoder(
             query=query,
             key=memory,
