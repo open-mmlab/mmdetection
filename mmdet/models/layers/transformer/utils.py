@@ -503,7 +503,7 @@ class ConditionalAttention(BaseModule):
                      query: Tensor,
                      key: Tensor,
                      value: Tensor,
-                     attn_mask: Tensor,
+                     attn_mask: Tensor = None,
                      key_padding_mask: Tensor = None) -> Tuple[Tensor]:
         """Forward process for `ConditionalAttention`.
 
@@ -512,10 +512,8 @@ class ConditionalAttention(BaseModule):
                 embed_dims].
             key (Tensor): The key tensor with shape [bs, num_keys,
                 embed_dims].
-                If None, the `query` will be used. Defaults to None.
             value (Tensor): The value tensor with same shape as `key`.
-                Same in `nn.MultiheadAttention.forward`. Defaults to None.
-                If None, the `key` will be used.
+                Same in `nn.MultiheadAttention.forward`.
             attn_mask (Tensor): ByteTensor mask with shape [num_queries,
                 num_keys]. Same in `nn.MultiheadAttention.forward`.
                 Defaults to None.
@@ -645,9 +643,9 @@ class ConditionalAttention(BaseModule):
     def forward(self,
                 query: Tensor,
                 key: Tensor,
-                query_pos: Tensor = None,
-                ref_sine_embed: Tensor = None,
-                key_pos: Tensor = None,
+                query_pos: Tensor,
+                ref_sine_embed: Tensor,
+                key_pos: Tensor,
                 attn_mask: Tensor = None,
                 key_padding_mask: Tensor = None,
                 is_first: bool = False) -> Tensor:
@@ -658,20 +656,15 @@ class ConditionalAttention(BaseModule):
                 embed_dims].
             key (Tensor): The key tensor with shape [bs, num_keys,
                 embed_dims].
-                If None, the `query` will be used. Defaults to None.
             query_pos (Tensor): The positional encoding for query in self
-                attention, with the same shape as `x`. If not None, it will
-                be added to `x` before forward function.
-                Defaults to None.
+                attention, with the same shape as `x`. It will be added to
+                `query` before forward function.
             ref_sine_embed (Tensor): The positional encoding for query in
-                cross attention, with the same shape as `x`. If not None, it
-                will be added to `x` before forward function.
-                Defaults to None.
+                cross attention, with the same shape as `x`. It will be
+                concatenated to `query` before forward function.
             key_pos (Tensor): The positional encoding for `key`, with the
-                same shape as `key`. Defaults to None. If not None, it will
-                be added to `key` before forward function. If None, and
-                `query_pos` has the same shape as `key`, then `query_pos`
-                will be used for `key_pos`. Defaults to None.
+                same shape as `key`. It will be added to `key` before forward
+                function.
             attn_mask (Tensor): ByteTensor mask with shape [num_queries,
                 num_keys]. Same in `nn.MultiheadAttention.forward`.
                 Defaults to None.

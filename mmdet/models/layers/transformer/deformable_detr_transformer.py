@@ -35,8 +35,7 @@ class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
         Args:
             query (Tensor): The input query, has shape (bs, num_queries, dim).
             query_pos (Tensor): The positional encoding for query, has shape
-                (bs, num_queries, dim). If not None, it will be added to the
-                `query` before forward function. Defaults to None.
+                (bs, num_queries, dim).
             key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
                 input. ByteTensor, has shape (bs, num_queries).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,

@@ -35,10 +35,10 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
 
     def forward(self,
                 query: Tensor,
-                key: Tensor = None,
-                query_pos: Tensor = None,
-                ref_sine_embed: Tensor = None,
-                key_pos: Tensor = None,
+                key: Tensor,
+                query_pos: Tensor,
+                ref_sine_embed: Tensor,
+                key_pos: Tensor,
                 self_attn_masks: Tensor = None,
                 cross_attn_masks: Tensor = None,
                 key_padding_mask: Tensor = None,
@@ -47,23 +47,15 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
         """
         Args:
             query (Tensor): The input query with shape [bs, num_queries,
-                embed_dims].
+                dim].
             key (Tensor): The key tensor with shape [bs, num_keys,
-                embed_dims].
-                If None, the `query` will be used. Defaults to None.
+                dim].
             query_pos (Tensor): The positional encoding for query in self
-                attention, with the same shape as `x`. If not None,
-                it will be added to `x` before forward function.
-                Defaults to None.
+                attention, with the same shape as `x`.
             ref_sine_embed (Tensor): The positional encoding for query in
-                cross attention, with the same shape as `x`. If not None,
-                it will be added to `x` before forward function.
-                Defaults to None.
+                cross attention, with the same shape as `x`.
             key_pos (Tensor): The positional encoding for `key`, with the
-                same shape as `key`. Defaults to None. If not None, it will
-                be added to `key` before forward function. If None, and
-                `query_pos` has the same shape as `key`, then `query_pos`
-                will be used for `key_pos`. Defaults to None.
+                same shape as `key`.
             self_attn_masks (Tensor): ByteTensor mask with shape [num_queries,
                 num_keys]. Same in `nn.MultiheadAttention.forward`.
                 Defaults to None.
@@ -78,7 +70,7 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
 
         Returns:
             Tensor: forwarded results with shape
-            [bs, num_queries, embed_dims].
+            [bs, num_queries, dim].
         """
 
         query = self.self_attn(
@@ -172,28 +164,23 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
 
     def forward(self,
                 query: Tensor,
+                key: Tensor,
+                query_pos: Tensor,
+                key_pos: Tensor,
                 reg_branches: nn.Module,
-                key: Tensor = None,
-                query_pos: Tensor = None,
-                key_pos: Tensor = None,
-                key_padding_mask=None,
+                key_padding_mask: Tensor = None,
                 **kwargs) -> List[Tensor]:
         """Forward function of decoder.
 
         Args:
             query (Tensor): The input query with shape (bs, num_queries, dim).
+            key (Tensor): The input key with shape (bs, num_keys, dim).
+            query_pos (Tensor): The positional encoding for `query`, with the
+                same shape as `query`.
+            key_pos (Tensor): The positional encoding for `key`, with the
+                same shape as `key`.
             reg_branches (nn.Module): The regression branch for dynamically
                 updating references in each layer.
-            key (Tensor): The input key with shape (bs, num_keys, dim) If
-                `None`, the `query` will be used. Defaults to `None`.
-            query_pos (Tensor): The positional encoding for `query`, with the
-                same shape as `query`. If not `None`, it will be added to
-                `query` before forward function. Defaults to `None`.
-            key_pos (Tensor): The positional encoding for `key`, with the
-                same shape as `key`. If not `None`, it will be added to
-                `key` before forward function. If `None`, and `query_pos`
-                has the same shape as `key`, then `query_pos` will be used
-                as `key_pos`. Defaults to `None`.
             key_padding_mask (Tensor): ByteTensor with shape (bs, num_keys).
                 Defaults to `None`.
 
@@ -204,14 +191,14 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
             (num_decoder_layers, bs, num_queries, 2/4).
         """
         output = query
-        reference_unsigmoid = query_pos
+        unsigmoid_references = query_pos
 
-        reference = reference_unsigmoid.sigmoid()
-        ref = [reference]
+        reference_points = unsigmoid_references.sigmoid()
+        intermediate_reference_points = [reference_points]
 
         intermediate = []
         for layer_id, layer in enumerate(self.layers):
-            obj_center = reference[..., :self.query_dim]
+            obj_center = reference_points[..., :self.query_dim]
             ref_sine_embed = convert_coordinate_to_encoding(
                 pos_tensor=obj_center, num_feats=self.embed_dims // 2)
             query_pos = self.ref_point_head(
@@ -247,28 +234,29 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
                 **kwargs)
             # iter update
             tmp_reg_preds = reg_branches(output)
-            tmp_reg_preds[..., :self.query_dim] += inverse_sigmoid(reference)
-            new_reference = tmp_reg_preds[..., :self.query_dim].sigmoid()
+            tmp_reg_preds[..., :self.query_dim] += inverse_sigmoid(
+                reference_points)
+            new_reference_points = tmp_reg_preds[
+                ..., :self.query_dim].sigmoid()
             if layer_id != self.num_layers - 1:
-                ref.append(new_reference)
-            reference = new_reference.detach()
+                intermediate_reference_points.append(new_reference_points)
+            reference_points = new_reference_points.detach()
 
             if self.return_intermediate:
-                if self.post_norm is not None:
-                    intermediate.append(self.post_norm(output))
-                else:
-                    intermediate.append(output)
+                intermediate.append(self.post_norm(output))
 
-        if self.post_norm is not None:
-            output = self.post_norm(output)
+        output = self.post_norm(output)
 
         if self.return_intermediate:
             return [
                 torch.stack(intermediate),
-                torch.stack(ref),
+                torch.stack(intermediate_reference_points),
             ]
         else:
-            return [output.unsqueeze(0), torch.stack(ref)]
+            return [
+                output.unsqueeze(0),
+                torch.stack(intermediate_reference_points)
+            ]
 
 
 class DabDetrTransformerEncoder(DetrTransformerEncoder):
@@ -284,11 +272,8 @@ class DabDetrTransformerEncoder(DetrTransformerEncoder):
         self.embed_dims = embed_dims
         self.query_scale = MLP(embed_dims, embed_dims, embed_dims, 2)
 
-    def forward(self,
-                query: Tensor,
-                query_pos: Tensor = None,
-                query_key_padding_mask: Tensor = None,
-                **kwargs):
+    def forward(self, query: Tensor, query_pos: Tensor,
+                query_key_padding_mask: Tensor, **kwargs):
         """Forward function of encoder.
 
         Args:
