@@ -142,7 +142,6 @@ class DetrTransformerDecoder(BaseModule):
             return torch.stack(intermediate)
 
         query = self.post_norm(query)
-
         return query.unsqueeze(0)
 
 
