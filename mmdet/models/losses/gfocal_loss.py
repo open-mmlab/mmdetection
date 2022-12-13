@@ -190,13 +190,17 @@ class QualityFocalLoss(nn.Module):
             if isinstance(target, torch.Tensor):
                 # this means that target is already in One-Hot form.
                 assert pred.dim() == target.dim()
-                B, N, W, H = target.shape
-                pred = pred.reshape(B, N, -1).permute(0, 2, 1).reshape(-1, N)
-                target = target.reshape(B, N, -1).permute(0, 2,
-                                                          1).reshape(-1, N)
+                if target.dim() == 4:
+                    # the target shape with (B,C,W,H), C means classes
+                    pred = pred.permute(0, 2, 3, 1)
+                    target = target.permute(0, 2, 3, 1)
+
+                pred = pred.reshape(-1, target.shape[-1])
+                target = target.reshape(-1, target.shape[-1])
+
                 pos_ind, pos_value = torch.max(target, dim=-1)
-                pos_ind[pos_value > 0] = N
-                target = tuple(pos_ind, pos_value)
+                pos_ind[pos_value > 0] = target.shape[-1]
+                target = (pos_ind.long(), pos_value.type(pred.dtype))
 
             loss_cls = self.loss_weight * calculate_loss_func(
                 pred,

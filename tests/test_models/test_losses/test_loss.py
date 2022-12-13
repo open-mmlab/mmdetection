@@ -30,8 +30,9 @@ def test_iou_type_loss_zeros_weight(loss_class):
 @pytest.mark.parametrize('loss_class', [
     BalancedL1Loss, BoundedIoULoss, CIoULoss, CrossEntropyLoss, DIoULoss,
     EIoULoss, FocalLoss, DistributionFocalLoss, MSELoss, SeesawLoss,
-    GaussianFocalLoss, GIoULoss, IoULoss, L1Loss, VarifocalLoss, GHMR, GHMC,
-    SmoothL1Loss, KnowledgeDistillationKLDivLoss, DiceLoss
+    GaussianFocalLoss, GIoULoss, QualityFocalLoss, IoULoss, L1Loss,
+    VarifocalLoss, GHMR, GHMC, SmoothL1Loss, KnowledgeDistillationKLDivLoss,
+    DiceLoss
 ])
 def test_loss_with_reduction_override(loss_class):
     pred = torch.rand((10, 4))
@@ -47,11 +48,14 @@ def test_loss_with_reduction_override(loss_class):
 
 
 @pytest.mark.parametrize('loss_class', [QualityFocalLoss])
-@pytest.mark.parametrize('input_shape', [(10, 4), (3, 4, 40, 40)])
+@pytest.mark.parametrize('input_shape', [(3, 16, 20), (3, 4, 40, 40)])
 def test_QualityFocalLoss_Loss(loss_class, input_shape):
     pred = torch.rand(input_shape)
-    target = torch.rand(input_shape),
+    target = torch.rand(input_shape)
     weight = None
+
+    loss = loss_class()(pred, target)
+    assert isinstance(loss, torch.Tensor)
 
     with pytest.raises(AssertionError):
         # only reduction_override from [None, 'none', 'mean', 'sum']
