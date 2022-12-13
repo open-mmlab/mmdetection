@@ -644,8 +644,8 @@ class ConditionalAttention(BaseModule):
                 query: Tensor,
                 key: Tensor,
                 query_pos: Tensor,
-                ref_sine_embed: Tensor,
                 key_pos: Tensor,
+                ref_sine_embed: Tensor = None,
                 attn_mask: Tensor = None,
                 key_padding_mask: Tensor = None,
                 is_first: bool = False) -> Tensor:
@@ -659,12 +659,13 @@ class ConditionalAttention(BaseModule):
             query_pos (Tensor): The positional encoding for query in self
                 attention, with the same shape as `x`. It will be added to
                 `query` before forward function.
-            ref_sine_embed (Tensor): The positional encoding for query in
-                cross attention, with the same shape as `x`. It will be
-                concatenated to `query` before forward function.
             key_pos (Tensor): The positional encoding for `key`, with the
                 same shape as `key`. It will be added to `key` before forward
                 function.
+            ref_sine_embed (Tensor): The positional encoding for query in
+                cross attention, with the same shape as `x`. If not None, it
+                will be concatenated to `query` before forward function.
+                Defaults to None.
             attn_mask (Tensor): ByteTensor mask with shape [num_queries,
                 num_keys]. Same in `nn.MultiheadAttention.forward`.
                 Defaults to None.

@@ -37,8 +37,8 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
                 query: Tensor,
                 key: Tensor,
                 query_pos: Tensor,
-                ref_sine_embed: Tensor,
                 key_pos: Tensor,
+                ref_sine_embed: Tensor = None,
                 self_attn_masks: Tensor = None,
                 cross_attn_masks: Tensor = None,
                 key_padding_mask: Tensor = None,
@@ -52,10 +52,11 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
                 dim].
             query_pos (Tensor): The positional encoding for query in self
                 attention, with the same shape as `x`.
-            ref_sine_embed (Tensor): The positional encoding for query in
-                cross attention, with the same shape as `x`.
             key_pos (Tensor): The positional encoding for `key`, with the
                 same shape as `key`.
+            ref_sine_embed (Tensor): The positional encoding for query in
+                cross attention, with the same shape as `x`.
+                Defaults to None.
             self_attn_masks (Tensor): ByteTensor mask with shape [num_queries,
                 num_keys]. Same in `nn.MultiheadAttention.forward`.
                 Defaults to None.
@@ -85,8 +86,8 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
             query=query,
             key=key,
             query_pos=query_pos,
-            ref_sine_embed=ref_sine_embed,
             key_pos=key_pos,
+            ref_sine_embed=ref_sine_embed,
             attn_mask=cross_attn_masks,
             key_padding_mask=key_padding_mask,
             is_first=is_first,
@@ -273,7 +274,7 @@ class DabDetrTransformerEncoder(DetrTransformerEncoder):
         self.query_scale = MLP(embed_dims, embed_dims, embed_dims, 2)
 
     def forward(self, query: Tensor, query_pos: Tensor,
-                query_key_padding_mask: Tensor, **kwargs):
+                key_padding_mask: Tensor, **kwargs):
         """Forward function of encoder.
 
         Args:
@@ -281,7 +282,7 @@ class DabDetrTransformerEncoder(DetrTransformerEncoder):
                 (bs, num_queries, dim).
             query_pos (Tensor): The positional embeddings of the queries, has
                 shape (bs, num_feat_points, dim).
-            query_key_padding_mask (Tensor): ByteTensor, the key padding mask
+            key_padding_mask (Tensor): ByteTensor, the key padding mask
                 of the queries, has shape (bs, num_feat_points).
 
         Returns:
@@ -293,7 +294,7 @@ class DabDetrTransformerEncoder(DetrTransformerEncoder):
             query = layer(
                 query,
                 query_pos=query_pos * pos_scales,
-                query_key_padding_mask=query_key_padding_mask,
+                key_padding_mask=key_padding_mask,
                 **kwargs)
 
         return query
