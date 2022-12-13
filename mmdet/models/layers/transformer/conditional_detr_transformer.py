@@ -132,16 +132,21 @@ class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
             query_pos (Tensor, optional): The positional encoding for `query`,
                 has the same shape as `query`. If not `None`, it will be
                 added to `query` before forward function. Defaults to `None`.
+            ref_sine_embed (Tensor): The positional encoding for query in
+                cross attention, with the same shape as `x`.
             key_pos (Tensor, optional): The positional encoding for `key`, has
-                the same shape as `key`.
+                the same shape as `key`. If not None, it will be added to
+                `key` before forward function. If None, and `query_pos` has
+                the same shape as `key`, then `query_pos` will be used for
+                `key_pos`. Defaults to None.
             self_attn_masks (Tensor, optional): ByteTensor mask, has shape
                 (num_queries, num_keys), Same in `nn.MultiheadAttention.
                 forward`. Defaults to None.
             cross_attn_masks (Tensor, optional): ByteTensor mask, has shape
                 (num_queries, num_keys), Same in `nn.MultiheadAttention.
                 forward`. Defaults to None.
-            key_padding_mask (Tensor, optional): The `key_padding_mask` of
-                `cross_attn` input. ByteTensor, has shape (bs, num_keys).
+            key_padding_mask (Tensor, optional): ByteTensor, has shape
+                (bs, num_keys).
             is_first (bool): A indicator to tell whether the current layer
                 is the first layer of the decoder.
                 Defaults to False.
