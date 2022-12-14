@@ -72,7 +72,8 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
             else:
                 pos_transformation = self.query_scale(query)
             # get sine embedding for the query reference
-            ref_sine_embed = convert_coordinate_to_encoding(reference_xy)
+            ref_sine_embed = convert_coordinate_to_encoding(
+                coord_tensor=reference_xy)
             # apply transformation
             ref_sine_embed = ref_sine_embed * pos_transformation
             query = layer(
