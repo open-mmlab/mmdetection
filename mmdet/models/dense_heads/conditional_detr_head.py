@@ -26,7 +26,7 @@ class ConditionalDETRHead(DETRHead):
         super().init_weights()
         # The initialization below for transformer head is very
         # important as we use Focal_loss for loss_cls
-        if self.loss_cls.get('use_sigmoid', True):
+        if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             nn.init.constant_(self.fc_cls.bias, bias_init)
 
