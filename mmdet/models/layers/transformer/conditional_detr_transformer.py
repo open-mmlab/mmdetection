@@ -59,7 +59,7 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
             List[Tensor]: forwarded results with shape (num_decoder_layers,
             bs, num_queries, dim) if `return_intermediate` is True, otherwise
             with shape (1, bs, num_queries, dim). references with shape
-            (num_decoder_layers, bs, num_queries, 2).
+            (bs, num_queries, 2).
         """
         reference_unsigmoid = self.ref_point_head(
             query_pos)  # [bs, num_queries, 2]
