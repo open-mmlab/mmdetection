@@ -56,11 +56,16 @@ def test_QualityFocalLoss_Loss(loss_class):
 
     loss = loss_class()(pred, (label, quality_label))
     assert isinstance(loss, torch.Tensor)
+    loss = loss_class(activated=True)(pred, (label, quality_label))
+    assert isinstance(loss, torch.Tensor)
 
     target = torch.nn.functional.one_hot(label, 5)
     target = target * quality_label.reshape(input_shape[0], 1)
 
     loss = loss_class()(pred, target)
+    assert isinstance(loss, torch.Tensor)
+
+    loss = loss_class(activated=True)(pred, target)
     assert isinstance(loss, torch.Tensor)
 
 

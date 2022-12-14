@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from functools import partial
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -52,7 +54,7 @@ def quality_focal_loss(pred, target, beta=2.0):
 
 
 @weighted_loss
-def quality_focal_loss_tensor_target(pred, target, beta=2.0):
+def quality_focal_loss_tensor_target(pred, target, beta=2.0, activated=False):
     """`QualityFocal Loss <https://arxiv.org/abs/2008.13367>`_
     Args:
         pred (torch.Tensor): The prediction with shape (N, C), C is the
@@ -61,11 +63,17 @@ def quality_focal_loss_tensor_target(pred, target, beta=2.0):
             classification score with shape (N, C), C is the number of classes.
         beta (float): The beta parameter for calculating the modulating factor.
             Defaults to 2.0.
+        activated (bool): Whether the input is activated.
+            If True, it means the input has been activated and can be
+            treated as probabilities. Else, it should be treated as logits.
+            Defaults to False.
     """
     # pred and target should be of the same size
     assert pred.size() == target.size()
-
-    pred_sigmoid = pred.sigmoid()
+    if activated:
+        pred_sigmoid = pred
+    else:
+        pred_sigmoid = pred.sigmoid()
 
     scale_factor = pred_sigmoid
     target = target.type_as(pred)
@@ -221,8 +229,11 @@ class QualityFocalLoss(nn.Module):
                 calculate_loss_func = quality_focal_loss_with_prob
             else:
                 calculate_loss_func = quality_focal_loss
-                if isinstance(target, torch.Tensor):
-                    calculate_loss_func = quality_focal_loss_tensor_target
+            if isinstance(target, torch.Tensor):
+                # the target shape with (N,C) or (N,C,...), which means
+                # the target is one-hot form with soft weights.
+                calculate_loss_func = partial(
+                    quality_focal_loss_tensor_target, activated=self.activated)
 
             loss_cls = self.loss_weight * calculate_loss_func(
                 pred,
