@@ -70,7 +70,6 @@ class ConditionalDETR(DETR):
             query_pos=query_pos,
             key_pos=memory_pos,
             key_padding_mask=memory_mask)
-        references = references.transpose(0, 1)
         head_inputs_dict = dict(
             hidden_states=hidden_states, references=references)
         return head_inputs_dict

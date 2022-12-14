@@ -62,9 +62,9 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
             (num_decoder_layers, bs, num_queries, 2).
         """
         reference_unsigmoid = self.ref_point_head(
-            query_pos)  # [num_queries, batch_size, 2]
-        reference = reference_unsigmoid.sigmoid().transpose(0, 1)
-        reference_xy = reference[..., :2].transpose(0, 1)
+            query_pos)  # [bs, num_queries, 2]
+        reference = reference_unsigmoid.sigmoid()
+        reference_xy = reference[..., :2]
         intermediate = []
         for layer_id, layer in enumerate(self.layers):
             if layer_id == 0:
