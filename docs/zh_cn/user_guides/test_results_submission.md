@@ -5,7 +5,7 @@
 下面几节介绍如何在 COCO 测试开发集上生成泛视分割模型的预测结果，并将预测提交到 [COCO评估服务器](https://competitions.codalab.org/competitions/19507)
 
 ### 前提条件
-- 下载 [COCO测试数据集图像](http://images.cocodataset.org/zips/test2017.zip)，[测试图像信息](http://images.cocodataset.org/annotations/image_info_test2017.zip)，和[全景训练/相关注释](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip)，然后解压缩它们，把 `test2017` 放到 ` data/coco/ ` ，把 json 文件和注释文件放到 `data/coco/annotations/` 。
+- 下载 [COCO测试数据集图像](http://images.cocodataset.org/zips/test2017.zip)，[测试图像信息](http://images.cocodataset.org/annotations/image_info_test2017.zip)，和[全景训练/相关注释](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip)，然后解压缩它们，把 `test2017` 放到 ` data/coco/ `，把 json 文件和注释文件放到 `data/coco/annotations/` 。
 
 ```shell
 # suppose data/coco/ does not exist
