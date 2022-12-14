@@ -472,9 +472,10 @@ class ConditionalAttention(BaseModule):
                  init_cfg=None):
         super().__init__(init_cfg=init_cfg)
 
-        assert batch_first is True, 'First \
-        dimension of all DETRs in mmdet is \
-        `batch`, please set `batch_first` flag.'
+        assert batch_first is True, 'Set `batch_first`\
+        to False is NOT supported in ConditionalAttention. \
+        First dimension of all DETRs in mmdet is `batch`, \
+        please set `batch_first` to True.'
 
         self.cross_attn = cross_attn
         self.keep_query_pos = keep_query_pos
