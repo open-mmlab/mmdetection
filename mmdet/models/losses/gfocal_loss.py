@@ -72,19 +72,21 @@ def quality_focal_loss_tensor_target(pred, target, beta=2.0, activated=False):
     assert pred.size() == target.size()
     if activated:
         pred_sigmoid = pred
+        loss_function = F.binary_cross_entropy
     else:
         pred_sigmoid = pred.sigmoid()
+        loss_function = F.binary_cross_entropy_with_logits
 
     scale_factor = pred_sigmoid
     target = target.type_as(pred)
 
     zerolabel = scale_factor.new_zeros(pred.shape)
-    loss = F.binary_cross_entropy_with_logits(
+    loss = loss_function(
         pred, zerolabel, reduction='none') * scale_factor.pow(beta)
 
     pos = (target != 0)
     scale_factor = target[pos] - pred_sigmoid[pos]
-    loss[pos] = F.binary_cross_entropy_with_logits(
+    loss[pos] = loss_function(
         pred[pos], target[pos],
         reduction='none') * scale_factor.abs().pow(beta)
 
