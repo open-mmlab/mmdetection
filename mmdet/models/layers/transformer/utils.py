@@ -450,23 +450,23 @@ def convert_coordinate_to_encoding(coord_tensor: Tensor,
     pos_x = x_embed[..., None] / dim_t
     pos_y = y_embed[..., None] / dim_t
     pos_x = torch.stack((pos_x[..., 0::2].sin(), pos_x[..., 1::2].cos()),
-                        dim=3).flatten(2)
+                        dim=-1).flatten(2)
     pos_y = torch.stack((pos_y[..., 0::2].sin(), pos_y[..., 1::2].cos()),
-                        dim=3).flatten(2)
+                        dim=-1).flatten(2)
     if coord_tensor.size(-1) == 2:
-        pos = torch.cat((pos_y, pos_x), dim=2)
+        pos = torch.cat((pos_y, pos_x), dim=-1)
     elif coord_tensor.size(-1) == 4:
         w_embed = coord_tensor[..., 2] * scale
         pos_w = w_embed[..., None] / dim_t
         pos_w = torch.stack((pos_w[..., 0::2].sin(), pos_w[..., 1::2].cos()),
-                            dim=3).flatten(2)
+                            dim=-1).flatten(2)
 
         h_embed = coord_tensor[..., 3] * scale
         pos_h = h_embed[..., None] / dim_t
         pos_h = torch.stack((pos_h[..., 0::2].sin(), pos_h[..., 1::2].cos()),
-                            dim=3).flatten(2)
+                            dim=-1).flatten(2)
 
-        pos = torch.cat((pos_y, pos_x, pos_w, pos_h), dim=2)
+        pos = torch.cat((pos_y, pos_x, pos_w, pos_h), dim=-1)
     else:
         raise ValueError('Unknown pos_tensor shape(-1):{}'.format(
             coord_tensor.size(-1)))
