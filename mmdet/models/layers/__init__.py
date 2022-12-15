@@ -15,7 +15,10 @@ from .positional_encoding import (LearnedPositionalEncoding,
                                   SinePositionalEncoding)
 from .res_layer import ResLayer, SimplifiedBasicBlock
 from .se_layer import ChannelAttention, DyReLU, SELayer
-from .transformer import (MLP, DeformableDetrTransformerDecoder,
+# yapf: disable
+from .transformer import (MLP, ConditionalDetrTransformerDecoder,
+                          ConditionalDetrTransformerDecoderLayer,
+                          DeformableDetrTransformerDecoder,
                           DeformableDetrTransformerDecoderLayer,
                           DeformableDetrTransformerEncoder,
                           DeformableDetrTransformerEncoderLayer,
@@ -37,5 +40,7 @@ __all__ = [
     'DetrTransformerEncoder', 'DetrTransformerDecoder',
     'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
     'DeformableDetrTransformerEncoderLayer',
-    'DeformableDetrTransformerDecoderLayer'
+    'DeformableDetrTransformerDecoderLayer',
+    'ConditionalDetrTransformerDecoder',
+    'ConditionalDetrTransformerDecoderLayer'
 ]
