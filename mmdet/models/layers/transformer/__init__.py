@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from .conditional_detr_transformer import (
+    ConditionalDetrTransformerDecoder, ConditionalDetrTransformerDecoderLayer)
 from .deformable_detr_transformer import (
     DeformableDetrTransformerDecoder, DeformableDetrTransformerDecoderLayer,
     DeformableDetrTransformerEncoder, DeformableDetrTransformerEncoderLayer)
@@ -16,5 +18,7 @@ __all__ = [
     'DetrTransformerEncoderLayer', 'DetrTransformerDecoderLayer',
     'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
     'DeformableDetrTransformerEncoderLayer',
-    'DeformableDetrTransformerDecoderLayer'
+    'DeformableDetrTransformerDecoderLayer',
+    'ConditionalDetrTransformerDecoder',
+    'ConditionalDetrTransformerDecoderLayer'
 ]

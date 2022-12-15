@@ -199,8 +199,11 @@ class DETR(DetectionTransformer):
         Returns:
             dict: The dictionary of decoder outputs, which includes the
             `hidden_states` of the decoder output.
+
+            - hidden_states (Tensor): Has shape
+                (num_decoder_layers, bs, num_queries, dim)
         """
-        # (num_decoder_layers, bs, num_queries, dim)
+
         hidden_states = self.decoder(
             query=query,
             key=memory,
