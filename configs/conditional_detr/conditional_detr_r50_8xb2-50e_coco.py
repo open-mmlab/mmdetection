@@ -40,4 +40,3 @@ model = dict(
 train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=50, val_interval=1)
 
 param_scheduler = [dict(type='MultiStepLR', end=50, milestones=[40])]
-randomness = dict(seed=42, deterministic=True)
