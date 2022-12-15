@@ -54,11 +54,11 @@ model = dict(
         pos_weight=-1,
         debug=False),
     test_cfg=dict(
-        nms_pre=1000,
+        nms_pre=30000,
         min_bbox_size=0,
-        score_thr=0.05,
-        nms=dict(type='nms', iou_threshold=0.6),
-        max_per_img=100),
+        score_thr=0.001,
+        nms=dict(type='nms', iou_threshold=0.65),
+        max_per_img=300),
 )
 
 train_pipeline = [
@@ -133,6 +133,9 @@ train_cfg = dict(
     max_epochs=max_epochs,
     val_interval=interval,
     dynamic_intervals=[(max_epochs - stage2_num_epochs, 1)])
+
+val_evaluator = dict(proposal_nums=(100, 1, 10))
+test_evaluator = val_evaluator
 
 # optimizer
 optim_wrapper = dict(
