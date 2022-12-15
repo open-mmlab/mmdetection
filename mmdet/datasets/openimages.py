@@ -267,13 +267,13 @@ class OpenImagesDataset(CustomDataset):
             labels_ignore = np.array(labels_ignore)
 
         assert len(is_group_ofs) == len(labels) == len(bboxes)
-        gt_is_group_ofs = np.array(is_group_ofs, dtype=np.bool)
+        gt_is_group_ofs = np.array(is_group_ofs, dtype=bool)
 
         # These parameters is not used yet.
-        is_occludeds = np.array(is_occludeds, dtype=np.bool)
-        is_truncateds = np.array(is_truncateds, dtype=np.bool)
-        is_depictions = np.array(is_depictions, dtype=np.bool)
-        is_insides = np.array(is_insides, dtype=np.bool)
+        is_occludeds = np.array(is_occludeds, dtype=bool)
+        is_truncateds = np.array(is_truncateds, dtype=bool)
+        is_depictions = np.array(is_depictions, dtype=bool)
+        is_insides = np.array(is_insides, dtype=bool)
 
         ann = dict(
             bboxes=bboxes.astype(np.float32),
@@ -450,7 +450,7 @@ class OpenImagesDataset(CustomDataset):
                 bboxes=np.array(gt_bboxes).astype(np.float32),
                 labels=np.array(gt_labels).astype(np.int64),
                 bboxes_ignore=ann['bboxes_ignore'],
-                gt_is_group_ofs=np.array(gt_is_group_ofs).astype(np.bool))
+                gt_is_group_ofs=np.array(gt_is_group_ofs).astype(bool))
 
         return annotations
 
@@ -790,7 +790,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
             gt_bboxes = np.array(bboxes, dtype=np.float32)
             gt_labels = np.array(labels, dtype=np.int64)
             gt_bboxes_ignore = np.zeros((0, 4), dtype=np.float32)
-            gt_is_group_ofs = np.array(is_group_ofs, dtype=np.bool)
+            gt_is_group_ofs = np.array(is_group_ofs, dtype=bool)
 
             img_info = dict(filename=filename)
             ann_info = dict(

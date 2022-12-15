@@ -82,7 +82,7 @@ class DeployBaseDetector(BaseDetector):
                     masks = torch.nn.functional.interpolate(
                         masks.unsqueeze(0), size=(ori_h, ori_w))
                     masks = masks.squeeze(0).detach().numpy()
-                if masks.dtype != np.bool:
+                if masks.dtype != bool:
                     masks = masks >= 0.5
                 segms_results = [[] for _ in range(len(self.CLASSES))]
                 for j in range(len(dets)):
