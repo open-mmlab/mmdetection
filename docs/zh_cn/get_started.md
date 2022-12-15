@@ -62,7 +62,7 @@ pip install -v -e .
 # "-e" 表示在可编辑模式下安装项目，因此对代码所做的任何本地修改都会生效，从而无需重新安装。
 ```
 
-安装 b：如果你将 mmdet 作为依赖或第三方 Python 包，使用 MIM 安装：
+方案 b：如果你将 mmdet 作为依赖或第三方 Python 包，使用 MIM 安装：
 
 ```shell
 mim install "mmdet>=3.0.0rc0"
@@ -82,7 +82,7 @@ mim download mmdet --config yolov3_mobilenetv2_8xb24-320-300e_coco --dest .
 
 **步骤 2.** 推理验证。
 
-选项 (a). 如果你通过源码安装的 MMDetection，那么直接运行以下命令进行验证：
+方案 a：如果你通过源码安装的 MMDetection，那么直接运行以下命令进行验证：
 
 ```shell
 python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
@@ -90,7 +90,7 @@ python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.p
 
 你会在当前文件夹中看到一个新的图像 `result.jpg`，图像中包含有网络预测的检测框。
 
-选项 (b). 如果你通过 MIM 安装的 MMDetection，那么可以打开你的 Python 解析器，复制并粘贴以下代码：
+方案 b：如果你通过 MIM 安装的 MMDetection，那么可以打开你的 Python 解析器，复制并粘贴以下代码：
 
 ```python
 from mmdet.apis import init_detector, inference_detector
@@ -220,7 +220,7 @@ docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetect
 
 ### 排除故障
 
-如果你在安装过程中遇到一些问题，请先查看 [FAQ](notes/faq.md) 页面。如果没有找到解决方案，你也可以在 GitHub 上[打开一个问题](https://github.com/open-mmlab/mmdetection/issues/new/choose)。
+如果你在安装过程中遇到一些问题，请先查看 [FAQ](notes/faq.md) 页面。如果没有找到解决方案，你也可以在 GitHub 上[提出一个问题](https://github.com/open-mmlab/mmdetection/issues/new/choose)。
 
 ### 使用多个 MMDetection 版本进行开发
 
