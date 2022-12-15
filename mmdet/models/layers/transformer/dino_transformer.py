@@ -367,7 +367,7 @@ class CdnQueryGenerator(BaseModule):
          have the points both between the inner and outer squares.
 
         Besides, the length of outer square is twice as long as that of
-        the inner square, i.e., self.box_noise_scale * 2 * w_or_h.
+        the inner square, i.e., self.box_noise_scale * w_or_h / 2.
         NOTE The noise is added to all the bboxes. Moreover, there is still
         unconsidered case when one point is within the positive square and
         the others is between the inner and outer squares.
