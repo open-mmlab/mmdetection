@@ -66,8 +66,9 @@ def bounded_iou_loss(pred: Tensor,
     <https://arxiv.org/abs/1711.00164>`_.
 
     Args:
-        pred (Tensor): Predicted bboxes.
-        target (Tensor): Target bboxes.
+        pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+            shape (n, 4).
+        target (Tensor): Corresponding gt bboxes, shape (n, 4).
         beta (float, optional): Beta parameter in smoothl1.
         eps (float, optional): Epsilon to avoid NaN values.
 
@@ -127,8 +128,8 @@ def giou_loss(pred: Tensor, target: Tensor, eps: float = 1e-7) -> Tensor:
 
 @weighted_loss
 def diou_loss(pred: Tensor, target: Tensor, eps: float = 1e-7) -> Tensor:
-    r"""`Implementation of Distance-IoU Loss: Faster and Better
-    Learning for Bounding Box Regression, https://arxiv.org/abs/1911.08287`_.
+    r"""Implementation of `Distance-IoU Loss: Faster and Better
+    Learning for Bounding Box Regression https://arxiv.org/abs/1911.08287`_.
 
     Code is modified from https://github.com/Zzh-tju/DIoU.
 
@@ -344,8 +345,10 @@ class IoULoss(nn.Module):
         """Forward function.
 
         Args:
-            pred (Tensor): The prediction.
-            target (Tensor): The learning target of the prediction.
+            pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+                shape (n, 4).
+            target (Tensor): The learning target of the prediction,
+                shape (n, 4).
             weight (Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
@@ -419,8 +422,10 @@ class BoundedIoULoss(nn.Module):
         """Forward function.
 
         Args:
-            pred (Tensor): The prediction.
-            target (Tensor): The learning target of the prediction.
+            pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+                shape (n, 4).
+            target (Tensor): The learning target of the prediction,
+                shape (n, 4).
             weight (Optional[Tensor], optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (Optional[int], optional): Average factor that is used
@@ -481,8 +486,10 @@ class GIoULoss(nn.Module):
         """Forward function.
 
         Args:
-            pred (Tensor): The prediction.
-            target (Tensor): The learning target of the prediction.
+            pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+                shape (n, 4).
+            target (Tensor): The learning target of the prediction,
+                shape (n, 4).
             weight (Optional[Tensor], optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (Optional[int], optional): Average factor that is used
@@ -520,8 +527,8 @@ class GIoULoss(nn.Module):
 
 @MODELS.register_module()
 class DIoULoss(nn.Module):
-    r"""`Implementation of Distance-IoU Loss: Faster and Better
-    Learning for Bounding Box Regression, https://arxiv.org/abs/1911.08287`_.
+    r"""Implementation of `Distance-IoU Loss: Faster and Better
+    Learning for Bounding Box Regression https://arxiv.org/abs/1911.08287`_.
 
     Code is modified from https://github.com/Zzh-tju/DIoU.
 
@@ -550,8 +557,10 @@ class DIoULoss(nn.Module):
         """Forward function.
 
         Args:
-            pred (Tensor): The prediction.
-            target (Tensor): The learning target of the prediction.
+            pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+                shape (n, 4).
+            target (Tensor): The learning target of the prediction,
+                shape (n, 4).
             weight (Optional[Tensor], optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (Optional[int], optional): Average factor that is used
@@ -620,8 +629,10 @@ class CIoULoss(nn.Module):
         """Forward function.
 
         Args:
-            pred (Tensor): The prediction.
-            target (Tensor): The learning target of the prediction.
+            pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+                shape (n, 4).
+            target (Tensor): The learning target of the prediction,
+                shape (n, 4).
             weight (Optional[Tensor], optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (Optional[int], optional): Average factor that is used
@@ -693,8 +704,10 @@ class EIoULoss(nn.Module):
         """Forward function.
 
         Args:
-            pred (Tensor): The prediction.
-            target (Tensor): The learning target of the prediction.
+            pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+                shape (n, 4).
+            target (Tensor): The learning target of the prediction,
+                shape (n, 4).
             weight (Optional[Tensor], optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (Optional[int], optional): Average factor that is used

@@ -21,7 +21,7 @@ def varifocal_loss(pred: Tensor,
 
     Args:
         pred (Tensor): The prediction with shape (N, C), C is the
-            number of classes
+            number of classes.
         target (Tensor): The learning target of the iou-aware
             classification score with shape (N, C), C is the number of classes.
         weight (Tensor, optional): The weight of loss for each
@@ -107,8 +107,11 @@ class VarifocalLoss(nn.Module):
         """Forward function.
 
         Args:
-            pred (Tensor): The prediction.
-            target (Tensor): The learning target of the prediction.
+            pred (Tensor): The prediction with shape (N, C), C is the
+                number of classes.
+            target (Tensor): The learning target of the iou-aware
+                classification score with shape (N, C), C is
+                the number of classes.
             weight (Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
