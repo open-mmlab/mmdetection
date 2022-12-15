@@ -21,8 +21,17 @@ class VOCDataset(XMLDataset):
                     (183, 130, 88)]
     }
 
-    def __init__(self, **kwargs):
-        super().__init__(minus_one=True, **kwargs)
+    def __init__(self,
+                 data_root: str = '',
+                 ann_file: str = 'VOC2012/ImageSets/Main/train.txt',
+                 data_prefix: dict = dict(sub_data_root='VOC2012'),
+                 **kwargs):
+        super().__init__(
+            data_root=data_root,
+            ann_file=ann_file,
+            data_prefix=data_prefix,
+            minus_one=True,
+            **kwargs)
         if 'VOC2007' in self.sub_data_root:
             self._metainfo['dataset_type'] = 'VOC2007'
         elif 'VOC2012' in self.sub_data_root:

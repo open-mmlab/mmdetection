@@ -20,9 +20,18 @@ class WIDERFaceDataset(XMLDataset):
     """
     METAINFO = {'classes': ('face', ), 'palette': [(0, 255, 0)]}
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 data_root: str = '',
+                 ann_file: str = 'train.txt',
+                 data_prefix: dict = dict(img='WIDER_train'),
+                 **kwargs):
         super(WIDERFaceDataset, self).__init__(
-            img_subdir='', minus_one=False, **kwargs)
+            img_subdir='',
+            data_root=data_root,
+            ann_file=ann_file,
+            data_prefix=data_prefix,
+            minus_one=False,
+            **kwargs)
 
     @property
     def img_root(self) -> str:
