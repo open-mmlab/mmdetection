@@ -17,7 +17,7 @@ class TestOpenImagesDataset(unittest.TestCase):
             pipeline=[])
         dataset.full_init()
         self.assertEqual(len(dataset), 1)
-        self.assertEqual(dataset.metainfo['CLASSES'], ['Airplane'])
+        self.assertEqual(dataset.metainfo['classes'], ['Airplane'])
 
 
 class TestOpenImagesChallengeDataset(unittest.TestCase):
@@ -33,4 +33,4 @@ class TestOpenImagesChallengeDataset(unittest.TestCase):
             pipeline=[])
         dataset.full_init()
         self.assertEqual(len(dataset), 1)
-        self.assertEqual(dataset.metainfo['CLASSES'], ['Airplane'])
+        self.assertEqual(dataset.metainfo['classes'], ['Airplane'])

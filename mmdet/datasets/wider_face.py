@@ -15,9 +15,7 @@ class WIDERFaceDataset(XMLDataset):
     Conversion scripts can be found in
     https://github.com/sovrasov/wider-face-pascal-voc-annotations
     """
-    CLASSES = ('face', )
-
-    PALETTE = [(0, 255, 0)]
+    METAINFO = {'classes': ('face', ), 'palette': [(0, 255, 0)]}
 
     def __init__(self, **kwargs):
         super(WIDERFaceDataset, self).__init__(**kwargs)

@@ -65,15 +65,19 @@ def init_detector(
         elif 'CLASSES' in checkpoint_meta:
             # < mmdet 3.x
             classes = checkpoint_meta['CLASSES']
-            model.dataset_meta = {'CLASSES': classes, 'PALETTE': palette}
+            model.dataset_meta = {'classes': classes, 'palette': palette}
+        elif 'classes' in checkpoint_meta:
+            # < mmdet 3.x
+            classes = checkpoint_meta['classes']
+            model.dataset_meta = {'classes': classes, 'palette': palette}
         else:
             warnings.simplefilter('once')
             warnings.warn(
                 'dataset_meta or class names are not saved in the '
                 'checkpoint\'s meta data, use COCO classes by default.')
             model.dataset_meta = {
-                'CLASSES': get_classes('coco'),
-                'PALETTE': palette
+                'classes': get_classes('coco'),
+                'palette': palette
             }
 
     model.cfg = config  # save the config in the model for convenience

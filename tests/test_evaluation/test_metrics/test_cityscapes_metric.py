@@ -89,7 +89,7 @@ class TestCityScapesMetric(unittest.TestCase):
             keep_results=False,
             outfile_prefix=self.outfile_prefix)
         metric.dataset_meta = dict(
-            CLASSES=('person', 'rider', 'car', 'truck', 'bus', 'train',
+            classes=('person', 'rider', 'car', 'truck', 'bus', 'train',
                      'motorcycle', 'bicycle'))
         metric.process({}, data_samples)
         results = metric.evaluate(size=2)
@@ -104,7 +104,7 @@ class TestCityScapesMetric(unittest.TestCase):
             keep_results=True,
             outfile_prefix=self.outfile_prefix)
         metric.dataset_meta = dict(
-            CLASSES=('person', 'rider', 'car', 'truck', 'bus', 'train',
+            classes=('person', 'rider', 'car', 'truck', 'bus', 'train',
                      'motorcycle', 'bicycle'))
         metric.process({}, data_samples)
         results = metric.evaluate(size=2)

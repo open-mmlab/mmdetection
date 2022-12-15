@@ -185,7 +185,7 @@ class OpenImagesMetric(BaseMetric):
                 image_level_labels)
 
             dets = []
-            for label in range(len(self.dataset_meta['CLASSES'])):
+            for label in range(len(self.dataset_meta['classes'])):
                 index = np.where(pred_labels == label)[0]
                 pred_bbox_scores = np.hstack(
                     [pred_bboxes[index], pred_scores[index].reshape((-1, 1))])
@@ -206,7 +206,7 @@ class OpenImagesMetric(BaseMetric):
         gts, preds = zip(*results)
         eval_results = OrderedDict()
         # get dataset type
-        dataset_type = self.dataset_meta.get('DATASET_TYPE')
+        dataset_type = self.dataset_meta.get('dataset_type')
         if dataset_type not in ['oid_challenge', 'oid_v6']:
             dataset_type = 'oid_v6'
             print_log(
