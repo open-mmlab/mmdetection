@@ -131,7 +131,6 @@ class DynamicSoftLabelAssigner(BaseAssigner):
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
         if hasattr(gt_instances, 'masks'):
             gt_center = center_of_mass(gt_instances.masks, eps=EPS)
-            # print(gt_center, (gt_bboxes[:, :2] + gt_bboxes[:, 2:]) / 2.0)
         elif isinstance(gt_bboxes, BaseBoxes):
             gt_center = gt_bboxes.centers
         else:
