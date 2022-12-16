@@ -98,20 +98,20 @@ class TestDetDataSample(TestCase):
                       pred_panoptic_seg_data['panoptic_seg'])
 
         # test gt_sem_seg
-        gt_segm_seg_data = dict(segm_seg=torch.rand(5, 4, 2))
-        gt_segm_seg = PixelData(**gt_segm_seg_data)
-        det_data_sample.gt_segm_seg = gt_segm_seg
-        assert 'gt_segm_seg' in det_data_sample
-        assert _equal(det_data_sample.gt_segm_seg.segm_seg,
-                      gt_segm_seg_data['segm_seg'])
+        gt_sem_seg_data = dict(sem_seg=torch.rand(5, 4, 2))
+        gt_sem_seg = PixelData(**gt_sem_seg_data)
+        det_data_sample.gt_sem_seg = gt_sem_seg
+        assert 'gt_sem_seg' in det_data_sample
+        assert _equal(det_data_sample.gt_sem_seg.sem_seg,
+                      gt_sem_seg_data['sem_seg'])
 
-        # test pred_segm_seg
-        pred_segm_seg_data = dict(segm_seg=torch.rand(5, 4, 2))
-        pred_segm_seg = PixelData(**pred_segm_seg_data)
-        det_data_sample.pred_segm_seg = pred_segm_seg
-        assert 'pred_segm_seg' in det_data_sample
-        assert _equal(det_data_sample.pred_segm_seg.segm_seg,
-                      pred_segm_seg_data['segm_seg'])
+        # test pred_sem_seg
+        pred_sem_seg_data = dict(sem_seg=torch.rand(5, 4, 2))
+        pred_sem_seg = PixelData(**pred_sem_seg_data)
+        det_data_sample.pred_sem_seg = pred_sem_seg
+        assert 'pred_sem_seg' in det_data_sample
+        assert _equal(det_data_sample.pred_sem_seg.sem_seg,
+                      pred_sem_seg_data['sem_seg'])
 
         # test type error
         with pytest.raises(AssertionError):
@@ -143,9 +143,9 @@ class TestDetDataSample(TestCase):
         del det_data_sample.pred_panoptic_seg
         assert 'pred_panoptic_seg' not in det_data_sample
 
-        pred_segm_seg_data = dict(segm_seg=torch.rand(5, 4, 2))
-        pred_segm_seg = PixelData(**pred_segm_seg_data)
-        det_data_sample.pred_segm_seg = pred_segm_seg
-        assert 'pred_segm_seg' in det_data_sample
-        del det_data_sample.pred_segm_seg
-        assert 'pred_segm_seg' not in det_data_sample
+        pred_sem_seg_data = dict(sem_seg=torch.rand(5, 4, 2))
+        pred_sem_seg = PixelData(**pred_sem_seg_data)
+        det_data_sample.pred_sem_seg = pred_sem_seg
+        assert 'pred_sem_seg' in det_data_sample
+        del det_data_sample.pred_sem_seg
+        assert 'pred_sem_seg' not in det_data_sample
