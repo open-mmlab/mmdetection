@@ -44,7 +44,7 @@ class DetDataSample(BaseDataElement):
 
             META INFORMATION
 
-            DATA_FIELDS
+            DATA FIELDS
             _gt_instances: <InstanceData(
 
                     META INFORMATION
