@@ -28,13 +28,13 @@ class RTMDetInsHead(RTMDetHead):
     """Detection Head of RTMDet-Ins.
 
     Args:
-        num_classes (int): Number of categories excluding the background
-            category.
-        in_channels (int): Number of channels in the input feature map.
-        with_objectness (bool): Whether to add an objectness branch.
-            Defaults to True.
-        act_cfg (:obj:`ConfigDict` or dict): Config dict for activation layer.
-            Default: dict(type='ReLU')
+        num_prototypes (int): Number of mask prototype features extracted
+            from the mask head.
+        dyconv_channels (int): Channel of the dynamic conv layers.
+        num_dyconvs (int): Number of the dynamic convolution layers.
+        mask_loss_stride (int): Down sample stride of the masks for loss
+            computation.
+        loss_mask (:obj:`ConfigDict` or dict): Config dict for mask loss.
     """
 
     def __init__(self,
@@ -56,7 +56,7 @@ class RTMDetInsHead(RTMDetHead):
         super().__init__(*args, **kwargs)
         self.loss_mask = MODELS.build(loss_mask)
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         """Initialize layers of the head."""
         super()._init_layers()
         self.kernel_convs = nn.ModuleList()
@@ -119,6 +119,11 @@ class RTMDetInsHead(RTMDetHead):
             - bbox_preds (list[Tensor]): Box energies / deltas for all scale
               levels, each is a 4D-tensor, the channels number is
               num_base_priors * 4.
+            - kernel_preds (list[Tensor]): Dynamic conv kernels for all scale
+              levels, each is a 4D-tensor, the channels number is
+              num_gen_params.
+            - mask_feat (Tensor): Output feature of the mask head. Each is a
+              4D-tensor, the channels number is num_prototypes.
         """
         mask_feat = self.mask_head(feats)
 
@@ -202,6 +207,7 @@ class RTMDetInsHead(RTMDetHead):
                   (num_instances, ).
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                   the last dimension 4 arrange as (x1, y1, x2, y2).
+                - masks (Tensor): Has a shape (num_instances, h, w).
         """
         assert len(cls_scores) == len(bbox_preds)
 
@@ -301,6 +307,7 @@ class RTMDetInsHead(RTMDetHead):
                   (num_instances, ).
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                   the last dimension 4 arrange as (x1, y1, x2, y2).
+                - masks (Tensor): Has a shape (num_instances, h, w).
         """
         if score_factor_list[0] is None:
             # e.g. Retina, FreeAnchor, etc.
@@ -435,6 +442,7 @@ class RTMDetInsHead(RTMDetHead):
                   (num_instances, ).
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                   the last dimension 4 arrange as (x1, y1, x2, y2).
+                - masks (Tensor): Has a shape (num_instances, h, w).
         """
         stride = self.prior_generator.strides[0][0]
         if rescale:
@@ -467,17 +475,13 @@ class RTMDetInsHead(RTMDetHead):
             results = results[:cfg.max_per_img]
 
             # process masks
-            h, w = img_meta['img_shape'][:2]
-
             mask_logits = self._mask_predict_by_feat_single(
                 mask_feat, results.kernels, results.priors)
 
             mask_logits = F.interpolate(
                 mask_logits.unsqueeze(0), scale_factor=stride, mode='bilinear')
-            # print('upsampled croped shape ', mask_logits.shape)
             if rescale:
                 ori_h, ori_w = img_meta['ori_shape'][:2]
-                # print('scale_factor: ',scale_factor)
                 mask_logits = F.interpolate(
                     mask_logits,
                     size=[
@@ -486,7 +490,6 @@ class RTMDetInsHead(RTMDetHead):
                     ],
                     mode='bilinear',
                     align_corners=False)[..., :ori_h, :ori_w]
-                # print('rescale shape ', mask_logits.shape, ori_h, ori_w)
             masks = mask_logits.sigmoid().squeeze(0)
             masks = masks > cfg.mask_thr_binary
             results.masks = masks
@@ -521,7 +524,21 @@ class RTMDetInsHead(RTMDetHead):
 
         return weight_splits, bias_splits
 
-    def _mask_predict_by_feat_single(self, mask_feat, kernels, priors):
+    def _mask_predict_by_feat_single(self, mask_feat: Tensor, kernels: Tensor,
+                                     priors: Tensor) -> Tensor:
+        """Generate mask logits from mask features with dynamic convs.
+
+        Args:
+            mask_feat (Tensor): Mask prototype features.
+                Has shape (num_prototypes, H, W).
+            kernels (Tensor): Kernel parameters for each instance.
+                Has shape (num_instance, num_params)
+            priors (Tensor): Center priors for each instance.
+                Has shape (num_instance, 4).
+        Returns:
+            Tensor: Instance segmentation masks for each instance.
+                Has shape (num_instance, H, W).
+        """
         num_inst = priors.shape[0]
         h, w = mask_feat.size()[-2:]
         if num_inst < 1:
@@ -556,8 +573,25 @@ class RTMDetInsHead(RTMDetHead):
         x = x.reshape(num_inst, h, w)
         return x
 
-    def loss_mask_by_feat(self, mask_feats, flatten_kernels,
-                          sampling_results_list, batch_gt_instances):
+    def loss_mask_by_feat(self, mask_feats: Tensor, flatten_kernels: Tensor,
+                          sampling_results_list: list,
+                          batch_gt_instances: InstanceList):
+        """Compute instance segmentation loss.
+
+        Args:
+            mask_feats (list[Tensor]): Mask prototype features extracted from
+                the mask head. Has shape (N, num_prototypes, H, W)
+            flatten_kernels (list[Tensor]): Kernels of the dynamic conv layers.
+                Has shape (N, num_instances, num_params)
+            sampling_results_list (list[:obj:`SamplingResults`]) Batch of
+                assignment results.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It usually includes ``bboxes`` and ``labels``
+                attributes.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         batch_pos_mask_logits = []
         pos_gt_masks = []
         for idx, (mask_feat, kernels, sampling_results,
@@ -705,15 +739,34 @@ class RTMDetInsHead(RTMDetHead):
 
 
 class MaskFeatModule(BaseModule):
+    """Mask feature head used in RTMDet-Ins.
 
-    def __init__(self,
-                 in_channels,
-                 feat_channels=256,
-                 stacked_convs=4,
-                 num_levels=3,
-                 num_prototypes=8,
-                 act_cfg=dict(type='SiLU'),
-                 norm_cfg=dict(type='BN')):
+    Args:
+        in_channels (int): Number of channels in the input feature map.
+        feat_channels (int): Number of hidden channels of the mask feature
+             map branch.
+        num_levels (int): The starting feature map level from RPN that
+             will be used to predict the mask feature map.
+        num_prototypes (int): Number of output channel of the mask feature
+             map branch. This is the channel count of the mask
+             feature map that to be dynamically convolved with the predicted
+             kernel.
+        stacked_convs (int): Number of convs in mask feature branch.
+        act_cfg (:obj:`ConfigDict` or dict): Config dict for activation layer.
+            Default: dict(type='ReLU')
+        norm_cfg (dict): Config dict for normalization layer. Default: None.
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        feat_channels: int = 256,
+        stacked_convs: int = 4,
+        num_levels: int = 3,
+        num_prototypes: int = 8,
+        act_cfg: ConfigType = dict(type='ReLU'),
+        norm_cfg: ConfigType = dict(type='BN')
+    ) -> None:
         super().__init__(init_cfg=None)
         self.num_levels = num_levels
         self.fusion_conv = nn.Conv2d(num_levels * in_channels, in_channels, 1)
@@ -732,7 +785,7 @@ class MaskFeatModule(BaseModule):
         self.projection = nn.Conv2d(
             feat_channels, num_prototypes, kernel_size=1)
 
-    def forward(self, features):
+    def forward(self, features: Tuple[Tensor, ...]) -> Tensor:
         # multi-level feature fusion
         fusion_feats = [features[0]]
         size = features[0].shape[-2:]
@@ -749,16 +802,19 @@ class MaskFeatModule(BaseModule):
 
 @MODELS.register_module()
 class RTMDetInsSepBNHead(RTMDetInsHead):
-    """Detection Head of RTMDet-ins-seg with sep-bn layers.
+    """Detection Head of RTMDet-Ins with sep-bn layers.
 
     Args:
         num_classes (int): Number of categories excluding the background
             category.
         in_channels (int): Number of channels in the input feature map.
-        with_objectness (bool): Whether to add an objectness branch.
+        share_conv (bool): Whether to share conv layers between stages.
             Defaults to True.
-        act_cfg (:obj:`ConfigDict` or dict): Config dict for activation layer.
-            Default: dict(type='ReLU')
+        norm_cfg (:obj:`ConfigDict` or dict)): Config dict for normalization
+            layer. Defaults to dict(type='BN').
+        act_cfg (:obj:`ConfigDict` or dict)): Config dict for activation layer.
+            Defaults to dict(type='SiLU', inplace=True).
+        pred_kernel_size (int): Kernel size of prediction layer. Defaults to 1.
     """
 
     def __init__(self,
@@ -767,6 +823,7 @@ class RTMDetInsSepBNHead(RTMDetInsHead):
                  share_conv=True,
                  with_objectness=False,
                  norm_cfg=dict(type='BN', requires_grad=True),
+                 act_cfg=dict(type='SiLU', inplace=True),
                  pred_kernel_size=1,
                  **kwargs) -> None:
         self.share_conv = share_conv
@@ -774,11 +831,12 @@ class RTMDetInsSepBNHead(RTMDetInsHead):
             num_classes,
             in_channels,
             norm_cfg=norm_cfg,
+            act_cfg=act_cfg,
             pred_kernel_size=pred_kernel_size,
             with_objectness=with_objectness,
             **kwargs)
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         """Initialize layers of the head."""
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
@@ -919,6 +977,11 @@ class RTMDetInsSepBNHead(RTMDetInsHead):
             - bbox_preds (list[Tensor]): Box energies / deltas for all scale
               levels, each is a 4D-tensor, the channels number is
               num_base_priors * 4.
+            - kernel_preds (list[Tensor]): Dynamic conv kernels for all scale
+              levels, each is a 4D-tensor, the channels number is
+              num_gen_params.
+            - mask_feat (Tensor): Output feature of the mask head. Each is a
+              4D-tensor, the channels number is num_prototypes.
         """
         mask_feat = self.mask_head(feats)
 
