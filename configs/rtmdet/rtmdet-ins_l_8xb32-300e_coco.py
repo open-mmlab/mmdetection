@@ -22,7 +22,13 @@ model = dict(
         loss_bbox=dict(type='GIoULoss', loss_weight=2.0),
         loss_mask=dict(
             type='DiceLoss', loss_weight=2.0, eps=5e-6, reduction='mean')),
-    test_cfg=dict(mask_thr_binary=0.5),
+    test_cfg=dict(
+        nms_pre=1000,
+        min_bbox_size=0,
+        score_thr=0.05,
+        nms=dict(type='nms', iou_threshold=0.6),
+        max_per_img=100,
+        mask_thr_binary=0.5),
 )
 
 train_pipeline = [
