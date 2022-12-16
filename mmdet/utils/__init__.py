@@ -8,10 +8,12 @@ from .replace_cfg_vals import replace_cfg_vals
 from .setup_env import setup_multi_processes
 from .split_batch import split_batch
 from .util_distribution import build_ddp, build_dp, get_device
+from .ascend_util import set_index, images_to_levels, generate_max_gt_nums
 
 __all__ = [
     'get_root_logger', 'collect_env', 'find_latest_checkpoint',
     'update_data_root', 'setup_multi_processes', 'get_caller_name',
     'log_img_scale', 'compat_cfg', 'split_batch', 'build_ddp', 'build_dp',
-    'get_device', 'replace_cfg_vals', 'AvoidOOM', 'AvoidCUDAOOM'
+    'get_device', 'replace_cfg_vals', 'AvoidOOM', 'AvoidCUDAOOM',
+    'set_index', 'images_to_levels', 'generate_max_gt_nums'
 ]
