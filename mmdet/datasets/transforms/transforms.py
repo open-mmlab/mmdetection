@@ -3555,8 +3555,8 @@ class CachedMixUp(BaseTransform):
         retrieve_gt_bboxes = retrieve_results['gt_bboxes']
         retrieve_gt_bboxes.rescale_([scale_ratio, scale_ratio])
         if with_mask:
-            retrieve_gt_masks: BitmapMasks = retrieve_results[
-                'gt_masks'].rescale(scale_ratio)
+            retrieve_gt_masks = retrieve_results['gt_masks'].rescale(
+                scale_ratio)
 
         if self.bbox_clip_border:
             retrieve_gt_bboxes.clip_([origin_h, origin_w])

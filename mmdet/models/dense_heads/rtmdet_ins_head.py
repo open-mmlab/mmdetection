@@ -29,11 +29,13 @@ class RTMDetInsHead(RTMDetHead):
 
     Args:
         num_prototypes (int): Number of mask prototype features extracted
-            from the mask head.
+            from the mask head. Defaults to 8.
         dyconv_channels (int): Channel of the dynamic conv layers.
+            Defaults to 8.
         num_dyconvs (int): Number of the dynamic convolution layers.
+            Defaults to 3.
         mask_loss_stride (int): Down sample stride of the masks for loss
-            computation.
+            computation. Defaults to 4.
         loss_mask (:obj:`ConfigDict` or dict): Config dict for mask loss.
     """
 
@@ -45,7 +47,7 @@ class RTMDetInsHead(RTMDetHead):
                  mask_loss_stride: int = 4,
                  loss_mask=dict(
                      type='DiceLoss',
-                     loss_weight=1.0,
+                     loss_weight=2.0,
                      eps=5e-6,
                      reduction='mean'),
                  **kwargs) -> None:
@@ -59,20 +61,22 @@ class RTMDetInsHead(RTMDetHead):
     def _init_layers(self) -> None:
         """Initialize layers of the head."""
         super()._init_layers()
+        # a branch to predict kernels of dynamic convs
         self.kernel_convs = nn.ModuleList()
         # calculate num dynamic parameters
         weight_nums, bias_nums = [], []
         for i in range(self.num_dyconvs):
             if i == 0:
                 weight_nums.append(
+                    # mask prototype and coordinate features
                     (self.num_prototypes + 2) * self.dyconv_channels)
-                bias_nums.append(self.dyconv_channels)
+                bias_nums.append(self.dyconv_channels * 1)
             elif i == self.num_dyconvs - 1:
-                weight_nums.append(self.dyconv_channels)
+                weight_nums.append(self.dyconv_channels * 1)
                 bias_nums.append(1)
             else:
                 weight_nums.append(self.dyconv_channels * self.dyconv_channels)
-                bias_nums.append(self.dyconv_channels)
+                bias_nums.append(self.dyconv_channels * 1)
         self.weight_nums = weight_nums
         self.bias_nums = bias_nums
         self.num_gen_params = sum(weight_nums) + sum(bias_nums)
@@ -184,6 +188,11 @@ class RTMDetInsHead(RTMDetHead):
             bbox_preds (list[Tensor]): Box energies / deltas for all
                 scale levels, each is a 4D-tensor, has shape
                 (batch_size, num_priors * 4, H, W).
+            kernel_preds (list[Tensor]): Kernel predictions of dynamic
+                convs for all scale levels, each is a 4D-tensor, has shape
+                (batch_size, num_params, H, W).
+            mask_feat (Tensor): Mask prototype features extracted from the
+                mask head, has shape (batch_size, num_prototypes, H, W).
             score_factors (list[Tensor], optional): Score factor for
                 all scale level, each is a 4D-tensor, has shape
                 (batch_size, num_priors * 1, H, W). Defaults to None.
@@ -261,8 +270,8 @@ class RTMDetInsHead(RTMDetHead):
     def _predict_by_feat_single(self,
                                 cls_score_list: List[Tensor],
                                 bbox_pred_list: List[Tensor],
-                                kernel_pred_list,
-                                mask_feat,
+                                kernel_pred_list: List[Tensor],
+                                mask_feat: Tensor,
                                 score_factor_list: List[Tensor],
                                 mlvl_priors: List[Tensor],
                                 img_meta: dict,
@@ -270,7 +279,7 @@ class RTMDetInsHead(RTMDetHead):
                                 rescale: bool = False,
                                 with_nms: bool = True) -> InstanceData:
         """Transform a single image's features extracted from the head into
-        bbox results.
+        bbox and mask results.
 
         Args:
             cls_score_list (list[Tensor]): Box scores from all scale
@@ -279,6 +288,11 @@ class RTMDetInsHead(RTMDetHead):
             bbox_pred_list (list[Tensor]): Box energies / deltas from
                 all scale levels of a single image, each item has shape
                 (num_priors * 4, H, W).
+            kernel_preds (list[Tensor]): Kernel predictions of dynamic
+                convs for all scale levels of a single image, each is a
+                4D-tensor, has shape (num_params, H, W).
+            mask_feat (Tensor): Mask prototype features of a single image
+                extracted from the mask head, has shape (num_prototypes, H, W).
             score_factor_list (list[Tensor]): Score factor from all scale
                 levels of a single image, each item has shape
                 (num_priors * 1, H, W).
@@ -400,7 +414,7 @@ class RTMDetInsHead(RTMDetHead):
         if with_score_factors:
             results.score_factors = torch.cat(mlvl_score_factors)
 
-        return self._bbox_post_process(
+        return self._bbox_mask_post_process(
             results=results,
             mask_feat=mask_feat,
             cfg=cfg,
@@ -408,14 +422,15 @@ class RTMDetInsHead(RTMDetHead):
             with_nms=with_nms,
             img_meta=img_meta)
 
-    def _bbox_post_process(self,
-                           results: InstanceData,
-                           mask_feat,
-                           cfg: ConfigType,
-                           rescale: bool = False,
-                           with_nms: bool = True,
-                           img_meta: Optional[dict] = None) -> InstanceData:
-        """bbox post-processing method.
+    def _bbox_mask_post_process(
+            self,
+            results: InstanceData,
+            mask_feat,
+            cfg: ConfigType,
+            rescale: bool = False,
+            with_nms: bool = True,
+            img_meta: Optional[dict] = None) -> InstanceData:
+        """bbox and mask post-processing method.
 
         The boxes would be rescaled to the original image scale and do
         the nms operation. Usually `with_nms` is False is used for aug test.
@@ -503,7 +518,7 @@ class RTMDetInsHead(RTMDetHead):
 
         return results
 
-    def parse_dynamic_params(self, flatten_kernels):
+    def parse_dynamic_params(self, flatten_kernels: Tensor) -> tuple:
         """split kernel head prediction to conv weight and bias."""
         n_inst = flatten_kernels.size(0)
         n_layers = len(self.weight_nums)
@@ -575,7 +590,7 @@ class RTMDetInsHead(RTMDetHead):
 
     def loss_mask_by_feat(self, mask_feats: Tensor, flatten_kernels: Tensor,
                           sampling_results_list: list,
-                          batch_gt_instances: InstanceList):
+                          batch_gt_instances: InstanceList) -> Tensor:
         """Compute instance segmentation loss.
 
         Args:
@@ -590,7 +605,7 @@ class RTMDetInsHead(RTMDetHead):
                 attributes.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            Tensor: The mask loss tensor.
         """
         batch_pos_mask_logits = []
         pos_gt_masks = []
@@ -620,7 +635,7 @@ class RTMDetInsHead(RTMDetHead):
                                                      ])).clamp_(min=1).item()
 
         if batch_pos_mask_logits.shape[0] == 0:
-            return mask_feats.sum() * 0, mask_feats.sum() * 0
+            return mask_feats.sum() * 0
 
         scale = self.prior_generator.strides[0][0] // self.mask_loss_stride
         # upsample pred masks
@@ -753,7 +768,7 @@ class MaskFeatModule(BaseModule):
              kernel.
         stacked_convs (int): Number of convs in mask feature branch.
         act_cfg (:obj:`ConfigDict` or dict): Config dict for activation layer.
-            Default: dict(type='ReLU')
+            Default: dict(type='ReLU', inplace=True)
         norm_cfg (dict): Config dict for normalization layer. Default: None.
     """
 
@@ -764,7 +779,7 @@ class MaskFeatModule(BaseModule):
         stacked_convs: int = 4,
         num_levels: int = 3,
         num_prototypes: int = 8,
-        act_cfg: ConfigType = dict(type='ReLU'),
+        act_cfg: ConfigType = dict(type='ReLU', inplace=True),
         norm_cfg: ConfigType = dict(type='BN')
     ) -> None:
         super().__init__(init_cfg=None)
@@ -820,11 +835,11 @@ class RTMDetInsSepBNHead(RTMDetInsHead):
     def __init__(self,
                  num_classes: int,
                  in_channels: int,
-                 share_conv=True,
-                 with_objectness=False,
-                 norm_cfg=dict(type='BN', requires_grad=True),
-                 act_cfg=dict(type='SiLU', inplace=True),
-                 pred_kernel_size=1,
+                 share_conv: bool = True,
+                 with_objectness: bool = False,
+                 norm_cfg: ConfigType = dict(type='BN', requires_grad=True),
+                 act_cfg: ConfigType = dict(type='SiLU', inplace=True),
+                 pred_kernel_size: int = 1,
                  **kwargs) -> None:
         self.share_conv = share_conv
         super().__init__(

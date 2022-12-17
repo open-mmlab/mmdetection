@@ -16,7 +16,16 @@ INF = 100000000
 EPS = 1.0e-7
 
 
-def center_of_mass(masks: Tensor, eps=1e-6):
+def center_of_mass(masks: Tensor, eps: float = 1e-7) -> Tensor:
+    """Compute the masks center of mass.
+
+    Args:
+        masks: Mask tensor, has shape (num_masks, H, W).
+        eps: a small number to avoid normalizer to be zero.
+            Defaults to 1e-7.
+    Returns:
+        Tensor: The masks center of mass. Has shape (num_masks, 2).
+    """
     n, h, w = masks.shape
     grid_h = torch.arange(h, device=masks.device)[:, None]
     grid_w = torch.arange(w, device=masks.device)
