@@ -76,10 +76,9 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ### 💎 稳定版本
 
-最新的 **2.25.2** 版本已经在 2022.09.15 发布:
+最新的 **2.26.0** 版本已经在 2022.11.23 发布:
 
-- 修复 Dynamic Head 和 Swin Transformer 中的错误。
-- 优化注释和文档。
+- 支持在 [NPU](docs/en/device/npu.md) 上进行训练。
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/en/changelog.md)。
 

@@ -1,5 +1,35 @@
 ## Changelog
 
+### v2.26.0 (23/11/2022)
+
+#### Highlights
+
+- Support training on [NPU](docs/en/device/npu.md) (#9267)
+
+#### Bug Fixes
+
+- Fix RPN visualization (#9151)
+- Fix readthedocs by freezing the dependency versions (#9154)
+- Fix device argument error in MMDet_Tutorial.ipynb (#9112)
+- Fix solov2 cannot dealing with empty gt image (#9185)
+- Fix random flipping ratio comparison of mixup image (#9336)
+
+#### Improvements
+
+- Complement necessary argument of seg_suffix of cityscapes (#9330)
+- Support copy paste based on bbox when there is no gt mask (#8905)
+- Make scipy as a default dependency in runtime (#9186)
+
+#### Documents
+
+- Delete redundant Chinese characters in docs (#9175)
+- Add MMEval in README (#9217)
+
+#### Contributors
+
+A total of 11 developers contributed to this release.
+Thanks @wangjiangben-hw, @motokimura, @AdorableJiang, @BainOuO, @JarvisKevin, @wanghonglie, @zytx121, @BIGWangYuDong, @hhaAndroid, @RangiLyu, @ZwwWayne
+
 ### v2.25.3 (25/10/2022)
 
 #### Bug Fixes
