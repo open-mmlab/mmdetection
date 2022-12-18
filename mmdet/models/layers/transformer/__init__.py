@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from .conditional_detr_transformer import (
+    ConditionalDetrTransformerDecoder, ConditionalDetrTransformerDecoderLayer)
 from .dab_detr_transformer import (DabDetrTransformerDecoder,
                                    DabDetrTransformerDecoderLayer,
                                    DabDetrTransformerEncoder)
@@ -22,5 +24,7 @@ __all__ = [
     'DeformableDetrTransformerEncoderLayer',
     'DeformableDetrTransformerDecoderLayer', 'convert_coordinate_to_encoding',
     'ConditionalAttention', 'DabDetrTransformerDecoderLayer',
-    'DabDetrTransformerDecoder', 'DabDetrTransformerEncoder'
+    'DabDetrTransformerDecoder', 'DabDetrTransformerEncoder',
+    'ConditionalDetrTransformerDecoder',
+    'ConditionalDetrTransformerDecoderLayer'
 ]
