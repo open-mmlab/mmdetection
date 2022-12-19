@@ -2,7 +2,7 @@
 
 如果你想把 MMDetection 修改为自己的项目，请遵循下面的约定。
 
-## 图片 pipeline 输入 shape
+## 关于图片 shape 顺序的说明
 
 在 OpenMMLab 2.0 中图片处理 pipeline 输入参数中关于 shape 值都是 `(width, height)`, pipeline 输出的 shape 值都是 `(height, width)`, 在模型中 shape 始终是  `(height, width)`. 常见字段如下：
 

@@ -2,7 +2,7 @@
 
 Please check the following conventions if you would like to modify MMDetection as your own project.
 
-## Image pipeline input shape
+## About the order of image shape
 
 In OpenMMLab 2.0, the image pipeline input shape is `(width, height)`, the shape of the pipeline output is `(height, width)` and the shape is also always `(height, width)` in model. The common fields are as follows:
 
