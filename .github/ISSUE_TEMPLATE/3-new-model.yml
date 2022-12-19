@@ -1,0 +1,32 @@
+name: "\U0001F31F New model/dataset/scheduler addition"
+description: Submit a proposal/request to implement a new model / dataset / scheduler
+labels: "kind/feature,status/unconfirmed"
+title: "[New Models] "
+
+
+body:
+  - type: textarea
+    id: description-request
+    validations:
+      required: true
+    attributes:
+      label: Model/Dataset/Scheduler description
+      description: |
+        Put any and all important information relative to the model/dataset/scheduler
+
+  - type: checkboxes
+    attributes:
+      label: Open source status
+      description: |
+          Please provide the open-source status, which would be very helpful
+      options:
+        - label: "The model implementation is available"
+        - label: "The model weights are available."
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Provide useful links for the implementation
+      description: |
+        Please provide information regarding the implementation, the weights, and the authors.
+        Please mention the authors by @gh-username if you're aware of their usernames.

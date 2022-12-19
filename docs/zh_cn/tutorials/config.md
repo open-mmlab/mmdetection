@@ -16,7 +16,7 @@
 
 - 更新列表或元组的值
 
-  如果要更新的值是列表或元组。例如，配置文件通常设置 `workflow=[('train', 1)]`，如果需要改变这个键，可以通过 `--cfg-options workflow="[(train,1),(val,1)]"` 来重新设置。需要注意，引号 \" 是支持列表或元组数据类型所必需的，并且在指定值的引号内**不允许**有空格。
+  如果要更新的值是列表或元组。例如，配置文件通常设置 `workflow=[('train', 1)]`，如果需要改变这个键，可以通过 `--cfg-options workflow="[(train,1),(val,1)]"` 来重新设置。需要注意，引号 " 是支持列表或元组数据类型所必需的，并且在指定值的引号内**不允许**有空格。
 
 ## 配置文件结构
 
@@ -56,8 +56,8 @@
 ```python
 # 已经弃用的形式
 model = dict(
-   type=...,
-   ...
+    type=...,
+    ...
 )
 train_cfg=dict(...)
 test_cfg=dict(...)
@@ -68,10 +68,10 @@ test_cfg=dict(...)
 ```python
 # 推荐的形式
 model = dict(
-   type=...,
-   ...
-   train_cfg=dict(...),
-   test_cfg=dict(...),
+    type=...,
+    ...
+train_cfg=dict(...),
+          test_cfg=dict(...),
 )
 ```
 
@@ -93,7 +93,7 @@ model = dict(
             requires_grad=True),  # 是否训练归一化里的 gamma 和 beta。
         norm_eval=True,  # 是否冻结 BN 里的统计项。
         style='pytorch',  # 主干网络的风格，'pytorch' 意思是步长为2的层为 3x3 卷积， 'caffe' 意思是步长为2的层为 1x1 卷积。
-       init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),  # 加载通过 ImageNet 预训练的模型
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),  # 加载通过 ImageNet 预训练的模型
     neck=dict(
         type='FPN',  # 检测器的 neck 是 FPN，我们同样支持 'NASFPN', 'PAFPN' 等，更多细节可以参考 https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/necks/fpn.py#L10。
         in_channels=[256, 512, 1024, 2048],  # 输入通道数，这与主干网络的输出通道一致
@@ -164,7 +164,7 @@ model = dict(
             loss_mask=dict(  # mask 分支的损失函数配置。
                 type='CrossEntropyLoss',  # 用于分割的损失类型。
                 use_mask=True,  # 是否只在正确的类中训练 mask。
-                loss_weight=1.0))))  # mask 分支的损失权重.
+                loss_weight=1.0))),  # mask 分支的损失权重.
     train_cfg = dict(  # rpn 和 rcnn 训练超参数的配置
         rpn=dict(  # rpn 的训练配置
             assigner=dict(  # 分配器(assigner)的配置
@@ -186,7 +186,7 @@ model = dict(
         rpn_proposal=dict(  # 在训练期间生成 proposals 的配置
             nms_across_levels=False,  # 是否对跨层的 box 做 NMS。仅适用于 `GARPNHead` ，naive rpn 不支持 nms cross levels。
             nms_pre=2000,  # NMS 前的 box 数
-            nms_post=1000,  # NMS 要保留的 box 的数量，只在 GARPNHHead 中起作用。
+            nms_post=1000,  # NMS 要保留的 box 的数量，只在 GARPNHead 中起作用。
             max_per_img=1000,  # NMS 后要保留的 box 数量。
             nms=dict( # NMS 的配置
                 type='nms',  # NMS 的类别
@@ -210,12 +210,12 @@ model = dict(
             ),  # 采样后是否添加 GT 作为 proposal。
             mask_size=28,  # mask 的大小
             pos_weight=-1,  # 训练期间正样本的权重。
-            debug=False))  # 是否设置调试模式。
+            debug=False)),  # 是否设置调试模式。
     test_cfg = dict(  # 用于测试 rpn 和 rcnn 超参数的配置
         rpn=dict(  # 测试阶段生成 proposals 的配置
             nms_across_levels=False,  # 是否对跨层的 box 做 NMS。仅适用于`GARPNHead`，naive rpn 不支持做 NMS cross levels。
             nms_pre=1000,  # NMS 前的 box 数
-            nms_post=1000,  # NMS 要保留的 box 的数量，只在`GARPNHHead`中起作用。
+            nms_post=1000,  # NMS 要保留的 box 的数量，只在`GARPNHead`中起作用。
             max_per_img=1000,  # NMS 后要保留的 box 数量
             nms=dict( # NMS 的配置
                 type='nms',  # NMS 的类型
@@ -228,7 +228,8 @@ model = dict(
                 type='nms',  # NMS 的类型
                 iou_thr=0.5),  # NMS 的阈值
             max_per_img=100,  # 每张图像的最大检测次数
-            mask_thr_binary=0.5))  # mask 预处的阈值
+            mask_thr_binary=0.5)))  # mask 预处的阈值
+
 dataset_type = 'CocoDataset'  # 数据集类型，这将被用来定义数据集。
 data_root = 'data/coco/'  # 数据的根路径。
 img_norm_cfg = dict(  # 图像归一化配置，用来归一化输入的图像。
@@ -364,7 +365,7 @@ data = dict(
                 ])
         ],
         samples_per_gpu=2  # 单个 GPU 测试时的 Batch size
-        ))
+    ))
 evaluation = dict(  # evaluation hook 的配置，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/evaluation/eval_hooks.py#L7。
     interval=1,  # 验证的间隔。
     metric=['bbox', 'segm'])  # 验证期间使用的指标。
@@ -389,10 +390,15 @@ checkpoint_config = dict(  # Checkpoint hook 的配置文件。执行时请参�
     interval=1)  # 保存的间隔是 1。
 log_config = dict(  # register logger hook 的配置文件。
     interval=50,  # 打印日志的间隔
-    hooks=[
-        # dict(type='TensorboardLoggerHook')  # 同样支持 Tensorboard 日志
-        dict(type='TextLoggerHook')
+    hooks=[ # 训练期间执行的钩子
+        dict(type='TextLoggerHook', by_epoch=False),
+        dict(type='TensorboardLoggerHook', by_epoch=False),
+        dict(type='MMDetWandbHook', by_epoch=False, # 还支持 Wandb 记录器，它需要安装 `wandb`。
+             init_kwargs={'entity': "OpenMMLab", # 用于登录wandb的实体
+                          'project': "MMDet", # WandB中的项目名称
+                          'config': cfg_dict}), # 检查 https://docs.wandb.ai/ref/python/init 以获取更多初始化参数
     ])  # 用于记录训练过程的记录器(logger)。
+
 dist_params = dict(backend='nccl')  # 用于设置分布式训练的参数，端口也同样可被设置。
 log_level = 'INFO'  # 日志的级别。
 load_from = None  # 从一个给定路径里加载模型作为预训练模型，它并不会消耗训练时间。

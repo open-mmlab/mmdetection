@@ -1,0 +1,89 @@
+name: "💥 Reimplementation Questions"
+description: "Ask about questions during model reimplementation"
+labels: "kind/enhancement,status/unconfirmed"
+title: "[Reimplementation] "
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We strongly appreciate you creating a PR to implement this feature [here](https://github.com/open-mmlab/mmdetection/pulls)!
+        If you need our help, please fill in as much of the following form as you're able to.
+
+        **The less clear the description, the longer it will take to solve it.**
+
+  - type: checkboxes
+    attributes:
+      label: Prerequisite
+      description: Please check the following items before creating a new issue.
+      options:
+      - label: I have searched [Issues](https://github.com/open-mmlab/mmdetection/issues) and [Discussions](https://github.com/open-mmlab/mmdetection/discussions) but cannot get the expected help.
+        required: true
+      - label: I have read the [FAQ documentation](https://mmdetection.readthedocs.io/en/latest/faq.html) but cannot get the expected help.
+        required: true
+      - label: The bug has not been fixed in the [latest version (master)](https://github.com/open-mmlab/mmdetection) or [latest version (3.x)](https://github.com/open-mmlab/mmdetection/tree/dev-3.x).
+        required: true
+
+  - type: textarea
+    attributes:
+      label: 💬 Describe the reimplementation questions
+      description: |
+        A clear and concise description of what the problem you meet and what have you done.
+        There are several common situations in the reimplementation issues as below
+
+        1. Reimplement a model in the model zoo using the provided configs
+        2. Reimplement a model in the model zoo on other dataset (e.g., custom datasets)
+        3. Reimplement a custom model but all the components are implemented in MMDetection
+        4. Reimplement a custom model with new modules implemented by yourself
+
+        There are several things to do for different cases as below.
+
+        - For case 1 & 3, please follow the steps in the following sections thus we could help to quick identify the issue.
+        - For case 2 & 4, please understand that we are not able to do much help here because we usually do not know the full code and the users should be responsible to the code they write.
+        - One suggestion for case 2 & 4 is that the users should first check whether the bug lies in the self-implemented code or the original code. For example, users can first make sure that the same model runs well on supported datasets. If you still need help, please describe what you have done and what you obtain in the issue, and follow the steps in the following sections and try as clear as possible so that we can better help you.
+      placeholder: |
+        A clear and concise description of what the bug is.
+        What config dir you run?
+
+        ```none
+        A placeholder for the config.
+        ```
+
+        ```shell
+        The command or script you run.
+        ```
+
+        ```
+        The error message or logs you got, with the full traceback.
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Environment
+      description: |
+         Please run `python mmdet/utils/collect_env.py` to collect necessary environment information and paste it here.
+         You may add addition that may be helpful for locating the problem, such as
+            - How you installed PyTorch \[e.g., pip, conda, source\]
+            - Other environment variables that may be related (such as `$PATH`, `$LD_LIBRARY_PATH`, `$PYTHONPATH`, etc.)
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Expected results
+      description: If applicable, paste the related results here, e.g., what you expect and what you get.
+      placeholder: |
+         ```none
+         A placeholder for results comparison
+         ```
+
+  - type: textarea
+    attributes:
+      label: Additional information
+      description: Tell us anything else you think we should know.
+      placeholder: |
+        1. Did you make any modifications on the code or config? Did you understand what you have modified?
+        2. What dataset did you use?
+        3. What do you think might be the reason?

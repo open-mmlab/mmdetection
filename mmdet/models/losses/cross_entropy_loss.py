@@ -123,7 +123,10 @@ def binary_cross_entropy(pred,
         # should mask out the ignored elements
         valid_mask = ((label >= 0) & (label != ignore_index)).float()
         if weight is not None:
-            weight *= valid_mask
+            # The inplace writing method will have a mismatched broadcast
+            # shape error if the weight and valid_mask dimensions
+            # are inconsistent such as (B,N,1) and (B,N,C).
+            weight = weight * valid_mask
         else:
             weight = valid_mask
 

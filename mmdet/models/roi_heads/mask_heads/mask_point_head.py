@@ -8,7 +8,8 @@ from mmcv.ops import point_sample, rel_roi_point_to_rel_img_point
 from mmcv.runner import BaseModule
 
 from mmdet.models.builder import HEADS, build_loss
-from mmdet.models.utils import get_uncertain_point_coords_with_randomness
+from mmdet.models.utils import (get_uncertain_point_coords_with_randomness,
+                                get_uncertainty)
 
 
 @HEADS.register_module()
@@ -230,7 +231,7 @@ class MaskPointHead(BaseModule):
                 most uncertain points from the [mask_height, mask_width] grid .
         """
         num_points = cfg.subdivision_num_points
-        uncertainty_map = self._get_uncertainty(mask_pred, pred_label)
+        uncertainty_map = get_uncertainty(mask_pred, pred_label)
         num_rois, _, mask_height, mask_width = uncertainty_map.shape
 
         # During ONNX exporting, the type of each elements of 'shape' is

@@ -48,44 +48,85 @@ def process_checkpoint(in_file, out_file):
     return final_file
 
 
-def get_final_epoch(config):
+def is_by_epoch(config):
     cfg = mmcv.Config.fromfile('./configs/' + config)
-    return cfg.runner.max_epochs
+    return cfg.runner.type == 'EpochBasedRunner'
 
 
-def get_best_epoch(exp_dir):
-    best_epoch_full_path = list(
+def get_final_epoch_or_iter(config):
+    cfg = mmcv.Config.fromfile('./configs/' + config)
+    if cfg.runner.type == 'EpochBasedRunner':
+        return cfg.runner.max_epochs
+    else:
+        return cfg.runner.max_iters
+
+
+def get_best_epoch_or_iter(exp_dir):
+    best_epoch_iter_full_path = list(
         sorted(glob.glob(osp.join(exp_dir, 'best_*.pth'))))[-1]
-    best_epoch_model_path = best_epoch_full_path.split('/')[-1]
-    best_epoch = best_epoch_model_path.split('_')[-1].split('.')[0]
-    return best_epoch_model_path, int(best_epoch)
+    best_epoch_or_iter_model_path = best_epoch_iter_full_path.split('/')[-1]
+    best_epoch_or_iter = best_epoch_or_iter_model_path.\
+        split('_')[-1].split('.')[0]
+    return best_epoch_or_iter_model_path, int(best_epoch_or_iter)
 
 
-def get_real_epoch(config):
+def get_real_epoch_or_iter(config):
     cfg = mmcv.Config.fromfile('./configs/' + config)
-    epoch = cfg.runner.max_epochs
-    if cfg.data.train.type == 'RepeatDataset':
-        epoch *= cfg.data.train.times
-    return epoch
+    if cfg.runner.type == 'EpochBasedRunner':
+        epoch = cfg.runner.max_epochs
+        if cfg.data.train.type == 'RepeatDataset':
+            epoch *= cfg.data.train.times
+        return epoch
+    else:
+        return cfg.runner.max_iters
 
 
-def get_final_results(log_json_path, epoch, results_lut):
+def get_final_results(log_json_path,
+                      epoch_or_iter,
+                      results_lut,
+                      by_epoch=True):
     result_dict = dict()
+    last_val_line = None
+    last_train_line = None
+    last_val_line_idx = -1
+    last_train_line_idx = -1
     with open(log_json_path, 'r') as f:
-        for line in f.readlines():
+        for i, line in enumerate(f.readlines()):
             log_line = json.loads(line)
             if 'mode' not in log_line.keys():
                 continue
 
-            if log_line['mode'] == 'train' and log_line['epoch'] == epoch:
-                result_dict['memory'] = log_line['memory']
+            if by_epoch:
+                if (log_line['mode'] == 'train'
+                        and log_line['epoch'] == epoch_or_iter):
+                    result_dict['memory'] = log_line['memory']
 
-            if log_line['mode'] == 'val' and log_line['epoch'] == epoch:
-                result_dict.update({
-                    key: log_line[key]
-                    for key in results_lut if key in log_line
-                })
-                return result_dict
+                if (log_line['mode'] == 'val'
+                        and log_line['epoch'] == epoch_or_iter):
+                    result_dict.update({
+                        key: log_line[key]
+                        for key in results_lut if key in log_line
+                    })
+                    return result_dict
+            else:
+                if log_line['mode'] == 'train':
+                    last_train_line_idx = i
+                    last_train_line = log_line
+
+                if log_line and log_line['mode'] == 'val':
+                    last_val_line_idx = i
+                    last_val_line = log_line
+
+    # bug: max_iters = 768, last_train_line['iter'] = 750
+    assert last_val_line_idx == last_train_line_idx + 1, \
+        'Log file is incomplete'
+    result_dict['memory'] = last_train_line['memory']
+    result_dict.update({
+        key: last_val_line[key]
+        for key in results_lut if key in last_val_line
+    })
+
+    return result_dict
 
 
 def get_dataset_name(config):
@@ -116,10 +157,12 @@ def convert_model_info_to_pwc(model_infos):
 
         # get metadata
         memory = round(model['results']['memory'] / 1024, 1)
-        epochs = get_real_epoch(model['config'])
         meta_data = OrderedDict()
         meta_data['Training Memory (GB)'] = memory
-        meta_data['Epochs'] = epochs
+        if 'epochs' in model:
+            meta_data['Epochs'] = get_real_epoch_or_iter(model['config'])
+        else:
+            meta_data['Iterations'] = get_real_epoch_or_iter(model['config'])
         pwc_model_info['Metadata'] = meta_data
 
         # get dataset name
@@ -200,12 +243,14 @@ def main():
     model_infos = []
     for used_config in used_configs:
         exp_dir = osp.join(models_root, used_config)
+        by_epoch = is_by_epoch(used_config)
         # check whether the exps is finished
         if args.best is True:
-            final_model, final_epoch = get_best_epoch(exp_dir)
+            final_model, final_epoch_or_iter = get_best_epoch_or_iter(exp_dir)
         else:
-            final_epoch = get_final_epoch(used_config)
-            final_model = 'epoch_{}.pth'.format(final_epoch)
+            final_epoch_or_iter = get_final_epoch_or_iter(used_config)
+            final_model = '{}_{}.pth'.format('epoch' if by_epoch else 'iter',
+                                             final_epoch_or_iter)
 
         model_path = osp.join(exp_dir, final_model)
         # skip if the model is still training
@@ -224,22 +269,24 @@ def main():
         # when using Panoptic Dataset, the evaluation key is 'PQ'.
         for i, key in enumerate(results_lut):
             if 'mAP' not in key and 'PQ' not in key:
-                results_lut[i] = key + 'm_AP'
-        model_performance = get_final_results(log_json_path, final_epoch,
-                                              results_lut)
+                results_lut[i] = key + '_mAP'
+        model_performance = get_final_results(log_json_path,
+                                              final_epoch_or_iter, results_lut,
+                                              by_epoch)
 
         if model_performance is None:
             continue
 
         model_time = osp.split(log_txt_path)[-1].split('.')[0]
-        model_infos.append(
-            dict(
-                config=used_config,
-                results=model_performance,
-                epochs=final_epoch,
-                model_time=model_time,
-                final_model=final_model,
-                log_json_path=osp.split(log_json_path)[-1]))
+        model_info = dict(
+            config=used_config,
+            results=model_performance,
+            model_time=model_time,
+            final_model=final_model,
+            log_json_path=osp.split(log_json_path)[-1])
+        model_info['epochs' if by_epoch else 'iterations'] =\
+            final_epoch_or_iter
+        model_infos.append(model_info)
 
     # publish model for each checkpoint
     publish_model_infos = []

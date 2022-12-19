@@ -17,7 +17,8 @@ from mmdet import __version__
 from mmdet.apis import init_random_seed, set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
-from mmdet.utils import (collect_env, get_root_logger, setup_multi_processes,
+from mmdet.utils import (collect_env, get_device, get_root_logger,
+                         replace_cfg_vals, setup_multi_processes,
                          update_data_root)
 
 
@@ -85,6 +86,10 @@ def parse_args():
         default='none',
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument(
+        '--auto-scale-lr',
+        action='store_true',
+        help='enable automatically scaling LR.')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -105,11 +110,26 @@ def main():
 
     cfg = Config.fromfile(args.config)
 
+    # replace the ${key} with the value of cfg.key
+    cfg = replace_cfg_vals(cfg)
+
     # update data root according to MMDET_DATASETS
     update_data_root(cfg)
 
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
+
+    if args.auto_scale_lr:
+        if 'auto_scale_lr' in cfg and \
+                'enable' in cfg.auto_scale_lr and \
+                'base_batch_size' in cfg.auto_scale_lr:
+            cfg.auto_scale_lr.enable = True
+        else:
+            warnings.warn('Can not find "auto_scale_lr" or '
+                          '"auto_scale_lr.enable" or '
+                          '"auto_scale_lr.base_batch_size" in your'
+                          ' configuration file. Please update all the '
+                          'configuration files to mmdet >= 2.24.1.')
 
     # set multi-process settings
     setup_multi_processes(cfg)
@@ -126,6 +146,7 @@ def main():
         # use config filename as default work_dir if cfg.work_dir is None
         cfg.work_dir = osp.join('./work_dirs',
                                 osp.splitext(osp.basename(args.config))[0])
+
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
     cfg.auto_resume = args.auto_resume
@@ -177,8 +198,9 @@ def main():
     logger.info(f'Distributed training: {distributed}')
     logger.info(f'Config:\n{cfg.pretty_text}')
 
+    cfg.device = get_device()
     # set random seeds
-    seed = init_random_seed(args.seed)
+    seed = init_random_seed(args.seed, device=cfg.device)
     seed = seed + dist.get_rank() if args.diff_seed else seed
     logger.info(f'Set random seed to {seed}, '
                 f'deterministic: {args.deterministic}')
@@ -195,8 +217,10 @@ def main():
 
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:
+        assert 'val' in [mode for (mode, _) in cfg.workflow]
         val_dataset = copy.deepcopy(cfg.data.val)
-        val_dataset.pipeline = cfg.data.train.pipeline
+        val_dataset.pipeline = cfg.data.train.get(
+            'pipeline', cfg.data.train.dataset.get('pipeline'))
         datasets.append(build_dataset(val_dataset))
     if cfg.checkpoint_config is not None:
         # save mmdet version, config file content and class names in
