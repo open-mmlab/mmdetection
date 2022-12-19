@@ -68,6 +68,7 @@ The master branch works with **PyTorch 1.6+**.
 - **State of the art**
 
   The toolbox stems from the codebase developed by the *MMDet* team, who won [COCO Detection Challenge](http://cocodataset.org/#detection-leaderboard) in 2018, and we keep pushing it forward.
+  The newly released [RTMDet](configs/rtmdet) also obtains new state-of-the-art results on real-time instance segmentation and rotated object detection tasks and the best parameter-accuracy trade-off on object detection.
 
 </details>
 
@@ -77,7 +78,7 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 
 ### Highlight
 
-We are excited to announce our latest work on real-time object recognition tasks, **RTMDet**, a family of fully convolutional single-stage detectors. RTMDet not only achieves the best parameter-accuracy trade-off on object detection from tiny to extra-large model sizes, but also becomes the state-of-the-art on instance segmentation and rotated object detection tasks. Detailed explanation of its methodologies is available in our [technical report](https://arxiv.org/abs/2212.07784). Pre-trained models can be found [here](configs/rtmdet).
+We are excited to announce our latest work on real-time object recognition tasks, **RTMDet**, a family of fully convolutional single-stage detectors. RTMDet not only achieves the best parameter-accuracy trade-off on object detection from tiny to extra-large model sizes but also obtains new state-of-the-art performance on instance segmentation and rotated object detection tasks. Details can be found in the [technical report](https://arxiv.org/abs/2212.07784). Pre-trained models are [here](configs/rtmdet).
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/real-time-instance-segmentation-on-mscoco)](https://paperswithcode.com/sota/real-time-instance-segmentation-on-mscoco?p=rtmdet-an-empirical-study-of-designing-real)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/object-detection-in-aerial-images-on-dota-1)](https://paperswithcode.com/sota/object-detection-in-aerial-images-on-dota-1?p=rtmdet-an-empirical-study-of-designing-real)
@@ -205,6 +206,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
             <li><a href="configs/ddod">DDOD (ACM MM'2021)</a></li>
+            <li><a href="configs/RTMDet">RTMDet (ArXiv'2022)</a></li>
       </ul>
       </td>
       <td>
@@ -224,6 +226,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
           <li><a href="configs/condinst">CondInst (ECCV 2020)</a></li>
           <li><a href="projects/SparseInst">SparseInst (CVPR 2022)</a></li>
+          <li><a href="configs/RTMDet">RTMDet (ArXiv'2022)</a></li>
         </ul>
       </td>
       <td>
