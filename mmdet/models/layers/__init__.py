@@ -16,7 +16,8 @@ from .positional_encoding import (LearnedPositionalEncoding,
 from .res_layer import ResLayer, SimplifiedBasicBlock
 from .se_layer import ChannelAttention, DyReLU, SELayer
 # yapf: disable
-from .transformer import (MLP, AdaptivePadding, ConditionalAttention,
+from .transformer import (MLP, AdaptivePadding, CdnQueryGenerator,
+                          ConditionalAttention,
                           ConditionalDetrTransformerDecoder,
                           ConditionalDetrTransformerDecoderLayer,
                           DabDetrTransformerDecoder,
@@ -28,9 +29,9 @@ from .transformer import (MLP, AdaptivePadding, ConditionalAttention,
                           DeformableDetrTransformerEncoderLayer,
                           DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DetrTransformerEncoder, DetrTransformerEncoderLayer,
-                          DynamicConv, PatchEmbed, PatchMerging,
-                          convert_coordinate_to_encoding, inverse_sigmoid,
-                          nchw_to_nlc, nlc_to_nchw)
+                          DinoTransformerDecoder, DynamicConv, PatchEmbed,
+                          PatchMerging, convert_coordinate_to_encoding,
+                          inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
 
 # yapf: enable
 
@@ -51,5 +52,6 @@ __all__ = [
     'convert_coordinate_to_encoding', 'ConditionalAttention',
     'DabDetrTransformerDecoderLayer', 'DabDetrTransformerDecoder',
     'DabDetrTransformerEncoder', 'ConditionalDetrTransformerDecoder',
-    'ConditionalDetrTransformerDecoderLayer'
+    'ConditionalDetrTransformerDecoderLayer', 'DinoTransformerDecoder',
+    'CdnQueryGenerator'
 ]

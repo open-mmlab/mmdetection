@@ -182,11 +182,11 @@ class SpatialReductionAttention(MultiheadAttention):
             identity = x_q
 
         # Because the dataflow('key', 'query', 'value') of
-        # ``torch.nn.MultiheadAttention`` is (num_query, batch,
+        # ``torch.nn.MultiheadAttention`` is (num_queries, batch,
         # embed_dims), We should adjust the shape of dataflow from
-        # batch_first (batch, num_query, embed_dims) to num_query_first
-        # (num_query ,batch, embed_dims), and recover ``attn_output``
-        # from num_query_first to batch_first.
+        # batch_first (batch, num_queries, embed_dims) to num_queries_first
+        # (num_queries ,batch, embed_dims), and recover ``attn_output``
+        # from num_queries_first to batch_first.
         if self.batch_first:
             x_q = x_q.transpose(0, 1)
             x_kv = x_kv.transpose(0, 1)

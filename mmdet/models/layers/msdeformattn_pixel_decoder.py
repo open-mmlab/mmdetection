@@ -214,10 +214,10 @@ class MSDeformAttnPixelDecoder(BaseModule):
             level_positional_encoding_list.append(level_pos_embed)
             spatial_shapes.append(feat.shape[-2:])
             reference_points_list.append(reference_points)
-        # shape (batch_size, total_num_query),
-        # total_num_query=sum([., h_i * w_i,.])
+        # shape (batch_size, total_num_queries),
+        # total_num_queries=sum([., h_i * w_i,.])
         padding_masks = torch.cat(padding_mask_list, dim=1)
-        # shape (total_num_query, batch_size, c)
+        # shape (total_num_queries, batch_size, c)
         encoder_inputs = torch.cat(encoder_input_list, dim=0)
         level_positional_encodings = torch.cat(
             level_positional_encoding_list, dim=0)
@@ -252,8 +252,8 @@ class MSDeformAttnPixelDecoder(BaseModule):
         memory = memory.permute(1, 2, 0)
 
         # from low resolution to high resolution
-        num_query_per_level = [e[0] * e[1] for e in spatial_shapes]
-        outs = torch.split(memory, num_query_per_level, dim=-1)
+        num_queries_per_level = [e[0] * e[1] for e in spatial_shapes]
+        outs = torch.split(memory, num_queries_per_level, dim=-1)
         outs = [
             x.reshape(batch_size, -1, spatial_shapes[i][0],
                       spatial_shapes[i][1]) for i, x in enumerate(outs)
