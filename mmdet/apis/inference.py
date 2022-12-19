@@ -55,8 +55,11 @@ def init_detector(
     elif 'init_cfg' in config.model.backbone:
         config.model.backbone.init_cfg = None
     model = MODELS.build(config.model)
-    model.dataset_meta = {'classes': get_classes('coco')}
-    if checkpoint is not None:
+    if checkpoint is None:
+        warnings.simplefilter('once')
+        warnings.warn('checkpoint is None, use COCO classes by default.')
+        model.dataset_meta = {'classes': get_classes('coco')}
+    else:
         checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
         # Weights converted from elsewhere may not have meta fields.
         checkpoint_meta = checkpoint.get('meta', {})
