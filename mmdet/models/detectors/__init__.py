@@ -10,6 +10,7 @@ from .cornernet import CornerNet
 from .ddod import DDOD
 from .deformable_detr import DeformableDETR
 from .detr import DETR
+from .dino import DINO
 from .fast_rcnn import FastRCNN
 from .faster_rcnn import FasterRCNN
 from .fcos import FCOS
@@ -60,5 +61,5 @@ __all__ = [
     'SOLOv2', 'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
     'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector', 'SoftTeacher',
-    'DetectionTransformer', 'RTMDet', 'ConditionalDETR'
+    'DetectionTransformer', 'RTMDet', 'ConditionalDETR', 'DINO'
 ]
