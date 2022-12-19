@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
 import warnings
 from pathlib import Path
 from typing import Optional, Sequence, Union
@@ -11,6 +12,7 @@ from mmcv.transforms import Compose
 from mmengine.config import Config
 from mmengine.runner import load_checkpoint
 
+from mmdet.registry import DATASETS
 from ..evaluation import get_classes
 from ..registry import MODELS
 from ..structures import DetDataSample, SampleList
@@ -86,7 +88,10 @@ def init_detector(
     if palette != 'none':
         model.dataset_meta['palette'] = palette
     else:
-        metainfo = config.test_dataloader.dataset.get('metainfo', {})
+        test_dataset_cfg = copy.deepcopy(config.test_dataloader.dataset)
+        # lazy init. We only need the metainfo.
+        test_dataset_cfg['lazy_init'] = True
+        metainfo = DATASETS.build(test_dataset_cfg).metainfo
         cfg_palette = metainfo.get('palette', None)
         if cfg_palette is not None:
             model.dataset_meta['palette'] = cfg_palette
