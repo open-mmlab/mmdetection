@@ -1,0 +1,58 @@
+Collections:
+  - Name: YOLOX-PAI
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Nesterov
+        - Weight Decay
+        - Cosine Annealing Lr Updater
+      Training Resources: 8x TITANXp GPUs
+      Architecture:
+        - RepVGG
+        - PAFPN
+    Paper:
+      URL: https://arxiv.org/abs/2208.13040
+      Title: 'YOLOX-PAI: An Improved YOLOX, Stronger and Faster than YOLOv6'
+    README: configs/yoloxpai/README.md
+    Code:
+      URL:
+      Version:
+
+
+Models:
+  - Name: yolox_pai_s_8x8_300e_coco
+    In Collection: YOLOX-PAI
+    Config: configs/yoloxpai/yolox_pai_s_8x8_300e_coco.py
+    Metadata:
+      Training Memory (GB):
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.8
+    Weights:
+  - Name: yolox_pai_asff_s_8x8_300e_coco
+    In Collection: YOLOX-PAI
+    Config: configs/yoloxpai/yolox_pai_asff_s_8x8_300e_coco.py
+    Metadata:
+      Training Memory (GB):
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.8
+    Weights:
+  - Name: yolox_pai_asff_tood_s_8x8_300e_coco
+    In Collection: YOLOX-PAI
+    Config: configs/yoloxpai/yolox_pai_asff_tood_s_8x8_300e_coco.py
+    Metadata:
+      Training Memory (GB):
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 43.6
+    Weights:
