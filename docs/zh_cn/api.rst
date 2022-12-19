@@ -54,12 +54,12 @@ mmdet.evaluation
 
 functional
 ^^^^^^^^^^^^^^^^^
-.. automodule:: mmdet.engine.functional
+.. automodule:: mmdet.evaluation.functional
     :members:
 
 metrics
 ^^^^^^^^^^
-.. automodule:: mmdet.engine.metrics
+.. automodule:: mmdet.evaluation.metrics
     :members:
 
 
@@ -129,6 +129,11 @@ utils
 
 mmdet.structures
 --------------------
+
+structures
+^^^^^^^^^^^^^^^^^
+.. automodule:: mmdet.structures
+    :members:
 
 bbox
 ^^^^^^^^^^
