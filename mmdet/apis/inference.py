@@ -12,7 +12,7 @@ from mmengine.config import Config
 from mmengine.runner import load_checkpoint
 
 from ..evaluation import get_classes
-from ..models import build_detector
+from ..registry import MODELS
 from ..structures import DetDataSample, SampleList
 from ..utils import get_test_pipeline_cfg
 
@@ -52,8 +52,7 @@ def init_detector(
         config.merge_from_dict(cfg_options)
     elif 'init_cfg' in config.model.backbone:
         config.model.backbone.init_cfg = None
-    config.model.train_cfg = None
-    model = build_detector(config.model)
+    model = MODELS.build(config.model)
     if checkpoint is not None:
         checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
         # Weights converted from elsewhere may not have meta fields.
