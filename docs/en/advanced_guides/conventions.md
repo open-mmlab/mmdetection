@@ -4,14 +4,14 @@ Please check the following conventions if you would like to modify MMDetection a
 
 ## About the order of image shape
 
-In OpenMMLab 2.0, the image pipeline input shape is `(width, height)`, the shape of the pipeline output is `(height, width)` and the shape is also always `(height, width)` in model. The common fields are as follows:
+In OpenMMLab 2.0, to be consistent with the input argument of OpenCV, the argument about image shape in the data transformation pipeline is always in the `(width, height)` order. On the contrary, for computation convenience, the order of the field going through the data pipeline and the model is `(height, width)`. Specifically, in the results processed by each data transform pipeline, the fields and their value meaning is as below:
 
 - img_shape: (height, width)
 - ori_shape: (height, width)
 - pad_shape: (height, width)
 - batch_input_shape: (height, width)
 
-As an example, the initialization parameters of `Mosaic` are as follows:
+As an example, the initialization arguments of `Mosaic` are as below:
 
 ```python
 @TRANSFORMS.register_module()
@@ -31,6 +31,7 @@ class Mosaic(BaseTransform):
         ...
 
         results['img'] = mosaic_img
+        # (height, width)
         results['img_shape'] = mosaic_img.shape[:2]
 ```
 

@@ -4,7 +4,8 @@
 
 ## 关于图片 shape 顺序的说明
 
-在 OpenMMLab 2.0 中图片处理 pipeline 输入参数中关于 shape 值都是 `(width, height)`, pipeline 输出的 shape 值都是 `(height, width)`, 在模型中 shape 始终是  `(height, width)`. 常见字段如下：
+在OpenMMLab 2.0中， 为了与 OpenCV 的输入参数相一致，图片处理 pipeline 中关于图像 shape 的输入参数总是以 `(width, height)` 的顺序排列。
+相反，为了计算方便，经过 pipeline 和 model 的字段的顺序是 `(height, width)`。具体来说在每个数据 pipeline 处理的结果中，字段和它们的值含义如下：
 
 - img_shape: (height, width)
 - ori_shape: (height, width)
@@ -31,6 +32,7 @@ class Mosaic(BaseTransform):
         ...
 
         results['img'] = mosaic_img
+        # (height, width)
         results['img_shape'] = mosaic_img.shape[:2]
 ```
 
