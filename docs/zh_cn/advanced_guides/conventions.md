@@ -23,7 +23,7 @@ class Mosaic(BaseTransform):
                 pad_val: float = 114.0,
                 prob: float = 1.0) -> None:
        ...
-       # 图片输入 shape 顺序为 (width, height)
+       # img_scale 顺序为 (width, height)
        self.img_scale=img_scale
 
     def transform(self, results: dict) -> dict:

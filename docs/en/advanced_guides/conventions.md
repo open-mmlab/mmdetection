@@ -23,7 +23,7 @@ class Mosaic(BaseTransform):
                 pad_val: float = 114.0,
                 prob: float = 1.0) -> None:
        ...
-       # The shape order should be (width, height)
+       # img_scale order should be (width, height)
        self.img_scale=img_scale
 
     def transform(self, results: dict) -> dict:
