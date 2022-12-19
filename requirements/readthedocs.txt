@@ -1,3 +1,4 @@
-mmcv
+mmcv>=2.0.0rc1,<2.1.0
+mmengine>=0.3.1
 torch
 torchvision

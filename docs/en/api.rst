@@ -129,6 +129,11 @@ utils
 mmdet.structures
 --------------
 
+structures
+^^^^^^^^^^
+.. automodule:: mmdet.structures
+    :members:
+
 bbox
 ^^^^^^^^^^
 .. automodule:: mmdet.structures.bbox
