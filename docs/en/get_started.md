@@ -83,7 +83,7 @@ The downloading will take several seconds or more, depending on your network env
 
 **Step 2.** Verify the inference demo.
 
-Option (a). If you install MMDetection from source, just run the following command.
+Case a: If you install MMDetection from source, just run the following command.
 
 ```shell
 python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
@@ -91,7 +91,7 @@ python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.p
 
 You will see a new image `result.jpg` on your current folder, where bounding boxes are plotted on cars, benches, etc.
 
-Option (b). If you install MMDetection with MIM, open your python interpreter and copy&paste the following codes.
+Case b: If you install MMDetection with MIM, open your python interpreter and copy&paste the following codes.
 
 ```python
 from mmdet.apis import init_detector, inference_detector
@@ -174,7 +174,7 @@ The following table lists affected algorithms.
 
 #### Install on Google Colab
 
-[Google Colab](https://research.google.com/) usually has PyTorch installed,
+[Google Colab](https://colab.research.google.com/) usually has PyTorch installed,
 thus we only need to install MMEngine, MMCV, and MMDetection with the following commands.
 
 **Step 1.** Install [MMEngine](https://github.com/open-mmlab/mmengine) and [MMCV](https://github.com/open-mmlab/mmcv) using [MIM](https://github.com/open-mmlab/mim).
@@ -182,7 +182,7 @@ thus we only need to install MMEngine, MMCV, and MMDetection with the following 
 ```shell
 !pip3 install openmim
 !mim install mmengine
-!mim install mmcv>=2.0.0rc1,<2.1.0
+!mim install "mmcv>=2.0.0rc1,<2.1.0"
 ```
 
 **Step 2.** Install MMDetection from the source.
@@ -226,7 +226,7 @@ docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetect
 If you have some issues during the installation, please first view the [FAQ](notes/faq.md) page.
 You may [open an issue](https://github.com/open-mmlab/mmdetection/issues/new/choose) on GitHub if no solution is found.
 
-### Use Multiple Versions of MMDetection in Develoement
+### Use Multiple Versions of MMDetection in Development
 
 Training and testing scripts have already been modified in `PYTHONPATH` in order to make sure the scripts are using their own versions of MMDetection.
 
