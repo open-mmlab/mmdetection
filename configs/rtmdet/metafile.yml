@@ -79,3 +79,88 @@ Models:
         Metrics:
           box AP: 52.6
     Weights: https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_x_8xb32-300e_coco/rtmdet_x_8xb32-300e_coco_20220715_230555-cc79b9ae.pth
+
+  - Name: rtmdet-ins_tiny_8xb32-300e_coco
+    In Collection: RTMDet
+    Config: configs/rtmdet/rtmdet-ins_tiny_8xb32-300e_coco.py
+    Metadata:
+      Training Memory (GB): 18.4
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.5
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 35.4
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_tiny_8xb32-300e_coco/rtmdet-ins_tiny_8xb32-300e_coco_20221130_151727-ec670f7e.pth
+
+  - Name: rtmdet-ins_s_8xb32-300e_coco
+    In Collection: RTMDet
+    Config: configs/rtmdet/rtmdet-ins_s_8xb32-300e_coco.py
+    Metadata:
+      Training Memory (GB): 27.6
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 44.0
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 38.7
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_s_8xb32-300e_coco/rtmdet-ins_s_8xb32-300e_coco_20221121_212604-fdc5d7ec.pth
+
+  - Name: rtmdet-ins_m_8xb32-300e_coco
+    In Collection: RTMDet
+    Config: configs/rtmdet/rtmdet-ins_m_8xb32-300e_coco.py
+    Metadata:
+      Training Memory (GB): 42.5
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 48.8
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 42.1
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_m_8xb32-300e_coco/rtmdet-ins_m_8xb32-300e_coco_20221123_001039-6eba602e.pth
+
+  - Name: rtmdet-ins_l_8xb32-300e_coco
+    In Collection: RTMDet
+    Config: configs/rtmdet/rtmdet-ins_l_8xb32-300e_coco.py
+    Metadata:
+      Training Memory (GB): 59.8
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 51.2
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 43.7
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_l_8xb32-300e_coco/rtmdet-ins_l_8xb32-300e_coco_20221124_103237-78d1d652.pth
+
+  - Name: rtmdet-ins_x_8xb16-300e_coco
+    In Collection: RTMDet
+    Config: configs/rtmdet/rtmdet-ins_x_8xb16-300e_coco.py
+    Metadata:
+      Training Memory (GB): 33.7
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 52.4
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 44.6
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_x_8xb16-300e_coco/rtmdet-ins_x_8xb16-300e_coco_20221124_111313-33d4595b.pth
