@@ -6,8 +6,8 @@ from torch import Tensor, nn
 
 from mmdet.registry import MODELS
 from ..layers import SinePositionalEncoding
-from ..layers.transformer import (DabDetrTransformerDecoder,
-                                  DabDetrTransformerEncoder, inverse_sigmoid)
+from ..layers.transformer import (DABDetrTransformerDecoder,
+                                  DABDetrTransformerEncoder, inverse_sigmoid)
 from .detr import DETR
 
 
@@ -44,8 +44,8 @@ class DABDETR(DETR):
         """Initialize layers except for backbone, neck and bbox_head."""
         self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding_cfg)
-        self.encoder = DabDetrTransformerEncoder(**self.encoder)
-        self.decoder = DabDetrTransformerDecoder(**self.decoder)
+        self.encoder = DABDetrTransformerEncoder(**self.encoder)
+        self.decoder = DABDetrTransformerDecoder(**self.decoder)
         self.embed_dims = self.encoder.embed_dims
         self.query_dim = self.decoder.query_dim
         self.query_embedding = nn.Embedding(self.num_queries, self.query_dim)

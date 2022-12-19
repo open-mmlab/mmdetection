@@ -16,7 +16,7 @@ from .utils import (MLP, ConditionalAttention, convert_coordinate_to_encoding,
                     inverse_sigmoid)
 
 
-class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
+class DABDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
     """Implements decoder layer in DAB-DETR transformer."""
 
     def _init_layers(self):
@@ -99,7 +99,7 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
         return query
 
 
-class DabDetrTransformerDecoder(DetrTransformerDecoder):
+class DABDetrTransformerDecoder(DetrTransformerDecoder):
     """Decoder of DAB-DETR.
 
     Args:
@@ -134,7 +134,7 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
         ]
 
         self.layers = ModuleList([
-            DabDetrTransformerDecoderLayer(**self.layer_cfg)
+            DABDetrTransformerDecoderLayer(**self.layer_cfg)
             for _ in range(self.num_layers)
         ])
 
@@ -260,7 +260,7 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
             ]
 
 
-class DabDetrTransformerEncoder(DetrTransformerEncoder):
+class DABDetrTransformerEncoder(DetrTransformerEncoder):
     """Encoder of DAB-DETR."""
 
     def _init_layers(self):
