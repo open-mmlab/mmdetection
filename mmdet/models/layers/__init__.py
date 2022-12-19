@@ -25,7 +25,9 @@ from .transformer import (MLP, CdnQueryGenerator,
                           DeformableDetrTransformerEncoderLayer,
                           DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DetrTransformerEncoder, DetrTransformerEncoderLayer,
-                          DinoTransformerDecoder, DynamicConv, PatchEmbed,
+                          DinoTransformerDecoder, DynamicConv,
+                          Mask2FormerTransformerDecoder,
+                          Mask2FormerTransformerDecoderLayer, PatchEmbed,
                           PatchMerging, inverse_sigmoid, nchw_to_nlc,
                           nlc_to_nchw)
 
@@ -47,5 +49,6 @@ __all__ = [
     'DeformableDetrTransformerDecoderLayer',
     'ConditionalDetrTransformerDecoder',
     'ConditionalDetrTransformerDecoderLayer', 'DinoTransformerDecoder',
-    'CdnQueryGenerator'
+    'CdnQueryGenerator', 'Mask2FormerTransformerDecoderLayer',
+    'Mask2FormerTransformerDecoder'
 ]

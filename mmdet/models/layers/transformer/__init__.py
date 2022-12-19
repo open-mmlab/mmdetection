@@ -9,6 +9,8 @@ from .detr_transformer import (DetrTransformerDecoder,
                                DetrTransformerEncoder,
                                DetrTransformerEncoderLayer)
 from .dino_transformer import CdnQueryGenerator, DinoTransformerDecoder
+from .mask2former_transformer import (Mask2FormerTransformerDecoder,
+                                      Mask2FormerTransformerDecoderLayer)
 from .utils import (MLP, AdaptivePadding, DynamicConv, PatchEmbed,
                     PatchMerging, inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
 
@@ -22,5 +24,6 @@ __all__ = [
     'DeformableDetrTransformerDecoderLayer',
     'ConditionalDetrTransformerDecoder',
     'ConditionalDetrTransformerDecoderLayer', 'DinoTransformerDecoder',
-    'CdnQueryGenerator'
+    'CdnQueryGenerator', 'Mask2FormerTransformerDecoderLayer',
+    'Mask2FormerTransformerDecoder'
 ]
