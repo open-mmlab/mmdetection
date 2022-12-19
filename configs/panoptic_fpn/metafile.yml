@@ -80,4 +80,4 @@ Models:
       Dataset: COCO
       Metrics:
         PQ: 42.5
-    Weights: weights
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/panoptic_fpn_r2_50_fpn_fp16_1x_coco/panoptic_fpn_r2_50_fpn_fp16_1x_coco-fa6c51f0.pth

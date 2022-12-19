@@ -34,7 +34,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 44.3
-    Weights: weights
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_search_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k/rfnext_search_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k-f47db42b.pth
     Paper:
       URL: https://arxiv.org/pdf/2206.06637.pdf
       Title: 'RF-Next: Efficient Receptive Field Search for CNN'
@@ -58,7 +58,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 44.0
-    Weights: weights
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_fixed_single_branch_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k/rfnext_fixed_single_branch_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k-71aeb991.pth
     Paper:
       URL: https://arxiv.org/pdf/2206.06637.pdf
       Title: 'RF-Next: Efficient Receptive Field Search for CNN'
@@ -82,7 +82,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 38.2
-    Weights: weights
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_search_cascade_mask_rcnn_hrnetv2p_w18_20e_coco/rfnext_search_cascade_mask_rcnn_hrnetv2p_w18_20e_coco-7b9c7885.pth
     Paper:
       URL: https://arxiv.org/pdf/2206.06637.pdf
       Title: 'RF-Next: Efficient Receptive Field Search for CNN'
@@ -106,7 +106,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 37.6
-    Weights: weights
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_fixed_single_branch_cascade_mask_rcnn_hrnetv2p_w18_20e_coco/rfnext_fixed_single_branch_cascade_mask_rcnn_hrnetv2p_w18_20e_coco-682f121d.pth
     Paper:
       URL: https://arxiv.org/pdf/2206.06637.pdf
       Title: 'RF-Next: Efficient Receptive Field Search for CNN'
@@ -130,7 +130,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 41.5
-    Weights: weights
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_search_cascade_mask_rcnn_r2_101_fpn_20e_coco/rfnext_search_cascade_mask_rcnn_r2_101_fpn_20e_coco-e17510a0.pth
     Paper:
       URL: https://arxiv.org/pdf/2206.06637.pdf
       Title: 'RF-Next: Efficient Receptive Field Search for CNN'
@@ -154,7 +154,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 40.7
-    Weights: weights
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_fixed_single_branch_cascade_mask_rcnn_r2_101_fpn_20e_coco/rfnext_fixed_single_branch_cascade_mask_rcnn_r2_101_fpn_20e_coco-e22d5257.pth
     Paper:
       URL: https://arxiv.org/pdf/2206.06637.pdf
       Title: 'RF-Next: Efficient Receptive Field Search for CNN'
@@ -178,7 +178,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 37.1
-    Weights: weights
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_search_mask_rcnn_pvtv2-b0_fpn_1x_coco/rfnext_search_mask_rcnn_pvtv2-b0_fpn_1x_coco-dc8fd5de.pth
     Paper:
       URL: https://arxiv.org/pdf/2206.06637.pdf
       Title: 'RF-Next: Efficient Receptive Field Search for CNN'
@@ -202,7 +202,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 36.8
-    Weights: weights
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_fixed_single_branch_mask_rcnn_pvtv2-b0_fpn_1x_coco/rfnext_fixed_single_branch_mask_rcnn_pvtv2-b0_fpn_1x_coco-7b25d72e.pth
     Paper:
       URL: https://arxiv.org/pdf/2206.06637.pdf
       Title: 'RF-Next: Efficient Receptive Field Search for CNN'
@@ -222,7 +222,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 44.3
-    Weights: weights
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_search_panoptic_fpn_r2_50_fpn_fp16_1x_coco/rfnext_search_panoptic_fpn_r2_50_fpn_fp16_1x_coco-34a893a0.pth
     Paper:
       URL: https://arxiv.org/pdf/2206.06637.pdf
       Title: 'RF-Next: Efficient Receptive Field Search for CNN'
@@ -242,7 +242,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 44.0
-    Weights: weights
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_fixed_single_branch_panoptic_fpn_r2_50_fpn_fp16_1x_coco/rfnext_fixed_single_branch_panoptic_fpn_r2_50_fpn_fp16_1x_coco-52181d5b.pth
     Paper:
       URL: https://arxiv.org/pdf/2206.06637.pdf
       Title: 'RF-Next: Efficient Receptive Field Search for CNN'
