@@ -16,6 +16,26 @@ INF = 100000000
 EPS = 1.0e-7
 
 
+def center_of_mass(masks: Tensor, eps: float = 1e-7) -> Tensor:
+    """Compute the masks center of mass.
+
+    Args:
+        masks: Mask tensor, has shape (num_masks, H, W).
+        eps: a small number to avoid normalizer to be zero.
+            Defaults to 1e-7.
+    Returns:
+        Tensor: The masks center of mass. Has shape (num_masks, 2).
+    """
+    n, h, w = masks.shape
+    grid_h = torch.arange(h, device=masks.device)[:, None]
+    grid_w = torch.arange(w, device=masks.device)
+    normalizer = masks.sum(dim=(1, 2)).float().clamp(min=eps)
+    center_y = (masks * grid_h).sum(dim=(1, 2)) / normalizer
+    center_x = (masks * grid_w).sum(dim=(1, 2)) / normalizer
+    center = torch.cat([center_x[:, None], center_y[:, None]], dim=1)
+    return center
+
+
 @TASK_UTILS.register_module()
 class DynamicSoftLabelAssigner(BaseAssigner):
     """Computes matching between predictions and ground truth with dynamic soft
@@ -118,7 +138,9 @@ class DynamicSoftLabelAssigner(BaseAssigner):
                                                       dtype=torch.long)
             return AssignResult(
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
-        if isinstance(gt_bboxes, BaseBoxes):
+        if hasattr(gt_instances, 'masks'):
+            gt_center = center_of_mass(gt_instances.masks, eps=EPS)
+        elif isinstance(gt_bboxes, BaseBoxes):
             gt_center = gt_bboxes.centers
         else:
             # Tensor boxes will be treated as horizontal boxes by defaults

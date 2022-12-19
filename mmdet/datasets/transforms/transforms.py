@@ -3244,6 +3244,9 @@ class CachedMosaic(Mosaic):
         mosaic_bboxes = []
         mosaic_bboxes_labels = []
         mosaic_ignore_flags = []
+        mosaic_masks = []
+        with_mask = True if 'gt_masks' in results else False
+
         if len(results['img'].shape) == 3:
             mosaic_img = np.full(
                 (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2), 3),
@@ -3298,6 +3301,20 @@ class CachedMosaic(Mosaic):
             mosaic_bboxes.append(gt_bboxes_i)
             mosaic_bboxes_labels.append(gt_bboxes_labels_i)
             mosaic_ignore_flags.append(gt_ignore_flags_i)
+            if with_mask and results_patch.get('gt_masks', None) is not None:
+                gt_masks_i = results_patch['gt_masks']
+                gt_masks_i = gt_masks_i.rescale(float(scale_ratio_i))
+                gt_masks_i = gt_masks_i.translate(
+                    out_shape=(int(self.img_scale[0] * 2),
+                               int(self.img_scale[1] * 2)),
+                    offset=padw,
+                    direction='horizontal')
+                gt_masks_i = gt_masks_i.translate(
+                    out_shape=(int(self.img_scale[0] * 2),
+                               int(self.img_scale[1] * 2)),
+                    offset=padh,
+                    direction='vertical')
+                mosaic_masks.append(gt_masks_i)
 
         mosaic_bboxes = mosaic_bboxes[0].cat(mosaic_bboxes, 0)
         mosaic_bboxes_labels = np.concatenate(mosaic_bboxes_labels, 0)
@@ -3317,6 +3334,10 @@ class CachedMosaic(Mosaic):
         results['gt_bboxes'] = mosaic_bboxes
         results['gt_bboxes_labels'] = mosaic_bboxes_labels
         results['gt_ignore_flags'] = mosaic_ignore_flags
+
+        if with_mask:
+            mosaic_masks = mosaic_masks[0].cat(mosaic_masks)
+            results['gt_masks'] = mosaic_masks[inside_inds]
         return results
 
     def __repr__(self):
@@ -3481,6 +3502,7 @@ class CachedMixUp(BaseTransform):
             return results
 
         retrieve_img = retrieve_results['img']
+        with_mask = True if 'gt_masks' in results else False
 
         jit_factor = random.uniform(*self.ratio_range)
         is_filp = random.uniform(0, 1) > self.flip_ratio
@@ -3532,16 +3554,32 @@ class CachedMixUp(BaseTransform):
         # 6. adjust bbox
         retrieve_gt_bboxes = retrieve_results['gt_bboxes']
         retrieve_gt_bboxes.rescale_([scale_ratio, scale_ratio])
+        if with_mask:
+            retrieve_gt_masks = retrieve_results['gt_masks'].rescale(
+                scale_ratio)
+
         if self.bbox_clip_border:
             retrieve_gt_bboxes.clip_([origin_h, origin_w])
 
         if is_filp:
             retrieve_gt_bboxes.flip_([origin_h, origin_w],
                                      direction='horizontal')
+            if with_mask:
+                retrieve_gt_masks = retrieve_gt_masks.flip()
 
         # 7. filter
         cp_retrieve_gt_bboxes = retrieve_gt_bboxes.clone()
         cp_retrieve_gt_bboxes.translate_([-x_offset, -y_offset])
+        if with_mask:
+            retrieve_gt_masks = retrieve_gt_masks.translate(
+                out_shape=(target_h, target_w),
+                offset=-x_offset,
+                direction='horizontal')
+            retrieve_gt_masks = retrieve_gt_masks.translate(
+                out_shape=(target_h, target_w),
+                offset=-y_offset,
+                direction='vertical')
+
         if self.bbox_clip_border:
             cp_retrieve_gt_bboxes.clip_([target_h, target_w])
 
@@ -3558,19 +3596,25 @@ class CachedMixUp(BaseTransform):
             (results['gt_bboxes_labels'], retrieve_gt_bboxes_labels), axis=0)
         mixup_gt_ignore_flags = np.concatenate(
             (results['gt_ignore_flags'], retrieve_gt_ignore_flags), axis=0)
+        if with_mask:
+            mixup_gt_masks = retrieve_gt_masks.cat(
+                [results['gt_masks'], retrieve_gt_masks])
 
         # remove outside bbox
         inside_inds = mixup_gt_bboxes.is_inside([target_h, target_w]).numpy()
         mixup_gt_bboxes = mixup_gt_bboxes[inside_inds]
         mixup_gt_bboxes_labels = mixup_gt_bboxes_labels[inside_inds]
         mixup_gt_ignore_flags = mixup_gt_ignore_flags[inside_inds]
+        if with_mask:
+            mixup_gt_masks = mixup_gt_masks[inside_inds]
 
         results['img'] = mixup_img.astype(np.uint8)
         results['img_shape'] = mixup_img.shape
         results['gt_bboxes'] = mixup_gt_bboxes
         results['gt_bboxes_labels'] = mixup_gt_bboxes_labels
         results['gt_ignore_flags'] = mixup_gt_ignore_flags
-
+        if with_mask:
+            results['gt_masks'] = mixup_gt_masks
         return results
 
     def __repr__(self):

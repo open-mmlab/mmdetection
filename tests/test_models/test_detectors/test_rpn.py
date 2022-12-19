@@ -23,15 +23,15 @@ class TestRPN(TestCase):
         model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
-        from mmdet.models import build_detector
-        detector = build_detector(model)
+        from mmdet.registry import MODELS
+        detector = MODELS.build(model)
         self.assertTrue(detector.backbone)
         self.assertTrue(detector.neck)
         self.assertTrue(detector.bbox_head)
 
         # if rpn.num_classes > 1, force set rpn.num_classes = 1
         model.rpn_head.num_classes = 2
-        detector = build_detector(model)
+        detector = MODELS.build(model)
         self.assertEqual(detector.bbox_head.num_classes, 1)
 
     @parameterized.expand([('rpn/rpn_r50_fpn_1x_coco.py', ('cpu', 'cuda'))])
@@ -42,11 +42,11 @@ class TestRPN(TestCase):
         model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
-        from mmdet.models import build_detector
+        from mmdet.registry import MODELS
         assert all([device in ['cpu', 'cuda'] for device in devices])
 
         for device in devices:
-            detector = build_detector(model)
+            detector = MODELS.build(model)
 
             if device == 'cuda':
                 if not torch.cuda.is_available():
@@ -67,11 +67,11 @@ class TestRPN(TestCase):
         model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
-        from mmdet.models import build_detector
+        from mmdet.registry import MODELS
         assert all([device in ['cpu', 'cuda'] for device in devices])
 
         for device in devices:
-            detector = build_detector(model)
+            detector = MODELS.build(model)
 
             if device == 'cuda':
                 if not torch.cuda.is_available():
@@ -95,11 +95,11 @@ class TestRPN(TestCase):
         model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
-        from mmdet.models import build_detector
+        from mmdet.registry import MODELS
         assert all([device in ['cpu', 'cuda'] for device in devices])
 
         for device in devices:
-            detector = build_detector(model)
+            detector = MODELS.build(model)
 
             if device == 'cuda':
                 if not torch.cuda.is_available():

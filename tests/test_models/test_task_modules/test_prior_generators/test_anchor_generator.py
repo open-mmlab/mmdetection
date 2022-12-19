@@ -550,7 +550,7 @@ def test_yolo_anchor_generator():
 
 
 def test_retina_anchor():
-    from mmdet.models import build_head
+    from mmdet.registry import MODELS
     if torch.cuda.is_available():
         device = 'cuda'
     else:
@@ -576,7 +576,7 @@ def test_retina_anchor():
             target_means=[.0, .0, .0, .0],
             target_stds=[1.0, 1.0, 1.0, 1.0]))
 
-    retina_head = build_head(bbox_head)
+    retina_head = MODELS.build(bbox_head)
     assert retina_head.anchor_generator is not None
 
     # use the featmap sizes in NASFPN setting to test retina head
@@ -649,7 +649,7 @@ def test_retina_anchor():
 
 
 def test_guided_anchor():
-    from mmdet.models import build_head
+    from mmdet.registry import MODELS
     if torch.cuda.is_available():
         device = 'cuda'
     else:
@@ -674,7 +674,7 @@ def test_guided_anchor():
             scales=[4],
             strides=[8, 16, 32, 64, 128]))
 
-    ga_retina_head = build_head(bbox_head)
+    ga_retina_head = MODELS.build(bbox_head)
     assert ga_retina_head.approx_anchor_generator is not None
 
     # use the featmap sizes in NASFPN setting to test ga_retina_head

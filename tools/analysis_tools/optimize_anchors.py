@@ -29,7 +29,7 @@ from mmengine.logging import MMLogger
 from mmengine.utils import ProgressBar
 from scipy.optimize import differential_evolution
 
-from mmdet.datasets import build_dataset
+from mmdet.registry import DATASETS
 from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_overlaps,
                                    bbox_xyxy_to_cxcywh)
 from mmdet.utils import (register_all_modules, replace_cfg_vals,
@@ -350,7 +350,7 @@ def main():
     train_data_cfg = cfg.train_dataloader
     while 'dataset' in train_data_cfg:
         train_data_cfg = train_data_cfg['dataset']
-    dataset = build_dataset(train_data_cfg)
+    dataset = DATASETS.build(train_data_cfg)
 
     if args.algorithm == 'k-means':
         optimizer = YOLOKMeansAnchorOptimizer(
