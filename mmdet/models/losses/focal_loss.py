@@ -72,6 +72,7 @@ def py_focal_loss_with_prob(pred,
         pred (torch.Tensor): The prediction probability with shape (N, C),
             C is the number of classes.
         target (torch.Tensor): The learning label of the prediction.
+            The target shape support (N,C) or (N,), (N,C) means one-hot form.
         weight (torch.Tensor, optional): Sample-wise loss weight.
         gamma (float, optional): The gamma for calculating the modulating
             factor. Defaults to 2.0.
@@ -82,9 +83,10 @@ def py_focal_loss_with_prob(pred,
         avg_factor (int, optional): Average factor that is used to average
             the loss. Defaults to None.
     """
-    num_classes = pred.size(1)
-    target = F.one_hot(target, num_classes=num_classes + 1)
-    target = target[:, :num_classes]
+    if pred.dim() != target.dim():
+        num_classes = pred.size(1)
+        target = F.one_hot(target, num_classes=num_classes + 1)
+        target = target[:, :num_classes]
 
     target = target.type_as(pred)
     pt = (1 - pred) * target + pred * (1 - target)
@@ -204,6 +206,8 @@ class FocalLoss(nn.Module):
         Args:
             pred (torch.Tensor): The prediction.
             target (torch.Tensor): The learning label of the prediction.
+                The target shape support (N,C) or (N,), (N,C) means
+                one-hot form.
             weight (torch.Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
@@ -222,7 +226,10 @@ class FocalLoss(nn.Module):
             if self.activated:
                 calculate_loss_func = py_focal_loss_with_prob
             else:
-                if torch.cuda.is_available() and pred.is_cuda:
+                if pred.dim() == target.dim():
+                    # this means that target is already in One-Hot form.
+                    calculate_loss_func = py_sigmoid_focal_loss
+                elif torch.cuda.is_available() and pred.is_cuda:
                     calculate_loss_func = sigmoid_focal_loss
                 else:
                     num_classes = pred.size(1)

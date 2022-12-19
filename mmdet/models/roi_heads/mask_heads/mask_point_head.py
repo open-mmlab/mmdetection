@@ -11,7 +11,6 @@ from mmengine.model import BaseModule
 from mmengine.structures import InstanceData
 from torch import Tensor
 
-from mmdet.models.builder import build_loss
 from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.models.utils import (get_uncertain_point_coords_with_randomness,
                                 get_uncertainty)
@@ -73,7 +72,7 @@ class MaskPointHead(BaseModule):
         self.coarse_pred_each_layer = coarse_pred_each_layer
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        self.loss_point = build_loss(loss_point)
+        self.loss_point = MODELS.build(loss_point)
 
         fc_in_channels = in_channels + num_classes
         self.fcs = nn.ModuleList()

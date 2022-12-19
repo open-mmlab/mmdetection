@@ -18,7 +18,7 @@ model = dict(
         widen_factor=1,
         channel_attention=True,
         norm_cfg=dict(type='SyncBN'),
-        act_cfg=dict(type='SiLU')),
+        act_cfg=dict(type='SiLU', inplace=True)),
     neck=dict(
         type='CSPNeXtPAFPN',
         in_channels=[256, 512, 1024],
@@ -26,7 +26,7 @@ model = dict(
         num_csp_blocks=3,
         expand_ratio=0.5,
         norm_cfg=dict(type='SyncBN'),
-        act_cfg=dict(type='SiLU')),
+        act_cfg=dict(type='SiLU', inplace=True)),
     bbox_head=dict(
         type='RTMDetSepBNHead',
         num_classes=80,
@@ -47,18 +47,18 @@ model = dict(
         share_conv=True,
         pred_kernel_size=1,
         norm_cfg=dict(type='SyncBN'),
-        act_cfg=dict(type='SiLU')),
+        act_cfg=dict(type='SiLU', inplace=True)),
     train_cfg=dict(
         assigner=dict(type='DynamicSoftLabelAssigner', topk=13),
         allowed_border=-1,
         pos_weight=-1,
         debug=False),
     test_cfg=dict(
-        nms_pre=1000,
+        nms_pre=30000,
         min_bbox_size=0,
-        score_thr=0.05,
-        nms=dict(type='nms', iou_threshold=0.6),
-        max_per_img=100),
+        score_thr=0.001,
+        nms=dict(type='nms', iou_threshold=0.65),
+        max_per_img=300),
 )
 
 train_pipeline = [
@@ -133,6 +133,9 @@ train_cfg = dict(
     max_epochs=max_epochs,
     val_interval=interval,
     dynamic_intervals=[(max_epochs - stage2_num_epochs, 1)])
+
+val_evaluator = dict(proposal_nums=(100, 1, 10))
+test_evaluator = val_evaluator
 
 # optimizer
 optim_wrapper = dict(

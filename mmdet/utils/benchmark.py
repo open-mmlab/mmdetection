@@ -18,8 +18,7 @@ from mmengine.runner import Runner, load_checkpoint
 from mmengine.utils.dl_utils import set_multi_processing
 from torch.nn.parallel import DistributedDataParallel
 
-from mmdet.models import build_detector
-from mmdet.registry import DATASETS
+from mmdet.registry import DATASETS, MODELS
 
 try:
     import psutil
@@ -178,7 +177,7 @@ class InferenceBenchmark(BaseBenchmark):
 
     def _init_model(self, checkpoint: str, is_fuse_conv_bn: bool) -> nn.Module:
         """Initialize the model."""
-        model = build_detector(self.cfg.model)
+        model = MODELS.build(self.cfg.model)
         # TODO need update
         # fp16_cfg = self.cfg.get('fp16', None)
         # if fp16_cfg is not None:
