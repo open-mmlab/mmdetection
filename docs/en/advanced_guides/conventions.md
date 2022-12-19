@@ -4,7 +4,22 @@ Please check the following conventions if you would like to modify MMDetection a
 
 ## Image pipeline input shape
 
-The image pipeline input shape is `(weight, height)`, and the shape of the pipeline output is `(height, weight)` in OpenMMLab 2.0.
+In OpenMMLab 2.0, the image pipeline input shape is `(width, height)`, the shape of the pipeline output is `(height, width)` and the shape is also always `(height, width)` in model.
+
+As an example, the initialization parameters of `Mosaic` are as follows:
+
+```python
+@TRANSFORMS.register_module()
+class Mosaic(BaseTransform):
+   def __init__(self,
+                # The shape order should be (width, height)
+                img_scale: Tuple[int, int] = (640, 640),
+                center_ratio_range: Tuple[float, float] = (0.5, 1.5),
+                bbox_clip_border: bool = True,
+                pad_val: float = 114.0,
+                prob: float = 1.0) -> None:
+        pass
+```
 
 ## Loss
 

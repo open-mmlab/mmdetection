@@ -4,7 +4,22 @@
 
 ## 图片 pipeline 输入 shape
 
-在 OpenMMLab 2.0 中图片处理 pipeline 输入参数中关于 shape 值都是 `(weight, height)`, pipeline 输出的 shape 值都是 `(height, weight)`.
+在 OpenMMLab 2.0 中图片处理 pipeline 输入参数中关于 shape 值都是 `(width, height)`, pipeline 输出的 shape 值都是 `(height, width)`, 在模型中 shape 始终是  `(height, width)`.
+
+以 `Mosaic` 为例，其初始化参数如下所示：
+
+```python
+@TRANSFORMS.register_module()
+class Mosaic(BaseTransform):
+   def __init__(self,
+                # 图片输入 shape 顺序为 (width, height)
+                img_scale: Tuple[int, int] = (640, 640),
+                center_ratio_range: Tuple[float, float] = (0.5, 1.5),
+                bbox_clip_border: bool = True,
+                pad_val: float = 114.0,
+                prob: float = 1.0) -> None:
+        pass
+```
 
 ## 损失
 
