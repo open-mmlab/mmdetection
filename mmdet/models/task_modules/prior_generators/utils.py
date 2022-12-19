@@ -52,8 +52,8 @@ def calc_region(bbox: Tensor,
     Args:
         bbox (Tensor): Bboxes to calculate regions, shape (n, 4).
         ratio (float): Ratio of the output region.
-        featmap_size (tuple, Optional): Feature map size used for
-            clipping the boundary. Defaults to None.
+        featmap_size (tuple, Optional): Feature map size in (height, width)
+            order used for clipping the boundary. Defaults to None.
 
     Returns:
         tuple: x1, y1, x2, y2

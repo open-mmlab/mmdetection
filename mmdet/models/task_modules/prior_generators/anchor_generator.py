@@ -370,7 +370,7 @@ class AnchorGenerator:
     def single_level_grid_anchors(self,
                                   base_anchors: Tensor,
                                   featmap_size: Tuple[int, int],
-                                  stride: Optional[Tuple[int]] = (16, 16),
+                                  stride: Tuple[int, int] = (16, 16),
                                   device: DeviceType = 'cuda') -> Tensor:
         """Generate grid anchors of a single level.
 
@@ -380,7 +380,7 @@ class AnchorGenerator:
         Args:
             base_anchors (torch.Tensor): The base anchors of a feature grid.
             featmap_size (tuple[int]): Size of the feature maps.
-            stride (tuple[int], optional): Stride of the feature map in order
+            stride (tuple[int, int]): Stride of the feature map in order
                 (w, h). Defaults to (16, 16).
             device (str | torch.device): Device the tensor will be put on.
                 Defaults to 'cuda'.
