@@ -23,7 +23,7 @@ class Mosaic(BaseTransform):
                 pad_val: float = 114.0,
                 prob: float = 1.0) -> None:
        ...
-       
+
        # img_scale order should be (width, height)
        self.img_scale = img_scale
 
