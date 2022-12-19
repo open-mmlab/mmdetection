@@ -14,6 +14,7 @@ from .d2_wrapper import Detectron2Wrapper
 from .ddod import DDOD
 from .deformable_detr import DeformableDETR
 from .detr import DETR
+from .dino import DINO
 from .fast_rcnn import FastRCNN
 from .faster_rcnn import FasterRCNN
 from .fcos import FCOS
@@ -65,5 +66,5 @@ __all__ = [
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
     'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector', 'SoftTeacher',
     'RTMDet', 'Detectron2Wrapper', 'CrowdDet', 'CondInst', 'BoxInst',
-    'DetectionTransformer', 'ConditionalDETR'
+    'DetectionTransformer', 'ConditionalDETR', 'DINO'
 ]
