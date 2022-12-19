@@ -5,13 +5,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Conv2d, ConvModule
-from mmcv.cnn.bricks.transformer import (build_positional_encoding,
-                                         build_transformer_layer_sequence)
 from mmengine.model import BaseModule, ModuleList, caffe2_xavier_init
 from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, OptMultiConfig
+from .transformer import DetrTransformerEncoder
+from .positional_encoding import SinePositionalEncoding
 
 
 @MODELS.register_module()
@@ -134,12 +134,11 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
             Defaults to dict(type='GN', num_groups=32).
         act_cfg (:obj:`ConfigDict` or dict): Config for activation.
             Defaults to dict(type='ReLU').
-        encoder (:obj:`ConfigDict` or dict): Config for transorformer
-            encoder. Defaults to None.
-        positional_encoding (:obj:`ConfigDict` or dict): Config for
+        encoder (:obj:`ConfigDict` or dict): Config for transformer encoder.
+            Defaults to None.
+        positional_encoding_cfg (:obj:`ConfigDict` or dict): Config for
             transformer encoder position encoding. Defaults to
-            dict(type='SinePositionalEncoding', num_feats=128,
-            normalize=True).
+            dict(num_feats=128, normalize=True).
         init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
             dict], optional): Initialization config dict. Defaults to None.
     """
@@ -151,8 +150,7 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
                  norm_cfg: ConfigType = dict(type='GN', num_groups=32),
                  act_cfg: ConfigType = dict(type='ReLU'),
                  encoder: ConfigType = None,
-                 positional_encoding: ConfigType = dict(
-                     type='SinePositionalEncoding',
+                 positional_encoding_cfg: ConfigType = dict(
                      num_feats=128,
                      normalize=True),
                  init_cfg: OptMultiConfig = None) -> None:
@@ -165,13 +163,13 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
             init_cfg=init_cfg)
         self.last_feat_conv = None
 
-        self.encoder = build_transformer_layer_sequence(encoder)
+        self.encoder = DetrTransformerEncoder(**encoder)
         self.encoder_embed_dims = self.encoder.embed_dims
         assert self.encoder_embed_dims == feat_channels, 'embed_dims({}) of ' \
             'tranformer encoder must equal to feat_channels({})'.format(
                 feat_channels, self.encoder_embed_dims)
-        self.positional_encoding = build_positional_encoding(
-            positional_encoding)
+        self.positional_encoding = SinePositionalEncoding(
+            **positional_encoding_cfg)
         self.encoder_in_proj = Conv2d(
             in_channels[-1], feat_channels, kernel_size=1)
         self.encoder_out_proj = ConvModule(

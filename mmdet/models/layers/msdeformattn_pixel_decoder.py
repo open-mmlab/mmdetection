@@ -5,15 +5,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Conv2d, ConvModule
-from mmcv.cnn.bricks.transformer import (MultiScaleDeformableAttention,
-                                         build_positional_encoding,
-                                         build_transformer_layer_sequence)
+from mmcv.cnn.bricks.transformer import MultiScaleDeformableAttention
 from mmengine.model import (BaseModule, ModuleList, caffe2_xavier_init,
                             normal_init, xavier_init)
 from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, OptMultiConfig
+from .transformer import DeformableDetrTransformerEncoder
+from .positional_encoding import SinePositionalEncoding
 from ..task_modules.prior_generators import MlvlPointGenerator
 
 
@@ -34,11 +34,10 @@ class MSDeformAttnPixelDecoder(BaseModule):
         act_cfg (:obj:`ConfigDict` or dict): Config for activation.
             Defaults to dict(type='ReLU').
         encoder (:obj:`ConfigDict` or dict): Config for transformer
-            encoder. Defaults to `DetrTransformerEncoder`.
-        positional_encoding (:obj:`ConfigDict` or dict): Config for
+            encoder. Defaults to None.
+        positional_encoding_cfg (:obj:`ConfigDict` or dict): Config for
             transformer encoder position encoding. Defaults to
-            dict(type='SinePositionalEncoding', num_feats=128,
-            normalize=True).
+            dict(num_feats=128, normalize=True).
         init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
             dict], optional): Initialization config dict. Defaults to None.
     """
@@ -52,36 +51,15 @@ class MSDeformAttnPixelDecoder(BaseModule):
                  num_outs: int = 3,
                  norm_cfg: ConfigType = dict(type='GN', num_groups=32),
                  act_cfg: ConfigType = dict(type='ReLU'),
-                 encoder: ConfigType = dict(
-                     type='DetrTransformerEncoder',
-                     num_layers=6,
-                     transformerlayers=dict(
-                         type='BaseTransformerLayer',
-                         attn_cfgs=dict(
-                             type='MultiScaleDeformableAttention',
-                             embed_dims=256,
-                             num_heads=8,
-                             num_levels=3,
-                             num_points=4,
-                             im2col_step=64,
-                             dropout=0.0,
-                             batch_first=False,
-                             norm_cfg=None,
-                             init_cfg=None),
-                         feedforward_channels=1024,
-                         ffn_dropout=0.0,
-                         operation_order=('self_attn', 'norm', 'ffn', 'norm')),
-                     init_cfg=None),
-                 positional_encoding: ConfigType = dict(
-                     type='SinePositionalEncoding',
-                     num_feats=128,
-                     normalize=True),
+                 encoder: ConfigType = None,
+                 positional_encoding_cfg: ConfigType = dict(
+                     num_feats=128, normalize=True),
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         self.strides = strides
         self.num_input_levels = len(in_channels)
         self.num_encoder_levels = \
-            encoder.transformerlayers.attn_cfgs.num_levels
+            encoder.layer_cfg.self_attn_cfg.num_levels
         assert self.num_encoder_levels >= 1, \
             'num_levels in attn_cfgs must be at least one'
         input_conv_list = []
@@ -99,9 +77,9 @@ class MSDeformAttnPixelDecoder(BaseModule):
             input_conv_list.append(input_conv)
         self.input_convs = ModuleList(input_conv_list)
 
-        self.encoder = build_transformer_layer_sequence(encoder)
-        self.postional_encoding = build_positional_encoding(
-            positional_encoding)
+        self.encoder = DeformableDetrTransformerEncoder(**encoder)  # TODO: Notice reference_point
+        self.postional_encoding = SinePositionalEncoding(
+            **positional_encoding_cfg)
         # high resolution to low resolution
         self.level_encoding = nn.Embedding(self.num_encoder_levels,
                                            feat_channels)
@@ -137,7 +115,7 @@ class MSDeformAttnPixelDecoder(BaseModule):
             feat_channels, out_channels, kernel_size=1, stride=1, padding=0)
 
         self.num_outs = num_outs
-        self.point_generator = MlvlPointGenerator(strides)
+        self.point_generator = MlvlPointGenerator(strides)  # TODO
 
     def init_weights(self) -> None:
         """Initialize weights."""

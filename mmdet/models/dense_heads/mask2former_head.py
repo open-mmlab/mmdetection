@@ -14,9 +14,10 @@ from torch import Tensor
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures import SampleList
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig, reduce_mean
-from ..utils import get_uncertain_point_coords_with_randomness
 from .anchor_free_head import AnchorFreeHead
 from .maskformer_head import MaskFormerHead
+from ..utils import get_uncertain_point_coords_with_randomness
+from ..layers import Mask2FormerTransformerDecoder, SinePositionalEncoding
 
 
 @MODELS.register_module()
@@ -41,8 +42,9 @@ class Mask2FormerHead(MaskFormerHead):
             Defaults to False.
         transformer_decoder (:obj:`ConfigDict` or dict): Config for
             transformer decoder. Defaults to None.
-        positional_encoding (:obj:`ConfigDict` or dict): Config for
-            transformer decoder position encoding. Defaults to None.
+        positional_encoding_cfg (:obj:`ConfigDict` or dict): Config for
+            transformer decoder position encoding. Defaults to
+            dict(num_feats=128, normalize=True).
         loss_cls (:obj:`ConfigDict` or dict): Config of the classification
             loss. Defaults to None.
         loss_mask (:obj:`ConfigDict` or dict): Config of the mask loss.
@@ -68,8 +70,7 @@ class Mask2FormerHead(MaskFormerHead):
                  pixel_decoder: ConfigType = ...,
                  enforce_decoder_input_project: bool = False,
                  transformer_decoder: ConfigType = ...,
-                 positional_encoding: ConfigType = dict(
-                     type='SinePositionalEncoding',
+                 positional_encoding_cfg: ConfigType = dict(
                      num_feats=128,
                      normalize=True),
                  loss_cls: ConfigType = dict(
@@ -101,18 +102,18 @@ class Mask2FormerHead(MaskFormerHead):
         self.num_classes = self.num_things_classes + self.num_stuff_classes
         self.num_queries = num_queries
         self.num_transformer_feat_level = num_transformer_feat_level
-        self.num_heads = transformer_decoder.transformerlayers. \
-            attn_cfgs.num_heads
+        self.num_heads = transformer_decoder.layer_cfg.cross_attn_cfg.num_heads
         self.num_transformer_decoder_layers = transformer_decoder.num_layers
-        assert pixel_decoder.encoder.transformerlayers. \
-            attn_cfgs.num_levels == num_transformer_feat_level
+        assert pixel_decoder.encoder.layer_cfg. \
+            self_attn_cfg.num_levels == num_transformer_feat_level
         pixel_decoder_ = copy.deepcopy(pixel_decoder)
         pixel_decoder_.update(
             in_channels=in_channels,
             feat_channels=feat_channels,
             out_channels=out_channels)
         self.pixel_decoder = MODELS.build(pixel_decoder_)
-        self.transformer_decoder = MODELS.build(transformer_decoder)
+        self.transformer_decoder = Mask2FormerTransformerDecoder(
+            **transformer_decoder)
         self.decoder_embed_dims = self.transformer_decoder.embed_dims
 
         self.decoder_input_projs = ModuleList()
@@ -125,7 +126,8 @@ class Mask2FormerHead(MaskFormerHead):
                         feat_channels, self.decoder_embed_dims, kernel_size=1))
             else:
                 self.decoder_input_projs.append(nn.Identity())
-        self.decoder_positional_encoding = MODELS.build(positional_encoding)
+        self.decoder_positional_encoding = SinePositionalEncoding(
+            **positional_encoding_cfg)
         self.query_embed = nn.Embedding(self.num_queries, feat_channels)
         self.query_feat = nn.Embedding(self.num_queries, feat_channels)
         # from low resolution to high resolution
