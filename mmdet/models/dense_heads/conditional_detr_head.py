@@ -40,7 +40,7 @@ class ConditionalDETRHead(DETRHead):
                 (num_decoder_layers, bs, num_queries, dim), else has shape (1,
                 bs, num_queries, dim) which only contains the last layer
                 outputs.
-            references (Tensor): References from transformer decoder,has
+            references (Tensor): References from transformer decoder, has
                 shape (bs, num_query, 2).
         Returns:
             tuple[Tensor]: results of head containing the following tensor.
