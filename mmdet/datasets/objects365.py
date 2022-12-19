@@ -96,7 +96,7 @@ class Objects365V1Dataset(CocoDataset):
         """
 
         self.coco = COCO(ann_file)
-        # 'categories' list in objects365_train.json an objects365_val.
+        # 'categories' list in objects365_train.json and objects365_val.
         # json is inconsistent, need sorted list(or dict) before get cat_ids.
         cats = self.coco.cats
         sorted_cats = {i: cats[i] for i in sorted(cats)}
@@ -216,11 +216,11 @@ class Objects365V2Dataset(CocoDataset):
         total_ann_ids = []
         for i in self.img_ids:
             info = self.coco.load_imgs([i])[0]
-            info['patch_name'] = osp.join(
+            file_name = osp.join(
                 osp.split(osp.split(info['file_name'])[0])[-1],
                 osp.split(info['file_name'])[-1])
-            info['file_name'] = osp.split(info['file_name'])[-1]
-            if info['patch_name'] in objv2_ignore_list:
+            info['file_name'] = file_name
+            if info['file_name'] in objv2_ignore_list:
                 continue
             info['filename'] = info['file_name']
             data_infos.append(info)
@@ -229,44 +229,3 @@ class Objects365V2Dataset(CocoDataset):
         assert len(set(total_ann_ids)) == len(
             total_ann_ids), f"Annotation ids in '{ann_file}' are not unique!"
         return data_infos
-
-    def prepare_train_img(self, idx):
-        """Get training data and annotations after pipeline.
-
-        Args:
-            idx (int): Index of data.
-
-        Returns:
-            dict: Training data and annotation after pipeline with new keys \
-                introduced by pipeline.
-        """
-
-        img_info = self.data_infos[idx]
-        assert img_info.get('patch_name', None) is not None
-        img_info['file_name'] = img_info['patch_name']
-        img_info['filename'] = img_info['patch_name']
-
-        ann_info = self.get_ann_info(idx)
-        results = dict(img_info=img_info, ann_info=ann_info)
-        if self.proposals is not None:
-            results['proposals'] = self.proposals[idx]
-        self.pre_pipeline(results)
-        return self.pipeline(results)
-
-    def prepare_test_img(self, idx):
-        """Get testing data after pipeline.
-
-        Args:
-            idx (int): Index of data.
-
-        Returns:
-            dict: Testing data after pipeline with new keys introduced by \
-                pipeline.
-        """
-
-        img_info = self.data_infos[idx]
-        results = dict(img_info=img_info)
-        if self.proposals is not None:
-            results['proposals'] = self.proposals[idx]
-        self.pre_pipeline(results)
-        return self.pipeline(results)

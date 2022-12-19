@@ -6,10 +6,10 @@ _base_ = [
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 model = dict(
     backbone=dict(norm_cfg=norm_cfg),
-    roi_head=dict(bbox_head=dict(num_classes=365)))
+    bbox_head=dict(num_classes=365))
 
 # Using 8 GPUS while training
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 
@@ -17,7 +17,7 @@ runner = dict(type='IterBasedRunner', max_iters=1350000)    # 36 epochs
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=1000,
+    warmup_iters=10000,
     warmup_ratio=1.0 / 1000,
     step=[900000, 1200000])
 
