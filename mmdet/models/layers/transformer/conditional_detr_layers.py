@@ -5,9 +5,8 @@ from mmcv.cnn.bricks.transformer import FFN
 from torch import Tensor
 from torch.nn import ModuleList
 
-from .detr_transformer import (DetrTransformerDecoder,
-                               DetrTransformerDecoderLayer)
-from .utils import MLP, ConditionalAttention, convert_coordinate_to_encoding
+from .detr_layers import DetrTransformerDecoder, DetrTransformerDecoderLayer
+from .utils import MLP, ConditionalAttention, coordinate_to_encoding
 
 
 class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
@@ -72,8 +71,7 @@ class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
             else:
                 pos_transformation = self.query_scale(query)
             # get sine embedding for the query reference
-            ref_sine_embed = convert_coordinate_to_encoding(
-                coord_tensor=reference_xy)
+            ref_sine_embed = coordinate_to_encoding(coord_tensor=reference_xy)
             # apply transformation
             ref_sine_embed = ref_sine_embed * pos_transformation
             query = layer(

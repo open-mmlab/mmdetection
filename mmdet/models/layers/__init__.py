@@ -30,7 +30,7 @@ from .transformer import (MLP, AdaptivePadding, CdnQueryGenerator,
                           DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DetrTransformerEncoder, DetrTransformerEncoderLayer,
                           DinoTransformerDecoder, DynamicConv, PatchEmbed,
-                          PatchMerging, convert_coordinate_to_encoding,
+                          PatchMerging, coordinate_to_encoding,
                           inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
 
 # yapf: enable
@@ -49,7 +49,7 @@ __all__ = [
     'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
     'DeformableDetrTransformerEncoderLayer',
     'DeformableDetrTransformerDecoderLayer', 'AdaptivePadding',
-    'convert_coordinate_to_encoding', 'ConditionalAttention',
+    'coordinate_to_encoding', 'ConditionalAttention',
     'DABDetrTransformerDecoderLayer', 'DABDetrTransformerDecoder',
     'DABDetrTransformerEncoder', 'ConditionalDetrTransformerDecoder',
     'ConditionalDetrTransformerDecoderLayer', 'DinoTransformerDecoder',

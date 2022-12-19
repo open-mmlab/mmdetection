@@ -8,10 +8,8 @@ from mmcv.ops import MultiScaleDeformableAttention
 from mmengine.model import ModuleList
 from torch import Tensor, nn
 
-from .detr_transformer import (DetrTransformerDecoder,
-                               DetrTransformerDecoderLayer,
-                               DetrTransformerEncoder,
-                               DetrTransformerEncoderLayer)
+from .detr_layers import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
+                          DetrTransformerEncoder, DetrTransformerEncoderLayer)
 from .utils import inverse_sigmoid
 
 

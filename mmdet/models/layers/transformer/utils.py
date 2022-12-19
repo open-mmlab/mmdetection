@@ -46,10 +46,10 @@ def nchw_to_nlc(x):
     return x.flatten(2).transpose(1, 2).contiguous()
 
 
-def convert_coordinate_to_encoding(coord_tensor: Tensor,
-                                   num_feats: int = 128,
-                                   temperature: int = 10000,
-                                   scale: float = 2 * math.pi):
+def coordinate_to_encoding(coord_tensor: Tensor,
+                           num_feats: int = 128,
+                           temperature: int = 10000,
+                           scale: float = 2 * math.pi):
     """Convert coordinate tensor to positional encoding.
 
     Args:

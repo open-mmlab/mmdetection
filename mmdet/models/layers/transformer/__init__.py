@@ -1,19 +1,18 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .conditional_detr_transformer import (
-    ConditionalDetrTransformerDecoder, ConditionalDetrTransformerDecoderLayer)
-from .dab_detr_transformer import (DABDetrTransformerDecoder,
-                                   DABDetrTransformerDecoderLayer,
-                                   DABDetrTransformerEncoder)
-from .deformable_detr_transformer import (
-    DeformableDetrTransformerDecoder, DeformableDetrTransformerDecoderLayer,
-    DeformableDetrTransformerEncoder, DeformableDetrTransformerEncoderLayer)
-from .detr_transformer import (DetrTransformerDecoder,
-                               DetrTransformerDecoderLayer,
-                               DetrTransformerEncoder,
-                               DetrTransformerEncoderLayer)
-from .dino_transformer import CdnQueryGenerator, DinoTransformerDecoder
+from .conditional_detr_layers import (ConditionalDetrTransformerDecoder,
+                                      ConditionalDetrTransformerDecoderLayer)
+from .dab_detr_layers import (DABDetrTransformerDecoder,
+                              DABDetrTransformerDecoderLayer,
+                              DABDetrTransformerEncoder)
+from .deformable_detr_layers import (DeformableDetrTransformerDecoder,
+                                     DeformableDetrTransformerDecoderLayer,
+                                     DeformableDetrTransformerEncoder,
+                                     DeformableDetrTransformerEncoderLayer)
+from .detr_layers import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
+                          DetrTransformerEncoder, DetrTransformerEncoderLayer)
+from .dino_layers import CdnQueryGenerator, DinoTransformerDecoder
 from .utils import (MLP, AdaptivePadding, ConditionalAttention, DynamicConv,
-                    PatchEmbed, PatchMerging, convert_coordinate_to_encoding,
+                    PatchEmbed, PatchMerging, coordinate_to_encoding,
                     inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
 
 __all__ = [
@@ -23,7 +22,7 @@ __all__ = [
     'DetrTransformerEncoderLayer', 'DetrTransformerDecoderLayer',
     'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
     'DeformableDetrTransformerEncoderLayer',
-    'DeformableDetrTransformerDecoderLayer', 'convert_coordinate_to_encoding',
+    'DeformableDetrTransformerDecoderLayer', 'coordinate_to_encoding',
     'ConditionalAttention', 'DABDetrTransformerDecoderLayer',
     'DABDetrTransformerDecoder', 'DABDetrTransformerEncoder',
     'ConditionalDetrTransformerDecoder',

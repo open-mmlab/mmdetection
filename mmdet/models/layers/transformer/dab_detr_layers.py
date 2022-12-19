@@ -8,11 +8,9 @@ from mmcv.cnn.bricks.transformer import FFN
 from mmengine.model import ModuleList
 from torch import Tensor
 
-from .detr_transformer import (DetrTransformerDecoder,
-                               DetrTransformerDecoderLayer,
-                               DetrTransformerEncoder,
-                               DetrTransformerEncoderLayer)
-from .utils import (MLP, ConditionalAttention, convert_coordinate_to_encoding,
+from .detr_layers import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
+                          DetrTransformerEncoder, DetrTransformerEncoderLayer)
+from .utils import (MLP, ConditionalAttention, coordinate_to_encoding,
                     inverse_sigmoid)
 
 
@@ -200,7 +198,7 @@ class DABDetrTransformerDecoder(DetrTransformerDecoder):
         intermediate = []
         for layer_id, layer in enumerate(self.layers):
             obj_center = reference_points[..., :self.query_dim]
-            ref_sine_embed = convert_coordinate_to_encoding(
+            ref_sine_embed = coordinate_to_encoding(
                 coord_tensor=obj_center, num_feats=self.embed_dims // 2)
             query_pos = self.ref_point_head(
                 ref_sine_embed)  # [bs, nq, 2c] -> [bs, nq, c]
