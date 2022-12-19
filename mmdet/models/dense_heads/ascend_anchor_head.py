@@ -167,7 +167,6 @@ class AscendAnchorHead(AnchorHead):
         assert gt_bboxes_ignore_list is None
         assert unmap_outputs is True
         assert return_sampling_results is False
-        assert return_level is True
         assert self.train_cfg.allowed_border < 0
         assert isinstance(self.assigner, AscendMaxIoUAssigner)
         assert isinstance(self.sampler, PseudoSampler)
@@ -214,15 +213,21 @@ class AscendAnchorHead(AnchorHead):
         min_num = torch.ones((num_imgs,), dtype=concat_pos_mask.dtype, device=concat_pos_mask.device)
         num_total_pos = torch.sum(torch.max(torch.sum(concat_pos_mask, dim=1), min_num))
         num_total_neg = torch.sum(torch.max(torch.sum(concat_neg_mask, dim=1), min_num))
-        labels_list = images_to_levels(concat_labels, num_level_anchors)
-        label_weights_list = images_to_levels(concat_label_weights, num_level_anchors)
-        bbox_targets_list = images_to_levels(concat_bbox_targets, num_level_anchors)
-        bbox_weights_list = images_to_levels(concat_bbox_weights, num_level_anchors)
-        res = (labels_list, label_weights_list, bbox_targets_list,
-               bbox_weights_list, num_total_pos, num_total_neg)
-        if return_sampling_results:
-            res = res + (sampling_result,)
-        for i, r in enumerate(rest_results):  # user-added return values
-            rest_results[i] = images_to_levels(r, num_level_anchors)
+        if return_level is True:
+            labels_list = images_to_levels(concat_labels, num_level_anchors)
+            label_weights_list = images_to_levels(concat_label_weights, num_level_anchors)
+            bbox_targets_list = images_to_levels(concat_bbox_targets, num_level_anchors)
+            bbox_weights_list = images_to_levels(concat_bbox_weights, num_level_anchors)
+            res = (labels_list, label_weights_list, bbox_targets_list,
+                   bbox_weights_list, num_total_pos, num_total_neg)
+            if return_sampling_results:
+                res = res + (sampling_result,)
+            for i, r in enumerate(rest_results):  # user-added return values
+                rest_results[i] = images_to_levels(r, num_level_anchors)
 
-        return res + tuple(rest_results)
+            return res + tuple(rest_results)
+        else:
+            res = (concat_labels, concat_label_weights, concat_bbox_targets, concat_bbox_weights, concat_pos_mask,
+                   concat_neg_mask, sampling_result, num_total_pos, num_total_neg, concat_anchors)
+            return res
+
