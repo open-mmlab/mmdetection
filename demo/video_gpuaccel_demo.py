@@ -1,5 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
+import os
+import warnings
 from typing import Tuple
 
 import cv2
@@ -8,6 +10,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.transforms import Compose
+from mmengine.logging import print_log
 from mmengine.utils import track_iter_progress
 
 from mmdet.apis import init_detector
@@ -32,15 +35,19 @@ def parse_args():
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
         '--score-thr', type=float, default=0.3, help='Bbox score threshold')
-    parser.add_argument('--out', type=str, help='Output video file')
-    parser.add_argument('--show', action='store_true', help='Show video')
+    parser.add_argument(
+        '--show', action='store_true', help='Show the detection results')
+    parser.add_argument(
+        '--out-dir', default='outputs', help='Dir to output file')
+    parser.add_argument(
+        '--no-save', action='store_true', help='Do not save detection results')
     parser.add_argument(
         '--nvdecode', action='store_true', help='Use NVIDIA decoder')
     parser.add_argument(
-        '--wait-time',
+        '--show-interval',
         type=float,
         default=1,
-        help='The interval of show (s), 0 is block')
+        help='the interval of show (s)')
     args = parser.parse_args()
     return args
 
@@ -77,9 +84,15 @@ def pack_data(frame_resize: np.ndarray, batch_input_shape: Tuple[int, int],
 
 def main():
     args = parse_args()
-    assert args.out or args.show, \
-        ('Please specify at least one operation (save/show the '
-         'video) with the argument "--out" or "--show"')
+
+    if args.no_save and not args.show:
+        warnings.warn(
+            'It doesn\'t make sense to neither save the prediction result '
+            'nor display it. Force set args.no_save to False')
+        args.no_save = False
+
+    if not os.path.exists(args.out_dir) and not args.no_save:
+        os.mkdir(args.out_dir)
 
     # register all modules in mmdet into the registries
     register_all_modules()
@@ -109,8 +122,15 @@ def main():
         resize_keepratioalign='topleft')
 
     video_writer = None
-    if args.out:
-        video_writer = ffmpegcv.VideoWriter(args.out, fps=video_origin.fps)
+
+    filename = os.path.basename(args.video)
+    if args.no_save:
+        out_file = None
+    else:
+        out_file = os.path.join(args.out_dir, filename)
+
+    if out_file is not None:
+        video_writer = ffmpegcv.VideoWriter(out_file, fps=video_origin.fps)
 
     with torch.no_grad():
         for i, (frame_resize, frame_origin) in enumerate(
@@ -130,8 +150,8 @@ def main():
 
             if args.show:
                 cv2.namedWindow('video', 0)
-                mmcv.imshow(frame_mask, 'video', args.wait_time)
-            if args.out:
+                mmcv.imshow(frame_mask, 'video', args.show_interval)
+            if out_file is not None:
                 video_writer.write(frame_mask)
 
     if video_writer:
@@ -140,6 +160,9 @@ def main():
     video_resize.release()
 
     cv2.destroyAllWindows()
+
+    if out_file is not None:
+        print_log(f'\nResults have been saved at {out_file}')
 
 
 if __name__ == '__main__':

@@ -1,8 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import asyncio
+import os
+import warnings
 from argparse import ArgumentParser
 
 import mmcv
+from mmengine.logging import print_log
 
 from mmdet.apis import (async_inference_detector, inference_detector,
                         init_detector)
@@ -15,7 +18,12 @@ def parse_args():
     parser.add_argument('img', help='Image file')
     parser.add_argument('config', help='Config file')
     parser.add_argument('checkpoint', help='Checkpoint file')
-    parser.add_argument('--out-file', default=None, help='Path to output file')
+    parser.add_argument(
+        '--show', action='store_true', help='Show the detection results')
+    parser.add_argument(
+        '--out-dir', default='outputs', help='Dir to output file')
+    parser.add_argument(
+        '--no-save', action='store_true', help='Do not save detection results')
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
@@ -37,6 +45,14 @@ def main(args):
     # register all modules in mmdet into the registries
     register_all_modules()
 
+    if args.no_save and not args.show:
+        warnings.warn('It doesn\'t make sense to neither save the prediction '
+                      'result nor display it. Force set args.no_save to False')
+        args.no_save = False
+
+    if not os.path.exists(args.out_dir) and not args.no_save:
+        os.mkdir(args.out_dir)
+
     # TODO: Support inference of image directory.
     # build the model from a config file and a checkpoint file
     model = init_detector(
@@ -54,15 +70,25 @@ def main(args):
     # show the results
     img = mmcv.imread(args.img)
     img = mmcv.imconvert(img, 'bgr', 'rgb')
+
+    filename = os.path.basename(args.img)
+    if args.no_save:
+        out_file = None
+    else:
+        out_file = os.path.join(args.out_dir, filename)
+
     visualizer.add_datasample(
-        'result',
+        filename,
         img,
         data_sample=result,
         draw_gt=False,
-        show=args.out_file is None,
+        show=args.show,
         wait_time=0,
-        out_file=args.out_file,
+        out_file=out_file,
         pred_score_thr=args.score_thr)
+
+    if out_file is not None:
+        print_log(f'\nResults have been saved at {out_file}')
 
 
 async def async_main(args):

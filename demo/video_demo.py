@@ -1,9 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
+import os
+import warnings
 
 import cv2
 import mmcv
 from mmcv.transforms import Compose
+from mmengine.logging import print_log
 from mmengine.utils import track_iter_progress
 
 from mmdet.apis import inference_detector, init_detector
@@ -20,22 +23,31 @@ def parse_args():
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
         '--score-thr', type=float, default=0.3, help='Bbox score threshold')
-    parser.add_argument('--out', type=str, help='Output video file')
-    parser.add_argument('--show', action='store_true', help='Show video')
     parser.add_argument(
-        '--wait-time',
+        '--show', action='store_true', help='Show the detection results')
+    parser.add_argument(
+        '--out-dir', default='outputs', help='Dir to output file')
+    parser.add_argument(
+        '--no-save', action='store_true', help='Do not save detection results')
+    parser.add_argument(
+        '--show-interval',
         type=float,
         default=1,
-        help='The interval of show (s), 0 is block')
+        help='the interval of show (s)')
     args = parser.parse_args()
     return args
 
 
 def main():
     args = parse_args()
-    assert args.out or args.show, \
-        ('Please specify at least one operation (save/show the '
-         'video) with the argument "--out" or "--show"')
+
+    if args.no_save and not args.show:
+        warnings.warn('It doesn\'t make sense to neither save the prediction '
+                      'result nor display it. Force set args.no_save to False')
+        args.no_save = False
+
+    if not os.path.exists(args.out_dir) and not args.no_save:
+        os.mkdir(args.out_dir)
 
     # register all modules in mmdet into the registries
     register_all_modules()
@@ -55,10 +67,17 @@ def main():
 
     video_reader = mmcv.VideoReader(args.video)
     video_writer = None
-    if args.out:
+
+    filename = os.path.basename(args.video)
+    if args.no_save:
+        out_file = None
+    else:
+        out_file = os.path.join(args.out_dir, filename)
+
+    if out_file is not None:
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         video_writer = cv2.VideoWriter(
-            args.out, fourcc, video_reader.fps,
+            out_file, fourcc, video_reader.fps,
             (video_reader.width, video_reader.height))
 
     for frame in track_iter_progress(video_reader):
@@ -74,13 +93,16 @@ def main():
 
         if args.show:
             cv2.namedWindow('video', 0)
-            mmcv.imshow(frame, 'video', args.wait_time)
-        if args.out:
+            mmcv.imshow(frame, 'video', args.show_interval)
+        if out_file is not None:
             video_writer.write(frame)
 
     if video_writer:
         video_writer.release()
     cv2.destroyAllWindows()
+
+    if out_file is not None:
+        print_log(f'\nResults have been saved at {out_file}')
 
 
 if __name__ == '__main__':
