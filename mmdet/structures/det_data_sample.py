@@ -10,18 +10,18 @@ class DetDataSample(BaseDataElement):
 
     The attributes in ``DetDataSample`` are divided into several parts:
 
-        - ``proposals``(InstanceData): Region proposals used in two-stage
+        - ``proposals`` (InstanceData): Region proposals used in two-stage
           detectors.
-        - ``gt_instances``(InstanceData): Ground truth of instance annotations.
-        - ``pred_instances``(InstanceData): Instances of model predictions.
-        - ``ignored_instances``(InstanceData): Instances to be ignored during
+        - ``gt_instances`` (InstanceData): Ground truth of instance annotations.
+        - ``pred_instances`` (InstanceData): Instances of model predictions.
+        - ``ignored_instances`` (InstanceData): Instances to be ignored during
           training/testing.
-        - ``gt_panoptic_seg``(PixelData): Ground truth of panoptic
+        - ``gt_panoptic_seg`` (PixelData): Ground truth of panoptic
           segmentation.
-        - ``pred_panoptic_seg``(PixelData): Prediction of panoptic
+        - ``pred_panoptic_seg`` (PixelData): Prediction of panoptic
           segmentation.
-        - ``gt_sem_seg``(PixelData): Ground truth of semantic segmentation.
-        - ``pred_sem_seg``(PixelData): Prediction of semantic segmentation.
+        - ``gt_sem_seg`` (PixelData): Ground truth of semantic segmentation.
+        - ``pred_sem_seg`` (PixelData): Prediction of semantic segmentation.
 
     Examples:
         >>> import torch
