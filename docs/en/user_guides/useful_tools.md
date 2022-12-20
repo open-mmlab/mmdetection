@@ -183,7 +183,19 @@ python tools/analysis_tools/coco_error_analysis.py \
 
 In order to serve an `MMDetection` model with [`TorchServe`](https://pytorch.org/serve/), you can follow the steps:
 
-### 1. Convert model from MMDetection to TorchServe
+### 1. Install TorchServe
+
+Suppose you have a `Python` environment with `PyTorch` and `MMDetection` successfully installed,
+then you could run the following command to install `TorchServe` and its dependencies.
+For more other installation options, please refer to the [quick start](https://github.com/pytorch/serve/blob/master/README.md#serve-a-model).
+
+```shell
+python -m pip install torchserve torch-model-archiver torch-workflow-archiver nvgpu
+```
+
+**Note**: Please refer to [torchserve docker](https://github.com/pytorch/serve/blob/master/docker/README.md) if you want to use `TorchServe` in docker.
+
+### 2. Convert model from MMDetection to TorchServe
 
 ```shell
 python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
@@ -191,32 +203,13 @@ python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
 --model-name ${MODEL_NAME}
 ```
 
-**Note**: ${MODEL_STORE} needs to be an absolute path to a folder.
-
-### 2. Build `mmdet-serve` docker image
+### 3. Start `TorchServe`
 
 ```shell
-docker build -t mmdet-serve:latest docker/serve/
+torchserve --start --ncs \
+  --model-store ${MODEL_STORE} \
+  --models  ${MODEL_NAME}.mar
 ```
-
-### 3. Run `mmdet-serve`
-
-Check the official docs for [running TorchServe with docker](https://github.com/pytorch/serve/blob/master/docker/README.md#running-torchserve-in-a-production-docker-environment).
-
-In order to run in GPU, you need to install [nvidia-docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html). You can omit the `--gpus` argument in order to run in CPU.
-
-Example:
-
-```shell
-docker run --rm \
---cpus 8 \
---gpus device=0 \
--p8080:8080 -p8081:8081 -p8082:8082 \
---mount type=bind,source=$MODEL_STORE,target=/home/model-server/model-store \
-mmdet-serve:latest
-```
-
-[Read the docs](https://github.com/pytorch/serve/blob/072f5d088cce9bb64b2a18af065886c9b01b317b/docs/rest_api.md/) about the Inference (8080), Management (8081) and Metrics (8082) APis
 
 ### 4. Test deployment
 
@@ -230,6 +223,7 @@ You should obtain a response similar to:
 ```json
 [
   {
+    "class_label": 16,
     "class_name": "dog",
     "bbox": [
       294.63409423828125,
@@ -240,6 +234,7 @@ You should obtain a response similar to:
     "score": 0.9987992644309998
   },
   {
+    "class_label": 16,
     "class_name": "dog",
     "bbox": [
       404.26019287109375,
@@ -250,6 +245,7 @@ You should obtain a response similar to:
     "score": 0.9979367256164551
   },
   {
+    "class_label": 16,
     "class_name": "dog",
     "bbox": [
       197.2144775390625,
@@ -262,11 +258,13 @@ You should obtain a response similar to:
 ]
 ```
 
-And you can use `test_torchserver.py` to compare result of torchserver and pytorch, and visualize them.
+#### Compare results
+
+And you can use `test_torchserver.py` to compare result of `TorchServe` and `PyTorch`, and visualize them.
 
 ```shell
 python tools/deployment/test_torchserver.py ${IMAGE_FILE} ${CONFIG_FILE} ${CHECKPOINT_FILE} ${MODEL_NAME}
-[--inference-addr ${INFERENCE_ADDR}] [--device ${DEVICE}] [--score-thr ${SCORE_THR}]
+[--inference-addr ${INFERENCE_ADDR}] [--device ${DEVICE}] [--score-thr ${SCORE_THR}] [--work-dir ${WORK_DIR}]
 ```
 
 Example:
@@ -276,7 +274,14 @@ python tools/deployment/test_torchserver.py \
 demo/demo.jpg \
 configs/yolo/yolov3_d53_8xb8-320-273e_coco.py \
 checkpoint/yolov3_d53_320_273e_coco-421362b6.pth \
-yolov3
+yolov3 \
+--work-dir ./work-dir
+```
+
+### 5. Stop `TorchServe`
+
+```shell
+torchserve --stop
 ```
 
 ## Model Complexity

@@ -141,7 +141,7 @@ class TestLVISDataset(unittest.TestCase):
         dump(fake_json, self.json_name)
 
         self.metainfo = dict(
-            CLASSES=('aerosol_can', 'air_conditioner', 'airplane'))
+            classes=('aerosol_can', 'air_conditioner', 'airplane'))
 
     def tearDown(self):
         os.remove(self.json_name)
@@ -154,7 +154,7 @@ class TestLVISDataset(unittest.TestCase):
             metainfo=self.metainfo,
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
             pipeline=[])
-        self.assertEqual(dataset.metainfo['CLASSES'], self.metainfo['CLASSES'])
+        self.assertEqual(dataset.metainfo['classes'], self.metainfo['classes'])
         dataset.full_init()
         # filter images of small size and images
         # with all illegal annotations
@@ -182,7 +182,7 @@ class TestLVISDataset(unittest.TestCase):
             metainfo=self.metainfo,
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
             pipeline=[])
-        self.assertEqual(dataset.metainfo['CLASSES'], self.metainfo['CLASSES'])
+        self.assertEqual(dataset.metainfo['classes'], self.metainfo['classes'])
         dataset.full_init()
         # filter images of small size and images
         # with all illegal annotations
@@ -210,7 +210,7 @@ class TestLVISDataset(unittest.TestCase):
             metainfo=self.metainfo,
             filter_cfg=None,
             pipeline=[])
-        self.assertEqual(dataset.metainfo['CLASSES'], self.metainfo['CLASSES'])
+        self.assertEqual(dataset.metainfo['classes'], self.metainfo['classes'])
         dataset.full_init()
         # filter images of small size and images
         # with all illegal annotations

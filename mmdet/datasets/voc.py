@@ -8,12 +8,12 @@ class VOCDataset(XMLDataset):
     """Dataset for PASCAL VOC."""
 
     METAINFO = {
-        'CLASSES':
+        'classes':
         ('aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat',
          'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person',
          'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'),
-        # PALETTE is a list of color tuples, which is used for visualization.
-        'PALETTE': [(106, 0, 228), (119, 11, 32), (165, 42, 42), (0, 0, 192),
+        # palette is a list of color tuples, which is used for visualization.
+        'palette': [(106, 0, 228), (119, 11, 32), (165, 42, 42), (0, 0, 192),
                     (197, 226, 255), (0, 60, 100), (0, 0, 142), (255, 77, 255),
                     (153, 69, 1), (120, 166, 157), (0, 182, 199),
                     (0, 226, 252), (182, 182, 255), (0, 0, 230), (220, 20, 60),
@@ -24,8 +24,8 @@ class VOCDataset(XMLDataset):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if 'VOC2007' in self.sub_data_root:
-            self._metainfo['DATASET_TYPE'] = 'VOC2007'
+            self._metainfo['dataset_type'] = 'VOC2007'
         elif 'VOC2012' in self.sub_data_root:
-            self._metainfo['DATASET_TYPE'] = 'VOC2012'
+            self._metainfo['dataset_type'] = 'VOC2012'
         else:
-            self._metainfo['DATASET_TYPE'] = None
+            self._metainfo['dataset_type'] = None

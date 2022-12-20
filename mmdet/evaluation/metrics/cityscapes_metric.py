@@ -115,7 +115,7 @@ class CityScapesMetric(BaseMetric):
             with open(pred_txt, 'w') as f:
                 for i, (label, mask, mask_score) in enumerate(
                         zip(labels, masks, mask_scores)):
-                    class_name = self.dataset_meta['CLASSES'][label]
+                    class_name = self.dataset_meta['classes'][label]
                     class_id = CSLabels.name2label[class_name].id
                     png_filename = osp.join(
                         self.seg_out_dir, basename + f'_{i}_{class_name}.png')

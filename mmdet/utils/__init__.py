@@ -5,13 +5,14 @@ from .dist_utils import (all_reduce_dict, allreduce_grads, reduce_mean,
                          sync_random_seed)
 from .logger import get_caller_name, log_img_scale
 from .memory import AvoidCUDAOOM, AvoidOOM
-from .misc import find_latest_checkpoint, update_data_root
+from .misc import (find_latest_checkpoint, get_test_pipeline_cfg,
+                   update_data_root)
 from .replace_cfg_vals import replace_cfg_vals
 from .setup_env import register_all_modules, setup_multi_processes
 from .split_batch import split_batch
-from .typing import (ConfigType, InstanceList, MultiConfig, OptConfigType,
-                     OptInstanceList, OptMultiConfig, OptPixelList, PixelList,
-                     RangeType)
+from .typing_utils import (ConfigType, InstanceList, MultiConfig,
+                           OptConfigType, OptInstanceList, OptMultiConfig,
+                           OptPixelList, PixelList, RangeType)
 
 __all__ = [
     'collect_env', 'find_latest_checkpoint', 'update_data_root',
@@ -20,5 +21,5 @@ __all__ = [
     'AvoidCUDAOOM', 'all_reduce_dict', 'allreduce_grads', 'reduce_mean',
     'sync_random_seed', 'ConfigType', 'InstanceList', 'MultiConfig',
     'OptConfigType', 'OptInstanceList', 'OptMultiConfig', 'OptPixelList',
-    'PixelList', 'RangeType'
+    'PixelList', 'RangeType', 'get_test_pipeline_cfg'
 ]

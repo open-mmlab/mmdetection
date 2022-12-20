@@ -62,7 +62,7 @@ COCO 格式的 JSON 标注文件有如下必要的字段：
 
 配置文件的修改涉及两个方面：
 
-1. `dataloaer` 部分。需要在 `train_dataloader.dataset`、`val_dataloader.dataset` 和 `test_dataloader.dataset` 中添加 `metainfo=dict(CLASSES=classes)`, 其中 classes 必须是 tuple 类型。
+1. `dataloaer` 部分。需要在 `train_dataloader.dataset`、`val_dataloader.dataset` 和 `test_dataloader.dataset` 中添加 `metainfo=dict(classes=classes)`, 其中 classes 必须是 tuple 类型。
 2. `model` 部分中的 `num_classes`。需要将默认值（COCO 数据集中为 80）修改为自定义数据集中的类别数。
 
 `configs/my_custom_config.py` 内容如下：
@@ -83,7 +83,7 @@ train_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         # 将类别名字添加至 `metainfo` 字段中
-        metainfo=dict(CLASSES=classes),
+        metainfo=dict(classes=classes),
         data_root=data_root,
         ann_file='train/annotation_data',
         data_prefix=dict(img='train/image_data')
@@ -97,7 +97,7 @@ val_dataloader = dict(
         type=dataset_type,
         test_mode=True,
         # 将类别名字添加至 `metainfo` 字段中
-        metainfo=dict(CLASSES=classes),
+        metainfo=dict(classes=classes),
         data_root=data_root,
         ann_file='val/annotation_data',
         data_prefix=dict(img='val/image_data')
@@ -110,7 +110,7 @@ test_dataloader = dict(
         type=dataset_type,
         test_mode=True,
         # 将类别名字添加至 `metainfo` 字段中
-        metainfo=dict(CLASSES=classes),
+        metainfo=dict(classes=classes),
         data_root=data_root,
         ann_file='test/annotation_data',
         data_prefix=dict(img='test/image_data')
@@ -270,8 +270,8 @@ from mmdet.registry import DATASETS
 class MyDataset(BaseDetDataset):
 
     METAINFO = {
-       'CLASSES': ('person', 'bicycle', 'car', 'motorcycle'),
-        'PALETTE': [(220, 20, 60), (119, 11, 32), (0, 0, 142), (0, 0, 230)]
+       'classes': ('person', 'bicycle', 'car', 'motorcycle'),
+        'palette': [(220, 20, 60), (119, 11, 32), (0, 0, 142), (0, 0, 230)]
     }
 
     def load_data_list(self, ann_file):
@@ -335,15 +335,15 @@ MMEngine 也支持非常多的数据集包装器（wrapper）来混合数据集�
 classes = ('person', 'bicycle', 'car')
 train_dataloader = dict(
     dataset=dict(
-        metainfo=dict(CLASSES=classes))
+        metainfo=dict(classes=classes))
     )
 val_dataloader = dict(
     dataset=dict(
-        metainfo=dict(CLASSES=classes))
+        metainfo=dict(classes=classes))
     )
 test_dataloader = dict(
     dataset=dict(
-        metainfo=dict(CLASSES=classes))
+        metainfo=dict(classes=classes))
     )
 ```
 

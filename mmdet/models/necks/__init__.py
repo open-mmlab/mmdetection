@@ -14,6 +14,7 @@ from .nasfcos_fpn import NASFCOS_FPN
 from .pafpn import PAFPN
 from .rfp import RFP
 from .ssd_neck import SSDNeck
+from .ssh import SSH
 from .yolo_neck import YOLOV3Neck
 from .yolox_asff_pafpn import YOLOXASFFPAFPN
 from .yolox_pafpn import YOLOXPAFPN
@@ -21,6 +22,6 @@ from .yolox_pafpn import YOLOXPAFPN
 __all__ = [
     'FPN', 'BFP', 'ChannelMapper', 'HRFPN', 'NASFPN', 'FPN_CARAFE', 'PAFPN',
     'NASFCOS_FPN', 'RFP', 'YOLOV3Neck', 'FPG', 'DilatedEncoder',
-    'CTResNetNeck', 'SSDNeck', 'YOLOXPAFPN', 'DyHead', 'CSPNeXtPAFPN',
+    'CTResNetNeck', 'SSDNeck', 'YOLOXPAFPN', 'DyHead', 'CSPNeXtPAFPN', 'SSH',
     'YOLOXASFFPAFPN'
 ]

@@ -12,7 +12,7 @@ class LVISV05Dataset(CocoDataset):
     """LVIS v0.5 dataset for detection."""
 
     METAINFO = {
-        'CLASSES':
+        'classes':
         ('acorn', 'aerosol_can', 'air_conditioner', 'airplane', 'alarm_clock',
          'alcohol', 'alligator', 'almond', 'ambulance', 'amplifier', 'anklet',
          'antenna', 'apple', 'apple_juice', 'applesauce', 'apricot', 'apron',
@@ -264,7 +264,7 @@ class LVISV05Dataset(CocoDataset):
          'wineglass', 'wing_chair', 'blinder_(for_horses)', 'wok', 'wolf',
          'wooden_spoon', 'wreath', 'wrench', 'wristband', 'wristlet', 'yacht',
          'yak', 'yogurt', 'yoke_(animal_equipment)', 'zebra', 'zucchini'),
-        'PALETTE':
+        'palette':
         None
     }
 
@@ -333,7 +333,7 @@ class LVISV1Dataset(LVISDataset):
     """LVIS v1 dataset for detection."""
 
     METAINFO = {
-        'CLASSES':
+        'classes':
         ('aerosol_can', 'air_conditioner', 'airplane', 'alarm_clock',
          'alcohol', 'alligator', 'almond', 'ambulance', 'amplifier', 'anklet',
          'antenna', 'apple', 'applesauce', 'apricot', 'apron', 'aquarium',
@@ -576,7 +576,7 @@ class LVISV1Dataset(LVISDataset):
          'wineglass', 'blinder_(for_horses)', 'wok', 'wolf', 'wooden_spoon',
          'wreath', 'wrench', 'wristband', 'wristlet', 'yacht', 'yogurt',
          'yoke_(animal_equipment)', 'zebra', 'zucchini'),
-        'PALETTE':
+        'palette':
         None
     }
 

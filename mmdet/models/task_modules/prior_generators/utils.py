@@ -1,20 +1,23 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional, Tuple
+
 import torch
+from torch import Tensor
 
 from mmdet.structures.bbox import BaseBoxes
 
 
-def anchor_inside_flags(flat_anchors,
-                        valid_flags,
-                        img_shape,
-                        allowed_border=0):
+def anchor_inside_flags(flat_anchors: Tensor,
+                        valid_flags: Tensor,
+                        img_shape: Tuple[int],
+                        allowed_border: int = 0) -> Tensor:
     """Check whether the anchors are inside the border.
 
     Args:
         flat_anchors (torch.Tensor): Flatten anchors, shape (n, 4).
         valid_flags (torch.Tensor): An existing valid flags of anchors.
         img_shape (tuple(int)): Shape of current image.
-        allowed_border (int, optional): The border to allow the valid anchor.
+        allowed_border (int): The border to allow the valid anchor.
             Defaults to 0.
 
     Returns:
@@ -39,7 +42,9 @@ def anchor_inside_flags(flat_anchors,
     return inside_flags
 
 
-def calc_region(bbox, ratio, featmap_size=None):
+def calc_region(bbox: Tensor,
+                ratio: float,
+                featmap_size: Optional[Tuple] = None) -> Tuple[int]:
     """Calculate a proportional bbox region.
 
     The bbox center are fixed and the new h' and w' is h * ratio and w * ratio.
@@ -47,7 +52,8 @@ def calc_region(bbox, ratio, featmap_size=None):
     Args:
         bbox (Tensor): Bboxes to calculate regions, shape (n, 4).
         ratio (float): Ratio of the output region.
-        featmap_size (tuple): Feature map size used for clipping the boundary.
+        featmap_size (tuple, Optional): Feature map size in (height, width)
+            order used for clipping the boundary. Defaults to None.
 
     Returns:
         tuple: x1, y1, x2, y2

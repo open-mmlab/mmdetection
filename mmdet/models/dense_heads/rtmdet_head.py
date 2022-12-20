@@ -10,8 +10,7 @@ from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures.bbox import distance2bbox
-from mmdet.utils import reduce_mean
-from mmdet.utils.typing import ConfigType, InstanceList, OptInstanceList
+from mmdet.utils import ConfigType, InstanceList, OptInstanceList, reduce_mean
 from ..layers.transformer import inverse_sigmoid
 from ..task_modules import anchor_inside_flags
 from ..utils import (images_to_levels, multi_apply, sigmoid_geometric_mean,
@@ -267,7 +266,7 @@ class RTMDetHead(ATSSHead):
             batch_img_metas,
             batch_gt_instances_ignore=batch_gt_instances_ignore)
         (anchor_list, labels_list, label_weights_list, bbox_targets_list,
-         assign_metrics_list) = cls_reg_targets
+         assign_metrics_list, sampling_results_list) = cls_reg_targets
 
         losses_cls, losses_bbox,\
             cls_avg_factors, bbox_avg_factors = multi_apply(
@@ -354,7 +353,7 @@ class RTMDetHead(ATSSHead):
             batch_gt_instances_ignore = [None] * num_imgs
         # anchor_list: list(b * [-1, 4])
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
-         all_assign_metrics) = multi_apply(
+         all_assign_metrics, sampling_results_list) = multi_apply(
              self._get_targets_single,
              cls_scores.detach(),
              bbox_preds.detach(),
@@ -379,7 +378,7 @@ class RTMDetHead(ATSSHead):
                                                num_level_anchors)
 
         return (anchors_list, labels_list, label_weights_list,
-                bbox_targets_list, assign_metrics_list)
+                bbox_targets_list, assign_metrics_list, sampling_results_list)
 
     def _get_targets_single(self,
                             cls_scores: Tensor,
@@ -487,7 +486,8 @@ class RTMDetHead(ATSSHead):
             bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
             assign_metrics = unmap(assign_metrics, num_total_anchors,
                                    inside_flags)
-        return (anchors, labels, label_weights, bbox_targets, assign_metrics)
+        return (anchors, labels, label_weights, bbox_targets, assign_metrics,
+                sampling_result)
 
     def get_anchors(self,
                     featmap_sizes: List[tuple],

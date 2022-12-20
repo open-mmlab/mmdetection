@@ -1,12 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from functools import partial
-from typing import List, Sequence, Union
+from typing import List, Sequence, Tuple, Union
 
 import numpy as np
 import torch
 from mmengine.structures import InstanceData
 from mmengine.utils import digit_version
 from six.moves import map, zip
+from torch import Tensor
 from torch.autograd import Function
 from torch.nn import functional as F
 
@@ -567,3 +568,60 @@ def reweight_loss_dict(losses: dict, weight: float) -> dict:
             else:
                 losses[name] = loss * weight
     return losses
+
+
+def relative_coordinate_maps(
+    locations: Tensor,
+    centers: Tensor,
+    strides: Tensor,
+    size_of_interest: int,
+    feat_sizes: Tuple[int],
+) -> Tensor:
+    """Generate the relative coordinate maps with feat_stride.
+
+    Args:
+        locations (Tensor): The prior location of mask feature map.
+            It has shape (num_priors, 2).
+        centers (Tensor): The prior points of a object in
+            all feature pyramid. It has shape (num_pos, 2)
+        strides (Tensor): The prior strides of a object in
+            all feature pyramid. It has shape (num_pos, 1)
+        size_of_interest (int): The size of the region used in rel coord.
+        feat_sizes (Tuple[int]): The feature size H and W, which has 2 dims.
+    Returns:
+        rel_coord_feat (Tensor): The coordinate feature
+            of shape (num_pos, 2, H, W).
+    """
+
+    H, W = feat_sizes
+    rel_coordinates = centers.reshape(-1, 1, 2) - locations.reshape(1, -1, 2)
+    rel_coordinates = rel_coordinates.permute(0, 2, 1).float()
+    rel_coordinates = rel_coordinates / (
+        strides[:, None, None] * size_of_interest)
+    return rel_coordinates.reshape(-1, 2, H, W)
+
+
+def aligned_bilinear(tensor: Tensor, factor: int) -> Tensor:
+    """aligned bilinear, used in original implement in CondInst:
+
+    https://github.com/aim-uofa/AdelaiDet/blob/\
+    c0b2092ce72442b0f40972f7c6dda8bb52c46d16/adet/utils/comm.py#L23
+    """
+
+    assert tensor.dim() == 4
+    assert factor >= 1
+    assert int(factor) == factor
+
+    if factor == 1:
+        return tensor
+
+    h, w = tensor.size()[2:]
+    tensor = F.pad(tensor, pad=(0, 1, 0, 1), mode='replicate')
+    oh = factor * h + 1
+    ow = factor * w + 1
+    tensor = F.interpolate(
+        tensor, size=(oh, ow), mode='bilinear', align_corners=True)
+    tensor = F.pad(
+        tensor, pad=(factor // 2, 0, factor // 2, 0), mode='replicate')
+
+    return tensor[:, :, :oh - 1, :ow - 1]

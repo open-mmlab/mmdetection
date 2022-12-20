@@ -12,8 +12,9 @@ from mmengine.config import Config
 from mmengine.runner import load_checkpoint
 
 from ..evaluation import get_classes
-from ..models import build_detector
+from ..registry import MODELS
 from ..structures import DetDataSample, SampleList
+from ..utils import get_test_pipeline_cfg
 
 
 def init_detector(
@@ -51,8 +52,7 @@ def init_detector(
         config.merge_from_dict(cfg_options)
     elif 'init_cfg' in config.model.backbone:
         config.model.backbone.init_cfg = None
-    config.model.train_cfg = None
-    model = build_detector(config.model)
+    model = MODELS.build(config.model)
     if checkpoint is not None:
         checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
         # Weights converted from elsewhere may not have meta fields.
@@ -64,15 +64,19 @@ def init_detector(
         elif 'CLASSES' in checkpoint_meta:
             # < mmdet 3.x
             classes = checkpoint_meta['CLASSES']
-            model.dataset_meta = {'CLASSES': classes, 'PALETTE': palette}
+            model.dataset_meta = {'classes': classes, 'palette': palette}
+        elif 'classes' in checkpoint_meta:
+            # < mmdet 3.x
+            classes = checkpoint_meta['classes']
+            model.dataset_meta = {'classes': classes, 'palette': palette}
         else:
             warnings.simplefilter('once')
             warnings.warn(
                 'dataset_meta or class names are not saved in the '
                 'checkpoint\'s meta data, use COCO classes by default.')
             model.dataset_meta = {
-                'CLASSES': get_classes('coco'),
-                'PALETTE': palette
+                'classes': get_classes('coco'),
+                'palette': palette
             }
 
     model.cfg = config  # save the config in the model for convenience
@@ -113,7 +117,7 @@ def inference_detector(
 
     if test_pipeline is None:
         cfg = cfg.copy()
-        test_pipeline = cfg.test_dataloader.dataset.pipeline
+        test_pipeline = get_test_pipeline_cfg(cfg)
         if isinstance(imgs[0], np.ndarray):
             # Calling this method across libraries will result
             # in module unregistered error if not prefixed with mmdet.

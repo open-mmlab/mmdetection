@@ -9,7 +9,7 @@ from mmengine.model import BaseModule
 from torch import Tensor
 
 from mmdet.registry import MODELS
-from mmdet.utils.typing import ConfigType, OptMultiConfig
+from mmdet.utils import ConfigType, OptMultiConfig
 from ..layers import CSPLayer
 
 
