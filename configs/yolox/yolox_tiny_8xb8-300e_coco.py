@@ -13,7 +13,7 @@ model = dict(
     neck=dict(in_channels=[96, 192, 384], out_channels=96),
     bbox_head=dict(in_channels=96, feat_channels=96))
 
-img_scale = (640, 640)  # height, width
+img_scale = (640, 640)  # width, height
 
 # file_client_args = dict(
 #     backend='petrel',
@@ -28,6 +28,7 @@ train_pipeline = [
     dict(
         type='RandomAffine',
         scaling_ratio_range=(0.5, 1.5),
+        # img_scale is (width, height)
         border=(-img_scale[0] // 2, -img_scale[1] // 2)),
     dict(type='YOLOXHSVRandomAug'),
     dict(type='RandomFlip', prob=0.5),

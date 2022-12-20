@@ -545,7 +545,7 @@ class Pad(MMCV_Pad):
 
     Args:
         size (tuple, optional): Fixed padding size.
-            Expected padding shape (w, h). Defaults to None.
+            Expected padding shape (width, height). Defaults to None.
         size_divisor (int, optional): The divisor of padded size. Defaults to
             None.
         pad_to_square (bool): Whether to pad the image into a square.
@@ -630,7 +630,7 @@ class RandomCrop(BaseTransform):
 
     Args:
         crop_size (tuple): The relative ratio or absolute pixels of
-            height and width.
+            (width, height).
         crop_type (str, optional): One of "relative_range", "relative",
             "absolute", "absolute_range". "relative" randomly crops
             (h * crop_size[0], w * crop_size[1]) part from an input of size
@@ -776,7 +776,7 @@ class RandomCrop(BaseTransform):
         offset_h = np.random.randint(0, margin_h + 1)
         offset_w = np.random.randint(0, margin_w + 1)
 
-        return (offset_h, offset_w)
+        return offset_h, offset_w
 
     @cache_randomness
     def _get_crop_size(self, image_size: Tuple[int, int]) -> Tuple[int, int]:
@@ -791,7 +791,7 @@ class RandomCrop(BaseTransform):
         """
         h, w = image_size
         if self.crop_type == 'absolute':
-            return (min(self.crop_size[0], h), min(self.crop_size[1], w))
+            return min(self.crop_size[1], h), min(self.crop_size[0], w)
         elif self.crop_type == 'absolute_range':
             crop_h = np.random.randint(
                 min(h, self.crop_size[0]),
@@ -801,7 +801,7 @@ class RandomCrop(BaseTransform):
                 min(w, self.crop_size[1]) + 1)
             return crop_h, crop_w
         elif self.crop_type == 'relative':
-            crop_h, crop_w = self.crop_size
+            crop_w, crop_h = self.crop_size
             return int(h * crop_h + 0.5), int(w * crop_w + 0.5)
         else:
             # 'relative_range'
@@ -1668,8 +1668,8 @@ class RandomCenterCropPad(BaseTransform):
 
     Args:
         crop_size (tuple, optional): expected size after crop, final size will
-            computed according to ratio. Requires (h, w) in train mode, and
-            None in test mode.
+            computed according to ratio. Requires  (width, height)
+            in train mode, and None in test mode.
         ratios (tuple, optional): random select a ratio from tuple and crop
             image to (crop_size[0] * ratio) * (crop_size[1] * ratio).
             Only available in train mode. Defaults to (0.9, 1.0, 1.1).
@@ -1844,8 +1844,8 @@ class RandomCenterCropPad(BaseTransform):
         gt_bboxes = results['gt_bboxes']
         while True:
             scale = random.choice(self.ratios)
-            new_h = int(self.crop_size[0] * scale)
-            new_w = int(self.crop_size[1] * scale)
+            new_h = int(self.crop_size[1] * scale)
+            new_w = int(self.crop_size[0] * scale)
             h_border = self._get_border(self.border, h)
             w_border = self._get_border(self.border, w)
 
@@ -2107,7 +2107,7 @@ class Mosaic(BaseTransform):
 
     Args:
         img_scale (Sequence[int]): Image size after mosaic pipeline of single
-            image. The shape order should be (height, width).
+            image. The shape order should be (width, height).
             Defaults to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
             output. Defaults to (0.5, 1.5).
@@ -2130,7 +2130,7 @@ class Mosaic(BaseTransform):
         assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. ' \
                                  f'got {prob}.'
 
-        log_img_scale(img_scale, skip_square=True)
+        log_img_scale(img_scale, skip_square=True, shape_order='wh')
         self.img_scale = img_scale
         self.center_ratio_range = center_ratio_range
         self.bbox_clip_border = bbox_clip_border
@@ -2170,20 +2170,20 @@ class Mosaic(BaseTransform):
         mosaic_ignore_flags = []
         if len(results['img'].shape) == 3:
             mosaic_img = np.full(
-                (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2), 3),
+                (int(self.img_scale[1] * 2), int(self.img_scale[0] * 2), 3),
                 self.pad_val,
                 dtype=results['img'].dtype)
         else:
             mosaic_img = np.full(
-                (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2)),
+                (int(self.img_scale[1] * 2), int(self.img_scale[0] * 2)),
                 self.pad_val,
                 dtype=results['img'].dtype)
 
         # mosaic center x, y
         center_x = int(
-            random.uniform(*self.center_ratio_range) * self.img_scale[1])
-        center_y = int(
             random.uniform(*self.center_ratio_range) * self.img_scale[0])
+        center_y = int(
+            random.uniform(*self.center_ratio_range) * self.img_scale[1])
         center_position = (center_x, center_y)
 
         loc_strs = ('top_left', 'top_right', 'bottom_left', 'bottom_right')
@@ -2196,8 +2196,8 @@ class Mosaic(BaseTransform):
             img_i = results_patch['img']
             h_i, w_i = img_i.shape[:2]
             # keep_ratio resize
-            scale_ratio_i = min(self.img_scale[0] / h_i,
-                                self.img_scale[1] / w_i)
+            scale_ratio_i = min(self.img_scale[1] / h_i,
+                                self.img_scale[0] / w_i)
             img_i = mmcv.imresize(
                 img_i, (int(w_i * scale_ratio_i), int(h_i * scale_ratio_i)))
 
@@ -2228,10 +2228,10 @@ class Mosaic(BaseTransform):
         mosaic_ignore_flags = np.concatenate(mosaic_ignore_flags, 0)
 
         if self.bbox_clip_border:
-            mosaic_bboxes.clip_([2 * self.img_scale[0], 2 * self.img_scale[1]])
+            mosaic_bboxes.clip_([2 * self.img_scale[1], 2 * self.img_scale[0]])
         # remove outside bboxes
         inside_inds = mosaic_bboxes.is_inside(
-            [2 * self.img_scale[0], 2 * self.img_scale[1]]).numpy()
+            [2 * self.img_scale[1], 2 * self.img_scale[0]]).numpy()
         mosaic_bboxes = mosaic_bboxes[inside_inds]
         mosaic_bboxes_labels = mosaic_bboxes_labels[inside_inds]
         mosaic_ignore_flags = mosaic_ignore_flags[inside_inds]
@@ -2277,7 +2277,7 @@ class Mosaic(BaseTransform):
             x1, y1, x2, y2 = center_position_xy[0], \
                              max(center_position_xy[1] - img_shape_wh[1], 0), \
                              min(center_position_xy[0] + img_shape_wh[0],
-                                 self.img_scale[1] * 2), \
+                                 self.img_scale[0] * 2), \
                              center_position_xy[1]
             crop_coord = 0, img_shape_wh[1] - (y2 - y1), min(
                 img_shape_wh[0], x2 - x1), img_shape_wh[1]
@@ -2287,7 +2287,7 @@ class Mosaic(BaseTransform):
             x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
                              center_position_xy[1], \
                              center_position_xy[0], \
-                             min(self.img_scale[0] * 2, center_position_xy[1] +
+                             min(self.img_scale[1] * 2, center_position_xy[1] +
                                  img_shape_wh[1])
             crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(
                 y2 - y1, img_shape_wh[1])
@@ -2297,8 +2297,8 @@ class Mosaic(BaseTransform):
             x1, y1, x2, y2 = center_position_xy[0], \
                              center_position_xy[1], \
                              min(center_position_xy[0] + img_shape_wh[0],
-                                 self.img_scale[1] * 2), \
-                             min(self.img_scale[0] * 2, center_position_xy[1] +
+                                 self.img_scale[0] * 2), \
+                             min(self.img_scale[1] * 2, center_position_xy[1] +
                                  img_shape_wh[1])
             crop_coord = 0, 0, min(img_shape_wh[0],
                                    x2 - x1), min(y2 - y1, img_shape_wh[1])
@@ -2362,7 +2362,7 @@ class MixUp(BaseTransform):
 
     Args:
         img_scale (Sequence[int]): Image output size after mixup pipeline.
-            The shape order should be (height, width). Defaults to (640, 640).
+            The shape order should be (width, height). Defaults to (640, 640).
         ratio_range (Sequence[float]): Scale ratio of mixup image.
             Defaults to (0.5, 1.5).
         flip_ratio (float): Horizontal flip ratio of mixup image.
@@ -2385,7 +2385,7 @@ class MixUp(BaseTransform):
                  max_iters: int = 15,
                  bbox_clip_border: bool = True) -> None:
         assert isinstance(img_scale, tuple)
-        log_img_scale(img_scale, skip_square=True)
+        log_img_scale(img_scale, skip_square=True, shape_order='wh')
         self.dynamic_scale = img_scale
         self.ratio_range = ratio_range
         self.flip_ratio = flip_ratio
@@ -2439,15 +2439,16 @@ class MixUp(BaseTransform):
 
         if len(retrieve_img.shape) == 3:
             out_img = np.ones(
-                (self.dynamic_scale[0], self.dynamic_scale[1], 3),
+                (self.dynamic_scale[1], self.dynamic_scale[0], 3),
                 dtype=retrieve_img.dtype) * self.pad_val
         else:
             out_img = np.ones(
-                self.dynamic_scale, dtype=retrieve_img.dtype) * self.pad_val
+                self.dynamic_scale[::-1],
+                dtype=retrieve_img.dtype) * self.pad_val
 
         # 1. keep_ratio resize
-        scale_ratio = min(self.dynamic_scale[0] / retrieve_img.shape[0],
-                          self.dynamic_scale[1] / retrieve_img.shape[1])
+        scale_ratio = min(self.dynamic_scale[1] / retrieve_img.shape[0],
+                          self.dynamic_scale[0] / retrieve_img.shape[1])
         retrieve_img = mmcv.imresize(
             retrieve_img, (int(retrieve_img.shape[1] * scale_ratio),
                            int(retrieve_img.shape[0] * scale_ratio)))
@@ -2567,7 +2568,7 @@ class RandomAffine(BaseTransform):
             scaling transform. Defaults to (0.5, 1.5).
         max_shear_degree (float): Maximum degrees of shear
             transform. Defaults to 2.
-        border (tuple[int]): Distance from height and width sides of input
+        border (tuple[int]): Distance from width and height sides of input
             image to adjust output shape. Only used in mosaic dataset.
             Defaults to (0, 0).
         border_val (tuple[int]): Border padding values of 3 channels.
@@ -2630,8 +2631,8 @@ class RandomAffine(BaseTransform):
     @autocast_box_type()
     def transform(self, results: dict) -> dict:
         img = results['img']
-        height = img.shape[0] + self.border[0] * 2
-        width = img.shape[1] + self.border[1] * 2
+        height = img.shape[0] + self.border[1] * 2
+        width = img.shape[1] + self.border[0] * 2
 
         warp_matrix = self._get_random_homography_matrix(height, width)
 
@@ -3167,7 +3168,7 @@ class CachedMosaic(Mosaic):
 
     Args:
         img_scale (Sequence[int]): Image size after mosaic pipeline of single
-            image. The shape order should be (height, width).
+            image. The shape order should be (width, height).
             Defaults to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
             output. Defaults to (0.5, 1.5).
@@ -3249,20 +3250,20 @@ class CachedMosaic(Mosaic):
 
         if len(results['img'].shape) == 3:
             mosaic_img = np.full(
-                (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2), 3),
+                (int(self.img_scale[1] * 2), int(self.img_scale[0] * 2), 3),
                 self.pad_val,
                 dtype=results['img'].dtype)
         else:
             mosaic_img = np.full(
-                (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2)),
+                (int(self.img_scale[1] * 2), int(self.img_scale[0] * 2)),
                 self.pad_val,
                 dtype=results['img'].dtype)
 
         # mosaic center x, y
         center_x = int(
-            random.uniform(*self.center_ratio_range) * self.img_scale[1])
-        center_y = int(
             random.uniform(*self.center_ratio_range) * self.img_scale[0])
+        center_y = int(
+            random.uniform(*self.center_ratio_range) * self.img_scale[1])
         center_position = (center_x, center_y)
 
         loc_strs = ('top_left', 'top_right', 'bottom_left', 'bottom_right')
@@ -3275,8 +3276,8 @@ class CachedMosaic(Mosaic):
             img_i = results_patch['img']
             h_i, w_i = img_i.shape[:2]
             # keep_ratio resize
-            scale_ratio_i = min(self.img_scale[0] / h_i,
-                                self.img_scale[1] / w_i)
+            scale_ratio_i = min(self.img_scale[1] / h_i,
+                                self.img_scale[0] / w_i)
             img_i = mmcv.imresize(
                 img_i, (int(w_i * scale_ratio_i), int(h_i * scale_ratio_i)))
 
@@ -3321,10 +3322,10 @@ class CachedMosaic(Mosaic):
         mosaic_ignore_flags = np.concatenate(mosaic_ignore_flags, 0)
 
         if self.bbox_clip_border:
-            mosaic_bboxes.clip_([2 * self.img_scale[0], 2 * self.img_scale[1]])
+            mosaic_bboxes.clip_([2 * self.img_scale[1], 2 * self.img_scale[0]])
         # remove outside bboxes
         inside_inds = mosaic_bboxes.is_inside(
-            [2 * self.img_scale[0], 2 * self.img_scale[1]]).numpy()
+            [2 * self.img_scale[1], 2 * self.img_scale[0]]).numpy()
         mosaic_bboxes = mosaic_bboxes[inside_inds]
         mosaic_bboxes_labels = mosaic_bboxes_labels[inside_inds]
         mosaic_ignore_flags = mosaic_ignore_flags[inside_inds]
@@ -3399,7 +3400,7 @@ class CachedMixUp(BaseTransform):
 
     Args:
         img_scale (Sequence[int]): Image output size after mixup pipeline.
-            The shape order should be (height, width). Defaults to (640, 640).
+            The shape order should be (width, height). Defaults to (640, 640).
         ratio_range (Sequence[float]): Scale ratio of mixup image.
             Defaults to (0.5, 1.5).
         flip_ratio (float): Horizontal flip ratio of mixup image.
@@ -3509,15 +3510,16 @@ class CachedMixUp(BaseTransform):
 
         if len(retrieve_img.shape) == 3:
             out_img = np.ones(
-                (self.dynamic_scale[0], self.dynamic_scale[1], 3),
+                (self.dynamic_scale[1], self.dynamic_scale[0], 3),
                 dtype=retrieve_img.dtype) * self.pad_val
         else:
             out_img = np.ones(
-                self.dynamic_scale, dtype=retrieve_img.dtype) * self.pad_val
+                self.dynamic_scale[::-1],
+                dtype=retrieve_img.dtype) * self.pad_val
 
         # 1. keep_ratio resize
-        scale_ratio = min(self.dynamic_scale[0] / retrieve_img.shape[0],
-                          self.dynamic_scale[1] / retrieve_img.shape[1])
+        scale_ratio = min(self.dynamic_scale[1] / retrieve_img.shape[0],
+                          self.dynamic_scale[0] / retrieve_img.shape[1])
         retrieve_img = mmcv.imresize(
             retrieve_img, (int(retrieve_img.shape[1] * scale_ratio),
                            int(retrieve_img.shape[0] * scale_ratio)))

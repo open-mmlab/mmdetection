@@ -593,28 +593,29 @@ class TestRandomCrop(unittest.TestCase):
     def test_transform(self):
         # test relative and absolute crop
         src_results = {
-            'img': np.random.randint(0, 255, size=(32, 24), dtype=np.int32)
+            'img': np.random.randint(0, 255, size=(24, 32), dtype=np.int32)
         }
-        target_shape = (16, 12)
+        target_shape = (12, 16)
         for crop_type, crop_size in zip(['relative', 'absolute'], [(0.5, 0.5),
                                                                    (16, 12)]):
             transform = RandomCrop(crop_size=crop_size, crop_type=crop_type)
             results = transform(copy.deepcopy(src_results))
+            print(results['img'].shape[:2])
             self.assertEqual(results['img'].shape[:2], target_shape)
 
         # test absolute_range crop
         transform = RandomCrop(crop_size=(10, 20), crop_type='absolute_range')
         results = transform(copy.deepcopy(src_results))
         h, w = results['img'].shape
-        self.assertTrue(10 <= h <= 20)
         self.assertTrue(10 <= w <= 20)
+        self.assertTrue(10 <= h <= 20)
         # test relative_range crop
         transform = RandomCrop(
             crop_size=(0.5, 0.5), crop_type='relative_range')
         results = transform(copy.deepcopy(src_results))
         h, w = results['img'].shape
-        self.assertTrue(16 <= h <= 32)
-        self.assertTrue(12 <= w <= 24)
+        self.assertTrue(16 <= w <= 32)
+        self.assertTrue(12 <= h <= 24)
 
         # test with gt_bboxes, gt_bboxes_labels, gt_ignore_flags,
         # gt_masks, gt_seg_map
@@ -636,23 +637,23 @@ class TestRandomCrop(unittest.TestCase):
             'gt_seg_map': gt_seg_map
         }
         transform = RandomCrop(
-            crop_size=(5, 5),
+            crop_size=(7, 5),
             allow_negative_crop=False,
             recompute_bbox=False,
             bbox_clip_border=True)
         results = transform(copy.deepcopy(src_results))
         h, w = results['img'].shape
         self.assertEqual(h, 5)
-        self.assertEqual(w, 5)
+        self.assertEqual(w, 7)
         self.assertEqual(results['gt_bboxes'].shape[0], 2)
         self.assertEqual(results['gt_bboxes_labels'].shape[0], 2)
         self.assertEqual(results['gt_ignore_flags'].shape[0], 2)
-        self.assertTupleEqual(results['gt_seg_map'].shape[:2], (5, 5))
+        self.assertTupleEqual(results['gt_seg_map'].shape[:2], (5, 7))
 
         # test geometric transformation with homography matrix
         bboxes = copy.deepcopy(src_results['gt_bboxes'])
         self.assertTrue((bbox_project(bboxes, results['homography_matrix'],
-                                      (5, 5)) == results['gt_bboxes']).all())
+                                      (5, 7)) == results['gt_bboxes']).all())
 
         # test recompute_bbox = True
         gt_masks_ = np.zeros((2, 10, 10), np.uint8)
@@ -665,7 +666,7 @@ class TestRandomCrop(unittest.TestCase):
         }
         target_gt_bboxes = np.zeros((1, 4), dtype=np.float32)
         transform = RandomCrop(
-            crop_size=(10, 10),
+            crop_size=(10, 11),
             allow_negative_crop=False,
             recompute_bbox=True,
             bbox_clip_border=True)
@@ -675,7 +676,7 @@ class TestRandomCrop(unittest.TestCase):
         # test bbox_clip_border = False
         src_results = {'img': img, 'gt_bboxes': gt_bboxes}
         transform = RandomCrop(
-            crop_size=(10, 10),
+            crop_size=(10, 11),
             allow_negative_crop=False,
             recompute_bbox=True,
             bbox_clip_border=False)
@@ -688,7 +689,7 @@ class TestRandomCrop(unittest.TestCase):
         img = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
         gt_bboxes = np.zeros((0, 4), dtype=np.float32)
         src_results = {'img': img, 'gt_bboxes': gt_bboxes}
-        transform = RandomCrop(crop_size=(5, 5), allow_negative_crop=False)
+        transform = RandomCrop(crop_size=(5, 3), allow_negative_crop=False)
         results = transform(copy.deepcopy(src_results))
         self.assertIsNone(results)
 
@@ -696,7 +697,7 @@ class TestRandomCrop(unittest.TestCase):
         img = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
         gt_bboxes = np.zeros((0, 4), dtype=np.float32)
         src_results = {'img': img, 'gt_bboxes': gt_bboxes}
-        transform = RandomCrop(crop_size=(5, 5), allow_negative_crop=True)
+        transform = RandomCrop(crop_size=(5, 3), allow_negative_crop=True)
         results = transform(copy.deepcopy(src_results))
         self.assertTrue(isinstance(results, dict))
 
@@ -721,24 +722,25 @@ class TestRandomCrop(unittest.TestCase):
             'gt_seg_map': gt_seg_map
         }
         transform = RandomCrop(
-            crop_size=(5, 5),
+            crop_size=(7, 5),
             allow_negative_crop=False,
             recompute_bbox=False,
             bbox_clip_border=True)
         results = transform(copy.deepcopy(src_results))
         h, w = results['img'].shape
         self.assertEqual(h, 5)
-        self.assertEqual(w, 5)
+        self.assertEqual(w, 7)
         self.assertEqual(results['gt_bboxes'].shape[0], 2)
         self.assertEqual(results['gt_bboxes_labels'].shape[0], 2)
         self.assertEqual(results['gt_ignore_flags'].shape[0], 2)
-        self.assertTupleEqual(results['gt_seg_map'].shape[:2], (5, 5))
+        self.assertTupleEqual(results['gt_seg_map'].shape[:2], (5, 7))
 
         # test geometric transformation with homography matrix
         bboxes = copy.deepcopy(src_results['gt_bboxes'].numpy())
+        print(bboxes, results['gt_bboxes'])
         self.assertTrue(
             (bbox_project(bboxes, results['homography_matrix'],
-                          (5, 5)) == results['gt_bboxes'].numpy()).all())
+                          (5, 7)) == results['gt_bboxes'].numpy()).all())
 
         # test recompute_bbox = True
         gt_masks_ = np.zeros((2, 10, 10), np.uint8)
@@ -751,7 +753,7 @@ class TestRandomCrop(unittest.TestCase):
         }
         target_gt_bboxes = np.zeros((1, 4), dtype=np.float32)
         transform = RandomCrop(
-            crop_size=(10, 10),
+            crop_size=(10, 11),
             allow_negative_crop=False,
             recompute_bbox=True,
             bbox_clip_border=True)
@@ -776,7 +778,7 @@ class TestRandomCrop(unittest.TestCase):
         img = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
         gt_bboxes = HorizontalBoxes(np.zeros((0, 4), dtype=np.float32))
         src_results = {'img': img, 'gt_bboxes': gt_bboxes}
-        transform = RandomCrop(crop_size=(5, 5), allow_negative_crop=False)
+        transform = RandomCrop(crop_size=(5, 2), allow_negative_crop=False)
         results = transform(copy.deepcopy(src_results))
         self.assertIsNone(results)
 
@@ -784,13 +786,13 @@ class TestRandomCrop(unittest.TestCase):
         img = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
         gt_bboxes = HorizontalBoxes(np.zeros((0, 4), dtype=np.float32))
         src_results = {'img': img, 'gt_bboxes': gt_bboxes}
-        transform = RandomCrop(crop_size=(5, 5), allow_negative_crop=True)
+        transform = RandomCrop(crop_size=(5, 2), allow_negative_crop=True)
         results = transform(copy.deepcopy(src_results))
         self.assertTrue(isinstance(results, dict))
 
     def test_repr(self):
         crop_type = 'absolute'
-        crop_size = (10, 10)
+        crop_size = (10, 5)
         allow_negative_crop = False
         recompute_bbox = True
         bbox_clip_border = False
@@ -903,7 +905,7 @@ class TestMosaic(unittest.TestCase):
         with self.assertRaises(AssertionError):
             transform = Mosaic(prob=1.5)
 
-        transform = Mosaic(img_scale=(10, 12))
+        transform = Mosaic(img_scale=(12, 10))
         # test assertion for invalid mix_results
         with self.assertRaises(AssertionError):
             results = transform(copy.deepcopy(self.results))
@@ -921,7 +923,7 @@ class TestMosaic(unittest.TestCase):
         self.results['gt_bboxes'] = np.empty((0, 4), dtype=np.float32)
         self.results['gt_bboxes_labels'] = np.empty((0, ), dtype=np.int64)
         self.results['gt_ignore_flags'] = np.empty((0, ), dtype=np.bool)
-        transform = Mosaic(img_scale=(10, 12))
+        transform = Mosaic(img_scale=(12, 10))
         self.results['mix_results'] = [copy.deepcopy(self.results)] * 3
         results = transform(copy.deepcopy(self.results))
         self.assertIsInstance(results, dict)
@@ -934,7 +936,7 @@ class TestMosaic(unittest.TestCase):
         self.assertTrue(results['gt_ignore_flags'].dtype == bool)
 
     def test_transform_use_box_type(self):
-        transform = Mosaic(img_scale=(10, 12))
+        transform = Mosaic(img_scale=(12, 10))
         results = copy.deepcopy(self.results)
         results['gt_bboxes'] = HorizontalBoxes(results['gt_bboxes'])
         results['mix_results'] = [results] * 3
@@ -984,7 +986,7 @@ class TestMixUp(unittest.TestCase):
         with self.assertRaises(AssertionError):
             transform = MixUp(img_scale=640)
 
-        transform = MixUp(img_scale=(10, 12))
+        transform = MixUp(img_scale=(12, 10))
         # test assertion for invalid mix_results
         with self.assertRaises(AssertionError):
             results = transform(copy.deepcopy(self.results))
@@ -1006,7 +1008,7 @@ class TestMixUp(unittest.TestCase):
         results = copy.deepcopy(self.results)
         results['gt_bboxes'] = HorizontalBoxes(results['gt_bboxes'])
 
-        transform = MixUp(img_scale=(10, 12))
+        transform = MixUp(img_scale=(12, 10))
         results['mix_results'] = [results]
         results = transform(results)
         self.assertTrue(results['img'].shape[:2] == (224, 224))
@@ -1233,7 +1235,7 @@ class TestRandomCenterCropPad(unittest.TestCase):
         results['gt_bboxes_labels'] = gt_bboxes_labels
         results['gt_ignore_flags'] = gt_ignore_flags
         crop_module = RandomCenterCropPad(
-            crop_size=(h - 20, w - 20),
+            crop_size=(w - 20, h - 20),
             ratios=(1.0, ),
             border=128,
             mean=[123.675, 116.28, 103.53],
@@ -1278,7 +1280,7 @@ class TestRandomCenterCropPad(unittest.TestCase):
         results['gt_bboxes_labels'] = gt_bboxes_labels
         results['gt_ignore_flags'] = gt_ignore_flags
         crop_module = RandomCenterCropPad(
-            crop_size=(h - 20, w - 20),
+            crop_size=(w - 20, h - 20),
             ratios=(1.0, ),
             border=128,
             mean=[123.675, 116.28, 103.53],
