@@ -71,7 +71,9 @@ configs/faster_rcnn/faster-rcnn_r50_fpn_fcos-rpn_1x_coco.py
 ```
 
 ## 评估候选区域
+
 候选区域的质量对检测器的性能有重要影响，因此，我们也提供了一种评估候选区域的方法。和上面一样创建一个新的名为 `configs/rpn/fcos-rpn_r50_fpn_1x_coco.py` 的配置文件，并且在 `configs/rpn/fcos-rpn_r50_fpn_1x_coco.py` 中将 `rpn_head` 的设置替换为 `bbox_head` 的设置。
+
 ```python
 _base_ = [
     '../_base_/models/rpn_r50_fpn.py', '../_base_/datasets/coco_detection.py',
@@ -117,6 +119,7 @@ configs/rpn/fcos-rpn_r50_fpn_1x_coco.py
 ## 用预先训练的 FCOS 训练定制的 Faster R-CNN
 
 预训练不仅加快了训练的收敛速度，而且提高了检测器的性能。因此，我们在这里给出一个例子来说明如何使用预先训练的 FCOS 作为 RPN 来加速训练和提高精度。假设我们想在 Faster R-CNN 中使用 `FCOSHead` 作为 `rpn_head`，并加载预先训练权重来进行训练 [`fcos_r50-caffe_fpn_gn-head_1x_coco`](https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r50_caffe_fpn_gn-head_1x_coco/fcos_r50_caffe_fpn_gn-head_1x_coco-821213aa.pth)。 配置文件 `configs/faster_rcnn/faster-rcnn_r50-caffe_fpn_fcos- rpn_1x_copy .py` 的内容如下所示。注意，`fcos_r50-caffe_fpn_gn-head_1x_coco` 使用 ResNet50 的 caffe 版本，因此需要更新 `data_preprocessor` 中的像素平均值和 std。
+
 ```python
 _base_ = [
     '../_base_/models/faster-rcnn_r50_fpn.py',
