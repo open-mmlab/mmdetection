@@ -12,7 +12,7 @@ from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, OptMultiConfig
-from .transformer import DeformableDetrTransformerEncoder
+from .transformer import Mask2FormerTransformerEncoder
 from .positional_encoding import SinePositionalEncoding
 from ..task_modules.prior_generators import MlvlPointGenerator
 
@@ -77,7 +77,7 @@ class MSDeformAttnPixelDecoder(BaseModule):
             input_conv_list.append(input_conv)
         self.input_convs = ModuleList(input_conv_list)
 
-        self.encoder = DeformableDetrTransformerEncoder(**encoder)  # TODO: Notice reference_point
+        self.encoder = Mask2FormerTransformerEncoder(**encoder)  # TODO: Notice reference_point
         self.postional_encoding = SinePositionalEncoding(
             **positional_encoding_cfg)
         # high resolution to low resolution
@@ -139,9 +139,9 @@ class MSDeformAttnPixelDecoder(BaseModule):
 
         # init_weights defined in MultiScaleDeformableAttention
         for layer in self.encoder.layers:
-            for attn in layer.attentions:
-                if isinstance(attn, MultiScaleDeformableAttention):
-                    attn.init_weights()
+            attn = layer.self_attn
+            if isinstance(attn, MultiScaleDeformableAttention):
+                attn.init_weights()
 
     def forward(self, feats: List[Tensor]) -> Tuple[Tensor, Tensor]:
         """
@@ -183,8 +183,8 @@ class MSDeformAttnPixelDecoder(BaseModule):
             reference_points = reference_points / factor
 
             # shape (batch_size, c, h_i, w_i) -> (h_i * w_i, batch_size, c)
-            feat_projected = feat_projected.flatten(2).permute(2, 0, 1)
-            level_pos_embed = level_pos_embed.flatten(2).permute(2, 0, 1)
+            feat_projected = feat_projected.flatten(2).permute(0, 2, 1)
+            level_pos_embed = level_pos_embed.flatten(2).permute(0, 2, 1)
             padding_mask_resized = padding_mask_resized.flatten(1)
 
             encoder_input_list.append(feat_projected)
@@ -196,9 +196,9 @@ class MSDeformAttnPixelDecoder(BaseModule):
         # total_num_queries=sum([., h_i * w_i,.])
         padding_masks = torch.cat(padding_mask_list, dim=1)
         # shape (total_num_queries, batch_size, c)
-        encoder_inputs = torch.cat(encoder_input_list, dim=0)
+        encoder_inputs = torch.cat(encoder_input_list, dim=1)
         level_positional_encodings = torch.cat(
-            level_positional_encoding_list, dim=0)
+            level_positional_encoding_list, dim=1)
         device = encoder_inputs.device
         # shape (num_encoder_levels, 2), from low
         # resolution to high resolution
@@ -215,19 +215,14 @@ class MSDeformAttnPixelDecoder(BaseModule):
         # shape (num_total_query, batch_size, c)
         memory = self.encoder(
             query=encoder_inputs,
-            key=None,
-            value=None,
             query_pos=level_positional_encodings,
-            key_pos=None,
-            attn_masks=None,
-            key_padding_mask=None,
-            query_key_padding_mask=padding_masks,
+            key_padding_mask=padding_masks,
             spatial_shapes=spatial_shapes,
             reference_points=reference_points,
             level_start_index=level_start_index,
-            valid_radios=valid_radios)
-        # (num_total_query, batch_size, c) -> (batch_size, c, num_total_query)
-        memory = memory.permute(1, 2, 0)
+            valid_ratios=valid_radios)
+        # (batch_size, num_total_query, c) -> (batch_size, c, num_total_query)
+        memory = memory.permute(0, 2, 1)
 
         # from low resolution to high resolution
         num_queries_per_level = [e[0] * e[1] for e in spatial_shapes]

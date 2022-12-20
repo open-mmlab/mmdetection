@@ -340,7 +340,7 @@ class Mask2FormerHead(MaskFormerHead):
         """Forward for head part which is called after every decoder layer.
 
         Args:
-            decoder_out (Tensor): in shape (num_queries, batch_size, c).
+            decoder_out (Tensor): in shape (batch_size, num_queries, c).
             mask_feature (Tensor): in shape (batch_size, c, h, w).
             attn_mask_target_size (tuple[int, int]): target attention
                 mask size.
@@ -357,7 +357,6 @@ class Mask2FormerHead(MaskFormerHead):
                     (batch_size * num_heads, num_queries, h, w).
         """
         decoder_out = self.transformer_decoder.post_norm(decoder_out)
-        decoder_out = decoder_out.transpose(0, 1)
         # shape (num_queries, batch_size, c)
         cls_pred = self.cls_embed(decoder_out)
         # shape (num_queries, batch_size, c)
@@ -410,25 +409,25 @@ class Mask2FormerHead(MaskFormerHead):
         decoder_positional_encodings = []
         for i in range(self.num_transformer_feat_level):
             decoder_input = self.decoder_input_projs[i](multi_scale_memorys[i])
-            # shape (batch_size, c, h, w) -> (h*w, batch_size, c)
-            decoder_input = decoder_input.flatten(2).permute(2, 0, 1)
+            # shape (batch_size, c, h, w) -> (batch_size, h*w, c)
+            decoder_input = decoder_input.flatten(2).permute(0, 2, 1)
             level_embed = self.level_embed.weight[i].view(1, 1, -1)
             decoder_input = decoder_input + level_embed
-            # shape (batch_size, c, h, w) -> (h*w, batch_size, c)
+            # shape (batch_size, c, h, w) -> (batch_size, h*w, c)
             mask = decoder_input.new_zeros(
                 (batch_size, ) + multi_scale_memorys[i].shape[-2:],
                 dtype=torch.bool)
             decoder_positional_encoding = self.decoder_positional_encoding(
                 mask)
             decoder_positional_encoding = decoder_positional_encoding.flatten(
-                2).permute(2, 0, 1)
+                2).permute(0, 2, 1)
             decoder_inputs.append(decoder_input)
             decoder_positional_encodings.append(decoder_positional_encoding)
-        # shape (num_queries, c) -> (num_queries, batch_size, c)
-        query_feat = self.query_feat.weight.unsqueeze(1).repeat(
-            (1, batch_size, 1))
-        query_embed = self.query_embed.weight.unsqueeze(1).repeat(
-            (1, batch_size, 1))
+        # shape (num_queries, c) -> (batch_size, num_queries, c)
+        query_feat = self.query_feat.weight.unsqueeze(0).repeat(
+            (batch_size, 1, 1))
+        query_embed = self.query_embed.weight.unsqueeze(0).repeat(
+            (batch_size, 1, 1))
 
         cls_pred_list = []
         mask_pred_list = []
@@ -445,14 +444,13 @@ class Mask2FormerHead(MaskFormerHead):
 
             # cross_attn + self_attn
             layer = self.transformer_decoder.layers[i]
-            attn_masks = [attn_mask, None]
             query_feat = layer(
                 query=query_feat,
                 key=decoder_inputs[level_idx],
                 value=decoder_inputs[level_idx],
                 query_pos=query_embed,
                 key_pos=decoder_positional_encodings[level_idx],
-                attn_masks=attn_masks,
+                cross_attn_mask=attn_mask,
                 query_key_padding_mask=None,
                 # here we do not apply masking on padded region
                 key_padding_mask=None)

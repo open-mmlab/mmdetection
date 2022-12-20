@@ -63,7 +63,8 @@ model = dict(
                         num_heads=8,
                         num_levels=3,  # 3 in DeformDETR
                         num_points=4,
-                        dropout=0.0),  # 0.1 in DeformDETR
+                        dropout=0.0,
+                        batch_first=True),  # 0.1 in DeformDETR
                     ffn_cfg=dict(
                         embed_dims=256,
                         feedforward_channels=1024,
@@ -77,7 +78,7 @@ model = dict(
             return_intermediate=True,
             num_layers=9,
             layer_cfg=dict(  # Mask2FormerTransformerDecoderLayer
-                self_attn_cfgs=dict(  # MultiheadAttention
+                self_attn_cfg=dict(  # MultiheadAttention
                     embed_dims=256,
                     num_heads=8,
                     dropout=0.0,  # 0.1 for DETR
@@ -87,15 +88,12 @@ model = dict(
                     num_heads=8,
                     dropout=0.0,  # 0.1 for DETR
                     batch_first=True),
-                ffn_cfgs=dict(
+                ffn_cfg=dict(
                     embed_dims=256,
                     feedforward_channels=2048,
                     num_fcs=2,
                     ffn_drop=0.0,  # 0.1 for DETR
-                    act_cfg=dict(type='ReLU', inplace=True)),
-                feedforward_channels=2048,
-                operation_order=('cross_attn', 'norm', 'self_attn', 'norm',
-                                 'ffn', 'norm')),
+                    act_cfg=dict(type='ReLU', inplace=True))),
             init_cfg=None),
         loss_cls=dict(
             type='CrossEntropyLoss',

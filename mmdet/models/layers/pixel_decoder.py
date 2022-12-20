@@ -226,20 +226,18 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
 
         pos_embed = self.positional_encoding(padding_mask)
         feat_last = self.encoder_in_proj(feat_last)
-        # (batch_size, c, h, w) -> (num_queries, batch_size, c)
-        feat_last = feat_last.flatten(2).permute(2, 0, 1)
-        pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
+        # (batch_size, c, h, w) -> (batch_size, num_queries, c)
+        feat_last = feat_last.flatten(2).permute(0, 2, 1)
+        pos_embed = pos_embed.flatten(2).permute(0, 2, 1)
         # (batch_size, h, w) -> (batch_size, h*w)
         padding_mask = padding_mask.flatten(1)
         memory = self.encoder(
             query=feat_last,
-            key=None,
-            value=None,
             query_pos=pos_embed,
-            query_key_padding_mask=padding_mask)
-        # (num_queries, batch_size, c) -> (batch_size, c, h, w)
-        memory = memory.permute(1, 2, 0).view(bs, self.encoder_embed_dims, h,
-                                              w)
+            key_padding_mask=padding_mask)
+        # (batch_size, num_queries, c) -> (batch_size, c, h, w)
+        memory = memory.permute(0, 2, 1).view(
+            bs, self.encoder_embed_dims, h, w)
         y = self.encoder_out_proj(memory)
         for i in range(self.num_inputs - 2, -1, -1):
             x = feats[i]

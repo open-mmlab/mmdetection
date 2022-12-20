@@ -493,26 +493,24 @@ class MaskFormerHead(AnchorFreeHead):
         mask_features, memory = self.pixel_decoder(x, batch_img_metas)
         pos_embed = self.decoder_pe(padding_mask)
         memory = self.decoder_input_proj(memory)
-        # shape (batch_size, c, h, w) -> (h*w, batch_size, c)
-        memory = memory.flatten(2).permute(2, 0, 1)
-        pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
+        # shape (batch_size, c, h, w) -> (batch_size, h*w, c)
+        memory = memory.flatten(2).permute(0, 2, 1)
+        pos_embed = pos_embed.flatten(2).permute(0, 2, 1)
         # shape (batch_size, h * w)
         padding_mask = padding_mask.flatten(1)
         # shape = (num_queries, embed_dims)
         query_embed = self.query_embed.weight
-        # shape = (num_queries, batch_size, embed_dims)
-        query_embed = query_embed.unsqueeze(1).repeat(1, batch_size, 1)
+        # shape = (batch_size, num_queries, embed_dims)
+        query_embed = query_embed.unsqueeze(0).repeat(batch_size, 1, 1)
         target = torch.zeros_like(query_embed)
         # shape (num_decoder, num_queries, batch_size, embed_dims)
         out_dec = self.transformer_decoder(
             query=target,
             key=memory,
             value=memory,
-            key_pos=pos_embed,
             query_pos=query_embed,
+            key_pos=pos_embed,
             key_padding_mask=padding_mask)
-        # shape (num_decoder, batch_size, num_queries, embed_dims)
-        out_dec = out_dec.transpose(1, 2)
 
         # cls_scores
         all_cls_scores = self.cls_embed(out_dec)

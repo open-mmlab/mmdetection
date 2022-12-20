@@ -3,7 +3,56 @@ from torch import Tensor
 from mmcv.cnn import build_norm_layer
 from mmengine.model import ModuleList
 
-from . import DetrTransformerDecoderLayer, DetrTransformerDecoder
+from .detr_transformer import (DetrTransformerDecoderLayer,
+                               DetrTransformerDecoder)
+from .deformable_detr_transformer import DeformableDetrTransformerEncoder
+
+
+class Mask2FormerTransformerEncoder(DeformableDetrTransformerEncoder):
+    """Encoder in PixelDecoder of Mask2Former."""
+
+    def forward(self, query: Tensor, query_pos: Tensor,
+                key_padding_mask: Tensor, spatial_shapes: Tensor,
+                level_start_index: Tensor, valid_ratios: Tensor,
+                reference_points: Tensor,
+                **kwargs) -> Tensor:
+        """Forward function of Transformer encoder.
+
+        Args:
+            query (Tensor): The input query, has shape (bs, num_queries, dim).
+            query_pos (Tensor): The positional encoding for query, has shape
+                (bs, num_queries, dim). If not None, it will be added to the
+                `query` before forward function. Defaults to None.
+            key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
+                input. ByteTensor, has shape (bs, num_queries).
+            spatial_shapes (Tensor): Spatial shapes of features in all levels,
+                has shape (num_levels, 2), last dimension represents (h, w).
+            level_start_index (Tensor): The start index of each level.
+                A tensor has shape (num_levels, ) and can be represented
+                as [0, h_0*w_0, h_0*w_0+h_1*w_1, ...].
+            valid_ratios (Tensor): The ratios of the valid width and the valid
+                height relative to the width and the height of features in all
+                levels, has shape (bs, num_levels, 2).
+            reference_points (Tensor): The initial reference, has shape
+                (bs, num_queries, 2) with the last dimension arranged
+                as (cx, cy).
+
+        Returns:
+            Tensor: Output queries of Transformer encoder, which is also
+            called 'encoder output embeddings' or 'memory', has shape
+            (bs, num_queries, dim)
+        """
+        for layer in self.layers:
+            query = layer(
+                query=query,
+                query_pos=query_pos,
+                key_padding_mask=key_padding_mask,
+                spatial_shapes=spatial_shapes,
+                level_start_index=level_start_index,
+                valid_ratios=valid_ratios,
+                reference_points=reference_points,
+                **kwargs)
+        return query
 
 
 class Mask2FormerTransformerDecoder(DetrTransformerDecoder):
