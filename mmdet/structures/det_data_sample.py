@@ -12,7 +12,8 @@ class DetDataSample(BaseDataElement):
 
         - ``proposals`` (InstanceData): Region proposals used in two-stage
           detectors.
-        - ``gt_instances`` (InstanceData): Ground truth of instance annotations.
+        - ``gt_instances`` (InstanceData): Ground truth of instance
+          annotations.
         - ``pred_instances`` (InstanceData): Instances of model predictions.
         - ``ignored_instances`` (InstanceData): Instances to be ignored during
           training/testing.
