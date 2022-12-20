@@ -3,6 +3,8 @@ from .anchor_free_head import AnchorFreeHead
 from .anchor_head import AnchorHead
 from .atss_head import ATSSHead
 from .ascend_anchor_head import AscendAnchorHead
+from .ascend_retina_head import AscendRetinaHead
+from .ascend_ssd_head import AscendSSDHead
 from .autoassign_head import AutoAssignHead
 from .cascade_rpn_head import CascadeRPNHead, StageCascadeRPNHead
 from .centernet_head import CenterNetHead
@@ -56,5 +58,5 @@ __all__ = [
     'DecoupledSOLOHead', 'CenterNetHead', 'YOLOXHead',
     'DecoupledSOLOLightHead', 'LADHead', 'TOODHead', 'MaskFormerHead',
     'Mask2FormerHead', 'SOLOV2Head', 'DDODHead',
-    'AscendAnchorHead'
+    'AscendAnchorHead', 'AscendRetinaHead', 'AscendSSDHead'
 ]

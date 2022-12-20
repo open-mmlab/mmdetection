@@ -157,13 +157,17 @@ class AscendSSDHead(SSDHead, AscendAnchorHead):
         if self.reg_decoded_bbox:
             raise RuntimeError
 
-        loss_bbox = smooth_l1_loss(
+        loss_bbox_all = smooth_l1_loss(
             concat_bbox_pred,
             concat_bbox_targets,
             concat_bbox_weights,
-            reduction="batch_mean",
+            reduction="none",
             beta=self.train_cfg.smoothl1_beta,
             avg_factor=num_total_samples)
+        eps = torch.finfo(torch.float32).eps
+
+        sum_dim = (i for i in range(1, len(loss_bbox_all.size())))
+        loss_bbox = loss_bbox_all.sum(tuple(sum_dim)) / (num_total_samples + eps)
         return loss_cls[None], loss_bbox
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))

@@ -114,7 +114,7 @@ class AscendMaxIoUAssigner(BaseAssigner):
             concat_gt_max_overlaps, concat_gt_argmax_overlaps = concat_overlaps.max(dim=2)
             concat_index_bool = (concat_gt_max_overlaps >= self.min_pos_iou) & (concat_gt_max_overlaps > 0)
             if self.gt_max_assign_all:
-                pos_inds_low_quality = (concat_overlaps == concat_gt_max_overlaps.unsqueeze(2) & concat_index_bool.unsqueeze(2))
+                pos_inds_low_quality = (concat_overlaps == concat_gt_max_overlaps.unsqueeze(2)) & concat_index_bool.unsqueeze(2)
                 for i in range(num_gts):
                     pos_inds_low_quality_gt = pos_inds_low_quality[:, i, :]
                     concat_argmax_overlaps[pos_inds_low_quality_gt] = i
