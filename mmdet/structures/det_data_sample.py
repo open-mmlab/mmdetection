@@ -41,16 +41,12 @@ class DetDataSample(BaseDataElement):
         5
         >>> print(data_sample)
         <DetDataSample(
-
             META INFORMATION
-
             DATA FIELDS
             _gt_instances: <InstanceData(
-
                     META INFORMATION
                     pad_shape: (800, 1216, 3)
                     img_shape: (800, 1196, 3)
-
                     DATA FIELDS
                     labels: tensor([0.8533, 0.1550, 0.5433, 0.7294, 0.5098])
                     bboxes: tensor([[0.9773, 0.5842, 0.1727, 0.6569],
@@ -60,11 +56,9 @@ class DetDataSample(BaseDataElement):
                                 [0.4134, 0.2117, 0.2724, 0.6848]])
                 ) at 0x7f21fb1b9190>
             gt_instances: <InstanceData(
-
                     META INFORMATION
                     pad_shape: (800, 1216, 3)
                     img_shape: (800, 1196, 3)
-
                     DATA FIELDS
                     labels: tensor([0.8533, 0.1550, 0.5433, 0.7294, 0.5098])
                     bboxes: tensor([[0.9773, 0.5842, 0.1727, 0.6569],
@@ -97,27 +91,22 @@ class DetDataSample(BaseDataElement):
         >>> data_sample.gt_panoptic_seg = gt_panoptic_seg
         >>> print(data_sample)
         <DetDataSample(
-
             META INFORMATION
-
             DATA FIELDS
             gt_panoptic_seg: <PixelData(
-
                     META INFORMATION
-
                     DATA FIELDS
                     panoptic_seg: tensor([[[0.7586, 0.1262, 0.2892, 0.9341],
                                  [0.3200, 0.7448, 0.1052, 0.5371]]])
                 ) at 0x7f66c2bb7730>
             _gt_panoptic_seg: <PixelData(
-
                     META INFORMATION
-
                     DATA FIELDS
                     panoptic_seg: tensor([[[0.7586, 0.1262, 0.2892, 0.9341],
                                  [0.3200, 0.7448, 0.1052, 0.5371]]])
                 ) at 0x7f66c2bb7730>
         ) at 0x7f66c2bb7280>
+
         >>> data_sample = DetDataSample()
         >>> gt_sem_seg_data = dict(sem_seg=torch.rand(2, 2, 2))
         >>> gt_sem_seg = PixelData(**gt_sem_seg_data)
