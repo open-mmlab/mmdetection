@@ -6,6 +6,7 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import TASK_UTILS
+from ..samplers.sampling_result import SamplingResult
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
@@ -118,58 +119,59 @@ class MaxIoUAssigner(BaseAssigner):
             >>> expected_gt_inds = torch.LongTensor([1, 0])
             >>> assert torch.all(assign_result.gt_inds == expected_gt_inds)
         """
-        gt_bboxes = gt_instances.bboxes
-        priors = pred_instances.priors
-        gt_labels = gt_instances.labels
-        if gt_instances_ignore is not None:
-            gt_bboxes_ignore = gt_instances_ignore.bboxes
-        else:
-            gt_bboxes_ignore = None
 
-        assign_on_cpu = True if (self.gpu_assign_thr > 0) and (
-            gt_bboxes.shape[0] > self.gpu_assign_thr) else False
-        # compute overlap and assign gt on CPU when number of GT is large
-        if assign_on_cpu:
-            device = priors.device
-            priors = priors.cpu()
-            gt_bboxes = gt_bboxes.cpu()
-            gt_labels = gt_labels.cpu()
-            if gt_bboxes_ignore is not None:
-                gt_bboxes_ignore = gt_bboxes_ignore.cpu()
+        overlaps = self.iou_calculator(
+            bboxes1=gt_instances,
+            bboxes2=pred_instances,
+            key1='bboxes',
+            key2='priors')
 
-        overlaps = self.iou_calculator(gt_bboxes, priors)
-
-        if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None
-                and gt_bboxes_ignore.numel() > 0 and priors.numel() > 0):
+        if (self.ignore_iof_thr > 0 and gt_instances_ignore is not None
+                and len(gt_instances_ignore) > 0 and len(pred_instances) > 0):
             if self.ignore_wrt_candidates:
                 ignore_overlaps = self.iou_calculator(
-                    priors, gt_bboxes_ignore, mode='iof')
+                    bboxes1=pred_instances,
+                    bboxes2=gt_instances_ignore,
+                    mode='iof',
+                    key1='priors',
+                    key2='bboxes')
+
                 ignore_max_overlaps, _ = ignore_overlaps.max(dim=1)
             else:
                 ignore_overlaps = self.iou_calculator(
-                    gt_bboxes_ignore, priors, mode='iof')
+                    bboxes1=gt_instances_ignore,
+                    bboxes2=pred_instances,
+                    mode='iof',
+                    key1='bboxes',
+                    key2='priors')
                 ignore_max_overlaps, _ = ignore_overlaps.max(dim=0)
             overlaps[:, ignore_max_overlaps > self.ignore_iof_thr] = -1
 
-        assign_result = self.assign_wrt_overlaps(overlaps, gt_labels)
-        if assign_on_cpu:
-            assign_result.gt_inds = assign_result.gt_inds.to(device)
-            assign_result.max_overlaps = assign_result.max_overlaps.to(device)
-            if assign_result.labels is not None:
-                assign_result.labels = assign_result.labels.to(device)
+        assign_result = self.assign_wrt_overlaps(overlaps, pred_instances,
+                                                 gt_instances)
         return assign_result
 
     def assign_wrt_overlaps(self, overlaps: Tensor,
-                            gt_labels: Tensor) -> AssignResult:
+                            pred_instances: InstanceData,
+                            gt_instances: InstanceData) -> SamplingResult:
         """Assign w.r.t. the overlaps of priors with gts.
 
         Args:
             overlaps (Tensor): Overlaps between k gt_bboxes and n bboxes,
                 shape(k, n).
-            gt_labels (Tensor): Labels of k gt_bboxes, shape (k, ).
+            pred_instances (:obj:`InstanceData`): Instances of model
+                predictions. It includes ``priors``, and the priors can
+                be anchors or points, or the bboxes predicted by the
+                previous stage, has shape (n, 4). The bboxes predicted by
+                the current model or stage will be named ``bboxes``,
+                ``labels``, and ``scores``, the same as the ``InstanceData``
+                in other places.
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes``, with shape (k, 4),
+                and ``labels``, with shape (k, ).
 
         Returns:
-            :obj:`AssignResult`: The assign result.
+            :obj:`SamplingResult`: The sampling result.
         """
         num_gts, num_bboxes = overlaps.size(0), overlaps.size(1)
 
@@ -181,17 +183,27 @@ class MaxIoUAssigner(BaseAssigner):
         if num_gts == 0 or num_bboxes == 0:
             # No ground truth or boxes, return empty assignment
             max_overlaps = overlaps.new_zeros((num_bboxes, ))
-            assigned_labels = overlaps.new_full((num_bboxes, ),
-                                                -1,
-                                                dtype=torch.long)
             if num_gts == 0:
                 # No truth, assign everything to background
                 assigned_gt_inds[:] = 0
-            return AssignResult(
-                num_gts=num_gts,
-                gt_inds=assigned_gt_inds,
-                max_overlaps=max_overlaps,
-                labels=assigned_labels)
+            pred_instances.gt_inds = assigned_gt_inds
+            pred_instances.gt_flags = overlaps.new_zeros((num_bboxes, ),
+                                                         dtype=torch.uint8)
+            pred_instances.max_overlaps = max_overlaps
+
+            pos_zeros = overlaps.new_zeros((num_bboxes, ), dtype=torch.bool)
+            # no positive indexes, and all priors are negative
+            pos_inds = torch.nonzero(
+                pos_zeros > 0, as_tuple=False).squeeze(-1).unique()
+            neg_inds = torch.nonzero(
+                pos_zeros == 0, as_tuple=False).squeeze(-1).unique()
+
+            return SamplingResult(
+                pred_instances=pred_instances,
+                gt_instances=gt_instances,
+                pos_inds=pos_inds,
+                neg_inds=neg_inds,
+                avg_factor_with_neg=False)
 
         # for each anchor, which gt best overlaps with it
         # for each anchor, the max iou of all gts
@@ -231,15 +243,19 @@ class MaxIoUAssigner(BaseAssigner):
                     else:
                         assigned_gt_inds[gt_argmax_overlaps[i]] = i + 1
 
-        assigned_labels = assigned_gt_inds.new_full((num_bboxes, ), -1)
         pos_inds = torch.nonzero(
             assigned_gt_inds > 0, as_tuple=False).squeeze()
-        if pos_inds.numel() > 0:
-            assigned_labels[pos_inds] = gt_labels[assigned_gt_inds[pos_inds] -
-                                                  1]
+        neg_inds = torch.nonzero(
+            assigned_gt_inds == 0, as_tuple=False).squeeze()
 
-        return AssignResult(
-            num_gts=num_gts,
-            gt_inds=assigned_gt_inds,
-            max_overlaps=max_overlaps,
-            labels=assigned_labels)
+        pred_instances.gt_inds = assigned_gt_inds
+        pred_instances.gt_flags = overlaps.new_zeros((num_bboxes, ),
+                                                     dtype=torch.uint8)
+        pred_instances.max_overlaps = max_overlaps
+
+        return SamplingResult(
+            pred_instances=pred_instances,
+            gt_instances=gt_instances,
+            pos_inds=pos_inds,
+            neg_inds=neg_inds,
+            avg_factor_with_neg=False)

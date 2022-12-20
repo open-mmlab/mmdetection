@@ -1,6 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
+from mmdet.utils.memory import AvoidCUDAOOM
+
 
 def fp16_clamp(x, min=None, max=None):
     if not x.is_cuda and x.dtype == torch.float16:
@@ -10,6 +12,7 @@ def fp16_clamp(x, min=None, max=None):
     return x.clamp(min, max)
 
 
+@AvoidCUDAOOM.retry_if_cuda_oom
 def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     """Calculate overlap between two set of bboxes.
 

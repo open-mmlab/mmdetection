@@ -6,7 +6,7 @@ import torch
 from mmengine.structures import InstanceData
 
 from mmdet.registry import TASK_UTILS
-from ..assigners import AssignResult
+from ..assigners.assign_result import AssignResult
 from .base_sampler import BaseSampler
 from .mask_sampling_result import MaskSamplingResult
 

@@ -6,8 +6,8 @@ from numpy import ndarray
 from torch import Tensor
 
 from mmdet.registry import TASK_UTILS
-from ..assigners import AssignResult
 from .base_sampler import BaseSampler
+from .sampling_result import SamplingResult
 
 
 @TASK_UTILS.register_module()
@@ -70,7 +70,7 @@ class RandomSampler(BaseSampler):
             rand_inds = rand_inds.cpu().numpy()
         return rand_inds
 
-    def _sample_pos(self, assign_result: AssignResult, num_expected: int,
+    def _sample_pos(self, assign_result: SamplingResult, num_expected: int,
                     **kwargs) -> Union[Tensor, ndarray]:
         """Randomly sample some positive samples.
 
@@ -89,7 +89,7 @@ class RandomSampler(BaseSampler):
         else:
             return self.random_choice(pos_inds, num_expected)
 
-    def _sample_neg(self, assign_result: AssignResult, num_expected: int,
+    def _sample_neg(self, assign_result: SamplingResult, num_expected: int,
                     **kwargs) -> Union[Tensor, ndarray]:
         """Randomly sample some negative samples.
 
