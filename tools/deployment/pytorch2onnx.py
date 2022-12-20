@@ -298,7 +298,7 @@ if __name__ == '__main__':
 
     if args.shape is None:
         img_scale = cfg.test_pipeline[1]['img_scale']
-        input_shape = (1, 3, img_scale[1], img_scale[0])
+        input_shape = (1, 3, img_scale[0], img_scale[1])
     elif len(args.shape) == 1:
         input_shape = (1, 3, args.shape[0], args.shape[0])
     elif len(args.shape) == 2:
