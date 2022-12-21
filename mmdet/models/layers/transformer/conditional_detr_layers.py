@@ -142,8 +142,7 @@ class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
             key_padding_mask (Tensor, optional): ByteTensor, has shape
                 (bs, num_keys). Defaults to None.
             is_first (bool): A indicator to tell whether the current layer
-                is the first layer of the decoder.
-                Defaults to False.
+                is the first layer of the decoder. Defaults to False.
 
         Returns:
             Tensor: Forwarded results, has shape (bs, num_queries, dim).
