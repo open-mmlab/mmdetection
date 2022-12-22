@@ -627,7 +627,7 @@ def aligned_bilinear(tensor: Tensor, factor: int) -> Tensor:
     return tensor[:, :, :oh - 1, :ow - 1]
 
 
-def unfold_wo_center(x, kernel_size, dilation):
+def unfold_wo_center(x, kernel_size: int, dilation: int) -> Tensor:
     """unfold_wo_center, used in original implement in BoxInst:
 
     https://github.com/aim-uofa/AdelaiDet/blob/\

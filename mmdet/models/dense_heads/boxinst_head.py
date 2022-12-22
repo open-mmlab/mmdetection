@@ -49,7 +49,7 @@ class BoxInstMaskHead(CondInstMaskHead):
         super().__init__(*arg, **kwargs)
         self.register_buffer('_iter', torch.zeros([1]))
 
-    def get_pairwise_afiinity(self, mask_logits):
+    def get_pairwise_afiinity(self, mask_logits: Tensor) -> Tensor:
         """Compute the pairwise affinity for each pixel."""
         log_fg_prob = F.logsigmoid(mask_logits).unsqueeze(1)
         log_bg_prob = F.logsigmoid(-mask_logits).unsqueeze(1)
