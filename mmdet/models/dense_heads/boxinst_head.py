@@ -3,6 +3,7 @@ from typing import List
 
 import torch
 import torch.nn.functional as F
+from mmengine import MessageHub
 from mmengine.structures import InstanceData
 from torch import Tensor
 
@@ -47,7 +48,6 @@ class BoxInstMaskHead(CondInstMaskHead):
         self.pairwise_dilation = pairwise_dilation
         self.warmup_iters = warmup_iters
         super().__init__(*arg, **kwargs)
-        self.register_buffer('_iter', torch.zeros([1]))
 
     def get_pairwise_afiinity(self, mask_logits: Tensor) -> Tensor:
         """Compute the pairwise affinity for each pixel."""
@@ -102,7 +102,6 @@ class BoxInstMaskHead(CondInstMaskHead):
             'positive_infos should not be None in `BoxInstMaskHead`'
         losses = dict()
 
-        self._iter += 1
         loss_mask_project = 0.
         loss_mask_pairwise = 0.
         num_imgs = len(mask_preds)
@@ -145,7 +144,9 @@ class BoxInstMaskHead(CondInstMaskHead):
             avg_fatcor += 1  # avoid nan
         loss_mask_project = loss_mask_project / total_pos
         loss_mask_pairwise = loss_mask_pairwise / avg_fatcor
-        warmup_factor = min(self._iter.item() / float(self.warmup_iters), 1.0)
+        message_hub = MessageHub.get_current_instance()
+        iter = message_hub.get_info('iter')
+        warmup_factor = min(iter / float(self.warmup_iters), 1.0)
         loss_mask_pairwise *= warmup_factor
 
         losses.update(
