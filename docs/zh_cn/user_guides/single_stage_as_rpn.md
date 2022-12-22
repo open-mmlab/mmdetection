@@ -43,13 +43,13 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
-    roi_head=dict(  # update featmap_strides due to the strides in neck
+    roi_head=dict(  # featmap_strides 的更新取决于于颈部的步伐
         bbox_roi_extractor=dict(featmap_strides=[8, 16, 32, 64, 128])))
 # 学习率
 param_scheduler = [
     dict(
         type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
-        end=1000),  # Slowly increase lr, otherwise loss becomes NAN
+        end=1000),  # 慢慢增加 lr，否则损失变成 NAN
     dict(
         type='MultiStepLR',
         begin=0,
@@ -82,7 +82,7 @@ _base_ = [
 val_evaluator = dict(metric='proposal_fast')
 test_evaluator = val_evaluator
 model = dict(
-    # copied from configs/fcos/fcos_r50-caffe_fpn_gn-head_1x_coco.py
+    # 从 configs/fcos/fcos_r50-caffe_fpn_gn-head_1x_coco.py 复制
     neck=dict(
         start_level=1,
         add_extra_convs='on_output',  # 使用 P5
