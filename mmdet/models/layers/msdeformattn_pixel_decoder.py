@@ -212,7 +212,7 @@ class MSDeformAttnPixelDecoder(BaseModule):
             batch_size, 1, self.num_encoder_levels, 1)
         valid_radios = reference_points.new_ones(
             (batch_size, self.num_encoder_levels, 2))
-        # shape (num_total_query, batch_size, c)
+        # shape (num_total_queries, batch_size, c)
         memory = self.encoder(
             query=encoder_inputs,
             query_pos=level_positional_encodings,
@@ -221,7 +221,7 @@ class MSDeformAttnPixelDecoder(BaseModule):
             reference_points=reference_points,
             level_start_index=level_start_index,
             valid_ratios=valid_radios)
-        # (batch_size, num_total_query, c) -> (batch_size, c, num_total_query)
+        # (batch_size, num_total_queries, c) -> (batch_size, c, num_total_query)
         memory = memory.permute(0, 2, 1)
 
         # from low resolution to high resolution
