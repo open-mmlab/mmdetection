@@ -36,12 +36,12 @@ class ConditionalDETRHead(DETRHead):
 
         Args:
             hidden_states (Tensor): Features from transformer decoder. If
-                `return_intermediate_dec` in detr.py is True output has shape
+                `return_intermediate_dec` is True output has shape
                 (num_decoder_layers, bs, num_queries, dim), else has shape (1,
                 bs, num_queries, dim) which only contains the last layer
                 outputs.
-            references (Tensor): References from transformer decoder,has
-                shape (bs, num_query, 2).
+            references (Tensor): References from transformer decoder, has
+                shape (bs, num_queries, 2).
         Returns:
             tuple[Tensor]: results of head containing the following tensor.
 
@@ -72,9 +72,9 @@ class ConditionalDETRHead(DETRHead):
         head on the features of the upstream network.
 
         Args:
-            hidden_states (Tensor): Feature from the transformer decoder, has
+            hidden_states (Tensor): Features from the transformer decoder, has
                 shape (num_decoder_layers, bs, num_queries, dim).
-            references (Tensor): references from the transformer decoder, has
+            references (Tensor): References from the transformer decoder, has
                shape (num_decoder_layers, bs, num_queries, 2).
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
@@ -102,16 +102,16 @@ class ConditionalDETRHead(DETRHead):
         img_metas are needed as inputs for bbox_head.
 
         Args:
-            hidden_states (Tensor): Feature from the transformer decoder, has
+            hidden_states (Tensor): Features from the transformer decoder, has
                 shape (num_decoder_layers, bs, num_queries, dim).
-            references (Tensor): references from the transformer decoder, has
+            references (Tensor): References from the transformer decoder, has
                 shape (num_decoder_layers, bs, num_queries, 2).
             batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
                 the meta information of each image and corresponding
                 annotations.
 
         Returns:
-            tuple: the return value is a tuple contains:
+            tuple: The return value is a tuple contains:
 
             - losses: (dict[str, Tensor]): A dictionary of loss components.
             - predictions (list[:obj:`InstanceData`]): Detection
@@ -141,9 +141,9 @@ class ConditionalDETRHead(DETRHead):
         because img_metas are needed as inputs for bbox_head.
 
         Args:
-            hidden_states (Tensor): Feature from the transformer decoder, has
+            hidden_states (Tensor): Features from the transformer decoder, has
                 shape (num_decoder_layers, bs, num_queries, dim).
-            references (Tensor): references from the transformer decoder, has
+            references (Tensor): References from the transformer decoder, has
                 shape (num_decoder_layers, bs, num_queries, 2).
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as

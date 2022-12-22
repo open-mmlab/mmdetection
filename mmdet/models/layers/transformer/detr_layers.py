@@ -105,18 +105,12 @@ class DetrTransformerDecoder(BaseModule):
         """Forward function of decoder
         Args:
             query (Tensor): The input query, has shape (bs, num_queries, dim).
-            key (Tensor): The input key, has shape (bs, num_keys, dim). If
-                `None`, the `query` will be used. Defaults to `None`.
+            key (Tensor): The input key, has shape (bs, num_keys, dim).
             value (Tensor): The input value with the same shape as `key`.
-                If `None`, the `key` will be used. Defaults to `None`.
             query_pos (Tensor): The positional encoding for `query`, with the
-                same shape as `query`. If not `None`, it will be added to
-                `query` before forward function. Defaults to `None`.
+                same shape as `query`.
             key_pos (Tensor): The positional encoding for `key`, with the
-                same shape as `key`. If not `None`, it will be added to
-                `key` before forward function. If `None`, and `query_pos`
-                has the same shape as `key`, then `query_pos` will be used
-                as `key_pos`. Defaults to `None`.
+                same shape as `key`.
             key_padding_mask (Tensor): The `key_padding_mask` of `cross_attn`
                 input. ByteTensor, has shape (bs, num_value).
 
@@ -137,11 +131,11 @@ class DetrTransformerDecoder(BaseModule):
                 **kwargs)
             if self.return_intermediate:
                 intermediate.append(self.post_norm(query))
+        query = self.post_norm(query)
 
         if self.return_intermediate:
             return torch.stack(intermediate)
 
-        query = self.post_norm(query)
         return query.unsqueeze(0)
 
 
@@ -203,8 +197,7 @@ class DetrTransformerEncoderLayer(BaseModule):
         Args:
             query (Tensor): The input query, has shape (bs, num_queries, dim).
             query_pos (Tensor): The positional encoding for query, with
-                the same shape as `query`. If not None, it will
-                be added to `query` before forward function. Defaults to None.
+                the same shape as `query`.
             key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
                 input. ByteTensor. has shape (bs, num_queries).
         Returns:

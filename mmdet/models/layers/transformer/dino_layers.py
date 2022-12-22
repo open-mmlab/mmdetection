@@ -9,8 +9,8 @@ from torch import Tensor, nn
 from mmdet.structures import SampleList
 from mmdet.structures.bbox import bbox_xyxy_to_cxcywh
 from mmdet.utils import OptConfigType
-from .deformable_detr_transformer import DeformableDetrTransformerDecoder
-from .utils import MLP, convert_coordinate_to_encoding, inverse_sigmoid
+from .deformable_detr_layers import DeformableDetrTransformerDecoder
+from .utils import MLP, coordinate_to_encoding, inverse_sigmoid
 
 
 class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
@@ -70,7 +70,7 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
                 reference_points_input = \
                     reference_points[:, :, None] * valid_ratios[:, None]
 
-            query_sine_embed = convert_coordinate_to_encoding(
+            query_sine_embed = coordinate_to_encoding(
                 reference_points_input[:, :, 0, :])
             query_pos = self.ref_point_head(query_sine_embed)
 
