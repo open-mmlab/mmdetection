@@ -24,12 +24,12 @@ model = dict(
     # 从 configs/fcos/fcos_r50-caffe_fpn_gn-head_1x_coco.py 复制
     neck=dict(
         start_level=1,
-        add_extra_convs='on_output',  # use P5
+        add_extra_convs='on_output',  # 使用 P5
         relu_before_extra_convs=True),
     rpn_head=dict(
-        _delete_=True,  # ignore the unused old settings
+        _delete_=True,  # 忽略未使用的旧设置
         type='FCOSHead',
-        num_classes=1,  # num_classes = 1 for rpn, if num_classes > 1, it will be set to 1 in TwoStageDetector automatically
+        num_classes=1,  # 对于 rpn, num_classes = 1，如果 num_classes > 1，它将在 TwoStageDetector 中自动设置为1
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -85,12 +85,12 @@ model = dict(
     # copied from configs/fcos/fcos_r50-caffe_fpn_gn-head_1x_coco.py
     neck=dict(
         start_level=1,
-        add_extra_convs='on_output',  # use P5
+        add_extra_convs='on_output',  # 使用 P5
         relu_before_extra_convs=True),
     rpn_head=dict(
-        _delete_=True,  # ignore the unused old settings
+        _delete_=True,  # 忽略未使用的旧设置
         type='FCOSHead',
-        num_classes=1,  # num_classes = 1 for rpn, if num_classes > 1, it will be set to 1 in RPN automatically
+        num_classes=1,  # 对于 rpn, num_classes = 1，如果 num_classes >为1，它将在 rpn 中自动设置为1
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -137,12 +137,12 @@ model = dict(
         init_cfg=None),  # the checkpoint in ``load_from`` contains the weights of backbone
     neck=dict(
         start_level=1,
-        add_extra_convs='on_output',  # use P5
+        add_extra_convs='on_output',  # 使用 P5
         relu_before_extra_convs=True),
     rpn_head=dict(
-        _delete_=True,  # ignore the unused old settings
+        _delete_=True,  # 忽略未使用的旧设置
         type='FCOSHead',
-        num_classes=1,  # num_classes = 1 for rpn, if num_classes > 1, it will be set to 1 in TwoStageDetector automatically
+        num_classes=1,  # 对于 rpn, num_classes = 1，如果 num_classes > 1，它将在 TwoStageDetector 中自动设置为1
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
