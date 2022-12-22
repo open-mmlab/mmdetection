@@ -8,10 +8,8 @@ from mmcv.ops import MultiScaleDeformableAttention
 from mmengine.model import ModuleList
 from torch import Tensor, nn
 
-from .detr_transformer import (DetrTransformerDecoder,
-                               DetrTransformerDecoderLayer,
-                               DetrTransformerEncoder,
-                               DetrTransformerEncoderLayer)
+from .detr_layers import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
+                          DetrTransformerEncoder, DetrTransformerEncoderLayer)
 from .utils import inverse_sigmoid
 
 
@@ -35,8 +33,7 @@ class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
         Args:
             query (Tensor): The input query, has shape (bs, num_queries, dim).
             query_pos (Tensor): The positional encoding for query, has shape
-                (bs, num_queries, dim). If not None, it will be added to the
-                `query` before forward function. Defaults to None.
+                (bs, num_queries, dim).
             key_padding_mask (Tensor): The `key_padding_mask` of `self_attn`
                 input. ByteTensor, has shape (bs, num_queries).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
@@ -198,15 +195,15 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
                 **kwargs)
 
             if reg_branches is not None:
-                tmp = reg_branches[layer_id](output)
+                tmp_reg_preds = reg_branches[layer_id](output)
                 if reference_points.shape[-1] == 4:
-                    new_reference_points = tmp + inverse_sigmoid(
+                    new_reference_points = tmp_reg_preds + inverse_sigmoid(
                         reference_points)
                     new_reference_points = new_reference_points.sigmoid()
                 else:
                     assert reference_points.shape[-1] == 2
-                    new_reference_points = tmp
-                    new_reference_points[..., :2] = tmp[
+                    new_reference_points = tmp_reg_preds
+                    new_reference_points[..., :2] = tmp_reg_preds[
                         ..., :2] + inverse_sigmoid(reference_points)
                     new_reference_points = new_reference_points.sigmoid()
                 reference_points = new_reference_points.detach()

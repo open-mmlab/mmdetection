@@ -46,6 +46,73 @@ def nchw_to_nlc(x):
     return x.flatten(2).transpose(1, 2).contiguous()
 
 
+def coordinate_to_encoding(coord_tensor: Tensor,
+                           num_feats: int = 128,
+                           temperature: int = 10000,
+                           scale: float = 2 * math.pi):
+    """Convert coordinate tensor to positional encoding.
+
+    Args:
+        coord_tensor (Tensor): Coordinate tensor to be converted to
+            positional encoding. With the last dimension as 2 or 4.
+        num_feats (int, optional): The feature dimension for each position
+            along x-axis or y-axis. Note the final returned dimension
+            for each position is 2 times of this value. Defaults to 128.
+        temperature (int, optional): The temperature used for scaling
+            the position embedding. Defaults to 10000.
+        scale (float, optional): A scale factor that scales the position
+            embedding. The scale will be used only when `normalize` is True.
+            Defaults to 2*pi.
+    Returns:
+        Tensor: Returned encoded positional tensor.
+    """
+    dim_t = torch.arange(
+        num_feats, dtype=torch.float32, device=coord_tensor.device)
+    dim_t = temperature**(2 * (dim_t // 2) / num_feats)
+    x_embed = coord_tensor[..., 0] * scale
+    y_embed = coord_tensor[..., 1] * scale
+    pos_x = x_embed[..., None] / dim_t
+    pos_y = y_embed[..., None] / dim_t
+    pos_x = torch.stack((pos_x[..., 0::2].sin(), pos_x[..., 1::2].cos()),
+                        dim=-1).flatten(2)
+    pos_y = torch.stack((pos_y[..., 0::2].sin(), pos_y[..., 1::2].cos()),
+                        dim=-1).flatten(2)
+    if coord_tensor.size(-1) == 2:
+        pos = torch.cat((pos_y, pos_x), dim=-1)
+    elif coord_tensor.size(-1) == 4:
+        w_embed = coord_tensor[..., 2] * scale
+        pos_w = w_embed[..., None] / dim_t
+        pos_w = torch.stack((pos_w[..., 0::2].sin(), pos_w[..., 1::2].cos()),
+                            dim=-1).flatten(2)
+
+        h_embed = coord_tensor[..., 3] * scale
+        pos_h = h_embed[..., None] / dim_t
+        pos_h = torch.stack((pos_h[..., 0::2].sin(), pos_h[..., 1::2].cos()),
+                            dim=-1).flatten(2)
+
+        pos = torch.cat((pos_y, pos_x, pos_w, pos_h), dim=-1)
+    else:
+        raise ValueError('Unknown pos_tensor shape(-1):{}'.format(
+            coord_tensor.size(-1)))
+    return pos
+
+
+def inverse_sigmoid(x: Tensor, eps: float = 1e-5) -> Tensor:
+    """Inverse function of sigmoid.
+
+    Args:
+        x (Tensor): The tensor to do the inverse.
+        eps (float): EPS avoid numerical overflow. Defaults 1e-5.
+    Returns:
+        Tensor: The x has passed the inverse function of sigmoid, has the same
+        shape with input.
+    """
+    x = x.clamp(min=0, max=1)
+    x1 = x.clamp(min=eps)
+    x2 = (1 - x).clamp(min=eps)
+    return torch.log(x1 / x2)
+
+
 class AdaptivePadding(nn.Module):
     """Applies padding to input (if needed) so that input can get fully covered
     by filter you specified. It support two modes "same" and "corner". The
@@ -371,216 +438,6 @@ class PatchMerging(BaseModule):
         return x, output_size
 
 
-def inverse_sigmoid(x: Tensor, eps: float = 1e-5) -> Tensor:
-    """Inverse function of sigmoid.
-
-    Args:
-        x (Tensor): The tensor to do the inverse.
-        eps (float): EPS avoid numerical overflow. Defaults 1e-5.
-    Returns:
-        Tensor: The x has passed the inverse function of sigmoid, has the same
-        shape with input.
-    """
-    x = x.clamp(min=0, max=1)
-    x1 = x.clamp(min=eps)
-    x2 = (1 - x).clamp(min=eps)
-    return torch.log(x1 / x2)
-
-
-class MLP(BaseModule):
-    """Very simple multi-layer perceptron (also called FFN) with relu. Mostly
-    used in DETR series detectors.
-
-    Args:
-        input_dim (int): Feature dim of the input tensor.
-        hidden_dim (int): Feature dim of the hidden layer.
-        output_dim (int): Feature dim of the output tensor.
-        num_layers (int): Number of FFN layers. As the last
-            layer of MLP only contains FFN (Linear).
-    """
-
-    def __init__(self, input_dim: int, hidden_dim: int, output_dim: int,
-                 num_layers: int) -> None:
-        super().__init__()
-        self.num_layers = num_layers
-        h = [hidden_dim] * (num_layers - 1)
-        self.layers = ModuleList(
-            Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
-
-    def forward(self, x: Tensor) -> Tensor:
-        """Forward function of MLP.
-
-        Args:
-            x (Tensor): The input feature, has shape
-                (num_queries, bs, input_dim).
-        Returns:
-            Tensor: The output feature, has shape
-                (num_queries, bs, output_dim).
-        """
-        for i, layer in enumerate(self.layers):
-            x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
-        return x
-
-
-def convert_coordinate_to_encoding(coord_tensor: Tensor,
-                                   num_feats: int = 128,
-                                   temperature: int = 10000,
-                                   scale: float = 2 * math.pi):
-    """Convert coordinate tensor to positional encoding.
-
-    Args:
-        coord_tensor (Tensor): Coordinate tensor to be converted to
-            positional encoding. With the last dimension as 2 or 4.
-        num_feats (int, optional): The feature dimension for each position
-            along x-axis or y-axis. Note the final returned dimension
-            for each position is 2 times of this value. Defaults to 128.
-        temperature (int, optional): The temperature used for scaling
-            the position embedding. Defaults to 10000.
-        scale (float, optional): A scale factor that scales the position
-            embedding. The scale will be used only when `normalize` is True.
-            Defaults to 2*pi.
-    Returns:
-        Tensor: Returned encoded positional tensor.
-    """
-    dim_t = torch.arange(
-        num_feats, dtype=torch.float32, device=coord_tensor.device)
-    dim_t = temperature**(2 * (dim_t // 2) / num_feats)
-    x_embed = coord_tensor[..., 0] * scale
-    y_embed = coord_tensor[..., 1] * scale
-    pos_x = x_embed[..., None] / dim_t
-    pos_y = y_embed[..., None] / dim_t
-    pos_x = torch.stack((pos_x[..., 0::2].sin(), pos_x[..., 1::2].cos()),
-                        dim=-1).flatten(2)
-    pos_y = torch.stack((pos_y[..., 0::2].sin(), pos_y[..., 1::2].cos()),
-                        dim=-1).flatten(2)
-    if coord_tensor.size(-1) == 2:
-        pos = torch.cat((pos_y, pos_x), dim=-1)
-    elif coord_tensor.size(-1) == 4:
-        w_embed = coord_tensor[..., 2] * scale
-        pos_w = w_embed[..., None] / dim_t
-        pos_w = torch.stack((pos_w[..., 0::2].sin(), pos_w[..., 1::2].cos()),
-                            dim=-1).flatten(2)
-
-        h_embed = coord_tensor[..., 3] * scale
-        pos_h = h_embed[..., None] / dim_t
-        pos_h = torch.stack((pos_h[..., 0::2].sin(), pos_h[..., 1::2].cos()),
-                            dim=-1).flatten(2)
-
-        pos = torch.cat((pos_y, pos_x, pos_w, pos_h), dim=-1)
-    else:
-        raise ValueError('Unknown pos_tensor shape(-1):{}'.format(
-            coord_tensor.size(-1)))
-    return pos
-
-
-@MODELS.register_module()
-class DynamicConv(BaseModule):
-    """Implements Dynamic Convolution.
-
-    This module generate parameters for each sample and
-    use bmm to implement 1*1 convolution. Code is modified
-    from the `official github repo <https://github.com/PeizeSun/
-    SparseR-CNN/blob/main/projects/SparseRCNN/sparsercnn/head.py#L258>`_ .
-
-    Args:
-        in_channels (int): The input feature channel.
-            Defaults to 256.
-        feat_channels (int): The inner feature channel.
-            Defaults to 64.
-        out_channels (int, optional): The output feature channel.
-            When not specified, it will be set to `in_channels`
-            by default
-        input_feat_shape (int): The shape of input feature.
-            Defaults to 7.
-        with_proj (bool): Project two-dimentional feature to
-            one-dimentional feature. Default to True.
-        act_cfg (dict): The activation config for DynamicConv.
-        norm_cfg (dict): Config dict for normalization layer. Default
-            layer normalization.
-        init_cfg (obj:`mmengine.ConfigDict`): The Config for initialization.
-            Default: None.
-    """
-
-    def __init__(self,
-                 in_channels: int = 256,
-                 feat_channels: int = 64,
-                 out_channels: Optional[int] = None,
-                 input_feat_shape: int = 7,
-                 with_proj: bool = True,
-                 act_cfg: OptConfigType = dict(type='ReLU', inplace=True),
-                 norm_cfg: OptConfigType = dict(type='LN'),
-                 init_cfg: OptConfigType = None) -> None:
-        super(DynamicConv, self).__init__(init_cfg)
-        self.in_channels = in_channels
-        self.feat_channels = feat_channels
-        self.out_channels_raw = out_channels
-        self.input_feat_shape = input_feat_shape
-        self.with_proj = with_proj
-        self.act_cfg = act_cfg
-        self.norm_cfg = norm_cfg
-        self.out_channels = out_channels if out_channels else in_channels
-
-        self.num_params_in = self.in_channels * self.feat_channels
-        self.num_params_out = self.out_channels * self.feat_channels
-        self.dynamic_layer = nn.Linear(
-            self.in_channels, self.num_params_in + self.num_params_out)
-
-        self.norm_in = build_norm_layer(norm_cfg, self.feat_channels)[1]
-        self.norm_out = build_norm_layer(norm_cfg, self.out_channels)[1]
-
-        self.activation = build_activation_layer(act_cfg)
-
-        num_output = self.out_channels * input_feat_shape**2
-        if self.with_proj:
-            self.fc_layer = nn.Linear(num_output, self.out_channels)
-            self.fc_norm = build_norm_layer(norm_cfg, self.out_channels)[1]
-
-    def forward(self, param_feature: Tensor, input_feature: Tensor) -> Tensor:
-        """Forward function for `DynamicConv`.
-
-        Args:
-            param_feature (Tensor): The feature can be used
-                to generate the parameter, has shape
-                (num_all_proposals, in_channels).
-            input_feature (Tensor): Feature that
-                interact with parameters, has shape
-                (num_all_proposals, in_channels, H, W).
-
-        Returns:
-            Tensor: The output feature has shape
-            (num_all_proposals, out_channels).
-        """
-        input_feature = input_feature.flatten(2).permute(2, 0, 1)
-
-        input_feature = input_feature.permute(1, 0, 2)
-        parameters = self.dynamic_layer(param_feature)
-
-        param_in = parameters[:, :self.num_params_in].view(
-            -1, self.in_channels, self.feat_channels)
-        param_out = parameters[:, -self.num_params_out:].view(
-            -1, self.feat_channels, self.out_channels)
-
-        # input_feature has shape (num_all_proposals, H*W, in_channels)
-        # param_in has shape (num_all_proposals, in_channels, feat_channels)
-        # feature has shape (num_all_proposals, H*W, feat_channels)
-        features = torch.bmm(input_feature, param_in)
-        features = self.norm_in(features)
-        features = self.activation(features)
-
-        # param_out has shape (batch_size, feat_channels, out_channels)
-        features = torch.bmm(features, param_out)
-        features = self.norm_out(features)
-        features = self.activation(features)
-
-        if self.with_proj:
-            features = features.flatten(1)
-            features = self.fc_layer(features)
-            features = self.fc_norm(features)
-            features = self.activation(features)
-
-        return features
-
-
 class ConditionalAttention(BaseModule):
     """A wrapper of conditional attention, dropout and residual connection.
 
@@ -646,7 +503,7 @@ class ConditionalAttention(BaseModule):
                      query: Tensor,
                      key: Tensor,
                      value: Tensor,
-                     attn_mask: Tensor,
+                     attn_mask: Tensor = None,
                      key_padding_mask: Tensor = None) -> Tuple[Tensor]:
         """Forward process for `ConditionalAttention`.
 
@@ -784,16 +641,15 @@ class ConditionalAttention(BaseModule):
                                                        tgt_len, src_len)
         return attn_output, attn_output_weights.sum(dim=1) / self.num_heads
 
-    def forward(
-            self,
-            query: Tensor,
-            key: Tensor,
-            query_pos: Tensor = None,
-            ref_sine_embed: Tensor = None,
-            key_pos: Tensor = None,  # pos
-            attn_mask: Tensor = None,
-            key_padding_mask: Tensor = None,
-            is_first: bool = False) -> Tensor:
+    def forward(self,
+                query: Tensor,
+                key: Tensor,
+                query_pos: Tensor = None,
+                ref_sine_embed: Tensor = None,
+                key_pos: Tensor = None,
+                attn_mask: Tensor = None,
+                key_padding_mask: Tensor = None,
+                is_first: bool = False) -> Tensor:
         """Forward function for `ConditionalAttention`.
         Args:
             query (Tensor): The input query with shape [bs, num_queries,
@@ -875,3 +731,146 @@ class ConditionalAttention(BaseModule):
             query = query + self.proj_drop(sa_output)
 
         return query
+
+
+class MLP(BaseModule):
+    """Very simple multi-layer perceptron (also called FFN) with relu. Mostly
+    used in DETR series detectors.
+
+    Args:
+        input_dim (int): Feature dim of the input tensor.
+        hidden_dim (int): Feature dim of the hidden layer.
+        output_dim (int): Feature dim of the output tensor.
+        num_layers (int): Number of FFN layers. As the last
+            layer of MLP only contains FFN (Linear).
+    """
+
+    def __init__(self, input_dim: int, hidden_dim: int, output_dim: int,
+                 num_layers: int) -> None:
+        super().__init__()
+        self.num_layers = num_layers
+        h = [hidden_dim] * (num_layers - 1)
+        self.layers = ModuleList(
+            Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
+
+    def forward(self, x: Tensor) -> Tensor:
+        """Forward function of MLP.
+
+        Args:
+            x (Tensor): The input feature, has shape
+                (num_queries, bs, input_dim).
+        Returns:
+            Tensor: The output feature, has shape
+                (num_queries, bs, output_dim).
+        """
+        for i, layer in enumerate(self.layers):
+            x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
+        return x
+
+
+@MODELS.register_module()
+class DynamicConv(BaseModule):
+    """Implements Dynamic Convolution.
+
+    This module generate parameters for each sample and
+    use bmm to implement 1*1 convolution. Code is modified
+    from the `official github repo <https://github.com/PeizeSun/
+    SparseR-CNN/blob/main/projects/SparseRCNN/sparsercnn/head.py#L258>`_ .
+
+    Args:
+        in_channels (int): The input feature channel.
+            Defaults to 256.
+        feat_channels (int): The inner feature channel.
+            Defaults to 64.
+        out_channels (int, optional): The output feature channel.
+            When not specified, it will be set to `in_channels`
+            by default
+        input_feat_shape (int): The shape of input feature.
+            Defaults to 7.
+        with_proj (bool): Project two-dimentional feature to
+            one-dimentional feature. Default to True.
+        act_cfg (dict): The activation config for DynamicConv.
+        norm_cfg (dict): Config dict for normalization layer. Default
+            layer normalization.
+        init_cfg (obj:`mmengine.ConfigDict`): The Config for initialization.
+            Default: None.
+    """
+
+    def __init__(self,
+                 in_channels: int = 256,
+                 feat_channels: int = 64,
+                 out_channels: Optional[int] = None,
+                 input_feat_shape: int = 7,
+                 with_proj: bool = True,
+                 act_cfg: OptConfigType = dict(type='ReLU', inplace=True),
+                 norm_cfg: OptConfigType = dict(type='LN'),
+                 init_cfg: OptConfigType = None) -> None:
+        super(DynamicConv, self).__init__(init_cfg)
+        self.in_channels = in_channels
+        self.feat_channels = feat_channels
+        self.out_channels_raw = out_channels
+        self.input_feat_shape = input_feat_shape
+        self.with_proj = with_proj
+        self.act_cfg = act_cfg
+        self.norm_cfg = norm_cfg
+        self.out_channels = out_channels if out_channels else in_channels
+
+        self.num_params_in = self.in_channels * self.feat_channels
+        self.num_params_out = self.out_channels * self.feat_channels
+        self.dynamic_layer = nn.Linear(
+            self.in_channels, self.num_params_in + self.num_params_out)
+
+        self.norm_in = build_norm_layer(norm_cfg, self.feat_channels)[1]
+        self.norm_out = build_norm_layer(norm_cfg, self.out_channels)[1]
+
+        self.activation = build_activation_layer(act_cfg)
+
+        num_output = self.out_channels * input_feat_shape**2
+        if self.with_proj:
+            self.fc_layer = nn.Linear(num_output, self.out_channels)
+            self.fc_norm = build_norm_layer(norm_cfg, self.out_channels)[1]
+
+    def forward(self, param_feature: Tensor, input_feature: Tensor) -> Tensor:
+        """Forward function for `DynamicConv`.
+
+        Args:
+            param_feature (Tensor): The feature can be used
+                to generate the parameter, has shape
+                (num_all_proposals, in_channels).
+            input_feature (Tensor): Feature that
+                interact with parameters, has shape
+                (num_all_proposals, in_channels, H, W).
+
+        Returns:
+            Tensor: The output feature has shape
+            (num_all_proposals, out_channels).
+        """
+        input_feature = input_feature.flatten(2).permute(2, 0, 1)
+
+        input_feature = input_feature.permute(1, 0, 2)
+        parameters = self.dynamic_layer(param_feature)
+
+        param_in = parameters[:, :self.num_params_in].view(
+            -1, self.in_channels, self.feat_channels)
+        param_out = parameters[:, -self.num_params_out:].view(
+            -1, self.feat_channels, self.out_channels)
+
+        # input_feature has shape (num_all_proposals, H*W, in_channels)
+        # param_in has shape (num_all_proposals, in_channels, feat_channels)
+        # feature has shape (num_all_proposals, H*W, feat_channels)
+        features = torch.bmm(input_feature, param_in)
+        features = self.norm_in(features)
+        features = self.activation(features)
+
+        # param_out has shape (batch_size, feat_channels, out_channels)
+        features = torch.bmm(features, param_out)
+        features = self.norm_out(features)
+        features = self.activation(features)
+
+        if self.with_proj:
+            features = features.flatten(1)
+            features = self.fc_layer(features)
+            features = self.fc_norm(features)
+            features = self.activation(features)
+
+        return features
