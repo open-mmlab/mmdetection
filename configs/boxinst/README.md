@@ -1,4 +1,4 @@
-# CondInst
+# BoxInst
 
 > [BoxInst: High-Performance Instance Segmentation with Box Annotations](https://arxiv.org/pdf/2012.02310.pdf)
 
