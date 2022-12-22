@@ -8,8 +8,12 @@ model = dict(
         mean=[123.675, 116.28, 103.53],
         std=[58.395, 57.12, 57.375],
         bgr_to_rgb=True,
-        pad_mask=True,
-        pad_size_divisor=32),
+        pad_size_divisor=32,
+        mask_stride=4,
+        pairwise_size=3,
+        pairwise_dilation=2,
+        pairwise_color_thresh=0.3,
+        bottom_pixels_removed=10),
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -30,7 +34,7 @@ model = dict(
         relu_before_extra_convs=True),
     bbox_head=dict(
         type='BoxInstBboxHead',
-        num_params=169,
+        num_params=593,
         num_classes=80,
         in_channels=256,
         stacked_convs=4,
@@ -83,3 +87,7 @@ model = dict(
 
 # optimizer
 optim_wrapper = dict(optimizer=dict(lr=0.01))
+
+# evaluator
+val_evaluator = dict(metric=['bbox', 'segm'])
+test_evaluator = val_evaluator
