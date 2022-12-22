@@ -16,9 +16,13 @@ from .positional_encoding import (LearnedPositionalEncoding,
 from .res_layer import ResLayer, SimplifiedBasicBlock
 from .se_layer import ChannelAttention, DyReLU, SELayer
 # yapf: disable
-from .transformer import (MLP, CdnQueryGenerator,
+from .transformer import (MLP, AdaptivePadding, CdnQueryGenerator,
+                          ConditionalAttention,
                           ConditionalDetrTransformerDecoder,
                           ConditionalDetrTransformerDecoderLayer,
+                          DABDetrTransformerDecoder,
+                          DABDetrTransformerDecoderLayer,
+                          DABDetrTransformerEncoder,
                           DeformableDetrTransformerDecoder,
                           DeformableDetrTransformerDecoderLayer,
                           DeformableDetrTransformerEncoder,
@@ -26,8 +30,8 @@ from .transformer import (MLP, CdnQueryGenerator,
                           DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DetrTransformerEncoder, DetrTransformerEncoderLayer,
                           DinoTransformerDecoder, DynamicConv, PatchEmbed,
-                          PatchMerging, inverse_sigmoid, nchw_to_nlc,
-                          nlc_to_nchw)
+                          PatchMerging, coordinate_to_encoding,
+                          inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
 
 # yapf: enable
 
@@ -44,8 +48,10 @@ __all__ = [
     'DetrTransformerEncoder', 'DetrTransformerDecoder',
     'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
     'DeformableDetrTransformerEncoderLayer',
-    'DeformableDetrTransformerDecoderLayer',
-    'ConditionalDetrTransformerDecoder',
+    'DeformableDetrTransformerDecoderLayer', 'AdaptivePadding',
+    'coordinate_to_encoding', 'ConditionalAttention',
+    'DABDetrTransformerDecoderLayer', 'DABDetrTransformerDecoder',
+    'DABDetrTransformerEncoder', 'ConditionalDetrTransformerDecoder',
     'ConditionalDetrTransformerDecoderLayer', 'DinoTransformerDecoder',
     'CdnQueryGenerator'
 ]

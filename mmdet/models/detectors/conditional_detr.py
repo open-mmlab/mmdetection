@@ -66,7 +66,6 @@ class ConditionalDETR(DETR):
         hidden_states, references = self.decoder(
             query=query,
             key=memory,
-            value=memory,
             query_pos=query_pos,
             key_pos=memory_pos,
             key_padding_mask=memory_mask)

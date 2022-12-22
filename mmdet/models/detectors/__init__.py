@@ -11,6 +11,7 @@ from .conditional_detr import ConditionalDETR
 from .cornernet import CornerNet
 from .crowddet import CrowdDet
 from .d2_wrapper import Detectron2Wrapper
+from .dab_detr import DABDETR
 from .ddod import DDOD
 from .deformable_detr import DeformableDETR
 from .detr import DETR
@@ -66,5 +67,5 @@ __all__ = [
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
     'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector', 'SoftTeacher',
     'RTMDet', 'Detectron2Wrapper', 'CrowdDet', 'CondInst', 'BoxInst',
-    'DetectionTransformer', 'ConditionalDETR', 'DINO'
+    'DetectionTransformer', 'ConditionalDETR', 'DINO', 'DABDETR'
 ]
