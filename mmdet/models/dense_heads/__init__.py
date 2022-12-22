@@ -35,6 +35,7 @@ from .retina_head import RetinaHead
 from .retina_sepbn_head import RetinaSepBNHead
 from .rpn_head import RPNHead
 from .rtmdet_head import RTMDetHead, RTMDetSepBNHead
+from .rtmdet_ins_head import RTMDetInsHead, RTMDetInsSepBNHead
 from .sabl_retina_head import SABLRetinaHead
 from .solo_head import DecoupledSOLOHead, DecoupledSOLOLightHead, SOLOHead
 from .solov2_head import SOLOV2Head
@@ -59,5 +60,6 @@ __all__ = [
     'DecoupledSOLOHead', 'DecoupledSOLOLightHead', 'SOLOV2Head', 'LADHead',
     'TOODHead', 'MaskFormerHead', 'Mask2FormerHead', 'DDODHead',
     'CenterNetUpdateHead', 'RTMDetHead', 'RTMDetSepBNHead', 'CondInstBboxHead',
-    'CondInstMaskHead', 'BoxInstBboxHead', 'BoxInstMaskHead'
+    'CondInstMaskHead', 'RTMDetInsHead', 'RTMDetInsSepBNHead',
+    'BoxInstBboxHead', 'BoxInstMaskHead'
 ]

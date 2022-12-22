@@ -21,10 +21,10 @@ class PackDetInputs(BaseTransform):
 
         - ``img_path``: path to the image file
 
-        - ``ori_shape``: original shape of the image as a tuple (h, w, c)
+        - ``ori_shape``: original shape of the image as a tuple (h, w)
 
         - ``img_shape``: shape of the image input to the network as a tuple \
-            (h, w, c).  Note that images may be zero padded on the \
+            (h, w).  Note that images may be zero padded on the \
             bottom/right if the batch tensor is larger than this shape.
 
         - ``scale_factor``: a float indicating the preprocessing scale
