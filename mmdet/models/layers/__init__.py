@@ -33,8 +33,8 @@ from .transformer import (MLP, AdaptivePadding, CdnQueryGenerator,
                           Mask2FormerTransformerDecoder,
                           Mask2FormerTransformerDecoderLayer,
                           Mask2FormerTransformerEncoder, PatchEmbed,
-                          PatchMerging, inverse_sigmoid, nchw_to_nlc,
-                          nlc_to_nchw)
+                          PatchMerging, coordinate_to_encoding,
+                          inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
 
 # yapf: enable
 
