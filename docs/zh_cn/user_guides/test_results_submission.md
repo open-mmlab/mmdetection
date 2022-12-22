@@ -9,17 +9,17 @@
 - 下载 [COCO测试数据集图像](http://images.cocodataset.org/zips/test2017.zip)，[测试图像信息](http://images.cocodataset.org/annotations/image_info_test2017.zip)，和[全景训练/相关注释](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip)，然后解压缩它们，把 `test2017` 放到 `data/coco/`，把 json 文件和注释文件放到 `data/coco/annotations/` 。
 
 ```shell
-# suppose data/coco/ does not exist
+# 假设 data/coco/ 不存在
 mkdir -pv data/coco/
-# download test2017
+# 下载 test2017
 wget -P data/coco/ http://images.cocodataset.org/zips/test2017.zip
 wget -P data/coco/ http://images.cocodataset.org/annotations/image_info_test2017.zip
 wget -P data/coco/ http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip
-# unzip them
+# 解压缩它们
 unzip data/coco/test2017.zip -d data/coco/
 unzip data/coco/image_info_test2017.zip -d data/coco/
 unzip data/coco/panoptic_annotations_trainval2017.zip -d data/coco/
-# remove zip files (optional)
+# 删除 zip 文件(可选)
 rm -rf data/coco/test2017.zip data/coco/image_info_test2017.zip data/coco/panoptic_annotations_trainval2017.zip
 ```
 
@@ -104,7 +104,7 @@ python tools/test.py \
 coco test-dev 上更新相关设置和推理的命令如下所示。
 
 ```shell
-# test with single gpu
+# 用一个 gpu 测试
 CUDA_VISIBLE_DEVICES=0 python tools/test.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
@@ -115,7 +115,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/test.py \
     test_evaluator.format_only=True \
     test_evaluator.ann_file=data/coco/annotations/panoptic_image_info_test-dev2017.json \
     test_evaluator.outfile_prefix=${WORK_DIR}/results
-# test with four gpus
+# 用四个 gpu 测试
 CUDA_VISIBLE_DEVICES=0,1,3,4 bash tools/dist_test.sh \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
@@ -127,7 +127,7 @@ CUDA_VISIBLE_DEVICES=0,1,3,4 bash tools/dist_test.sh \
     test_evaluator.format_only=True \
     test_evaluator.ann_file=data/coco/annotations/panoptic_image_info_test-dev2017.json \
     test_evaluator.outfile_prefix=${WORK_DIR}/results
-# test with slurm
+# 用 slurm 测试
 GPUS=8 tools/slurm_test.sh \
     ${Partition} \
     ${JOB_NAME} \
@@ -145,7 +145,7 @@ GPUS=8 tools/slurm_test.sh \
 例子:假设我们使用预先训练的带有 ResNet-50 骨干网的 MaskFormer 对 `test2017` 执行推断。
 
 ```shell
-# test with single gpu
+# 单 gpu 测试
 CUDA_VISIBLE_DEVICES=0 python tools/test.py \
     configs/maskformer/maskformer_r50_mstrain_16x1_75e_coco.py \
     checkpoints/maskformer_r50_mstrain_16x1_75e_coco_20220221_141956-bc2699cb.pth \
@@ -165,9 +165,9 @@ CUDA_VISIBLE_DEVICES=0 python tools/test.py \
 重命名文件和压缩结果的命令:
 
 ```shell
-# In WORK_DIR, we have panoptic segmentation results: 'panoptic' and 'results.panoptic.json'.
+# 在 WORK_DIR 中，我们有 panoptic 分割结果: 'panoptic' 和 'results. panoptical .json'。
 cd ${WORK_DIR}
-# replace '[algorithm_name]' with the name of algorithm you used.
+# 将 '[algorithm_name]' 替换为您使用的算法名称
 mv ./panoptic ./panoptic_test-dev2017_[algorithm_name]_results
 mv ./results.panoptic.json ./panoptic_test-dev2017_[algorithm_name]_results.json
 zip panoptic_test-dev2017_[algorithm_name]_results.zip -ur panoptic_test-dev2017_[algorithm_name]_results panoptic_test-dev2017_[algorithm_name]_results.json
