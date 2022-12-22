@@ -225,6 +225,13 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
         </ul>
         </ul>
       </ul>
+        <li><b>Receptive Field Search</b></li>
+      <ul>
+        <ul>
+          <li><a href="configs/rfnext">RF-Next (TPAMI'2022)</a></li>
+        </ul>
+        </ul>
+      </ul>
       </td>
     </tr>
 </td>
@@ -299,6 +306,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/pisa">Prime Sample Attention (CVPR'2020)</a></li>
           <li><a href="configs/strong_baselines">Strong Baselines (CVPR'2021)</a></li>
           <li><a href="configs/resnet_strikes_back">Resnet strikes back (NeurIPSW'2021)</a></li>
+          <li><a href="configs/rfnext">RF-Next (TPAMI'2022)</a></li>
         </ul>
       </td>
     </tr>
