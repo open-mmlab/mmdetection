@@ -21,7 +21,7 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 model = dict(
-    # copied from configs/fcos/fcos_r50-caffe_fpn_gn-head_1x_coco.py
+    # 从 configs/fcos/fcos_r50-caffe_fpn_gn-head_1x_coco.py 复制
     neck=dict(
         start_level=1,
         add_extra_convs='on_output',  # use P5
@@ -45,7 +45,7 @@ model = dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     roi_head=dict(  # update featmap_strides due to the strides in neck
         bbox_roi_extractor=dict(featmap_strides=[8, 16, 32, 64, 128])))
-# learning rate
+# 学习率
 param_scheduler = [
     dict(
         type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
@@ -63,7 +63,7 @@ param_scheduler = [
 然后，我们可以使用下面的命令来训练我们的定制模型。更多训练命令，请参考[这里](train.md)。
 
 ```python
-# training with 8 GPUS
+# 使用8个 GPU 进行训练
 bash
 tools/dist_train.sh
 configs/faster_rcnn/faster-rcnn_r50_fpn_fcos-rpn_1x_coco.py
@@ -109,7 +109,7 @@ model = dict(
 假设我们在训练之后有检查点 `./work_dirs/faster-rcnn_r50_fpn_fcos-rpn_1x_coco/epoch_12.pth` ，然后，我们可以使用下面的命令来评估建议的质量。
 
 ```python
-# testing with 8 GPUs
+# 使用8个 GPU 进行测试
 bash
 tools/dist_test.sh
 configs/rpn/fcos-rpn_r50_fpn_1x_coco.py
