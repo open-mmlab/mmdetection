@@ -753,23 +753,29 @@ class BoxInstDataPreprocessor(DetDataPreprocessor):
                 images_lab = images_lab.permute(2, 0, 1)[None]
                 images_color_similarity = self.get_images_color_similarity(
                     images_lab, img_masks[im_i])
-                pairwise_masks = (images_color_similarity >=
-                                  self.pairwise_color_thresh).float()
+                pairwise_mask = (images_color_similarity >=
+                                 self.pairwise_color_thresh).float()
 
                 per_im_bboxes = data_sample.gt_instances.bboxes
-                per_im_masks = []
-                for per_box in per_im_bboxes:
-                    mask_full = torch.zeros((b_img_h, b_img_w),
-                                            device=self.device).float()
-                    mask_full[int(per_box[1]):int(per_box[3] + 1),
-                              int(per_box[0]):int(per_box[2] + 1)] = 1.0
-                    per_im_masks.append(mask_full)
-                per_im_masks = torch.stack(per_im_masks, dim=0)
+                if per_im_bboxes.shape[0] > 0:
+                    per_im_masks = []
+                    for per_box in per_im_bboxes:
+                        mask_full = torch.zeros((b_img_h, b_img_w),
+                                                device=self.device).float()
+                        mask_full[int(per_box[1]):int(per_box[3] + 1),
+                                  int(per_box[0]):int(per_box[2] + 1)] = 1.0
+                        per_im_masks.append(mask_full)
+                    per_im_masks = torch.stack(per_im_masks, dim=0)
+                    pairwise_masks = torch.cat(
+                        [pairwise_mask for _ in range(per_im_bboxes.shape[0])],
+                        dim=0)
+                else:
+                    per_im_masks = torch.zeros((0, b_img_h, b_img_w))
+                    pairwise_masks = torch.zeros(
+                        (0, self.pairwise_size**2 - 1, b_img_h, b_img_w))
 
                 # TODO: Support BitmapMasks with tensor?
                 data_sample.gt_instances.masks = BitmapMasks(
                     per_im_masks.cpu().numpy(), b_img_h, b_img_w)
-                data_sample.gt_instances.pairwise_masks = torch.cat(
-                    [pairwise_masks for _ in range(per_im_bboxes.shape[0])],
-                    dim=0)
-        return inputs, data_samples
+                data_sample.gt_instances.pairwise_masks = pairwise_masks
+        return {'inputs': inputs, 'data_samples': data_samples}
