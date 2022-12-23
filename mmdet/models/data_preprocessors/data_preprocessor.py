@@ -668,6 +668,7 @@ class BoxInstDataPreprocessor(DetDataPreprocessor):
         pairwise_color_thresh (float): The thresh of image color similarity.
             Defaults to 0.3.
         bottom_pixels_removed (int): The length of removed pixels in bottom.
+            It is caused by the annotation error in coco dataset.
             Defaults to 10.
     """
 
@@ -686,7 +687,8 @@ class BoxInstDataPreprocessor(DetDataPreprocessor):
         self.pairwise_color_thresh = pairwise_color_thresh
         self.bottom_pixels_removed = bottom_pixels_removed
 
-    def get_images_color_similarity(self, inputs: Tensor, image_masks: Tensor):
+    def get_images_color_similarity(self, inputs: Tensor,
+                                    image_masks: Tensor) -> Tensor:
         """Compute the image color similarity in LAB color space."""
         assert inputs.dim() == 4
         assert inputs.size(0) == 1
