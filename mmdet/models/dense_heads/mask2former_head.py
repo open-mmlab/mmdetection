@@ -14,10 +14,10 @@ from torch import Tensor
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures import SampleList
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig, reduce_mean
+from ..layers import Mask2FormerTransformerDecoder, SinePositionalEncoding
+from ..utils import get_uncertain_point_coords_with_randomness
 from .anchor_free_head import AnchorFreeHead
 from .maskformer_head import MaskFormerHead
-from ..utils import get_uncertain_point_coords_with_randomness
-from ..layers import Mask2FormerTransformerDecoder, SinePositionalEncoding
 
 
 @MODELS.register_module()
@@ -71,8 +71,7 @@ class Mask2FormerHead(MaskFormerHead):
                  enforce_decoder_input_project: bool = False,
                  transformer_decoder: ConfigType = ...,
                  positional_encoding_cfg: ConfigType = dict(
-                     num_feats=128,
-                     normalize=True),
+                     num_feats=128, normalize=True),
                  loss_cls: ConfigType = dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=False,

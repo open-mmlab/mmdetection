@@ -1,11 +1,11 @@
-from torch import Tensor
-
+# Copyright (c) OpenMMLab. All rights reserved.
 from mmcv.cnn import build_norm_layer
 from mmengine.model import ModuleList
+from torch import Tensor
 
-from .detr_transformer import (DetrTransformerDecoderLayer,
-                               DetrTransformerDecoder)
 from .deformable_detr_transformer import DeformableDetrTransformerEncoder
+from .detr_transformer import (DetrTransformerDecoder,
+                               DetrTransformerDecoderLayer)
 
 
 class Mask2FormerTransformerEncoder(DeformableDetrTransformerEncoder):
@@ -14,8 +14,7 @@ class Mask2FormerTransformerEncoder(DeformableDetrTransformerEncoder):
     def forward(self, query: Tensor, query_pos: Tensor,
                 key_padding_mask: Tensor, spatial_shapes: Tensor,
                 level_start_index: Tensor, valid_ratios: Tensor,
-                reference_points: Tensor,
-                **kwargs) -> Tensor:
+                reference_points: Tensor, **kwargs) -> Tensor:
         """Forward function of Transformer encoder.
 
         Args:

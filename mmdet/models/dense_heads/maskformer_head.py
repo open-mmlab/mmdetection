@@ -13,8 +13,8 @@ from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures import SampleList
 from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
                          OptMultiConfig, reduce_mean)
+from ..layers import DetrTransformerDecoder, SinePositionalEncoding
 from ..utils import multi_apply, preprocess_panoptic_gt
-from ..layers import SinePositionalEncoding, DetrTransformerDecoder
 from .anchor_free_head import AnchorFreeHead
 
 
@@ -66,8 +66,7 @@ class MaskFormerHead(AnchorFreeHead):
                  enforce_decoder_input_project: bool = False,
                  transformer_decoder: ConfigType = ...,
                  positional_encoding_cfg: ConfigType = dict(
-                     num_feats=128,
-                     normalize=True),
+                     num_feats=128, normalize=True),
                  loss_cls: ConfigType = dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=False,

@@ -10,8 +10,8 @@ from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, OptMultiConfig
-from .transformer import DetrTransformerEncoder
 from .positional_encoding import SinePositionalEncoding
+from .transformer import DetrTransformerEncoder
 
 
 @MODELS.register_module()
@@ -151,8 +151,7 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
                  act_cfg: ConfigType = dict(type='ReLU'),
                  encoder: ConfigType = None,
                  positional_encoding_cfg: ConfigType = dict(
-                     num_feats=128,
-                     normalize=True),
+                     num_feats=128, normalize=True),
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             in_channels=in_channels,
@@ -236,8 +235,8 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
             query_pos=pos_embed,
             key_padding_mask=padding_mask)
         # (batch_size, num_queries, c) -> (batch_size, c, h, w)
-        memory = memory.permute(0, 2, 1).view(
-            bs, self.encoder_embed_dims, h, w)
+        memory = memory.permute(0, 2, 1).view(bs, self.encoder_embed_dims, h,
+                                              w)
         y = self.encoder_out_proj(memory)
         for i in range(self.num_inputs - 2, -1, -1):
             x = feats[i]

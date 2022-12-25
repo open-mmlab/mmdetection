@@ -12,9 +12,9 @@ from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, OptMultiConfig
-from .transformer import Mask2FormerTransformerEncoder
-from .positional_encoding import SinePositionalEncoding
 from ..task_modules.prior_generators import MlvlPointGenerator
+from .positional_encoding import SinePositionalEncoding
+from .transformer import Mask2FormerTransformerEncoder
 
 
 @MODELS.register_module()
@@ -77,7 +77,8 @@ class MSDeformAttnPixelDecoder(BaseModule):
             input_conv_list.append(input_conv)
         self.input_convs = ModuleList(input_conv_list)
 
-        self.encoder = Mask2FormerTransformerEncoder(**encoder)  # TODO: Notice reference_point
+        self.encoder = Mask2FormerTransformerEncoder(
+            **encoder)  # TODO: Notice reference_point
         self.postional_encoding = SinePositionalEncoding(
             **positional_encoding_cfg)
         # high resolution to low resolution
@@ -221,7 +222,7 @@ class MSDeformAttnPixelDecoder(BaseModule):
             reference_points=reference_points,
             level_start_index=level_start_index,
             valid_ratios=valid_radios)
-        # (batch_size, num_total_queries, c) -> (batch_size, c, num_total_query)
+        # (batch_size, c, num_total_queries)
         memory = memory.permute(0, 2, 1)
 
         # from low resolution to high resolution
