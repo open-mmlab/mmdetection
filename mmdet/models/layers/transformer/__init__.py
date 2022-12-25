@@ -11,9 +11,9 @@ from .deformable_detr_layers import (DeformableDetrTransformerDecoder,
 from .detr_layers import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DetrTransformerEncoder, DetrTransformerEncoderLayer)
 from .dino_layers import CdnQueryGenerator, DinoTransformerDecoder
-from .mask2former_transformer import (Mask2FormerTransformerDecoder,
-                                      Mask2FormerTransformerDecoderLayer,
-                                      Mask2FormerTransformerEncoder)
+from .mask2former_layers import (Mask2FormerTransformerDecoder,
+                                 Mask2FormerTransformerDecoderLayer,
+                                 Mask2FormerTransformerEncoder)
 from .utils import (MLP, AdaptivePadding, ConditionalAttention, DynamicConv,
                     PatchEmbed, PatchMerging, coordinate_to_encoding,
                     inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)

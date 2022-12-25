@@ -3,9 +3,8 @@ from mmcv.cnn import build_norm_layer
 from mmengine.model import ModuleList
 from torch import Tensor
 
-from .deformable_detr_transformer import DeformableDetrTransformerEncoder
-from .detr_transformer import (DetrTransformerDecoder,
-                               DetrTransformerDecoderLayer)
+from .deformable_detr_layers import DeformableDetrTransformerEncoder
+from .detr_layers import DetrTransformerDecoder, DetrTransformerDecoderLayer
 
 
 class Mask2FormerTransformerEncoder(DeformableDetrTransformerEncoder):
