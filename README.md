@@ -107,7 +107,9 @@ We are excited to announce our latest work on real-time object recognition tasks
 
 A brand new version of **MMDetection v3.0.0rc6** was released in 26/12/2022:
 
-- TODO
+- Support [RTMDet](https://arxiv.org/abs/2212.07784) instance segmentation models.
+- Support [SSH](https://arxiv.org/abs/1708.03979).
+- Support [CondInst](https://arxiv.org/abs/2003.05664).
 
 Find more new features in [3.x branch](https://github.com/open-mmlab/mmdetection/tree/3.x). Issues and PRs are welcome!
 
