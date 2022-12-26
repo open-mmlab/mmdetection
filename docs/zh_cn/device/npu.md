@@ -1,23 +1,22 @@
-# NPU (HUAWEI Ascend)
+# NPU (华为 昇腾)
 
-## Usage
+## 使用方法
 
-Please refer to [link](https://github.com/open-mmlab/mmcv/blob/master/docs/zh_cn/get_started/build.md) installing mmcv
-on NPU Devices.
+请参考该链接 [link](https://github.com/open-mmlab/mmcv/blob/master/docs/zh_cn/get_started/build.md) 安装npu版本的mmcv。
 
-Here we use 8 NPUs on your computer to train the model with the following command:
+以下展示单机八卡场景的运行指令:
 
 ```shell
 bash tools/dist_train.sh configs/ssd/ssd300_coco.py 8
 ```
 
-Also, you can use only one NPU to train the model with the following command:
+以下展示单机单卡下的运行指令:
 
 ```shell
 python tools/train.py configs/ssd/ssd300_coco.py
 ```
 
-## Models Results
+## 模型验证结果
 
 |        Model         | box AP | mask AP | Config                                                                                                                        | Download                                                                                                     |
 | :------------------: | :----: | :-----: | :---------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
@@ -34,12 +33,10 @@ python tools/train.py configs/ssd/ssd300_coco.py
 
 **Notes:**
 
-- If not specially marked, the results are same between results on the NPU and results on the GPU with FP32.
-- (\*) The results on the NPU of these models are aligned with the results of the mixed-precision training on the GPU,
-  but are lower than the results of the FP32. This situation is mainly related to the phase of the model itself in
-  mixed-precision training, users please adjust the hyperparameters to achieve the best result by self.
-- (\*\*) The accuracy of yolox-s on the GPU in mixed precision is 40.1; yolox-s is persister_woker enabled by default,
-  and there are currently some bugs on NPUs that prevent the last few epochs from running, but the accuracy is less
-  affected and can be ignored.
+- 如果没有特别标记，NPU 上的结果与使用 FP32 的 GPU 上的结果结果相同。
+- (\*) 这些模型在 NPU 上的结果与 GPU 上的混合精度训练结果一致，但低于 FP32 的结果。这种情况主要与模型本身在混合精度训练中的相性有关，
+  用户请自行调整超参数以达到最佳效果。
+- (\*\*) GPU 上 yolox-s 在混合精度下的精度为 40.1 低于readme中 40.5 的水平;默认情况下，yolox-s 启用 persister_woker，但这个参数
+  目前在NPU上存在一些bug，会导致在最后几个epoch由于资源耗尽报错退出，对整体精度影响有限可以忽略。
 
 **All above models are provided by Huawei Ascend group.**
