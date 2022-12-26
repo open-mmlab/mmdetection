@@ -12,7 +12,6 @@ from mmengine.logging import MessageHub
 from mmengine.model import BaseDataPreprocessor, ImgDataPreprocessor
 from mmengine.structures import PixelData
 from mmengine.utils import is_list_of
-from skimage import color
 from torch import Tensor
 
 from mmdet.models.utils import unfold_wo_center
@@ -21,6 +20,11 @@ from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
 from mmdet.structures.mask import BitmapMasks
 from mmdet.utils import ConfigType
+
+try:
+    import skimage
+except ImportError:
+    skimage = None
 
 
 @MODELS.register_module()
@@ -687,6 +691,10 @@ class BoxInstDataPreprocessor(DetDataPreprocessor):
         self.pairwise_color_thresh = pairwise_color_thresh
         self.bottom_pixels_removed = bottom_pixels_removed
 
+        if skimage is None:
+            raise RuntimeError('skimage is not installed,\
+                 please install it by: pip install scikit-image')
+
     def get_images_color_similarity(self, inputs: Tensor,
                                     image_masks: Tensor) -> Tensor:
         """Compute the image color similarity in LAB color space."""
@@ -745,7 +753,7 @@ class BoxInstDataPreprocessor(DetDataPreprocessor):
             # Compute color similarity for pseudo mask generation
             for im_i, data_sample in enumerate(data_samples):
                 # TODO: Support rgb2lab in mmengine?
-                images_lab = color.rgb2lab(
+                images_lab = skimage.color.rgb2lab(
                     downsampled_imgs[im_i].byte().permute(1, 2,
                                                           0).cpu().numpy())
                 images_lab = torch.as_tensor(
