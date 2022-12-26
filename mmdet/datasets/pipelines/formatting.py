@@ -78,21 +78,21 @@ class ImageToTensor:
     def __init__(self, keys):
         self.keys = keys
 
-        permute the channel order.
-        permute the channel order.
+    def __call__(self, results):
+        """Call function to convert image in results to :obj:`torch.Tensor` and
         permute the channel order.
 
         Args:
             results (dict): Result dict contains the image data to convert.
 
-                to :obj:`torch.Tensor` and permuted to (C, H, W) order.
-                to :obj:`torch.Tensor` and permuted to (C, H, W) order.
+        Returns:
+            dict: The result dict contains the image converted
                 to :obj:`torch.Tensor` and permuted to (C, H, W) order.
         """
         for key in self.keys:
             img = results[key]
-            results[key] = to_tensor(img).permute(2, 0, 1).contiguous()
-            results[key] = to_tensor(img).permute(2, 0, 1).contiguous()
+            if len(img.shape) < 3:
+                img = np.expand_dims(img, -1)
             results[key] = to_tensor(img).permute(2, 0, 1).contiguous()
         return results
 
@@ -177,8 +177,8 @@ class DefaultFormatBundle:
 
     It simplifies the pipeline of formatting common fields, including "img",
     "proposals", "gt_bboxes", "gt_labels", "gt_masks" and "gt_semantic_seg".
-    - img: (1)to tensor, (2)permute, (3)to DataContainer (stack=True)
-    - img: (1)to tensor, (2)permute, (3)to DataContainer (stack=True)
+    These fields are formatted as follows.
+
     - img: (1)to tensor, (2)permute, (3)to DataContainer (stack=True)
     - proposals: (1)to tensor, (2)to DataContainer
     - gt_bboxes: (1)to tensor, (2)to DataContainer
@@ -224,12 +224,10 @@ class DefaultFormatBundle:
                 img = img.astype(np.float32)
             # add default meta keys
             results = self._add_default_meta_keys(results)
+            if len(img.shape) < 3:
+                img = np.expand_dims(img, -1)
             results['img'] = DC(
                 to_tensor(img).permute(2, 0, 1).contiguous(),
-                padding_value=self.pad_val['img'],
-                stack=True)
-                padding_value=self.pad_val['img'],
-                stack=True)
                 padding_value=self.pad_val['img'],
                 stack=True)
         for key in ['proposals', 'gt_bboxes', 'gt_bboxes_ignore', 'gt_labels']:
