@@ -77,8 +77,7 @@ class MSDeformAttnPixelDecoder(BaseModule):
             input_conv_list.append(input_conv)
         self.input_convs = ModuleList(input_conv_list)
 
-        self.encoder = Mask2FormerTransformerEncoder(
-            **encoder)  # TODO: Notice reference_point
+        self.encoder = Mask2FormerTransformerEncoder(**encoder)
         self.postional_encoding = SinePositionalEncoding(**positional_encoding)
         # high resolution to low resolution
         self.level_encoding = nn.Embedding(self.num_encoder_levels,
