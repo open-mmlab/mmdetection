@@ -34,8 +34,8 @@ class TestMaskFormer(unittest.TestCase):
         model_cfg.panoptic_head.pixel_decoder.encoder.\
             layer_cfg.ffn_cfg.feedforward_channels = base_channels * 8
         model_cfg.panoptic_head.pixel_decoder.\
-            positional_encoding_cfg.num_feats = base_channels // 2
-        model_cfg.panoptic_head.positional_encoding_cfg.\
+            positional_encoding.num_feats = base_channels // 2
+        model_cfg.panoptic_head.positional_encoding.\
             num_feats = base_channels // 2
         model_cfg.panoptic_head.transformer_decoder.\
             layer_cfg.self_attn_cfg.embed_dims = base_channels
@@ -136,8 +136,8 @@ class TestMask2Former(unittest.TestCase):
         model_cfg.panoptic_head.pixel_decoder.encoder.\
             layer_cfg.ffn_cfg.feedforward_channels = base_channels * 4
         model_cfg.panoptic_head.pixel_decoder.\
-            positional_encoding_cfg.num_feats = base_channels // 2
-        model_cfg.panoptic_head.positional_encoding_cfg.\
+            positional_encoding.num_feats = base_channels // 2
+        model_cfg.panoptic_head.positional_encoding.\
             num_feats = base_channels // 2
         model_cfg.panoptic_head.transformer_decoder.\
             layer_cfg.self_attn_cfg.embed_dims = base_channels

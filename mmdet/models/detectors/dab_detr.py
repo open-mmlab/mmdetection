@@ -43,7 +43,7 @@ class DABDETR(DETR):
     def _init_layers(self) -> None:
         """Initialize layers except for backbone, neck and bbox_head."""
         self.positional_encoding = SinePositionalEncoding(
-            **self.positional_encoding_cfg)
+            **self.positional_encoding)
         self.encoder = DABDetrTransformerEncoder(**self.encoder)
         self.decoder = DABDetrTransformerDecoder(**self.decoder)
         self.embed_dims = self.encoder.embed_dims

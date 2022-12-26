@@ -35,7 +35,7 @@ class MSDeformAttnPixelDecoder(BaseModule):
             Defaults to dict(type='ReLU').
         encoder (:obj:`ConfigDict` or dict): Config for transformer
             encoder. Defaults to None.
-        positional_encoding_cfg (:obj:`ConfigDict` or dict): Config for
+        positional_encoding (:obj:`ConfigDict` or dict): Config for
             transformer encoder position encoding. Defaults to
             dict(num_feats=128, normalize=True).
         init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
@@ -52,7 +52,7 @@ class MSDeformAttnPixelDecoder(BaseModule):
                  norm_cfg: ConfigType = dict(type='GN', num_groups=32),
                  act_cfg: ConfigType = dict(type='ReLU'),
                  encoder: ConfigType = None,
-                 positional_encoding_cfg: ConfigType = dict(
+                 positional_encoding: ConfigType = dict(
                      num_feats=128, normalize=True),
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
@@ -79,8 +79,7 @@ class MSDeformAttnPixelDecoder(BaseModule):
 
         self.encoder = Mask2FormerTransformerEncoder(
             **encoder)  # TODO: Notice reference_point
-        self.postional_encoding = SinePositionalEncoding(
-            **positional_encoding_cfg)
+        self.postional_encoding = SinePositionalEncoding(**positional_encoding)
         # high resolution to low resolution
         self.level_encoding = nn.Embedding(self.num_encoder_levels,
                                            feat_channels)
@@ -116,7 +115,7 @@ class MSDeformAttnPixelDecoder(BaseModule):
             feat_channels, out_channels, kernel_size=1, stride=1, padding=0)
 
         self.num_outs = num_outs
-        self.point_generator = MlvlPointGenerator(strides)  # TODO
+        self.point_generator = MlvlPointGenerator(strides)
 
     def init_weights(self) -> None:
         """Initialize weights."""

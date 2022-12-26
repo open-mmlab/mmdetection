@@ -55,9 +55,9 @@ model = dict(
                         num_fcs=2,
                         ffn_drop=0.1,
                         act_cfg=dict(type='ReLU', inplace=True)))),
-            positional_encoding_cfg=dict(num_feats=128, normalize=True)),
+            positional_encoding=dict(num_feats=128, normalize=True)),
         enforce_decoder_input_project=False,
-        positional_encoding_cfg=dict(num_feats=128, normalize=True),
+        positional_encoding=dict(num_feats=128, normalize=True),
         transformer_decoder=dict(  # DetrTransformerDecoder
             num_layers=6,
             layer_cfg=dict(  # DetrTransformerDecoderLayer

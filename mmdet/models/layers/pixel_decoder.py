@@ -136,7 +136,7 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
             Defaults to dict(type='ReLU').
         encoder (:obj:`ConfigDict` or dict): Config for transformer encoder.
             Defaults to None.
-        positional_encoding_cfg (:obj:`ConfigDict` or dict): Config for
+        positional_encoding (:obj:`ConfigDict` or dict): Config for
             transformer encoder position encoding. Defaults to
             dict(num_feats=128, normalize=True).
         init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
@@ -150,7 +150,7 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
                  norm_cfg: ConfigType = dict(type='GN', num_groups=32),
                  act_cfg: ConfigType = dict(type='ReLU'),
                  encoder: ConfigType = None,
-                 positional_encoding_cfg: ConfigType = dict(
+                 positional_encoding: ConfigType = dict(
                      num_feats=128, normalize=True),
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
@@ -168,7 +168,7 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
             'tranformer encoder must equal to feat_channels({})'.format(
                 feat_channels, self.encoder_embed_dims)
         self.positional_encoding = SinePositionalEncoding(
-            **positional_encoding_cfg)
+            **positional_encoding)
         self.encoder_in_proj = Conv2d(
             in_channels[-1], feat_channels, kernel_size=1)
         self.encoder_out_proj = ConvModule(

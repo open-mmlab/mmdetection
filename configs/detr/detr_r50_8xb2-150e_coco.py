@@ -62,7 +62,7 @@ model = dict(
                 ffn_drop=0.1,
                 act_cfg=dict(type='ReLU', inplace=True))),
         return_intermediate=True),
-    positional_encoding_cfg=dict(num_feats=128, normalize=True),
+    positional_encoding=dict(num_feats=128, normalize=True),
     bbox_head=dict(
         type='DETRHead',
         num_classes=80,

@@ -39,7 +39,7 @@ class MaskFormerHead(AnchorFreeHead):
             the embed_dim of transformer decoder. Defaults to False.
         transformer_decoder (:obj:`ConfigDict` or dict): Config for
             transformer decoder.
-        positional_encoding_cfg (:obj:`ConfigDict` or dict): Config for
+        positional_encoding (:obj:`ConfigDict` or dict): Config for
             transformer decoder position encoding.
         loss_cls (:obj:`ConfigDict` or dict): Config of the classification
             loss. Defaults to `CrossEntropyLoss`.
@@ -65,7 +65,7 @@ class MaskFormerHead(AnchorFreeHead):
                  pixel_decoder: ConfigType = ...,
                  enforce_decoder_input_project: bool = False,
                  transformer_decoder: ConfigType = ...,
-                 positional_encoding_cfg: ConfigType = dict(
+                 positional_encoding: ConfigType = dict(
                      num_feats=128, normalize=True),
                  loss_cls: ConfigType = dict(
                      type='CrossEntropyLoss',
@@ -110,7 +110,7 @@ class MaskFormerHead(AnchorFreeHead):
                 in_channels[-1], self.decoder_embed_dims, kernel_size=1)
         else:
             self.decoder_input_proj = nn.Identity()
-        self.decoder_pe = SinePositionalEncoding(**positional_encoding_cfg)
+        self.decoder_pe = SinePositionalEncoding(**positional_encoding)
         self.query_embed = nn.Embedding(self.num_queries, out_channels)
 
         self.cls_embed = nn.Linear(feat_channels, self.num_classes + 1)

@@ -42,7 +42,7 @@ class Mask2FormerHead(MaskFormerHead):
             Defaults to False.
         transformer_decoder (:obj:`ConfigDict` or dict): Config for
             transformer decoder. Defaults to None.
-        positional_encoding_cfg (:obj:`ConfigDict` or dict): Config for
+        positional_encoding (:obj:`ConfigDict` or dict): Config for
             transformer decoder position encoding. Defaults to
             dict(num_feats=128, normalize=True).
         loss_cls (:obj:`ConfigDict` or dict): Config of the classification
@@ -70,7 +70,7 @@ class Mask2FormerHead(MaskFormerHead):
                  pixel_decoder: ConfigType = ...,
                  enforce_decoder_input_project: bool = False,
                  transformer_decoder: ConfigType = ...,
-                 positional_encoding_cfg: ConfigType = dict(
+                 positional_encoding: ConfigType = dict(
                      num_feats=128, normalize=True),
                  loss_cls: ConfigType = dict(
                      type='CrossEntropyLoss',
@@ -126,7 +126,7 @@ class Mask2FormerHead(MaskFormerHead):
             else:
                 self.decoder_input_projs.append(nn.Identity())
         self.decoder_positional_encoding = SinePositionalEncoding(
-            **positional_encoding_cfg)
+            **positional_encoding)
         self.query_embed = nn.Embedding(self.num_queries, feat_channels)
         self.query_feat = nn.Embedding(self.num_queries, feat_channels)
         # from low resolution to high resolution
