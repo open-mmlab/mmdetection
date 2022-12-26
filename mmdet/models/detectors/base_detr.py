@@ -14,9 +14,10 @@ from .base import BaseDetector
 class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
     r"""Base class for Detection Transformer.
 
-    Detection Transformer uses an encoder to process output features of neck,
-    then several queries interactive with the output features of encoder and
-    do the regression and classification with bounding box head.
+    In Detection Transformer, an encoder is used to process output features of
+    neck, then several queries interact with the encoder features using a
+    decoder and do the regression and classification with the bounding box
+    head.
 
     Args:
         backbone (:obj:`ConfigDict` or dict): Config of the backbone.
