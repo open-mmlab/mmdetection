@@ -93,11 +93,11 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
 
-**v3.0.0rc4** 版本已经在 2022.11.25 发布：
+**v3.0.0rc5** 版本已经在 2022.12.26 发布：
 
-- 支持了 [CondInst](https://arxiv.org/abs/2003.05664)
-- 添加了 [`projects/`](./projects/) 文件夹并提供了[示例](./projects/example_project/README.md)，方便社区快速地贡献相关项目
-- 在 [`projects`](./projects/SparseInst/README.md) 中支持了 [SparseInst](https://arxiv.org/abs/2203.12827)
+- 支持了 [RTMDet-Ins](https://arxiv.org/abs/2212.07784) 并改进了 RTMDet 的测试配置
+- 支持了 [SSH](https://arxiv.org/abs/1708.03979)
+- 发布了 [CondInst](https://arxiv.org/abs/2003.05664) 预训练模型
 
 ## 安装
 

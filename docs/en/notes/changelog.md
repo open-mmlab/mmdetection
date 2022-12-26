@@ -1,5 +1,66 @@
 # Changelog of v3.x
 
+## v3.0.0rc4 (26/12/2022)
+
+### Highlights
+
+- Support [RTMDet-Ins](https://arxiv.org/abs/2212.07784) and improve RTMDet test config
+- Support [SSH](https://arxiv.org/abs/1708.03979)
+- Release [CondInst](https://arxiv.org/abs/2003.05664) pre-trained model
+
+### New Features
+
+- Support [RTMDet-Ins](https://arxiv.org/abs/2212.07784) and improve RTMDet test config (#9494)
+- Support [SSH](https://arxiv.org/abs/1708.03979) (#8953)
+- Release [CondInst](https://arxiv.org/abs/2003.05664) pre-trained model (#9406)
+
+### Bug Fixes
+
+- Fix Condinst predict error when val `batch_size` > 1 (#9400)
+- Fix browse dataset (#9401)
+- Fix `analyze_logs.py` to plot mAP and calculate train time correctly (#9409)
+- Fix backward inplace error with `PAFPN` (#9450)
+- Fix config import links in model converters (#9441)
+- Fix `DeformableDETRHead` object has no attribute `loss_single` (#9477)
+- Fix the logic of pseudo bboxes predicted by teacher model in SemiBaseDetector (#9414)
+- Fix mmdet3.x InstanceSeg_Tutorial demo api (#9226)
+- Fix `analyze_results` (#9380)
+- Fix the error that Readthedocs API cannot be displayed (#9510)
+
+### Improvements
+
+- Remove legacy `builder.py` (#9479)
+- Make sure the pipeline input shape is in WH (#9324)
+- Add `.pre-commit-config-zh-cn.yaml` file (#9388)
+- Refactor dataset metainfo to lowercase (#9469)
+- Add torch1.13 checking in CI (#9478)
+- Adjust `FocalLoss` and `QualityFocalLoss` to fit `MMYOLO` (#9481)
+- Refactor `setup.cfg` (#9370)
+- Clip saturation value to valid range `[0, 1]` (#9391)
+- Only keep meta and state_dict when publish model (#9356)
+- Add segm evaluator in ms-poly_3x_coco_insatnce config (#9524)
+- Update deployment guide (#9527)
+- Update zh_cn `faq.md` (#9396)
+- Update `get_started` (#9480)
+- Update the zh_cn user_guides of `useful_tools.md` and `useful_hooks.md` (#9453)
+- Add type hints for `bfp` and `channel_mapper` (#9410)
+- Add type hints of part 8 including `iou_loss.py`, etc. (#9397)
+- Add type hints of part 3 including `anchor_generator.py`, etc. (#9468)
+
+### New Contributors
+
+- @lihua199710 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9388>
+- @twmht made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9450>
+- @tianleiSHI made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9453>
+- @kitecats made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9481>
+- @QJC123654 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9468>
+
+### Contributors
+
+A total of 20 developers contributed to this release.
+
+Thanks @liuyanyi, @RangeKing, @lihua199710, @MambaWong, @sanbuphy, @Xiangxu-0103, @twmht, @JunyaoHu, @Chan-Sun, @tianleiSHI, @zytx121, @kitecats, @QJC123654, @JosonChan1998, @lvhan028, @Czm369, @BIGWangYuDong, @RangiLyu, @hhaAndroid, @ZwwWayne
+
 ## v3.0.0rc4 (23/11/2022)
 
 ### Highlights
