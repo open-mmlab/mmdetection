@@ -96,8 +96,7 @@ We are excited to announce our latest work on real-time object recognition tasks
 
 **v3.0.0rc5** was released in 27/12/2022:
 
-- Release the technical report of [**RTMDet**](https://arxiv.org/abs/2212.07784)
-- Support [RTMDet](https://arxiv.org/abs/2212.07784) instance segmentation models
+- Support [RTMDet](https://arxiv.org/abs/2212.07784) instance segmentation models. The technical report of RTMDet is on [arxiv](https://arxiv.org/abs/2212.07784)
 - Support SSHContextModule in paper [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979)
 
 ## Installation
