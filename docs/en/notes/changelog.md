@@ -1,6 +1,6 @@
 # Changelog of v3.x
 
-## v3.0.0rc4 (26/12/2022)
+## v3.0.0rc5 (26/12/2022)
 
 ### Highlights
 
@@ -15,8 +15,8 @@
 
 ### Bug Fixes
 
-- Fix Condinst predict error when `batch_size` is greater than 1 in inference (#9400)
-- Fix browse dataset (#9401)
+- Fix CondInst predict error when `batch_size` is greater than 1 in inference (#9400)
+- Fix the bug of visualization when the dtype of the pipeline output image is not uint8 in browse dataset (#9401)
 - Fix `analyze_logs.py` to plot mAP and calculate train time correctly (#9409)
 - Fix backward inplace error with `PAFPN` (#9450)
 - Fix config import links in model converters (#9441)
@@ -29,7 +29,7 @@
 ### Improvements
 
 - Remove legacy `builder.py` (#9479)
-- Make sure the pipeline argument shape is in WH order (#9324)
+- Make sure the pipeline argument shape is in `(width, height)` order (#9324)
 - Add `.pre-commit-config-zh-cn.yaml` file (#9388)
 - Refactor dataset metainfo to lowercase (#9469)
 - Add PyTorch 1.13 checking in CI (#9478)
