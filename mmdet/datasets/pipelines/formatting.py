@@ -179,7 +179,7 @@ class DefaultFormatBundle:
     "proposals", "gt_bboxes", "gt_labels", "gt_masks" and "gt_semantic_seg".
     These fields are formatted as follows.
 
-    - img: (1)to tensor, (2)permute, (3)to DataContainer (stack=True)
+    - img: (1)transpose (or permute) & to tensor, (2)to DataContainer (stack=True)
     - proposals: (1)to tensor, (2)to DataContainer
     - gt_bboxes: (1)to tensor, (2)to DataContainer
     - gt_bboxes_ignore: (1)to tensor, (2)to DataContainer
@@ -226,11 +226,18 @@ class DefaultFormatBundle:
             results = self._add_default_meta_keys(results)
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
-            img = np.ascontiguousarray(img)
-            results['img'] = DC(
-                to_tensor(img).permute(2, 0, 1).contiguous(),
-                padding_value=self.pad_val['img'],
-                stack=True)
+            # To lower the computational time, if image is not contiguous,
+            # use `numpy.transpose()`` before `numpy.ascontiguousarray()`,
+            # otherwise, use `torch.permute()` before `torch.contiguous()`.
+            if not img.flags.c_contiguous:
+                img = np.ascontiguousarray(img.transpose(2, 0, 1))
+                results['img'] = DC(
+                    to_tensor(img), padding_value=self.pad_val['img'], stack=True)
+            else:
+                results['img'] = DC(
+                    to_tensor(img).permute(2, 0, 1).contiguous(),
+                    padding_value=self.pad_val['img'],
+                    stack=True)
         for key in ['proposals', 'gt_bboxes', 'gt_bboxes_ignore', 'gt_labels']:
             if key not in results:
                 continue
