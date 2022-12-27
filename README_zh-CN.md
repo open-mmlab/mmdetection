@@ -95,8 +95,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 **v3.0.0rc5** 版本已经在 2022.12.26 发布：
 
-- 发布了 [**RTMDet**](https://arxiv.org/abs/2212.07784) 的技术报告
-- 支持了 [RTMDet](https://arxiv.org/abs/2212.07784) 的实例分割模型
+- 支持了 [RTMDet](https://arxiv.org/abs/2212.07784) 的实例分割模型。RTMDet 的技术报告发布在了 [arxiv](https://arxiv.org/abs/2212.07784) 上。
 - 支持了 [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979) 论文中的 SSHContextModule
 
 ## 安装
