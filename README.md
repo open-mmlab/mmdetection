@@ -107,9 +107,8 @@ We are excited to announce our latest work on real-time object recognition tasks
 
 A brand new version of **MMDetection v3.0.0rc5** was released in 26/12/2022:
 
-- Support [RTMDet](https://arxiv.org/abs/2212.07784) instance segmentation models.
-- Support SSHContextModule in paper [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979).
-- Support instance segmentation algorithm [CondInst](https://arxiv.org/abs/2003.05664).
+- Support [RTMDet](https://arxiv.org/abs/2212.07784) instance segmentation models. The technical report of RTMDet is on [arxiv](https://arxiv.org/abs/2212.07784)
+- Support SSHContextModule in paper [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979)
 
 Find more new features in [3.x branch](https://github.com/open-mmlab/mmdetection/tree/3.x). Issues and PRs are welcome!
 
