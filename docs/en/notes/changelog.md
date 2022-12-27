@@ -15,36 +15,36 @@
 
 ### Bug Fixes
 
-- Fix Condinst predict error when val `batch_size` > 1 (#9400)
+- Fix Condinst predict error when `batch_size` is greater than 1 in inference (#9400)
 - Fix browse dataset (#9401)
 - Fix `analyze_logs.py` to plot mAP and calculate train time correctly (#9409)
 - Fix backward inplace error with `PAFPN` (#9450)
 - Fix config import links in model converters (#9441)
 - Fix `DeformableDETRHead` object has no attribute `loss_single` (#9477)
 - Fix the logic of pseudo bboxes predicted by teacher model in SemiBaseDetector (#9414)
-- Fix mmdet3.x InstanceSeg_Tutorial demo api (#9226)
+- Fix demo API in instance segmentation tutorial (#9226)
 - Fix `analyze_results` (#9380)
 - Fix the error that Readthedocs API cannot be displayed (#9510)
 
 ### Improvements
 
 - Remove legacy `builder.py` (#9479)
-- Make sure the pipeline input shape is in WH (#9324)
+- Make sure the pipeline argument shape is in WH order (#9324)
 - Add `.pre-commit-config-zh-cn.yaml` file (#9388)
 - Refactor dataset metainfo to lowercase (#9469)
-- Add torch1.13 checking in CI (#9478)
-- Adjust `FocalLoss` and `QualityFocalLoss` to fit `MMYOLO` (#9481)
+- Add PyTorch 1.13 checking in CI (#9478)
+- Adjust `FocalLoss` and `QualityFocalLoss` to allow different kinds of targets (#9481)
 - Refactor `setup.cfg` (#9370)
 - Clip saturation value to valid range `[0, 1]` (#9391)
-- Only keep meta and state_dict when publish model (#9356)
-- Add segm evaluator in ms-poly_3x_coco_insatnce config (#9524)
+- Only keep meta and state_dict when publishing model (#9356)
+- Add segm evaluator in ms-poly_3x_coco_instance config (#9524)
 - Update deployment guide (#9527)
 - Update zh_cn `faq.md` (#9396)
 - Update `get_started` (#9480)
 - Update the zh_cn user_guides of `useful_tools.md` and `useful_hooks.md` (#9453)
 - Add type hints for `bfp` and `channel_mapper` (#9410)
-- Add type hints of part 8 including `iou_loss.py`, etc. (#9397)
-- Add type hints of part 3 including `anchor_generator.py`, etc. (#9468)
+- Add type hints of several losses (#9397)
+- Add type hints and update docstring for task modules (#9468)
 
 ### New Contributors
 
