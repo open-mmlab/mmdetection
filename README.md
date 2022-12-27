@@ -78,7 +78,7 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 
 ### Highlight
 
-We are excited to announce our latest work on real-time object recognition tasks, **RTMDet**, a family of fully convolutional single-stage detectors. RTMDet not only achieves the best parameter-accuracy trade-off on object detection from tiny to extra-large model sizes but also obtains new state-of-the-art performance on instance segmentation and rotated object detection tasks. Details can be found in the [technical report](https://arxiv.org/abs/2212.07784). Pre-trained models are [here](configs/rtmdet).
+We are excited to announce our latest work on real-time object recognition tasks, **RTMDet**, a family of fully convolutional single-stage detectors. RTMDet not only achieves the best parameter-accuracy trade-off on object detection from tiny to extra-large model sizes but also obtains new state-of-the-art performance on instance segmentation and rotated object detection tasks. Details can be found in the [technical report](https://arxiv.org/abs/2212.07784). Pre-trained models are [here](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet).
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/real-time-instance-segmentation-on-mscoco)](https://paperswithcode.com/sota/real-time-instance-segmentation-on-mscoco?p=rtmdet-an-empirical-study-of-designing-real)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/object-detection-in-aerial-images-on-dota-1)](https://paperswithcode.com/sota/object-detection-in-aerial-images-on-dota-1?p=rtmdet-an-empirical-study-of-designing-real)
@@ -96,9 +96,9 @@ We are excited to announce our latest work on real-time object recognition tasks
 
 **v3.0.0rc5** was released in 26/12/2022:
 
-- Support [RTMDet-Ins](https://arxiv.org/abs/2212.07784) and improve RTMDet test config
-- Support [SSH](https://arxiv.org/abs/1708.03979)
-- Release [CondInst](https://arxiv.org/abs/2003.05664) pre-trained model
+- Release the technical report of [**RTMDet**](https://arxiv.org/abs/2212.07784)
+- Support [RTMDet](https://arxiv.org/abs/2212.07784) instance segmentation models
+- Support SSHContextModule in paper [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979)
 
 ## Installation
 

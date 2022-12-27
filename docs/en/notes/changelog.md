@@ -4,14 +4,14 @@
 
 ### Highlights
 
+- Release the technical report of [**RTMDet**](https://arxiv.org/abs/2212.07784)
 - Support [RTMDet-Ins](https://arxiv.org/abs/2212.07784) and improve RTMDet test config
-- Support [SSH](https://arxiv.org/abs/1708.03979)
-- Release [CondInst](https://arxiv.org/abs/2003.05664) pre-trained model
+- Support SSHContextModule in paper [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979).
 
 ### New Features
 
 - Support [RTMDet-Ins](https://arxiv.org/abs/2212.07784) and improve RTMDet test config (#9494)
-- Support [SSH](https://arxiv.org/abs/1708.03979) (#8953)
+- Support SSHContextModule in paper [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979) (#8953)
 - Release [CondInst](https://arxiv.org/abs/2003.05664) pre-trained model (#9406)
 
 ### Bug Fixes
