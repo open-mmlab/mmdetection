@@ -4,13 +4,12 @@
 
 ### Highlights
 
-- Release the technical report of [**RTMDet**](https://arxiv.org/abs/2212.07784)
-- Support [RTMDet-Ins](https://arxiv.org/abs/2212.07784) and improve RTMDet test config
+- Support [RTMDet](https://arxiv.org/abs/2212.07784) instance segmentation models. The technical report of RTMDet is on [arxiv](https://arxiv.org/abs/2212.07784)
 - Support SSHContextModule in paper [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979).
 
 ### New Features
 
-- Support [RTMDet-Ins](https://arxiv.org/abs/2212.07784) and improve RTMDet test config (#9494)
+- Support [RTMDet](https://arxiv.org/abs/2212.07784) instance segmentation models and improve RTMDet test config (#9494)
 - Support SSHContextModule in paper [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979) (#8953)
 - Release [CondInst](https://arxiv.org/abs/2003.05664) pre-trained model (#9406)
 
