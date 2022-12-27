@@ -93,7 +93,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
 
-**v3.0.0rc5** 版本已经在 2022.12.26 发布：
+**v3.0.0rc5** 版本已经在 2022.12.27 发布：
 
 - 发布了 [**RTMDet**](https://arxiv.org/abs/2212.07784) 的技术报告
 - 支持了 [RTMDet](https://arxiv.org/abs/2212.07784) 的实例分割模型
