@@ -226,6 +226,7 @@ class DefaultFormatBundle:
             results = self._add_default_meta_keys(results)
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
+            img = np.ascontiguousarray(img)
             results['img'] = DC(
                 to_tensor(img).permute(2, 0, 1).contiguous(),
                 padding_value=self.pad_val['img'],
