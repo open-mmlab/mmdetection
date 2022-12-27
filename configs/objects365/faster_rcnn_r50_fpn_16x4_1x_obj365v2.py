@@ -1,10 +1,12 @@
 _base_ = [
     '../_base_/models/faster_rcnn_r50_fpn.py',
-    '../_base_/datasets/objects365v1_detection.py',
+    '../_base_/datasets/objects365v2_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
 model = dict(roi_head=dict(bbox_head=dict(num_classes=365)))
+
+data = dict(samples_per_gpu=4)
 
 # Using 32 GPUS while training
 optimizer = dict(type='SGD', lr=0.08, momentum=0.9, weight_decay=0.0001)

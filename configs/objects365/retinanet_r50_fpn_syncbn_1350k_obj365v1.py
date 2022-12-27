@@ -11,7 +11,8 @@ optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 
-runner = dict(type='IterBasedRunner', max_iters=1350000)  # 36 epochs
+runner = dict(
+    _delete_=True, type='IterBasedRunner', max_iters=1350000)  # 36 epochs
 lr_config = dict(
     policy='step',
     warmup='linear',
