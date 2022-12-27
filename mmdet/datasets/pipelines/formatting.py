@@ -179,7 +179,7 @@ class DefaultFormatBundle:
     "proposals", "gt_bboxes", "gt_labels", "gt_masks" and "gt_semantic_seg".
     These fields are formatted as follows.
 
-    - img: (1)transpose (or permute) & to tensor, (2)to DataContainer (stack=True)
+    - img: (1)transpose & to tensor, (2)to DataContainer (stack=True)
     - proposals: (1)to tensor, (2)to DataContainer
     - gt_bboxes: (1)to tensor, (2)to DataContainer
     - gt_bboxes_ignore: (1)to tensor, (2)to DataContainer
@@ -232,7 +232,9 @@ class DefaultFormatBundle:
             if not img.flags.c_contiguous:
                 img = np.ascontiguousarray(img.transpose(2, 0, 1))
                 results['img'] = DC(
-                    to_tensor(img), padding_value=self.pad_val['img'], stack=True)
+                    to_tensor(img),
+                    padding_value=self.pad_val['img'],
+                    stack=True)
             else:
                 results['img'] = DC(
                     to_tensor(img).permute(2, 0, 1).contiguous(),
