@@ -226,9 +226,11 @@ class DefaultFormatBundle:
             results = self._add_default_meta_keys(results)
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
-            # To lower the computational time, if image is not contiguous,
-            # use `numpy.transpose()`` before `numpy.ascontiguousarray()`,
-            # otherwise, use `torch.permute()` before `torch.contiguous()`.
+            # To improve the computational speed by by 3-5 times, apply:
+            # If image is not contiguous, use
+            # `numpy.transpose()` followed by `numpy.ascontiguousarray()`
+            # If image is already contiguous, use
+            # `torch.permute()` followed by `torch.contiguous()`
             if not img.flags.c_contiguous:
                 img = np.ascontiguousarray(img.transpose(2, 0, 1))
                 img = to_tensor(img)
