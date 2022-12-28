@@ -9,8 +9,8 @@ from .misc import (aligned_bilinear, center_of_mass, empty_instances,
                    levels_to_images, mask2ndarray, multi_apply,
                    relative_coordinate_maps, rename_loss_dict,
                    reweight_loss_dict, samplelist_boxtype2tensor,
-                   select_single_mlvl, sigmoid_geometric_mean, unmap,
-                   unpack_gt_instances)
+                   select_single_mlvl, sigmoid_geometric_mean,
+                   unfold_wo_center, unmap, unpack_gt_instances)
 from .panoptic_gt_processing import preprocess_panoptic_gt
 from .point_sample import (get_uncertain_point_coords_with_randomness,
                            get_uncertainty)
@@ -25,5 +25,6 @@ __all__ = [
     'generate_coordinate', 'levels_to_images', 'mask2ndarray', 'multi_apply',
     'select_single_mlvl', 'unmap', 'images_to_levels',
     'samplelist_boxtype2tensor', 'filter_gt_instances', 'rename_loss_dict',
-    'reweight_loss_dict', 'relative_coordinate_maps', 'aligned_bilinear'
+    'reweight_loss_dict', 'relative_coordinate_maps', 'aligned_bilinear',
+    'unfold_wo_center'
 ]
