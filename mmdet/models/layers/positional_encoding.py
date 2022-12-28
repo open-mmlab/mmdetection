@@ -33,7 +33,7 @@ class SinePositionalEncoding(BaseModule):
         offset (float): offset add to embed when do the normalization.
             Defaults to 0.
         init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
+            Default to None
     """
 
     def __init__(self,
@@ -44,7 +44,7 @@ class SinePositionalEncoding(BaseModule):
                  eps: float = 1e-6,
                  offset: float = 0.,
                  init_cfg: OptMultiConfig = None) -> None:
-        super().__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         if normalize:
             assert isinstance(scale, (float, int)), 'when normalize is set,' \
                 'scale should be provided and in float or int type, ' \
@@ -56,7 +56,7 @@ class SinePositionalEncoding(BaseModule):
         self.eps = eps
         self.offset = offset
 
-    def forward(self, mask) -> Tensor:
+    def forward(self, mask: Tensor) -> Tensor:
         """Forward function for `SinePositionalEncoding`.
 
         Args:
@@ -115,9 +115,9 @@ class LearnedPositionalEncoding(BaseModule):
             along x-axis or y-axis. The final returned dimension for
             each position is 2 times of this value.
         row_num_embed (int, optional): The dictionary size of row embeddings.
-            Default 50.
+            Default to 50.
         col_num_embed (int, optional): The dictionary size of col embeddings.
-            Default 50.
+            Default to 50.
         init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
@@ -128,14 +128,14 @@ class LearnedPositionalEncoding(BaseModule):
         col_num_embed: int = 50,
         init_cfg: MultiConfig = dict(type='Uniform', layer='Embedding')
     ) -> None:
-        super().__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         self.row_embed = nn.Embedding(row_num_embed, num_feats)
         self.col_embed = nn.Embedding(col_num_embed, num_feats)
         self.num_feats = num_feats
         self.row_num_embed = row_num_embed
         self.col_num_embed = col_num_embed
 
-    def forward(self, mask) -> Tensor:
+    def forward(self, mask: Tensor) -> Tensor:
         """Forward function for `LearnedPositionalEncoding`.
 
         Args:

@@ -37,7 +37,7 @@ class NormedLinear(nn.Linear):
         if self.bias is not None:
             nn.init.constant_(self.bias, 0)
 
-    def forward(self, x) -> Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         weight_ = self.weight / (
             self.weight.norm(dim=1, keepdim=True).pow(self.power) + self.eps)
         x_ = x / (x.norm(dim=1, keepdim=True).pow(self.power) + self.eps)
@@ -56,7 +56,7 @@ class NormedConv2d(nn.Conv2d):
         eps (float, optional): The minimal value of divisor to
              keep numerical stability. Default to 1e-6.
         norm_over_kernel (bool, optional): Normalize over kernel.
-             Default: False.
+             Default to False.
     """
 
     def __init__(self,
@@ -72,7 +72,7 @@ class NormedConv2d(nn.Conv2d):
         self.norm_over_kernel = norm_over_kernel
         self.eps = eps
 
-    def forward(self, x) -> Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         if not self.norm_over_kernel:
             weight_ = self.weight / (
                 self.weight.norm(dim=1, keepdim=True).pow(self.power) +

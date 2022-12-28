@@ -17,15 +17,15 @@ class ResLayer(Sequential):
         inplanes (int): inplanes of block.
         planes (int): planes of block.
         num_blocks (int): number of blocks.
-        stride (int): stride of the first block. Default: 1
+        stride (int): stride of the first block. Default to 1
         avg_down (bool): Use AvgPool instead of stride conv when
-            downsampling in the bottleneck. Default: False
+            downsampling in the bottleneck. Default to False
         conv_cfg (dict): dictionary to construct and config conv layer.
-            Default: None
+            Default to None
         norm_cfg (dict): dictionary to construct and config norm layer.
-            Default: dict(type='BN')
+            Default to dict(type='BN')
         downsample_first (bool): Downsample at the first block or last block.
-            False for Hourglass, True for ResNet. Default: True
+            False for Hourglass, True for ResNet. Default to True
     """
 
     def __init__(self,
