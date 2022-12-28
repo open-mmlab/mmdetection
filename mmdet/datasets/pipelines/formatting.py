@@ -231,15 +231,13 @@ class DefaultFormatBundle:
             # otherwise, use `torch.permute()` before `torch.contiguous()`.
             if not img.flags.c_contiguous:
                 img = np.ascontiguousarray(img.transpose(2, 0, 1))
-                img = to_tensor(img),
-            
+                img = to_tensor(img)
             else:
-               img =  to_tensor(img).permute(2, 0, 1).contiguous()
-                   
+                img = to_tensor(img).permute(2, 0, 1).contiguous()
             results['img'] = DC(
-                    img,
-                    padding_value=self.pad_val['img'],
-                    stack=True)
+                img,
+                padding_value=self.pad_val['img'],
+                stack=True)
         for key in ['proposals', 'gt_bboxes', 'gt_bboxes_ignore', 'gt_labels']:
             if key not in results:
                 continue
