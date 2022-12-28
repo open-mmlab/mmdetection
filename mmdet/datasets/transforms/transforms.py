@@ -419,14 +419,14 @@ class RandomShift(BaseTransform):
     - img
     - gt_bboxes (BaseBoxes[torch.float32])
     - gt_bboxes_labels (np.int64)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
 
     Modified Keys:
 
     - img
     - gt_bboxes
     - gt_bboxes_labels
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
 
     Args:
         prob (float): Probability of shifts. Defaults to 0.5.
@@ -611,7 +611,7 @@ class RandomCrop(BaseTransform):
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - gt_seg_map (np.uint8) (optional)
 
     Modified Keys:
@@ -1157,7 +1157,7 @@ class MinIoURandomCrop(BaseTransform):
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - gt_seg_map (np.uint8) (optional)
 
     Modified Keys:
@@ -1554,7 +1554,7 @@ class Albu(BaseTransform):
         if 'gt_ignore_flags' in results and isinstance(
                 results['gt_ignore_flags'], list):
             results['gt_ignore_flags'] = np.array(
-                results['gt_ignore_flags'], dtype=np.bool)
+                results['gt_ignore_flags'], dtype=bool)
 
         if 'bboxes' in results:
             if isinstance(results['bboxes'], list):
@@ -1656,7 +1656,7 @@ class RandomCenterCropPad(BaseTransform):
     - img_shape (tuple)
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
 
     Modified Keys:
 
@@ -1664,7 +1664,7 @@ class RandomCenterCropPad(BaseTransform):
     - img_shape (tuple)
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
 
     Args:
         crop_size (tuple, optional): expected size after crop, final size will
@@ -2094,7 +2094,7 @@ class Mosaic(BaseTransform):
     - img
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - mix_results (List[dict])
 
     Modified Keys:
@@ -2347,7 +2347,7 @@ class MixUp(BaseTransform):
     - img
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - mix_results (List[dict])
 
 
@@ -2549,7 +2549,7 @@ class RandomAffine(BaseTransform):
     - img
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
 
     Modified Keys:
 
@@ -2791,7 +2791,7 @@ class CopyPaste(BaseTransform):
     - img
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - gt_masks (BitmapMasks) (optional)
 
     Modified Keys:
@@ -2971,7 +2971,7 @@ class RandomErasing(BaseTransform):
     - img
     - gt_bboxes (HorizontalBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - gt_masks (BitmapMasks) (optional)
 
     Modified Keys:
@@ -3156,7 +3156,7 @@ class CachedMosaic(Mosaic):
     - img
     - gt_bboxes (np.float32) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
 
     Modified Keys:
 
@@ -3385,7 +3385,7 @@ class CachedMixUp(BaseTransform):
     - img
     - gt_bboxes (np.float32) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - mix_results (List[dict])
 
 

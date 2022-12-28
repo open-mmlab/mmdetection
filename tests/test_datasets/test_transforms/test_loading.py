@@ -71,7 +71,7 @@ class TestLoadAnnotations(unittest.TestCase):
         self.assertEqual(results['gt_bboxes'].dtype, np.float32)
         self.assertTrue((results['gt_ignore_flags'] == np.array([0, 0,
                                                                  1])).all())
-        self.assertEqual(results['gt_ignore_flags'].dtype, np.bool)
+        self.assertEqual(results['gt_ignore_flags'].dtype, bool)
 
     def test_load_labels(self):
         transform = LoadAnnotations(

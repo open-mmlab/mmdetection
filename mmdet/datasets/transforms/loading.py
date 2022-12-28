@@ -218,7 +218,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
     - gt_bboxes_labels (np.int64)
     - gt_masks (BitmapMasks | PolygonMasks)
     - gt_seg_map (np.uint8)
-    - gt_ignore_flags (np.bool)
+    - gt_ignore_flags (bool)
 
     Args:
         with_bbox (bool): Whether to parse and load the bbox annotation.
@@ -270,7 +270,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         else:
             _, box_type_cls = get_box_type(self.box_type)
             results['gt_bboxes'] = box_type_cls(gt_bboxes, dtype=torch.float32)
-        results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=np.bool)
+        results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=bool)
 
     def _load_labels(self, results: dict) -> None:
         """Private function to load label annotations.
@@ -356,7 +356,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             gt_masks.append(gt_mask)
             # re-process gt_ignore_flags
             gt_ignore_flags.append(instance['ignore_flag'])
-        results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=np.bool)
+        results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=bool)
         return gt_masks
 
     def _load_masks(self, results: dict) -> None:
@@ -485,7 +485,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
     - gt_bboxes_labels (np.int64)
     - gt_masks (BitmapMasks | PolygonMasks)
     - gt_seg_map (np.uint8)
-    - gt_ignore_flags (np.bool)
+    - gt_ignore_flags (bool)
 
     Args:
         with_bbox (bool): Whether to parse and load the bbox annotation.
@@ -667,7 +667,7 @@ class FilterAnnotations(BaseTransform):
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
 
     Modified Keys:
 
@@ -758,7 +758,7 @@ class LoadEmptyAnnotations(BaseTransform):
     - gt_bboxes_labels (np.int64)
     - gt_masks (BitmapMasks | PolygonMasks)
     - gt_seg_map (np.uint8)
-    - gt_ignore_flags (np.bool)
+    - gt_ignore_flags (bool)
 
     Args:
         with_bbox (bool): Whether to load the pseudo bbox annotation.
