@@ -37,7 +37,7 @@ python tools/train.py configs/ssd/ssd300_coco.py
 - If not specially marked, the results on NPU are the same as those on the GPU with FP32.
 - (\*) The results on the NPU of these models are aligned with the results of the mixed-precision training on the GPU,
   but are lower than the results of the FP32. This situation is mainly related to the phase of the model itself in
-  mixed-precision training, users please adjust the hyperparameters to achieve the best result by self.
+  mixed-precision training, users may need to adjust the hyperparameters to achieve better results.
 - (\*\*) The accuracy of yolox-s on the GPU in mixed precision is 40.1; yolox-s is persister_woker enabled by default,
   and there are currently some bugs on NPUs that prevent the last few epochs from running, but the accuracy is less
   affected and can be ignored.
