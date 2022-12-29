@@ -27,10 +27,10 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
             Transformer encoder. Defaults to None.
         decoder (:obj:`ConfigDict` or dict, optional): Config of the
             Transformer decoder. Defaults to None.
-        positional_encoding (:obj:`ConfigDict` or dict, optional): Config
-            of the positional encoding module. Defaults to None.
         bbox_head (:obj:`ConfigDict` or dict, optional): Config for the
             bounding box head module. Defaults to None.
+        positional_encoding (:obj:`ConfigDict` or dict, optional): Config
+            of the positional encoding module. Defaults to None.
         num_queries (int, optional): Number of decoder query in Transformer.
             Defaults to 100.
         train_cfg (:obj:`ConfigDict` or dict, optional): Training config of
@@ -50,8 +50,8 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
                  neck: OptConfigType = None,
                  encoder: OptConfigType = None,
                  decoder: OptConfigType = None,
-                 positional_encoding: OptConfigType = None,
                  bbox_head: OptConfigType = None,
+                 positional_encoding: OptConfigType = None,
                  num_queries: int = 100,
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None,
