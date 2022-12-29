@@ -94,7 +94,7 @@ class DABDETR(DETR):
                                         self.embed_dims)
         else:
             query = self.patterns.weight[:, None, None, :]\
-                .repeat(1, batch_size, self.num_queries, 1)\
+                .repeat(1, self.num_queries, batch_size, 1)\
                 .view(-1, batch_size, self.embed_dims)\
                 .permute(1, 0, 2)
             query_pos = query_pos.repeat(1, self.num_patterns, 1)
