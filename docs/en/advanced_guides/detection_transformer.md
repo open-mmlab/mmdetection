@@ -42,14 +42,80 @@ def forward_transformer(self, img_feats: Tuple[Tensor],
 
 The implementations of most components, such as `DetrTransformerEncoderLayer`, `DetrTransformerDecoder`, and `DetrHead`, become more concise.
 
-The original intricate modules of Transformer, including encoder, decoder, encoder layer, and decoder layer, are replaced with straightforward modules which attend to clear logic rather than excessive compatibility. Additionally, the Transformer components are moved out of the head. Hence, the head becomes lightweight and focuses on getting detection results and calculating losses.
+The `XTransformer` class has been dropped. Instead, the detector initialize `XTransformerEncoder` and `XTransformerDecoder` directly.
+
+The original intricate modules of Transformer, including `XTransformerEncoder`, `XTransformerEncoderLayer`, `XTransdormerDecoder`, `XTransformerDecoderLayer`, are replaced with straightforward modules which attend to clear logic rather than excessive compatibility. For example:
+
+```Python
+class DetrTransformerEncoder(BaseModule):
+    def __init__(self,
+                 num_layers: int,
+                 layer_cfg: ConfigType,
+                 init_cfg: OptConfigType = None) -> None:
+        super().__init__(init_cfg=init_cfg)
+        self.num_layers = num_layers
+        self.layer_cfg = layer_cfg
+        self._init_layers()
+
+    def _init_layers(self) -> None:
+        self.layers = ModuleList([
+            DetrTransformerEncoderLayer(**self.layer_cfg)
+            for _ in range(self.num_layers)])
+        self.embed_dims = self.layers[0].embed_dims
+
+    def forward(self, query: Tensor, query_pos: Tensor,
+                key_padding_mask: Tensor, **kwargs) -> Tensor:
+        for layer in self.layers:
+            query = layer(query, query_pos, key_padding_mask, **kwargs)
+        return query
+```
+
+Additionally, the `XHead` becomes lightweight, because the Transformer components are moved to detector, which makes the head focus on getting detection results and calculating losses.
 
 #### 3. Code with better readability and usability
 
-The code of all DETR-related modules are refactored to enhance the readability and usability. Specifically, Firstly, the refactored modules have reasonable designing and uniform implementation, which makes it easy to read the code of supported DETRs and implement a custom DETR. Secondly, The overused registration mechanism for building modules are replaced with direct initialization, which benefits code reading and jumping. At last, the new modules come with more detailed docstring and comments that attempt to help the user understand the them.
+The code of all DETR-related modules are refactored to enhance the readability and usability.
+
+The refactored modules have reasonable designs and a uniform implementation style, which makes it easy to read the code of supported DETRs or implement a custom DETR. Users can refer to [Customize a DETR](<>) to implement a new DETR.
+
+The overused registration mechanism for building modules are replaced with direct initialization, which benefits code reading and jumping.
+
+```
+# Original implementation
+self.encoder = build_transformer_layer_sequence(encoder)
+self.decoder = build_transformer_layer_sequence(decoder)
+# Refactored implementation
+self.encoder = DetrTransformerEncoder(**self.encoder)
+self.decoder = DetrTransformerDecoder(**self.decoder)
+# Show the module class directly, support code jumping.
+```
+
+At last, the new modules come with more detailed doc-strings and comments.
 
 #### 4. More SOTA DETRs
 
-In addition to the supported DETR and Deformable DETR, three SOTA DETRs are added, including Conditional DETR, DAB DETR, and DINO. The pre-trained weights has been available in the model zoo.
+In the latest MMDetection, the supported DETRs have been refactored. Besides, implementation and weight of several SOTA DETRs have been available.
+
+Supported DETRs:
+
+- [x] [DETR](https://arxiv.org/abs/2005.12872) (ECCV'2020)
+- [x] [Deformable-DETR](https://arxiv.org/abs/2010.04159v4) (ICLR'2021)
+- [x] [Conditional-DETR](https://arxiv.org/abs/2108.06152v2) (ICCV'2021)
+- [x] [DAB-DETR](https://arxiv.org/abs/2201.12329) (ICLR'2022)
+- [x] [DINO](https://arxiv.org/abs/2203.03605) (ArXiv'2022)
 
 ### Appointment
+
+#### Parameter names
+
+#### Unified data flow
+
+### Customize a DETR
+
+#### Implement Transformer components
+
+#### Implement detector
+
+#### Implement head
+
+#### Example: Implement DINO
