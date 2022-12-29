@@ -2,7 +2,7 @@
 
 ## Usage
 
-Please refer to [link](https://github.com/open-mmlab/mmcv/blob/master/docs/zh_cn/get_started/build.md) installing mmcv
+Please refer to [link](https://mmcv.readthedocs.io/en/latest/get_started/build.html#build-mmcv-full-on-ascend-npu-machine) installing mmcv
 on NPU Devices.
 
 Here we use 8 NPUs on your computer to train the model with the following command:
