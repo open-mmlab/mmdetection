@@ -1,9 +1,0 @@
-blank_issues_enabled: true
-
-contact_links:
-  - name: 💬 Forum
-    url: https://github.com/open-mmlab/mmdetection/discussions
-    about: Ask general usage questions and discuss with other MMDetection community members
-  - name: 🌐 Explore OpenMMLab
-    url: https://openmmlab.com/
-    about: Get know more about OpenMMLab
