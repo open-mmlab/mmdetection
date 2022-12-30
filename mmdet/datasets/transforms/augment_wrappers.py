@@ -97,7 +97,7 @@ class AutoAugment(RandomChoice):
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - gt_seg_map (np.uint8) (optional)
 
     Modified Keys:
@@ -178,7 +178,7 @@ class RandAugment(RandomChoice):
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - gt_seg_map (np.uint8) (optional)
 
     Modified Keys:

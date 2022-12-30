@@ -19,7 +19,7 @@ def _rand_masks(num_items, bboxes, img_w, img_h):
     for i, bbox in enumerate(bboxes):
         bbox = bbox.astype(np.int32)
         mask = (rng.rand(1, bbox[3] - bbox[1], bbox[2] - bbox[0]) >
-                0.3).astype(np.int)
+                0.3).astype(np.int64)
         masks[i:i + 1, bbox[1]:bbox[3], bbox[0]:bbox[2]] = mask
     return BitmapMasks(masks, height=img_h, width=img_w)
 
