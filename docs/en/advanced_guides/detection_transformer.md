@@ -12,7 +12,7 @@ There is a brand new implementation of DETRs in MMDetection, whose features are 
 
 According to the existing DETRs, a unified base detector class `DetectionTransformer` is designed to standardize the architectures and forward procedures of DETRs. (mmdet/models/detectors/base_detr.py)
 
-Each detector inherited from `DetectionTransformer` is mainly consists of six components: `backbone`, `neck`, `positional_encoding`, `encoder`, `decoder`, and `bbox_head`. The `backbone` and `neck` extract features of input batch. The `positional_encoding` encodes the absolute position of each feature points. The `encoder` processes output features of neck. The `decoder` pools encoder features of objects into the queries. At last, the `bbox_head` makes predictions on output queries of decoder.
+Each detector inherited from `DetectionTransformer` is mainly consists of six components: `backbone`, `neck`, `positional_encoding`, `encoder`, `decoder`, and `bbox_head`. The `backbone` and `neck` extract features of input batch. The `positional_encoding` encodes the position of each feature points. The `encoder` processes output features of neck. The `decoder` pools encoder features of objects into the queries. At last, the `bbox_head` makes predictions and calculates losses on output queries of decoder.
 
 For the forward process, except for the earliest `extracting features` and the latest `calculating with head`, the intermediate forward process of transformer are designed as four steps: `pre_transformer`, `forward_encoder`, `pre_decoder`, and `forward_decoder`. The parameters flow among the functions are summarized as follow:
 
@@ -80,7 +80,7 @@ The refactored modules have reasonable designs and a uniform implementation styl
 
 The overused registration mechanism for building modules are replaced with direct initialization, which benefits code reading and jumping.
 
-```
+```python
 # Original implementation
 self.encoder = build_transformer_layer_sequence(encoder)
 self.decoder = build_transformer_layer_sequence(decoder)
@@ -107,6 +107,8 @@ Supported DETRs:
 ### Appointment
 
 #### Parameter names
+
+We follow the
 
 #### Unified data flow
 
