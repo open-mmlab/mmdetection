@@ -17,15 +17,15 @@ class ResLayer(Sequential):
         inplanes (int): inplanes of block.
         planes (int): planes of block.
         num_blocks (int): number of blocks.
-        stride (int): stride of the first block. Default to 1
+        stride (int): stride of the first block. Defaults to 1
         avg_down (bool): Use AvgPool instead of stride conv when
-            downsampling in the bottleneck. Default to False
+            downsampling in the bottleneck. Defaults to False
         conv_cfg (dict): dictionary to construct and config conv layer.
-            Default to None
+            Defaults to None
         norm_cfg (dict): dictionary to construct and config norm layer.
-            Default to dict(type='BN')
+            Defaults to dict(type='BN')
         downsample_first (bool): Downsample at the first block or last block.
-            False for Hourglass, True for ResNet. Default to True
+            False for Hourglass, True for ResNet. Defaults to True
     """
 
     def __init__(self,
@@ -130,8 +130,8 @@ class SimplifiedBasicBlock(BaseModule):
                  norm_cfg: ConfigType = dict(type='BN'),
                  dcn: OptConfigType = None,
                  plugins: OptConfigType = None,
-                 init_fg: OptMultiConfig = None) -> None:
-        super().__init__(init_fg=init_fg)
+                 init_cfg: OptMultiConfig = None) -> None:
+        super().__init__(init_cfg=init_cfg)
         assert dcn is None, 'Not implemented yet.'
         assert plugins is None, 'Not implemented yet.'
         assert not with_cp, 'Not implemented yet.'
@@ -174,7 +174,7 @@ class SimplifiedBasicBlock(BaseModule):
         return getattr(self, self.norm2_name) if self.with_norm else None
 
     def forward(self, x: Tensor) -> Tensor:
-        """Forward function."""
+        """Forward function for SimplifiedBasicBlock."""
 
         identity = x
 

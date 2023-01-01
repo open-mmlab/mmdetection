@@ -15,17 +15,17 @@ class SELayer(BaseModule):
     Args:
         channels (int): The input (and output) channels of the SE layer.
         ratio (int): Squeeze ratio in SELayer, the intermediate channel will be
-            ``int(channels/ratio)``. Default to 16.
+            ``int(channels/ratio)``. Defaults to 16.
         conv_cfg (None or dict): Config dict for convolution layer.
-            Default to None, which means using conv2d.
+            Defaults to None, which means using conv2d.
         act_cfg (dict or Sequence[dict]): Config dict for activation layer.
             If act_cfg is a dict, two activation layers will be configurated
             by this dict. If act_cfg is a sequence of dicts, the first
             activation layer will be configurated by the first dict and the
             second activation layer will be configurated by the second dict.
-            Default to (dict(type='ReLU'), dict(type='Sigmoid'))
+            Defaults to (dict(type='ReLU'), dict(type='Sigmoid'))
         init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default to None
+            Defaults to None
     """
 
     def __init__(self,
@@ -57,6 +57,7 @@ class SELayer(BaseModule):
             act_cfg=act_cfg[1])
 
     def forward(self, x: Tensor) -> Tensor:
+        """Forward function for SELayer."""
         out = self.global_avgpool(x)
         out = self.conv1(out)
         out = self.conv2(out)
@@ -75,18 +76,18 @@ class DyReLU(BaseModule):
         channels (int): The input (and output) channels of DyReLU module.
         ratio (int): Squeeze ratio in Squeeze-and-Excitation-like module,
             the intermediate channel will be ``int(channels/ratio)``.
-            Default to 4.
+            Defaults to 4.
         conv_cfg (None or dict): Config dict for convolution layer.
-            Default to None, which means using conv2d.
+            Defaults to None, which means using conv2d.
         act_cfg (dict or Sequence[dict]): Config dict for activation layer.
             If act_cfg is a dict, two activation layers will be configurated
             by this dict. If act_cfg is a sequence of dicts, the first
             activation layer will be configurated by the first dict and the
             second activation layer will be configurated by the second dict.
-            Default to (dict(type='ReLU'), dict(type='HSigmoid', bias=3.0,
+            Defaults to (dict(type='ReLU'), dict(type='HSigmoid', bias=3.0,
             divisor=6.0))
         init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default to None
+            Defaults to None
     """
 
     def __init__(self,
@@ -150,6 +151,7 @@ class ChannelAttention(BaseModule):
         self.act = nn.Hardsigmoid(inplace=True)
 
     def forward(self, x: Tensor) -> Tensor:
+        """Forward function for ChannelAttention."""
         out = self.global_avgpool(x)
         out = self.fc(out)
         out = self.act(out)

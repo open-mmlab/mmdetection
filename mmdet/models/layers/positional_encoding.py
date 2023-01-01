@@ -33,7 +33,7 @@ class SinePositionalEncoding(BaseModule):
         offset (float): offset add to embed when do the normalization.
             Defaults to 0.
         init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default to None
+            Defaults to None
     """
 
     def __init__(self,
@@ -115,9 +115,9 @@ class LearnedPositionalEncoding(BaseModule):
             along x-axis or y-axis. The final returned dimension for
             each position is 2 times of this value.
         row_num_embed (int, optional): The dictionary size of row embeddings.
-            Default to 50.
+            Defaults to 50.
         col_num_embed (int, optional): The dictionary size of col embeddings.
-            Default to 50.
+            Defaults to 50.
         init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
