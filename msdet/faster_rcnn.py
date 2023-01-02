@@ -140,7 +140,7 @@ class FasterRCNNCont(TwoStageDetector):
         gt_feats_ori = gt_feats_ori.view(B, -1)
         gt_feats_aug = gt_feats_aug.view(B, -1)
         consistency_loss = self.calc_consistency_loss(gt_feats_ori, gt_feats_aug)
-        losses.update({'consistency_loss': consistency_loss * 10.0})
+        losses.update({'consistency_loss': consistency_loss * 1.0})
         
         loss, log_vars = self._parse_losses(losses)
 
