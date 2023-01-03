@@ -625,3 +625,28 @@ def aligned_bilinear(tensor: Tensor, factor: int) -> Tensor:
         tensor, pad=(factor // 2, 0, factor // 2, 0), mode='replicate')
 
     return tensor[:, :, :oh - 1, :ow - 1]
+
+
+def unfold_wo_center(x, kernel_size: int, dilation: int) -> Tensor:
+    """unfold_wo_center, used in original implement in BoxInst:
+
+    https://github.com/aim-uofa/AdelaiDet/blob/\
+    4a3a1f7372c35b48ebf5f6adc59f135a0fa28d60/\
+    adet/modeling/condinst/condinst.py#L53
+    """
+    assert x.dim() == 4
+    assert kernel_size % 2 == 1
+
+    # using SAME padding
+    padding = (kernel_size + (dilation - 1) * (kernel_size - 1)) // 2
+    unfolded_x = F.unfold(
+        x, kernel_size=kernel_size, padding=padding, dilation=dilation)
+    unfolded_x = unfolded_x.reshape(
+        x.size(0), x.size(1), -1, x.size(2), x.size(3))
+    # remove the center pixels
+    size = kernel_size**2
+    unfolded_x = torch.cat(
+        (unfolded_x[:, :, :size // 2], unfolded_x[:, :, size // 2 + 1:]),
+        dim=2)
+
+    return unfolded_x

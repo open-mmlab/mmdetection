@@ -235,7 +235,7 @@ class BitmapMasks(BaseInstanceMasks):
         >>> from mmdet.data_elements.mask.structures import *  # NOQA
         >>> num_masks, H, W = 3, 32, 32
         >>> rng = np.random.RandomState(0)
-        >>> masks = (rng.rand(num_masks, H, W) > 0.1).astype(np.int)
+        >>> masks = (rng.rand(num_masks, H, W) > 0.1).astype(np.int64)
         >>> self = BitmapMasks(masks, height=H, width=W)
 
         >>> # demo crop_and_resize
@@ -824,7 +824,7 @@ class PolygonMasks(BaseInstanceMasks):
         """Translate the PolygonMasks.
 
         Example:
-            >>> self = PolygonMasks.random(dtype=np.int)
+            >>> self = PolygonMasks.random(dtype=np.int64)
             >>> out_shape = (self.height, self.width)
             >>> new = self.translate(out_shape, 4., direction='horizontal')
             >>> assert np.all(new.masks[0][0][1::2] == self.masks[0][0][1::2])

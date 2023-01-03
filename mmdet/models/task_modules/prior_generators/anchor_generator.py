@@ -1,13 +1,17 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 from mmengine.utils import is_tuple_of
+from torch import Tensor
 from torch.nn.modules.utils import _pair
 
 from mmdet.registry import TASK_UTILS
 from mmdet.structures.bbox import HorizontalBoxes
+
+DeviceType = Union[str, torch.device]
 
 
 @TASK_UTILS.register_module()
@@ -19,21 +23,21 @@ class AnchorGenerator:
             in multiple feature levels in order (w, h).
         ratios (list[float]): The list of ratios between the height and width
             of anchors in a single level.
-        scales (list[int] | None): Anchor scales for anchors in a single level.
-            It cannot be set at the same time if `octave_base_scale` and
-            `scales_per_octave` are set.
-        base_sizes (list[int] | None): The basic sizes
+        scales (list[int], Optional): Anchor scales for anchors
+            in a single level. It cannot be set at the same time
+            if `octave_base_scale` and `scales_per_octave` are set.
+        base_sizes (list[int], Optional): The basic sizes
             of anchors in multiple levels.
             If None is given, strides will be used as base_sizes.
             (If strides are non square, the shortest stride is taken.)
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
             same scales. By default it is True in V2.0
-        octave_base_scale (int): The base scale of octave.
-        scales_per_octave (int): Number of scales for each octave.
+        octave_base_scale (int, Optional): The base scale of octave.
+        scales_per_octave (int, Optional): Number of scales for each octave.
             `octave_base_scale` and `scales_per_octave` are usually used in
             retinanet and the `scales` should be None when they are set.
-        centers (list[tuple[float, float]] | None): The centers of the anchor
+        centers (list[tuple[float]], Optional): The centers of the anchor
             relative to the feature grid center in multiple feature levels.
             By default it is set to be None and not used. If a list of tuple of
             float is given, they will be used to shift the centers of anchors.
@@ -63,16 +67,16 @@ class AnchorGenerator:
     """
 
     def __init__(self,
-                 strides,
-                 ratios,
-                 scales=None,
-                 base_sizes=None,
-                 scale_major=True,
-                 octave_base_scale=None,
-                 scales_per_octave=None,
-                 centers=None,
-                 center_offset=0.,
-                 use_box_type=False):
+                 strides: Union[List[int], List[Tuple[int, int]]],
+                 ratios: List[float],
+                 scales: Optional[List[int]] = None,
+                 base_sizes: Optional[List[int]] = None,
+                 scale_major: bool = True,
+                 octave_base_scale: Optional[int] = None,
+                 scales_per_octave: Optional[int] = None,
+                 centers: Optional[List[Tuple[float, float]]] = None,
+                 center_offset: float = 0.,
+                 use_box_type: bool = False) -> None:
         # check center and center_offset
         if center_offset != 0:
             assert centers is None, 'center cannot be set when center_offset' \
@@ -119,22 +123,22 @@ class AnchorGenerator:
         self.use_box_type = use_box_type
 
     @property
-    def num_base_anchors(self):
+    def num_base_anchors(self) -> List[int]:
         """list[int]: total number of base anchors in a feature grid"""
         return self.num_base_priors
 
     @property
-    def num_base_priors(self):
+    def num_base_priors(self) -> List[int]:
         """list[int]: The number of priors (anchors) at a point
         on the feature grid"""
         return [base_anchors.size(0) for base_anchors in self.base_anchors]
 
     @property
-    def num_levels(self):
+    def num_levels(self) -> int:
         """int: number of feature levels that the generator will be applied"""
         return len(self.strides)
 
-    def gen_base_anchors(self):
+    def gen_base_anchors(self) -> List[Tensor]:
         """Generate base anchors.
 
         Returns:
@@ -155,10 +159,11 @@ class AnchorGenerator:
         return multi_level_base_anchors
 
     def gen_single_level_base_anchors(self,
-                                      base_size,
-                                      scales,
-                                      ratios,
-                                      center=None):
+                                      base_size: Union[int, float],
+                                      scales: Tensor,
+                                      ratios: Tensor,
+                                      center: Optional[Tuple[float]] = None) \
+            -> Tensor:
         """Generate base anchors of a single level.
 
         Args:
@@ -199,13 +204,16 @@ class AnchorGenerator:
 
         return base_anchors
 
-    def _meshgrid(self, x, y, row_major=True):
+    def _meshgrid(self,
+                  x: Tensor,
+                  y: Tensor,
+                  row_major: bool = True) -> Tuple[Tensor]:
         """Generate mesh grid of x and y.
 
         Args:
             x (torch.Tensor): Grids of x dimension.
             y (torch.Tensor): Grids of y dimension.
-            row_major (bool, optional): Whether to return y grids first.
+            row_major (bool): Whether to return y grids first.
                 Defaults to True.
 
         Returns:
@@ -219,15 +227,19 @@ class AnchorGenerator:
         else:
             return yy, xx
 
-    def grid_priors(self, featmap_sizes, dtype=torch.float32, device='cuda'):
+    def grid_priors(self,
+                    featmap_sizes: List[Tuple],
+                    dtype: torch.dtype = torch.float32,
+                    device: DeviceType = 'cuda') -> List[Tensor]:
         """Generate grid anchors in multiple feature levels.
 
         Args:
             featmap_sizes (list[tuple]): List of feature map sizes in
                 multiple feature levels.
             dtype (:obj:`torch.dtype`): Dtype of priors.
-                Default: torch.float32.
-            device (str): The device where the anchors will be put on.
+                Defaults to torch.float32.
+            device (str | torch.device): The device where the anchors
+                will be put on.
 
         Return:
             list[torch.Tensor]: Anchors in multiple feature levels. \
@@ -245,21 +257,21 @@ class AnchorGenerator:
         return multi_level_anchors
 
     def single_level_grid_priors(self,
-                                 featmap_size,
-                                 level_idx,
-                                 dtype=torch.float32,
-                                 device='cuda'):
+                                 featmap_size: Tuple[int, int],
+                                 level_idx: int,
+                                 dtype: torch.dtype = torch.float32,
+                                 device: DeviceType = 'cuda') -> Tensor:
         """Generate grid anchors of a single level.
 
         Note:
             This function is usually called by method ``self.grid_priors``.
 
         Args:
-            featmap_size (tuple[int]): Size of the feature maps.
+            featmap_size (tuple[int, int]): Size of the feature maps.
             level_idx (int): The index of corresponding feature map level.
             dtype (obj:`torch.dtype`): Date type of points.Defaults to
                 ``torch.float32``.
-            device (str, optional): The device the tensor will be put on.
+            device (str | torch.device): The device the tensor will be put on.
                 Defaults to 'cuda'.
 
         Returns:
@@ -289,22 +301,22 @@ class AnchorGenerator:
         return all_anchors
 
     def sparse_priors(self,
-                      prior_idxs,
-                      featmap_size,
-                      level_idx,
-                      dtype=torch.float32,
-                      device='cuda'):
+                      prior_idxs: Tensor,
+                      featmap_size: Tuple[int, int],
+                      level_idx: int,
+                      dtype: torch.dtype = torch.float32,
+                      device: DeviceType = 'cuda') -> Tensor:
         """Generate sparse anchors according to the ``prior_idxs``.
 
         Args:
             prior_idxs (Tensor): The index of corresponding anchors
                 in the feature map.
-            featmap_size (tuple[int]): feature map size arrange as (h, w).
+            featmap_size (tuple[int, int]): feature map size arrange as (h, w).
             level_idx (int): The level index of corresponding feature
                 map.
             dtype (obj:`torch.dtype`): Date type of points.Defaults to
                 ``torch.float32``.
-            device (obj:`torch.device`): The device where the points is
+            device (str | torch.device): The device where the points is
                 located.
         Returns:
             Tensor: Anchor with shape (N, 4), N should be equal to
@@ -323,13 +335,16 @@ class AnchorGenerator:
 
         return priors
 
-    def grid_anchors(self, featmap_sizes, device='cuda'):
+    def grid_anchors(self,
+                     featmap_sizes: List[Tuple],
+                     device: DeviceType = 'cuda') -> List[Tensor]:
         """Generate grid anchors in multiple feature levels.
 
         Args:
             featmap_sizes (list[tuple]): List of feature map sizes in
                 multiple feature levels.
-            device (str): Device where the anchors will be put on.
+            device (str | torch.device): Device where the anchors will be
+                put on.
 
         Return:
             list[torch.Tensor]: Anchors in multiple feature levels. \
@@ -353,10 +368,10 @@ class AnchorGenerator:
         return multi_level_anchors
 
     def single_level_grid_anchors(self,
-                                  base_anchors,
-                                  featmap_size,
-                                  stride=(16, 16),
-                                  device='cuda'):
+                                  base_anchors: Tensor,
+                                  featmap_size: Tuple[int, int],
+                                  stride: Tuple[int, int] = (16, 16),
+                                  device: DeviceType = 'cuda') -> Tensor:
         """Generate grid anchors of a single level.
 
         Note:
@@ -365,9 +380,9 @@ class AnchorGenerator:
         Args:
             base_anchors (torch.Tensor): The base anchors of a feature grid.
             featmap_size (tuple[int]): Size of the feature maps.
-            stride (tuple[int], optional): Stride of the feature map in order
+            stride (tuple[int, int]): Stride of the feature map in order
                 (w, h). Defaults to (16, 16).
-            device (str, optional): Device the tensor will be put on.
+            device (str | torch.device): Device the tensor will be put on.
                 Defaults to 'cuda'.
 
         Returns:
@@ -397,14 +412,18 @@ class AnchorGenerator:
         # then (0, 1), (0, 2), ...
         return all_anchors
 
-    def valid_flags(self, featmap_sizes, pad_shape, device='cuda'):
+    def valid_flags(self,
+                    featmap_sizes: List[Tuple[int, int]],
+                    pad_shape: Tuple,
+                    device: DeviceType = 'cuda') -> List[Tensor]:
         """Generate valid flags of anchors in multiple feature levels.
 
         Args:
-            featmap_sizes (list(tuple)): List of feature map sizes in
+            featmap_sizes (list(tuple[int, int])): List of feature map sizes in
                 multiple feature levels.
             pad_shape (tuple): The padded shape of the image.
-            device (str): Device where the anchors will be put on.
+            device (str | torch.device): Device where the anchors will be
+                put on.
 
         Return:
             list(torch.Tensor): Valid flags of anchors in multiple levels.
@@ -425,10 +444,10 @@ class AnchorGenerator:
         return multi_level_flags
 
     def single_level_valid_flags(self,
-                                 featmap_size,
-                                 valid_size,
-                                 num_base_anchors,
-                                 device='cuda'):
+                                 featmap_size: Tuple[int, int],
+                                 valid_size: Tuple[int, int],
+                                 num_base_anchors: int,
+                                 device: DeviceType = 'cuda') -> Tensor:
         """Generate the valid flags of anchor in a single feature map.
 
         Args:
@@ -436,7 +455,7 @@ class AnchorGenerator:
                 as (h, w).
             valid_size (tuple[int]): The valid size of the feature maps.
             num_base_anchors (int): The number of base anchors.
-            device (str, optional): Device where the flags will be put on.
+            device (str | torch.device): Device where the flags will be put on.
                 Defaults to 'cuda'.
 
         Returns:
@@ -456,7 +475,7 @@ class AnchorGenerator:
                                       num_base_anchors).contiguous().view(-1)
         return valid
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """str: a string that describes the module"""
         indent_str = '    '
         repr_str = self.__class__.__name__ + '(\n'
@@ -500,14 +519,14 @@ class SSDAnchorGenerator(AnchorGenerator):
     """
 
     def __init__(self,
-                 strides,
-                 ratios,
-                 min_sizes=None,
-                 max_sizes=None,
-                 basesize_ratio_range=(0.15, 0.9),
-                 input_size=300,
-                 scale_major=True,
-                 use_box_type=False):
+                 strides: Union[List[int], List[Tuple[int, int]]],
+                 ratios: List[float],
+                 min_sizes: Optional[List[float]] = None,
+                 max_sizes: Optional[List[float]] = None,
+                 basesize_ratio_range: Tuple[float] = (0.15, 0.9),
+                 input_size: int = 300,
+                 scale_major: bool = True,
+                 use_box_type: bool = False) -> None:
         assert len(strides) == len(ratios)
         assert not (min_sizes is None) ^ (max_sizes is None)
         self.strides = [_pair(stride) for stride in strides]
@@ -580,7 +599,7 @@ class SSDAnchorGenerator(AnchorGenerator):
         self.base_anchors = self.gen_base_anchors()
         self.use_box_type = use_box_type
 
-    def gen_base_anchors(self):
+    def gen_base_anchors(self) -> List[Tensor]:
         """Generate base anchors.
 
         Returns:
@@ -601,7 +620,7 @@ class SSDAnchorGenerator(AnchorGenerator):
             multi_level_base_anchors.append(base_anchors)
         return multi_level_base_anchors
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """str: a string that describes the module"""
         indent_str = '    '
         repr_str = self.__class__.__name__ + '(\n'
@@ -671,10 +690,11 @@ class LegacyAnchorGenerator(AnchorGenerator):
     """
 
     def gen_single_level_base_anchors(self,
-                                      base_size,
-                                      scales,
-                                      ratios,
-                                      center=None):
+                                      base_size: Union[int, float],
+                                      scales: Tensor,
+                                      ratios: Tensor,
+                                      center: Optional[Tuple[float]] = None) \
+            -> Tensor:
         """Generate base anchors of a single level.
 
         Note:
@@ -729,12 +749,12 @@ class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
     """
 
     def __init__(self,
-                 strides,
-                 ratios,
-                 basesize_ratio_range,
-                 input_size=300,
-                 scale_major=True,
-                 use_box_type=False):
+                 strides: Union[List[int], List[Tuple[int, int]]],
+                 ratios: List[float],
+                 basesize_ratio_range: Tuple[float],
+                 input_size: int = 300,
+                 scale_major: bool = True,
+                 use_box_type: bool = False) -> None:
         super(LegacySSDAnchorGenerator, self).__init__(
             strides=strides,
             ratios=ratios,
@@ -758,7 +778,10 @@ class YOLOAnchorGenerator(AnchorGenerator):
             of anchors in multiple levels.
     """
 
-    def __init__(self, strides, base_sizes, use_box_type=False):
+    def __init__(self,
+                 strides: Union[List[int], List[Tuple[int, int]]],
+                 base_sizes: List[List[Tuple[int, int]]],
+                 use_box_type: bool = False) -> None:
         self.strides = [_pair(stride) for stride in strides]
         self.centers = [(stride[0] / 2., stride[1] / 2.)
                         for stride in self.strides]
@@ -772,11 +795,11 @@ class YOLOAnchorGenerator(AnchorGenerator):
         self.use_box_type = use_box_type
 
     @property
-    def num_levels(self):
+    def num_levels(self) -> int:
         """int: number of feature levels that the generator will be applied"""
         return len(self.base_sizes)
 
-    def gen_base_anchors(self):
+    def gen_base_anchors(self) -> List[Tensor]:
         """Generate base anchors.
 
         Returns:
@@ -793,11 +816,14 @@ class YOLOAnchorGenerator(AnchorGenerator):
                                                    center))
         return multi_level_base_anchors
 
-    def gen_single_level_base_anchors(self, base_sizes_per_level, center=None):
+    def gen_single_level_base_anchors(self,
+                                      base_sizes_per_level: List[Tuple[int]],
+                                      center: Optional[Tuple[float]] = None) \
+            -> Tensor:
         """Generate base anchors of a single level.
 
         Args:
-            base_sizes_per_level (list[tuple[int, int]]): Basic sizes of
+            base_sizes_per_level (list[tuple[int]]): Basic sizes of
                 anchors.
             center (tuple[float], optional): The center of the base anchor
                 related to a single feature grid. Defaults to None.

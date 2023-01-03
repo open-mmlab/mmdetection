@@ -3,6 +3,7 @@ from .anchor_free_head import AnchorFreeHead
 from .anchor_head import AnchorHead
 from .atss_head import ATSSHead
 from .autoassign_head import AutoAssignHead
+from .boxinst_head import BoxInstBboxHead, BoxInstMaskHead
 from .cascade_rpn_head import CascadeRPNHead, StageCascadeRPNHead
 from .centernet_head import CenterNetHead
 from .centernet_update_head import CenterNetUpdateHead
@@ -59,5 +60,6 @@ __all__ = [
     'DecoupledSOLOHead', 'DecoupledSOLOLightHead', 'SOLOV2Head', 'LADHead',
     'TOODHead', 'MaskFormerHead', 'Mask2FormerHead', 'DDODHead',
     'CenterNetUpdateHead', 'RTMDetHead', 'RTMDetSepBNHead', 'CondInstBboxHead',
-    'CondInstMaskHead', 'RTMDetInsHead', 'RTMDetInsSepBNHead'
+    'CondInstMaskHead', 'RTMDetInsHead', 'RTMDetInsSepBNHead',
+    'BoxInstBboxHead', 'BoxInstMaskHead'
 ]

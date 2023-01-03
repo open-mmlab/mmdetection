@@ -66,20 +66,14 @@ def init_detector(
 
         # save the dataset_meta in the model for convenience
         if 'dataset_meta' in checkpoint_meta:
-            # mmdet 3.x
-            dataset_meta = checkpoint_meta['dataset_meta']
-            dataset_meta.setdefault(
-                'classes', dataset_meta.get('CLASSES', get_classes('coco')))
-            dataset_meta.setdefault('palette',
-                                    dataset_meta.get('PALETTE', 'random'))
-            model.dataset_meta = dataset_meta
+            # mmdet 3.x, all keys should be lowercase
+            model.dataset_meta = {
+                k.lower(): v
+                for k, v in checkpoint_meta['dataset_meta'].items()
+            }
         elif 'CLASSES' in checkpoint_meta:
             # < mmdet 3.x
             classes = checkpoint_meta['CLASSES']
-            model.dataset_meta = {'classes': classes}
-        elif 'classes' in checkpoint_meta:
-            # < mmdet 3.x
-            classes = checkpoint_meta['classes']
             model.dataset_meta = {'classes': classes}
         else:
             warnings.simplefilter('once')

@@ -1,15 +1,34 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Tuple, Union
+
 import numpy as np
 import torch
+from torch import Tensor
 from torch.nn.modules.utils import _pair
 
 from mmdet.registry import TASK_UTILS
+
+DeviceType = Union[str, torch.device]
 
 
 @TASK_UTILS.register_module()
 class PointGenerator:
 
-    def _meshgrid(self, x, y, row_major=True):
+    def _meshgrid(self,
+                  x: Tensor,
+                  y: Tensor,
+                  row_major: bool = True) -> Tuple[Tensor, Tensor]:
+        """Generate mesh grid of x and y.
+
+        Args:
+            x (torch.Tensor): Grids of x dimension.
+            y (torch.Tensor): Grids of y dimension.
+            row_major (bool): Whether to return y grids first.
+                Defaults to True.
+
+        Returns:
+            tuple[torch.Tensor]: The mesh grids of x and y.
+        """
         xx = x.repeat(len(y))
         yy = y.view(-1, 1).repeat(1, len(x)).view(-1)
         if row_major:
@@ -17,7 +36,21 @@ class PointGenerator:
         else:
             return yy, xx
 
-    def grid_points(self, featmap_size, stride=16, device='cuda'):
+    def grid_points(self,
+                    featmap_size: Tuple[int, int],
+                    stride=16,
+                    device: DeviceType = 'cuda') -> Tensor:
+        """Generate grid points of a single level.
+
+        Args:
+            featmap_size (tuple[int, int]): Size of the feature maps.
+            stride (int): The stride of corresponding feature map.
+            device (str | torch.device): The device the tensor will be put on.
+                Defaults to 'cuda'.
+
+        Returns:
+            torch.Tensor: grid point in a feature map.
+        """
         feat_h, feat_w = featmap_size
         shift_x = torch.arange(0., feat_w, device=device) * stride
         shift_y = torch.arange(0., feat_h, device=device) * stride
@@ -27,7 +60,22 @@ class PointGenerator:
         all_points = shifts.to(device)
         return all_points
 
-    def valid_flags(self, featmap_size, valid_size, device='cuda'):
+    def valid_flags(self,
+                    featmap_size: Tuple[int, int],
+                    valid_size: Tuple[int, int],
+                    device: DeviceType = 'cuda') -> Tensor:
+        """Generate valid flags of anchors in a feature map.
+
+        Args:
+            featmap_sizes (list(tuple[int, int])): List of feature map sizes in
+                multiple feature levels.
+            valid_shape (tuple[int, int]): The valid shape of the image.
+            device (str | torch.device): Device where the anchors will be
+                put on.
+
+        Return:
+            torch.Tensor: Valid flags of anchors in a level.
+        """
         feat_h, feat_w = featmap_size
         valid_h, valid_w = valid_size
         assert valid_h <= feat_h and valid_w <= feat_w
@@ -52,22 +100,27 @@ class MlvlPointGenerator:
             corresponding stride. Defaults to 0.5.
     """
 
-    def __init__(self, strides, offset=0.5):
+    def __init__(self,
+                 strides: Union[List[int], List[Tuple[int, int]]],
+                 offset: float = 0.5) -> None:
         self.strides = [_pair(stride) for stride in strides]
         self.offset = offset
 
     @property
-    def num_levels(self):
+    def num_levels(self) -> int:
         """int: number of feature levels that the generator will be applied"""
         return len(self.strides)
 
     @property
-    def num_base_priors(self):
+    def num_base_priors(self) -> List[int]:
         """list[int]: The number of priors (points) at a point
         on the feature grid"""
         return [1 for _ in range(len(self.strides))]
 
-    def _meshgrid(self, x, y, row_major=True):
+    def _meshgrid(self,
+                  x: Tensor,
+                  y: Tensor,
+                  row_major: bool = True) -> Tuple[Tensor, Tensor]:
         yy, xx = torch.meshgrid(y, x)
         if row_major:
             # warning .flatten() would cause error in ONNX exporting
@@ -78,18 +131,19 @@ class MlvlPointGenerator:
             return yy.reshape(-1), xx.reshape(-1)
 
     def grid_priors(self,
-                    featmap_sizes,
-                    dtype=torch.float32,
-                    device='cuda',
-                    with_stride=False):
+                    featmap_sizes: List[Tuple],
+                    dtype: torch.dtype = torch.float32,
+                    device: DeviceType = 'cuda',
+                    with_stride: bool = False) -> List[Tensor]:
         """Generate grid points of multiple feature levels.
 
         Args:
             featmap_sizes (list[tuple]): List of feature map sizes in
                 multiple feature levels, each size arrange as
                 as (h, w).
-            dtype (:obj:`dtype`): Dtype of priors. Default: torch.float32.
-            device (str): The device where the anchors will be put on.
+            dtype (:obj:`dtype`): Dtype of priors. Defaults to torch.float32.
+            device (str | torch.device): The device where the anchors will be
+                put on.
             with_stride (bool): Whether to concatenate the stride to
                 the last dimension of points.
 
@@ -117,11 +171,11 @@ class MlvlPointGenerator:
         return multi_level_priors
 
     def single_level_grid_priors(self,
-                                 featmap_size,
-                                 level_idx,
-                                 dtype=torch.float32,
-                                 device='cuda',
-                                 with_stride=False):
+                                 featmap_size: Tuple[int],
+                                 level_idx: int,
+                                 dtype: torch.dtype = torch.float32,
+                                 device: DeviceType = 'cuda',
+                                 with_stride: bool = False) -> Tensor:
         """Generate grid Points of a single level.
 
         Note:
@@ -131,8 +185,8 @@ class MlvlPointGenerator:
             featmap_size (tuple[int]): Size of the feature maps, arrange as
                 (h, w).
             level_idx (int): The index of corresponding feature map level.
-            dtype (:obj:`dtype`): Dtype of priors. Default: torch.float32.
-            device (str, optional): The device the tensor will be put on.
+            dtype (:obj:`dtype`): Dtype of priors. Defaults to torch.float32.
+            device (str | torch.device): The device the tensor will be put on.
                 Defaults to 'cuda'.
             with_stride (bool): Concatenate the stride to the last dimension
                 of points.
@@ -174,7 +228,10 @@ class MlvlPointGenerator:
         all_points = shifts.to(device)
         return all_points
 
-    def valid_flags(self, featmap_sizes, pad_shape, device='cuda'):
+    def valid_flags(self,
+                    featmap_sizes: List[Tuple[int, int]],
+                    pad_shape: Tuple[int],
+                    device: DeviceType = 'cuda') -> List[Tensor]:
         """Generate valid flags of points of multiple feature levels.
 
         Args:
@@ -182,8 +239,9 @@ class MlvlPointGenerator:
                 multiple feature levels, each size arrange as
                 as (h, w).
             pad_shape (tuple(int)): The padded shape of the image,
-                 arrange as (h, w).
-            device (str): The device where the anchors will be put on.
+                arrange as (h, w).
+            device (str | torch.device): The device where the anchors will be
+                put on.
 
         Return:
             list(torch.Tensor): Valid flags of points of multiple levels.
@@ -203,9 +261,9 @@ class MlvlPointGenerator:
         return multi_level_flags
 
     def single_level_valid_flags(self,
-                                 featmap_size,
-                                 valid_size,
-                                 device='cuda'):
+                                 featmap_size: Tuple[int, int],
+                                 valid_size: Tuple[int, int],
+                                 device: DeviceType = 'cuda') -> Tensor:
         """Generate the valid flags of points of a single feature map.
 
         Args:
@@ -213,8 +271,8 @@ class MlvlPointGenerator:
                 as (h, w).
             valid_size (tuple[int]): The valid size of the feature maps.
                 The size arrange as as (h, w).
-            device (str, optional): The device where the flags will be put on.
-                Defaults to 'cuda'.
+            device (str | torch.device): The device where the flags will be
+            put on. Defaults to 'cuda'.
 
         Returns:
             torch.Tensor: The valid flags of each points in a single level \
@@ -232,11 +290,11 @@ class MlvlPointGenerator:
         return valid
 
     def sparse_priors(self,
-                      prior_idxs,
-                      featmap_size,
-                      level_idx,
-                      dtype=torch.float32,
-                      device='cuda'):
+                      prior_idxs: Tensor,
+                      featmap_size: Tuple[int],
+                      level_idx: int,
+                      dtype: torch.dtype = torch.float32,
+                      device: DeviceType = 'cuda') -> Tensor:
         """Generate sparse points according to the ``prior_idxs``.
 
         Args:
@@ -247,7 +305,7 @@ class MlvlPointGenerator:
                 map.
             dtype (obj:`torch.dtype`): Date type of points. Defaults to
                 ``torch.float32``.
-            device (obj:`torch.device`): The device where the points is
+            device (str | torch.device): The device where the points is
                 located.
         Returns:
             Tensor: Anchor with shape (N, 2), N should be equal to
