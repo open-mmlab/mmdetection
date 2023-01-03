@@ -31,7 +31,7 @@ python tools/train.py configs/ssd/ssd300_coco.py
 |   [fcos-r50\*](<>)   |  36.1  |   ---   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/fcos/fcos_r50_caffe_fpn_gn-head_fp16_1x_bs8x8_coco.py) | [log](https://download.openmmlab.com/mmdetection/v2.0/npu/fcos_r50_caffe_fpn_gn-head_1x_coco_bs8x8.log.json) |
 |   [solov2-r50](<>)   |  ---   |  34.7   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/solov2/solov2_r50_fpn_1x_coco.py)                      | [log](https://download.openmmlab.com/mmdetection/v2.0/npu/solov2_r50_fpn_1x_coco.log.json)                   |
 
-**Notes:**
+**注意:**
 
 - 如果没有特别标记，NPU 上的结果与使用 FP32 的 GPU 上的结果结果相同。
 - (\*) 这些模型在 NPU 上的结果与 GPU 上的混合精度训练结果一致，但低于 FP32 的结果。这种情况主要与模型本身在混合精度训练中的特点有关，
@@ -39,4 +39,4 @@ python tools/train.py configs/ssd/ssd300_coco.py
 - (\*\*) GPU 上 yolox-s 在混合精度下的精度为 40.1 低于readme中 40.5 的水平;默认情况下，yolox-s 启用 `persister_woker=True`，但这个参数
   目前在NPU上存在一些bug，会导致在最后几个epoch由于资源耗尽报错退出，对整体精度影响有限可以忽略。
 
-**All above models are provided by Huawei Ascend group.**
+**以上模型结果由华为昇腾团队提供**
