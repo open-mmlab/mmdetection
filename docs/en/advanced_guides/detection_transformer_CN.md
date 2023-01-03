@@ -188,12 +188,42 @@ Transformer 的自注意力的计算过程通常是先用查询（query）和键
 
 #### 统一的参数流
 
+to be continued
+
 ### 自定义一个 DETR 检测器
 
 #### 实现 Transformer 的 组件
 
+Transformer 的组件通常包括四类： `XTransformerEncoder`，`XTransformerEncoderLayer`，`XTransformerDecoder`，`XTransformerDecoderLayer`。通常将实现的组件放入 mmdet/models/layers/transformer 文件夹中的 xxx_layers.py 文件中。
+
+新的检测器可能沿用一些现有的组件。用户可以进行分析，根据需要选取需要编写的组件，充分利用 mmdet 所提供的组件；而对于需要编写的组件，用户也可以选取相似的现有组件继承，在其基础上稍加修改即可。
+
+这四类组件的新模块的实现通常需要继承自 detr_layers.py 中的四个组件（或其他文件中的组件），然后根据需要重载某些函数。通常只需要编写 `_init_layers()` 函数：对于 `XTransformerEncoder` 和 `XTransformerDecoder` ，通常指定 `self.layers` 属性和 `self.embed_dims` 属性；对于 `XTransformerEncoderLayer` 和 `XTransformerDecoderLayer`，通常指定各模块属性和 `self.embed_dims` 属性；此外，根据需要，也可能需要编写 `forward()` 函数；
+
 #### 实现检测器类
+
+新的检测器可能基于某个已有的 DETR。用户可进行分析，找到它们之间的差异。继承该检测器类并重写有差异的部分即可。
+
+新检测器类需要继承自 `DetectionTransformer` 类（或某个已有的 DETR 检测器类）。其实现流程通常如下：
+
+首先编写检测器的初始化部分：编写 `_init_layers()` 函数来初始化编写好的各模型模块，如编码器和解码器模块，和位置编码模块；编写 `init_weights()` 函数来初始化各模块的权重。
+
+然后编写检测器的前向过程：用户通常只需要采取新版 MMDetection 中设计的前向过程，编写 `pre_transformer()`，`forward_encoder()`，`pre_decoder()`，`forward_decoder()` 四个函数；在 `pre_transformer()` 中，编写获取填充掩码、位置编码的生成逻辑、图像特征到序列特征的转换逻辑，将 `forward_encoder()` 所需要的所有参数和 `forward_decoder()` 所需要的部分参数分别以关键词字典的形式返回；在 `pre_decoder()` 中处理编码器的输出，获取检测查询，将 `forward_decoder()` 所需要的其他参数和 `self.bbox_head` 的函数所需要的部分参数分别以关键词字典的形式返回；在 `forward_encoder()` 和 `forward_decoder()` 中，实现检测器层面和 Transformer 组件层面的命名空间的转换。
+
+若不采取所提供的前向过程，可以根据需要，编写 `forward_transformer()`，单独实现 Transformer 的前向过程，并将检测头的函数所需要的输入参数保存在一个关键词字典中，作为返回值；或者也可以编写 `loss()`， `prediction()`， `_forward()` 三个函数，参考 MMDetection 检测器设计范式，实现不同情况下的检测前向过程。
 
 #### 实现检测头类
 
+新的检测头类需要继承自 `DETRHead` 类。检测头类的实现也通常分为初始化部分和前向部分：
+
+检测头的初始化也通常需要编写 `_init_layers()` 和 `init_weights()` 函数。
+
+对于前向过程，首先编写 `forward()` 函数，实现从解码器输出获得包含分类结果和边界框回归结果的预测结果的逻辑；然后编写 `loss_by_feat()` 函数，实现在训练时从预测结果和真值结果获取损失字典的逻辑；并且可能需要编写 `predict_by_feat()` 函数，实现在使用时对预测结果进行后运算的逻辑。如果有参数的增删，可能需要修改 `loss()` 函数和 `predict()` 函数。
+
 #### 示例: 实现 DINO
+
+DINO 是基于 Deformable DETR 的检测器，其主要改进在编码器后部。
+
+DINO 的 Transformer 中，编码器的模块与 Deformable DETR 的完全相同，解码器在其基础上改进，因此可以直接使用 `DeformableDetrTransformerEncoder` 和 `DeformableDetrTransformerEncoderLayer` 模块，并新增 mmdet/models/layers/transformer/dino_layer.py 文件，继承 `DeformableDetrTransformerDecoder` 实现 `DinoTransformerDecoder` 类，继承 `DeformableDetrTransformerDecoderLayer` 实现 `DinoTransformerDecoderLayer` 类。
+
+to be continued
