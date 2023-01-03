@@ -2,7 +2,7 @@
 
 ## 使用方法
 
-请参考该链接 [link](https://mmcv.readthedocs.io/en/latest/get_started/build.html#build-mmcv-full-on-ascend-npu-machine) 安装npu版本的mmcv。
+请参考 [MMCV 的安装文档](https://mmcv.readthedocs.io/en/latest/get_started/build.html#build-mmcv-full-on-ascend-npu-machine) 来安装 NPU 版本的 MMCV。
 
 以下展示单机八卡场景的运行指令:
 
