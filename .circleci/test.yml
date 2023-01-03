@@ -68,7 +68,7 @@ jobs:
           command: |
             python -m pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cpu/torch${MMCV_TORCH}/index.html
             python -m pip install -r requirements.txt
-            python -m pip install -r albumentations>=0.3.2
+            python -m pip install albumentations>=0.3.2
             python -m pip install git+https://github.com/cocodataset/panopticapi.git
       - run:
           name: Build and install
@@ -111,7 +111,7 @@ jobs:
           command: |
             docker exec mmdet pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/${MMCV_CUDA}/torch${MMCV_TORCH}/index.html
             docker exec mmdet pip install -r requirements.txt
-            docker exec mmdet pip install -r albumentations>=0.3.2
+            docker exec mmdet pip install albumentations>=0.3.2
             docker exec mmdet pip install git+https://github.com/cocodataset/panopticapi.git
       - run:
           name: Build and install
