@@ -104,11 +104,55 @@ Supported DETRs:
 - [x] [DAB-DETR](https://arxiv.org/abs/2201.12329) (ICLR'2022)
 - [x] [DINO](https://arxiv.org/abs/2203.03605) (ArXiv'2022)
 
+### Basic conception
+
+#### Image feature and sequence feature
+
+Transformer is the prevalent architecture for nature language processing, which usually process sequence data. There are usually three dimensions of sequence data: batch size `B`, number of tokens / length of sequence `N`, embedding dimension / number of channels `C`.
+
+In the computer vision community, there are usually four dimensions of image data: batch size `B`, number of channels `C`, image height `H`, image width `W`.
+
+Hence, the image features of `(B, c, H, W)` extracted by backbone and neck should be transformed into sequence feature of `(B, N, C)`.  Specifically, the two dimensions `H` and `W` are flattened into a new dimension `N = H x W`. Then permute the `N` and `C` dimensions.
+
+The transformation logic is usually implemented in the `pre_transformer` function of detector class. Compared with most codebase, the implementation support dynamically export to ONNX.
+
+```python
+# [bs, c, h, w] -> [bs, h*w, c]
+# Most codebase:
+feat = feat.flatten(2).permute(0, 2, 1)
+# MMDetection:
+feat = feat.view(batch_size, feat_dim, -1).permute(0, 2, 1)
+```
+
+After the flattening, the spatial position information is lost. Hence, in DETRs, the 2D positional encoding is used to encode the row and column positions of each feature point into positional embeddings. More details can be found in [Positional embedding in DETRs](<>).
+
+The aforementioned operations support the transformation of a single-level feature. For transformation of multi-level features, more information should be recorded.
+
+The multi-level features is actually a tuple of multiple image features. The format of the `l`-th level image feature is `(B, C, H_l, W_l)`, where `H_l` and `W_l` are height and width, respectively. The tuple of image features is also transformed into a sequence feature. Specifically, each image feature is transformed into a sequence feature of length `N_l = H_l x W_l` by flattening and permuting. Then, the obtained sequence features are concatenate on the dimension `N = N_1 + ... + N_L`.
+
+```python
+feat_flatten = []
+for lvl, feat in enumerate(mlvl_feats):
+    batch_size, c, h, w = feat.shape
+    # [bs, c, h_lvl, w_lvl] -> [bs, h_lvl*w_lvl, c]
+    feat = feat.view(batch_size, c, -1).permute(0, 2, 1)
+    feat_flatten.append(feat)
+feat_flatten = torch.cat(feat_flatten, 1)
+```
+
+When processing multi-level features, the level embeddings are usually added to the positional embeddings to distinguish the feature level. The ***sum*** is represented with `lvl_pos_embed`.
+
+In addition, (introduce spatial shape, lvl start index)
+
+#### Positional embedding of DETRs
+
+.........
+
 ### Appointment
 
 #### Parameter names
 
-We follow the
+In various codebase of DETRs, there are multiple meanings for the parameter name `query`, which ......
 
 #### Unified data flow
 

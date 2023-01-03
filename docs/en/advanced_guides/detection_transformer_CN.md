@@ -2,7 +2,7 @@
 
 Detection Transformers (DETRs) 是一系列基于 Transformer 的目标检测算法。
 
-多数的DETR算法的处理流程如下：先用 骨干网络（backbone）和 颈部网络（neck）提取图像特征。然后使用一个由 编码器（encoder）和 解码器（decoder）构成的 Transformer 网络处理图像特征。该 Transformer 网络直接并行输出一组 查询（queries）。每个查询对应着一个预测，这个预测可能是目标，也可能是 `no object` 即“非目标”类。
+多数的DETR算法的处理流程如下：先用 骨干网络（backbone）和 颈部网络（neck）提取图像特征。然后使用一个由 编码器（encoder）和 解码器（decoder）构成的 Transformer 网络处理特征。该 Transformer 网络直接并行输出一组 查询（queries）。每个查询对应着一个预测，这个预测可能是目标，也可能是 `no object` 即“非目标”类。
 
 ![DETR_overall](.\DETR_overall.png)
 
@@ -108,11 +108,11 @@ self.decoder = DetrTransformerDecoder(**self.decoder)
 
 #### 图像特征 和 序列特征
 
-Transformer 是自然语言处理领域的主流模型，其处理的数据通常为序列（Sequence）。序列数据一般有三个维度：批大小 `B`（batch size）、序列长度/ `N`（length of token）、通道数/嵌入维度 `C`（channel / embedding dimension）。该批数据中的每个样本都可以理解为 `N` 个 维度为 `C` 的向量。序列的特征也是相同的表示形式。
+Transformer 是自然语言处理领域的主流模型，其处理的数据通常为序列（Sequence）。序列数据一般有三个维度：批大小 `B`（batch size）、序列长度/ `N`（length of sequence）、通道数/嵌入维度 `C`（channel / embedding dimension）。该批数据中的每个样本都可以理解为 `N` 个 维度为 `C` 的向量。序列的特征也是相同的表示形式。
 
 在计算机视觉领域，图像数据一般有四个维度：批大小 `B` （batch size）、通道数 `C` （channel）、图高 `H`（height）、图宽 `W`（width）。图像的特征也是相同的表达形式。
 
-因此，骨干网络和颈部网络提取的图像特征 `(B, C, H, W)` 在输入 Transformer 之前，要转化为序列特征 `(B, N, C)` 的形式。通常先展平（flatten）宽高两维，再进行维度替换（permute），获得的序列的 `N` 即为 `H x W`。
+因此，骨干网络和颈部网络提取的图像特征 `(B, C, H, W)` 在输入 Transformer 之前，要转化为序列特征 `(B, N, C)` 的形式。通常先展平（flatten）宽高两维，再进行维度替换（permute），获得的序列的 `N` 即为 `H x W`。如果需要将序列特征还原成图像特征，只需要进行上述操作的逆运算，不需要额外的参数。
 
 图像特征转化为序列特征的逻辑通常在各检测器的 `pre_transformer` 中实现，采用的方式和多数代码中稍有不同，该方式支持动态导出到 ONNX：
 
@@ -124,7 +124,7 @@ feat = feat.flatten(2).permute(0, 2, 1)
 feat = feat.view(batch_size, feat_dim, -1).permute(0, 2, 1)
 ```
 
-展平宽高后，特征丢失了空间的位置信息。因此在 DETRs 中通常采用2D的位置编码，对每个特征点在特征图的行列位置进行编码，作为该特征点的位置嵌入。更多细节可以参考 [DETR 的位置嵌入](<>)。
+展平宽高后，特征丢失了空间位置信息。因此在 DETRs 中通常采用2D的位置编码，对每个特征点在特征图的行列位置进行编码，作为该特征点的位置嵌入。更多细节可以参考 [DETR 的位置嵌入](<>)。
 
 上述操作能支持单尺度的特征图转换为序列特征，进而被 Transformer 处理。而对于多尺度特征图，通常需要记录更多的信息。
 
@@ -142,13 +142,15 @@ feat_flatten = torch.cat(feat_flatten, 1)
 
 多尺度特征图的位置嵌入中通常增加特征层级嵌入（level embeddings），来分辨特征图的层级。特征层级嵌入通常和位置嵌入直接相加，统一用 `lvl_pos_embed` 来表示。
 
-此外，（这里介绍 spatial shape, lvl_start_index）
+此外，为了支持对多尺度特征图的更多特殊操作，通常需要记录一些额外的信息。例如 每个尺度的特征空间大小 `spatial shape`; 由 `spatial shape` 可以获得每个特征图在 `N` 这一维度的起始索引 `lvl_start_index`。通过这两个参数可以反过来将 `(B, N, C)` 格式的序列特征还原成 `(B, C, H_l, W_l)` 格式的多尺度特征；也可以支持多尺度特征交互操作，例如可变形注意力（Deformable Attention）。
 
 #### DETR 的位置嵌入
 
 Transformer 的自注意力的计算过程通常是先用查询（query）和键（key）生成注意力，将注意力作为权重将值（value）加权。由于该计算过程具有置换不变性（permutation invariance），多数自注意力在计算前通常对查询、键和值嵌入位置编码。
 
 在 DETR 系列算法的 Transformer 的注意力模块的输入中，也进行了位置嵌入。与多数情况不同的是，DETR 只对查询和键进行位置嵌入。
+
+.........
 
 ### 约定
 
