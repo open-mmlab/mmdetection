@@ -39,6 +39,5 @@ python tools/train.py configs/ssd/ssd300_coco.py
   mixed-precision training, users may need to adjust the hyperparameters to achieve better results.
 - (\*\*) The accuracy of yolox-s on the GPU in mixed precision is 40.1, with `persister_woker=True` in the data loader config by default.
   There are currently some bugs on NPUs that prevent the last few epochs from running, but the accuracy is less affected and the difference can be ignored.
-  affected and can be ignored.
 
 **All above models are provided by Huawei Ascend group.**
