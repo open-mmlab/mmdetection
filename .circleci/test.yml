@@ -52,7 +52,7 @@ jobs:
           name: Install Libraries
           command: |
             sudo apt-get update
-            sudo apt-get install -y ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 libgl1-mesa-glx libjpeg-dev zlib1g-dev libtinfo-dev libncurses5 libgeos-dev
+            sudo apt-get install -y ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 libgl1-mesa-glx libjpeg-dev zlib1g-dev libtinfo-dev libncurses5 libgeos-dev git
       - run:
           name: Configure Python & pip
           command: |
@@ -68,6 +68,8 @@ jobs:
           command: |
             python -m pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cpu/torch${MMCV_TORCH}/index.html
             python -m pip install -r requirements.txt
+            python -m pip install -r requirements/albu.txt
+            python -m pip install git+https://github.com/cocodataset/panopticapi.git
       - run:
           name: Build and install
           command: |
@@ -109,6 +111,8 @@ jobs:
           command: |
             docker exec mmdet pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/${MMCV_CUDA}/torch${MMCV_TORCH}/index.html
             docker exec mmdet pip install -r requirements.txt
+            python -m pip install -r requirements/albu.txt
+            python -m pip install git+https://github.com/cocodataset/panopticapi.git
       - run:
           name: Build and install
           command: |
