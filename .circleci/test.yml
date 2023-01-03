@@ -131,45 +131,44 @@ workflows:
             branches:
               ignore:
                 - master
-  # pr_stage_test:
-  #   when:
-  #     not:
-  #       << pipeline.parameters.lint_only >>
-  #   jobs:
-  #     - lint:
-  #         name: lint
-  #         filters:
-  #           branches:
-  #             ignore:
-  #               - master
-  #     - build_cpu:
-  #         name: minimum_version_cpu
-  #         torch: 1.6.0
-  #         torchvision: 0.7.0
-  #         python: 3.7.7
-  #         requires:
-  #           - lint
-  #     - build_cpu:
-  #         name: maximum_version_cpu
-  #         torch: 1.9.0
-  #         torchvision: 0.10.0
-  #         python: 3.9.0
-  #         requires:
-  #           - minimum_version_cpu
-  #     - hold:
-  #         type: approval
-  #         requires:
-  #           - maximum_version_cpu
-  #     - build_cuda:
-  #         name: mainstream_version_gpu
-  #         torch: 1.8.1
-  #         # Use double quotation mark to explicitly specify its type
-  #         # as string instead of number
-  #         cuda: "10.2"
-  #         requires:
-  #           - hold
-  # merge_stage_test:
   pr_stage_test:
+    when:
+      not:
+        << pipeline.parameters.lint_only >>
+    jobs:
+      - lint:
+          name: lint
+          filters:
+            branches:
+              ignore:
+                - master
+      - build_cpu:
+          name: minimum_version_cpu
+          torch: 1.6.0
+          torchvision: 0.7.0
+          python: 3.7.7
+          requires:
+            - lint
+      - build_cpu:
+          name: maximum_version_cpu
+          torch: 1.9.0
+          torchvision: 0.10.0
+          python: 3.9.0
+          requires:
+            - minimum_version_cpu
+      - hold:
+          type: approval
+          requires:
+            - maximum_version_cpu
+      - build_cuda:
+          name: mainstream_version_gpu
+          torch: 1.8.1
+          # Use double quotation mark to explicitly specify its type
+          # as string instead of number
+          cuda: "10.2"
+          requires:
+            - hold
+  merge_stage_test:
     when:
       not:
         << pipeline.parameters.lint_only >>
@@ -180,7 +179,7 @@ workflows:
           # Use double quotation mark to explicitly specify its type
           # as string instead of number
           cuda: "10.1"
-          # filters:
-          #   branches:
-          #     only:
-          #       - master
+          filters:
+            branches:
+              only:
+                - master
