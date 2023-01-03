@@ -21,6 +21,8 @@ Collections:
 
 Models:
   - Name: yolox_s_8x8_300e_coco
+    Alias:
+      - yolox-s
     In Collection: YOLOX
     Config: configs/yolox/yolox_s_8xb8-300e_coco.py
     Metadata:
@@ -33,6 +35,8 @@ Models:
           box AP: 40.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_s_8x8_300e_coco/yolox_s_8x8_300e_coco_20211121_095711-4592a793.pth
   - Name: yolox_l_8x8_300e_coco
+    Alias:
+      - yolox-l
     In Collection: YOLOX
     Config: configs/yolox/yolox_l_8xb8-300e_coco.py
     Metadata:
@@ -45,6 +49,8 @@ Models:
           box AP: 49.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_l_8x8_300e_coco/yolox_l_8x8_300e_coco_20211126_140236-d3bd2b23.pth
   - Name: yolox_x_8x8_300e_coco
+    Alias:
+      - yolox-x
     In Collection: YOLOX
     Config: configs/yolox/yolox_x_8xb8-300e_coco.py
     Metadata:
@@ -57,6 +63,8 @@ Models:
           box AP: 50.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_x_8x8_300e_coco/yolox_x_8x8_300e_coco_20211126_140254-1ef88d67.pth
   - Name: yolox_tiny_8x8_300e_coco
+    Alias:
+      - yolox-tiny
     In Collection: YOLOX
     Config: configs/yolox/yolox_tiny_8xb8-300e_coco.py
     Metadata:

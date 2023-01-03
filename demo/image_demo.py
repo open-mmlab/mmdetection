@@ -1,98 +1,82 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import asyncio
+import warnings
 from argparse import ArgumentParser
 
-import mmcv
+from mmengine.logging import print_log
 
-from mmdet.apis import (async_inference_detector, inference_detector,
-                        init_detector)
-from mmdet.registry import VISUALIZERS
-from mmdet.utils import register_all_modules
+from mmdet.apis import MMDetInferencer
 
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument('img', help='Image file')
-    parser.add_argument('config', help='Config file')
-    parser.add_argument('checkpoint', help='Checkpoint file')
-    parser.add_argument('--out-file', default=None, help='Path to output file')
+    parser.add_argument(
+        'inputs', type=str, help='Input image file or folder path.')
+    parser.add_argument('model', help='Config file')
+    parser.add_argument('--weights', default=None, help='Checkpoint file')
+    parser.add_argument(
+        '--img-out-dir',
+        type=str,
+        default='outputs',
+        help='Output directory of images.')
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
+        '--pred-score-thr',
+        type=float,
+        default=0.3,
+        help='bbox score threshold')
+    parser.add_argument(
+        '--batch-size', type=int, default=1, help='Inference batch size.')
+    parser.add_argument(
+        '--show',
+        action='store_true',
+        help='Display the image in a popup window.')
+    parser.add_argument(
+        '--no-save-image',
+        action='store_true',
+        help='Do not save detection vis results')
+    parser.add_argument(
+        '--print-result',
+        action='store_true',
+        help='Whether to print the results.')
+    parser.add_argument(
+        '--pred-out-file',
+        type=str,
+        default='',
+        help='File to save the inference results.')
+    parser.add_argument(
         '--palette',
-        default='coco',
+        default='none',
         choices=['coco', 'voc', 'citys', 'random'],
         help='Color palette used for visualization')
-    parser.add_argument(
-        '--score-thr', type=float, default=0.3, help='bbox score threshold')
-    parser.add_argument(
-        '--async-test',
-        action='store_true',
-        help='whether to set async options for async inference.')
-    args = parser.parse_args()
-    return args
+
+    call_args = vars(parser.parse_args())
+    no_save_image = call_args.pop('no_save_image')
+    if no_save_image and not call_args['show'] and call_args[
+            'pred_out_file'] == '':
+        warnings.warn(
+            'It doesn\'t make sense to neither save the prediction '
+            'result nor display it. Force set args.no-save-image to False')
+        no_save_image = True
+    if no_save_image:
+        call_args['img_out_dir'] = ''
+
+    init_kws = ['model', 'weights', 'device', 'palette']
+    init_args = {}
+    for init_kw in init_kws:
+        init_args[init_kw] = call_args.pop(init_kw)
+
+    return init_args, call_args
 
 
-def main(args):
-    # register all modules in mmdet into the registries
-    register_all_modules()
+def main():
+    init_args, call_args = parse_args()
+    inferencer = MMDetInferencer(**init_args)
+    inferencer(**call_args)
 
-    # TODO: Support inference of image directory.
-    # build the model from a config file and a checkpoint file
-    model = init_detector(
-        args.config, args.checkpoint, palette=args.palette, device=args.device)
-
-    # init visualizer
-    visualizer = VISUALIZERS.build(model.cfg.visualizer)
-    # the dataset_meta is loaded from the checkpoint and
-    # then pass to the model in init_detector
-    visualizer.dataset_meta = model.dataset_meta
-
-    # test a single image
-    result = inference_detector(model, args.img)
-
-    # show the results
-    img = mmcv.imread(args.img)
-    img = mmcv.imconvert(img, 'bgr', 'rgb')
-    visualizer.add_datasample(
-        'result',
-        img,
-        data_sample=result,
-        draw_gt=False,
-        show=args.out_file is None,
-        wait_time=0,
-        out_file=args.out_file,
-        pred_score_thr=args.score_thr)
-
-
-async def async_main(args):
-    # build the model from a config file and a checkpoint file
-    model = init_detector(args.config, args.checkpoint, device=args.device)
-
-    # init visualizer
-    visualizer = VISUALIZERS.build(model.cfg.visualizer)
-    visualizer.dataset_meta = model.dataset_meta
-
-    # test a single image
-    tasks = asyncio.create_task(async_inference_detector(model, args.img))
-    result = await asyncio.gather(tasks)
-    # show the results
-    img = mmcv.imread(args.img)
-    img = mmcv.imconvert(img, 'bgr', 'rgb')
-    visualizer.add_datasample(
-        'result',
-        img,
-        pred_sample=result[0],
-        show=args.out_file is None,
-        wait_time=0,
-        out_file=args.out_file,
-        pred_score_thr=args.score_thr)
+    if call_args['img_out_dir'] != '':
+        print_log(f'\nResults have been saved at {call_args["img_out_dir"]}')
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    assert not args.async_test, 'async inference is not supported yet.'
-    if args.async_test:
-        asyncio.run(async_main(args))
-    else:
-        main(args)
+    main()
