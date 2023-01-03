@@ -16,8 +16,11 @@ from .positional_encoding import (LearnedPositionalEncoding,
                                   SinePositionalEncoding)
 from .res_layer import ResLayer, SimplifiedBasicBlock
 from .se_layer import DyReLU, SELayer
-from .transformer import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
-                          DynamicConv, PatchEmbed, Transformer, nchw_to_nlc,
+from .transformer import (MLP, DabDetrTransformer, DabDetrTransformerDecoder,
+                          DabDetrTransformerDecoderLayer,
+                          DetrTransformerDecoder, DetrTransformerDecoderLayer,
+                          DetrTransformerEncoder, DynamicConv, PatchEmbed,
+                          Transformer, gen_sineembed_for_position, nchw_to_nlc,
                           nlc_to_nchw)
 
 __all__ = [
@@ -30,5 +33,8 @@ __all__ = [
     'adaptive_avg_pool2d', 'AdaptiveAvgPool2d', 'PatchEmbed', 'nchw_to_nlc',
     'nlc_to_nchw', 'pvt_convert', 'sigmoid_geometric_mean',
     'preprocess_panoptic_gt', 'DyReLU',
-    'get_uncertain_point_coords_with_randomness', 'get_uncertainty'
+    'get_uncertain_point_coords_with_randomness', 'get_uncertainty', 'MLP',
+    'DabDetrTransformer', 'DabDetrTransformerDecoder',
+    'DabDetrTransformerDecoderLayer', 'DetrTransformerEncoder',
+    'gen_sineembed_for_position'
 ]

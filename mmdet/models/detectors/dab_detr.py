@@ -1,0 +1,10 @@
+# Copyright (c) OpenMMLab. All rights reserved.
+from ..builder import DETECTORS
+from .detr import DETR
+
+
+@DETECTORS.register_module()
+class DABDETR(DETR):
+
+    def __init__(self, *args, **kwargs):
+        super(DETR, self).__init__(*args, **kwargs)

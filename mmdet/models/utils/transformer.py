@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
 import math
 import warnings
 from typing import Sequence
@@ -6,14 +7,15 @@ from typing import Sequence
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import (build_activation_layer, build_conv_layer,
+from mmcv.cnn import (Linear, build_activation_layer, build_conv_layer,
                       build_norm_layer, xavier_init)
-from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
+from mmcv.cnn.bricks.drop import Dropout
+from mmcv.cnn.bricks.registry import (ATTENTION, TRANSFORMER_LAYER,
                                       TRANSFORMER_LAYER_SEQUENCE)
 from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
                                          TransformerLayerSequence,
                                          build_transformer_layer_sequence)
-from mmcv.runner.base_module import BaseModule
+from mmcv.runner.base_module import BaseModule, ModuleList
 from mmcv.utils import to_2tuple
 from torch.nn.init import normal_
 
@@ -59,9 +61,60 @@ def nchw_to_nlc(x):
     return x.flatten(2).transpose(1, 2).contiguous()
 
 
+def gen_sineembed_for_position(pos_tensor,
+                               num_feats,
+                               temperature=10000,
+                               scale=2 * math.pi):
+    dim_t = torch.arange(
+        num_feats, dtype=torch.float32, device=pos_tensor.device)
+    dim_t = temperature**(2 * (dim_t // 2) / num_feats)
+    x_embed = pos_tensor[:, :, 0] * scale
+    y_embed = pos_tensor[:, :, 1] * scale
+    pos_x = x_embed[:, :, None] / dim_t
+    pos_y = y_embed[:, :, None] / dim_t
+    pos_x = torch.stack((pos_x[:, :, 0::2].sin(), pos_x[:, :, 1::2].cos()),
+                        dim=3).flatten(2)  # TODO: .view()
+    pos_y = torch.stack((pos_y[:, :, 0::2].sin(), pos_y[:, :, 1::2].cos()),
+                        dim=3).flatten(2)
+    if pos_tensor.size(-1) == 2:
+        pos = torch.cat((pos_y, pos_x), dim=2)
+    elif pos_tensor.size(-1) == 4:
+        w_embed = pos_tensor[:, :, 2] * scale
+        pos_w = w_embed[:, :, None] / dim_t
+        pos_w = torch.stack((pos_w[:, :, 0::2].sin(), pos_w[:, :, 1::2].cos()),
+                            dim=3).flatten(2)
+
+        h_embed = pos_tensor[:, :, 3] * scale
+        pos_h = h_embed[:, :, None] / dim_t
+        pos_h = torch.stack((pos_h[:, :, 0::2].sin(), pos_h[:, :, 1::2].cos()),
+                            dim=3).flatten(2)
+
+        pos = torch.cat((pos_y, pos_x, pos_w, pos_h), dim=2)
+    else:
+        raise ValueError('Unknown pos_tensor shape(-1):{}'.format(
+            pos_tensor.size(-1)))
+    return pos
+
+
+class MLP(nn.Module):
+    """Very simple multi-layer perceptron (also called FFN) with relu."""
+
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
+        super(MLP, self).__init__()
+        self.num_layers = num_layers
+        h = [hidden_dim] * (num_layers - 1)
+        self.layers = ModuleList(
+            Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
+
+    def forward(self, x):
+        for i, layer in enumerate(self.layers):
+            x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
+        return x
+
+
 class AdaptivePadding(nn.Module):
     """Applies padding to input (if needed) so that input can get fully covered
-    by filter you specified. It support two modes "same" and "corner". The
+    by filter you specified. It supports two modes "same" and "corner". The
     "same" mode is same with "SAME" padding mode in TensorFlow, pad zero around
     input. The "corner"  mode would pad zero to bottom right.
 
@@ -412,7 +465,7 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
         attn_cfgs (list[`mmcv.ConfigDict`] | list[dict] | dict )):
             Configs for self_attention or cross_attention, the order
             should be consistent with it in `operation_order`. If it is
-            a dict, it would be expand to the number of attention in
+            a dict, it would expand to the number of attention in
             `operation_order`.
         feedforward_channels (int): The hidden dimension for FFNs.
         ffn_dropout (float): Probability of an element to be zeroed
@@ -1165,3 +1218,533 @@ class DynamicConv(BaseModule):
             features = self.activation(features)
 
         return features
+
+
+@ATTENTION.register_module()
+class ConditionalAttention(BaseModule):
+
+    def __init__(self,
+                 embed_dims,
+                 num_heads,
+                 dropout=0.,
+                 batch_first=False,
+                 init_cfg=None):
+        super().__init__(init_cfg)
+        self.batch_first = batch_first  # indispensable!
+        self.embed_dims = embed_dims  # output dims
+        self.num_heads = num_heads
+        self.out_proj = Linear(embed_dims, embed_dims)
+        self.attn_drop = Dropout(dropout)
+
+        nn.init.constant_(self.out_proj.bias, 0.)
+
+    def forward(self,
+                query,
+                key,
+                value,
+                attn_mask=None,
+                key_padding_mask=None,
+                need_weights=True):
+        assert key.size(0) == value.size(0), \
+            f'{"key, value must have the same sequence length"}'
+        assert query.size(1) == key.size(1) == value.size(1), \
+            f'{"batch size must be equal for query, key, value"}'
+        assert query.size(2) == key.size(2), \
+            f'{"q_dims, k_dims must be equal"}'
+        assert value.size(2) == self.embed_dims, \
+            f'{"v_dims must be equal to embed_dims"}'
+
+        tgt_len, bsz, hidden_dims = query.size()
+        head_dims = hidden_dims // self.num_heads
+        v_head_dims = self.embed_dims // self.num_heads
+        assert head_dims * self.num_heads == hidden_dims, \
+            f'{"hidden_dims must be divisible by num_heads"}'
+        scaling = float(head_dims)**-0.5
+
+        q = query * scaling
+        k = key
+        v = value
+
+        if attn_mask is not None:
+            assert attn_mask.dtype == torch.float32 or \
+                   attn_mask.dtype == torch.float64 or \
+                   attn_mask.dtype == torch.float16 or \
+                   attn_mask.dtype == torch.uint8 or \
+                   attn_mask.dtype == torch.bool, \
+                   'Only float, byte, and bool types are supported for \
+                    attn_mask'
+
+            if attn_mask.dtype == torch.uint8:
+                warnings.warn('Byte tensor for attn_mask is deprecated.\
+                     Use bool tensor instead.')
+                attn_mask = attn_mask.to(torch.bool)
+            if attn_mask.dim() == 2:
+                attn_mask = attn_mask.unsqueeze(0)
+                if list(attn_mask.size()) != [1, query.size(0), key.size(0)]:
+                    raise RuntimeError(
+                        'The size of the 2D attn_mask is not correct.')
+            elif attn_mask.dim() == 3:
+                if list(attn_mask.size()) != [
+                        bsz * self.num_heads,
+                        query.size(0),
+                        key.size(0)
+                ]:
+                    raise RuntimeError(
+                        'The size of the 3D attn_mask is not correct.')
+            else:
+                raise RuntimeError(
+                    "attn_mask's dimension {} is not supported".format(
+                        attn_mask.dim()))
+        # attn_mask's dim is 3 now.
+
+        if key_padding_mask is not None and key_padding_mask.dtype == int:
+            key_padding_mask = key_padding_mask.to(torch.bool)
+
+        q = q.contiguous().view(tgt_len, bsz * self.num_heads,
+                                head_dims).transpose(0, 1)
+        if k is not None:
+            k = k.contiguous().view(-1, bsz * self.num_heads,
+                                    head_dims).transpose(0, 1)
+        if v is not None:
+            v = v.contiguous().view(-1, bsz * self.num_heads,
+                                    v_head_dims).transpose(0, 1)
+
+        src_len = k.size(1)
+
+        if key_padding_mask is not None:
+            assert key_padding_mask.size(0) == bsz
+            assert key_padding_mask.size(1) == src_len
+
+        attn_output_weights = torch.bmm(q, k.transpose(1, 2))
+        assert list(attn_output_weights.size()) == [
+            bsz * self.num_heads, tgt_len, src_len
+        ]
+
+        if attn_mask is not None:
+            if attn_mask.dtype == torch.bool:
+                attn_output_weights.masked_fill_(attn_mask, float('-inf'))
+            else:
+                attn_output_weights += attn_mask
+
+        if key_padding_mask is not None:
+            attn_output_weights = attn_output_weights.view(
+                bsz, self.num_heads, tgt_len, src_len)
+            attn_output_weights = attn_output_weights.masked_fill(
+                key_padding_mask.unsqueeze(1).unsqueeze(2),
+                float('-inf'),
+            )
+            attn_output_weights = attn_output_weights.view(
+                bsz * self.num_heads, tgt_len, src_len)
+
+        attn_output_weights = F.softmax(
+            attn_output_weights -
+            attn_output_weights.max(dim=-1, keepdim=True)[0],
+            dim=-1)
+        attn_output_weights = self.attn_drop(attn_output_weights)
+
+        attn_output = torch.bmm(attn_output_weights, v)
+        assert list(attn_output.size()) == [
+            bsz * self.num_heads, tgt_len, v_head_dims
+        ]
+        attn_output = attn_output.transpose(0, 1).contiguous().view(
+            tgt_len, bsz, self.embed_dims)
+        attn_output = self.out_proj(attn_output)
+
+        if need_weights:
+            # average attention weights over heads
+            attn_output_weights = attn_output_weights.view(
+                bsz, self.num_heads, tgt_len, src_len)
+            return attn_output, attn_output_weights.sum(dim=1) / self.num_heads
+        else:
+            return attn_output, None
+
+
+@TRANSFORMER_LAYER.register_module()
+class DabDetrTransformerDecoderLayer(BaseTransformerLayer):
+
+    def __init__(self,
+                 attn_cfgs,
+                 feedforward_channels,
+                 sa_dropout=0.0,
+                 ca_dropout=0.0,
+                 keep_query_pos=False,
+                 ffn_dropout=0.0,
+                 operation_order=None,
+                 act_cfg=dict(type='ReLU', inplace=True),
+                 norm_cfg=dict(type='LN'),
+                 ffn_num_fcs=2,
+                 **kwargs):
+        super(DabDetrTransformerDecoderLayer, self).__init__(
+            attn_cfgs=attn_cfgs,
+            feedforward_channels=feedforward_channels,
+            ffn_dropout=ffn_dropout,
+            operation_order=operation_order,
+            act_cfg=act_cfg,
+            norm_cfg=norm_cfg,
+            ffn_num_fcs=ffn_num_fcs,
+            **kwargs)
+        assert len(operation_order) == 6
+        assert set(operation_order) == set(
+            ['self_attn', 'norm', 'cross_attn', 'ffn'])
+
+        self.num_heads = self.attentions[0].num_heads
+        embed_dims = self.embed_dims
+
+        # Decoder self-attention
+        self.sa_qcontent_proj = Linear(embed_dims, embed_dims)
+        self.sa_qpos_proj = Linear(embed_dims, embed_dims)
+        self.sa_kcontent_proj = Linear(embed_dims, embed_dims)
+        self.sa_kpos_proj = Linear(embed_dims, embed_dims)
+        self.sa_v_proj = Linear(embed_dims, embed_dims)
+        self.sa_dropout = Dropout(sa_dropout)
+
+        # Decoder cross-attention
+        self.ca_qcontent_proj = Linear(embed_dims, embed_dims)
+        self.ca_qpos_proj = Linear(embed_dims, embed_dims)
+        self.ca_kcontent_proj = Linear(embed_dims, embed_dims)
+        self.ca_kpos_proj = Linear(embed_dims, embed_dims)
+        self.ca_v_proj = Linear(embed_dims, embed_dims)
+        self.ca_qpos_sine_proj = Linear(embed_dims, embed_dims)
+        self.ca_dropout = Dropout(ca_dropout)
+
+        self.keep_query_pos = keep_query_pos
+
+    def forward(
+            self,
+            query,  # tgt
+            key,  # memory
+            query_pos=None,
+            query_sine_embed=None,
+            key_pos=None,  # pos
+            attn_masks=None,
+            query_key_padding_mask=None,  # tgt_key_padding_mask
+            key_padding_mask=None,  # memory_key_padding_mask
+            is_first=False,
+            **kwargs):
+        norm_index = 0
+        attn_index = 0
+        ffn_index = 0
+        if attn_masks is None:
+            attn_masks = [None for _ in range(self.num_attn)]
+        elif isinstance(attn_masks, torch.Tensor):
+            attn_masks = [
+                copy.deepcopy(attn_masks) for _ in range(self.num_attn)
+            ]
+            warnings.warn(f'Use same attn_mask in all attentions in '
+                          f'{self.__class__.__name__} ')
+        else:
+            assert len(attn_masks) == self.num_attn
+        if self.pre_norm is True:  # TODO: pre norm
+            raise NotImplementedError
+
+        for layer in self.operation_order:
+            if layer == 'self_attn':
+                q_content = self.sa_qcontent_proj(query)
+                q_pos = self.sa_qpos_proj(query_pos)
+                k_content = self.sa_kcontent_proj(query)
+                k_pos = self.sa_kpos_proj(query_pos)
+                v = self.sa_v_proj(query)
+                q = q_content if q_pos is None else q_content + q_pos
+                k = k_content if k_pos is None else k_content + k_pos
+                sa_output = self.attentions[attn_index](
+                    q,
+                    k,
+                    v,
+                    attn_mask=attn_masks[attn_index],
+                    key_padding_mask=query_key_padding_mask)[0]
+                query = query + self.sa_dropout(sa_output)
+                attn_index += 1
+
+            elif layer == 'norm':
+                query = self.norms[norm_index](query)
+                norm_index += 1
+
+            elif layer == 'cross_attn':
+                q_content = self.ca_qcontent_proj(query)
+                k_content = self.ca_kcontent_proj(key)
+                v = self.ca_v_proj(key)
+
+                nq, bs, c = q_content.size()
+                hw, _, _ = k_content.size()
+
+                k_pos = self.ca_kpos_proj(key_pos)
+                if is_first or self.keep_query_pos:
+                    q_pos = self.ca_qpos_proj(query_pos)
+                    q = q_content + q_pos
+                    k = k_content + k_pos
+                else:
+                    q = q_content
+                    k = k_content
+                # Conditional attention
+                q = q.view(nq, bs, self.num_heads, c // self.num_heads)
+                query_sine_embed = self.ca_qpos_sine_proj(query_sine_embed)
+                query_sine_embed = query_sine_embed.view(
+                    nq, bs, self.num_heads, c // self.num_heads)
+                q = torch.cat([q, query_sine_embed], dim=3).view(nq, bs, 2 * c)
+                k = k.view(hw, bs, self.num_heads, c // self.num_heads)
+                k_pos = k_pos.view(hw, bs, self.num_heads, c // self.num_heads)
+                k = torch.cat([k, k_pos], dim=3).view(hw, bs, 2 * c)
+                ca_output = self.attentions[attn_index](
+                    q,
+                    k,
+                    v,
+                    attn_mask=attn_masks[attn_index],
+                    key_padding_mask=key_padding_mask)[0]
+                query = query + self.ca_dropout(ca_output)
+                attn_index += 1
+
+            elif layer == 'ffn':
+                query = self.ffns[ffn_index](query)
+                ffn_index += 1
+
+        return query
+
+
+@TRANSFORMER_LAYER_SEQUENCE.register_module()
+class DabDetrTransformerDecoder(TransformerLayerSequence):
+    """Implements the decoder in DAB-DETR transformer.
+
+    Args:
+        post_norm_cfg (dict): Config of last normalization layer. Default：
+            `LN`.
+    """
+
+    def __init__(self,
+                 *args,
+                 norm_cfg=dict(type='LN'),
+                 query_dim=4,
+                 query_scale_type='cond_elewise',
+                 modulate_hw_attn=True,
+                 bbox_embed_diff_each_layer=False,
+                 **kwargs):
+
+        super(DabDetrTransformerDecoder, self).__init__(*args, **kwargs)
+        if norm_cfg is not None:
+            self.norm = build_norm_layer(norm_cfg, self.embed_dims)[1]
+        else:
+            self.norm = None
+        self.query_dim = query_dim  # pass to DABDETR
+        assert self.query_dim in [2, 4], \
+            f'{"dab-detr only supports anchor prior or reference point prior"}'
+        embed_dims = self.embed_dims
+        self.keep_query_pos = self.layers[0].keep_query_pos
+
+        assert query_scale_type in [
+            'cond_elewise', 'cond_scalar', 'fix_elewise'
+        ]
+        self.query_scale_type = query_scale_type
+        if query_scale_type == 'cond_elewise':
+            self.query_scale = MLP(embed_dims, embed_dims, embed_dims, 2)
+        elif query_scale_type == 'cond_scalar':
+            self.query_scale = MLP(embed_dims, embed_dims, 1, 2)
+        elif query_scale_type == 'fix_elewise':
+            self.query_scale = nn.Embedding(self.num_layers, embed_dims)
+        else:
+            raise NotImplementedError(
+                'Unknown query_scale_type: {}'.format(query_scale_type))
+
+        self.ref_point_head = MLP(query_dim // 2 * embed_dims, embed_dims,
+                                  embed_dims, 2)
+        self.modulate_hw_attn = modulate_hw_attn
+        self.bbox_embed_diff_each_layer = bbox_embed_diff_each_layer
+
+        if modulate_hw_attn and self.query_dim == 4:
+            self.ref_anchor_head = MLP(embed_dims, embed_dims, 2, 2)
+
+        if not self.keep_query_pos:
+            for layer_id in range(self.num_layers - 1):
+                self.layers[layer_id + 1].ca_qpos_proj = None
+
+    def forward(
+            self,
+            query,  # tgt
+            key,  # memory
+            query_pos,  # refpoints_unsigmoid
+            key_pos=None,  # pos
+            attn_masks=None,
+            query_key_padding_mask=None,  # tgt_key_padding_mask
+            key_padding_mask=None,  # memory_key_padding_mask
+            reg_branches=None,  # TODO: fix build_optimizer error
+            **kwargs):
+
+        output = query
+        reference_unsigmoid = query_pos
+
+        intermediate = []
+        reference = reference_unsigmoid.sigmoid()
+        ref = [reference]
+
+        for layer_id, layer in enumerate(self.layers):
+            obj_center = reference[..., :self.query_dim]
+            query_sine_embed = gen_sineembed_for_position(
+                pos_tensor=obj_center, num_feats=self.embed_dims // 2)
+            query_pos = self.ref_point_head(
+                query_sine_embed)  # [nq, bs, 2c] -> [nq, bs, c]
+            # For the first decoder layer, do not apply transformation
+            if self.query_scale_type != 'fix_elewise':
+                if layer_id == 0:
+                    pos_transformation = 1
+                else:
+                    pos_transformation = self.query_scale(output)
+            else:
+                pos_transformation = self.query_scale.weight[layer_id]
+            # apply transformation
+            query_sine_embed = query_sine_embed[
+                ..., :self.embed_dims] * pos_transformation
+            # modulated height and weight attention
+            if self.modulate_hw_attn:
+                assert obj_center.size(-1) == 4
+                ref_hw = self.ref_anchor_head(output).sigmoid()
+                query_sine_embed[..., self.embed_dims // 2:] *= \
+                    (ref_hw[..., 0] / obj_center[..., 2]).unsqueeze(-1)
+                query_sine_embed[..., : self.embed_dims // 2] *= \
+                    (ref_hw[..., 1] / obj_center[..., 3]).unsqueeze(-1)
+
+            output = layer(
+                output,
+                key,
+                query_pos=query_pos,
+                query_sine_embed=query_sine_embed,
+                key_pos=key_pos,
+                attn_masks=attn_masks,
+                query_key_padding_mask=query_key_padding_mask,
+                key_padding_mask=key_padding_mask,
+                is_first=(layer_id == 0),
+                **kwargs)
+            # iter update
+            if reg_branches is not None:
+                if self.bbox_embed_diff_each_layer:
+                    tmp = reg_branches[layer_id](output)
+                else:
+                    tmp = reg_branches(output)
+                tmp[..., :self.query_dim] += inverse_sigmoid(reference)
+                new_reference = tmp[..., :self.query_dim].sigmoid()
+                if layer_id != self.num_layers - 1:
+                    ref.append(new_reference)
+                reference = new_reference.detach()  # no grad_fn
+
+            intermediate.append(self.norm(output))
+
+        if self.norm is not None:
+            output = self.norm(output)
+            intermediate.pop()
+            intermediate.append(output)
+
+        if reg_branches is not None:
+            return [
+                torch.stack(intermediate).transpose(1, 2),
+                torch.stack(ref).transpose(1, 2),
+            ]
+        else:
+            return [
+                torch.stack(intermediate).transpose(1, 2),
+                reference.unsqueeze(0).transpose(1, 2)
+            ]
+
+
+@TRANSFORMER_LAYER_SEQUENCE.register_module()
+class DabDetrTransformerEncoder(TransformerLayerSequence):
+    """TransformerEncoder of DAB-DETR.
+
+    Args:
+        post_norm_cfg (dict): Config of last normalization layer. Default：
+            `LN`. Only used when `self.pre_norm` is `True`
+    """
+
+    def __init__(self, *args, post_norm_cfg=dict(type='LN'), **kwargs):
+        super(DabDetrTransformerEncoder, self).__init__(*args, **kwargs)
+        if post_norm_cfg is not None:
+            self.post_norm = build_norm_layer(
+                post_norm_cfg, self.embed_dims)[1] if self.pre_norm else None
+        else:
+            assert not self.pre_norm, f'Use prenorm in ' \
+                                      f'{self.__class__.__name__},' \
+                                      f'Please specify post_norm_cfg'
+            self.post_norm = None
+        embed_dims = self.embed_dims
+        self.query_scale = MLP(embed_dims, embed_dims, embed_dims, 2)
+
+    def forward(self,
+                query,
+                key,
+                value,
+                query_pos=None,
+                key_pos=None,
+                attn_masks=None,
+                query_key_padding_mask=None,
+                key_padding_mask=None,
+                **kwargs):
+        """Forward function for `DabDetrTransformerEncoder`.
+
+        Returns:
+            Tensor: forwarded results with shape [num_query, bs, embed_dims].
+        """
+        for layer in self.layers:
+            pos_scales = self.query_scale(query)  # rescale the query_pos
+            query = layer(
+                query,
+                key,
+                value,
+                query_pos=query_pos * pos_scales,
+                key_pos=key_pos,
+                attn_masks=attn_masks,
+                query_key_padding_mask=query_key_padding_mask,
+                key_padding_mask=key_padding_mask,
+                **kwargs)
+        if self.post_norm is not None:
+            query = self.post_norm(query)
+        return query
+
+
+@TRANSFORMER.register_module()
+class DabDetrTransformer(Transformer):
+
+    def __init__(self, num_patterns=0, **kwargs):
+        super(DabDetrTransformer, self).__init__(**kwargs)
+        self.num_patterns = num_patterns
+        if not isinstance(num_patterns, int):
+            Warning('num_patterns should be int but {}'.format(
+                type(num_patterns)))
+            self.num_patterns = 0
+        if self.num_patterns > 0:
+            self.patterns = nn.Embedding(self.num_patterns, self.embed_dims)
+        self.query_dim = self.decoder.query_dim
+        self.bbox_embed_diff_each_layer = \
+            self.decoder.bbox_embed_diff_each_layer
+        self.nb_dec = self.decoder.num_layers
+
+    def forward(self, x, mask, query_embed, pos_embed, reg_branches=None):
+        bs, c, h, w = x.shape
+        # use `view` instead of `flatten` for dynamically exporting to ONNX
+
+        x = x.view(bs, c, -1).permute(2, 0, 1)  # [bs, c, h, w] -> [h*w, bs, c]
+        pos_embed = pos_embed.view(bs, c, -1).permute(2, 0, 1)
+        query_embed = query_embed.unsqueeze(1).repeat(
+            1, bs, 1)  # [num_query, 4] -> [num_query, bs, 4]
+        mask = mask.view(bs, -1)  # [bs, h, w] -> [bs, h*w]
+        memory = self.encoder(
+            query=x,
+            key=None,
+            value=None,
+            query_pos=pos_embed,
+            query_key_padding_mask=mask)
+        num_queries = query_embed.size(0)
+        if self.num_patterns == 0:
+            target = torch.zeros(
+                num_queries, bs, self.embed_dims, device=query_embed.device)
+        else:
+            target = self.patterns.weight[:, None, None, :]\
+                .repeat(1, num_queries, bs, 1)\
+                .view(-1, bs, self.embed_dims)
+            query_embed = query_embed.repeat(self.num_patterns, 1, 1)
+        # out_dec: [num_layers, bs, num_query, dim]
+        # reference: [num_layers, bs, num_query, query_dim]
+        out_dec, reference = self.decoder(
+            query=target,
+            key=memory,
+            value=memory,
+            key_pos=pos_embed,
+            query_pos=query_embed,
+            key_padding_mask=mask,
+            reg_branches=reg_branches)
+        return out_dec, reference

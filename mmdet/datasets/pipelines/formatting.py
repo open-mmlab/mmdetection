@@ -1,9 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from collections.abc import Sequence
 
+# import cv2
 import mmcv
 import numpy as np
 import torch
+# import torchvision.transforms.functional as F
 from mmcv.parallel import DataContainer as DC
 
 from ..builder import PIPELINES
@@ -24,6 +26,14 @@ def to_tensor(data):
         return data
     elif isinstance(data, np.ndarray):
         return torch.from_numpy(data)
+        # # TODO: debug only
+        # data = torch.from_numpy(data)
+        # data = data.div(255)
+        # data = F.normalize(
+        #     data, mean=[0.485, 0.456, 0.406],
+        #     std=[0.229, 0.224, 0.225])
+        # return data
+        # # TODO: debug only
     elif isinstance(data, Sequence) and not mmcv.is_str(data):
         return torch.tensor(data)
     elif isinstance(data, int):
@@ -94,6 +104,11 @@ class ImageToTensor:
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
             results[key] = (to_tensor(img.transpose(2, 0, 1))).contiguous()
+            # # TODO: debug only
+            # results['img_norm_cfg'] = dict(
+            #     mean=[0.485, 0.456, 0.406],
+            #     std=[0.229, 0.224, 0.225],
+            #     to_rgb=True)
         return results
 
     def __repr__(self):
