@@ -111,8 +111,8 @@ jobs:
           command: |
             docker exec mmdet pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/${MMCV_CUDA}/torch${MMCV_TORCH}/index.html
             docker exec mmdet pip install -r requirements.txt
-            python -m pip install -r requirements/albu.txt
-            python -m pip install git+https://github.com/cocodataset/panopticapi.git
+            docker exec mmdet pip install -r requirements/albu.txt
+            docker exec mmdet pip install git+https://github.com/cocodataset/panopticapi.git
       - run:
           name: Build and install
           command: |
