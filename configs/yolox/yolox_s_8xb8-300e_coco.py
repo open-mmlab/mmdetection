@@ -1,6 +1,6 @@
 _base_ = ['../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py']
 
-img_scale = (640, 640)  # height, width
+img_scale = (640, 640)  # width, height
 
 # model settings
 model = dict(
@@ -83,6 +83,7 @@ train_pipeline = [
     dict(
         type='RandomAffine',
         scaling_ratio_range=(0.1, 2),
+        # img_scale is (width, height)
         border=(-img_scale[0] // 2, -img_scale[1] // 2)),
     dict(
         type='MixUp',

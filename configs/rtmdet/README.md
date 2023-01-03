@@ -43,7 +43,7 @@ RTMDet-Ins is the state-of-the-art real-time instance segmentation on coco datas
 |  RTMDet-Ins-s   | 640  |  44.0  |  38.7   |   10.18   |   21.5   |         1.93         |  [config](./rtmdet-ins_s_8xb32-300e_coco.py)   |       [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_s_8xb32-300e_coco/rtmdet-ins_s_8xb32-300e_coco_20221121_212604-fdc5d7ec.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_s_8xb32-300e_coco/rtmdet-ins_s_8xb32-300e_coco_20221121_212604.log.json)       |
 |  RTMDet-Ins-m   | 640  |  48.8  |  42.1   |   27.58   |  54.13   |         2.69         |  [config](./rtmdet-ins_m_8xb32-300e_coco.py)   |       [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_m_8xb32-300e_coco/rtmdet-ins_m_8xb32-300e_coco_20221123_001039-6eba602e.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_m_8xb32-300e_coco/rtmdet-ins_m_8xb32-300e_coco_20221123_001039.log.json)       |
 |  RTMDet-Ins-l   | 640  |  51.2  |  43.7   |   57.37   |  106.56  |         3.68         |  [config](./rtmdet-ins_l_8xb32-300e_coco.py)   |       [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_l_8xb32-300e_coco/rtmdet-ins_l_8xb32-300e_coco_20221124_103237-78d1d652.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_l_8xb32-300e_coco/rtmdet-ins_l_8xb32-300e_coco_20221124_103237.log.json)       |
-|  RTMDet-Ins-x   | 640  |  52.4  |  44.6   |   102.7   |  182.7   |         5.31         |  [config](./rtmdet-ins_x_8xb16-300e_coco.py)   |       [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_x_8xb16-300e_coco/rtmdet-ins_x_8xb16-300e_coco_20221124_111313-33d4595b.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_l_8xb16-300e_coco/rtmdet-ins_x_8xb16-300e_coco_20221124_111313.log.json)       |
+|  RTMDet-Ins-x   | 640  |  52.4  |  44.6   |   102.7   |  182.7   |         5.31         |  [config](./rtmdet-ins_x_8xb16-300e_coco.py)   |       [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_x_8xb16-300e_coco/rtmdet-ins_x_8xb16-300e_coco_20221124_111313-33d4595b.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_x_8xb16-300e_coco/rtmdet-ins_x_8xb16-300e_coco_20221124_111313.log.json)       |
 
 **Note**:
 
@@ -51,7 +51,7 @@ RTMDet-Ins is the state-of-the-art real-time instance segmentation on coco datas
 
 ## Rotated Object Detection
 
-RTMDet-R achieves state-of-the-art on various remote sensing datasets
+RTMDet-R achieves state-of-the-art on various remote sensing datasets.
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/object-detection-in-aerial-images-on-dota-1)](https://paperswithcode.com/sota/object-detection-in-aerial-images-on-dota-1?p=rtmdet-an-empirical-study-of-designing-real)
 
@@ -61,7 +61,7 @@ RTMDet-R achieves state-of-the-art on various remote sensing datasets
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/one-stage-anchor-free-oriented-object-3)](https://paperswithcode.com/sota/one-stage-anchor-free-oriented-object-3?p=rtmdet-an-empirical-study-of-designing-real)
 
-Models and configs of RTMDet-R are available in [MMRotate](https://github.com/open-mmlab/mmrotate/tree/1.x/configs/rotated_rtmdet)
+Models and configs of RTMDet-R are available in [MMRotate](https://github.com/open-mmlab/mmrotate/tree/1.x/configs/rotated_rtmdet).
 
 ## Citation
 
