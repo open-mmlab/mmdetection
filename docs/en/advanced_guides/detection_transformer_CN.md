@@ -144,13 +144,29 @@ feat_flatten = torch.cat(feat_flatten, 1)
 
 此外，为了支持对多尺度特征图的更多特殊操作，通常需要记录一些额外的信息。例如 每个尺度的特征空间大小 `spatial shape`; 由 `spatial shape` 可以获得每个特征图在 `N` 这一维度的起始索引 `lvl_start_index`。通过这两个参数可以反过来将 `(B, N, C)` 格式的序列特征还原成 `(B, C, H_l, W_l)` 格式的多尺度特征；也可以支持多尺度特征交互操作，例如可变形注意力（Deformable Attention）。
 
+（此处加一张图，来描述 image feature \<-> sequence feature）
+
 #### DETR 的位置嵌入
 
-Transformer 的自注意力的计算过程通常是先用查询（query）和键（key）生成注意力，将注意力作为权重将值（value）加权。由于该计算过程具有置换不变性（permutation invariance），多数自注意力在计算前通常对查询、键和值嵌入位置编码。
+对于 Transformer 常处理的序列数据中，每个元素在序列中的位置和多个元素的排列方式是该类数据语义特征的重要组成部分；对于图像数据，每个像素在图像上的位置和多个像素的空间排列方式对于图像语义信息也是至关重要的。
 
-在 DETR 系列算法的 Transformer 的注意力模块的输入中，也进行了位置嵌入。与多数情况不同的是，DETR 只对查询和键进行位置嵌入。
+Transformer 的自注意力的计算过程通常是先用查询（query）和键（key）生成注意力，将注意力作为权重将值（value）加权。在计算自注意力时，序列中的每个元素是独立的，它们的位置信息就会丢失。并且，由于该计算过程具有置换不变性（permutation invariance），多数自注意力在计算前通常对查询、键和值嵌入位置编码（positional encoding）来嵌入每个元素的位置信息。
 
-.........
+在 DETR 系列算法的 Transformer 的注意力模块的输入中，也进行了位置嵌入。与多数情况不同的是，DETRs 只对查询和键进行位置嵌入；且 DETRs 对行、列两个空间方向都进行了位置嵌入，即 2D 位置编码。
+
+![](C:\Users\lqy\Desktop\doc_detr\DETR_positional_encoding.png)
+
+图左为 2D 位置编码的示意图：查询或键与它们各自的 2D 位置嵌入有着相同的嵌入维度 `C`。在 DETRs 的 2D 位置编码中，沿 `C` 这一维均分成两部分，前一半对行进行编码，后一半对列进行编码。
+
+图中和图右为 DAB-DETR 论文中的 DETRs 的位置嵌入示意图，可以看到：编码器和解码器的查询 `Q` 和 键 `K` 都分别由两部分组成，其中一部分为特征，通常被称为 “content query / key”，另一部分为位置嵌入，通常也被称为 “positional query / key”；但不对值 `V` 进行位置嵌入；对于编码器，查询 `Q` 和键 `K` 的 “content ” 分量、值 `V`都通常源于图像特征，查询 `Q` 和键 `K` 对应的位置嵌入为图像特征的 2D 位置编码；对于解码器，“content query” 来自于上层解码器层的输出，“positional query” 为解码器中每个查询的位置嵌入，“content key” 和 “value” 为编码器输出的特征，“positional key” 为特征的 2D 位置编码。
+
+#### 基于集合预测的目标检测范式
+
+主流的 DETRs 都是基于集合预测（set prediction）的检测器。这类检测器去除了传统检测器中的很多复杂的组件，如非极大值抑制（non-maximum suppression）、锚生成器（anchor generation），能够直接获得一组固定数量的预测的集合，每个预测都分别包含类别和边界框。分类类别为所有目标类别和 `no object` “非目标” 类。
+
+在训练时，基于集合预测的检测器通过匈牙利算法（Hungarian algorithm）获得指派给集合中每个预测目标的真值目标。对于匹配到真值目标的预测目标，计算其分类损失和边界框回归损失；对于没有匹配到真值目标的预测目标，将它们的真值类别设为 `no object` “非目标” 类，计算分类损失，不计算边界框回归损失。
+
+在预测时，只需要保留分类类别不为 `no object` “非目标” 类的预测目标，并设置信度阈值来去除低置信度的预测目标，就可以获得预测结果，而不需要复杂的预测结果后处理。
 
 ### 约定
 
@@ -161,6 +177,8 @@ Transformer 的自注意力的计算过程通常是先用查询（query）和键
 在 DETR 相关模块中，共采用了两种主要的命名规则，对应两个层面：
 
 在检测器的层面：骨干网路和颈部网络提取的特征图称为 `img_feats`。`pre_transformer` 将特征图转换成输入编码器的特征序列，称为 `feat`。特征序列对应的掩码和位置编码分别称为 `feat_mask` 和 `feat_pos`。编码器的输出被称为 `memory`，对应的掩码称为 `memory_mask`。解码器中的查询为 `query`，在多数文章中被称为 "content query"，对应的位置嵌入称为 `query_pos`，在多数的文章中被称为 "positional query", "spatial query", 或 "object query"。我们用下图概括这些参数的命名规则：
+
+（此处加一张图，来描述 参数的命名规则）
 
 在 Transformer 部件模块、注意力模块等深层模块的层面：按照注意力的输入参数名命名，即 查询为 `query`、键为 `key`, 且 值为 `value`，查询和健对应的位置分别为 `query_pos` 和 `key_pos`。由于输入图像在批处理时会采用零填充的方式对齐图像尺寸，在计算时将记录填充位置的掩码命名为 `key_padding_mask`。在解码器中也可以指定 `self_attn_mask` 和 `cross_attn_mask` 作为不同注意力模块的掩码。
 
