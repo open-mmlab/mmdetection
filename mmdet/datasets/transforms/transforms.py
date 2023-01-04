@@ -1580,6 +1580,10 @@ class Albu(BaseTransform):
                 if (not len(results['idx_mapper'])
                         and self.skip_img_without_anno):
                     return None
+            elif 'masks' in results:
+                results['masks'] = ori_masks.__class__(
+                    results['masks'], results['image'].shape[0],
+                    results['image'].shape[1])
 
         return results
 
