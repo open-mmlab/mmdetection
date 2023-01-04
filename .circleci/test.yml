@@ -113,7 +113,7 @@ jobs:
             docker exec mmdet pip install wheel
             docker exec mmdet pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/${MMCV_CUDA}/torch${MMCV_TORCH}/index.html
             docker exec mmdet pip install -r requirements.txt
-            docker exec mmdet pip install albumentations --use-pep517 qudida,albumentations
+            docker exec mmdet pip install albumentations --use-pep517 qudida albumentations
             docker exec mmdet pip install git+https://github.com/cocodataset/panopticapi.git
       - run:
           name: Build and install
