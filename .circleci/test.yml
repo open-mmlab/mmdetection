@@ -164,11 +164,10 @@ workflows:
       #       - maximum_version_cpu
       - build_cuda:
           name: mainstream_version_gpu
-          torch: 1.9.1
+          torch: 1.9.0
           # Use double quotation mark to explicitly specify its type
           # as string instead of number
-          cuda: "11.1"
-          cudnn: 8
+          cuda: "10.2"
           # requires:
           #   - hold
   # merge_stage_test:
