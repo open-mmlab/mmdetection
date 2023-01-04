@@ -9,17 +9,17 @@ import numpy as np
 from mmengine.utils import is_list_of
 from parameterized import parameterized
 
-from mmdet.apis import MMDetInferencer
+from mmdet.apis import DetInferencer
 from mmdet.structures import DetDataSample
 
 
-class TestMMDetInferencer(TestCase):
+class TestDetInferencer(TestCase):
 
     def test_init(self):
         # init from metafile
-        MMDetInferencer('yolox-tiny')
+        DetInferencer('yolox-tiny')
         # init from cfg
-        MMDetInferencer('configs/yolox/yolox_tiny_8xb8-300e_coco.py')
+        DetInferencer('configs/yolox/yolox_tiny_8xb8-300e_coco.py')
 
     def assert_predictions_equal(self, preds1, preds2):
         for pred1, pred2 in zip(preds1, preds2):
@@ -42,7 +42,7 @@ class TestMMDetInferencer(TestCase):
     def test_call(self, model):
         # single img
         img_path = 'tests/data/color.jpg'
-        inferencer = MMDetInferencer(model)
+        inferencer = DetInferencer(model)
         res_path = inferencer(img_path, return_vis=True)
         # ndarray
         img = mmcv.imread(img_path)
@@ -82,7 +82,7 @@ class TestMMDetInferencer(TestCase):
     ])
     def test_visualize(self, model):
         img_paths = ['tests/data/color.jpg', 'tests/data/gray.jpg']
-        inferencer = MMDetInferencer(model)
+        inferencer = DetInferencer(model)
         # img_out_dir
         with tempfile.TemporaryDirectory() as tmp_dir:
             inferencer(img_paths, img_out_dir=tmp_dir)
@@ -96,7 +96,7 @@ class TestMMDetInferencer(TestCase):
     def test_postprocess(self, model):
         # return_datasample
         img_path = 'tests/data/color.jpg'
-        inferencer = MMDetInferencer(model)
+        inferencer = DetInferencer(model)
         res = inferencer(img_path, return_datasamples=True)
         self.assertTrue(is_list_of(res['predictions'], DetDataSample))
 

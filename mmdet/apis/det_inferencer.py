@@ -33,7 +33,7 @@ PredType = List[DetDataSample]
 ImgType = Union[np.ndarray, Sequence[np.ndarray]]
 
 
-class MMDetInferencer(BaseInferencer):
+class DetInferencer(BaseInferencer):
     """MMDet inferencer.
 
     Args:
