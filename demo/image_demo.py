@@ -43,7 +43,8 @@ def parse_args():
         '--pred-out-file',
         type=str,
         default='',
-        help='File to save the inference results.')
+        help='File to save the inference results. '
+        'Currently only supports json suffix.')
     parser.add_argument(
         '--palette',
         default='none',
@@ -57,9 +58,14 @@ def parse_args():
         warnings.warn(
             'It doesn\'t make sense to neither save the prediction '
             'result nor display it. Force set args.no-save-image to False')
-        no_save_image = True
+        no_save_image = False
     if no_save_image:
         call_args['img_out_dir'] = ''
+
+    if call_args['pred_out_file'] != '':
+        assert call_args['pred_out_file'].endswith('.json'), \
+            f'The --pred-out-file: {call_args["pred_out_file"]} ' \
+            'must be a json file.'
 
     init_kws = ['model', 'weights', 'device', 'palette']
     init_args = {}
@@ -75,7 +81,11 @@ def main():
     inferencer(**call_args)
 
     if call_args['img_out_dir'] != '':
-        print_log(f'\nResults have been saved at {call_args["img_out_dir"]}')
+        print_log('\nVisualized results have been saved at '
+                  f'{call_args["img_out_dir"]}')
+    if call_args['pred_out_file'] != '':
+        print_log('Predicted Results have been saved at '
+                  f'{call_args["pred_out_file"]}')
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@
 import copy
 import os.path as osp
 import warnings
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 import mmcv
 import mmengine
@@ -11,19 +11,26 @@ import torch.nn as nn
 from mmengine.dataset import Compose
 from mmengine.infer.infer import BaseInferencer, ModelType
 from mmengine.runner import load_checkpoint
-from mmengine.structures import InstanceData
 from mmengine.visualization import Visualizer
 
+from mmdet.evaluation import INSTANCE_OFFSET
 from mmdet.registry import DATASETS, MODELS
+from mmdet.structures import DetDataSample
+from mmdet.structures.mask import encode_mask_results
 from mmdet.utils import ConfigType, register_all_modules
 from ..evaluation import get_classes
 
-InstanceList = List[InstanceData]
+try:
+    from panopticapi.evaluation import VOID
+    from panopticapi.utils import id2rgb
+except ImportError:
+    id2rgb = None
+    VOID = None
+
 InputType = Union[str, np.ndarray]
 InputsType = Union[InputType, Sequence[InputType]]
-PredType = Union[InstanceData, InstanceList]
+PredType = List[DetDataSample]
 ImgType = Union[np.ndarray, Sequence[np.ndarray]]
-ResType = Union[Dict, List[Dict], InstanceData, List[InstanceData]]
 
 
 class MMDetInferencer(BaseInferencer):
@@ -38,6 +45,9 @@ class MMDetInferencer(BaseInferencer):
             from metafile. Defaults to None.
         device (str, optional): Device to run inference. If None, the available
             device will be automatically used. Defaults to None.
+        scope (str, optional): The scope of the model. Defaults to mmdet.
+        palette (str): Color palette used for visualization. The order of
+            priority is palette -> config -> checkpoint. Defaults to 'none'.
     """
 
     preprocess_kwargs: set = set()
@@ -59,6 +69,7 @@ class MMDetInferencer(BaseInferencer):
         # A global counter tracking the number of images processed, for
         # naming of the output images
         self.num_visualized_imgs = 0
+        self.num_predicted_imgs = 0
         self.palette = palette
         register_all_modules()
         super().__init__(
@@ -67,31 +78,46 @@ class MMDetInferencer(BaseInferencer):
     def _init_model(
         self,
         cfg: ConfigType,
-        weights: str,
+        weights: Optional[str] = None,
         device: str = 'cpu',
     ) -> nn.Module:
+        """Initialize the model with the given config and checkpoint on the
+        specific device.
+
+        Args:
+            cfg (ConfigType): Config containing the model information.
+            weights (str, optional): Path to the checkpoint.
+            device (str, optional): Device to run inference. Defaults to 'cpu'.
+
+        Returns:
+            nn.Module: Model loaded with checkpoint.
+        """
+
         if 'init_cfg' in cfg.model.backbone:
             cfg.model.backbone.init_cfg = None
         model = MODELS.build(cfg.model)
 
-        checkpoint = load_checkpoint(model, weights, map_location='cpu')
-        checkpoint_meta = checkpoint.get('meta', {})
-        # save the dataset_meta in the model for convenience
-        if 'dataset_meta' in checkpoint_meta:
-            # mmdet 3.x, all keys should be lowercase
-            model.dataset_meta = {
-                k.lower(): v
-                for k, v in checkpoint_meta['dataset_meta'].items()
-            }
-        elif 'CLASSES' in checkpoint_meta:
-            # < mmdet 3.x
-            classes = checkpoint_meta['CLASSES']
-            model.dataset_meta = {'classes': classes}
+        if weights is not None:
+            checkpoint = load_checkpoint(model, weights, map_location='cpu')
+            checkpoint_meta = checkpoint.get('meta', {})
+            # save the dataset_meta in the model for convenience
+            if 'dataset_meta' in checkpoint_meta:
+                # mmdet 3.x, all keys should be lowercase
+                model.dataset_meta = {
+                    k.lower(): v
+                    for k, v in checkpoint_meta['dataset_meta'].items()
+                }
+            elif 'CLASSES' in checkpoint_meta:
+                # < mmdet 3.x
+                classes = checkpoint_meta['CLASSES']
+                model.dataset_meta = {'classes': classes}
+            else:
+                warnings.warn(
+                    'dataset_meta or class names are not saved in the '
+                    'checkpoint\'s meta data, use COCO classes by default.')
+                model.dataset_meta = {'classes': get_classes('coco')}
         else:
-            warnings.simplefilter('once')
-            warnings.warn(
-                'dataset_meta or class names are not saved in the '
-                'checkpoint\'s meta data, use COCO classes by default.')
+            warnings.warn('weights is None, use COCO classes by default.')
             model.dataset_meta = {'classes': get_classes('coco')}
 
         # Priority:  args.palette -> config -> checkpoint
@@ -146,6 +172,14 @@ class MMDetInferencer(BaseInferencer):
         return -1
 
     def _init_visualizer(self, cfg: ConfigType) -> Optional[Visualizer]:
+        """Initialize visualizers.
+
+        Args:
+            cfg (ConfigType): Config containing the visualizer information.
+
+        Returns:
+            Visualizer or None: Visualizer initialized with config.
+        """
         visualizer = super()._init_visualizer(cfg)
         visualizer.dataset_meta = self.model.dataset_meta
         return visualizer
@@ -168,7 +202,7 @@ class MMDetInferencer(BaseInferencer):
         Args:
             inputs (InputsType): Inputs for the inferencer.
             return_datasamples (bool): Whether to return results as
-                :obj:`BaseDataElement`. Defaults to False.
+                :obj:`DetDataSample`. Defaults to False.
             batch_size (int): Inference batch size. Defaults to 1.
             show (bool): Whether to display the visualization results in a
                 popup window. Defaults to False.
@@ -194,6 +228,10 @@ class MMDetInferencer(BaseInferencer):
         Returns:
             dict: Inference and visualization results.
         """
+        if pred_out_file != '':
+            assert pred_out_file.endswith('.json'), \
+                f'The pred_out_file: {pred_out_file} must be a json file.'
+
         return super().__call__(
             inputs,
             return_datasamples,
@@ -221,7 +259,7 @@ class MMDetInferencer(BaseInferencer):
 
         Args:
             inputs (List[Union[str, np.ndarray]]): Inputs for the inferencer.
-            preds (List[Dict]): Predictions of the model.
+            preds (List[:obj:`DetDataSample`]): Predictions of the model.
             return_vis (bool): Whether to return the visualization result.
                 Defaults to False.
             show (bool): Whether to display the image in a popup window.
@@ -238,11 +276,10 @@ class MMDetInferencer(BaseInferencer):
             List[np.ndarray] or None: Returns visualization results only if
             applicable.
         """
-        if self.visualizer is None or (not show and img_out_dir == ''
-                                       and not return_vis):
+        if not show and img_out_dir == '' and not return_vis:
             return None
 
-        if getattr(self, 'visualizer') is None:
+        if self.visualizer is None:
             raise ValueError('Visualization needs the "visualizer" term'
                              'defined in the config, but got None.')
 
@@ -276,7 +313,7 @@ class MMDetInferencer(BaseInferencer):
                 pred_score_thr=pred_score_thr,
                 out_file=out_file,
             )
-            results.append(img)
+            results.append(self.visualizer.get_image())
             self.num_visualized_imgs += 1
 
         return results
@@ -288,7 +325,7 @@ class MMDetInferencer(BaseInferencer):
         return_datasample: bool = False,
         print_result: bool = False,
         pred_out_file: str = '',
-    ) -> Union[ResType, Tuple[ResType, np.ndarray]]:
+    ) -> Dict:
         """Process the predictions and visualization results from ``forward``
         and ``visualize``.
 
@@ -299,7 +336,7 @@ class MMDetInferencer(BaseInferencer):
         3. Dump or log the predictions.
 
         Args:
-            preds (List[Dict]): Predictions of the model.
+            preds (List[:obj:`DetDataSample`]): Predictions of the model.
             visualization (Optional[np.ndarray]): Visualized predictions.
             return_datasample (bool): Whether to use Datasample to store
                 inference results. If False, dict will be used.
@@ -325,7 +362,7 @@ class MMDetInferencer(BaseInferencer):
         if not return_datasample:
             results = []
             for pred in preds:
-                result = self.pred2dict(pred)
+                result = self.pred2dict(pred, pred_out_file)
                 results.append(result)
         # Add img to the results after printing and dumping
         result_dict['predictions'] = results
@@ -336,18 +373,63 @@ class MMDetInferencer(BaseInferencer):
         result_dict['visualization'] = visualization
         return result_dict
 
-    def pred2dict(self, data_sample: InstanceData) -> Dict:
+    def pred2dict(self,
+                  data_sample: DetDataSample,
+                  pred_out_file: str = '') -> Dict:
         """Extract elements necessary to represent a prediction into a
         dictionary.
 
         It's better to contain only basic data elements such as strings and
         numbers in order to guarantee it's json-serializable.
+
+        Args:
+            data_sample (:obj:`DetDataSample`): Predictions of the model.
+            pred_out_file: File to save the inference results w/o
+                visualization. If left as empty, no file will be saved.
+                Defaults to ''.
+
+        Returns:
+            dict: Prediction results.
         """
-        pred_instances = data_sample.pred_instances.numpy()
-        result = {
-            'bboxes': pred_instances.bboxes.tolist(),
-            'labels': pred_instances.labels.tolist(),
-            'scores': pred_instances.scores.tolist()
-        }
+
+        result = {}
+        if 'pred_instances' in data_sample:
+            pred_instances = data_sample.pred_instances.numpy()
+            result = {
+                'bboxes': pred_instances.bboxes.tolist(),
+                'labels': pred_instances.labels.tolist(),
+                'scores': pred_instances.scores.tolist()
+            }
+            if 'masks' in pred_instances:
+                encode_masks = encode_mask_results(pred_instances.masks)
+                for encode_mask in encode_masks:
+                    if isinstance(encode_mask['counts'], bytes):
+                        encode_mask['counts'] = encode_mask['counts'].decode()
+                result['masks'] = encode_masks
+
+        if 'pred_panoptic_seg' in data_sample and pred_out_file != '':
+            if VOID is None:
+                raise RuntimeError(
+                    'panopticapi is not installed, please install it by: '
+                    'pip install git+https://github.com/cocodataset/'
+                    'panopticapi.git.')
+
+            pan = data_sample.pred_panoptic_seg.sem_seg.cpu().numpy()[0]
+            pan[pan % INSTANCE_OFFSET == len(
+                self.model.dataset_meta['classes'])] = VOID
+            pan = id2rgb(pan).astype(np.uint8)
+
+            if 'img_path' in data_sample:
+                img_path = osp.basename(data_sample.img_path)
+                out_path = osp.splitext(img_path)[0] + '.png'
+                out_path = osp.join(osp.dirname(pred_out_file), out_path)
+            else:
+                out_path = osp.join(
+                    osp.dirname(pred_out_file),
+                    f'{self.num_predicted_imgs}.png')
+                self.num_predicted_imgs += 1
+
+            mmcv.imwrite(pan[:, :, ::-1], out_path)
+            result['panoptic_seg_path'] = out_path
 
         return result
