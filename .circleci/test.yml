@@ -115,6 +115,7 @@ jobs:
             docker exec mmdet pip install -r requirements.txt
             docker exec mmdet pip install albumentations --use-pep517 qudida albumentations
             docker exec mmdet pip install git+https://github.com/cocodataset/panopticapi.git
+            docker exec mmdet python -c 'import albumentations; print(albumentations.__version__)'
       - run:
           name: Build and install
           command: |
@@ -164,7 +165,7 @@ workflows:
       #       - maximum_version_cpu
       - build_cuda:
           name: mainstream_version_gpu
-          torch: 1.9.0
+          torch: 1.8.1
           # Use double quotation mark to explicitly specify its type
           # as string instead of number
           cuda: "10.2"
