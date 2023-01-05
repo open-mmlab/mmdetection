@@ -20,8 +20,8 @@ def parse_args():
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
         '--palette',
-        default='coco',
-        choices=['coco', 'voc', 'citys', 'random'],
+        default='none',
+        choices=['coco', 'voc', 'citys', 'random', 'none'],
         help='Color palette used for visualization')
     parser.add_argument(
         '--score-thr', type=float, default=0.3, help='bbox score threshold')
