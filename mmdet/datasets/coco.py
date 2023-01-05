@@ -11,6 +11,7 @@ from collections import OrderedDict
 import mmcv
 import numpy as np
 from mmcv.utils import print_log
+from pycocotools import mask as coco_mask
 from terminaltables import AsciiTable
 
 from mmdet.core import eval_recalls
@@ -647,3 +648,81 @@ class CocoDataset(CustomDataset):
         if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results
+
+    def evaluate_occluded(self, results):
+        dict_det = {}
+        for i in range(len(results)):
+            print(i)
+            # cur_img_name = results[i][0]
+            cur_img_name = self.data_infos[i]['filename']
+            print(cur_img_name)
+            if cur_img_name not in dict_det.keys():
+                dict_det[cur_img_name] = []
+            for cat_id in range(len(results[i][1])):  # for j in 80
+                assert len(results[i][1][cat_id]) == len(results[i][0][cat_id])
+                for instance_id in range(len(results[i][1][cat_id])):
+                    cur_binary_mask = coco_mask.decode(
+                        results[i][1][cat_id][instance_id])
+                    cur_det_bbox = results[i][0][cat_id][instance_id][:4]
+                    dict_det[cur_img_name].append([
+                        results[i][0][cat_id][instance_id][4],
+                        self.CLASSES[cat_id], cur_binary_mask, cur_det_bbox
+                    ])
+            dict_det[cur_img_name].sort(
+                key=lambda x: (-x[0], x[3][0], x[3][1])
+            )  # rank by confidence from high to low, avoid same confidence
+        import pdb
+        pdb.set_trace()
+
+        CONFIDENCE_THRESHOLD = 0.3
+        IOU_THRESHOLD = 0.75
+        gt_json = mmcv.load('occluded_coco.pkl')
+        is_occ = True
+
+        mask_fail_reason_dict = {'suc': 0}
+        print(len(gt_json))
+
+        def compute_iou_mask(mask1, mask2):
+            mask1_area = np.count_nonzero(mask1 == 1)
+            mask2_area = np.count_nonzero(mask2 == 1)
+            intersection = np.count_nonzero(
+                np.logical_and(mask1 == 1, mask2 == 1))
+            iou = intersection / (mask1_area + mask2_area - intersection)
+            return iou
+
+        for iter_i in range(len(gt_json)):
+            print(iter_i)
+            print(mask_fail_reason_dict)
+            cur_item = gt_json[iter_i]
+            cur_img_name = cur_item[0]
+            cur_gt_bbox = cur_item[3]
+            if is_occ:
+                cur_gt_bbox = [
+                    cur_gt_bbox[0], cur_gt_bbox[1],
+                    cur_gt_bbox[0] + cur_gt_bbox[2],
+                    cur_gt_bbox[1] + cur_gt_bbox[3]
+                ]
+            cur_gt_class = cur_item[1]
+            cur_gt_mask = coco_mask.decode(cur_item[4])
+
+            assert cur_img_name in dict_det.keys()
+            cur_detections = dict_det[cur_img_name]
+
+            correct_flag = False
+            for i in range(len(cur_detections)):
+                cur_det_confidence = cur_detections[i][0]
+                if cur_det_confidence < CONFIDENCE_THRESHOLD:
+                    break
+                cur_det_class = cur_detections[i][1]
+                if cur_det_class != cur_gt_class:
+                    continue
+                cur_det_mask = cur_detections[i][2]
+                cur_iou = compute_iou_mask(cur_det_mask, cur_gt_mask)
+                if cur_iou >= IOU_THRESHOLD:
+                    correct_flag = True
+                    break
+            if correct_flag:
+                mask_fail_reason_dict['suc'] += 1
+
+        save_dict_collect = [mask_fail_reason_dict]
+        return save_dict_collect
