@@ -77,7 +77,7 @@ Apart from MMDetection, we also released a library [mmcv](https://github.com/ope
 
 ### 💎 Stable version
 
-**2.27.0** was released in 26/12/2022:
+**2.27.0** was released in 5/1/2023:
 
 - Support receptive field search of CNN models([TPAMI 2022: RF-Next](http://mftp.mmcheng.net/Papers/22TPAMI-ActionSeg.pdf)).
 
