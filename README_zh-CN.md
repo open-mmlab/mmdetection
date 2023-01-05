@@ -76,7 +76,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ### 💎 稳定版本
 
-最新的 **2.27.0** 版本已经在 2022.12.26 发布:
+最新的 **2.27.0** 版本已经在 2023.1.5 发布:
 
 - 支持 CNN 模型的感受野搜索 ([TPAMI 2022: RF-Next](http://mftp.mmcheng.net/Papers/22TPAMI-ActionSeg.pdf))。
 
