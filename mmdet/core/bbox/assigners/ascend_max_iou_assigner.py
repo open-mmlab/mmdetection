@@ -74,7 +74,7 @@ class AscendMaxIoUAssigner(BaseAssigner):
         """Assign gt to bboxes.
         Args:
             concat_bboxes (Tensor): Bounding boxes to be assigned, shape(b, n, 4).
-            concat_gt_bboxes (Tensor): Groundtruth boxes, shape (b, k, 4).
+            concat_gt_bboxes (Tensor): Ground truth boxes, shape (b, k, 4).
             concat_gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
                 labelled as `ignored`, e.g., crowd boxes in COCO.
             concat_gt_labels (Tensor, optional): Label of gt_bboxes, shape (b, k, ).

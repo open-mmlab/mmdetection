@@ -1,24 +1,16 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import warnings
-
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmcv.runner import force_fp32
-
-from mmdet.core import (build_assigner, build_bbox_coder,
-                        build_prior_generator, build_sampler, multi_apply)
 from ..builder import HEADS
 from ..losses import smooth_l1_loss
 from .ascend_anchor_head import AscendAnchorHead
 from .ssd_head import SSDHead
-from ...utils import set_index
 
 
 @HEADS.register_module()
 class AscendSSDHead(SSDHead, AscendAnchorHead):
-    """SSD head used in https://arxiv.org/abs/1512.02325.
+    """Ascend SSD head used in https://arxiv.org/abs/1512.02325.
 
     Args:
         num_classes (int): Number of categories excluding the background
@@ -79,22 +71,35 @@ class AscendSSDHead(SSDHead, AscendAnchorHead):
                      distribution='uniform',
                      bias=0)):
         super(AscendSSDHead, self).__init__(
-            num_classes,
-            in_channels,
-            stacked_convs,
-            feat_channels,
-            use_depthwise,
-            conv_cfg,
-            norm_cfg,
-            act_cfg,
-            anchor_generator,
-            bbox_coder,
-            reg_decoded_bbox,
-            train_cfg,
-            test_cfg,
-            init_cfg)
+            num_classes=num_classes,
+            in_channels=in_channels,
+            stacked_convs=stacked_convs,
+            feat_channels=feat_channels,
+            use_depthwise=use_depthwise,
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg,
+            act_cfg=act_cfg,
+            anchor_generator=anchor_generator,
+            bbox_coder=bbox_coder,
+            reg_decoded_bbox=reg_decoded_bbox,
+            train_cfg=train_cfg,
+            test_cfg=test_cfg,
+            init_cfg=init_cfg
+        )
 
     def get_static_anchors(self, featmap_sizes, img_metas, device="cuda"):
+        """Get static anchors according to feature map sizes.
+
+        Args:
+            featmap_sizes (list[tuple]): Multi-level feature map sizes.
+            img_metas (list[dict]): Image meta info.
+            device (torch.device | str): Device for returned tensors
+
+        Returns:
+            tuple:
+                anchor_list (list[Tensor]): Anchors of each image.
+                valid_flag_list (list[Tensor]): Valid flags of each image.
+        """
         if not hasattr(self, 'static_anchors') or not hasattr(self, 'static_valid_flags'):
             static_anchors, static_valid_flags = self.get_anchors(featmap_sizes, img_metas, device)
             self.static_anchors = static_anchors
@@ -112,6 +117,48 @@ class AscendSSDHead(SSDHead, AscendAnchorHead):
                     unmap_outputs=True,
                     return_sampling_results=False,
                     return_level=True):
+        """Compute regression and classification targets for anchors in
+        multiple images.
+
+        Args:
+            anchor_list (list[list[Tensor]]): Multi level anchors of each
+                image. The outer list indicates images, and the inner list
+                corresponds to feature levels of the image. Each element of
+                the inner list is a tensor of shape (num_anchors, 4).
+            valid_flag_list (list[list[Tensor]]): Multi level valid flags of
+                each image. The outer list indicates images, and the inner list
+                corresponds to feature levels of the image. Each element of
+                the inner list is a tensor of shape (num_anchors, )
+            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
+            img_metas (list[dict]): Meta info of each image.
+            gt_bboxes_ignore_list (list[Tensor]): Ground truth bboxes to be
+                ignored.
+            gt_labels_list (list[Tensor]): Ground truth labels of each box.
+            label_channels (int): Channel of label.
+            unmap_outputs (bool): Whether to map outputs back to the original
+                set of anchors.
+            return_sampling_results (bool): Whether to return the result of
+                sample.
+            return_level (bool): Whether to map outputs back to the levels
+                of feature map sizes.
+        Returns:
+            tuple: Usually returns a tuple containing learning targets.
+
+                - labels_list (list[Tensor]): Labels of each level.
+                - label_weights_list (list[Tensor]): Label weights of each
+                  level.
+                - bbox_targets_list (list[Tensor]): BBox targets of each level.
+                - bbox_weights_list (list[Tensor]): BBox weights of each level.
+                - num_total_pos (int): Number of positive samples in all
+                  images.
+                - num_total_neg (int): Number of negative samples in all
+                  images.
+
+            additional_returns: This function enables user-defined returns from
+                `self._get_targets_single`. These returns are currently refined
+                to properties at each feature map (i.e. having HxW dimension).
+                The results will be concatenated after the end
+        """
         return AscendAnchorHead.get_targets(
             self,
             anchor_list,
@@ -133,6 +180,32 @@ class AscendSSDHead(SSDHead, AscendAnchorHead):
                     concat_bbox_targets, concat_bbox_weights,
                     concat_pos_mask, concat_neg_mask,
                     num_total_samples):
+        """Compute loss of all images.
+
+        Args:
+            concat_cls_score (Tensor): Box scores for all image
+                Has shape (num_imgs, num_total_anchors, num_classes).
+            concat_bbox_pred (Tensor): Box energies / deltas for all image
+                level with shape (num_imgs, num_total_anchors, 4).
+            concat_anchor (Tensor): Box reference for all image with shape
+                (num_imgs, num_total_anchors, 4).
+            concat_labels (Tensor): Labels of all anchors with shape
+                (num_imgs, num_total_anchors,).
+            concat_label_weights (Tensor): Label weights of all anchor with
+                shape (num_imgs, num_total_anchors,)
+            concat_bbox_targets (Tensor): BBox regression targets of all anchor
+                weight shape (num_imgs, num_total_anchors, 4).
+            concat_bbox_weights (Tensor): BBox regression loss weights of
+                all anchor with shape (num_imgs, num_total_anchors, 4).
+            concat_pos_mask (Tensor): Positive samples mask in all images.
+            concat_neg_mask (Tensor): negative samples mask in all images.
+            num_total_samples (int): If sampling, num total samples equal to
+                the number of total anchors; Otherwise, it is the number of
+                positive anchors.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         num_images, num_anchors, _ = concat_anchor.size()
 
         concat_loss_cls_all = F.cross_entropy(
@@ -155,6 +228,7 @@ class AscendSSDHead(SSDHead, AscendAnchorHead):
         loss_cls = (concat_loss_cls_pos + concat_loss_cls_neg) / num_total_samples
 
         if self.reg_decoded_bbox:
+            # TODO: support self.reg_decoded_bbox is True
             raise RuntimeError
 
         loss_bbox_all = smooth_l1_loss(
