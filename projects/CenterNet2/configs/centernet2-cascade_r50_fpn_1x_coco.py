@@ -9,7 +9,7 @@ custom_imports = dict(
 
 # model settings
 model = dict(
-    type='CenterNet2',
+    type='TwoStageDetector',
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
@@ -34,7 +34,7 @@ model = dict(
         add_extra_convs='on_output',
         relu_before_extra_convs=True),
     rpn_head=dict(
-        type='CustomCenterNetHead',
+        type='CenterNet2Head',
         num_classes=80,
         norm='BN',
         in_channel=256,
@@ -46,13 +46,13 @@ model = dict(
         only_proposal=True,
         fpn_strides=[8, 16, 32, 64, 128],
         loss_center_heatmap=dict(
-            type='CustomGaussianFocalLoss',
+            type='CN2GaussianFocalLoss',
             alpha=0.25,
             ignore_high_fp=0.85,
             loss_weight=0.5),
         loss_bbox=dict(type='GIoULoss', loss_weight=1.0)),
     roi_head=dict(
-        type='CustomCascadeRoIHead',
+        type='CN2CascadeRoIHead',
         num_stages=3,
         stage_loss_weights=[1, 1, 1],
         bbox_roi_extractor=dict(

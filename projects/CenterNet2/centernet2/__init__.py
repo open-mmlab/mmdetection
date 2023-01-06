@@ -1,10 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .centernet2 import CenterNet2
-from .custom_cascade_roi_head import CustomCascadeRoIHead
-from .custom_centernet_head import CustomCenterNetHead
-from .custom_gaussian_focal_loss import CustomGaussianFocalLoss
+from .centernet2_head import CenterNet2Head
+from .cn2_cascade_roi_head import CN2CascadeRoIHead
+from .cn2_gaussian_focal_loss import CN2GaussianFocalLoss
 
-__all__ = [
-    'CustomGaussianFocalLoss', 'CenterNet2', 'CustomCascadeRoIHead',
-    'CustomCenterNetHead'
-]
+__all__ = ['CN2GaussianFocalLoss', 'CN2CascadeRoIHead', 'CenterNet2Head']

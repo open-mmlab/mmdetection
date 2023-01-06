@@ -16,8 +16,8 @@ INF = 100000000
 
 
 @HEADS.register_module()
-class CustomCenterNetHead(BaseDenseHead):
-    """Objects as Points Head.
+class CenterNet2Head(BaseDenseHead):
+    """CenterNet2 Head.
 
     CenterHead use center_point to indicate object's
     position. Paper link <https://arxiv.org/abs/2103.07461>
@@ -49,7 +49,7 @@ class CustomCenterNetHead(BaseDenseHead):
                  only_proposal,
                  fpn_strides,
                  loss_center_heatmap=dict(
-                     type='CustomGaussianFocalLoss',
+                     type='CN2GaussianFocalLoss',
                      alpha=0.25,
                      ignore_high_fp=0.85,
                      loss_weight=0.5),

@@ -35,8 +35,8 @@ class _ScaleGradient(Function):
 
 
 @MODELS.register_module()
-class CustomCascadeRoIHead(BaseRoIHead):
-    """Cascade roi head including one bbox head and one mask head.
+class CN2CascadeRoIHead(BaseRoIHead):
+    """CenterNet2 Cascade roi head including one bbox head and one mask head.
 
     https://arxiv.org/abs/1712.00726
     """
