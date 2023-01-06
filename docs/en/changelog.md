@@ -1,6 +1,6 @@
 ## Changelog
 
-### v2.27.0 (26/12/2022)
+### v2.27.0 (5/1/2023)
 
 #### Highlights
 
@@ -15,6 +15,7 @@
 - Add minimum GitHub token permissions for workflows (#8928)
 - Delete compatible code for parrots in roi extractor (#9503)
 - Deprecate np.bool Type Alias (#9498)
+- Replace numpy transpose with torch permute to speed-up data pre-processing (#9533)
 
 #### Documents
 
@@ -23,8 +24,8 @@
 
 #### Contributors
 
-A total of 11 developers contributed to this release.
-Thanks @gasvn, @lzyhha, @jbwang1997, @zachcoleman, @chenyuwang814, @MilkClouds, @Fizzez, @boahc077, @apatsekin, @zytx121, @DonggeunYu
+A total of 12 developers contributed to this release.
+Thanks @Min-Sheng, @gasvn, @lzyhha, @jbwang1997, @zachcoleman, @chenyuwang814, @MilkClouds, @Fizzez, @boahc077, @apatsekin, @zytx121, @DonggeunYu
 
 ### v2.26.0 (23/11/2022)
 
