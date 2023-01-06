@@ -5,17 +5,19 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import Scale
 from mmcv.ops import batched_nms
+from mmengine.structures import InstanceData
 from torch.nn import functional as F
 
-from mmdet.core import distance2bbox, multi_apply, reduce_mean
-from mmdet.models import HEADS, build_loss
 from mmdet.models.dense_heads.base_dense_head import BaseDenseHead
-from mmdet.utils import InstanceList, OptInstanceList
+from mmdet.models.utils import multi_apply
+from mmdet.registry import MODELS
+from mmdet.structures.bbox import distance2bbox
+from mmdet.utils import InstanceList, OptInstanceList, reduce_mean
 
 INF = 100000000
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CenterNet2Head(BaseDenseHead):
     """CenterNet2 Head.
 
@@ -73,8 +75,8 @@ class CenterNet2Head(BaseDenseHead):
         self.with_agn_hm = True
         self.not_norm_reg = True
 
-        self.loss_center_heatmap = build_loss(loss_center_heatmap)
-        self.loss_bbox = build_loss(loss_bbox)
+        self.loss_center_heatmap = MODELS.build(loss_center_heatmap)
+        self.loss_bbox = MODELS.build(loss_bbox)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -560,7 +562,7 @@ class CenterNet2Head(BaseDenseHead):
                         clss_per_level,
                         reg_pred,
                         agn_hm_pred,
-                        img_metas,
+                        batch_img_metas,
                         cfg=None):
 
         grids = self.compute_grids(agn_hm_pred)
@@ -662,4 +664,8 @@ class CenterNet2Head(BaseDenseHead):
             keep = torch.nonzero(keep, as_tuple=False).squeeze(1)
             result = result[keep]
 
-        return result
+        results = InstanceData()
+        results.bboxes = result[..., :4]
+        results.scores = result[..., 4]
+
+        return results
