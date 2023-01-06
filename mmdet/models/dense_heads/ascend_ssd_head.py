@@ -86,6 +86,8 @@ class AscendSSDHead(SSDHead, AscendAnchorHead):
             test_cfg=test_cfg,
             init_cfg=init_cfg
         )
+        assert self.reg_decoded_bbox is False, \
+            'reg_decoded_bbox only support False now.'
 
     def get_static_anchors(self, featmap_sizes, img_metas, device="cuda"):
         """Get static anchors according to feature map sizes.
