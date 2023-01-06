@@ -9,7 +9,11 @@ image_size = (1024, 1024)
 batch_augments = [
     dict(type='BatchFixedSizePad', size=image_size, pad_mask=True)
 ]
-norm_cfg = dict(type='CustomLN', requires_grad=True)
+
+# Please install mmcls>=1.0
+norm_cfg = dict(type='LN2d', requires_grad=True)
+backbone_norm_cfg = dict(type='LN', requires_grad=True)
+
 model = dict(
     # the model is trained from scratch, so init_cfg is None
     data_preprocessor=dict(
@@ -24,9 +28,12 @@ model = dict(
         img_size=1024,
         drop_path_rate=0.1,
         out_indices=(2, 5, 8, 11),
-        norm_cfg=norm_cfg,
-        init_cfg=None),
-    neck=dict(in_channels=[768, 768, 768, 768], norm_cfg=norm_cfg),
+        norm_cfg=backbone_norm_cfg,
+        init_cfg=None
+        ),
+    neck=dict(
+        in_channels=[768, 768, 768, 768],
+        norm_cfg=norm_cfg),
     rpn_head=dict(num_convs=2),
     roi_head=dict(
         bbox_head=dict(

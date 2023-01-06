@@ -6,11 +6,13 @@
 Author: @xxx.
 This is an implementation of \[XXX\]. -->
 
-This is an implementation of [ViTDet](https://github.com/facebookresearch/detectron2/tree/main/projects/ViTDet) based on [MMDetection](https://github.com/open-mmlab/mmdetection/tree/3.x), [MMCV](https://github.com/open-mmlab/mmcv), and [MMEngine](https://github.com/open-mmlab/mmengine).
+This is an implementation of [ViTDet](https://github.com/facebookresearch/detectron2/tree/main/projects/ViTDet) based on [MMDetection](https://github.com/open-mmlab/mmdetection/tree/3.x), [MMClassification](https://github.com/open-mmlab/mmclassification/tree/1.x), [MMCV](https://github.com/open-mmlab/mmcv), and [MMEngine](https://github.com/open-mmlab/mmengine).
 
 ## Usage
 
 <!-- For a typical model, this section should contain the commands for training and testing. You are also suggested to dump your environment specification to env.yml by `conda env export > env.yml`. -->
+
+Please install mmcls>=1.0, because we need to use `LN2d`.
 
 ### Training commands
 
