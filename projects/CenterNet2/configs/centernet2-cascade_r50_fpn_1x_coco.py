@@ -199,8 +199,7 @@ param_scheduler = [
 ]
 
 # optimizer
-optim_wrapper = dict(
-    optimizer=dict(lr=0.04), clip_grad=dict(max_norm=35, norm_type=2))
+optim_wrapper = dict(clip_grad=dict(max_norm=35, norm_type=2))
 
 train_pipeline = [
     dict(
@@ -216,5 +215,4 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 
-train_dataloader = dict(
-    batch_size=8, num_workers=4, dataset=dict(pipeline=train_pipeline))
+find_unused_parameters = True
