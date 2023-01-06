@@ -50,8 +50,7 @@ model = dict(
             alpha=0.25,
             ignore_high_fp=0.85,
             loss_weight=0.5),
-        loss_bbox=dict(type='GIoULoss', loss_weight=1.0)
-        ),
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.0)),
     roi_head=dict(
         type='CustomCascadeRoIHead',
         num_stages=3,
@@ -185,7 +184,11 @@ model = dict(
 # learning rate
 param_scheduler = [
     dict(
-        type='LinearLR', start_factor=0.0001, by_epoch=False, begin=0, end=1000),
+        type='LinearLR',
+        start_factor=0.0001,
+        by_epoch=False,
+        begin=0,
+        end=1000),
     dict(
         type='MultiStepLR',
         begin=0,
@@ -197,11 +200,12 @@ param_scheduler = [
 
 # optimizer
 optim_wrapper = dict(
-    optimizer=dict(lr=0.04),
-    clip_grad=dict(max_norm=35, norm_type=2))
+    optimizer=dict(lr=0.04), clip_grad=dict(max_norm=35, norm_type=2))
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args={{_base_.file_client_args}}),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='RandomChoiceResize',
@@ -213,6 +217,4 @@ train_pipeline = [
 ]
 
 train_dataloader = dict(
-    batch_size=8,
-    num_workers=4,
-    dataset=dict(pipeline=train_pipeline))
+    batch_size=8, num_workers=4, dataset=dict(pipeline=train_pipeline))

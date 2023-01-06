@@ -1,6 +1,5 @@
 # CenterNet2
 
-
 ## Description
 
 <!-- Share any information you would like others to know. For example:
@@ -47,9 +46,9 @@ You should claim whether this is based on the pre-trained weights, which are con
 Here we provide the baseline version of CenterNet2 with ResNet50 backbone.
 To find more variants, please visit the [official model zoo](https://github.com/xingyizhou/CenterNet2#main-results).
 
-|                                Method                                 |  Backbone   | Pretrained Model |  Training set  |   Test set   | #epoch | box AP |         Download         |
-| :-------------------------------------------------------------------: | :---------: | :--------------: | :------------: | :----------: | :----: | :----: | :----------------------: |
-| [CenterNet2](configs/centernet2-cascade_r50_fpn_1x_coco.py) | R-50 |        -         | COCO2017 Train | COCO2017 Val |   12   | 0.8853 | [model](<>) \| [log](<>) |
+|                           Method                            | Backbone | Pretrained Model |  Training set  |   Test set   | #epoch | box AP |         Download         |
+| :---------------------------------------------------------: | :------: | :--------------: | :------------: | :----------: | :----: | :----: | :----------------------: |
+| [CenterNet2](configs/centernet2-cascade_r50_fpn_1x_coco.py) |   R-50   |        -         | COCO2017 Train | COCO2017 Val |   12   | 0.8853 | [model](<>) \| [log](<>) |
 
 ## Citation
 

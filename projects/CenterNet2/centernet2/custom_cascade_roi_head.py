@@ -8,22 +8,22 @@ from mmengine.config import ConfigDict
 from mmengine.model import ModuleList
 from mmengine.structures import InstanceData
 from torch import Tensor
+from torch.autograd.function import Function
 
 from mmdet.models.layers import multiclass_nms
+from mmdet.models.roi_heads.base_roi_head import BaseRoIHead
 from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.models.test_time_augs import merge_aug_masks
+from mmdet.models.utils.misc import empty_instances, unpack_gt_instances
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures import SampleList
 from mmdet.structures.bbox import bbox2roi, get_box_tensor, scale_boxes
 from mmdet.utils import (ConfigType, InstanceList, MultiConfig, OptConfigType,
                          OptMultiConfig)
-from mmdet.models.utils.misc import empty_instances, unpack_gt_instances
-from mmdet.models.roi_heads.base_roi_head import BaseRoIHead
-
-from torch.autograd.function import Function
 
 
 class _ScaleGradient(Function):
+
     @staticmethod
     def forward(ctx, input, scale):
         ctx.scale = scale
@@ -32,6 +32,7 @@ class _ScaleGradient(Function):
     @staticmethod
     def backward(ctx, grad_output):
         return grad_output * ctx.scale, None
+
 
 @MODELS.register_module()
 class CustomCascadeRoIHead(BaseRoIHead):
@@ -462,8 +463,7 @@ class CustomCascadeRoIHead(BaseRoIHead):
         return results_list
 
     def _refine_roi(self, x: Tuple[Tensor], rois: Tensor,
-                    proposals: List[Tensor],
-                    batch_img_metas: List[dict],
+                    proposals: List[Tensor], batch_img_metas: List[dict],
                     num_proposals_per_img: Sequence[int], **kwargs) -> tuple:
         """Multi-stage refinement of RoI.
 
@@ -532,10 +532,9 @@ class CustomCascadeRoIHead(BaseRoIHead):
                 rois = torch.cat(refine_rois_list)
 
         # softmax each stage
-        ms_scores = [
-            [F.softmax(score[i], dim=-1) for i in range(len(batch_img_metas))]
-            for score in ms_scores
-        ]
+        ms_scores = [[
+            F.softmax(score[i], dim=-1) for i in range(len(batch_img_metas))
+        ] for score in ms_scores]
 
         # average scores of each image by stages
         cls_scores = [
@@ -544,10 +543,8 @@ class CustomCascadeRoIHead(BaseRoIHead):
         ]
 
         # multiple proposal scores
-        cls_scores = [
-            (cls_scores[i].t() * proposals[i][:, -1]).t() ** 0.5
-            for i in range(len(batch_img_metas))
-        ]
+        cls_scores = [(cls_scores[i].t() * proposals[i][:, -1]).t()**0.5
+                      for i in range(len(batch_img_metas))]
 
         return rois, cls_scores, bbox_preds
 

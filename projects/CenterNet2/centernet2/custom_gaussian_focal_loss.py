@@ -1,23 +1,24 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
 
-from mmdet.registry import MODELS
 from mmdet.models.losses.utils import weighted_loss
+from mmdet.registry import MODELS
 
 
 @weighted_loss
 def custom_gaussian_focal_loss(
-    pred, 
+    pred,
     gaussian_target,
-    pos_inds = None,
+    pos_inds=None,
     alpha: float = -1,
     beta: float = 4,
     gamma: float = 2,
     sigmoid_clamp: float = 1e-4,
     ignore_high_fp: float = -1.,
-    ):
+):
     """`Focal Loss <https://arxiv.org/abs/1708.02002>`_ for targets in gaussian
     distribution.
+
     Args:
         pred (torch.Tensor): The prediction.
         gaussian_target (torch.Tensor): The learning target of the prediction
@@ -27,17 +28,18 @@ def custom_gaussian_focal_loss(
         gamma (float, optional): The gamma for calculating the modulating
             factor. Defaults to 4.0.
     """
-    pred = torch.clamp(pred.sigmoid_(), min=sigmoid_clamp, max=1-sigmoid_clamp)
+    pred = torch.clamp(
+        pred.sigmoid_(), min=sigmoid_clamp, max=1 - sigmoid_clamp)
     neg_weights = torch.pow(1 - gaussian_target, beta)
-    pos_pred = pred[pos_inds] # N
+    pos_pred = pred[pos_inds]  # N
     pos_loss = torch.log(pos_pred) * torch.pow(1 - pos_pred, gamma)
     neg_loss = torch.log(1 - pred) * torch.pow(pred, gamma) * neg_weights
     if ignore_high_fp > 0:
         not_high_fp = (pred < ignore_high_fp).float()
         neg_loss = not_high_fp * neg_loss
 
-    pos_loss = - pos_loss.sum()
-    neg_loss = - neg_loss.sum()
+    pos_loss = -pos_loss.sum()
+    neg_loss = -neg_loss.sum()
 
     if alpha >= 0:
         pos_loss = alpha * pos_loss
@@ -45,10 +47,12 @@ def custom_gaussian_focal_loss(
 
     return pos_loss + neg_loss
 
+
 @MODELS.register_module()
 class CustomGaussianFocalLoss(nn.Module):
-    """GaussianFocalLoss is a variant of focal loss.
-    More details can be found in the `paper
+    """GaussianFocalLoss is a variant of focal loss. More details can be found
+    in the `paper.
+
     <https://arxiv.org/abs/1808.01244>`_
     Code is modified from `kp_utils.py
     <https://github.com/princeton-vl/CornerNet/blob/master/models/py_utils/kp_utils.py#L152>`_  # noqa: E501
@@ -86,6 +90,7 @@ class CustomGaussianFocalLoss(nn.Module):
                 avg_factor=None,
                 reduction_override=None):
         """Forward function.
+
         Args:
             pred (torch.Tensor): The prediction.
             target (torch.Tensor): The learning target of the prediction

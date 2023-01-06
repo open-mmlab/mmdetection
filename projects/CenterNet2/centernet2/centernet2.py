@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from mmdet.models.detectors.two_stage import TwoStageDetector
 from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
-from mmdet.models.detectors.two_stage import TwoStageDetector
 
 
 @MODELS.register_module()
