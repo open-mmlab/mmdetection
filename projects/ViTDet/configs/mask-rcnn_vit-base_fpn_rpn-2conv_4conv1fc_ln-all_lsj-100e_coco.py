@@ -29,11 +29,8 @@ model = dict(
         drop_path_rate=0.1,
         out_indices=(2, 5, 8, 11),
         norm_cfg=backbone_norm_cfg,
-        init_cfg=None
-        ),
-    neck=dict(
-        in_channels=[768, 768, 768, 768],
-        norm_cfg=norm_cfg),
+        init_cfg=None),
+    neck=dict(in_channels=[768, 768, 768, 768], norm_cfg=norm_cfg),
     rpn_head=dict(num_convs=2),
     roi_head=dict(
         bbox_head=dict(
