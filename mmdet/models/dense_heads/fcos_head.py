@@ -118,9 +118,8 @@ class FCOSHead(AnchorFreeHead):
         self.conv_centerness = nn.Conv2d(self.feat_channels, 1, 3, padding=1)
         self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
 
-    def forward(
-            self, x: Tuple[Tensor], *args
-    ) -> Tuple[List[Tensor], List[Tensor], List[Tensor]]:
+    def forward(self, x: Tuple[Tensor],
+                *args) -> Tuple[List[Tensor], List[Tensor], List[Tensor]]:
         """Forward features from the upstream network.
 
         Args:

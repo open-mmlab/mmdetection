@@ -517,8 +517,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
 
         return results_list
 
-    def forward(self, x: Tuple[Tensor],
-                rpn_results_list: InstanceList,
+    def forward(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
                 batch_data_samples: SampleList) -> tuple:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
@@ -538,8 +537,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         """
         results = ()
         batch_img_metas = [
-                data_samples.metainfo for data_samples in batch_data_samples
-            ]
+            data_samples.metainfo for data_samples in batch_data_samples
+        ]
         num_imgs = len(batch_img_metas)
 
         if self.with_semantic:
@@ -562,7 +561,12 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         # mask head
         if self.with_mask:
             rois = torch.cat(rois)
-            mask_results = self._mask_forward(stage=-1, x=x, rois=rois, semantic_feat=semantic_feat, training=False)
+            mask_results = self._mask_forward(
+                stage=-1,
+                x=x,
+                rois=rois,
+                semantic_feat=semantic_feat,
+                training=False)
             aug_masks = [[
                 mask.sigmoid().detach()
                 for mask in mask_preds.split(num_proposals_per_img, 0)

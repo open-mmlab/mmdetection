@@ -187,7 +187,8 @@ class SSDHead(AnchorHead):
             self.cls_convs.append(nn.Sequential(*cls_layers))
             self.reg_convs.append(nn.Sequential(*reg_layers))
 
-    def forward(self, x: Tuple[Tensor], *args) -> Tuple[List[Tensor], List[Tensor]]:
+    def forward(self, x: Tuple[Tensor],
+                *args) -> Tuple[List[Tensor], List[Tensor]]:
         """Forward features from the upstream network.
 
         Args:

@@ -519,8 +519,7 @@ class CascadeRoIHead(BaseRoIHead):
         ]
         return rois, cls_scores, bbox_preds
 
-    def forward(self, x: Tuple[Tensor],
-                rpn_results_list: InstanceList,
+    def forward(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
                 batch_data_samples: SampleList) -> tuple:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
@@ -540,14 +539,15 @@ class CascadeRoIHead(BaseRoIHead):
         """
         results = ()
         batch_img_metas = [
-                data_samples.metainfo for data_samples in batch_data_samples
-            ]
+            data_samples.metainfo for data_samples in batch_data_samples
+        ]
         proposals = [rpn_results.bboxes for rpn_results in rpn_results_list]
         num_proposals_per_img = tuple(len(p) for p in proposals)
         rois = bbox2roi(proposals)
         # bbox head
         if self.with_bbox:
-            rois, cls_scores, bbox_preds = self._refine_roi(x, rois, batch_img_metas, num_proposals_per_img)
+            rois, cls_scores, bbox_preds = self._refine_roi(
+                x, rois, batch_img_metas, num_proposals_per_img)
             results = results + (cls_scores, bbox_preds)
         # mask head
         if self.with_mask:

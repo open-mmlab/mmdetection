@@ -56,8 +56,7 @@ class StandardRoIHead(BaseRoIHead):
         self.mask_head = MODELS.build(mask_head)
 
     # TODO: Need to refactor later
-    def forward(self, x: Tuple[Tensor],
-                rpn_results_list: InstanceList,
+    def forward(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
                 *args) -> tuple:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.

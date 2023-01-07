@@ -608,8 +608,7 @@ class SCNetRoIHead(CascadeRoIHead):
 
         return results_list
 
-    def forward(self, x: Tuple[Tensor],
-                rpn_results_list: InstanceList,
+    def forward(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
                 batch_data_samples: SampleList) -> tuple:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
@@ -629,9 +628,8 @@ class SCNetRoIHead(CascadeRoIHead):
         """
         results = ()
         batch_img_metas = [
-                data_samples.metainfo for data_samples in batch_data_samples
-            ]
-        num_imgs = len(batch_img_metas)
+            data_samples.metainfo for data_samples in batch_data_samples
+        ]
 
         if self.with_semantic:
             _, semantic_feat = self.semantic_head(x)

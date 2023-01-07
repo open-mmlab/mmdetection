@@ -138,7 +138,8 @@ class TwoStageDetector(BaseDetector):
             rpn_results_list = [
                 data_sample.proposals for data_sample in batch_data_samples
             ]
-        roi_outs = self.roi_head.forward(x, rpn_results_list, batch_data_samples)
+        roi_outs = self.roi_head.forward(x, rpn_results_list,
+                                         batch_data_samples)
         results = results + (roi_outs, )
         return results
 
