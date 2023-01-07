@@ -119,6 +119,9 @@ class TwoStageDetector(BaseDetector):
 
         Args:
             batch_inputs (Tensor): Inputs with shape (N, C, H, W).
+            batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
+                the meta information of each image and corresponding
+                annotations.
 
         Returns:
             tuple: A tuple of features from ``rpn_head`` and ``roi_head``

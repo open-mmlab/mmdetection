@@ -619,9 +619,9 @@ class SCNetRoIHead(CascadeRoIHead):
                 resolutions.
             rpn_results_list (list[:obj:`InstanceData`]): List of region
                 proposals.
-            batch_img_metas (list[dict]): List of image information.
-                Pass in for creating more accurate padding mask. Not
-                used here.
+            batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
+                the meta information of each image and corresponding
+                annotations.
 
         Returns
             tuple: A tuple of features from ``bbox_head`` and ``mask_head``
