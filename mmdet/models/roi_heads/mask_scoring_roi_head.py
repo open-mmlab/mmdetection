@@ -28,7 +28,7 @@ class MaskScoringRoIHead(StandardRoIHead):
         self.mask_iou_head = MODELS.build(mask_iou_head)
 
     def forward(self, x: Tuple[Tensor],
-                rpn_results_list: InstanceList) -> tuple:
+                rpn_results_list: InstanceList, *args) -> tuple:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
 

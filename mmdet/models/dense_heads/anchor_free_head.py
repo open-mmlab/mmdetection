@@ -206,7 +206,7 @@ class AnchorFreeHead(BaseDenseHead):
                                       strict, missing_keys, unexpected_keys,
                                       error_msgs)
 
-    def forward(self, x: Tuple[Tensor]) -> Tuple[List[Tensor], List[Tensor]]:
+    def forward(self, x: Tuple[Tensor], *args) -> Tuple[List[Tensor], List[Tensor]]:
         """Forward features from the upstream network.
 
         Args:

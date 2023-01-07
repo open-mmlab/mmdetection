@@ -226,7 +226,7 @@ class TOODHead(ATSSHead):
         normal_init(self.tood_cls, std=0.01, bias=bias_cls)
         normal_init(self.tood_reg, std=0.01)
 
-    def forward(self, feats: Tuple[Tensor]) -> Tuple[List[Tensor]]:
+    def forward(self, feats: Tuple[Tensor], *args) -> Tuple[List[Tensor]]:
         """Forward features from the upstream network.
 
         Args:

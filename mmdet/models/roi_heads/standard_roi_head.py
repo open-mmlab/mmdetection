@@ -57,7 +57,8 @@ class StandardRoIHead(BaseRoIHead):
 
     # TODO: Need to refactor later
     def forward(self, x: Tuple[Tensor],
-                rpn_results_list: InstanceList) -> tuple:
+                rpn_results_list: InstanceList,
+                *args) -> tuple:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
 

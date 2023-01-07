@@ -76,7 +76,7 @@ class GridRoIHead(StandardRoIHead):
 
     # TODO: Forward is incorrect and need to refactor.
     def forward(self, x: Tuple[Tensor],
-                rpn_results_list: InstanceList) -> tuple:
+                rpn_results_list: InstanceList, *args) -> tuple:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
 
@@ -96,8 +96,9 @@ class GridRoIHead(StandardRoIHead):
         # bbox head
         if self.with_bbox:
             bbox_results = self._bbox_forward(x, rois)
-            results = results + (bbox_results['cls_score'],
-                                 bbox_results['bbox_pred'])
+            results = results + (bbox_results['cls_score'], )
+            if self.bbox_head.with_reg:
+                results = results + (bbox_results['bbox_pred'],)
 
             # grid head
             grid_rois = rois[:100]

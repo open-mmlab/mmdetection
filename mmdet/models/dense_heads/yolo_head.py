@@ -171,7 +171,7 @@ class YOLOV3Head(BaseDenseHead):
                               bias_init_with_prob(8 / (608 / stride)**2))
             nn.init.constant_(bias.data[:, 5:], bias_init_with_prob(0.01))
 
-    def forward(self, x: Tuple[Tensor, ...]) -> tuple:
+    def forward(self, x: Tuple[Tensor, ...], *args) -> tuple:
         """Forward features from the upstream network.
 
         Args:

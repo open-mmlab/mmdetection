@@ -219,7 +219,7 @@ class VFNetHead(ATSSHead, FCOSHead):
         self.vfnet_cls = nn.Conv2d(
             self.feat_channels, self.cls_out_channels, 3, padding=1)
 
-    def forward(self, x: Tuple[Tensor]) -> Tuple[List[Tensor]]:
+    def forward(self, x: Tuple[Tensor], *args) -> Tuple[List[Tensor]]:
         """Forward features from the upstream network.
 
         Args:

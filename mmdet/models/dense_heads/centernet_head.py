@@ -90,7 +90,7 @@ class CenterNetHead(BaseDenseHead):
                 if isinstance(m, nn.Conv2d):
                     normal_init(m, std=0.001)
 
-    def forward(self, x: Tuple[Tensor, ...]) -> Tuple[List[Tensor]]:
+    def forward(self, x: Tuple[Tensor, ...], *args) -> Tuple[List[Tensor]]:
         """Forward features. Notice CenterNet head does not use FPN.
 
         Args:

@@ -119,7 +119,7 @@ class FCOSHead(AnchorFreeHead):
         self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
 
     def forward(
-            self, x: Tuple[Tensor]
+            self, x: Tuple[Tensor], *args
     ) -> Tuple[List[Tensor], List[Tensor], List[Tensor]]:
         """Forward features from the upstream network.
 

@@ -171,7 +171,7 @@ class GFLHead(AnchorHead):
         self.scales = nn.ModuleList(
             [Scale(1.0) for _ in self.prior_generator.strides])
 
-    def forward(self, x: Tuple[Tensor]) -> Tuple[List[Tensor]]:
+    def forward(self, x: Tuple[Tensor], *args) -> Tuple[List[Tensor]]:
         """Forward features from the upstream network.
 
         Args:
