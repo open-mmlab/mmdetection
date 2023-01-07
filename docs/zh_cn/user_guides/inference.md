@@ -1,6 +1,6 @@
 # 使用已有模型在标准数据集上进行推理
 
-MMDetection 提供了许多预训练好的检测模型，可以在[Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html)查看具体有哪些模型.
+MMDetection 提供了许多预训练好的检测模型，可以在 [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html) 查看具体有哪些模型.
 
 推理具体指使用训练好的模型来检测图像上的目标，本文将会展示具体步骤。
 
@@ -46,7 +46,7 @@ visualizer.add_datasample(
     show=True)
 
 # 测试视频并展示结果
-# 构建测试pipeline
+# 构建测试 pipeline
 model.cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromNDArray'
 test_pipeline = Compose(model.cfg.test_dataloader.dataset.pipeline)
 
@@ -78,7 +78,7 @@ cv2.destroyAllWindows()
 
 jupyter notebook 上的演示样例在 [demo/inference_demo.ipynb](../../../demo/inference_demo.ipynb) 。
 
-注意:  `inference_detector` 目前仅支持单张图片的推理。
+注意: `inference_detector` 目前仅支持单张图片的推理。
 
 ## 演示样例
 
