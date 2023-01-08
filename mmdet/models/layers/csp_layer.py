@@ -66,7 +66,7 @@ class DarknetBottleneck(BaseModule):
         self.add_identity = \
             add_identity and in_channels == out_channels
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         identity = x
         out = self.conv1(x)
         out = self.conv2(out)
