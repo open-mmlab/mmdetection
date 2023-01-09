@@ -4,6 +4,7 @@ import numpy as np
 from mmcv.fileio import load
 from mmcv.utils import print_log
 from pycocotools import mask as coco_mask
+from terminaltables import AsciiTable
 
 from .coco import CocoDataset
 
@@ -24,6 +25,10 @@ class OccludedSeparatedCocoDataset(CocoDataset):
       segmentation mask is connected.
     These two new scalable real-image datasets are to benchmark a model's
     capability to detect occluded objects of 80 common categories.
+
+    Args:
+        occluded_ann (str): Path to the occluded coco annotation file.
+        separated_ann (str): Path to the separated coco annotation file.
     """  # noqa
 
     def __init__(
@@ -36,15 +41,46 @@ class OccludedSeparatedCocoDataset(CocoDataset):
         self.occluded_ann = load(occluded_ann)
         self.separated_ann = load(separated_ann)
 
-    def evaluate(self, results, score_thr=0.3, iou_thr=0.75, **kwargs):
+    def evaluate(self,
+                 results,
+                 metric=[],
+                 score_thr=0.3,
+                 iou_thr=0.75,
+                 **kwargs):
+        """Occluded and separated mask evaluation in COCO protocol.
+
+        Args:
+            results (list[tuple]): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated. Options are
+                'bbox', 'segm', 'proposal', 'proposal_fast'. Defaults to [].
+            score_thr (float): Score threshold of the detection masks.
+                Defaults to 0.3.
+            iou_thr (float): IoU threshold for the recall calculation.
+                Defaults to 0.75.
+        Returns:
+            tuple: number of correct masks and the recall.
+        """
+        coco_metric_res = super().evaluate(results, metric=metric, **kwargs)
         eval_res = self.evaluate_occluded_separated(results, score_thr,
                                                     iou_thr)
-        return eval_res
+        coco_metric_res.update(eval_res)
+        return coco_metric_res
 
     def evaluate_occluded_separated(self,
                                     results,
                                     score_thr=0.3,
                                     iou_thr=0.75):
+        """Compute the recall of occluded and separated masks.
+
+        Args:
+            results (list[tuple]): Testing results of the dataset.
+            score_thr (float): Score threshold of the detection masks.
+                Defaults to 0.3.
+            iou_thr (float): IoU threshold for the recall calculation.
+                Defaults to 0.75.
+        Returns:
+            tuple: number of correct masks and the recall.
+        """
         dict_det = {}
         print_log('processing detection results...')
         prog_bar = mmcv.ProgressBar(len(results))
@@ -52,7 +88,7 @@ class OccludedSeparatedCocoDataset(CocoDataset):
             cur_img_name = self.data_infos[i]['filename']
             if cur_img_name not in dict_det.keys():
                 dict_det[cur_img_name] = []
-            for cat_id in range(len(results[i][1])):  # for j in 80
+            for cat_id in range(len(results[i][1])):
                 assert len(results[i][1][cat_id]) == len(results[i][0][cat_id])
                 for instance_id in range(len(results[i][1][cat_id])):
                     cur_binary_mask = coco_mask.decode(
@@ -67,33 +103,54 @@ class OccludedSeparatedCocoDataset(CocoDataset):
             )  # rank by confidence from high to low, avoid same confidence
             prog_bar.update()
         print_log('\ncomputing occluded mask recall...')
-        occluded_suc_num, occluded_recall = self.compute_recall(
+        occluded_correct_num, occluded_recall = self.compute_recall(
             dict_det,
             gt_ann=self.occluded_ann,
             score_thr=score_thr,
             iou_thr=iou_thr,
             is_occ=True)
         print_log(f'\nCOCO occluded mask recall: {occluded_recall:.2f}%')
-        print_log(f'COCO occluded mask success num: {occluded_suc_num}')
+        print_log(f'COCO occluded mask success num: {occluded_correct_num}')
         print_log('computing separated mask recall...')
-        separated_suc_num, separated_recall = self.compute_recall(
+        separated_correct_num, separated_recall = self.compute_recall(
             dict_det,
             gt_ann=self.separated_ann,
             score_thr=score_thr,
             iou_thr=iou_thr,
             is_occ=False)
         print_log(f'\nCOCO separated mask recall: {separated_recall:.2f}%')
-        print_log(f'COCO separated mask success num: {separated_suc_num}')
+        print_log(f'COCO separated mask success num: {separated_correct_num}')
+        table_data = [
+            ['mask type', 'recall', 'num correct'],
+            ['occluded', f'{occluded_recall:.2f}%', occluded_correct_num],
+            ['separated', f'{separated_recall:.2f}%', separated_correct_num]
+        ]
+        table = AsciiTable(table_data)
+        print_log('\n' + table.table)
         return dict(
             occluded_recall=occluded_recall, separated_recall=separated_recall)
 
     def compute_recall(self,
                        result_dict,
                        gt_ann,
-                       score_thr,
-                       iou_thr,
+                       score_thr=0.3,
+                       iou_thr=0.75,
                        is_occ=True):
-        suc = 0
+        """Compute the recall of occluded or separated masks.
+
+        Args:
+            results (list[tuple]): Testing results of the dataset.
+            gt_ann (list): Occluded or separated coco annotations.
+            score_thr (float): Score threshold of the detection masks.
+                Defaults to 0.3.
+            iou_thr (float): IoU threshold for the recall calculation.
+                Defaults to 0.75.
+            is_occ (bool): Whether the annotation is occluded mask.
+                Defaults to True.
+        Returns:
+            tuple: number of correct masks and the recall.
+        """
+        correct = 0
         prog_bar = mmcv.ProgressBar(len(gt_ann))
         for iter_i in range(len(gt_ann)):
             cur_item = gt_ann[iter_i]
@@ -125,10 +182,10 @@ class OccludedSeparatedCocoDataset(CocoDataset):
                     correct_flag = True
                     break
             if correct_flag:
-                suc += 1
+                correct += 1
             prog_bar.update()
-        recall = suc / len(gt_ann) * 100
-        return suc, recall
+        recall = correct / len(gt_ann) * 100
+        return correct, recall
 
     def compute_iou_mask(self, mask1, mask2):
         mask1_area = np.count_nonzero(mask1 == 1)
