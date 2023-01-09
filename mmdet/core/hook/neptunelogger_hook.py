@@ -3,6 +3,7 @@ import os.path as osp
 
 try:
     import neptune.new as neptune
+    from neptune.new.types import File
 except ImportError:
     raise ImportError('Neptune client library not installed.'
                       'Please refer to the installation guide:'
@@ -39,9 +40,9 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                  **neptune_run_kwargs):
         super().__init__()
 
-        self.run = neptune.init_run(**neptune_run_kwargs)
+        self._run = neptune.init_run(**neptune_run_kwargs)
         self.base_namespace = base_namespace
-        self.base_handler = self.run[base_namespace]
+        self.base_handler = self._run[base_namespace]
 
         self.interval = interval
 
@@ -125,10 +126,11 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
 
     @master_only
     def after_run(self, runner):
-        if self.ckpt_hook is not None:
+        if self.ckpt_hook is not None and self.log_model:
+            checkpoint_path = 'model/checkpoint/latest.pth'
             out_path = self.ckpt_hook.out_dir
-            self.base_handler['model/checkpoint/latest.pth'].upload(
-                osp.join(out_path, 'latest.pth'))
 
-        self.run.sync()
-        self.run.stop()
+            with open(osp.join(out_path, 'latest.pth'), 'rb') as fp:
+                self._run[checkpoint_path] = File.from_stream(fp)
+        self._run.sync()
+        self._run.stop()
