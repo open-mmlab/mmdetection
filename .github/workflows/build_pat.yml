@@ -23,7 +23,6 @@ on:
       - "docs_zh-CN/**"
       - "tools/**"
       - "README.md"
-      - "README_zh-CN.md"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
