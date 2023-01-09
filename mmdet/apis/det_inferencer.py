@@ -12,12 +12,14 @@ from mmengine.dataset import Compose
 from mmengine.infer.infer import BaseInferencer, ModelType
 from mmengine.runner import load_checkpoint
 from mmengine.visualization import Visualizer
+from mmengine.runner.checkpoint import _load_checkpoint
+from mmengine.config import Config
 
 from mmdet.evaluation import INSTANCE_OFFSET
 from mmdet.registry import DATASETS, MODELS
 from mmdet.structures import DetDataSample
 from mmdet.structures.mask import encode_mask_results
-from mmdet.utils import ConfigType, register_all_modules
+from mmdet.utils import ConfigType, register_all_modules, OptConfigType
 from ..evaluation import get_classes
 
 try:
@@ -40,6 +42,9 @@ class DetInferencer(BaseInferencer):
         model (str, optional): Path to the config file or the model name
             defined in metafile. For example, it could be
             "yolox-s" or "configs/yolox/yolox_s_8xb8-300e_coco.py".
+            If model is not specified, user must provide the
+            `weights` saved by MMEngine which contains the config string.
+            Defaults to None.
         weights (str, optional): Path to the checkpoint. If it is not specified
             and model is a model name of metafile, the weights will be loaded
             from metafile. Defaults to None.
@@ -61,7 +66,7 @@ class DetInferencer(BaseInferencer):
     }
 
     def __init__(self,
-                 model: Union[ModelType, str],
+                 model: Optional[Union[ModelType, str]]  = None,
                  weights: Optional[str] = None,
                  device: Optional[str] = None,
                  scope: Optional[str] = 'mmdet',
@@ -77,7 +82,7 @@ class DetInferencer(BaseInferencer):
 
     def _init_model(
         self,
-        cfg: ConfigType,
+        cfg: OptConfigType,
         weights: Optional[str] = None,
         device: str = 'cpu',
     ) -> nn.Module:
@@ -92,9 +97,34 @@ class DetInferencer(BaseInferencer):
         Returns:
             nn.Module: Model loaded with checkpoint.
         """
+        if not cfg:
+            assert weights is not None
+            checkpoint = _load_checkpoint(weights, map_location='cpu')
+            try:
+                # Prefer to get config from `message_hub` since `message_hub`
+                # is a more stable module to store all runtime information.
+                # However, the early version of MMEngine will not save config
+                # in `message_hub`, so we will try to load config from `meta`.
+                cfg_string = checkpoint['message_hub']['runtime_info']['cfg']
+            except KeyError:
+                assert 'meta' in checkpoint, (
+                    'If config is not provided, the checkpoint must contain '
+                    'the config string in `meta` or `message_hub`, but both '
+                    '`meta` and `message_hub` are not found in the checkpoint.'
+                )
+                meta = checkpoint['meta']
+                if 'cfg' in meta:
+                    cfg_string = meta['cfg']
+                else:
+                    raise ValueError(
+                        'Cannot find the config in the checkpoint.')
+            cfg.update(Config.fromstring(cfg_string, file_format='.py')._cfg_dict)
 
-        if 'init_cfg' in cfg.model.backbone:
-            cfg.model.backbone.init_cfg = None
+        # Delete the `pretrained` field to prevent model from loading the
+        # the pretrained weights unnecessarily.
+        if cfg.model.get('pretrained') is not None:
+            del cfg.model.pretrained
+
         model = MODELS.build(cfg.model)
 
         if weights is not None:
