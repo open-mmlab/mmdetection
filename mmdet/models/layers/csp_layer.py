@@ -20,7 +20,8 @@ class DarknetBottleneck(BaseModule):
     Args:
         in_channels (int): The input channels of this Module.
         out_channels (int): The output channels of this Module.
-        expansion (float): The kernel size of the convolution. Default: 0.5
+        expansion (float): The kernel size of the convolution.
+            Defaults to 0.5
         add_identity (bool): Whether to add identity to the out.
             Default: True
         use_depthwise (bool): Whether to use depthwise separable convolution.
@@ -43,8 +44,8 @@ class DarknetBottleneck(BaseModule):
                  norm_cfg: ConfigType = dict(
                      type='BN', momentum=0.03, eps=0.001),
                  act_cfg: ConfigType = dict(type='Swish'),
-                 init_cfg: OptMultiConfig = None):
-        super().__init__(init_cfg)
+                 init_cfg: OptMultiConfig = None) -> None:
+        super().__init__(init_cfg=init_cfg)
         hidden_channels = int(out_channels * expansion)
         conv = DepthwiseSeparableConvModule if use_depthwise else ConvModule
         self.conv1 = ConvModule(
@@ -112,7 +113,7 @@ class CSPNeXtBlock(BaseModule):
                  norm_cfg: ConfigType = dict(
                      type='BN', momentum=0.03, eps=0.001),
                  act_cfg: ConfigType = dict(type='SiLU'),
-                 init_cfg: OptMultiConfig = None):
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         hidden_channels = int(out_channels * expansion)
         conv = DepthwiseSeparableConvModule if use_depthwise else ConvModule
@@ -188,7 +189,7 @@ class CSPLayer(BaseModule):
                  norm_cfg: ConfigType = dict(
                      type='BN', momentum=0.03, eps=0.001),
                  act_cfg: ConfigType = dict(type='Swish'),
-                 init_cfg: OptMultiConfig = None):
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         block = CSPNeXtBlock if use_cspnext_block else DarknetBottleneck
         mid_channels = int(out_channels * expand_ratio)
