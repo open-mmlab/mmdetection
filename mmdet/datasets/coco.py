@@ -525,7 +525,7 @@ class CocoDataset(CustomDataset):
 
                 for item in metric_items:
                     val = float(
-                        f'{cocoEval.stats[coco_metric_names[item]]:.3f}')
+                        f'{cocoEval.stats[coco_metric_names[item]]:.4f}')
                     eval_results[item] = val
             else:
                 cocoEval.evaluate()
@@ -579,13 +579,13 @@ class CocoDataset(CustomDataset):
                 for metric_item in metric_items:
                     key = f'{metric}_{metric_item}'
                     val = float(
-                        f'{cocoEval.stats[coco_metric_names[metric_item]]:.3f}'
+                        f'{cocoEval.stats[coco_metric_names[metric_item]]:.4f}'
                     )
                     eval_results[key] = val
                 ap = cocoEval.stats[:6]
                 eval_results[f'{metric}_mAP_copypaste'] = (
-                    f'{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
-                    f'{ap[4]:.3f} {ap[5]:.3f}')
+                    f'{ap[0]:.4f} {ap[1]:.4f} {ap[2]:.4f} {ap[3]:.4f} '
+                    f'{ap[4]:.4f} {ap[5]:.4f}')
 
         return eval_results
 
