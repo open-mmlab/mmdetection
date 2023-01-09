@@ -13,17 +13,6 @@ on:
       - "README.md"
       - "README_zh-CN.md"
 
-  pull_request:
-    paths-ignore:
-      - ".dev_scripts/**"
-      - ".github/**.md"
-      - "demo/**"
-      - "docker/**"
-      - "docs/**"
-      - "docs_zh-CN/**"
-      - "tools/**"
-      - "README.md"
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
