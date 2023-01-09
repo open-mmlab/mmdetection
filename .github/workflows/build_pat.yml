@@ -3,11 +3,27 @@ name: build_pat
 on:
   push:
     paths-ignore:
-      - 'README.md'
-      - 'README_zh-CN.md'
-      - 'docs/**'
-      - 'tools/**'
-      - '.dev_scripts/**'
+      - ".dev_scripts/**"
+      - ".github/**.md"
+      - "demo/**"
+      - "docker/**"
+      - "docs/**"
+      - "docs_zh-CN/**"
+      - "tools/**"
+      - "README.md"
+      - "README_zh-CN.md"
+
+  pull_request:
+    paths-ignore:
+      - ".dev_scripts/**"
+      - ".github/**.md"
+      - "demo/**"
+      - "docker/**"
+      - "docs/**"
+      - "docs_zh-CN/**"
+      - "tools/**"
+      - "README.md"
+      - "README_zh-CN.md"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
