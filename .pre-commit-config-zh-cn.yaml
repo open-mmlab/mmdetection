@@ -48,7 +48,7 @@ repos:
     hooks:
       - id: pyupgrade
         args: ["--py36-plus"]
-  - repo: https://github.com/open-mmlab/pre-commit-hooks
+  - repo: https://gitee.com/open-mmlab/pre-commit-hooks
     rev: v0.2.0
     hooks:
       - id: check-algo-readme

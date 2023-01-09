@@ -53,14 +53,14 @@ def parse_args():
     parser.add_argument(
         '--palette',
         default='none',
-        choices=['coco', 'voc', 'citys', 'random'],
+        choices=['coco', 'voc', 'citys', 'random', 'none'],
         help='Color palette used for visualization')
 
     call_args = vars(parser.parse_args())
 
     if call_args['model'].endswith('.pth'):
-        print_log('The model is a weight file, which is '
-                  'automatically replaced by the --weights parameter')
+        print_log('The model is a weight file, automatically '
+                  'assign the model to --weights')
         call_args['weights'] = call_args['model']
         call_args['model'] = None
 
