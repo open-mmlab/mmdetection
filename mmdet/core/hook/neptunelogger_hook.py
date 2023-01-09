@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
+import warnings
 
 try:
     import neptune.new as neptune
@@ -58,11 +59,6 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
 
     @master_only
     def before_run(self, runner):
-        # Inspect CheckpointHook and EvalHook
-        for hook in runner.hooks:
-            if isinstance(hook, CheckpointHook):
-                self.ckpt_hook = hook
-
         # Save and Log config.
         if runner.meta is not None and runner.meta.get('exp_name',
                                                        None) is not None:
@@ -82,6 +78,9 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                 self.eval_hook = hook
                 self.val_dataset = self.eval_hook.dataloader.dataset
 
+        if self.log_checkpoint and self.ckpt_hook is None:
+            warnings.warn('WARNING ABOUT CHECKPOINTER NOT PRESENT')
+
     def _log_buffer(self, runner, category, log_eval=True):
         assert category in ['epoch', 'iter']
         # only record lr of the first param group
@@ -100,6 +99,27 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
 
         for key, value in eval_results.items():
             self.base_handler['val/' + category + '/' + key].log(value)
+
+    def _log_checkpoint(self, runner, ext='pth', final=False):
+        if self.ckpt_hook is None:
+            return
+
+        if final:
+            file_name = 'latest'
+        else:
+            file_name = f'epoch_{runner.epoch}'
+
+        file_path = osp.join(self.ckpt_hook.out_dir, f'{file_name}.{ext}')
+
+        neptune_checkpoint_path = osp.join('model/checkpoint/',
+                                           f'{file_name}.{ext}')
+
+        if not osp.exists(file_path):
+            warnings.warn('WARNING ABOUT CHECKPOINT FILE NOT FOUND')
+            return
+
+        with open(file_path, 'rb') as fp:
+            self._run[neptune_checkpoint_path] = File.from_stream(fp)
 
     @master_only
     def after_train_iter(self, runner):
@@ -126,11 +146,8 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
 
     @master_only
     def after_run(self, runner):
-        if self.ckpt_hook is not None and self.log_model:
-            checkpoint_path = 'model/checkpoint/latest.pth'
-            out_path = self.ckpt_hook.out_dir
+        if self.log_model:
+            self._log_checkpoint(runner, final=True)
 
-            with open(osp.join(out_path, 'latest.pth'), 'rb') as fp:
-                self._run[checkpoint_path] = File.from_stream(fp)
         self._run.sync()
         self._run.stop()
