@@ -21,17 +21,17 @@ class DarknetBottleneck(BaseModule):
         in_channels (int): The input channels of this Module.
         out_channels (int): The output channels of this Module.
         expansion (float): The kernel size of the convolution.
-            Defaults to 0.5
+            Defaults to 0.5.
         add_identity (bool): Whether to add identity to the out.
-            Default: True
+            Defaults to True.
         use_depthwise (bool): Whether to use depthwise separable convolution.
-            Default: False
-        conv_cfg (dict): Config dict for convolution layer. Default: None,
+            Defaults to False.
+        conv_cfg (dict): Config dict for convolution layer. Defaults to None,
             which means using conv2d.
         norm_cfg (dict): Config dict for normalization layer.
-            Default: dict(type='BN').
+            Defaults to dict(type='BN').
         act_cfg (dict): Config dict for activation layer.
-            Default: dict(type='Swish').
+            Defaults to dict(type='Swish').
     """
 
     def __init__(self,
@@ -157,22 +157,22 @@ class CSPLayer(BaseModule):
         in_channels (int): The input channels of the CSP layer.
         out_channels (int): The output channels of the CSP layer.
         expand_ratio (float): Ratio to adjust the number of channels of the
-            hidden layer. Default: 0.5
-        num_blocks (int): Number of blocks. Default: 1
+            hidden layer. Defaults to 0.5.
+        num_blocks (int): Number of blocks. Defaults to 1.
         add_identity (bool): Whether to add identity in blocks.
-            Default: True
+            Defaults to True.
         use_cspnext_block (bool): Whether to use CSPNeXt block.
             Defaults to False.
         use_depthwise (bool): Whether to use depthwise separable convolution in
-            blocks. Default: False
+            blocks. Defaults to False.
         channel_attention (bool): Whether to add channel attention in each
             stage. Defaults to True.
         conv_cfg (dict, optional): Config dict for convolution layer.
-            Default: None, which means using conv2d.
+            Defaults to None, which means using conv2d.
         norm_cfg (dict): Config dict for normalization layer.
-            Default: dict(type='BN')
+            Defaults to dict(type='BN')
         act_cfg (dict): Config dict for activation layer.
-            Default: dict(type='Swish')
+            Defaults to dict(type='Swish')
         init_cfg (:obj:`ConfigDict` or dict or list[dict] or
             list[:obj:`ConfigDict`], optional): Initialization config dict.
             Defaults to None.
