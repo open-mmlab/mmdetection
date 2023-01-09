@@ -4,14 +4,19 @@ from argparse import ArgumentParser
 
 from mmengine.logging import print_log
 
-from mmdet.apis import MMDetInferencer
+from mmdet.apis import DetInferencer
 
 
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
         'inputs', type=str, help='Input image file or folder path.')
-    parser.add_argument('model', help='Config file')
+    parser.add_argument(
+        'model',
+        type=str,
+        help='Config or checkpoint .pth file or the model name defined '
+        'in metafile. The model configuration file will try to read '
+        'from .pth if the parameter is a .pth weights file.')
     parser.add_argument('--weights', default=None, help='Checkpoint file')
     parser.add_argument(
         '--img-out-dir',
@@ -52,6 +57,13 @@ def parse_args():
         help='Color palette used for visualization')
 
     call_args = vars(parser.parse_args())
+
+    if call_args['model'].endswith('.pth'):
+        print_log('The model is a weight file, which is '
+                  'automatically replaced by the --weights parameter')
+        call_args['weights'] = call_args['model']
+        call_args['model'] = None
+
     no_save_image = call_args.pop('no_save_image')
     if no_save_image and not call_args['show'] and call_args[
             'pred_out_file'] == '':
@@ -77,7 +89,7 @@ def parse_args():
 
 def main():
     init_args, call_args = parse_args()
-    inferencer = MMDetInferencer(**init_args)
+    inferencer = DetInferencer(**init_args)
     inferencer(**call_args)
 
     if call_args['img_out_dir'] != '':

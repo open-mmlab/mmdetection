@@ -34,7 +34,7 @@ ImgType = Union[np.ndarray, Sequence[np.ndarray]]
 
 
 class DetInferencer(BaseInferencer):
-    """MMDet inferencer.
+    """Object Detection Inferencer..
 
     Args:
         model (str, optional): Path to the config file or the model name
