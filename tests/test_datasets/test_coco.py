@@ -8,7 +8,7 @@ class TestCocoDataset(unittest.TestCase):
 
     def test_coco_dataset(self):
         # test CocoDataset
-        metainfo = dict(CLASSES=('bus', 'car'), task_name='new_task')
+        metainfo = dict(classes=('bus', 'car'), task_name='new_task')
         dataset = CocoDataset(
             data_prefix=dict(img='imgs'),
             ann_file='tests/data/coco_sample.json',
@@ -17,7 +17,7 @@ class TestCocoDataset(unittest.TestCase):
             pipeline=[],
             serialize_data=False,
             lazy_init=False)
-        self.assertEqual(dataset.metainfo['CLASSES'], ('bus', 'car'))
+        self.assertEqual(dataset.metainfo['classes'], ('bus', 'car'))
         self.assertEqual(dataset.metainfo['task_name'], 'new_task')
         self.assertListEqual(dataset.get_cat_ids(0), [0, 1])
 
@@ -39,7 +39,7 @@ class TestCocoDataset(unittest.TestCase):
 
     def test_coco_annotation_ids_unique(self):
         # test annotation ids not unique error
-        metainfo = dict(CLASSES=('car', ), task_name='new_task')
+        metainfo = dict(classes=('car', ), task_name='new_task')
         with self.assertRaisesRegex(AssertionError, 'are not unique!'):
             CocoDataset(
                 data_prefix=dict(img='imgs'),

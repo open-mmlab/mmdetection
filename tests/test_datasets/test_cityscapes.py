@@ -146,7 +146,7 @@ class TestCityscapesDataset(unittest.TestCase):
         self.json_name = 'cityscapes.json'
         dump(fake_json, self.json_name)
 
-        self.metainfo = dict(CLASSES=('person', 'rider', 'car'))
+        self.metainfo = dict(classes=('person', 'rider', 'car'))
 
     def tearDown(self):
         os.remove(self.json_name)
@@ -158,7 +158,7 @@ class TestCityscapesDataset(unittest.TestCase):
             metainfo=self.metainfo,
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
             pipeline=[])
-        self.assertEqual(dataset.metainfo['CLASSES'], self.metainfo['CLASSES'])
+        self.assertEqual(dataset.metainfo['classes'], self.metainfo['classes'])
         dataset.full_init()
         # filter images of small size and images
         # with all illegal annotations
@@ -185,7 +185,7 @@ class TestCityscapesDataset(unittest.TestCase):
             metainfo=self.metainfo,
             filter_cfg=None,
             pipeline=[])
-        self.assertEqual(dataset.metainfo['CLASSES'], self.metainfo['CLASSES'])
+        self.assertEqual(dataset.metainfo['classes'], self.metainfo['classes'])
         dataset.full_init()
         # filter images of small size and images
         # with all illegal annotations

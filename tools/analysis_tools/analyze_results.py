@@ -3,6 +3,7 @@ import argparse
 import os.path as osp
 from multiprocessing import Pool
 
+import mmcv
 import numpy as np
 from mmengine.config import Config, DictAction
 from mmengine.fileio import load
@@ -150,9 +151,10 @@ class ResultVisualizer:
                 data_samples.pred_panoptic_seg = pred_panoptic_seg
                 data_samples.gt_panoptic_seg = gt_panoptic_seg
 
+            img = mmcv.imread(filename, channel_order='rgb')
             self.visualizer.add_datasample(
                 'image',
-                results[index]['img'],
+                img,
                 data_samples,
                 show=self.show,
                 draw_gt=False,
@@ -246,7 +248,7 @@ class ResultVisualizer:
             pred_labels = pred['labels'].cpu().numpy()
 
             dets = []
-            for label in range(len(dataset.metainfo['CLASSES'])):
+            for label in range(len(dataset.metainfo['classes'])):
                 index = np.where(pred_labels == label)[0]
                 pred_bbox_scores = np.hstack(
                     [pred_bboxes[index], pred_scores[index].reshape((-1, 1))])

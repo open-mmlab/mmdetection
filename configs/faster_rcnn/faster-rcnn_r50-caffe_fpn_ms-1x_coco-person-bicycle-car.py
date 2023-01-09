@@ -1,8 +1,8 @@
 _base_ = './faster-rcnn_r50-caffe_fpn_ms-1x_coco.py'
 model = dict(roi_head=dict(bbox_head=dict(num_classes=3)))
 metainfo = {
-    'CLASSES': ('person', 'bicycle', 'car'),
-    'PALETTE': [
+    'classes': ('person', 'bicycle', 'car'),
+    'palette': [
         (220, 20, 60),
         (119, 11, 32),
         (0, 0, 142),

@@ -15,7 +15,6 @@ from torch import Tensor
 from mmdet.registry import MODELS
 from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
                          OptInstanceList, OptMultiConfig)
-from ..builder import build_loss
 from ..utils import (gather_feat, gaussian_radius, gen_gaussian_target,
                      get_local_maximum, get_topk_from_heatmap, multi_apply,
                      transpose_and_gather_feat)
@@ -150,11 +149,11 @@ class CornerHead(BaseDenseHead):
         self.with_corner_emb = self.corner_emb_channels > 0
         self.corner_offset_channels = 2
         self.num_feat_levels = num_feat_levels
-        self.loss_heatmap = build_loss(
+        self.loss_heatmap = MODELS.build(
             loss_heatmap) if loss_heatmap is not None else None
-        self.loss_embedding = build_loss(
+        self.loss_embedding = MODELS.build(
             loss_embedding) if loss_embedding is not None else None
-        self.loss_offset = build_loss(
+        self.loss_offset = MODELS.build(
             loss_offset) if loss_offset is not None else None
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg

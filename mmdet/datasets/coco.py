@@ -13,7 +13,7 @@ class CocoDataset(BaseDetDataset):
     """Dataset for COCO."""
 
     METAINFO = {
-        'CLASSES':
+        'classes':
         ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
          'truck', 'boat', 'traffic light', 'fire hydrant', 'stop sign',
          'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep',
@@ -27,8 +27,8 @@ class CocoDataset(BaseDetDataset):
          'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave',
          'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
          'scissors', 'teddy bear', 'hair drier', 'toothbrush'),
-        # PALETTE is a list of color tuples, which is used for visualization.
-        'PALETTE':
+        # palette is a list of color tuples, which is used for visualization.
+        'palette':
         [(220, 20, 60), (119, 11, 32), (0, 0, 142), (0, 0, 230), (106, 0, 228),
          (0, 60, 100), (0, 80, 100), (0, 0, 70), (0, 0, 192), (250, 170, 30),
          (100, 170, 30), (220, 220, 0), (175, 116, 175), (250, 0, 30),
@@ -63,9 +63,9 @@ class CocoDataset(BaseDetDataset):
         with self.file_client.get_local_path(self.ann_file) as local_path:
             self.coco = self.COCOAPI(local_path)
         # The order of returned `cat_ids` will not
-        # change with the order of the CLASSES
+        # change with the order of the `classes`
         self.cat_ids = self.coco.get_cat_ids(
-            cat_names=self.metainfo['CLASSES'])
+            cat_names=self.metainfo['classes'])
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.cat_img_map = copy.deepcopy(self.coco.cat_img_map)
 

@@ -68,6 +68,7 @@ The master branch works with **PyTorch 1.6+**.
 - **State of the art**
 
   The toolbox stems from the codebase developed by the *MMDet* team, who won [COCO Detection Challenge](http://cocodataset.org/#detection-leaderboard) in 2018, and we keep pushing it forward.
+  The newly released [RTMDet](configs/rtmdet) also obtains new state-of-the-art results on real-time instance segmentation and rotated object detection tasks and the best parameter-accuracy trade-off on object detection.
 
 </details>
 
@@ -75,11 +76,28 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 
 ## What's New
 
-**v3.0.0rc3** was released in 4/11/2022:
+### Highlight
 
-- Support [CrowdDet](configs/crowddet/) and EIoULoss
-- Support training detection models in Detectron2, see [examples](configs/misc)
-- Refactor [Fast R-CNN](configs/fast_rcnn/)
+We are excited to announce our latest work on real-time object recognition tasks, **RTMDet**, a family of fully convolutional single-stage detectors. RTMDet not only achieves the best parameter-accuracy trade-off on object detection from tiny to extra-large model sizes but also obtains new state-of-the-art performance on instance segmentation and rotated object detection tasks. Details can be found in the [technical report](https://arxiv.org/abs/2212.07784). Pre-trained models are [here](configs/rtmdet).
+
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/real-time-instance-segmentation-on-mscoco)](https://paperswithcode.com/sota/real-time-instance-segmentation-on-mscoco?p=rtmdet-an-empirical-study-of-designing-real)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/object-detection-in-aerial-images-on-dota-1)](https://paperswithcode.com/sota/object-detection-in-aerial-images-on-dota-1?p=rtmdet-an-empirical-study-of-designing-real)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/object-detection-in-aerial-images-on-hrsc2016)](https://paperswithcode.com/sota/object-detection-in-aerial-images-on-hrsc2016?p=rtmdet-an-empirical-study-of-designing-real)
+
+| Task                     | Dataset | AP                                   | FPS(TRT FP16 BS1 3090) |
+| ------------------------ | ------- | ------------------------------------ | ---------------------- |
+| Object Detection         | COCO    | 52.8                                 | 322                    |
+| Instance Segmentation    | COCO    | 44.6                                 | 188                    |
+| Rotated Object Detection | DOTA    | 78.9(single-scale)/81.3(multi-scale) | 121                    |
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
+</div>
+
+**v3.0.0rc5** was released in 26/12/2022:
+
+- Support [RTMDet](https://arxiv.org/abs/2212.07784) instance segmentation models. The technical report of RTMDet is on [arxiv](https://arxiv.org/abs/2212.07784)
+- Support SSHContextModule in paper [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979)
 
 ## Installation
 
@@ -187,6 +205,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
             <li><a href="configs/ddod">DDOD (ACM MM'2021)</a></li>
+            <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
       </ul>
       </td>
       <td>
@@ -204,6 +223,9 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/scnet">SCNet (AAAI'2021)</a></li>
           <li><a href="configs/queryinst">QueryInst (ICCV'2021)</a></li>
           <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
+          <li><a href="configs/condinst">CondInst (ECCV 2020)</a></li>
+          <li><a href="projects/SparseInst">SparseInst (CVPR 2022)</a></li>
+          <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
         </ul>
       </td>
       <td>

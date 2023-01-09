@@ -419,14 +419,14 @@ class RandomShift(BaseTransform):
     - img
     - gt_bboxes (BaseBoxes[torch.float32])
     - gt_bboxes_labels (np.int64)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
 
     Modified Keys:
 
     - img
     - gt_bboxes
     - gt_bboxes_labels
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
 
     Args:
         prob (float): Probability of shifts. Defaults to 0.5.
@@ -545,7 +545,7 @@ class Pad(MMCV_Pad):
 
     Args:
         size (tuple, optional): Fixed padding size.
-            Expected padding shape (w, h). Defaults to None.
+            Expected padding shape (width, height). Defaults to None.
         size_divisor (int, optional): The divisor of padded size. Defaults to
             None.
         pad_to_square (bool): Whether to pad the image into a square.
@@ -611,7 +611,7 @@ class RandomCrop(BaseTransform):
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - gt_seg_map (np.uint8) (optional)
 
     Modified Keys:
@@ -630,7 +630,7 @@ class RandomCrop(BaseTransform):
 
     Args:
         crop_size (tuple): The relative ratio or absolute pixels of
-            height and width.
+            (width, height).
         crop_type (str, optional): One of "relative_range", "relative",
             "absolute", "absolute_range". "relative" randomly crops
             (h * crop_size[0], w * crop_size[1]) part from an input of size
@@ -776,7 +776,7 @@ class RandomCrop(BaseTransform):
         offset_h = np.random.randint(0, margin_h + 1)
         offset_w = np.random.randint(0, margin_w + 1)
 
-        return (offset_h, offset_w)
+        return offset_h, offset_w
 
     @cache_randomness
     def _get_crop_size(self, image_size: Tuple[int, int]) -> Tuple[int, int]:
@@ -791,7 +791,7 @@ class RandomCrop(BaseTransform):
         """
         h, w = image_size
         if self.crop_type == 'absolute':
-            return (min(self.crop_size[0], h), min(self.crop_size[1], w))
+            return min(self.crop_size[1], h), min(self.crop_size[0], w)
         elif self.crop_type == 'absolute_range':
             crop_h = np.random.randint(
                 min(h, self.crop_size[0]),
@@ -801,7 +801,7 @@ class RandomCrop(BaseTransform):
                 min(w, self.crop_size[1]) + 1)
             return crop_h, crop_w
         elif self.crop_type == 'relative':
-            crop_h, crop_w = self.crop_size
+            crop_w, crop_h = self.crop_size
             return int(h * crop_h + 0.5), int(w * crop_w + 0.5)
         else:
             # 'relative_range'
@@ -981,6 +981,10 @@ class PhotoMetricDistortion(BaseTransform):
         # random saturation
         if saturation_flag:
             img[..., 1] *= saturation_value
+            # For image(type=float32), after convert bgr to hsv by opencv,
+            # valid saturation value range is [0, 1]
+            if saturation_value > 1:
+                img[..., 1] = img[..., 1].clip(0, 1)
 
         # random hue
         if hue_flag:
@@ -1153,7 +1157,7 @@ class MinIoURandomCrop(BaseTransform):
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - gt_seg_map (np.uint8) (optional)
 
     Modified Keys:
@@ -1550,7 +1554,7 @@ class Albu(BaseTransform):
         if 'gt_ignore_flags' in results and isinstance(
                 results['gt_ignore_flags'], list):
             results['gt_ignore_flags'] = np.array(
-                results['gt_ignore_flags'], dtype=np.bool)
+                results['gt_ignore_flags'], dtype=bool)
 
         if 'bboxes' in results:
             if isinstance(results['bboxes'], list):
@@ -1576,6 +1580,10 @@ class Albu(BaseTransform):
                 if (not len(results['idx_mapper'])
                         and self.skip_img_without_anno):
                     return None
+            elif 'masks' in results:
+                results['masks'] = ori_masks.__class__(
+                    results['masks'], results['image'].shape[0],
+                    results['image'].shape[1])
 
         return results
 
@@ -1652,7 +1660,7 @@ class RandomCenterCropPad(BaseTransform):
     - img_shape (tuple)
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
 
     Modified Keys:
 
@@ -1660,12 +1668,12 @@ class RandomCenterCropPad(BaseTransform):
     - img_shape (tuple)
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
 
     Args:
         crop_size (tuple, optional): expected size after crop, final size will
-            computed according to ratio. Requires (h, w) in train mode, and
-            None in test mode.
+            computed according to ratio. Requires  (width, height)
+            in train mode, and None in test mode.
         ratios (tuple, optional): random select a ratio from tuple and crop
             image to (crop_size[0] * ratio) * (crop_size[1] * ratio).
             Only available in train mode. Defaults to (0.9, 1.0, 1.1).
@@ -1840,8 +1848,8 @@ class RandomCenterCropPad(BaseTransform):
         gt_bboxes = results['gt_bboxes']
         while True:
             scale = random.choice(self.ratios)
-            new_h = int(self.crop_size[0] * scale)
-            new_w = int(self.crop_size[1] * scale)
+            new_h = int(self.crop_size[1] * scale)
+            new_w = int(self.crop_size[0] * scale)
             h_border = self._get_border(self.border, h)
             w_border = self._get_border(self.border, w)
 
@@ -2090,7 +2098,7 @@ class Mosaic(BaseTransform):
     - img
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - mix_results (List[dict])
 
     Modified Keys:
@@ -2103,7 +2111,7 @@ class Mosaic(BaseTransform):
 
     Args:
         img_scale (Sequence[int]): Image size after mosaic pipeline of single
-            image. The shape order should be (height, width).
+            image. The shape order should be (width, height).
             Defaults to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
             output. Defaults to (0.5, 1.5).
@@ -2126,7 +2134,7 @@ class Mosaic(BaseTransform):
         assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. ' \
                                  f'got {prob}.'
 
-        log_img_scale(img_scale, skip_square=True)
+        log_img_scale(img_scale, skip_square=True, shape_order='wh')
         self.img_scale = img_scale
         self.center_ratio_range = center_ratio_range
         self.bbox_clip_border = bbox_clip_border
@@ -2166,20 +2174,20 @@ class Mosaic(BaseTransform):
         mosaic_ignore_flags = []
         if len(results['img'].shape) == 3:
             mosaic_img = np.full(
-                (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2), 3),
+                (int(self.img_scale[1] * 2), int(self.img_scale[0] * 2), 3),
                 self.pad_val,
                 dtype=results['img'].dtype)
         else:
             mosaic_img = np.full(
-                (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2)),
+                (int(self.img_scale[1] * 2), int(self.img_scale[0] * 2)),
                 self.pad_val,
                 dtype=results['img'].dtype)
 
         # mosaic center x, y
         center_x = int(
-            random.uniform(*self.center_ratio_range) * self.img_scale[1])
-        center_y = int(
             random.uniform(*self.center_ratio_range) * self.img_scale[0])
+        center_y = int(
+            random.uniform(*self.center_ratio_range) * self.img_scale[1])
         center_position = (center_x, center_y)
 
         loc_strs = ('top_left', 'top_right', 'bottom_left', 'bottom_right')
@@ -2192,8 +2200,8 @@ class Mosaic(BaseTransform):
             img_i = results_patch['img']
             h_i, w_i = img_i.shape[:2]
             # keep_ratio resize
-            scale_ratio_i = min(self.img_scale[0] / h_i,
-                                self.img_scale[1] / w_i)
+            scale_ratio_i = min(self.img_scale[1] / h_i,
+                                self.img_scale[0] / w_i)
             img_i = mmcv.imresize(
                 img_i, (int(w_i * scale_ratio_i), int(h_i * scale_ratio_i)))
 
@@ -2224,10 +2232,10 @@ class Mosaic(BaseTransform):
         mosaic_ignore_flags = np.concatenate(mosaic_ignore_flags, 0)
 
         if self.bbox_clip_border:
-            mosaic_bboxes.clip_([2 * self.img_scale[0], 2 * self.img_scale[1]])
+            mosaic_bboxes.clip_([2 * self.img_scale[1], 2 * self.img_scale[0]])
         # remove outside bboxes
         inside_inds = mosaic_bboxes.is_inside(
-            [2 * self.img_scale[0], 2 * self.img_scale[1]]).numpy()
+            [2 * self.img_scale[1], 2 * self.img_scale[0]]).numpy()
         mosaic_bboxes = mosaic_bboxes[inside_inds]
         mosaic_bboxes_labels = mosaic_bboxes_labels[inside_inds]
         mosaic_ignore_flags = mosaic_ignore_flags[inside_inds]
@@ -2273,7 +2281,7 @@ class Mosaic(BaseTransform):
             x1, y1, x2, y2 = center_position_xy[0], \
                              max(center_position_xy[1] - img_shape_wh[1], 0), \
                              min(center_position_xy[0] + img_shape_wh[0],
-                                 self.img_scale[1] * 2), \
+                                 self.img_scale[0] * 2), \
                              center_position_xy[1]
             crop_coord = 0, img_shape_wh[1] - (y2 - y1), min(
                 img_shape_wh[0], x2 - x1), img_shape_wh[1]
@@ -2283,7 +2291,7 @@ class Mosaic(BaseTransform):
             x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
                              center_position_xy[1], \
                              center_position_xy[0], \
-                             min(self.img_scale[0] * 2, center_position_xy[1] +
+                             min(self.img_scale[1] * 2, center_position_xy[1] +
                                  img_shape_wh[1])
             crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(
                 y2 - y1, img_shape_wh[1])
@@ -2293,8 +2301,8 @@ class Mosaic(BaseTransform):
             x1, y1, x2, y2 = center_position_xy[0], \
                              center_position_xy[1], \
                              min(center_position_xy[0] + img_shape_wh[0],
-                                 self.img_scale[1] * 2), \
-                             min(self.img_scale[0] * 2, center_position_xy[1] +
+                                 self.img_scale[0] * 2), \
+                             min(self.img_scale[1] * 2, center_position_xy[1] +
                                  img_shape_wh[1])
             crop_coord = 0, 0, min(img_shape_wh[0],
                                    x2 - x1), min(y2 - y1, img_shape_wh[1])
@@ -2343,7 +2351,7 @@ class MixUp(BaseTransform):
     - img
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - mix_results (List[dict])
 
 
@@ -2358,7 +2366,7 @@ class MixUp(BaseTransform):
 
     Args:
         img_scale (Sequence[int]): Image output size after mixup pipeline.
-            The shape order should be (height, width). Defaults to (640, 640).
+            The shape order should be (width, height). Defaults to (640, 640).
         ratio_range (Sequence[float]): Scale ratio of mixup image.
             Defaults to (0.5, 1.5).
         flip_ratio (float): Horizontal flip ratio of mixup image.
@@ -2381,7 +2389,7 @@ class MixUp(BaseTransform):
                  max_iters: int = 15,
                  bbox_clip_border: bool = True) -> None:
         assert isinstance(img_scale, tuple)
-        log_img_scale(img_scale, skip_square=True)
+        log_img_scale(img_scale, skip_square=True, shape_order='wh')
         self.dynamic_scale = img_scale
         self.ratio_range = ratio_range
         self.flip_ratio = flip_ratio
@@ -2435,15 +2443,16 @@ class MixUp(BaseTransform):
 
         if len(retrieve_img.shape) == 3:
             out_img = np.ones(
-                (self.dynamic_scale[0], self.dynamic_scale[1], 3),
+                (self.dynamic_scale[1], self.dynamic_scale[0], 3),
                 dtype=retrieve_img.dtype) * self.pad_val
         else:
             out_img = np.ones(
-                self.dynamic_scale, dtype=retrieve_img.dtype) * self.pad_val
+                self.dynamic_scale[::-1],
+                dtype=retrieve_img.dtype) * self.pad_val
 
         # 1. keep_ratio resize
-        scale_ratio = min(self.dynamic_scale[0] / retrieve_img.shape[0],
-                          self.dynamic_scale[1] / retrieve_img.shape[1])
+        scale_ratio = min(self.dynamic_scale[1] / retrieve_img.shape[0],
+                          self.dynamic_scale[0] / retrieve_img.shape[1])
         retrieve_img = mmcv.imresize(
             retrieve_img, (int(retrieve_img.shape[1] * scale_ratio),
                            int(retrieve_img.shape[0] * scale_ratio)))
@@ -2544,7 +2553,7 @@ class RandomAffine(BaseTransform):
     - img
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
 
     Modified Keys:
 
@@ -2563,7 +2572,7 @@ class RandomAffine(BaseTransform):
             scaling transform. Defaults to (0.5, 1.5).
         max_shear_degree (float): Maximum degrees of shear
             transform. Defaults to 2.
-        border (tuple[int]): Distance from height and width sides of input
+        border (tuple[int]): Distance from width and height sides of input
             image to adjust output shape. Only used in mosaic dataset.
             Defaults to (0, 0).
         border_val (tuple[int]): Border padding values of 3 channels.
@@ -2626,8 +2635,8 @@ class RandomAffine(BaseTransform):
     @autocast_box_type()
     def transform(self, results: dict) -> dict:
         img = results['img']
-        height = img.shape[0] + self.border[0] * 2
-        width = img.shape[1] + self.border[1] * 2
+        height = img.shape[0] + self.border[1] * 2
+        width = img.shape[1] + self.border[0] * 2
 
         warp_matrix = self._get_random_homography_matrix(height, width)
 
@@ -2786,7 +2795,7 @@ class CopyPaste(BaseTransform):
     - img
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - gt_masks (BitmapMasks) (optional)
 
     Modified Keys:
@@ -2966,7 +2975,7 @@ class RandomErasing(BaseTransform):
     - img
     - gt_bboxes (HorizontalBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - gt_masks (BitmapMasks) (optional)
 
     Modified Keys:
@@ -3151,7 +3160,7 @@ class CachedMosaic(Mosaic):
     - img
     - gt_bboxes (np.float32) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
 
     Modified Keys:
 
@@ -3163,7 +3172,7 @@ class CachedMosaic(Mosaic):
 
     Args:
         img_scale (Sequence[int]): Image size after mosaic pipeline of single
-            image. The shape order should be (height, width).
+            image. The shape order should be (width, height).
             Defaults to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
             output. Defaults to (0.5, 1.5).
@@ -3240,22 +3249,25 @@ class CachedMosaic(Mosaic):
         mosaic_bboxes = []
         mosaic_bboxes_labels = []
         mosaic_ignore_flags = []
+        mosaic_masks = []
+        with_mask = True if 'gt_masks' in results else False
+
         if len(results['img'].shape) == 3:
             mosaic_img = np.full(
-                (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2), 3),
+                (int(self.img_scale[1] * 2), int(self.img_scale[0] * 2), 3),
                 self.pad_val,
                 dtype=results['img'].dtype)
         else:
             mosaic_img = np.full(
-                (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2)),
+                (int(self.img_scale[1] * 2), int(self.img_scale[0] * 2)),
                 self.pad_val,
                 dtype=results['img'].dtype)
 
         # mosaic center x, y
         center_x = int(
-            random.uniform(*self.center_ratio_range) * self.img_scale[1])
-        center_y = int(
             random.uniform(*self.center_ratio_range) * self.img_scale[0])
+        center_y = int(
+            random.uniform(*self.center_ratio_range) * self.img_scale[1])
         center_position = (center_x, center_y)
 
         loc_strs = ('top_left', 'top_right', 'bottom_left', 'bottom_right')
@@ -3268,8 +3280,8 @@ class CachedMosaic(Mosaic):
             img_i = results_patch['img']
             h_i, w_i = img_i.shape[:2]
             # keep_ratio resize
-            scale_ratio_i = min(self.img_scale[0] / h_i,
-                                self.img_scale[1] / w_i)
+            scale_ratio_i = min(self.img_scale[1] / h_i,
+                                self.img_scale[0] / w_i)
             img_i = mmcv.imresize(
                 img_i, (int(w_i * scale_ratio_i), int(h_i * scale_ratio_i)))
 
@@ -3294,16 +3306,30 @@ class CachedMosaic(Mosaic):
             mosaic_bboxes.append(gt_bboxes_i)
             mosaic_bboxes_labels.append(gt_bboxes_labels_i)
             mosaic_ignore_flags.append(gt_ignore_flags_i)
+            if with_mask and results_patch.get('gt_masks', None) is not None:
+                gt_masks_i = results_patch['gt_masks']
+                gt_masks_i = gt_masks_i.rescale(float(scale_ratio_i))
+                gt_masks_i = gt_masks_i.translate(
+                    out_shape=(int(self.img_scale[0] * 2),
+                               int(self.img_scale[1] * 2)),
+                    offset=padw,
+                    direction='horizontal')
+                gt_masks_i = gt_masks_i.translate(
+                    out_shape=(int(self.img_scale[0] * 2),
+                               int(self.img_scale[1] * 2)),
+                    offset=padh,
+                    direction='vertical')
+                mosaic_masks.append(gt_masks_i)
 
         mosaic_bboxes = mosaic_bboxes[0].cat(mosaic_bboxes, 0)
         mosaic_bboxes_labels = np.concatenate(mosaic_bboxes_labels, 0)
         mosaic_ignore_flags = np.concatenate(mosaic_ignore_flags, 0)
 
         if self.bbox_clip_border:
-            mosaic_bboxes.clip_([2 * self.img_scale[0], 2 * self.img_scale[1]])
+            mosaic_bboxes.clip_([2 * self.img_scale[1], 2 * self.img_scale[0]])
         # remove outside bboxes
         inside_inds = mosaic_bboxes.is_inside(
-            [2 * self.img_scale[0], 2 * self.img_scale[1]]).numpy()
+            [2 * self.img_scale[1], 2 * self.img_scale[0]]).numpy()
         mosaic_bboxes = mosaic_bboxes[inside_inds]
         mosaic_bboxes_labels = mosaic_bboxes_labels[inside_inds]
         mosaic_ignore_flags = mosaic_ignore_flags[inside_inds]
@@ -3313,6 +3339,10 @@ class CachedMosaic(Mosaic):
         results['gt_bboxes'] = mosaic_bboxes
         results['gt_bboxes_labels'] = mosaic_bboxes_labels
         results['gt_ignore_flags'] = mosaic_ignore_flags
+
+        if with_mask:
+            mosaic_masks = mosaic_masks[0].cat(mosaic_masks)
+            results['gt_masks'] = mosaic_masks[inside_inds]
         return results
 
     def __repr__(self):
@@ -3359,7 +3389,7 @@ class CachedMixUp(BaseTransform):
     - img
     - gt_bboxes (np.float32) (optional)
     - gt_bboxes_labels (np.int64) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
     - mix_results (List[dict])
 
 
@@ -3374,7 +3404,7 @@ class CachedMixUp(BaseTransform):
 
     Args:
         img_scale (Sequence[int]): Image output size after mixup pipeline.
-            The shape order should be (height, width). Defaults to (640, 640).
+            The shape order should be (width, height). Defaults to (640, 640).
         ratio_range (Sequence[float]): Scale ratio of mixup image.
             Defaults to (0.5, 1.5).
         flip_ratio (float): Horizontal flip ratio of mixup image.
@@ -3477,21 +3507,23 @@ class CachedMixUp(BaseTransform):
             return results
 
         retrieve_img = retrieve_results['img']
+        with_mask = True if 'gt_masks' in results else False
 
         jit_factor = random.uniform(*self.ratio_range)
         is_filp = random.uniform(0, 1) > self.flip_ratio
 
         if len(retrieve_img.shape) == 3:
             out_img = np.ones(
-                (self.dynamic_scale[0], self.dynamic_scale[1], 3),
+                (self.dynamic_scale[1], self.dynamic_scale[0], 3),
                 dtype=retrieve_img.dtype) * self.pad_val
         else:
             out_img = np.ones(
-                self.dynamic_scale, dtype=retrieve_img.dtype) * self.pad_val
+                self.dynamic_scale[::-1],
+                dtype=retrieve_img.dtype) * self.pad_val
 
         # 1. keep_ratio resize
-        scale_ratio = min(self.dynamic_scale[0] / retrieve_img.shape[0],
-                          self.dynamic_scale[1] / retrieve_img.shape[1])
+        scale_ratio = min(self.dynamic_scale[1] / retrieve_img.shape[0],
+                          self.dynamic_scale[0] / retrieve_img.shape[1])
         retrieve_img = mmcv.imresize(
             retrieve_img, (int(retrieve_img.shape[1] * scale_ratio),
                            int(retrieve_img.shape[0] * scale_ratio)))
@@ -3528,16 +3560,32 @@ class CachedMixUp(BaseTransform):
         # 6. adjust bbox
         retrieve_gt_bboxes = retrieve_results['gt_bboxes']
         retrieve_gt_bboxes.rescale_([scale_ratio, scale_ratio])
+        if with_mask:
+            retrieve_gt_masks = retrieve_results['gt_masks'].rescale(
+                scale_ratio)
+
         if self.bbox_clip_border:
             retrieve_gt_bboxes.clip_([origin_h, origin_w])
 
         if is_filp:
             retrieve_gt_bboxes.flip_([origin_h, origin_w],
                                      direction='horizontal')
+            if with_mask:
+                retrieve_gt_masks = retrieve_gt_masks.flip()
 
         # 7. filter
         cp_retrieve_gt_bboxes = retrieve_gt_bboxes.clone()
         cp_retrieve_gt_bboxes.translate_([-x_offset, -y_offset])
+        if with_mask:
+            retrieve_gt_masks = retrieve_gt_masks.translate(
+                out_shape=(target_h, target_w),
+                offset=-x_offset,
+                direction='horizontal')
+            retrieve_gt_masks = retrieve_gt_masks.translate(
+                out_shape=(target_h, target_w),
+                offset=-y_offset,
+                direction='vertical')
+
         if self.bbox_clip_border:
             cp_retrieve_gt_bboxes.clip_([target_h, target_w])
 
@@ -3554,19 +3602,25 @@ class CachedMixUp(BaseTransform):
             (results['gt_bboxes_labels'], retrieve_gt_bboxes_labels), axis=0)
         mixup_gt_ignore_flags = np.concatenate(
             (results['gt_ignore_flags'], retrieve_gt_ignore_flags), axis=0)
+        if with_mask:
+            mixup_gt_masks = retrieve_gt_masks.cat(
+                [results['gt_masks'], retrieve_gt_masks])
 
         # remove outside bbox
         inside_inds = mixup_gt_bboxes.is_inside([target_h, target_w]).numpy()
         mixup_gt_bboxes = mixup_gt_bboxes[inside_inds]
         mixup_gt_bboxes_labels = mixup_gt_bboxes_labels[inside_inds]
         mixup_gt_ignore_flags = mixup_gt_ignore_flags[inside_inds]
+        if with_mask:
+            mixup_gt_masks = mixup_gt_masks[inside_inds]
 
         results['img'] = mixup_img.astype(np.uint8)
         results['img_shape'] = mixup_img.shape
         results['gt_bboxes'] = mixup_gt_bboxes
         results['gt_bboxes_labels'] = mixup_gt_bboxes_labels
         results['gt_ignore_flags'] = mixup_gt_ignore_flags
-
+        if with_mask:
+            results['gt_masks'] = mixup_gt_masks
         return results
 
     def __repr__(self):

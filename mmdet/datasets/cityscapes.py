@@ -13,9 +13,9 @@ class CityscapesDataset(CocoDataset):
     """Dataset for Cityscapes."""
 
     METAINFO = {
-        'CLASSES': ('person', 'rider', 'car', 'truck', 'bus', 'train',
+        'classes': ('person', 'rider', 'car', 'truck', 'bus', 'train',
                     'motorcycle', 'bicycle'),
-        'PALETTE': [(220, 20, 60), (255, 0, 0), (0, 0, 142), (0, 0, 70),
+        'palette': [(220, 20, 60), (255, 0, 0), (0, 0, 142), (0, 0, 70),
                     (0, 60, 100), (0, 80, 100), (0, 0, 230), (119, 11, 32)]
     }
 

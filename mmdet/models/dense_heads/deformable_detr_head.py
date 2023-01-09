@@ -245,8 +245,8 @@ class DeformableDETRHead(DETRHead):
                 batch_gt_instances[i].labels = torch.zeros_like(
                     batch_gt_instances[i].labels)
             enc_loss_cls, enc_losses_bbox, enc_losses_iou = \
-                self.loss_single(enc_cls_scores, enc_bbox_preds,
-                                 batch_gt_instances, batch_img_metas)
+                self.loss_by_feat_single(enc_cls_scores, enc_bbox_preds,
+                                         batch_gt_instances, batch_img_metas)
             loss_dict['enc_loss_cls'] = enc_loss_cls
             loss_dict['enc_loss_bbox'] = enc_losses_bbox
             loss_dict['enc_loss_iou'] = enc_losses_iou

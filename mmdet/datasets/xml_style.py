@@ -41,11 +41,11 @@ class XMLDataset(BaseDetDataset):
         Returns:
             list[dict]: Annotation info from XML file.
         """
-        assert self._metainfo.get('CLASSES', None) is not None, \
-            'CLASSES in `XMLDataset` can not be None.'
+        assert self._metainfo.get('classes', None) is not None, \
+            '`classes` in `XMLDataset` can not be None.'
         self.cat2label = {
             cat: i
-            for i, cat in enumerate(self._metainfo['CLASSES'])
+            for i, cat in enumerate(self._metainfo['classes'])
         }
 
         data_list = []
@@ -111,7 +111,7 @@ class XMLDataset(BaseDetDataset):
         for obj in raw_ann_info.findall('object'):
             instance = {}
             name = obj.find('name').text
-            if name not in self._metainfo['CLASSES']:
+            if name not in self._metainfo['classes']:
                 continue
             difficult = obj.find('difficult')
             difficult = 0 if difficult is None else int(difficult.text)

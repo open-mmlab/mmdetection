@@ -64,7 +64,7 @@ class MMdetHandler(BaseHandler):
                 cls_score, bbox, cls_label = scores[idx], bboxes[idx], labels[
                     idx]
                 if cls_score >= self.threshold:
-                    class_name = self.model.dataset_meta['CLASSES'][cls_label]
+                    class_name = self.model.dataset_meta['classes'][cls_label]
                     result = dict(
                         class_label=cls_label,
                         class_name=class_name,
