@@ -68,6 +68,7 @@ class DarknetBottleneck(BaseModule):
             add_identity and in_channels == out_channels
 
     def forward(self, x: Tensor) -> Tensor:
+        """Forward function."""
         identity = x
         out = self.conv1(x)
         out = self.conv2(out)
@@ -138,6 +139,7 @@ class CSPNeXtBlock(BaseModule):
             add_identity and in_channels == out_channels
 
     def forward(self, x: Tensor) -> Tensor:
+        """Forward function."""
         identity = x
         out = self.conv1(x)
         out = self.conv2(out)
@@ -231,6 +233,7 @@ class CSPLayer(BaseModule):
             self.attention = ChannelAttention(2 * mid_channels)
 
     def forward(self, x: Tensor) -> Tensor:
+        """Forward function."""
         x_short = self.short_conv(x)
 
         x_main = self.main_conv(x)
