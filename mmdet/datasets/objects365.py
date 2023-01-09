@@ -7,9 +7,9 @@ from .coco import CocoDataset
 
 # images exist in annotations but not in image folder.
 objv2_ignore_list = [
-    'patch16/objects365_v2_00908726.jpg',
-    'patch6/objects365_v1_00320532.jpg',
-    'patch6/objects365_v1_00320534.jpg',
+    osp.join('patch16', 'objects365_v2_00908726.jpg'),
+    osp.join('patch6', 'objects365_v1_00320532.jpg'),
+    osp.join('patch6', 'objects365_v1_00320534.jpg'),
 ]
 
 
