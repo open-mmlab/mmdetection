@@ -58,7 +58,8 @@ class OccludedSeparatedCocoDataset(CocoDataset):
             iou_thr (float): IoU threshold for the recall calculation.
                 Defaults to 0.75.
         Returns:
-            tuple: number of correct masks and the recall.
+            dict[str, float]: The recall of occluded and separated masks and
+            COCO style evaluation metric.
         """
         coco_metric_res = super().evaluate(results, metric=metric, **kwargs)
         eval_res = self.evaluate_occluded_separated(results, score_thr,
@@ -79,7 +80,7 @@ class OccludedSeparatedCocoDataset(CocoDataset):
             iou_thr (float): IoU threshold for the recall calculation.
                 Defaults to 0.75.
         Returns:
-            tuple: number of correct masks and the recall.
+            dict[str, float]: The recall of occluded and separated masks.
         """
         dict_det = {}
         print_log('processing detection results...')
