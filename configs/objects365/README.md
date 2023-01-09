@@ -24,7 +24,7 @@ and semantic segmentation.
 #### Objects365 Dataset V2
 
 [Objects365 Dataset V2](http://www.objects365.org/overview.html) is based on the V1 release of the Objects365 dataset.
-Objects 365 annotated 365 object classes on more than 1800k images, with more than 29 million bounding boxes in the training set, surpassing PASCAL VOC, ImageNet, and COCO datast.
+Objects 365 annotated 365 object classes on more than 1800k images, with more than 29 million bounding boxes in the training set, surpassing PASCAL VOC, ImageNet, and COCO datasets.
 Objects 365 includes 11 categories of people, clothing, living room, bathroom, kitchen, office/medical, electrical appliances, transportation, food, animals, sports/musical instruments, and each category has dozens of subcategories.
 
 ## Citation
