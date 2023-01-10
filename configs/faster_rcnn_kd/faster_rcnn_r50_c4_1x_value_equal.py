@@ -48,9 +48,12 @@ data = dict(
     samples_per_gpu=4,
     workers_per_gpu=4,
     train=dict(type="CocoContDataset",
-               pipeline=train_pipeline),
+               pipeline=train_pipeline,
+               multiscale_mode_student='value',
+               ratio_range_student=(0.2, 0.4, 0.6, 0.8, 1.0)),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
+
 
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)

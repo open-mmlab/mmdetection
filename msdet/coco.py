@@ -8,6 +8,8 @@ class CocoContDataset(CocoDataset):
     def __init__(self,
                  ann_file,
                  pipeline,
+                 multiscale_mode_student=None,
+                 ratio_range_student=None,
                  classes=None,
                  data_root=None,
                  img_prefix='',
@@ -30,13 +32,14 @@ class CocoContDataset(CocoDataset):
                  filter_empty_gt,
                  file_client_args)
         
-        pipeline_multiscale = []
-        for pipe in pipeline:
-            if pipe['type'] == 'Resize':
-                pipe.update({'ratio_range': (0.3, 1.0)})
-            pipeline_multiscale.append(pipe)
-        
-        self.pipeline_multiscale = Compose(pipeline)
+        if not self.test_mode:
+            pipeline_multiscale = []
+            for pipe in pipeline:
+                if pipe['type'] == 'Resize':
+                    pipe.update({'type': 'Resize_Student', 'multiscale_mode': multiscale_mode_student, 'ratio_range': ratio_range_student})
+                pipeline_multiscale.append(pipe)
+            
+            self.pipeline_multiscale = Compose(pipeline_multiscale)
 
 
     def prepare_train_img(self, idx):

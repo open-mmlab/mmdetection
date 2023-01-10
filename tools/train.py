@@ -26,7 +26,7 @@ import msdet
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
-    parser.add_argument('--config', default='configs/faster_rcnn_kd/faster_rcnn_r50_caffe_c4_1x_coco.py', type=str, help='train config file path')
+    parser.add_argument('--config', default='configs/faster_rcnn_kd/faster_rcnn_r50_c4_1x_value_half.py', type=str, help='train config file path')
     parser.add_argument('--work-dir', help='the dir to save logs and models')
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
