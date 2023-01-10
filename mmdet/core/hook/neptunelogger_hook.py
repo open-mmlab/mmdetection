@@ -57,9 +57,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         self.ckpt_hook: CheckpointHook
         self.eval_hook: EvalHook
 
-    @master_only
-    def before_run(self, runner):
-        # Save and Log config.
+    def _log_config(self, runner):
         if runner.meta is not None and runner.meta.get('exp_name',
                                                        None) is not None:
             src_cfg_path = osp.join(runner.work_dir,
@@ -70,6 +68,10 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         else:
             runner.logger.warning('No meta information found in the runner. ')
 
+    @master_only
+    def before_run(self, runner):
+        self._log_config(runner)
+
         # Inspect CheckpointHook and EvalHook
         for hook in runner.hooks:
             if isinstance(hook, CheckpointHook):
@@ -79,7 +81,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                 self.val_dataset = self.eval_hook.dataloader.dataset
 
         if self.log_checkpoint and self.ckpt_hook is None:
-            warnings.warn('WARNING ABOUT CHECKPOINTER NOT PRESENT')
+            runner.logger.warning('WARNING ABOUT CHECKPOINTER NOT PRESENT')
 
     def _log_buffer(self, runner, category, log_eval=True):
         assert category in ['epoch', 'iter']
