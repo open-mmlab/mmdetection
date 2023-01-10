@@ -59,5 +59,6 @@ val_evaluator = dict(
     type='CocoMetric',
     ann_file=data_root + 'annotations/objects365_val.json',
     metric='bbox',
+    sort_categories=True,
     format_only=False)
 test_evaluator = val_evaluator

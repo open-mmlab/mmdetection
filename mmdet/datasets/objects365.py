@@ -106,20 +106,12 @@ class Objects365V1Dataset(CocoDataset):
             self.coco = self.COCOAPI(local_path)
 
         # 'categories' list in objects365_train.json and objects365_val.json
-        # is inconsistent, need sorted list(or dict) before get cat_ids.
+        # is inconsistent, need sort list(or dict) before get cat_ids.
         cats = self.coco.cats
         sorted_cats = {i: cats[i] for i in sorted(cats)}
-        print('----')
-        print(cats)
-        print('----')
-        print(sorted_cats)
         self.coco.cats = sorted_cats
         categories = self.coco.dataset['categories']
         sorted_categories = sorted(categories, key=lambda i: i['id'])
-        print('----')
-        print(categories)
-        print('----')
-        print(sorted_categories)
         self.coco.dataset['categories'] = sorted_categories
         # The order of returned `cat_ids` will not
         # change with the order of the `classes`
