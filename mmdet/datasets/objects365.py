@@ -15,7 +15,7 @@ objv2_ignore_list = [
 
 @DATASETS.register_module()
 class Objects365V1Dataset(CocoDataset):
-
+    """Objects365 v1 dataset for detection."""
     CLASSES = (
         'person', 'sneakers', 'chair', 'hat', 'lamp', 'bottle',
         'cabinet/shelf', 'cup', 'car', 'glasses', 'picture/frame', 'desk',
@@ -125,6 +125,7 @@ class Objects365V1Dataset(CocoDataset):
 
 @DATASETS.register_module()
 class Objects365V2Dataset(CocoDataset):
+    """Objects365 v2 dataset for detection."""
 
     CLASSES = (
         'Person', 'Sneakers', 'Chair', 'Other Shoes', 'Hat', 'Car', 'Lamp',
