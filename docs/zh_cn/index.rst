@@ -48,6 +48,12 @@ Welcome to MMDetection's documentation!
 
    api.rst
 
+.. toctree::
+   :maxdepth: 1
+   :caption: 设备支持
+
+   device/npu.md
+
 
 Indices and tables
 ==================

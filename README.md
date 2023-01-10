@@ -77,9 +77,9 @@ Apart from MMDetection, we also released a library [mmcv](https://github.com/ope
 
 ### 💎 Stable version
 
-**2.26.0** was released in 23/11/2022:
+**2.27.0** was released in 5/1/2023:
 
-- Support training on [NPU](docs/en/device/npu.md).
+- Support receptive field search of CNN models([TPAMI 2022: RF-Next](http://mftp.mmcheng.net/Papers/22TPAMI-ActionSeg.pdf)).
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
@@ -87,13 +87,28 @@ For compatibility changes between different versions of MMDetection, please refe
 
 ### 🌟 Preview of 3.x version
 
-A brand new version of **MMDetection v3.0.0rc0** was released in 31/8/2022:
+#### Highlight
 
-- Unifies interfaces of all components based on [MMEngine](https://github.com/open-mmlab/mmengine).
-- Faster training and testing speed with complete support of mixed precision training.
-- Refactored and more flexible [architecture](https://mmdetection.readthedocs.io/en/v3.0.0rc0/overview.html).
-- Provides more strong baselines and a general semi-supervised object detection framework. See [tutorial of semi-supervised detection](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/semi_det.html).
-- Allows any kind of single-stage model as an RPN in a two-stage model. See [tutorial](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/single_stage_as_rpn.html).
+We are excited to announce our latest work on real-time object recognition tasks, **RTMDet**, a family of fully convolutional single-stage detectors. RTMDet not only achieves the best parameter-accuracy trade-off on object detection from tiny to extra-large model sizes but also obtains new state-of-the-art performance on instance segmentation and rotated object detection tasks. Details can be found in the [technical report](https://arxiv.org/abs/2212.07784). Pre-trained models are [here](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet).
+
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/real-time-instance-segmentation-on-mscoco)](https://paperswithcode.com/sota/real-time-instance-segmentation-on-mscoco?p=rtmdet-an-empirical-study-of-designing-real)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/object-detection-in-aerial-images-on-dota-1)](https://paperswithcode.com/sota/object-detection-in-aerial-images-on-dota-1?p=rtmdet-an-empirical-study-of-designing-real)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/object-detection-in-aerial-images-on-hrsc2016)](https://paperswithcode.com/sota/object-detection-in-aerial-images-on-hrsc2016?p=rtmdet-an-empirical-study-of-designing-real)
+
+| Task                     | Dataset | AP                                   | FPS(TRT FP16 BS1 3090) |
+| ------------------------ | ------- | ------------------------------------ | ---------------------- |
+| Object Detection         | COCO    | 52.8                                 | 322                    |
+| Instance Segmentation    | COCO    | 44.6                                 | 188                    |
+| Rotated Object Detection | DOTA    | 78.9(single-scale)/81.3(multi-scale) | 121                    |
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
+</div>
+
+A brand new version of **MMDetection v3.0.0rc5** was released in 26/12/2022:
+
+- Support [RTMDet](https://arxiv.org/abs/2212.07784) instance segmentation models. The technical report of RTMDet is on [arxiv](https://arxiv.org/abs/2212.07784)
+- Support SSHContextModule in paper [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979)
 
 Find more new features in [3.x branch](https://github.com/open-mmlab/mmdetection/tree/3.x). Issues and PRs are welcome!
 
@@ -226,6 +241,13 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         </ul>
         </ul>
       </ul>
+        <li><b>Receptive Field Search</b></li>
+      <ul>
+        <ul>
+          <li><a href="configs/rfnext">RF-Next (TPAMI'2022)</a></li>
+        </ul>
+        </ul>
+      </ul>
       </td>
     </tr>
 </td>
@@ -300,6 +322,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/pisa">Prime Sample Attention (CVPR'2020)</a></li>
           <li><a href="configs/strong_baselines">Strong Baselines (CVPR'2021)</a></li>
           <li><a href="configs/resnet_strikes_back">Resnet strikes back (NeurIPSW'2021)</a></li>
+          <li><a href="configs/rfnext">RF-Next (TPAMI'2022)</a></li>
         </ul>
       </td>
     </tr>
