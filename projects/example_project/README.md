@@ -22,6 +22,12 @@ In MMDetection's root directory, run the following command to train the model:
 python tools/train.py projects/example_project/configs/faster-rcnn_dummy-resnet_fpn_1x_coco.py
 ```
 
+For multi-gpu training, run:
+
+```bash
+python -m torch.distributed.launch --nnodes=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} --master_port=29506 --master_addr="127.0.0.1" tools/train.py projects/example_project/configs/faster-rcnn_dummy-resnet_fpn_1x_coco.py
+```
+
 ### Testing commands
 
 In MMDetection's root directory, run the following command to test the model:
