@@ -12,6 +12,7 @@ import torch.distributed as dist
 from mmcv import Config, DictAction
 from mmcv.runner import get_dist_info, init_dist
 from mmcv.utils import get_git_hash
+from msdet.utils.checkpoint import load_teacher_checkpoint
 
 from mmdet import __version__
 from mmdet.apis import init_random_seed, set_random_seed, train_detector
@@ -20,11 +21,12 @@ from mmdet.models import build_detector
 from mmdet.utils import (collect_env, get_device, get_root_logger,
                          replace_cfg_vals, rfnext_init_model,
                          setup_multi_processes, update_data_root)
+
 import msdet
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
-    parser.add_argument('config', help='train config file path')
+    parser.add_argument('--config', default='configs/faster_rcnn_kd/faster_rcnn_r50_caffe_c4_1x_coco.py', type=str, help='train config file path')
     parser.add_argument('--work-dir', help='the dir to save logs and models')
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
@@ -209,6 +211,13 @@ def main():
     meta['seed'] = seed
     meta['exp_name'] = osp.basename(args.config)
 
+
+    # Load Teacher Configure
+    if cfg.get('teacher_config_path') is not None:
+        assert cfg.get('teacher_weight_path') is not None
+        cfg.model.teacher_cfg = Config.fromfile(cfg.teacher_config_path)
+        
+    # Load Model
     model = build_detector(
         cfg.model,
         train_cfg=cfg.get('train_cfg'),
@@ -218,6 +227,11 @@ def main():
     # init rfnext if 'RFSearchHook' is defined in cfg
     rfnext_init_model(model, cfg=cfg)
 
+    # Load Teacher Checkpoint
+    if cfg.get('teacher_weight_path') is not None:
+        state_dict = load_teacher_checkpoint(cfg.get('teacher_weight_path'), map_location='cpu')
+        model.teacher.load_state_dict(state_dict, strict=True)
+    
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:
         assert 'val' in [mode for (mode, _) in cfg.workflow]

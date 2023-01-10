@@ -55,6 +55,7 @@ model = dict(
                 add_gt_as_proposals=True),
             pos_weight=-1,
             debug=False)),
+    
     test_cfg=dict(
         rcnn=dict(
             score_thr=0.05,

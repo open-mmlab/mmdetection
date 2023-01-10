@@ -33,7 +33,7 @@ class CocoContDataset(CocoDataset):
         pipeline_multiscale = []
         for pipe in pipeline:
             if pipe['type'] == 'Resize':
-                pipe.update({'ratio_range': (0.2, 0.8)})
+                pipe.update({'ratio_range': (0.3, 1.0)})
             pipeline_multiscale.append(pipe)
         
         self.pipeline_multiscale = Compose(pipeline)
