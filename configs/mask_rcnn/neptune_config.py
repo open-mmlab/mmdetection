@@ -11,10 +11,11 @@ checkpoint_config = dict(interval=4)
 
 # yapf:disable
 log_config = dict(
-    interval=50,
+    interval=3,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='NeptuneHook',
              project='mmdetection',
-             log_model=True)
+             log_model=True,
+             log_checkpoint=True)
         ])

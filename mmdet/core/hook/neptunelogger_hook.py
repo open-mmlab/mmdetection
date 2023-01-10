@@ -117,37 +117,37 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         if not osp.exists(file_path):
             warnings.warn('WARNING ABOUT CHECKPOINT FILE NOT FOUND')
             return
-
         with open(file_path, 'rb') as fp:
             self._run[neptune_checkpoint_path] = File.from_stream(fp)
 
     @master_only
     def after_train_iter(self, runner):
-        print('ITER')
-        # if self.by_epoch:
-        #     return
         if not isinstance(runner, IterBasedRunner):
             return
 
         log_eval = self.every_n_iters(runner, self.eval_hook.interval)
         self._log_buffer(runner, 'iter', log_eval)
 
+    def _should_upload_checkpoint(self, runner) -> bool:
+        if isinstance(runner, EpochBasedRunner):
+            return self.log_checkpoint and runner.epoch != 0 and \
+                runner.epoch % self.ckpt_hook.interval == 0
+
     @master_only
     def after_train_epoch(self, runner):
-        print('EPOCH')
-        # If runner has no Notion of Epoch.
-        # Eg. IterBasedRunner
-        # if not self.by_epoch:
-        #     return
         if not isinstance(runner, EpochBasedRunner):
             return
         log_eval = self.every_n_epochs(runner, self.eval_hook.interval)
         self._log_buffer(runner, 'epoch', log_eval)
+
+        if self._should_upload_checkpoint(runner):
+            self._log_checkpoint(runner, final=False)
 
     @master_only
     def after_run(self, runner):
         if self.log_model:
             self._log_checkpoint(runner, final=True)
 
+        print('SYNCING')
         self._run.sync()
         self._run.stop()
