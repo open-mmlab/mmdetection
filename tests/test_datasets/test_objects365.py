@@ -22,6 +22,7 @@ class TestObjects365V1Dataset(unittest.TestCase):
         self.assertListEqual(dataset.get_cat_ids(0), [0, 1])
         self.assertEqual(dataset.cat_ids, [1, 2])
 
+    def test_obj365v1_with_unsorted_annotation(self):
         # test Objects365V1Dataset with unsorted annotations
         metainfo = dict(classes=('bus', 'car'), task_name='new_task')
         dataset = Objects365V1Dataset(
