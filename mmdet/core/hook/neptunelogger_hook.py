@@ -22,10 +22,10 @@ from mmdet.core import DistEvalHook, EvalHook
 
 @HOOKS.register_module()
 class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
-    """Check invalid loss hook.
+    """Log metadata to Neptune.
 
-    This hook will regularly check whether the loss is valid
-    during training.
+    This hook will automatically log training or evaluation metadata
+    to Neptune.ai.
     Args:
         interval (int): Checking interval (every k iterations).
             Default: 50.
@@ -40,7 +40,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                  log_checkpoint: bool = False,
                  log_model_diagram: bool = False,
                  num_eval_predictions: int = 50,
-                 **kwargs):
+                 **kwargs) -> None:
         super().__init__()
 
         self._run = neptune.init_run(**neptune_init_kwargs)
@@ -60,7 +60,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         self.eval_hook: EvalHook
         self.kwargs = kwargs
 
-    def _log_config(self, runner):
+    def _log_config(self, runner) -> None:
         if runner.meta is not None and runner.meta.get('exp_name',
                                                        None) is not None:
             src_cfg_path = osp.join(runner.work_dir,
@@ -72,7 +72,13 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
             runner.logger.warning('No meta information found in the runner. ')
 
     @master_only
-    def before_run(self, runner):
+    def before_run(self, runner) -> None:
+        """Logs config if exists, inspects the hooks in search of checkpointing
+        and evaluation hooks.
+
+        Raises a warning if checkpointing is enabled, but the dedicated hook is
+        not present.
+        """
         self._log_config(runner)
 
         # Inspect CheckpointHook and EvalHook
@@ -86,7 +92,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         if self.log_checkpoint and self.ckpt_hook is None:
             runner.logger.warning('WARNING ABOUT CHECKPOINTER NOT PRESENT')
 
-    def _log_buffer(self, runner, category, log_eval=True):
+    def _log_buffer(self, runner, category, log_eval=True) -> None:
         assert category in ['epoch', 'iter']
         # only record lr of the first param group
         cur_lr = runner.current_lr()
@@ -105,7 +111,11 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         for key, value in eval_results.items():
             self.base_handler['val/' + category + '/' + key].log(value)
 
-    def _log_checkpoint(self, runner, ext='pth', final=False, mode='epoch'):
+    def _log_checkpoint(self,
+                        runner,
+                        ext='pth',
+                        final=False,
+                        mode='epoch') -> None:
         assert mode in ['epoch', 'iter']
 
         if self.ckpt_hook is None:
@@ -128,7 +138,9 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
             self._run[neptune_checkpoint_path] = File.from_stream(fp)
 
     @master_only
-    def after_train_iter(self, runner):
+    def after_train_iter(self, runner) -> None:
+        """For an iter-based runner logs evaluation metadata, as well as
+        checkpoints (if enabled by the user)."""
         if not isinstance(runner, IterBasedRunner):
             return
 
@@ -144,7 +156,9 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                 (runner.iter + 1) % self.ckpt_hook.interval == 0
 
     @master_only
-    def after_train_epoch(self, runner):
+    def after_train_epoch(self, runner) -> None:
+        """For an epoch-based runner logs evaluation metadata, as well as
+        checkpoints (if enabled by the user)."""
         if not isinstance(runner, EpochBasedRunner):
             return
         log_eval = self.every_n_epochs(runner, self.eval_hook.interval)
@@ -154,7 +168,9 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
             self._log_checkpoint(runner, final=False)
 
     @master_only
-    def after_run(self, runner):
+    def after_run(self, runner) -> None:
+        """If enabled by the user, logs final model checkpoint, syncs and stops
+        the Neptune run."""
         if self.log_model:
             self._log_checkpoint(runner, final=True)
 
