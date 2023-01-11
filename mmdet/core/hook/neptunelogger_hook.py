@@ -17,6 +17,7 @@ from mmcv.runner import HOOKS, EpochBasedRunner, IterBasedRunner
 from mmcv.runner.dist_utils import master_only
 from mmcv.runner.hooks.checkpoint import CheckpointHook
 
+from mmdet import version
 from mmdet.core import DistEvalHook, EvalHook
 
 
@@ -30,6 +31,8 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         interval (int): Checking interval (every k iterations).
             Default: 50.
     """
+
+    INTEGRATION_VERSION_KEY = 'source_code/integrations/neptune-mmdetection'
 
     def __init__(self,
                  *,
@@ -59,6 +62,9 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         self.ckpt_hook: CheckpointHook
         self.eval_hook: EvalHook
         self.kwargs = kwargs
+
+    def _log_integration_version(self) -> None:
+        self.base_handler[self.INTEGRATION_VERSION_KEY] = version.__version__
 
     def _log_config(self, runner) -> None:
         if runner.meta is not None and runner.meta.get('exp_name',
