@@ -141,7 +141,9 @@ def get_dataset_name(config):
         VOCDataset='Pascal VOC',
         WIDERFaceDataset='WIDER Face',
         OpenImagesDataset='OpenImagesDataset',
-        OpenImagesChallengeDataset='OpenImagesChallengeDataset')
+        OpenImagesChallengeDataset='OpenImagesChallengeDataset',
+        Objects365V1Dataset='Objects365 v1',
+        Objects365V2Dataset='Objects365 v2')
     cfg = mmcv.Config.fromfile('./configs/' + config)
     return name_map[cfg.dataset_type]
 
