@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
 import warnings
+from typing import Any, Dict
 
 try:
     import neptune.new as neptune
@@ -32,16 +33,17 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
 
     def __init__(self,
                  *,
-                 interval: int = 20,
+                 neptune_init_kwargs: Dict[str, Any] = None,
+                 interval: int = 50,
                  base_namespace: str = 'training',
                  log_model: bool = False,
                  log_checkpoint: bool = False,
                  log_model_diagram: bool = False,
                  num_eval_predictions: int = 50,
-                 **neptune_run_kwargs):
+                 **kwargs):
         super().__init__()
 
-        self._run = neptune.init_run(**neptune_run_kwargs)
+        self._run = neptune.init_run(**neptune_init_kwargs)
         self.base_namespace = base_namespace
         self.base_handler = self._run[base_namespace]
 
@@ -56,6 +58,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
 
         self.ckpt_hook: CheckpointHook
         self.eval_hook: EvalHook
+        self.kwargs = kwargs
 
     def _log_config(self, runner):
         if runner.meta is not None and runner.meta.get('exp_name',
@@ -102,14 +105,16 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         for key, value in eval_results.items():
             self.base_handler['val/' + category + '/' + key].log(value)
 
-    def _log_checkpoint(self, runner, ext='pth', final=False):
+    def _log_checkpoint(self, runner, ext='pth', final=False, mode='epoch'):
+        assert mode in ['epoch', 'iter']
+
         if self.ckpt_hook is None:
             return
 
         if final:
             file_name = 'latest'
         else:
-            file_name = f'epoch_{runner.epoch}'
+            file_name = f'{mode}_{getattr(runner, mode) + 1}'
 
         file_path = osp.join(self.ckpt_hook.out_dir, f'{file_name}.{ext}')
 
@@ -132,8 +137,11 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
 
     def _should_upload_checkpoint(self, runner) -> bool:
         if isinstance(runner, EpochBasedRunner):
-            return self.log_checkpoint and runner.epoch != 0 and \
-                runner.epoch % self.ckpt_hook.interval == 0
+            return self.log_checkpoint and \
+                (runner.epoch + 1) % self.ckpt_hook.interval == 0
+        elif isinstance(runner, IterBasedRunner):
+            return self.log_checkpoint and \
+                (runner.iter + 1) % self.ckpt_hook.interval == 0
 
     @master_only
     def after_train_epoch(self, runner):
@@ -150,6 +158,6 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         if self.log_model:
             self._log_checkpoint(runner, final=True)
 
-        print('SYNCING')
+        runner.logger.info('SYNCING')
         self._run.sync()
         self._run.stop()
