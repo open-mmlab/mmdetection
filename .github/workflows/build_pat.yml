@@ -38,6 +38,6 @@ jobs:
           MMCV_WITH_OPS=1 python setup.py install
           cd .. && rm -rf mmcv
           python -c 'import mmcv; print(mmcv.__version__)'
-          pip install -r requirements.txt
+          pip install -r requirements.txt -i http://pypi.douban.com/simple/ --trusted-host pypi.douban.com
       - name: Build and install
         run: rm -rf .eggs && pip install -e .
