@@ -1,7 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
 import warnings
-from typing import Any, Dict
 
 try:
     import neptune.new as neptune
@@ -36,7 +35,8 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
 
     def __init__(self,
                  *,
-                 neptune_init_kwargs: Dict[str, Any] = None,
+                 api_token: str = None,
+                 project: str = None,
                  interval: int = 50,
                  base_namespace: str = 'training',
                  log_model: bool = False,
@@ -46,7 +46,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                  **kwargs) -> None:
         super().__init__()
 
-        self._run = neptune.init_run(**neptune_init_kwargs)
+        self._run = neptune.init_run(api_token=api_token, project=project)
         self.base_namespace = base_namespace
         self.base_handler = self._run[base_namespace]
 
