@@ -41,7 +41,7 @@ Objects 365 includes 11 categories of people, clothing, living room, bathroom, k
 
 ## Prepare Dataset
 
-1. You need to download and extract Objects365 dataset. Users can download  Objects365 V2 by using `tools/misc/download_dataset.py`.
+1. You need to download and extract Objects365 dataset. Users can download Objects365 V2 by using `tools/misc/download_dataset.py`.
 
    **Usage**
 
