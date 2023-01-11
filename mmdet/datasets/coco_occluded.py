@@ -178,7 +178,7 @@ class OccludedSeparatedCocoDataset(CocoDataset):
                 if cur_det_class != cur_gt_class:
                     continue
                 cur_det_mask = cur_detections[i][2]
-                cur_iou = self.compute_iou_mask(cur_det_mask, cur_gt_mask)
+                cur_iou = self.mask_iou(cur_det_mask, cur_gt_mask)
                 if cur_iou >= iou_thr:
                     correct_flag = True
                     break
@@ -188,7 +188,8 @@ class OccludedSeparatedCocoDataset(CocoDataset):
         recall = correct / len(gt_ann) * 100
         return correct, recall
 
-    def compute_iou_mask(self, mask1, mask2):
+    def mask_iou(self, mask1, mask2):
+        """Compute IoU between two masks."""
         mask1_area = np.count_nonzero(mask1 == 1)
         mask2_area = np.count_nonzero(mask2 == 1)
         intersection = np.count_nonzero(np.logical_and(mask1 == 1, mask2 == 1))
