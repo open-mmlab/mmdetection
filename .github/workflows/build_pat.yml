@@ -34,17 +34,15 @@ jobs:
       - name: Install mmdet dependencies
         run: |
           source /usr/local/env/pat_latest
-          pip config set global.index-url https://pypi.douban.com/simple/
           pip install -r requirements.txt -i http://pypi.douban.com/simple/ --trusted-host pypi.douban.com
       - name: Build MMCV
         run: |
           source /usr/local/env/pat_latest
-          pip config set global.index-url https://pypi.douban.com/simple/
           git clone https://github.com/open-mmlab/mmcv.git && cd mmcv
-          MMCV_WITH_OPS=1 python setup.py install
+          MMCV_WITH_OPS=1 pip install -e .
           cd .. && rm -rf mmcv
           python -c 'import mmcv; print(mmcv.__version__)'
       - name: Build and install
         run: |
-          pip config set global.index-url https://pypi.douban.com/simple/
-          rm -rf .eggs && pip install -e .
+          rm -rf .eggs && pip install -e . -i http://pypi.douban.com/simple/ --trusted-host pypi.douban.com
+          python -c 'import mmdet; print(mmdet.__version__)'
