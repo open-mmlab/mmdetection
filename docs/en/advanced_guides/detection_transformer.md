@@ -158,6 +158,14 @@ The left sub-figure illustrates the 2D position encoding process: The positional
 
 The right sub-figure is excerpted from DAB-DETR paper ( may require to re-paint ), which illustrates the positional embeddings of DETRs. The queries `Q` and keys `K` are all composed of two partitions: content queries / keys which attend to object feature content, and positional queries / keys which attend to positional information. The values `V` have not positional partitions. For encoder: content queries, content keys, and values are all from image features.  Positional queries and positional keys are from the 2D position embeddings of image features. For decoder: content keys, values, and positional keys remain. Content queries are from the outputs of last decoder layer or the initial decoder queries. Positional queries are positional embeddings of the decoder queries.
 
+#### Object detection paradigm of set prediction
+
+Most DETRs were set prediction-based detectors. They eliminated the complicated components required by many convenient detectors, such as non-maximum suppression, anchor generation. They obtains a set of predictions, and each prediction includes a category and a bounding box. The classification results include all object categories and a  `no object`  class.
+
+In training: the Hungarian algorithm is used to assign a prediction to each ground truth target. Both classification losses and boxes losses are calculated for the predictions which have been assigned with certain ground truth. While for the predictions which have not been assigned with any ground truth. Their target labels are then assigned with  `no object`  class and only classification losses are calculated.
+
+In inference: the final detection results can be obtained by directly remove the predictions whose classification results are  `no object`  and predictions whose classification confidences are lower than a presupposed threshold, without complicated post-processing.
+
 ### Appointment
 
 #### Parameter names
