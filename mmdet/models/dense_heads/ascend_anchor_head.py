@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 from ..builder import HEADS
 from .anchor_head import AnchorHead
