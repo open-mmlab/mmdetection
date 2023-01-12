@@ -64,7 +64,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         self.kwargs = kwargs
 
     def _log_integration_version(self) -> None:
-        self.base_handler[self.INTEGRATION_VERSION_KEY] = version.__version__
+        self._run[self.INTEGRATION_VERSION_KEY] = version.__version__
 
     def _log_config(self, runner) -> None:
         if runner.meta is not None and runner.meta.get('exp_name',
@@ -85,6 +85,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         Raises a warning if checkpointing is enabled, but the dedicated hook is
         not present.
         """
+        self._log_integration_version()
         self._log_config(runner)
 
         # Inspect CheckpointHook and EvalHook
@@ -150,8 +151,10 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         if not isinstance(runner, IterBasedRunner):
             return
 
-        log_eval = self.every_n_iters(runner, self.eval_hook.interval)
-        self._log_buffer(runner, 'iter', log_eval)
+        # log_eval = self.every_n_iters(runner, self.eval_hook.interval)
+        # self._log_buffer(runner, 'iter', log_eval)
+        if self._should_upload_checkpoint(runner):
+            self._log_checkpoint(runner, final=False, mode='iter')
 
     def _should_upload_checkpoint(self, runner) -> bool:
         if isinstance(runner, EpochBasedRunner):
