@@ -576,3 +576,14 @@ data = dict(
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
 ```
+
+Please cite the paper if you use this metric:
+
+```latex
+@article{zhan2022triocc,
+    title={A Tri-Layer Plugin to Improve Occluded Detection},
+    author={Zhan, Guanqi and Xie, Weidi and Zisserman, Andrew},
+    journal={British Machine Vision Conference},
+    year={2022}
+}
+```

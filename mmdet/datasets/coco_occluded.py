@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import os.path as osp
+
 import mmcv
 import numpy as np
 from mmcv.fileio import load
@@ -6,9 +8,11 @@ from mmcv.utils import print_log
 from pycocotools import mask as coco_mask
 from terminaltables import AsciiTable
 
+from .builder import DATASETS
 from .coco import CocoDataset
 
 
+@DATASETS.register_module()
 class OccludedSeparatedCocoDataset(CocoDataset):
     """COCO dataset with evaluation on separated and occluded masks which
     presented in paper `A Tri-Layer Plugin to Improve Occluded Detection.
@@ -26,6 +30,15 @@ class OccludedSeparatedCocoDataset(CocoDataset):
     These two new scalable real-image datasets are to benchmark a model's
     capability to detect occluded objects of 80 common categories.
 
+    Please cite the paper if you use this dataset:
+
+    @article{zhan2022triocc,
+        title={A Tri-Layer Plugin to Improve Occluded Detection},
+        author={Zhan, Guanqi and Xie, Weidi and Zisserman, Andrew},
+        journal={British Machine Vision Conference},
+        year={2022}
+    }
+
     Args:
         occluded_ann (str): Path to the occluded coco annotation file.
         separated_ann (str): Path to the separated coco annotation file.
@@ -38,6 +51,13 @@ class OccludedSeparatedCocoDataset(CocoDataset):
             separated_ann='https://www.robots.ox.ac.uk/~vgg/research/tpod/datasets/separated_coco.pkl',  # noqa
             **kwargs):
         super().__init__(*args, **kwargs)
+
+        # load from local file
+        if osp.isfile(occluded_ann) and not osp.isabs(occluded_ann):
+            occluded_ann = osp.join(self.data_root, occluded_ann)
+        if osp.isfile(separated_ann) and not osp.isabs(separated_ann):
+            separated_ann = osp.join(self.data_root, separated_ann)
+
         self.occluded_ann = load(occluded_ann)
         self.separated_ann = load(separated_ann)
 
