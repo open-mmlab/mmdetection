@@ -148,7 +148,7 @@ To support more operations on multi-scale features, some extra information shoul
 
 For the sequence data, both the position of each element in the sequence and the arrangement of the elements are essential for the semantic characterization of the data; For the image data, both the position of each pixel on the whole image and the spatial arrangement of the pixels are also critical for understanding image semantic information.
 
-The attention calculation procedure of Transformer is usually as follow: a query embedding calculates self attentions with the key embeddings. Then, the value embeddings are weighted with the attentions and aggregated into the output embedding. In the attention calculations, each element in the sequence is independent, and their position information is lost. Besides, the attention calculations are permutation-invariant. Therefore, the position encodings are usually embedded for queries, keys, and values before calculating attentions as positional embeddings.
+The attention calculation procedure of Transformer is usually as follow: A query embedding calculates self attentions with the key embeddings. Then, the value embeddings are weighted with the attentions and aggregated into the output embedding. In the attention calculations, each element in the sequence is independent, and their position information is lost. Besides, the attention calculations are permutation-invariant. Therefore, the position encodings are usually embedded for queries, keys, and values before calculating attentions as positional embeddings.
 
 There are also positional embeddings for the inputs of attention modules in DETRs. Unlike most cases, DETRs only embed for queries and keys, and not embed for values. Moreover, DETRs embed positions of both spatial directions, i.e. row and column, namely 2D position encoding.
 
@@ -156,15 +156,15 @@ There are also positional embeddings for the inputs of attention modules in DETR
 
 The left sub-figure illustrates the 2D position encoding process: The positional embeddings for queries or keys have same embedding dimension with the queries or keys. In the 2D position encoding of DETRs, the dimension of `C` is divided into two partitions of `C/2` uniformly. The former one is embedded for row position and the latter one is embedded for the column position.
 
-The right sub-figure is excerpted from DAB-DETR paper ( may require to re-paint ), which illustrates the positional embeddings of DETRs. The queries `Q` and keys `K` are all composed of two partitions: content queries / keys which attend to object feature content, and positional queries / keys which attend to positional information. The values `V` have not positional partitions. For encoder: content queries, content keys, and values are all from image features.  Positional queries and positional keys are from the 2D position embeddings of image features. For decoder: content keys, values, and positional keys remain. Content queries are from the outputs of last decoder layer or the initial decoder queries. Positional queries are positional embeddings of the decoder queries.
+The right sub-figure is excerpted from DAB-DETR paper ( may require to re-paint ), which illustrates the positional embeddings of DETRs. The queries `Q` and keys `K` are all composed of two partitions: Content queries / keys which attend to object feature content, and positional queries / keys which attend to positional information. The values `V` have not positional partitions. For encoder: Content queries, content keys, and values are all from image features.  Positional queries and positional keys are from the 2D position embeddings of image features. For decoder: Content keys, values, and positional keys remain. Content queries are from the outputs of last decoder layer or the initial decoder queries. Positional queries are positional embeddings of the decoder queries.
 
 #### Object detection paradigm of set prediction
 
 Most DETRs were set prediction-based detectors. They eliminated the complicated components required by many convenient detectors, such as non-maximum suppression, anchor generation. They obtains a set of predictions, and each prediction includes a category and a bounding box. The classification results include all object categories and a  `no object`  class.
 
-In training: the Hungarian algorithm is used to assign a prediction to each ground truth target. Both classification losses and boxes losses are calculated for the predictions which have been assigned with certain ground truth. While for the predictions which have not been assigned with any ground truth. Their target labels are then assigned with  `no object`  class and only classification losses are calculated.
+In training: The Hungarian algorithm is used to assign a prediction to each ground truth target. Both classification losses and boxes losses are calculated for the predictions which have been assigned with certain ground truth. While for the predictions which have not been assigned with any ground truth. Their target labels are then assigned with  `no object`  class and only classification losses are calculated.
 
-In inference: the final detection results can be obtained by directly remove the predictions whose classification results are  `no object`  and predictions whose classification confidences are lower than a presupposed threshold, without complicated post-processing.
+In inference: The final detection results can be obtained by directly remove the predictions whose classification results are  `no object`  and predictions whose classification confidences are lower than a presupposed threshold, without complicated post-processing.
 
 ### Appointment
 
@@ -174,9 +174,9 @@ In various codebase of DETRs, there are multiple meanings for the parameter name
 
 There are two levels of naming schemes in our implementation:
 
-On the level of detector modules: the feature maps extracted by backbone and neck are  `img_feats`. The `pre_transformer()` converts the image feature into the input sequence feature of encoder, namely  `feat`. The masks and positional embeddings corresponding to the sequence feature are `feat_mask` and `feat_pos`. The outputs of the encoder are `memory`, whose corresponding masks are `memory_mask`. The decoder queries are `query`, which are called 'content query' in most papers. The positional embeddings of the decoder queries are `query_pos`, which are called 'spatial query',  'positional query', and 'object query' in most papers.
+On the level of detector modules: The feature maps extracted by backbone and neck are  `img_feats`. The `pre_transformer()` converts the image feature into the input sequence feature of encoder, namely  `feat`. The masks and positional embeddings corresponding to the sequence feature are `feat_mask` and `feat_pos`. The outputs of the encoder are `memory`, whose corresponding masks are `memory_mask`. The decoder queries are `query`, which are called 'content query' in most papers. The positional embeddings of the decoder queries are `query_pos`, which are called 'spatial query',  'positional query', and 'object query' in most papers.
 
-On the level of deep modules, including Transformer components and attention modules: for the attention modules, the queries, keys, and values are `query`, `key`, and `value`, respectively. The positional embeddings corresponding to queries and keys are `query_pos` and `key_pos`, respectively. For encoder modules and encoder layer modules, the input parameters are named according to the `self_attn`. For decoder modules and decoder layer modules, the input parameters are named according to the `cross_attn`. Since the input images are padded to align shapes when collating a batch, the padding positions are recorded in a mask, namely `key_padding_mask`. The `self_attn_mask` and `cross_attn_mask` can also be specified in the decoder as attention masks for the two attention modules.
+On the level of deep modules, including Transformer components and attention modules: For the attention modules, the queries, keys, and values are `query`, `key`, and `value`, respectively. The positional embeddings corresponding to queries and keys are `query_pos` and `key_pos`, respectively. For encoder modules and encoder layer modules, the input parameters are named according to the `self_attn`. For decoder modules and decoder layer modules, the input parameters are named according to the `cross_attn`. Since the input images are padded to align shapes when collating a batch, the padding positions are recorded in a mask, namely `key_padding_mask`. The `self_attn_mask` and `cross_attn_mask` can also be specified in the decoder as attention masks for the two attention modules.
 
 ***（Add a figure here to summarize the schemes）***
 
@@ -192,8 +192,34 @@ Hence, while reading or using the codebase, the users should attend to judge whi
 
 #### Implement Transformer components
 
+There are four types of Transformer component modules: `XTransformerEncoder`，`XTransformerEncoderLayer`，`XTransformerDecoder`，`XTransformerDecoderLayer`. We put these Transformer component modules of the support DETRs at mmdet/models/layers/transformer/xxx_layers.py.
+
+In most case, a new DETR may reuse some existing components. The users should analysis and decide which components to reuse and which modules should be re-written. A new module usually only requires to inherit from an existing module and build on it with minor modifications.
+
+After inheriting an existing component module, the `_init_layers()` and `forward()` can be re-written according to the requirement. For `XTransformerEncoder._init_layers()` and `XTransformerDecoder._init_layers()`, the attributes `self.layers` and `self.embed_dims` should be initialized. For  `XTransformerEncoderLayer._init_layers()` and `XTransformerDecoderLayer._init_layers()`, the attributes of various modules, such as `self.self_attn`, `self.cross_attn`, `self.norms`, `self.ffn`, and `self.embed_dims` should be initialized.
+
 #### Implement detector
+
+The new DETR may be based on an existing DETR. Therefore, we can analyze the differences between them. Inherit the existing detector class or `DetectionTransformer` class. Then override certain functions.
+
+First, the initialization section should be written: The `_init_layers()` is re-written to initialize the modules, including `self.encoder`, `self.decoder`, `self.position_encoding`, and so on. The `init_weights()` is re-written to initialize the weights of the modules.
+
+Then, the forward process should be written: The users are recommended to adopt the well-designed general forward process. Re-write `pre_transformer()`，`forward_encoder()`，`pre_decoder()`，`forward_decoder()`. In `pre_transformer()`, write the logic of generating padding masks and position encoding, and the logic of feature convert from image format into sequence format. At last, return two keyword dictionaries of parameters required by `forward_encoder()` and `forward_decoder()`, respectively. In `pre_decoder()`, write the logic of processing decoder outputs and obtaining decoder queries `query` and their positional embeddings `query_pos`. Finally, return two keyword dictionaries of parameters required by `forward_decoder()` and the function of `self.bbox_head`, respectively.  In `forward_encoder()` and `forward_decoder()`, implement the logic of converting between naming schemes and processing with `self.encoder` or `self.decoder`.
+
+If the users do not adopt the provided process, the `forward_transformer()` should be re-written to implement the forward process of Transformer, and return a keyword dictionary containing the input parameters required by the function of `self.heads`. Or re-write the `loss()`, `prediction()`, `_forward()` completely.
 
 #### Implement head
 
-#### Example: Implement DINO
+The new head class should inherit `DETRHead` class. The implementation are divided into the initialization part, the forward part, the loss calculation part and post-processing part:
+
+The initialization of head also requires new `_init_layers()` and `init_weights()`. The `forward()` should be re-written to obtain classification and regression results from decoder outputs. The `loss_by_feat()` transforms the prediction results into loss dictionary for training, and the `prediction_by_feat()` conduct post-processing. If there is added or deleted parameters, the `loss()` and `predict()` may require to be modified.
+
+#### Example: Implement Conditional DETR
+
+Compared with DETR, the main improvement of Conditional DETR are in decoder section.
+
+We can reuse `DetrTransformerEncoder` and `DetrTransformerEncoderLayer`. We require to inherit `DetrTransformerDecoder` and `DetrTransformerDecoderLayers` to write new modules. The two modules both requires new `_init_layers()` and new `forward()`. The implementation can be found at mmdet/models/layers/transformer/conditional_detr_layers.py.
+
+The detector of Conditional DETR is almost same with DETR. There is only small difference, i.e. an extra returned parameter `references` for the decoder. Hence, only `forward_decoder()` is re-written. Moreover, in `_init_layers`, the decoder module should be replaced with the new module. The implementation can be found at mmdet/models/detector/conditional_detr.py.
+
+For the box head: Since the Conditional DETR uses focal loss, the `init_weights()` is written to modify the initialization of classification head. The `forward()` is re-written to implement the logic of adding predicted offsets to reference. Moreover, `loss()`, `predict()`, `loss_and_prediction()` are re-written to receive the new parameter `references`.

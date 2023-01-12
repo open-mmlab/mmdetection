@@ -196,172 +196,11 @@ Transformer 的组件通常包括四类： `XTransformerEncoder`，`XTransformer
 
 新的检测器可能沿用一些现有的组件。用户可以进行分析，根据需要选取需要编写的组件，充分利用 mmdet 所提供的组件；而对于需要编写的组件，用户也可以选取相似的现有组件继承，在其基础上稍加修改即可。
 
-这四类组件的新模块的实现通常需要继承自 detr_layers.py 中的四个组件（或其他文件中的组件），然后根据需要重载某些函数。通常需要编写 `_init_layers()` 函数和 `forward()` 函数：对于 `XTransformerEncoder` 和 `XTransformerDecoder` ，通常指定 `self.layers` 属性和 `self.embed_dims` 属性；对于 `XTransformerEncoderLayer` 和 `XTransformerDecoderLayer`，通常指定各模块属性和 `self.embed_dims` 属性；
+这四类模块在继承现有组件后，根据需要编写 `_init_layers()` 函数和 `forward()` 函数：对于 `XTransformerEncoder._init_layers()` 和 `XTransformerDecoder._init_layers()` ，通常指定 `self.layers` 属性和 `self.embed_dims` 属性；对于 `XTransformerEncoderLayer._init_layers()` 和 `XTransformerDecoderLayer._init_layers()`，通常指定各模块属性如 `self.self_attn`, `self.cross_attn`, `self.norms`, `self.ffn`, 和 `self.embed_dims` 属性；
 
 ##### 示例：实现 Conditional DETR 的 Transformer 组件  （写 html5 折叠掉）
 
 经分析相对于 DETR，Conditional DETR 的主要改进在解码器部分。因此可以直接复用 `DetrTransformerEncoder` 和 `DetrTransformerEncoderLayer`。需要分别继承 `DetrTransformerDecoder` 和 `DetrTransformerDecoderLayer` 编写 `ConditionalDetrTransformerDecoder` 和 `ConditionalDetrTransformerDecoderLayer`。两个模块都只需要先编写 `_init_layers()` 初始化各个模型层和 `self.embed_dims` 属性，然后可以根据实际情况选择性地编写 `forward()` 实现前向过程。
-
-<details>
-    <summary>Code</summary>
-    <pre><code class="language-python"># Copyright (c) OpenMMLab. All rights reserved.
-import torch
-from mmcv.cnn import build_norm_layer
-from mmcv.cnn.bricks.transformer import FFN
-from torch import Tensor
-from torch.nn import ModuleList
-from .detr_layers import DetrTransformerDecoder, DetrTransformerDecoderLayer
-from .utils import MLP, ConditionalAttention, coordinate_to_encoding
-class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
-    """Decoder of Conditional DETR."""
-    def _init_layers(self) -> None:
-        """Initialize decoder layers and other layers."""
-        self.layers = ModuleList([
-            ConditionalDetrTransformerDecoderLayer(**self.layer_cfg)
-            for _ in range(self.num_layers)
-        ])
-        self.embed_dims = self.layers[0].embed_dims
-        self.post_norm = build_norm_layer(self.post_norm_cfg,
-                                          self.embed_dims)[1]
-        # conditional detr affline
-        self.query_scale = MLP(self.embed_dims, self.embed_dims,
-                               self.embed_dims, 2)
-        self.ref_point_head = MLP(self.embed_dims, self.embed_dims, 2, 2)
-        # we have substitute 'qpos_proj' with 'qpos_sine_proj' except for
-        # the first decoder layer), so 'qpos_proj' should be deleted
-        # in other layers.
-        for layer_id in range(self.num_layers - 1):
-            self.layers[layer_id + 1].cross_attn.qpos_proj = None
-    def forward(self,
-                query: Tensor,
-                key: Tensor = None,
-                query_pos: Tensor = None,
-                key_pos: Tensor = None,
-                key_padding_mask: Tensor = None):
-        """Forward function of decoder.
-        Args:
-            query (Tensor): The input query with shape
-                (bs, num_queries, dim).
-            key (Tensor): The input key with shape (bs, num_keys, dim) If
-                `None`, the `query` will be used. Defaults to `None`.
-            query_pos (Tensor): The positional encoding for `query`, with the
-                same shape as `query`. If not `None`, it will be added to
-                `query` before forward function. Defaults to `None`.
-            key_pos (Tensor): The positional encoding for `key`, with the
-                same shape as `key`. If not `None`, it will be added to
-                `key` before forward function. If `None`, and `query_pos`
-                has the same shape as `key`, then `query_pos` will be used
-                as `key_pos`. Defaults to `None`.
-            key_padding_mask (Tensor): ByteTensor with shape (bs, num_keys).
-                Defaults to `None`.
-        Returns:
-            List[Tensor]: forwarded results with shape (num_decoder_layers,
-            bs, num_queries, dim) if `return_intermediate` is True, otherwise
-            with shape (1, bs, num_queries, dim). References with shape
-            (bs, num_queries, 2).
-        """
-        reference_unsigmoid = self.ref_point_head(
-            query_pos)  # [bs, num_queries, 2]
-        reference = reference_unsigmoid.sigmoid()
-        reference_xy = reference[..., :2]
-        intermediate = []
-        for layer_id, layer in enumerate(self.layers):
-            if layer_id == 0:
-                pos_transformation = 1
-            else:
-                pos_transformation = self.query_scale(query)
-            # get sine embedding for the query reference
-            ref_sine_embed = coordinate_to_encoding(coord_tensor=reference_xy)
-            # apply transformation
-            ref_sine_embed = ref_sine_embed * pos_transformation
-            query = layer(
-                query,
-                key=key,
-                query_pos=query_pos,
-                key_pos=key_pos,
-                key_padding_mask=key_padding_mask,
-                ref_sine_embed=ref_sine_embed,
-                is_first=(layer_id == 0))
-            if self.return_intermediate:
-                intermediate.append(self.post_norm(query))
-        if self.return_intermediate:
-            return torch.stack(intermediate), reference
-        query = self.post_norm(query)
-        return query.unsqueeze(0), reference
-class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
-    """Implements decoder layer in Conditional DETR transformer."""
-    def _init_layers(self):
-        """Initialize self-attention, cross-attention, FFN, and
-        normalization."""
-        self.self_attn = ConditionalAttention(**self.self_attn_cfg)
-        self.cross_attn = ConditionalAttention(**self.cross_attn_cfg)
-        self.embed_dims = self.self_attn.embed_dims
-        self.ffn = FFN(**self.ffn_cfg)
-        norms_list = [
-            build_norm_layer(self.norm_cfg, self.embed_dims)[1]
-            for _ in range(3)
-        ]
-        self.norms = ModuleList(norms_list)
-    def forward(self,
-                query: Tensor,
-                key: Tensor = None,
-                query_pos: Tensor = None,
-                key_pos: Tensor = None,
-                self_attn_masks: Tensor = None,
-                cross_attn_masks: Tensor = None,
-                key_padding_mask: Tensor = None,
-                ref_sine_embed: Tensor = None,
-                is_first: bool = False):
-        """
-        Args:
-            query (Tensor): The input query, has shape (bs, num_queries, dim)
-            key (Tensor, optional): The input key, has shape (bs, num_keys,
-                dim). If `None`, the `query` will be used. Defaults to `None`.
-            query_pos (Tensor, optional): The positional encoding for `query`,
-                has the same shape as `query`. If not `None`, it will be
-                added to `query` before forward function. Defaults to `None`.
-            ref_sine_embed (Tensor): The positional encoding for query in
-                cross attention, with the same shape as `x`. Defaults to None.
-            key_pos (Tensor, optional): The positional encoding for `key`, has
-                the same shape as `key`. If not None, it will be added to
-                `key` before forward function. If None, and `query_pos` has
-                the same shape as `key`, then `query_pos` will be used for
-                `key_pos`. Defaults to None.
-            self_attn_masks (Tensor, optional): ByteTensor mask, has shape
-                (num_queries, num_keys), Same in `nn.MultiheadAttention.
-                forward`. Defaults to None.
-            cross_attn_masks (Tensor, optional): ByteTensor mask, has shape
-                (num_queries, num_keys), Same in `nn.MultiheadAttention.
-                forward`. Defaults to None.
-            key_padding_mask (Tensor, optional): ByteTensor, has shape
-                (bs, num_keys). Defaults to None.
-            is_first (bool): A indicator to tell whether the current layer
-                is the first layer of the decoder. Defaults to False.
-        Returns:
-            Tensor: Forwarded results, has shape (bs, num_queries, dim).
-        """
-        query = self.self_attn(
-            query=query,
-            key=query,
-            query_pos=query_pos,
-            key_pos=query_pos,
-            attn_mask=self_attn_masks)
-        query = self.norms[0](query)
-        query = self.cross_attn(
-            query=query,
-            key=key,
-            query_pos=query_pos,
-            key_pos=key_pos,
-            attn_mask=cross_attn_masks,
-            key_padding_mask=key_padding_mask,
-            ref_sine_embed=ref_sine_embed,
-            is_first=is_first)
-        query = self.norms[1](query)
-        query = self.ffn(query)
-        query = self.norms[2](query)
-        return query
-    </code></pre>
-</details>
 
 #### 实现检测器类
 
@@ -369,9 +208,9 @@ class ConditionalDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
 
 新检测器类需要继承自 `DetectionTransformer` 类（或某个已有的 DETR 检测器类）。其实现流程通常如下：
 
-首先编写检测器的初始化部分：编写 `_init_layers()` 函数来初始化编写好的各模型模块，如编码器和解码器模块，和位置编码模块；编写 `init_weights()` 函数来初始化各模块的权重。
+首先编写检测器的初始化部分：编写 `_init_layers()` 函数来初始化编写好的各模型模块，如编码器和解码器模块，和位置编码模块等；编写 `init_weights()` 函数来初始化各模块的权重。
 
-然后编写检测器的前向过程：用户通常只需要采取新版 MMDetection 中设计的前向过程，编写 `pre_transformer()`，`forward_encoder()`，`pre_decoder()`，`forward_decoder()` 四个函数；在 `pre_transformer()` 中，编写获取填充掩码、位置编码的生成逻辑、图像特征到序列特征的转换逻辑，将 `forward_encoder()` 所需要的所有参数和 `forward_decoder()` 所需要的部分参数分别以关键词字典的形式返回；在 `pre_decoder()` 中处理编码器的输出，获取检测查询，将 `forward_decoder()` 所需要的其他参数和 `self.bbox_head` 的函数所需要的部分参数分别以关键词字典的形式返回；在 `forward_encoder()` 和 `forward_decoder()` 中，实现检测器层面和 Transformer 组件层面的命名空间的转换。
+然后编写检测器的前向过程：用户通常只需要采取新版 MMDetection 中设计的前向过程，编写 `pre_transformer()`，`forward_encoder()`，`pre_decoder()`，`forward_decoder()` 四个函数；在 `pre_transformer()` 中，编写获取填充掩码、位置编码的生成逻辑、图像特征到序列特征的转换逻辑，将 `forward_encoder()` 所需要的所有参数和 `forward_decoder()` 所需要的部分参数分别以关键词字典的形式返回；在 `pre_decoder()` 中处理编码器的输出，获取检测查询，将 `forward_decoder()` 所需要的其他参数和 `self.bbox_head` 的函数所需要的部分参数分别以关键词字典的形式返回；在 `forward_encoder()` 和 `forward_decoder()` 中，实现检测器层面和 Transformer 组件层面的命名空间的转换，并分别用 `self.encoder` 或 `self.decoder` 对进行处理。
 
 若不采取所提供的前向过程，可以根据需要，编写 `forward_transformer()`，单独实现 Transformer 的前向过程，并将检测头的函数所需要的输入参数保存在一个关键词字典中，作为返回值；或者也可以编写 `loss()`， `prediction()`， `_forward()` 三个函数，参考 MMDetection 检测器设计范式，实现不同情况下的检测前向过程。
 
