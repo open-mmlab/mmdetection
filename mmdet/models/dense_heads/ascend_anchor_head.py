@@ -359,7 +359,7 @@ class AscendAnchorHead(AnchorHead):
 
         # sampled anchors of all images
         min_num = torch.ones((num_imgs,),
-                             dtype=concat_pos_mask.dtype,
+                             dtype=torch.long,
                              device=concat_pos_mask.device)
         num_total_pos = torch.sum(torch.max(torch.sum(concat_pos_mask, dim=1),
                                             min_num))
