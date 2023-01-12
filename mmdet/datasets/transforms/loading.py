@@ -270,7 +270,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         else:
             _, box_type_cls = get_box_type(self.box_type)
             results['gt_bboxes'] = box_type_cls(gt_bboxes, dtype=torch.float32)
-        results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=np.bool)
+        results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=np.bool_)
 
     def _load_labels(self, results: dict) -> None:
         """Private function to load label annotations.
