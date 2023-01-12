@@ -122,6 +122,8 @@ feat = feat.view(batch_size, feat_dim, -1).permute(0, 2, 1)
 
 展平宽高后，特征丢失了空间位置信息。因此在 DETRs 中通常采用2D的位置编码，对每个特征点在特征图的行列位置进行编码，作为该特征点的位置嵌入。更多细节可以参考 [DETR 的位置嵌入](<>)。
 
+***（此处加一张图，来描述 image feature \<-> sequence feature）***
+
 上述操作能支持单尺度的特征图转换为序列特征，进而被 Transformer 处理。而对于多尺度特征图，通常需要记录更多的信息。
 
 多尺度特征图通常为多个图像特征的元组，第`l`个层级（level）的图像特征形式为 `(B, C, H_l, W_l)`，其中`H_l`, `W_l` 为该特征图的高宽。将该元组转化为序列特征的方式通常先对每个特征图进行展平和维度替换的操作，再将获得的几个序列在 `N` 这一维度合并（concat）起来，实现方式如下：
@@ -140,7 +142,7 @@ feat_flatten = torch.cat(feat_flatten, 1)
 
 为了支持对多尺度特征图的更多特殊操作，通常需要记录一些额外的信息。例如 每个尺度的特征空间大小 `spatial shape`; 由 `spatial shape` 可以获得每个特征图在 `N` 这一维度的起始索引 `lvl_start_index`。通过这两个参数可以反过来将 `(B, N, C)` 格式的序列特征还原成 `(B, C, H_l, W_l)` 格式的多尺度特征；也可以支持多尺度特征交互操作，例如可变形注意力（Deformable Attention）。
 
-（此处加一张图，来描述 image feature \<-> sequence feature）
+***（此处加一张图，来描述 image feature \<-> sequence feature）***
 
 #### DETR 的位置嵌入
 
@@ -172,19 +174,19 @@ Transformer 的自注意力的计算过程通常是先用查询（query）和键
 
 在 DETR 相关模块中，共采用了两种主要的命名规则，对应两个层面：
 
-在检测器的层面：骨干网路和颈部网络提取的特征图称为 `img_feats`。`pre_transformer` 将特征图转换成输入编码器的特征序列，称为 `feat`。特征序列对应的掩码和位置编码分别称为 `feat_mask` 和 `feat_pos`。编码器的输出被称为 `memory`，对应的掩码称为 `memory_mask`。解码器中的查询为 `query`，在多数文章中被称为 "content query"，对应的位置嵌入称为 `query_pos`，在多数的文章中被称为 "positional query", "spatial query", 或 "object query"。我们用下图概括这些参数的命名规则：
+在检测器的层面：骨干网路和颈部网络提取的特征图称为 `img_feats`。`pre_transformer()` 将特征图转换成输入编码器的特征序列，称为 `feat`。特征序列对应的掩码和位置编码分别称为 `feat_mask` 和 `feat_pos`。编码器的输出被称为 `memory`，对应的掩码称为 `memory_mask`。解码器中的查询为 `query`，在多数文章中被称为 "content query"，对应的位置嵌入称为 `query_pos`，在多数的文章中被称为 "positional query", "spatial query", 或 "object query"。
 
-（此处加一张图，来描述 参数的命名规则）
+在 Transformer 部件模块、注意力模块等深层模块的层面：对于注意力模块，查询为 `query`、键为 `key`、值为 `value`，查询和健对应的位置分别为 `query_pos` 和 `key_pos`；对于编码器和编码器层，按照 `self_attn` 的输入参数名命名；对于解码器和解码器层，按照 `cross_attn` 的输入参数命名。由于输入图像在批处理时会采用零填充的方式对齐图像尺寸，在计算时将记录填充位置的掩码命名为 `key_padding_mask`。在解码器中也可以指定 `self_attn_mask` 和 `cross_attn_mask` 作为不同注意力模块的掩码。
 
-在 Transformer 部件模块、注意力模块等深层模块的层面：按照注意力的输入参数名命名，即 查询为 `query`、键为 `key`, 且 值为 `value`，查询和健对应的位置分别为 `query_pos` 和 `key_pos`。由于输入图像在批处理时会采用零填充的方式对齐图像尺寸，在计算时将记录填充位置的掩码命名为 `key_padding_mask`。在解码器中也可以指定 `self_attn_mask` 和 `cross_attn_mask` 作为不同注意力模块的掩码。
+***（此处加一张图，来描述 参数的命名规则）***
 
-检测器类的 `forward_encoder` 和 `forward_decoder` 方法的本质作用是 对两种参数命名规则进行映射。
+检测器类的 `forward_encoder()` 和 `forward_decoder()` 方法的本质作用是 对两种参数命名规则进行映射。
 
 因此读者在阅读和使用代码时要注意判断是哪种命名规则。尤其对于 `query` 这个参数，如果是检测器中的参数，应当特指的是解码器的查询，如果是 Transformer 部件的参数，应当代表的是注意力计算中的查询。
 
 #### 统一的参数流
 
-to be continued
+***（其致哥编写~）***
 
 ### 自定义一个 DETR 检测器
 

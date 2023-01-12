@@ -170,9 +170,23 @@ In inference: the final detection results can be obtained by directly remove the
 
 #### Parameter names
 
-In various codebase of DETRs, there are multiple meanings for the parameter name `query`, which ......
+In various codebase of DETRs, there are multiple meanings for the parameter name `query`, which make it easy for users to confuse about the variable. In the new MMDetection, we appoint the meaning of parameter names and standardize our implementation uniformly.
+
+There are two levels of naming schemes in our implementation:
+
+On the level of detector modules: the feature maps extracted by backbone and neck are  `img_feats`. The `pre_transformer()` converts the image feature into the input sequence feature of encoder, namely  `feat`. The masks and positional embeddings corresponding to the sequence feature are `feat_mask` and `feat_pos`. The outputs of the encoder are `memory`, whose corresponding masks are `memory_mask`. The decoder queries are `query`, which are called 'content query' in most papers. The positional embeddings of the decoder queries are `query_pos`, which are called 'spatial query',  'positional query', and 'object query' in most papers.
+
+On the level of deep modules, including Transformer components and attention modules: for the attention modules, the queries, keys, and values are `query`, `key`, and `value`, respectively. The positional embeddings corresponding to queries and keys are `query_pos` and `key_pos`, respectively. For encoder modules and encoder layer modules, the input parameters are named according to the `self_attn`. For decoder modules and decoder layer modules, the input parameters are named according to the `cross_attn`. Since the input images are padded to align shapes when collating a batch, the padding positions are recorded in a mask, namely `key_padding_mask`. The `self_attn_mask` and `cross_attn_mask` can also be specified in the decoder as attention masks for the two attention modules.
+
+***（Add a figure here to summarize the schemes）***
+
+The role of `forward_encoder()` and `forward_decoder()` functions of detector classes is to map the two levels of naming schemes.
+
+Hence, while reading or using the codebase, the users should attend to judge which kind of naming scheme is used, especially for the parameter named `query`. (If it is in the detector, it represents the decoder queries. If it is in the Transformer components or attention modules, it indicates the queries of the attention calculation.)
 
 #### Unified data flow
+
+***(To be written by QiZhi~)***
 
 ### Customize a DETR
 
