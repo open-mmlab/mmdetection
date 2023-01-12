@@ -108,12 +108,215 @@ We also provide the imagenet classification configs of the RTMDet backbone. Find
 
 ## Deployment Tutorial
 
+Here is a basic example of deploy RTMDet with [MMDeploy-1.x](https://github.com/open-mmlab/mmdeploy/tree/1.x).
+
 ### Step1. Install MMDeploy
 
-### Step2. Export Model
+Before starting the deployment, please make sure you install MMDetection-3.x and MMDeploy-1.x correctly.
 
-#### ONNX
+- Install MMDetection-3.x, please refer to the [MMDetection-3.x installation guide](https://mmdetection.readthedocs.io/en/3.x/get_started.html).
+- Install MMDeploy-1.x, please refer to the [MMDeploy-1.x installation guide](https://mmdeploy.readthedocs.io/en/1.x/get_started.html#installation).
 
-#### TensorRT
+If you want to deploy RTMDet with ONNXRuntime, TensorRT, or other inference engine,
+please make sure you have installed the corresponding dependencies and MMDeploy precompiled packages.
+
+### Step2. Convert Model
+
+After the installation, you can enjoy the model deployment journey starting from converting PyTorch model to backend model by running MMDeploy's `tools/deploy.py`.
+
+The detailed model conversion tutorial please refer to the [MMDeploy document](https://mmdeploy.readthedocs.io/en/1.x/02-how-to-run/convert_model.html).
+Here we only give the example of converting RTMDet.
+
+MMDeploy supports converting dynamic and static models. Dynamic models support different input shape, but the inference speed is slower than static models.
+To achieve the best performance, we suggest converting RTMDet with static setting.
+
+- If you only want to use ONNX, please use [`configs/mmdet/detection/detection_onnxruntime_static.py`](https://github.com/open-mmlab/mmdeploy/blob/1.x/configs/mmdet/detection/detection_onnxruntime_static.py) as the deployment config.
+- If you want to use TensorRT, please use [`configs/mmdet/detection/detection_tensorrt_static-640x640.py`](https://github.com/open-mmlab/mmdeploy/blob/1.x/configs/mmdet/detection/detection_tensorrt_static-640x640.py).
+
+If you want to customize the settings in the deployment config for your requirements, please refer to [MMDeploy config tutorial](https://mmdeploy.readthedocs.io/en/1.x/02-how-to-run/write_config.html).
+
+After preparing the deployment config, you can run the `tools/deploy.py` script to convert your model.
+Here we take converting RTMDet-s to TensorRT as an example:
+
+```shell
+# go to the mmdeploy folder
+cd ${PATH_TO_MMDEPLOY}
+
+# download RTMDet-s checkpoint
+wget -P checkpoint https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_s_8xb32-300e_coco/rtmdet_s_8xb32-300e_coco_20220905_161602-387a891e.pth
+
+# run the command to start model conversion
+python tools/deploy.py \
+  configs/mmdet/detection/detection_tensorrt_static-640x640.py \
+  ${PATH_TO_MMDET}/configs/rtmdet/rtmdet_s_8xb32-300e_coco.py \
+  checkpoint/rtmdet_s_8xb32-300e_coco_20220905_161602-387a891e.pth \
+  demo/resources/det.jpg \
+  --work-dir ./work_dirs/rtmdet \
+  --device cuda:0 \
+  --show
+```
+
+If the script runs successfully, you will see the following files:
+
+```
+|----work_dirs
+     |----rtmdet
+          |----end2end.onnx  # ONNX model
+          |----end2end.engine  # TensorRT engine file
+```
+
+After this, you can check the inference results with MMDeploy Model Converter API:
+
+```python
+from mmdeploy.apis import inference_model
+
+result = inference_model(
+  model_cfg='${PATH_TO_MMDET}/configs/rtmdet/rtmdet_s_8xb32-300e_coco.py',
+  deploy_cfg='${PATH_TO_MMDEPLOY}/configs/rtmdet/rtmdet_s_8xb32-300e_coco.py',
+  backend_files=['work_dirs/rtmdet/end2end.engine'],
+  img='demo/resources/det.jpg',
+  device='cuda:0')
+```
+
+#### Advanced Setting
+
+To convert the model with TRT-FP16, you can enable the fp16 mode in your deploy config:
+
+```python
+# in MMDeploy config
+backend_config = dict(
+    type='tensorrt',
+    common_config=dict(
+        fp16_mode=True  # enable fp16
+    ))
+```
+
+To reduce the end to end inference speed with the inference engine, we suggest you to adjust the post-processing setting of the model.
+We set a very low score threshold during training and testing to achieve better COCO mAP.
+However, in actual usage scenarios, a relatively high score threshold (e.g. 0.3) is usually used.
+
+You can adjust the score threshold and the number of detection boxes in your model config according to the actual usage to reduce the time-consuming of post-processing.
+
+```python
+# in MMDetection config
+model = dict(
+    test_cfg=dict(
+        nms_pre=1000,  # keep top-k score bboxes before nms
+        min_bbox_size=0,
+        score_thr=0.3,  # score threshold to filter bboxes
+        nms=dict(type='nms', iou_threshold=0.65),
+        max_per_img=100)  # only keep top-100 as the final results.
+)
+```
 
 ### Step3. Inference with SDK
+
+We provide both Python and C++ inference API with MMDeploy SDK.
+
+To use SDK, you need to dump the required info during converting the model. Just add `--dump-info` to the model conversion command:
+
+```shell
+python tools/deploy.py \
+  configs/mmdet/detection/detection_tensorrt_static-640x640.py \
+  ${PATH_TO_MMDET}/configs/rtmdet/rtmdet_s_8xb32-300e_coco.py \
+  checkpoint/rtmdet_s_8xb32-300e_coco_20220905_161602-387a891e.pth \
+  demo/resources/det.jpg \
+  --work-dir ./work_dirs/rtmdet-sdk \
+  --device cuda:0 \
+  --show \
+  --dump-info  # dump sdk info
+```
+
+After running the command, it will dump 3 json files additionally for the SDK:
+
+```
+|----work_dirs
+     |----rtmdet-sdk
+          |----end2end.onnx  # ONNX model
+          |----end2end.engine  # TensorRT engine file
+          # json files for the SDK
+          |----pipeline.json
+          |----deploy.json
+          |----detail.json
+```
+
+#### Python API
+
+Here is a basic example of SDK Python API:
+
+```python
+from mmdeploy_python import Detector
+import cv2
+
+img = cv2.imread('demo/resources/det.jpg')
+
+# create a detector
+detector = Detector(model_path='work_dirs/rtmdet-sdk', device_name='cuda', device_id=0)
+# run the inference
+bboxes, labels, _ = detector(img)
+# Filter the result according to threshold
+indices = [i for i in range(len(bboxes))]
+for index, bbox, label_id in zip(indices, bboxes, labels):
+  [left, top, right, bottom], score = bbox[0:4].astype(int),  bbox[4]
+  if score < 0.3:
+      continue
+  # draw bbox
+  cv2.rectangle(img, (left, top), (right, bottom), (0, 255, 0))
+
+cv2.imwrite('output_detection.png', img)
+```
+
+#### C++ API
+
+Here is a basic example of SDK C++ API:
+
+```C++
+#include <cstdlib>
+#include <opencv2/opencv.hpp>
+#include "mmdeploy/detector.hpp"
+
+int main() {
+  const char* device_name = "cuda";
+  int device_id = 0;
+  std::string model_path = "work_dirs/rtmdet-sdk";
+  std::string image_path = "demo/resources/det.jpg";
+
+  // 1. load model
+  mmdeploy::Model model(model_path);
+  // 2. create predictor
+  mmdeploy::Detector detector(model, mmdeploy::Device{device_name, device_id});
+  // 3. read image
+  cv::Mat img = cv::imread(image_path);
+  // 4. inference
+  auto dets = detector.Apply(img);
+  // 5. deal with the result. Here we choose to visualize it
+  for (int i = 0; i < dets.size(); ++i) {
+    const auto& box = dets[i].bbox;
+    fprintf(stdout, "box %d, left=%.2f, top=%.2f, right=%.2f, bottom=%.2f, label=%d, score=%.4f\n",
+            i, box.left, box.top, box.right, box.bottom, dets[i].label_id, dets[i].score);
+    if (bboxes[i].score < 0.3) {
+      continue;
+    }
+    cv::rectangle(img, cv::Point{(int)box.left, (int)box.top},
+                  cv::Point{(int)box.right, (int)box.bottom}, cv::Scalar{0, 255, 0});
+  }
+  cv::imwrite("output_detection.png", img);
+  return 0;
+}
+```
+
+To build C++ example, please add MMDeploy package in your CMake project as following:
+
+```cmake
+find_package(MMDeploy REQUIRED)
+target_link_libraries(${name} PRIVATE mmdeploy ${OpenCV_LIBS})
+```
+
+#### Other languages
+
+- [C# API Examples](https://github.com/open-mmlab/mmdeploy/tree/1.x/demo/csharp)
+- [JAVA API Examples](https://github.com/open-mmlab/mmdeploy/tree/1.x/demo/java)
+
+### Deploy RTMDet Instance Segmentation Model
+
+Coming soon!
