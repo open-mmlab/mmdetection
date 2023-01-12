@@ -20,6 +20,6 @@ __all__ = [
     'BaseAssigner', 'MaxIoUAssigner', 'ApproxMaxIoUAssigner', 'AssignResult',
     'PointAssigner', 'ATSSAssigner', 'CenterRegionAssigner', 'GridAssigner',
     'HungarianAssigner', 'RegionAssigner', 'UniformAssigner', 'SimOTAAssigner',
-    'TaskAlignedAssigner', 'MaskHungarianAssigner',
-    'AscendAssignResult', 'AscendMaxIoUAssigner'
+    'TaskAlignedAssigner', 'MaskHungarianAssigner', 'AscendAssignResult',
+    'AscendMaxIoUAssigner'
 ]

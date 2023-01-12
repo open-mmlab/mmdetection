@@ -2,9 +2,8 @@
 import mmcv
 import torch
 
-from mmdet.models.dense_heads import AscendAnchorHead
-from mmdet.models.dense_heads import AscendRetinaHead
-from mmdet.models.dense_heads import AscendSSDHead
+from mmdet.models.dense_heads import (AscendAnchorHead, AscendRetinaHead,
+                                      AscendSSDHead)
 
 
 def test_ascend_anchor_head_loss():
@@ -26,13 +25,12 @@ def test_ascend_anchor_head_loss():
                 ignore_iof_thr=-1),
             allowed_border=-1,
             pos_weight=-1,
-            debug=False)
-    )
+            debug=False))
     self = AscendAnchorHead(num_classes=4, in_channels=1, train_cfg=cfg)
 
     # Anchor head expects a multiple levels of features per image
     feat = [
-        torch.rand(1, 1, s // (2 ** (i + 2)), s // (2 ** (i + 2)))
+        torch.rand(1, 1, s // (2**(i + 2)), s // (2**(i + 2)))
         for i in range(len(self.prior_generator.strides))
     ]
     cls_scores, bbox_preds = self.forward(feat)
@@ -89,17 +87,13 @@ def test_ascend_retina_head_loss():
                 ignore_iof_thr=-1),
             allowed_border=-1,
             pos_weight=-1,
-            debug=False)
-    )
-    self = AscendRetinaHead(num_classes=num_classes,
-                            in_channels=in_channels,
-                            train_cfg=cfg)
+            debug=False))
+    self = AscendRetinaHead(
+        num_classes=num_classes, in_channels=in_channels, train_cfg=cfg)
 
     # Anchor head expects a multiple levels of features per image
     feat = [
-        torch.rand(1,
-                   in_channels,
-                   pad_shape[0] // strides[0],
+        torch.rand(1, in_channels, pad_shape[0] // strides[0],
                    pad_shape[1] // strides[1])
         for strides in self.prior_generator.strides
     ]
@@ -139,18 +133,15 @@ def test_ascend_ssd_head_loss():
     img_shape = (320, 320, 3)
     pad_shape = (320, 320, 3)
     in_channels = (96, 1280, 512, 256, 256, 128)
-    img_metas = [
-        {
-            'img_shape': img_shape,
-            'scale_factor': 1,
-            'pad_shape': pad_shape
-        },
-        {
-            'img_shape': img_shape,
-            'scale_factor': 1,
-            'pad_shape': pad_shape
-        }
-    ]
+    img_metas = [{
+        'img_shape': img_shape,
+        'scale_factor': 1,
+        'pad_shape': pad_shape
+    }, {
+        'img_shape': img_shape,
+        'scale_factor': 1,
+        'pad_shape': pad_shape
+    }]
 
     self = AscendSSDHead(
         in_channels=in_channels,
@@ -159,7 +150,6 @@ def test_ascend_ssd_head_loss():
         norm_cfg=dict(type='BN', eps=0.001, momentum=0.03),
         act_cfg=dict(type='ReLU6'),
         init_cfg=dict(type='Normal', layer='Conv2d', std=0.001),
-
         anchor_generator=dict(
             type='SSDAnchorGenerator',
             scale_major=False,
@@ -171,29 +161,26 @@ def test_ascend_ssd_head_loss():
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
             target_stds=[0.1, 0.1, 0.2, 0.2]),
-        train_cfg=mmcv.Config(dict(
-            assigner=dict(
-                type='AscendMaxIoUAssigner',
-                pos_iou_thr=0.5,
-                neg_iou_thr=0.5,
-                min_pos_iou=0.,
-                ignore_iof_thr=-1,
-                gt_max_assign_all=False),
-            smoothl1_beta=1.,
-            allowed_border=-1,
-            pos_weight=-1,
-            neg_pos_ratio=3,
-            debug=False))
-    )
+        train_cfg=mmcv.Config(
+            dict(
+                assigner=dict(
+                    type='AscendMaxIoUAssigner',
+                    pos_iou_thr=0.5,
+                    neg_iou_thr=0.5,
+                    min_pos_iou=0.,
+                    ignore_iof_thr=-1,
+                    gt_max_assign_all=False),
+                smoothl1_beta=1.,
+                allowed_border=-1,
+                pos_weight=-1,
+                neg_pos_ratio=3,
+                debug=False)))
 
     # Anchor head expects a multiple levels of features per image
     feat = [
-        torch.rand(
-            2,
-            in_channels[i],
-            round(pad_shape[0] / self.prior_generator.strides[i][0]),
-            round(pad_shape[1] / self.prior_generator.strides[i][1])
-        )
+        torch.rand(2, in_channels[i],
+                   round(pad_shape[0] / self.prior_generator.strides[i][0]),
+                   round(pad_shape[1] / self.prior_generator.strides[i][1]))
         for i in range(len(self.prior_generator.strides))
     ]
     cls_scores, bbox_preds = self.forward(feat)

@@ -2,6 +2,7 @@
 import torch
 import torch.nn.functional as F
 from mmcv.runner import force_fp32
+
 from ..builder import HEADS
 from ..losses import smooth_l1_loss
 from .ascend_anchor_head import AscendAnchorHead
@@ -84,12 +85,11 @@ class AscendSSDHead(SSDHead, AscendAnchorHead):
             reg_decoded_bbox=reg_decoded_bbox,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            init_cfg=init_cfg
-        )
+            init_cfg=init_cfg)
         assert self.reg_decoded_bbox is False, \
             'reg_decoded_bbox only support False now.'
 
-    def get_static_anchors(self, featmap_sizes, img_metas, device="cuda"):
+    def get_static_anchors(self, featmap_sizes, img_metas, device='cuda'):
         """Get static anchors according to feature map sizes.
 
         Args:
@@ -102,8 +102,10 @@ class AscendSSDHead(SSDHead, AscendAnchorHead):
                 anchor_list (list[Tensor]): Anchors of each image.
                 valid_flag_list (list[Tensor]): Valid flags of each image.
         """
-        if not hasattr(self, 'static_anchors') or not hasattr(self, 'static_valid_flags'):
-            static_anchors, static_valid_flags = self.get_anchors(featmap_sizes, img_metas, device)
+        if not hasattr(self, 'static_anchors') or \
+                not hasattr(self, 'static_valid_flags'):
+            static_anchors, static_valid_flags = self.get_anchors(
+                featmap_sizes, img_metas, device)
             self.static_anchors = static_anchors
             self.static_valid_flags = static_valid_flags
         return self.static_anchors, self.static_valid_flags
@@ -175,12 +177,9 @@ class AscendSSDHead(SSDHead, AscendAnchorHead):
             return_level,
         )
 
-    def concat_loss(self,
-                    concat_cls_score, concat_bbox_pred,
-                    concat_anchor, concat_labels,
-                    concat_label_weights,
-                    concat_bbox_targets, concat_bbox_weights,
-                    concat_pos_mask, concat_neg_mask,
+    def concat_loss(self, concat_cls_score, concat_bbox_pred, concat_anchor,
+                    concat_labels, concat_label_weights, concat_bbox_targets,
+                    concat_bbox_weights, concat_pos_mask, concat_neg_mask,
                     num_total_samples):
         """Compute loss of all images.
 
@@ -211,23 +210,34 @@ class AscendSSDHead(SSDHead, AscendAnchorHead):
         num_images, num_anchors, _ = concat_anchor.size()
 
         concat_loss_cls_all = F.cross_entropy(
-            concat_cls_score.view((-1, self.cls_out_channels)), concat_labels.view(-1),
-            reduction='none').view(concat_label_weights.size()) * concat_label_weights
+            concat_cls_score.view((-1, self.cls_out_channels)),
+            concat_labels.view(-1),
+            reduction='none').view(
+                concat_label_weights.size()) * concat_label_weights
         # # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
         concat_num_pos_samples = torch.sum(concat_pos_mask, dim=1)
-        concat_num_neg_samples = self.train_cfg.neg_pos_ratio * concat_num_pos_samples
+        concat_num_neg_samples = \
+            self.train_cfg.neg_pos_ratio * concat_num_pos_samples
 
         concat_num_neg_samples_max = torch.sum(concat_neg_mask, dim=1)
-        concat_num_neg_samples = torch.min(concat_num_neg_samples, concat_num_neg_samples_max)
+        concat_num_neg_samples = torch.min(concat_num_neg_samples,
+                                           concat_num_neg_samples_max)
 
-        concat_topk_loss_cls_neg, _ = torch.topk(concat_loss_cls_all * concat_neg_mask, k=num_anchors, dim=1)
-        concat_loss_cls_pos = torch.sum(concat_loss_cls_all * concat_pos_mask, dim=1)
+        concat_topk_loss_cls_neg, _ = torch.topk(
+            concat_loss_cls_all * concat_neg_mask, k=num_anchors, dim=1)
+        concat_loss_cls_pos = torch.sum(
+            concat_loss_cls_all * concat_pos_mask, dim=1)
 
-        anchor_index = torch.arange(end=num_anchors, dtype=torch.float, device=concat_anchor.device).view((1, -1))
-        topk_loss_neg_mask = (anchor_index < concat_num_neg_samples.view(-1, 1)).float()
+        anchor_index = torch.arange(
+            end=num_anchors, dtype=torch.float,
+            device=concat_anchor.device).view((1, -1))
+        topk_loss_neg_mask = (anchor_index < concat_num_neg_samples.view(
+            -1, 1)).float()
 
-        concat_loss_cls_neg = torch.sum(concat_topk_loss_cls_neg * topk_loss_neg_mask, dim=1)
-        loss_cls = (concat_loss_cls_pos + concat_loss_cls_neg) / num_total_samples
+        concat_loss_cls_neg = torch.sum(
+            concat_topk_loss_cls_neg * topk_loss_neg_mask, dim=1)
+        loss_cls = \
+            (concat_loss_cls_pos + concat_loss_cls_neg) / num_total_samples
 
         if self.reg_decoded_bbox:
             # TODO: support self.reg_decoded_bbox is True
@@ -237,13 +247,14 @@ class AscendSSDHead(SSDHead, AscendAnchorHead):
             concat_bbox_pred,
             concat_bbox_targets,
             concat_bbox_weights,
-            reduction="none",
+            reduction='none',
             beta=self.train_cfg.smoothl1_beta,
             avg_factor=num_total_samples)
         eps = torch.finfo(torch.float32).eps
 
         sum_dim = (i for i in range(1, len(loss_bbox_all.size())))
-        loss_bbox = loss_bbox_all.sum(tuple(sum_dim)) / (num_total_samples + eps)
+        loss_bbox = loss_bbox_all.sum(tuple(sum_dim)) / (
+            num_total_samples + eps)
         return loss_cls[None], loss_bbox
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
@@ -292,27 +303,27 @@ class AscendSSDHead(SSDHead, AscendAnchorHead):
         if cls_reg_targets is None:
             return None
 
-        (concat_labels, concat_label_weights, concat_bbox_targets, concat_bbox_weights, concat_pos_mask,
-         concat_neg_mask, sampling_result, num_total_pos, num_total_neg, concat_anchors) = cls_reg_targets
+        (concat_labels, concat_label_weights, concat_bbox_targets,
+         concat_bbox_weights, concat_pos_mask, concat_neg_mask,
+         sampling_result, num_total_pos, num_total_neg,
+         concat_anchors) = cls_reg_targets
 
         num_imgs = len(img_metas)
         concat_cls_score = torch.cat([
-            s.permute(0, 2, 3, 1).reshape(
-                num_imgs, -1, self.cls_out_channels) for s in cls_scores
+            s.permute(0, 2, 3, 1).reshape(num_imgs, -1, self.cls_out_channels)
+            for s in cls_scores
         ], 1)
 
         concat_bbox_pred = torch.cat([
-            b.permute(0, 2, 3, 1).reshape(num_imgs, -1, 4)
-            for b in bbox_preds
+            b.permute(0, 2, 3, 1).reshape(num_imgs, -1, 4) for b in bbox_preds
         ], -2)
 
         concat_losses_cls, concat_losses_bbox = self.concat_loss(
-            concat_cls_score, concat_bbox_pred,
-            concat_anchors, concat_labels,
-            concat_label_weights,
-            concat_bbox_targets, concat_bbox_weights,
-            concat_pos_mask, concat_neg_mask,
-            num_total_pos)
-        losses_cls = [concat_losses_cls[:, index_imgs] for index_imgs in range(num_imgs)]
+            concat_cls_score, concat_bbox_pred, concat_anchors, concat_labels,
+            concat_label_weights, concat_bbox_targets, concat_bbox_weights,
+            concat_pos_mask, concat_neg_mask, num_total_pos)
+        losses_cls = [
+            concat_losses_cls[:, index_imgs] for index_imgs in range(num_imgs)
+        ]
         losses_bbox = [losses_bbox for losses_bbox in concat_losses_bbox]
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)

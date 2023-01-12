@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from .ascend_util import generate_max_gt_nums, images_to_levels, set_index
 from .collect_env import collect_env
 from .compat_config import compat_cfg
 from .logger import get_caller_name, get_root_logger, log_img_scale
@@ -8,12 +9,11 @@ from .replace_cfg_vals import replace_cfg_vals
 from .setup_env import setup_multi_processes
 from .split_batch import split_batch
 from .util_distribution import build_ddp, build_dp, get_device
-from .ascend_util import set_index, images_to_levels, generate_max_gt_nums
 
 __all__ = [
     'get_root_logger', 'collect_env', 'find_latest_checkpoint',
     'update_data_root', 'setup_multi_processes', 'get_caller_name',
     'log_img_scale', 'compat_cfg', 'split_batch', 'build_ddp', 'build_dp',
     'get_device', 'replace_cfg_vals', 'AvoidOOM', 'AvoidCUDAOOM',
-    'set_index', 'images_to_levels', 'generate_max_gt_nums'
+    'generate_max_gt_nums', 'set_index', 'images_to_levels'
 ]

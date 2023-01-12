@@ -1,6 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import torch
-
 from mmdet.utils import util_mixins
 
 
@@ -18,14 +16,18 @@ class AscendAssignResult(util_mixins.NiceRepr):
             and ground truth boxes.
 
         concat_anchor_gt_indes(None | LongTensor): The the assigned truth
-            box index of all anchors
-            .
+            box index of all anchors.
 
-        concat_anchor_gt_labels(None | LongTensor): The gt labels of all anchors
+        concat_anchor_gt_labels(None | LongTensor): The gt labels
+            of all anchors
     """
 
-    def __init__(self, concat_num_gts, concat_pos_mask, concat_neg_mask,
-                 concat_max_overlaps, concat_anchor_gt_indes=None,
+    def __init__(self,
+                 concat_num_gts,
+                 concat_pos_mask,
+                 concat_neg_mask,
+                 concat_max_overlaps,
+                 concat_anchor_gt_indes=None,
                  concat_anchor_gt_labels=None):
         self.concat_num_gts = concat_num_gts
         self.concat_pos_mask = concat_pos_mask

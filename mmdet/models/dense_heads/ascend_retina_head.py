@@ -110,14 +110,6 @@ class AscendRetinaHead(RetinaHead, AscendAnchorHead):
                 The results will be concatenated after the end
         """
         return AscendAnchorHead.get_targets(
-            self,
-            anchor_list,
-            valid_flag_list,
-            gt_bboxes_list,
-            img_metas,
-            gt_bboxes_ignore_list,
-            gt_labels_list,
-            label_channels,
-            unmap_outputs,
-            return_sampling_results,
-            return_level)
+            self, anchor_list, valid_flag_list, gt_bboxes_list, img_metas,
+            gt_bboxes_ignore_list, gt_labels_list, label_channels,
+            unmap_outputs, return_sampling_results, return_level)

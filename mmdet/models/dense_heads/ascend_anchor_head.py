@@ -1,10 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
-from ..builder import HEADS
-from .anchor_head import AnchorHead
+
 from ...core.bbox.assigners import AscendMaxIoUAssigner
 from ...core.bbox.samplers import PseudoSampler
-from ...utils import set_index, images_to_levels, generate_max_gt_nums
+from ...utils import generate_max_gt_nums, images_to_levels, set_index
+from ..builder import HEADS
+from .anchor_head import AnchorHead
 
 
 @HEADS.register_module()
@@ -65,15 +66,10 @@ class AscendAnchorHead(AnchorHead):
             loss_bbox=loss_bbox,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            init_cfg=init_cfg
-        )
+            init_cfg=init_cfg)
 
-    def _get_concat_gt_bboxes(self,
-                              gt_bboxes_list,
-                              num_images,
-                              gt_nums,
-                              device,
-                              max_gt_labels):
+    def _get_concat_gt_bboxes(self, gt_bboxes_list, num_images, gt_nums,
+                              device, max_gt_labels):
         """Get ground truth bboxes of all image.
 
         Args:
@@ -100,16 +96,14 @@ class AscendAnchorHead(AnchorHead):
                 concat_gt_bboxes[:, :, 2:] = self.min_anchor[1]
                 self.concat_gt_bboxes[max_gt_labels] = concat_gt_bboxes.clone()
             else:
-                concat_gt_bboxes = self.concat_gt_bboxes.get(max_gt_labels).clone()
+                concat_gt_bboxes = self.concat_gt_bboxes.get(
+                    max_gt_labels).clone()
             for index_imgs, gt_bboxes in enumerate(gt_bboxes_list):
                 concat_gt_bboxes[index_imgs, :gt_nums[index_imgs]] = gt_bboxes
         return concat_gt_bboxes
 
-    def _get_concat_gt_bboxes_ignore(self,
-                                     gt_bboxes_ignore_list,
-                                     num_images,
-                                     gt_nums,
-                                     device):
+    def _get_concat_gt_bboxes_ignore(self, gt_bboxes_ignore_list, num_images,
+                                     gt_nums, device):
         """Ground truth bboxes to be ignored of all image.
 
         Args:
@@ -126,15 +120,11 @@ class AscendAnchorHead(AnchorHead):
         if gt_bboxes_ignore_list is None:
             concat_gt_bboxes_ignore = None
         else:
-            raise RuntimeError("gt_bboxes_ignore not support yet")
+            raise RuntimeError('gt_bboxes_ignore not support yet')
         return concat_gt_bboxes_ignore
 
-    def _get_concat_gt_labels(self,
-                              gt_labels_list,
-                              num_images,
-                              gt_nums,
-                              device,
-                              max_gt_labels):
+    def _get_concat_gt_labels(self, gt_labels_list, num_images, gt_nums,
+                              device, max_gt_labels):
         """Ground truth bboxes to be ignored of all image.
 
         Args:
@@ -200,7 +190,9 @@ class AscendAnchorHead(AnchorHead):
         num_imgs, num_anchors, _ = concat_anchors.size()
         # assign gt and sample concat_anchors
         assign_result = self.assigner.assign(
-            concat_anchors, concat_gt_bboxes, concat_gt_bboxes_ignore,
+            concat_anchors,
+            concat_gt_bboxes,
+            concat_gt_bboxes_ignore,
             None if self.sampling else concat_gt_labels,
             concat_bboxes_ignore_mask=concat_valid_flags)
         # TODO: support sampling_result
@@ -210,37 +202,51 @@ class AscendAnchorHead(AnchorHead):
         concat_anchor_gt_indes = assign_result.concat_anchor_gt_indes
         concat_anchor_gt_labels = assign_result.concat_anchor_gt_labels
 
-        concat_anchor_gt_bboxes = torch.zeros(concat_anchors.size(),
-                                              dtype=concat_anchors.dtype,
-                                              device=concat_anchors.device)
+        concat_anchor_gt_bboxes = torch.zeros(
+            concat_anchors.size(),
+            dtype=concat_anchors.dtype,
+            device=concat_anchors.device)
         for index_imgs in range(num_imgs):
-            concat_anchor_gt_bboxes[index_imgs] = torch.index_select(concat_gt_bboxes[index_imgs], 0,
-                                                                     concat_anchor_gt_indes[index_imgs])
+            concat_anchor_gt_bboxes[index_imgs] = torch.index_select(
+                concat_gt_bboxes[index_imgs], 0,
+                concat_anchor_gt_indes[index_imgs])
 
         concat_bbox_targets = torch.zeros_like(concat_anchors)
         concat_bbox_weights = torch.zeros_like(concat_anchors)
-        concat_labels = concat_anchors.new_full((num_imgs, num_anchors), self.num_classes, dtype=torch.int)
-        concat_label_weights = concat_anchors.new_zeros((num_imgs, num_anchors), dtype=torch.float)
+        concat_labels = concat_anchors.new_full((num_imgs, num_anchors),
+                                                self.num_classes,
+                                                dtype=torch.int)
+        concat_label_weights = concat_anchors.new_zeros(
+            (num_imgs, num_anchors), dtype=torch.float)
 
         if not self.reg_decoded_bbox:
-            concat_pos_bbox_targets = self.bbox_coder.encode(concat_anchors, concat_anchor_gt_bboxes)
+            concat_pos_bbox_targets = self.bbox_coder.encode(
+                concat_anchors, concat_anchor_gt_bboxes)
         else:
             concat_pos_bbox_targets = concat_anchor_gt_bboxes
 
-        concat_bbox_targets = set_index(concat_bbox_targets, concat_pos_mask.unsqueeze(2), concat_pos_bbox_targets)
-        concat_bbox_weights = set_index(concat_bbox_weights, concat_pos_mask.unsqueeze(2), 1.0)
+        concat_bbox_targets = set_index(concat_bbox_targets,
+                                        concat_pos_mask.unsqueeze(2),
+                                        concat_pos_bbox_targets)
+        concat_bbox_weights = set_index(concat_bbox_weights,
+                                        concat_pos_mask.unsqueeze(2), 1.0)
         if concat_gt_labels is None:
             concat_labels = set_index(concat_labels, concat_pos_mask, 0.0)
         else:
-            concat_labels = set_index(concat_labels, concat_pos_mask, concat_anchor_gt_labels)
+            concat_labels = set_index(concat_labels, concat_pos_mask,
+                                      concat_anchor_gt_labels)
         if self.train_cfg.pos_weight <= 0:
-            concat_label_weights = set_index(concat_label_weights, concat_pos_mask, 1.0)
+            concat_label_weights = set_index(concat_label_weights,
+                                             concat_pos_mask, 1.0)
         else:
-            concat_label_weights = set_index(concat_label_weights, concat_pos_mask, self.train_cfg.pos_weight)
-        concat_label_weights = set_index(concat_label_weights, concat_neg_mask, 1.0)
+            concat_label_weights = set_index(concat_label_weights,
+                                             concat_pos_mask,
+                                             self.train_cfg.pos_weight)
+        concat_label_weights = set_index(concat_label_weights, concat_neg_mask,
+                                         1.0)
         return (concat_labels, concat_label_weights, concat_bbox_targets,
-                concat_bbox_weights, concat_pos_mask,
-                concat_neg_mask, sampling_result)
+                concat_bbox_weights, concat_pos_mask, concat_neg_mask,
+                sampling_result)
 
     def get_targets(self,
                     anchor_list,
@@ -314,33 +320,22 @@ class AscendAnchorHead(AnchorHead):
             concat_anchor_list.append(torch.cat(anchor_list[i]))
             concat_valid_flag_list.append(torch.cat(valid_flag_list[i]))
         concat_anchors = torch.cat(
-            [torch.unsqueeze(anchor, 0) for anchor in concat_anchor_list], 0
-        )
-        concat_valid_flags = torch.cat(
-            [torch.unsqueeze(concat_valid_flag, 0)
-             for concat_valid_flag in concat_valid_flag_list], 0
-        )
+            [torch.unsqueeze(anchor, 0) for anchor in concat_anchor_list], 0)
+        concat_valid_flags = torch.cat([
+            torch.unsqueeze(concat_valid_flag, 0)
+            for concat_valid_flag in concat_valid_flag_list
+        ], 0)
 
         gt_nums = [len(gt_bbox) for gt_bbox in gt_bboxes_list]
         max_gt_nums = generate_max_gt_nums(gt_nums)
-        concat_gt_bboxes = self._get_concat_gt_bboxes(
-            gt_bboxes_list,
-            num_imgs,
-            gt_nums,
-            device,
-            max_gt_nums)
+        concat_gt_bboxes = self._get_concat_gt_bboxes(gt_bboxes_list, num_imgs,
+                                                      gt_nums, device,
+                                                      max_gt_nums)
         concat_gt_bboxes_ignore = self._get_concat_gt_bboxes_ignore(
-            gt_bboxes_ignore_list,
-            num_imgs,
-            gt_nums,
-            device
-        )
-        concat_gt_labels = self._get_concat_gt_labels(
-            gt_labels_list,
-            num_imgs,
-            gt_nums,
-            device,
-            max_gt_nums)
+            gt_bboxes_ignore_list, num_imgs, gt_nums, device)
+        concat_gt_labels = self._get_concat_gt_labels(gt_labels_list, num_imgs,
+                                                      gt_nums, device,
+                                                      max_gt_nums)
 
         results = self._get_targets_concat(
             concat_anchors,
@@ -353,35 +348,30 @@ class AscendAnchorHead(AnchorHead):
             unmap_outputs=unmap_outputs)
 
         (concat_labels, concat_label_weights, concat_bbox_targets,
-         concat_bbox_weights, concat_pos_mask,
-         concat_neg_mask, sampling_result) = results[:7]
+         concat_bbox_weights, concat_pos_mask, concat_neg_mask,
+         sampling_result) = results[:7]
         rest_results = list(results[7:])  # user-added return values
 
         # sampled anchors of all images
-        min_num = torch.ones((num_imgs,),
+        min_num = torch.ones((num_imgs, ),
                              dtype=torch.long,
                              device=concat_pos_mask.device)
-        num_total_pos = torch.sum(torch.max(torch.sum(concat_pos_mask, dim=1),
-                                            min_num))
-        num_total_neg = torch.sum(torch.max(torch.sum(concat_neg_mask, dim=1),
-                                            min_num))
+        num_total_pos = torch.sum(
+            torch.max(torch.sum(concat_pos_mask, dim=1), min_num))
+        num_total_neg = torch.sum(
+            torch.max(torch.sum(concat_neg_mask, dim=1), min_num))
         if return_level is True:
-            labels_list = images_to_levels(
-                concat_labels,
-                num_level_anchors)
-            label_weights_list = images_to_levels(
-                concat_label_weights,
-                num_level_anchors)
-            bbox_targets_list = images_to_levels(
-                concat_bbox_targets,
-                num_level_anchors)
-            bbox_weights_list = images_to_levels(
-                concat_bbox_weights,
-                num_level_anchors)
+            labels_list = images_to_levels(concat_labels, num_level_anchors)
+            label_weights_list = images_to_levels(concat_label_weights,
+                                                  num_level_anchors)
+            bbox_targets_list = images_to_levels(concat_bbox_targets,
+                                                 num_level_anchors)
+            bbox_weights_list = images_to_levels(concat_bbox_weights,
+                                                 num_level_anchors)
             res = (labels_list, label_weights_list, bbox_targets_list,
                    bbox_weights_list, num_total_pos, num_total_neg)
             if return_sampling_results:
-                res = res + (sampling_result,)
+                res = res + (sampling_result, )
             for i, r in enumerate(rest_results):  # user-added return values
                 rest_results[i] = images_to_levels(r, num_level_anchors)
 
@@ -392,4 +382,3 @@ class AscendAnchorHead(AnchorHead):
                    sampling_result, num_total_pos, num_total_neg,
                    concat_anchors)
             return res
-
