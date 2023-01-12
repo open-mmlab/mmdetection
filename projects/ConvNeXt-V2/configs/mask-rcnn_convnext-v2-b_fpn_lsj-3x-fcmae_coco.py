@@ -1,7 +1,8 @@
 _base_ = [
-    '../_base_/models/mask-rcnn_r50_fpn.py',
-    '../_base_/datasets/coco_instance.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+    'mmdet::_base_/models/mask-rcnn_r50_fpn.py',
+    'mmdet::_base_/datasets/coco_instance.py',
+    'mmdet::_base_/schedules/schedule_1x.py',
+    'mmdet::_base_/default_runtime.py'
 ]
 
 # please install mmcls>=1.0
@@ -19,9 +20,9 @@ model = dict(
         # TODO: verify stochastic depth rate {0.1, 0.2, 0.3, 0.4}
         # drop_path_rate=[0.1] * 3 + [0.2] * 3 + [0.3] * 27 + [0.4] * 3,
         drop_path_rate=0.4,
-        layer_scale_init_value=1.0,
+        layer_scale_init_value=0.,  # disable layer scale when using GRN
         gap_before_final_norm=False,
-        use_grn=True,
+        use_grn=True,  # V2 uses GRN
         init_cfg=dict(
             type='Pretrained', checkpoint=checkpoint_file,
             prefix='backbone.')),
