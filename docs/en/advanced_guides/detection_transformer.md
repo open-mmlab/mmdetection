@@ -146,17 +146,13 @@ To support more operations on multi-scale features, some extra information shoul
 
 #### Positional embedding of DETRs
 
-For the sequence data, both the position of each element in the sequence and the arrangement of the elements are essential for the semantic characterization of the data; For the image data, both the position of each pixel on the whole image and the spatial arrangement of the pixels are also critical for understanding image semantic information.
-
-The attention calculation procedure of Transformer is usually as follow: A query embedding calculates self attentions with the key embeddings. Then, the value embeddings are weighted with the attentions and aggregated into the output embedding. In the attention calculations, each element in the sequence is independent, and their position information is lost. Besides, the attention calculations are permutation-invariant. Therefore, the position encodings are usually embedded for queries, keys, and values before calculating attentions as positional embeddings.
-
-There are also positional embeddings for the inputs of attention modules in DETRs. Unlike most cases, DETRs only embed for queries and keys, and not embed for values. Moreover, DETRs embed positions of both spatial directions, i.e. row and column, namely 2D position encoding.
+There are positional embeddings for the inputs of attention modules in DETRs. Unlike most cases, DETRs only embed for queries and keys, and not embed for values. Moreover, DETRs embed positions of both spatial directions, i.e. row and column, namely 2D position encoding.
 
 ![](C:\Users\lqy\Desktop\doc_detr\DETR_positional_encoding.png)
 
 The left sub-figure illustrates the 2D position encoding process: The positional embeddings for queries or keys have same embedding dimension with the queries or keys. In the 2D position encoding of DETRs, the dimension of `C` is divided into two partitions of `C/2` uniformly. The former one is embedded for row position and the latter one is embedded for the column position.
 
-The right sub-figure is excerpted from DAB-DETR paper ( may require to re-paint ), which illustrates the positional embeddings of DETRs. The queries `Q` and keys `K` are all composed of two partitions: Content queries / keys which attend to object feature content, and positional queries / keys which attend to positional information. The values `V` have not positional partitions. For encoder: Content queries, content keys, and values are all from image features.  Positional queries and positional keys are from the 2D position embeddings of image features. For decoder: Content keys, values, and positional keys remain. Content queries are from the outputs of last decoder layer or the initial decoder queries. Positional queries are positional embeddings of the decoder queries.
+The right sub-figure is excerpted from DAB-DETR paper ***( may require to re-paint )***, which illustrates the positional embeddings of DETRs. The queries `Q` and keys `K` are all composed of two partitions: Content queries / keys which attend to object feature content, and positional queries / keys which attend to positional information. The values `V` have not positional partitions. For encoder: Content queries, content keys, and values are all from image features.  Positional queries and positional keys are from the 2D position embeddings of image features. For decoder: Content keys, values, and positional keys remain. Content queries are from the outputs of last decoder layer or the initial decoder queries. Positional queries are positional embeddings of the decoder queries.
 
 #### Object detection paradigm of set prediction
 

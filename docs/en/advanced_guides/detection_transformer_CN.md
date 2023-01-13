@@ -198,10 +198,6 @@ Transformer 的组件通常包括四类： `XTransformerEncoder`，`XTransformer
 
 这四类模块在继承现有组件后，根据需要编写 `_init_layers()` 函数和 `forward()` 函数：对于 `XTransformerEncoder._init_layers()` 和 `XTransformerDecoder._init_layers()` ，通常指定 `self.layers` 属性和 `self.embed_dims` 属性；对于 `XTransformerEncoderLayer._init_layers()` 和 `XTransformerDecoderLayer._init_layers()`，通常指定各模块属性如 `self.self_attn`, `self.cross_attn`, `self.norms`, `self.ffn`, 和 `self.embed_dims` 属性；
 
-##### 示例：实现 Conditional DETR 的 Transformer 组件  （写 html5 折叠掉）
-
-经分析相对于 DETR，Conditional DETR 的主要改进在解码器部分。因此可以直接复用 `DetrTransformerEncoder` 和 `DetrTransformerEncoderLayer`。需要分别继承 `DetrTransformerDecoder` 和 `DetrTransformerDecoderLayer` 编写 `ConditionalDetrTransformerDecoder` 和 `ConditionalDetrTransformerDecoderLayer`。两个模块都只需要先编写 `_init_layers()` 初始化各个模型层和 `self.embed_dims` 属性，然后可以根据实际情况选择性地编写 `forward()` 实现前向过程。
-
 #### 实现检测器类
 
 新的检测器可能基于某个已有的 DETR。用户可进行分析，找到它们之间的差异。继承该检测器类并重写有差异的部分即可。
