@@ -13,8 +13,8 @@ model = dict(type='FasterRCNN_TS',
 
 teacher_config_path = 'result/faster_rcnn_ori/faster_rcnn_r50_caffe_c4_1x_coco.py'
 teacher_weight_path = 'result/faster_rcnn_ori/epoch_12.pth'
- 
- 
+backbone_pretrain = True
+
 # use caffe img_norm
 img_norm_cfg = dict(
     mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
@@ -49,8 +49,8 @@ data = dict(
     workers_per_gpu=4,
     train=dict(type="CocoContDataset",
                pipeline=train_pipeline,
-               multiscale_mode_student='value',
-               ratio_range_student=(0.2, 0.4, 0.6, 0.8, 1.0, 1.0, 1.0, 1.0)),
+               multiscale_mode_student='value', # range
+               ratio_range_student=(0.4, 0.6, 0.8, 1.0, 1.0, 1.0)),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 

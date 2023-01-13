@@ -29,17 +29,25 @@ class FasterRCNN_TS(TwoStageDetector):
             pretrained=pretrained,
             init_cfg=init_cfg)
         
-        # Teacher Network        
+        # Teacher Network
         teacher_cfg.model.type = 'FasterRCNNCont'
         teacher_cfg.model.roi_head.type = 'ContRoIHead'
-        self.teacher = build_detector(teacher_cfg.model,
+        self.teacher_cfg = teacher_cfg
+        
+
+    def update_teacher(self, state_dict):
+        # Load Teacher Model
+        self.teacher = build_detector(self.teacher_cfg.model,
                                       train_cfg=None,
                                       test_cfg=None)
+        
+        # Load Pretrained Teacher Weights
+        self.teacher.load_state_dict(state_dict, strict=True)
         
         # Freeze Param
         for param in self.teacher.parameters():
             param.requires_grad = False
-
+    
     
     def forward_train(self,
                       img,

@@ -224,13 +224,20 @@ def main():
         test_cfg=cfg.get('test_cfg'))
     model.init_weights()
 
+
     # init rfnext if 'RFSearchHook' is defined in cfg
     rfnext_init_model(model, cfg=cfg)
 
     # Load Teacher Checkpoint
     if cfg.get('teacher_weight_path') is not None:
-        state_dict = load_teacher_checkpoint(cfg.get('teacher_weight_path'), map_location='cpu')
-        model.teacher.load_state_dict(state_dict, strict=True)
+        state_dict = load_teacher_checkpoint(cfg.get('teacher_weight_path'), map_location='cpu')        
+        
+        if cfg.get('backbone_pretrain') is not None:
+            print('Update Pre-trained Backbone')
+            model.load_state_dict(state_dict, strict=True)
+        
+        print('Load Teacher Model')
+        model.update_teacher(state_dict)
     
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:
@@ -239,14 +246,17 @@ def main():
         val_dataset.pipeline = cfg.data.train.get(
             'pipeline', cfg.data.train.dataset.get('pipeline'))
         datasets.append(build_dataset(val_dataset))
+        
     if cfg.checkpoint_config is not None:
         # save mmdet version, config file content and class names in
         # checkpoints as meta data
         cfg.checkpoint_config.meta = dict(
             mmdet_version=__version__ + get_git_hash()[:7],
             CLASSES=datasets[0].CLASSES)
+        
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
+    
     train_detector(
         model,
         datasets,
