@@ -128,18 +128,15 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         for key, value in runner.log_buffer.val_history.items():
             self.base_handler['train/' + category + '/' + key].log(value[-1])
 
-        if not log_eval:
-            return
-        results = self.eval_hook.latest_results
+        if log_eval and self.eval_hook._should_evaluate(runner):
 
-        if results is None:
-            return
+            results = self.eval_hook.latest_results
 
-        eval_results = self.val_dataset.evaluate(
-            results, logger='silent', **self.eval_hook.eval_kwargs)
+            eval_results = self.val_dataset.evaluate(
+                results, logger='silent', **self.eval_hook.eval_kwargs)
 
-        for key, value in eval_results.items():
-            self.base_handler['val/' + category + '/' + key].log(value)
+            for key, value in eval_results.items():
+                self.base_handler['val/' + category + '/' + key].log(value)
 
     def _log_checkpoint(self,
                         runner,
