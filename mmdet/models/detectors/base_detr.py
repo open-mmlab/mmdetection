@@ -14,9 +14,10 @@ from .base import BaseDetector
 class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
     r"""Base class for Detection Transformer.
 
-    Detection Transformer uses an encoder to process output features of neck,
-    then several queries interactive with the output features of encoder and
-    do the regression and classification with bounding box head.
+    In Detection Transformer, an encoder is used to process output features of
+    neck, then several queries interact with the encoder features using a
+    decoder and do the regression and classification with the bounding box
+    head.
 
     Args:
         backbone (:obj:`ConfigDict` or dict): Config of the backbone.
@@ -26,10 +27,10 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
             Transformer encoder. Defaults to None.
         decoder (:obj:`ConfigDict` or dict, optional): Config of the
             Transformer decoder. Defaults to None.
-        positional_encoding_cfg (:obj:`ConfigDict` or dict, optional): Config
-            of the positional encoding module. Defaults to None.
         bbox_head (:obj:`ConfigDict` or dict, optional): Config for the
             bounding box head module. Defaults to None.
+        positional_encoding (:obj:`ConfigDict` or dict, optional): Config
+            of the positional encoding module. Defaults to None.
         num_queries (int, optional): Number of decoder query in Transformer.
             Defaults to 100.
         train_cfg (:obj:`ConfigDict` or dict, optional): Training config of
@@ -49,8 +50,8 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
                  neck: OptConfigType = None,
                  encoder: OptConfigType = None,
                  decoder: OptConfigType = None,
-                 positional_encoding_cfg: OptConfigType = None,
                  bbox_head: OptConfigType = None,
+                 positional_encoding: OptConfigType = None,
                  num_queries: int = 100,
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None,
@@ -65,7 +66,7 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
         self.test_cfg = test_cfg
         self.encoder = encoder
         self.decoder = decoder
-        self.positional_encoding_cfg = positional_encoding_cfg
+        self.positional_encoding = positional_encoding
         self.num_queries = num_queries
 
         # init model layers
@@ -200,7 +201,7 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
 
         Args:
             img_feats (tuple[Tensor]): Tuple of feature maps from neck. Each
-                feature map has shape (bs, dim, H, W).
+                    feature map has shape (bs, dim, H, W).
             batch_data_samples (list[:obj:`DetDataSample`], optional): The
                 batch data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.

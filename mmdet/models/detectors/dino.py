@@ -46,7 +46,7 @@ class DINO(DeformableDETR):
     def _init_layers(self) -> None:
         """Initialize layers except for backbone, neck and bbox_head."""
         self.positional_encoding = SinePositionalEncoding(
-            **self.positional_encoding_cfg)
+            **self.positional_encoding)
         self.encoder = DeformableDetrTransformerEncoder(**self.encoder)
         self.decoder = DinoTransformerDecoder(**self.decoder)
         self.embed_dims = self.encoder.embed_dims

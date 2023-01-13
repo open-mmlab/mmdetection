@@ -71,7 +71,7 @@ class DeformableDETR(DetectionTransformer):
     def _init_layers(self) -> None:
         """Initialize layers except for backbone, neck and bbox_head."""
         self.positional_encoding = SinePositionalEncoding(
-            **self.positional_encoding_cfg)
+            **self.positional_encoding)
         self.encoder = DeformableDetrTransformerEncoder(**self.encoder)
         self.decoder = DeformableDetrTransformerDecoder(**self.decoder)
         self.embed_dims = self.encoder.embed_dims
@@ -169,35 +169,37 @@ class DeformableDETR(DetectionTransformer):
             mlvl_pos_embeds.append(self.positional_encoding(mlvl_masks[-1]))
 
         feat_flatten = []
-        mask_flatten = []
         lvl_pos_embed_flatten = []
+        mask_flatten = []
         spatial_shapes = []
         for lvl, (feat, mask, pos_embed) in enumerate(
                 zip(mlvl_feats, mlvl_masks, mlvl_pos_embeds)):
             batch_size, c, h, w = feat.shape
-            spatial_shape = (h, w)
-            spatial_shapes.append(spatial_shape)
-            feat = feat.flatten(2).transpose(1, 2)  # (bs, h_lvl*w_lvl, dim)
-            pos_embed = pos_embed.flatten(2).transpose(1, 2)  # as above
-            mask = mask.flatten(1)  # (bs, h_lvl*w_lvl)
+            # [bs, c, h_lvl, w_lvl] -> [bs, h_lvl*w_lvl, c]
+            feat = feat.view(batch_size, c, -1).permute(0, 2, 1)
+            pos_embed = pos_embed.view(batch_size, c, -1).permute(0, 2, 1)
             lvl_pos_embed = pos_embed + self.level_embed[lvl].view(1, 1, -1)
-            lvl_pos_embed_flatten.append(lvl_pos_embed)
-            feat_flatten.append(feat)
-            mask_flatten.append(mask)
+            # [bs, h_lvl, w_lvl] -> [bs, h_lvl*w_lvl]
+            mask = mask.flatten(1)
+            spatial_shape = (h, w)
 
-        # (bs, num_feat_points), where num_feat_points = sum_lvl(h_lvl*w_lvl)
-        mask_flatten = torch.cat(mask_flatten, 1)
+            feat_flatten.append(feat)
+            lvl_pos_embed_flatten.append(lvl_pos_embed)
+            mask_flatten.append(mask)
+            spatial_shapes.append(spatial_shape)
+
         # (bs, num_feat_points, dim)
         feat_flatten = torch.cat(feat_flatten, 1)
         lvl_pos_embed_flatten = torch.cat(lvl_pos_embed_flatten, 1)
+        # (bs, num_feat_points), where num_feat_points = sum_lvl(h_lvl*w_lvl)
+        mask_flatten = torch.cat(mask_flatten, 1)
 
         spatial_shapes = torch.as_tensor(  # (num_level, 2)
             spatial_shapes,
             dtype=torch.long,
             device=feat_flatten.device)
         level_start_index = torch.cat((
-            spatial_shapes.new_zeros(  # (num_level)
-                (1, )),
+            spatial_shapes.new_zeros((1, )),  # (num_level)
             spatial_shapes.prod(1).cumsum(0)[:-1]))
         valid_ratios = torch.stack(  # (bs, num_level, 2)
             [self.get_valid_ratio(m) for m in mlvl_masks], 1)
