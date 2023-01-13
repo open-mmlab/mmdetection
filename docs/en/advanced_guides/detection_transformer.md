@@ -120,8 +120,6 @@ The transformation logic is usually implemented in the `pre_transformer` functio
 feat = feat.view(batch_size, feat_dim, -1).permute(0, 2, 1)
 ```
 
-***( Add a figure here, to illustrate single-scale feature \<--> sequence feature***
-
 After the flattening, the spatial position information is lost. Hence, in DETRs, the 2D positional encoding is used to encode the row and column positions of each feature point into positional embeddings. More details can be found in [Positional embedding in DETRs](<>).
 
 The aforementioned operations support the transformation of a single-level feature. For transformation of multi-level features, more information should be recorded.
@@ -142,7 +140,7 @@ When processing multi-level features, the level embeddings are usually added to 
 
 To support more operations on multi-scale features, some extra information should be introduced. For example, the feature `spatial shape` on each level, the `lvl_start_index` (the start sequence indexes of each feature level), and so on. The `spatial shape` and `lvl_start_index` can be used to restore the sequence feature of `(B, N, C)` to the tuple of multi-scale features of `B, C, H_l, W_l`. They can also support special multi-scale feature interaction operations, such as Deformable Attention.
 
-***( Add a figure here, to illustrate multi-scale features \<--> sequence feature, what is spatial_shape and lvl_start_index)***
+<img src="C:\Users\lqy\Desktop\doc_detr\DETR_mlvl_feats2seq.png" style="zoom:50%;" />
 
 #### Positional embedding of DETRs
 
@@ -152,7 +150,7 @@ There are positional embeddings for the inputs of attention modules in DETRs. Un
 
 The left sub-figure illustrates the 2D position encoding process: The positional embeddings for queries or keys have same embedding dimension with the queries or keys. In the 2D position encoding of DETRs, the dimension of `C` is divided into two partitions of `C/2` uniformly. The former one is embedded for row position and the latter one is embedded for the column position.
 
-The right sub-figure is excerpted from DAB-DETR paper ***( may require to re-paint )***, which illustrates the positional embeddings of DETRs. The queries `Q` and keys `K` are all composed of two partitions: Content queries / keys which attend to object feature content, and positional queries / keys which attend to positional information. The values `V` have not positional partitions. For encoder: Content queries, content keys, and values are all from image features.  Positional queries and positional keys are from the 2D position embeddings of image features. For decoder: Content keys, values, and positional keys remain. Content queries are from the outputs of last decoder layer or the initial decoder queries. Positional queries are positional embeddings of the decoder queries.
+The right sub-figure is excerpted from DAB-DETR paper, which illustrates the positional embeddings of DETRs. The queries `Q` and keys `K` are all composed of two partitions: Content queries / keys which attend to object feature content, and positional queries / keys which attend to positional information. The values `V` have not positional partitions. For encoder: Content queries, content keys, and values are all from image features.  Positional queries and positional keys are from the 2D position embeddings of image features. For decoder: Content keys, values, and positional keys remain. Content queries are from the outputs of last decoder layer or the initial decoder queries. Positional queries are positional embeddings of the decoder queries.
 
 #### Object detection paradigm of set prediction
 
@@ -173,8 +171,6 @@ There are two levels of naming schemes in our implementation:
 On the level of detector modules: The feature maps extracted by backbone and neck are  `img_feats`. The `pre_transformer()` converts the image feature into the input sequence feature of encoder, namely  `feat`. The masks and positional embeddings corresponding to the sequence feature are `feat_mask` and `feat_pos`. The outputs of the encoder are `memory`, whose corresponding masks are `memory_mask`. The decoder queries are `query`, which are called 'content query' in most papers. The positional embeddings of the decoder queries are `query_pos`, which are called 'spatial query',  'positional query', and 'object query' in most papers.
 
 On the level of deep modules, including Transformer components and attention modules: For the attention modules, the queries, keys, and values are `query`, `key`, and `value`, respectively. The positional embeddings corresponding to queries and keys are `query_pos` and `key_pos`, respectively. For encoder modules and encoder layer modules, the input parameters are named according to the `self_attn`. For decoder modules and decoder layer modules, the input parameters are named according to the `cross_attn`. Since the input images are padded to align shapes when collating a batch, the padding positions are recorded in a mask, namely `key_padding_mask`. The `self_attn_mask` and `cross_attn_mask` can also be specified in the decoder as attention masks for the two attention modules.
-
-***（Add a figure here to summarize the schemes）***
 
 The role of `forward_encoder()` and `forward_decoder()` functions of detector classes is to map the two levels of naming schemes.
 
