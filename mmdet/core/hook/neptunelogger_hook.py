@@ -65,6 +65,8 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         self.eval_hook: EvalHook = None
         self.eval_interval: int = None
 
+        self.val_dataset = None
+
         self.kwargs = kwargs
 
     def _log_integration_version(self) -> None:
@@ -114,13 +116,14 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                 runner.logger.warning('WARNING ABOUT EVAL HOOK NOT PRESENT')
             else:
                 self.eval_interval = self.eval_hook.interval
+                self.val_dataset = self.eval_hook.dataloader.dataset
 
     def _log_buffer(self, runner, category, log_eval=True) -> None:
         assert category in ['epoch', 'iter']
         # only record lr of the first param group
         cur_lr = runner.current_lr()
         self.base_handler['train/' + category + '/' +
-                          'learning_rate'].log(cur_lr)
+                          'learning_rate'].extend(cur_lr)
 
         for key, value in runner.log_buffer.val_history.items():
             self.base_handler['train/' + category + '/' + key].log(value[-1])
@@ -128,6 +131,10 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         if not log_eval:
             return
         results = self.eval_hook.latest_results
+
+        if results is None:
+            return
+
         eval_results = self.val_dataset.evaluate(
             results, logger='silent', **self.eval_hook.eval_kwargs)
 
@@ -167,8 +174,8 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         if not isinstance(runner, IterBasedRunner):
             return
 
-        # log_eval = self.every_n_iters(runner, self.eval_hook.interval)
-        # self._log_buffer(runner, 'iter', log_eval)
+        log_eval = self.every_n_iters(runner, self.eval_hook.interval)
+        self._log_buffer(runner, 'iter', log_eval)
         if self._should_upload_checkpoint(runner):
             self._log_checkpoint(runner, final=False, mode='iter')
 
