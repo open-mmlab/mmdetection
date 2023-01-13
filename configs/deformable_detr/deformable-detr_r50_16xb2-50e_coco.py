@@ -54,7 +54,7 @@ model = dict(
             ffn_cfg=dict(
                 embed_dims=256, feedforward_channels=1024, ffn_drop=0.1)),
         post_norm_cfg=None),
-    positional_encoding_cfg=dict(num_feats=128, normalize=True, offset=-0.5),
+    positional_encoding=dict(num_feats=128, normalize=True, offset=-0.5),
     bbox_head=dict(
         type='DeformableDETRHead',
         num_classes=80,

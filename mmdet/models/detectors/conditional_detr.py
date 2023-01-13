@@ -23,7 +23,7 @@ class ConditionalDETR(DETR):
     def _init_layers(self) -> None:
         """Initialize layers except for backbone, neck and bbox_head."""
         self.positional_encoding = SinePositionalEncoding(
-            **self.positional_encoding_cfg)
+            **self.positional_encoding)
         self.encoder = DetrTransformerEncoder(**self.encoder)
         self.decoder = ConditionalDetrTransformerDecoder(**self.decoder)
         self.embed_dims = self.encoder.embed_dims
