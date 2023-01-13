@@ -222,10 +222,12 @@ Transformer 的组件通常包括四类： `XTransformerEncoder`，`XTransformer
 
 对于前向过程，首先编写 `forward()` 函数，实现从解码器输出获得包含分类结果和边界框回归结果的预测结果的逻辑；然后编写 `loss_by_feat()` 函数，实现在训练时从预测结果和真值结果获取损失字典的逻辑；并且可能需要编写 `predict_by_feat()` 函数，实现在使用时对预测结果进行后运算的逻辑。如果有参数的增删，可能需要修改 `loss()` 函数和 `predict()` 函数。
 
-#### 示例: 实现 DINO
+#### 示例: 实现 Conditional DETR
 
-DINO 是基于 Deformable DETR 的检测器，其主要改进在编码器后部。
+相比于 DETR，Conditional DETR 主要的改进集中在解码器部分。
 
-DINO 的 Transformer 中，编码器的模块与 Deformable DETR 的完全相同，解码器在其基础上改进，因此可以直接使用 `DeformableDetrTransformerEncoder` 和 `DeformableDetrTransformerEncoderLayer` 模块，并新增 mmdet/models/layers/transformer/dino_layer.py 文件，继承 `DeformableDetrTransformerDecoder` 实现 `DinoTransformerDecoder` 类，继承 `DeformableDetrTransformerDecoderLayer` 实现 `DinoTransformerDecoderLayer` 类。
+我们可以复用 `DetrTransformerEncoder` 和 `DetrTransformerEncoderLayer`。需要继承 `DetrTransformerDecoder` 和 `DetrTransformerDecoderLayer` 重写 `_init_layers()` 和 `forward()` 实现两个新模块。这两个模块保存在 mmdet/models/layers/transformer/conditional_detr_layers.py。
 
-to be continued
+Conditional DETR 的检测器和 DETR 几乎一样，只有 decoder 多了一个返回参数 `references` 这一个小差别。所以，前向过程中只有 `forward_decoder()` 需要重写。此外，在 `_init_layers()` 中，应当把初始化解码器的类换成新编写的 `ConditionalDetrTransformerDecoder`。该检测器模块保存在 mmdet/models/detector/conditional_detr.py。
+
+对于检测头模块：由于 Conditional DETR 使用了 Focal Loss，需要修改 `init_weights()` 中初始化分类网络的部分。重写 `forward()`，实现预测 `offset` 和与 `references` 结合的逻辑。此外，需要修改 `loss()`, `predict()`, `loss_and_prediction()` 来接收新的参数 `references`。

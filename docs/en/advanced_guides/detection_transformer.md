@@ -220,6 +220,6 @@ Compared with DETR, the main improvement of Conditional DETR are in decoder sect
 
 We can reuse `DetrTransformerEncoder` and `DetrTransformerEncoderLayer`. We require to inherit `DetrTransformerDecoder` and `DetrTransformerDecoderLayers` to write new modules. The two modules both requires new `_init_layers()` and new `forward()`. The implementation can be found at mmdet/models/layers/transformer/conditional_detr_layers.py.
 
-The detector of Conditional DETR is almost same with DETR. There is only small difference, i.e. an extra returned parameter `references` for the decoder. Hence, only `forward_decoder()` is re-written. Moreover, in `_init_layers`, the decoder module should be replaced with the new module. The implementation can be found at mmdet/models/detector/conditional_detr.py.
+The detector of Conditional DETR is almost same with DETR. There is only small difference, i.e. an extra returned parameter `references` for the decoder. Hence, only `forward_decoder()` is re-written. Moreover, in `_init_layers()`, the decoder module should be replaced with the new module. The implementation can be found at mmdet/models/detector/conditional_detr.py.
 
 For the box head: Since the Conditional DETR uses focal loss, the `init_weights()` is written to modify the initialization of classification head. The `forward()` is re-written to implement the logic of adding predicted offsets to reference. Moreover, `loss()`, `predict()`, `loss_and_prediction()` are re-written to receive the new parameter `references`.
