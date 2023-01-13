@@ -179,10 +179,12 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
     def _should_upload_checkpoint(self, runner) -> bool:
         if isinstance(runner, EpochBasedRunner):
             return self.log_checkpoint and \
-                (runner.epoch + 1) % self.ckpt_hook.interval == 0
+                (runner.epoch + 1) % self.ckpt_interval == 0
         elif isinstance(runner, IterBasedRunner):
             return self.log_checkpoint and \
-                (runner.iter + 1) % self.ckpt_hook.interval == 0
+                (runner.iter + 1) % self.ckpt_interval == 0
+        else:
+            return False
 
     @master_only
     def after_train_epoch(self, runner) -> None:
