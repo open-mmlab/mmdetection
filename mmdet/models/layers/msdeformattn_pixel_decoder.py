@@ -137,10 +137,9 @@ class MSDeformAttnPixelDecoder(BaseModule):
                 nn.init.xavier_normal_(p)
 
         # init_weights defined in MultiScaleDeformableAttention
-        for layer in self.encoder.layers:
-            attn = layer.self_attn
-            if isinstance(attn, MultiScaleDeformableAttention):
-                attn.init_weights()
+        for m in self.encoder.layers.modules():
+            if isinstance(m, MultiScaleDeformableAttention):
+                m.init_weights()
 
     def forward(self, feats: List[Tensor]) -> Tuple[Tensor, Tensor]:
         """
