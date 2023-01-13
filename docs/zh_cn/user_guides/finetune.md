@@ -12,7 +12,7 @@
 
 ## 继承基础配置
 
-为了减轻编写整个配置的负担并减少漏洞的数量， MMDetection V2.0 支持从多个现有配置中继承配置信息。微调 MaskRCNN 模型的时候，新的配置信息需要使用从 `_base_/models/mask_rcnn_r50_fpn.py` 中继承的配置信息来构建模型的基本结构。当使用 Cityscapes 数据集时，新的配置信息可以简便地从`_base_/datasets/cityscapes_instance.py` 中继承。对于训练过程的运行设置部分，例如 `logger settings`，配置文件可以从 `_base_/default_runtime.py` 中继承。对于训练计划的配置则可以从`_base_/schedules/schedule_1x.py` 中继承。这些配置文件存放于 `configs` 目录下，用户可以选择全部内容的重新编写而不是使用继承方法。
+为了减轻编写整个配置的负担并减少漏洞的数量， MMDetection V3.0 支持从多个现有配置中继承配置信息。微调 MaskRCNN 模型的时候，新的配置信息需要使用从 `_base_/models/mask_rcnn_r50_fpn.py` 中继承的配置信息来构建模型的基本结构。当使用 Cityscapes 数据集时，新的配置信息可以简便地从`_base_/datasets/cityscapes_instance.py` 中继承。对于训练过程的运行设置部分，例如 `logger settings`，配置文件可以从 `_base_/default_runtime.py` 中继承。对于训练计划的配置则可以从`_base_/schedules/schedule_1x.py` 中继承。这些配置文件存放于 `configs` 目录下，用户可以选择全部内容的重新编写而不是使用继承方法。
 
 ```python
 _base_ = [
