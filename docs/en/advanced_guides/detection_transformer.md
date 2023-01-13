@@ -178,7 +178,20 @@ Hence, while reading or using the codebase, the users should attend to judge whi
 
 #### Unified data flow
 
-***(To be written by QiZhi~)***
+##### 1. Two kinds of data flow: ***batch first*** and ***sequnce first***
+In the previous versions of DETR's implementation, data (image, feature etc.) in the transformer is organized as `[N, B, C]` format, where `N` denotes sequence length, `B` denotes batch size, and `C` denotes embedding dimension. We refer this format to `sequence_first`. Sequence first data flow is originated from the NLP community, hence the CV community inherited this format naturally when introducing transformer into its methodology.
+
+On the other hand, the classic data flow of CV community in CNN-like models is `[B, ...]` instead, namely `batch_first`.
+
+##### 2. Why we unify the data flow to batch first?
+
+In older implementations of DETR, the data flow is converted from batch first to sequence first before the transformer encoder, and the process is done **reversely** after the transformer decoder.
+
+The repeated conversion of data flow henders the **readability** and **usability** of code. Therefore, we unify the data flow to `[B, N, C]` in all DETRs' implementation, we believe the unified batch first data flow is more friendly to the researchers of CV community.
+
+##### 3. Examples
+
+We demonstrate the unified data flow from three aspects: Detector, head, attention.
 
 ### Customize a DETR
 
