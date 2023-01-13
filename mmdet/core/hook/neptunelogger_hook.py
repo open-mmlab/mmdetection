@@ -59,8 +59,12 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         self.num_eval_predictions = num_eval_predictions
         self.log_eval_predictions = (num_eval_predictions > 0)
 
-        self.ckpt_hook: CheckpointHook
-        self.eval_hook: EvalHook
+        self.ckpt_hook: CheckpointHook = None
+        self.ckpt_interval: int = None
+
+        self.eval_hook: EvalHook = None
+        self.eval_interval: int = None
+
         self.kwargs = kwargs
 
     def _log_integration_version(self) -> None:
@@ -83,7 +87,8 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         and evaluation hooks.
 
         Raises a warning if checkpointing is enabled, but the dedicated hook is
-        not present.
+        not present. Raises a warning if evaluation logging is enabled, but the
+        dedicated hook is not present.
         """
         self._log_integration_version()
         self._log_config(runner)
@@ -94,10 +99,21 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                 self.ckpt_hook = hook
             if isinstance(hook, (EvalHook, DistEvalHook)):
                 self.eval_hook = hook
-                self.val_dataset = self.eval_hook.dataloader.dataset
 
-        if self.log_checkpoint and self.ckpt_hook is None:
-            runner.logger.warning('WARNING ABOUT CHECKPOINTER NOT PRESENT')
+        if self.log_checkpoint:
+            if self.ckpt_hook is None:
+                self.log_checkpoint = False
+                runner.logger.warning(
+                    'WARNING ABOUT CHECKPOINT HOOK NOT PRESENT')
+            else:
+                self.ckpt_interval = self.ckpt_hook.interval
+
+        if self.log_eval_predictions:
+            if self.eval_hook is None:
+                self.log_eval_predictions = False
+                runner.logger.warning('WARNING ABOUT EVAL HOOK NOT PRESENT')
+            else:
+                self.eval_interval = self.eval_hook.interval
 
     def _log_buffer(self, runner, category, log_eval=True) -> None:
         assert category in ['epoch', 'iter']
