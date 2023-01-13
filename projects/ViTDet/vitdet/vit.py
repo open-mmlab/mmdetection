@@ -22,6 +22,111 @@ from torch import nn
 from mmdet.registry import MODELS
 
 
+def calc_rel_pos_spatial(
+    attn,
+    q,
+    q_shape,
+    k_shape,
+    rel_pos_h,
+    rel_pos_w,
+):
+    """Spatial Relative Positional Embeddings."""
+    sp_idx = 0
+    q_h = q_shape
+    q_w = q_shape
+    k_h = k_shape
+    k_w = k_shape
+
+    # Scale up rel pos if shapes for q and k are different.
+    q_h_ratio = max(k_h / q_h, 1.0)
+    k_h_ratio = max(q_h / k_h, 1.0)
+    dist_h = (
+        torch.arange(q_h)[:, None] * q_h_ratio -
+        torch.arange(k_h)[None, :] * k_h_ratio)
+    dist_h += (k_h - 1) * k_h_ratio
+    q_w_ratio = max(k_w / q_w, 1.0)
+    k_w_ratio = max(q_w / k_w, 1.0)
+    dist_w = (
+        torch.arange(q_w)[:, None] * q_w_ratio -
+        torch.arange(k_w)[None, :] * k_w_ratio)
+    dist_w += (k_w - 1) * k_w_ratio
+
+    Rh = rel_pos_h[dist_h.long()]
+    Rw = rel_pos_w[dist_w.long()]
+
+    B, n_head, q_N, dim = q.shape
+
+    r_q = q[:, :, sp_idx:].reshape(B, n_head, q_h, q_w, dim)
+    rel_h = torch.einsum('byhwc,hkc->byhwk', r_q, Rh)
+    rel_w = torch.einsum('byhwc,wkc->byhwk', r_q, Rw)
+
+    attn[:, :, sp_idx:, sp_idx:] = (
+        attn[:, :, sp_idx:, sp_idx:].view(B, -1, q_h, q_w, k_h, k_w) +
+        rel_h[:, :, :, :, :, None] + rel_w[:, :, :, :, None, :]).view(
+            B, -1, q_h * q_w, k_h * k_w)
+
+    return attn
+
+
+def calc_rel_pos_spatial2(
+    attn,
+    q,
+    q_shape,
+    k_shape,
+    rel_pos_h,
+    rel_pos_w,
+):
+    """Spatial Relative Positional Embeddings."""
+    sp_idx = 0
+    q_h = q_shape
+    q_w = q_shape
+    k_h = k_shape
+    k_w = k_shape
+
+    # Scale up rel pos if shapes for q and k are different.
+    q_h_ratio = max(k_h / q_h, 1.0)
+    k_h_ratio = max(q_h / k_h, 1.0)
+    dist_h = (
+        torch.arange(q_h)[:, None] * q_h_ratio -
+        torch.arange(k_h)[None, :] * k_h_ratio)
+    dist_h += (k_h - 1) * k_h_ratio
+    q_w_ratio = max(k_w / q_w, 1.0)
+    k_w_ratio = max(q_w / k_w, 1.0)
+    dist_w = (
+        torch.arange(q_w)[:, None] * q_w_ratio -
+        torch.arange(k_w)[None, :] * k_w_ratio)
+    dist_w += (k_w - 1) * k_w_ratio
+
+    Rh = rel_pos_h[dist_h.long()]
+    Rw = rel_pos_w[dist_w.long()]
+
+    B, L, n_head, q_N, dim = q.shape
+
+    r_q = q[:, :, :, sp_idx:].reshape(B, L, n_head, q_h, q_w, dim)
+    rel_h = torch.einsum('blyhwc,hkc->blyhwk', r_q, Rh)
+    rel_w = torch.einsum('blyhwc,wkc->blyhwk', r_q, Rw)
+
+    attn[:, :, :, sp_idx:, sp_idx:] = (
+        attn[:, :, :, sp_idx:, sp_idx:].view(B, L, -1, q_h, q_w, k_h, k_w) +
+        rel_h[:, :, :, :, :, :, None] + rel_w[:, :, :, :, :, None, :]).view(
+            B, L, -1, q_h * q_w, k_h * k_w)
+
+    return attn
+
+
+class Norm2d(nn.Module):
+
+    def __init__(self, embed_dim):
+        super().__init__()
+        self.ln = nn.LayerNorm(embed_dim, eps=1e-6)
+
+    def forward(self, x):
+        x = x.permute(0, 2, 3, 1)
+        x = self.ln(x)
+        x = x.permute(0, 3, 1, 2).contiguous()
+        return x
+
+
 class TransformerEncoderLayer(_TransformerEncoderLayer):
     """Implements one encoder layer in Vision Transformer.
 
@@ -116,8 +221,8 @@ class TransformerEncoderLayer(_TransformerEncoderLayer):
             dropout_layer=dict(type='DropPath', drop_prob=drop_path_rate),
             act_cfg=act_cfg)
 
-    def forward(self, x, H, W, rel_pos_bias):
-        x = x + self.attn(self.norm1(x), H, W, rel_pos_bias)
+    def forward(self, x, H, W, rel_pos_bias=None):
+        x = x + self.attn(self.norm1(x), H, W)
         x = self.ffn(self.norm2(x), identity=x)
         return x
 
@@ -198,7 +303,12 @@ class WindowMultiheadAttention(_MultiheadAttention):
         self.pad_mode = pad_mode
         self.window_size = window_size
 
-    def forward(self, x, H, W, rel_pos_bias):
+        q_size = window_size
+        rel_sp_dim = 2 * q_size - 1
+        self.rel_pos_h = nn.Parameter(torch.zeros(rel_sp_dim, self.head_dims))
+        self.rel_pos_w = nn.Parameter(torch.zeros(rel_sp_dim, self.head_dims))
+
+    def forward(self, x, H, W, rel_pos_bias=None):
         B, N, C = x.shape
         N_ = self.window_size * self.window_size
         H_ = math.ceil(H / self.window_size) * self.window_size
@@ -219,7 +329,10 @@ class WindowMultiheadAttention(_MultiheadAttention):
         q, k, v = qkv[0], qkv[1], qkv[2]
 
         attn = (q @ k.transpose(-2, -1)) * self.scale
-        attn = attn + rel_pos_bias
+        # attn = attn + rel_pos_bias
+        attn = calc_rel_pos_spatial2(attn, q, self.window_size,
+                                     self.window_size, self.rel_pos_h,
+                                     self.rel_pos_w)
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
 
@@ -244,14 +357,45 @@ class MultiheadAttention(_MultiheadAttention):
     We rewrite the forward function to accept ``H`` and ``W``.
     """
 
-    def forward(self, x, H, W, rel_pos_bias):
+    def __init__(self,
+                 embed_dims,
+                 num_heads,
+                 input_dims=None,
+                 attn_drop=0.,
+                 proj_drop=0.,
+                 dropout_layer=dict(type='Dropout', drop_prob=0.),
+                 qkv_bias=True,
+                 qk_scale=None,
+                 proj_bias=True,
+                 v_shortcut=False,
+                 init_cfg=None):
+        super().__init__(
+            embed_dims=embed_dims,
+            num_heads=num_heads,
+            input_dims=input_dims,
+            attn_drop=attn_drop,
+            proj_drop=proj_drop,
+            dropout_layer=dropout_layer,
+            qkv_bias=qkv_bias,
+            qk_scale=qk_scale,
+            proj_bias=proj_bias,
+            v_shortcut=v_shortcut,
+            init_cfg=init_cfg)
+
+        rel_sp_dim = 2 * self.head_dims - 1
+        self.rel_pos_h = nn.Parameter(torch.zeros(rel_sp_dim, self.head_dims))
+        self.rel_pos_w = nn.Parameter(torch.zeros(rel_sp_dim, self.head_dims))
+
+    def forward(self, x, H, W, rel_pos_bias=None):
         B, N, _ = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads,
                                   self.head_dims).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
 
         attn = (q @ k.transpose(-2, -1)) * self.scale
-        attn = attn + rel_pos_bias
+        # attn = attn + rel_pos_bias
+        attn = calc_rel_pos_spatial(attn, q, self.head_dims, self.head_dims,
+                                    self.rel_pos_h, self.rel_pos_w)
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
 
@@ -413,29 +557,20 @@ class VisionTransformer(_VisionTransformer):
             self.layers.append(TransformerEncoderLayer(**_layer_cfg))
 
         self.res_modify_block_0 = nn.Sequential(
-            nn.ConvTranspose2d(self.embed_dims, self.embed_dims, 2, 2),
-            nn.GroupNorm(num_groups, self.embed_dims), nn.GELU(),
-            nn.ConvTranspose2d(self.embed_dims, self.embed_dims, 2, 2))
+            nn.ConvTranspose2d(self.embed_dims, self.embed_dims // 2, 2, 2),
+            Norm2d(self.embed_dims // 2), nn.GELU(),
+            nn.ConvTranspose2d(self.embed_dims // 2, self.embed_dims // 4, 2,
+                               2))
         self.res_modify_block_1 = nn.Sequential(
-            nn.ConvTranspose2d(self.embed_dims, self.embed_dims, 2, 2))
+            nn.ConvTranspose2d(self.embed_dims, self.embed_dims // 2, 2, 2))
         self.res_modify_block_2 = nn.Sequential(nn.Identity())
         self.res_modify_block_3 = nn.Sequential(
             nn.MaxPool2d(kernel_size=2, stride=2))
-
-        _, self.norm0 = build_norm_layer(norm_cfg, self.embed_dims, postfix=1)
-        _, self.norm1 = build_norm_layer(norm_cfg, self.embed_dims, postfix=1)
-        _, self.norm2 = build_norm_layer(norm_cfg, self.embed_dims, postfix=1)
-        _, self.norm3 = build_norm_layer(norm_cfg, self.embed_dims, postfix=1)
 
         self.res_modify_block_0.apply(self._init_weights)
         self.res_modify_block_1.apply(self._init_weights)
         self.res_modify_block_2.apply(self._init_weights)
         self.res_modify_block_3.apply(self._init_weights)
-
-        self.local_share_rel_pos_bias = RelativePositionBias(
-            14, self.arch_settings['num_heads'])
-        self.global_share_rel_pos_bias = RelativePositionBias(
-            img_size // patch_size, self.arch_settings['num_heads'])
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
@@ -473,10 +608,8 @@ class VisionTransformer(_VisionTransformer):
 
         outs = []
         for i, layer in enumerate(self.layers):
-            rel_pos_bias = self.local_share_rel_pos_bias() if i not in \
-                    self.out_indices else self.global_share_rel_pos_bias()
-            x = layer(x, patch_resolution[0], patch_resolution[1],
-                      rel_pos_bias[:, 1:, 1:])
+
+            x = layer(x, patch_resolution[0], patch_resolution[1])
 
             if i == len(self.layers) - 1 and self.final_norm:
                 x = self.norm1(x)
@@ -502,15 +635,11 @@ class VisionTransformer(_VisionTransformer):
         outs, patch_resolution = self.forward_features(x)
         B, _, C = outs[0].shape
 
-        # Normalization and Reshape
-        out0 = self.norm0(outs[0]).transpose(1, 2).reshape(
-            B, C, *patch_resolution)
-        out1 = self.norm1(outs[1]).transpose(1, 2).reshape(
-            B, C, *patch_resolution)
-        out2 = self.norm2(outs[2]).transpose(1, 2).reshape(
-            B, C, *patch_resolution)
-        out3 = self.norm3(outs[3]).transpose(1, 2).reshape(
-            B, C, *patch_resolution)
+        # Reshape
+        out0 = outs[0].transpose(1, 2).reshape(B, C, *patch_resolution)
+        out1 = outs[1].transpose(1, 2).reshape(B, C, *patch_resolution)
+        out2 = outs[2].transpose(1, 2).reshape(B, C, *patch_resolution)
+        out3 = outs[3].transpose(1, 2).reshape(B, C, *patch_resolution)
 
         # Convert to multi-scale
         out0 = self.res_modify_block_0(out0).contiguous()
