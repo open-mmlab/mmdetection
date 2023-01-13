@@ -15,8 +15,8 @@ log_config = dict(
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='NeptuneHook',
-             neptune_init_kwargs=dict(
-                 project='mmdetection',
-                 log_model=True)
+             project='mmdetection',
+             log_model=True,
+             log_checkpoint=True,
              )
         ])
