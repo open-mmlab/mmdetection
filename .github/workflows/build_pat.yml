@@ -34,7 +34,7 @@ jobs:
       - name: Install mmdet dependencies
         run: |
           source /usr/local/env/pat_latest
-          pip install -r requirements.txt -i http://pypi.douban.com/simple/ --trusted-host pypi.douban.com
+          pip install -r requirements.txt -i https://pypi.douban.com/simple/ --retries 0
       - name: Build MMCV
         run: |
           source /usr/local/env/pat_latest
@@ -44,5 +44,5 @@ jobs:
           python -c 'import mmcv; print(mmcv.__version__)'
       - name: Build and install
         run: |
-          rm -rf .eggs && pip install -e . -i http://pypi.douban.com/simple/ --trusted-host pypi.douban.com
+          rm -rf .eggs && pip install -e . -i https://pypi.douban.com/simple/  --retries 0
           python -c 'import mmdet; print(mmdet.__version__)'
