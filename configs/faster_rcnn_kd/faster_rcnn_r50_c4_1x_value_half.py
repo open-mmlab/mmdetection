@@ -11,23 +11,29 @@ model = dict(type='FasterRCNN_TS',
                 ),
             )
 
+# Distillation Params
 teacher_config_path = 'result/faster_rcnn_ori/faster_rcnn_r50_caffe_c4_1x_coco.py'
 teacher_weight_path = 'result/faster_rcnn_ori/epoch_12.pth'
-backbone_pretrain = True
+backbone_pretrain = False
 
 # use caffe img_norm
 img_norm_cfg = dict(
     mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
-train_pipeline = [
+
+pre_train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
+]
+
+train_pipeline = [
+    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
+
 test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
@@ -49,6 +55,7 @@ data = dict(
     workers_per_gpu=4,
     train=dict(type="CocoContDataset",
                pipeline=train_pipeline,
+               pre_pipeline=pre_train_pipeline,
                multiscale_mode_student='value', # range
                ratio_range_student=(0.4, 0.6, 0.8, 1.0, 1.0, 1.0)),
     val=dict(pipeline=test_pipeline),

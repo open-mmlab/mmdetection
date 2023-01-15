@@ -8,6 +8,7 @@ class CocoContDataset(CocoDataset):
     def __init__(self,
                  ann_file,
                  pipeline,
+                 pre_pipeline=None,
                  multiscale_mode_student=None,
                  ratio_range_student=None,
                  classes=None,
@@ -32,13 +33,18 @@ class CocoContDataset(CocoDataset):
                  filter_empty_gt,
                  file_client_args)
         
+        if (pre_pipeline is None) or (self.test_mode):
+            self.pre_train_pipeline = None
+        else:
+            self.pre_train_pipeline = Compose(pre_pipeline)
+        
         if not self.test_mode:
             pipeline_multiscale = []
             for pipe in pipeline:
                 if pipe['type'] == 'Resize':
                     pipe.update({'type': 'Resize_Student', 'multiscale_mode': multiscale_mode_student, 'ratio_range': ratio_range_student})
                 pipeline_multiscale.append(pipe)
-            
+                
             self.pipeline_multiscale = Compose(pipeline_multiscale)
 
 
@@ -58,8 +64,12 @@ class CocoContDataset(CocoDataset):
         results = dict(img_info=img_info, ann_info=ann_info)
         if self.proposals is not None:
             results['proposals'] = self.proposals[idx]
+            
         self.pre_pipeline(results)
         
+        if self.pre_train_pipeline is not None:
+            self.pre_train_pipeline(results)
+            
         results_original, results_augment = deepcopy(results), deepcopy(results)
         return self.pipeline(results_original), self.pipeline_multiscale(results_augment)
      
