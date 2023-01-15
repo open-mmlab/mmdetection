@@ -26,7 +26,7 @@ model = init_detector(config_file, checkpoint_file, device='cuda:0')
 
 # 初始化可视化工具
 visualizer = VISUALIZERS.build(model.cfg.visualizer)
-# 从 checkpoint 中加载 Dataset_meta，并将其传递给模型的 init_detector 
+# 从 checkpoint 中加载 Dataset_meta，并将其传递给模型的 init_detector
 visualizer.dataset_meta = model.dataset_meta
 
 # 测试单张图片并展示结果
@@ -52,7 +52,7 @@ test_pipeline = Compose(model.cfg.test_dataloader.dataset.pipeline)
 
 # 初始化可视化工具
 visualizer = VISUALIZERS.build(model.cfg.visualizer)
-# 从 checkpoint 中加载 Dataset_meta，并将其传递给模型的 init_detector 
+# 从 checkpoint 中加载 Dataset_meta，并将其传递给模型的 init_detector
 visualizer.dataset_meta = model.dataset_meta
 
 # 显示间隔 (s), 0 表示暂停
