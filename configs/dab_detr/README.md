@@ -22,9 +22,9 @@ We present in this paper a novel query formulation using dynamic anchor boxes fo
 
 We provide the config files and models for DAB-DETR: [DAB-DETR: Dynamic Anchor Boxes are Better Queries for DETR](https://arxiv.org/abs/2201.12329).
 
-| Backbone |  Model   | Lr schd | Mem (GB) | Inf time (fps) | box AP |                  Config                   |               Download               |
-| :------: | :------: | :-----: | :------: | :------------: | :----: | :---------------------------------------: | :----------------------------------: |
-|   R-50   | DAB-DETR |   50e   |   6.4    |                |  42.3  | [config](./dab-detr_r50_8xb2-50e_coco.py) | \[model\](# TODO) \| \[log\](# TODO) |
+| Backbone |  Model   | Lr schd | Mem (GB) | Inf time (fps) | box AP |                  Config                   |                                                                                                                                                                        Download                                                                                                                                                                        |
+| :------: | :------: | :-----: | :------: | :------------: | :----: | :---------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|   R-50   | DAB-DETR |   50e   |   6.4    |                |  42.3  | [config](./dab-detr_r50_8xb2-50e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/conditional_detr/conditional_detr_r50_8xb2-50e_coco/conditional_detr_r50_8xb2-50e_coco_20221121_180202-c83a1dc0.pth) \\ [log](https://download.openmmlab.com/mmdetection/v3.0/conditional_detr/conditional_detr_r50_8xb2-50e_coco/conditional_detr_r50_8xb2-50e_coco_20221121_180202.log.json) |
 
 ## Citation
 
