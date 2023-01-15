@@ -19,11 +19,11 @@
 #                                 --launcher pytorch
 
 
-CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch \
+CUDA_VISIBLE_DEVICES=2,3 python -m torch.distributed.launch \
                                 --nproc_per_node=2 \
-                                --master_port 523 \
+                                --master_port 901 \
                                 tools/train.py \
-                                --config configs/faster_rcnn_kd/faster_rcnn_r50_c4_1x_naive.py \
+                                --config configs/faster_rcnn_kd/faster_rcnn_r50_c4_1x_discrete.py \
                                 --seed 0 \
-                                --work-dir result/faster_rcnn_value_naive \
+                                --work-dir result/faster_rcnn_discrete_half \
                                 --launcher pytorch
