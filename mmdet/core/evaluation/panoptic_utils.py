@@ -3,4 +3,4 @@
 # be greater than the number of categories.
 # For a pixel in the panoptic result map:
 #   pan_id = ins_id * INSTANCE_OFFSET + cat_id
-INSTANCE_OFFSET = 1000
+INSTANCE_OFFSET: int = 1000
