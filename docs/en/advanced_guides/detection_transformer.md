@@ -10,7 +10,7 @@ There is a brand new implementation of DETRs in MMDetection, whose features are 
 
 #### 1. A unified base detector class for DETRs.
 
-According to the existing DETRs, a unified base detector class `DetectionTransformer` is designed to standardize the architectures and forward procedures of DETRs. (mmdet/models/detectors/base_detr.py)
+According to the existing DETRs, a unified base detector class [`DetectionTransformer`](../../../mmdet/models/detectors/base_detr.py) is designed to standardize the architectures and forward procedures of DETRs.
 
 Each detector inherited from `DetectionTransformer` is mainly consists of six components: `backbone`, `neck`, `positional_encoding`, `encoder`, `decoder`, and `bbox_head`. The `backbone` and `neck` extract features of input batch. The `positional_encoding` encodes the position of each feature points. The `encoder` processes output features of neck. The `decoder` pools encoder features of objects into the queries. At last, the `bbox_head` makes predictions and calculates losses on output queries of decoder.
 
