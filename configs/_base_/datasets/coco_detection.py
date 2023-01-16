@@ -10,16 +10,24 @@ data_root = 'data/coco/'
 #     }))
 file_client_args = dict(backend='disk')
 
+backend = 'pillow'
+
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args=file_client_args,
+        imdecode_backend=backend),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', scale=(1333, 800), keep_ratio=True),
-    dict(type='RandomFlip', prob=0.5),
+    dict(type='Resize', scale=(1333, 800), keep_ratio=True, backend=backend),
+    dict(type='RandomFlip', prob=0.),
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
-    dict(type='Resize', scale=(1333, 800), keep_ratio=True),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args=file_client_args,
+        imdecode_backend=backend),
+    dict(type='Resize', scale=(1333, 800), keep_ratio=True, backend=backend),
     # If you don't have a gt annotation, delete the pipeline
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
@@ -31,14 +39,14 @@ train_dataloader = dict(
     batch_size=2,
     num_workers=2,
     persistent_workers=True,
-    sampler=dict(type='DefaultSampler', shuffle=True),
+    sampler=dict(type='DefaultSampler', shuffle=False),
     batch_sampler=dict(type='AspectRatioBatchSampler'),
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='annotations/instances_train2017.json',
-        data_prefix=dict(img='train2017/'),
-        filter_cfg=dict(filter_empty_gt=True, min_size=32),
+        ann_file='annotations/instances_val2017.json',
+        data_prefix=dict(img='val2017/'),
+        filter_cfg=dict(filter_empty_gt=False, min_size=1e-5),
         pipeline=train_pipeline))
 val_dataloader = dict(
     batch_size=1,

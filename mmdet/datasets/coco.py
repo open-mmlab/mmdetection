@@ -70,6 +70,8 @@ class CocoDataset(BaseDetDataset):
         self.cat_img_map = copy.deepcopy(self.coco.cat_img_map)
 
         img_ids = self.coco.get_img_ids()
+        # sort indices for reproducible results
+        img_ids = sorted(img_ids)
         data_list = []
         total_ann_ids = []
         for img_id in img_ids:
