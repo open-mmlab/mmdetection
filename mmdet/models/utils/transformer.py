@@ -627,14 +627,21 @@ class DeformableDetrTransformerDecoder(TransformerLayerSequence):
 
     Args:
         return_intermediate (bool): Whether to return intermediate outputs.
+        look_forward_twice (bool): Whether to use look forward twice.
+            Defaults to False.
         coder_norm_cfg (dict): Config of last normalization layer. Default：
             `LN`.
     """
 
-    def __init__(self, *args, return_intermediate=False, **kwargs):
+    def __init__(self,
+                 *args,
+                 return_intermediate=False,
+                 look_forward_twice=False,
+                 **kwargs):
 
         super(DeformableDetrTransformerDecoder, self).__init__(*args, **kwargs)
         self.return_intermediate = return_intermediate
+        self.look_forward_twice = look_forward_twice
 
     def forward(self,
                 query,
@@ -671,11 +678,13 @@ class DeformableDetrTransformerDecoder(TransformerLayerSequence):
         for lid, layer in enumerate(self.layers):
             if reference_points.shape[-1] == 4:
                 reference_points_input = reference_points[:, :, None] * \
-                    torch.cat([valid_ratios, valid_ratios], -1)[:, None]
+                                         torch.cat(
+                                             [valid_ratios, valid_ratios], -1)[
+                                         :, None]
             else:
                 assert reference_points.shape[-1] == 2
-                reference_points_input = reference_points[:, :, None] * \
-                    valid_ratios[:, None]
+                reference_points_input = (
+                    reference_points[:, :, None] * valid_ratios[:, None])
             output = layer(
                 output,
                 *args,
@@ -700,7 +709,9 @@ class DeformableDetrTransformerDecoder(TransformerLayerSequence):
             output = output.permute(1, 0, 2)
             if self.return_intermediate:
                 intermediate.append(output)
-                intermediate_reference_points.append(reference_points)
+                intermediate_reference_points.append(
+                    new_reference_points if self.
+                    look_forward_twice else reference_points)
 
         if self.return_intermediate:
             return torch.stack(intermediate), torch.stack(
@@ -720,17 +731,21 @@ class DeformableDetrTransformer(Transformer):
             Default: 4.
         two_stage_num_proposals (int): Number of proposals when set
             `as_two_stage` as True. Default: 300.
+        mixed_selection (bool): Whether to use mixed selection.
+            Defaults to False.
     """
 
     def __init__(self,
                  as_two_stage=False,
                  num_feature_levels=4,
                  two_stage_num_proposals=300,
+                 mixed_selection=False,
                  **kwargs):
         super(DeformableDetrTransformer, self).__init__(**kwargs)
         self.as_two_stage = as_two_stage
         self.num_feature_levels = num_feature_levels
         self.two_stage_num_proposals = two_stage_num_proposals
+        self.mixed_selection = mixed_selection
         self.embed_dims = self.encoder.embed_dims
         self.init_layers()
 
@@ -1025,7 +1040,12 @@ class DeformableDetrTransformer(Transformer):
             init_reference_out = reference_points
             pos_trans_out = self.pos_trans_norm(
                 self.pos_trans(self.get_proposal_pos_embed(topk_coords_unact)))
-            query_pos, query = torch.split(pos_trans_out, c, dim=2)
+            if not self.mixed_selection:
+                query_pos, query = torch.split(pos_trans_out, c, dim=2)
+            else:
+                # query_embed here is the content embed for deformable DETR
+                query = query_embed.unsqueeze(0).expand(bs, -1, -1)
+                query_pos, _ = torch.split(pos_trans_out, c, dim=2)
         else:
             query_pos, query = torch.split(query_embed, c, dim=1)
             query_pos = query_pos.unsqueeze(0).expand(bs, -1, -1)
@@ -1052,11 +1072,11 @@ class DeformableDetrTransformer(Transformer):
 
         inter_references_out = inter_references
         if self.as_two_stage:
-            return inter_states, init_reference_out,\
-                inter_references_out, enc_outputs_class,\
-                enc_outputs_coord_unact
-        return inter_states, init_reference_out, \
-            inter_references_out, None, None
+            return inter_states, init_reference_out, \
+                   inter_references_out, enc_outputs_class, \
+                   enc_outputs_coord_unact
+        return (inter_states, init_reference_out, inter_references_out, None,
+                None)
 
 
 @TRANSFORMER.register_module()

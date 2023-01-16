@@ -1,107 +1,57 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import copy
-
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import Linear, bias_init_with_prob, constant_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import multi_apply
+from mmdet.models.builder import HEADS
+from mmdet.models.dense_heads.deformable_detr_head import DeformableDETRHead
 from mmdet.models.utils.transformer import inverse_sigmoid
-from ..builder import HEADS
-from .detr_head import DETRHead
 
 
 @HEADS.register_module()
-class DeformableDETRHead(DETRHead):
-    """Head of DeformDETR: Deformable DETR: Deformable Transformers for End-to-
-    End Object Detection.
+class HDeformableDETRHead(DeformableDETRHead):
+    """Head of DETRs with Hybrid Matching.
 
     Code is modified from the `official github repo
-    <https://github.com/fundamentalvision/Deformable-DETR>`_.
+    <https://github.com/HDETR/H-Deformable-DETR>`_.
 
     More details can be found in the `paper
-    <https://arxiv.org/abs/2010.04159>`_ .
+    <https://arxiv.org/abs/2207.13080>`_ .
 
     Args:
-        with_box_refine (bool): Whether to refine the reference points
-            in the decoder. Defaults to False.
-        as_two_stage (bool) : Whether to generate the proposal from
-            the outputs of encoder.
-        mixed_selection (bool): Whether to use mixed selection.
-            Defaults to False.
+        num_queries_one2one (int):
+            Number of query for one2one matching in Transformer.
+            Defaults to 300.
+        num_queries_one2many (int) :
+            Number of query for one2many matching in Transformer.
+            Defaults to 0.
+        k_one2many (int): Number of repeats for one2many matching targets.
+            Defaults to 6.
+        lambda_one2many (float): Weight of one2many loss.
+            Defaults to 1.0.
         transformer (obj:`ConfigDict`): ConfigDict is used for building
             the Encoder and Decoder.
     """
 
     def __init__(self,
                  *args,
-                 with_box_refine=False,
-                 as_two_stage=False,
-                 mixed_selection=False,
+                 num_queries_one2one=300,
+                 num_queries_one2many=0,
+                 k_one2many=6,
+                 lambda_one2many=1.0,
                  transformer=None,
                  **kwargs):
-        self.with_box_refine = with_box_refine
-        self.as_two_stage = as_two_stage
-        if self.as_two_stage:
-            transformer['as_two_stage'] = self.as_two_stage
-        self.mixed_selection = mixed_selection
-        if self.mixed_selection:
-            transformer['mixed_selection'] = self.mixed_selection
-
-        super(DeformableDETRHead, self).__init__(
-            *args, transformer=transformer, **kwargs)
-
-    def _init_layers(self):
-        """Initialize classification branch and regression branch of head."""
-
-        fc_cls = Linear(self.embed_dims, self.cls_out_channels)
-        reg_branch = []
-        for _ in range(self.num_reg_fcs):
-            reg_branch.append(Linear(self.embed_dims, self.embed_dims))
-            reg_branch.append(nn.ReLU())
-        reg_branch.append(Linear(self.embed_dims, 4))
-        reg_branch = nn.Sequential(*reg_branch)
-
-        def _get_clones(module, N):
-            return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
-
-        # last reg_branch is used to generate proposal from
-        # encode feature map when as_two_stage is True.
-        num_pred = (self.transformer.decoder.num_layers + 1) if \
-            self.as_two_stage else self.transformer.decoder.num_layers
-
-        if self.with_box_refine:
-            self.cls_branches = _get_clones(fc_cls, num_pred)
-            self.reg_branches = _get_clones(reg_branch, num_pred)
-        else:
-
-            self.cls_branches = nn.ModuleList(
-                [fc_cls for _ in range(num_pred)])
-            self.reg_branches = nn.ModuleList(
-                [reg_branch for _ in range(num_pred)])
-
-        if not self.as_two_stage:
-            self.query_embedding = nn.Embedding(self.num_query,
-                                                self.embed_dims * 2)
-        elif self.mixed_selection:
-            self.query_embedding = nn.Embedding(self.num_query,
-                                                self.embed_dims)
-
-    def init_weights(self):
-        """Initialize weights of the DeformDETR head."""
-        self.transformer.init_weights()
-        if self.loss_cls.use_sigmoid:
-            bias_init = bias_init_with_prob(0.01)
-            for m in self.cls_branches:
-                nn.init.constant_(m.bias, bias_init)
-        for m in self.reg_branches:
-            constant_init(m[-1], 0, bias=0)
-        nn.init.constant_(self.reg_branches[0][-1].bias.data[2:], -2.0)
-        if self.as_two_stage:
-            for m in self.reg_branches:
-                nn.init.constant_(m[-1].bias.data[2:], 0.0)
+        self.num_queries_one2one = num_queries_one2one
+        transformer['two_stage_num_proposals'] = (
+            num_queries_one2one + num_queries_one2many)
+        super().__init__(
+            *args,
+            num_query=num_queries_one2one + num_queries_one2many,
+            transformer=transformer,
+            **kwargs)
+        self.k_one2many = k_one2many
+        self.lambda_one2many = lambda_one2many
 
     def forward(self, mlvl_feats, img_metas):
         """Forward function.
@@ -111,14 +61,23 @@ class DeformableDETRHead(DETRHead):
                 network, each is a 4D-tensor with shape
                 (N, C, H, W).
             img_metas (list[dict]): List of image information.
-
         Returns:
-            all_cls_scores (Tensor): Outputs from the classification head, \
-                shape [nb_dec, bs, num_query, cls_out_channels]. Note \
-                cls_out_channels should includes background.
-            all_bbox_preds (Tensor): Sigmoid outputs from the regression \
+            all_cls_scores_one2one (Tensor):
+                Outputs from the classification head for one2one matching, \
+                shape [nb_dec, bs, num_queries_one2one, cls_out_channels]. \
+                Note cls_out_channels should includes background.
+            all_bbox_preds_one2one (Tensor):
+                Sigmoid outputs from the regression for one2one matching \
                 head with normalized coordinate format (cx, cy, w, h). \
-                Shape [nb_dec, bs, num_query, 4].
+                Shape [nb_dec, bs, num_queries_one2one, 4].
+            all_cls_scores_one2many (Tensor):
+                Outputs from the classification head for one2many matching, \
+                shape [nb_dec, bs, num_queries_one2many, cls_out_channels]. \
+                Note cls_out_channels should includes background.
+            all_bbox_preds_one2many (Tensor):
+                Sigmoid outputs from the regression for one2many matching \
+                head with normalized coordinate format (cx, cy, w, h). \
+                Shape [nb_dec, bs, num_queries_one2many, 4].
             enc_outputs_class (Tensor): The score of each point on encode \
                 feature map, has shape (N, h*w, num_class). Only when \
                 as_two_stage is True it would be returned, otherwise \
@@ -148,7 +107,17 @@ class DeformableDETRHead(DETRHead):
 
         query_embeds = None
         if not self.as_two_stage or self.mixed_selection:
-            query_embeds = self.query_embedding.weight[:self.num_query, :]
+            query_embeds = self.query_embedding.weight
+
+        self_attn_mask = (
+            torch.zeros([
+                self.num_query,
+                self.num_query,
+            ]).bool().to(mlvl_feats[0].device))
+        self_attn_mask[self.num_queries_one2one:,
+                       0:self.num_queries_one2one, ] = True
+        self_attn_mask[0:self.num_queries_one2one,
+                       self.num_queries_one2one:, ] = True
 
         (hs, init_reference, inter_references, enc_outputs_class,
          enc_outputs_coord) = self.transformer(
@@ -160,10 +129,12 @@ class DeformableDETRHead(DETRHead):
              # noqa:E501
              cls_branches=self.cls_branches if self.as_two_stage else None,
              # noqa:E501
-         )
+             attn_masks=self_attn_mask)
         hs = hs.permute(0, 2, 1, 3)
-        outputs_classes = []
-        outputs_coords = []
+        outputs_classes_one2one = []
+        outputs_coords_one2one = []
+        outputs_classes_one2many = []
+        outputs_coords_one2many = []
 
         for lvl in range(hs.shape[0]):
             if lvl == 0:
@@ -179,23 +150,35 @@ class DeformableDETRHead(DETRHead):
                 assert reference.shape[-1] == 2
                 tmp[..., :2] += reference
             outputs_coord = tmp.sigmoid()
-            outputs_classes.append(outputs_class)
-            outputs_coords.append(outputs_coord)
+            outputs_classes_one2one.append(
+                outputs_class[:, :self.num_queries_one2one])
+            outputs_classes_one2many.append(
+                outputs_class[:, self.num_queries_one2one:])
+            outputs_coords_one2one.append(
+                outputs_coord[:, :self.num_queries_one2one])
+            outputs_coords_one2many.append(
+                outputs_coord[:, self.num_queries_one2one:])
 
-        outputs_classes = torch.stack(outputs_classes)
-        outputs_coords = torch.stack(outputs_coords)
+        outputs_classes_one2one = torch.stack(outputs_classes_one2one)
+        outputs_coords_one2one = torch.stack(outputs_coords_one2one)
+        outputs_classes_one2many = torch.stack(outputs_classes_one2many)
+        outputs_coords_one2many = torch.stack(outputs_coords_one2many)
         if self.as_two_stage:
-            return outputs_classes, outputs_coords, \
+            return outputs_classes_one2one, outputs_coords_one2one, \
+                   outputs_classes_one2many, outputs_coords_one2many, \
                    enc_outputs_class, \
                    enc_outputs_coord.sigmoid()
         else:
-            return outputs_classes, outputs_coords, \
+            return outputs_classes_one2one, outputs_coords_one2one, \
+                   outputs_classes_one2many, outputs_coords_one2many, \
                    None, None
 
-    @force_fp32(apply_to=('all_cls_scores', 'all_bbox_preds'))
+    @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
     def loss(self,
-             all_cls_scores,
-             all_bbox_preds,
+             all_cls_scores_one2one,
+             all_bbox_preds_one2one,
+             all_cls_scores_one2many,
+             all_bbox_preds_one2many,
              enc_cls_scores,
              enc_bbox_preds,
              gt_bboxes_list,
@@ -205,13 +188,22 @@ class DeformableDETRHead(DETRHead):
         """"Loss function.
 
         Args:
-            all_cls_scores (Tensor): Classification score of all
-                decoder layers, has shape
-                [nb_dec, bs, num_query, cls_out_channels].
-            all_bbox_preds (Tensor): Sigmoid regression
-                outputs of all decode layers. Each is a 4D-tensor with
-                normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, bs, num_query, 4].
+            all_cls_scores_one2one (Tensor):
+                Outputs from the classification head for one2one matching, \
+                shape [nb_dec, bs, num_queries_one2one, cls_out_channels]. \
+                Note cls_out_channels should includes background.
+            all_bbox_preds_one2one (Tensor):
+                Sigmoid outputs from the regression for one2one matching \
+                head with normalized coordinate format (cx, cy, w, h). \
+                Shape [nb_dec, bs, num_queries_one2one, 4].
+            all_cls_scores_one2many (Tensor):
+                Outputs from the classification head for one2many matching, \
+                shape [nb_dec, bs, num_queries_one2many, cls_out_channels]. \
+                Note cls_out_channels should includes background.
+            all_bbox_preds_one2many (Tensor):
+                Sigmoid outputs from the regression for one2many matching \
+                head with normalized coordinate format (cx, cy, w, h). \
+                Shape [nb_dec, bs, num_queries_one2many, 4].
             enc_cls_scores (Tensor): Classification scores of
                 points on encode feature map , has shape
                 (N, h*w, num_classes). Only be passed when as_two_stage is
@@ -226,7 +218,6 @@ class DeformableDETRHead(DETRHead):
             img_metas (list[dict]): List of image meta information.
             gt_bboxes_ignore (list[Tensor], optional): Bounding boxes
                 which can be ignored for each image. Default None.
-
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
@@ -234,16 +225,37 @@ class DeformableDETRHead(DETRHead):
             f'{self.__class__.__name__} only supports ' \
             f'for gt_bboxes_ignore setting to None.'
 
-        num_dec_layers = len(all_cls_scores)
+        num_dec_layers = len(all_cls_scores_one2one)
         all_gt_bboxes_list = [gt_bboxes_list for _ in range(num_dec_layers)]
         all_gt_labels_list = [gt_labels_list for _ in range(num_dec_layers)]
         all_gt_bboxes_ignore_list = [
             gt_bboxes_ignore for _ in range(num_dec_layers)
         ]
+        all_gt_bboxes_list_one2many = [[
+            g.repeat(self.k_one2many, 1) for g in gt_bboxes_list
+        ] for _ in range(num_dec_layers)]
+        all_gt_labels_list_one2many = [[
+            g.repeat(self.k_one2many, 1).view(-1) for g in gt_labels_list
+        ] for _ in range(num_dec_layers)]
+        if gt_bboxes_ignore is None:
+            all_gt_bboxes_ignore_list_one2many = [
+                gt_bboxes_ignore for _ in range(num_dec_layers)
+            ]
+        else:
+            all_gt_bboxes_ignore_list_one2many = [[
+                g.repeat(self.k_one2many, 1) if g is not None else None
+                for g in gt_bboxes_ignore
+            ] for _ in range(num_dec_layers)]
         img_metas_list = [img_metas for _ in range(num_dec_layers)]
 
+        (losses_cls_one2many, losses_bbox_one2many,
+         losses_iou_one2many) = multi_apply(
+             self.loss_single, all_cls_scores_one2many,
+             all_bbox_preds_one2many, all_gt_bboxes_list_one2many,
+             all_gt_labels_list_one2many, img_metas_list,
+             all_gt_bboxes_ignore_list_one2many)
         losses_cls, losses_bbox, losses_iou = multi_apply(
-            self.loss_single, all_cls_scores, all_bbox_preds,
+            self.loss_single, all_cls_scores_one2one, all_bbox_preds_one2one,
             all_gt_bboxes_list, all_gt_labels_list, img_metas_list,
             all_gt_bboxes_ignore_list)
 
@@ -266,21 +278,37 @@ class DeformableDETRHead(DETRHead):
         loss_dict['loss_cls'] = losses_cls[-1]
         loss_dict['loss_bbox'] = losses_bbox[-1]
         loss_dict['loss_iou'] = losses_iou[-1]
+        loss_dict['loss_cls_one2many'] = (
+            losses_cls_one2many[-1] * self.lambda_one2many)
+        loss_dict['loss_bbox_one2many'] = (
+            losses_bbox_one2many[-1] * self.lambda_one2many)
+        loss_dict['loss_iou_one2many'] = (
+            losses_iou_one2many[-1] * self.lambda_one2many)
         # loss from other decoder layers
         num_dec_layer = 0
-        for loss_cls_i, loss_bbox_i, loss_iou_i in zip(losses_cls[:-1],
-                                                       losses_bbox[:-1],
-                                                       losses_iou[:-1]):
+        for (loss_cls_i, loss_bbox_i, loss_iou_i, loss_cls_i_one2many,
+             loss_bbox_i_one2many, loss_iou_i_one2many) in zip(
+                 losses_cls[:-1], losses_bbox[:-1], losses_iou[:-1],
+                 losses_cls_one2many[:-1], losses_bbox_one2many[:-1],
+                 losses_iou_one2many[:-1]):
             loss_dict[f'd{num_dec_layer}.loss_cls'] = loss_cls_i
             loss_dict[f'd{num_dec_layer}.loss_bbox'] = loss_bbox_i
             loss_dict[f'd{num_dec_layer}.loss_iou'] = loss_iou_i
+            loss_dict[
+                f'd{num_dec_layer}.loss_cls_one2many'] = loss_cls_i_one2many
+            loss_dict[
+                f'd{num_dec_layer}.loss_bbox_one2many'] = loss_bbox_i_one2many
+            loss_dict[
+                f'd{num_dec_layer}.loss_iou_one2many'] = loss_iou_i_one2many
             num_dec_layer += 1
         return loss_dict
 
-    @force_fp32(apply_to=('all_cls_scores', 'all_bbox_preds'))
+    @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
     def get_bboxes(self,
                    all_cls_scores,
                    all_bbox_preds,
+                   all_cls_scores_one2many,
+                   all_bbox_preds_one2many,
                    enc_cls_scores,
                    enc_bbox_preds,
                    img_metas,
@@ -288,13 +316,22 @@ class DeformableDETRHead(DETRHead):
         """Transform network outputs for a batch into bbox predictions.
 
         Args:
-            all_cls_scores (Tensor): Classification score of all
-                decoder layers, has shape
-                [nb_dec, bs, num_query, cls_out_channels].
-            all_bbox_preds (Tensor): Sigmoid regression
-                outputs of all decode layers. Each is a 4D-tensor with
-                normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, bs, num_query, 4].
+            all_cls_scores (Tensor):
+                Outputs from the classification head for one2one matching, \
+                shape [nb_dec, bs, num_queries_one2one, cls_out_channels]. \
+                Note cls_out_channels should includes background.
+            all_bbox_preds (Tensor):
+                Sigmoid outputs from the regression for one2one matching \
+                head with normalized coordinate format (cx, cy, w, h). \
+                Shape [nb_dec, bs, num_queries_one2one, 4].
+            all_cls_scores_one2many (Tensor):
+                Outputs from the classification head for one2many matching, \
+                shape [nb_dec, bs, num_queries_one2many, cls_out_channels]. \
+                Note cls_out_channels should includes background.
+            all_bbox_preds_one2many (Tensor):
+                Sigmoid outputs from the regression for one2many matching \
+                head with normalized coordinate format (cx, cy, w, h). \
+                Shape [nb_dec, bs, num_queries_one2many, 4].
             enc_cls_scores (Tensor): Classification scores of
                 points on encode feature map , has shape
                 (N, h*w, num_classes). Only be passed when as_two_stage is
@@ -305,7 +342,6 @@ class DeformableDETRHead(DETRHead):
             img_metas (list[dict]): Meta information of each image.
             rescale (bool, optional): If True, return boxes in original
                 image space. Default False.
-
         Returns:
             list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
                 The first item is an (n, 5) tensor, where the first 4 columns \
