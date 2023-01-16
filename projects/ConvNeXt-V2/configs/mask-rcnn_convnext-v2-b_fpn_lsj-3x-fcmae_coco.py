@@ -5,7 +5,7 @@ _base_ = [
     'mmdet::_base_/default_runtime.py'
 ]
 
-# please install mmcls>=1.0
+# please install the mmclassification dev-1.x branch
 # import mmcls.models to trigger register_module in mmcls
 custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
 checkpoint_file = 'https://download.openmmlab.com/mmclassification/v0/convnext-v2/convnext-v2-base_3rdparty-fcmae_in1k_20230104-8a798eaf.pth'  # noqa
@@ -18,7 +18,6 @@ model = dict(
         arch='base',
         out_indices=[0, 1, 2, 3],
         # TODO: verify stochastic depth rate {0.1, 0.2, 0.3, 0.4}
-        # drop_path_rate=[0.1] * 3 + [0.2] * 3 + [0.3] * 27 + [0.4] * 3,
         drop_path_rate=0.4,
         layer_scale_init_value=0.,  # disable layer scale when using GRN
         gap_before_final_norm=False,
