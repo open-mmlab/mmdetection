@@ -12,9 +12,9 @@ Driven by improved architectures and better representation learning frameworks, 
 
 ## Results and models
 
-|   Method   |   Backbone    | Pretrain | Lr schd | Augmentation | Mem (GB) | box AP | mask AP |                              Config                               |        Download         |
-| :--------: | :-----------: | :------: | :-----: | :----------: | :------: | :----: | :-----: | :---------------------------------------------------------------: | :---------------------: |
-| Mask R-CNN | ConvNeXt-V2-B |  FCMAE   |   3x    |     LSJ      |   22.5   |  52.9  |  46.4   | [config](./mask-rcnn_convnext-t-p4-w7_fpn_amp-ms-crop-3x_coco.py) | [model](-)  \| [log](-) |
+|   Method   |   Backbone    | Pretrain | Lr schd | Augmentation | Mem (GB) | box AP | mask AP |                            Config                            |                                                                                                                                                                                        Download                                                                                                                                                                                         |
+| :--------: | :-----------: | :------: | :-----: | :----------: | :------: | :----: | :-----: | :----------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| Mask R-CNN | ConvNeXt-V2-B |  FCMAE   |   3x    |     LSJ      |   22.5   |  52.9  |  46.4   | [config](./mask-rcnn_convnext-v2-b_fpn_lsj-3x-fcmae_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/convnextv2/mask-rcnn_convnext-v2-b_fpn_lsj-3x-fcmae_coco/mask-rcnn_convnext-v2-b_fpn_lsj-3x-fcmae_coco_20230113_110947-757ee2dd.pth)  \| [log](https://download.openmmlab.com/mmdetection/v3.0/convnextv2/mask-rcnn_convnext-v2-b_fpn_lsj-3x-fcmae_coco/mask-rcnn_convnext-v2-b_fpn_lsj-3x-fcmae_coco_20230113_110947.log.json) |
 
 **Note**:
 
