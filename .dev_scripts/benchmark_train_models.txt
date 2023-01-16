@@ -1,0 +1,8 @@
+atss/atss_r50_fpn_1x_coco.py
+carafe/faster-rcnn_r50_fpn-carafe_1x_coco.py
+cascade_rcnn/cascade-mask-rcnn_r50_fpn_1x_coco.py
+detectors/detectors_htc-r50_1x_coco.py
+instaboost/mask-rcnn_r50_fpn_instaboost-4x_coco.py
+lad/lad_r50-paa-r101_fpn_2xb8_coco_1x.py
+panoptic_fpn/panoptic-fpn_r50_fpn_1x_coco.py
+yolox/yolox_tiny_8xb8-300e_coco.py
