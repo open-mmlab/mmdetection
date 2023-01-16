@@ -15,7 +15,7 @@ Tested on the following environments
 - MSDET FasterRCNN
   - detectors: "Faster_RCNN_TS" ($msdet/faster_rcnn.py)
     - rpn_head: "RPNHead" ($mmdet/models/dense_heads/rpn_head.py)
-    - roi_head: " " ($msdet/roi_heads.py)
+    - roi_head: "ContRoIHead" ($msdet/roi_heads.py)
   - data: "CocoConDataset" ($msdet/coco.py)
 
 
