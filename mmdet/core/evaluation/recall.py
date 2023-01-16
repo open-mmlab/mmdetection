@@ -5,43 +5,47 @@ import numpy as np
 from mmcv.utils import print_log
 from terminaltables import AsciiTable
 
+from typing import *
+import logging
+
 from .bbox_overlaps import bbox_overlaps
 
 
-def _recalls(all_ious, proposal_nums, thrs):
+def _recalls(all_ious: np.ndarray, proposal_nums, thrs) -> np.ndarray:
 
-    img_num = all_ious.shape[0]
-    total_gt_num = sum([ious.shape[0] for ious in all_ious])
+    img_num: int = all_ious.shape[0]
+    total_gt_num: int = sum([ious.shape[0] for ious in all_ious])
 
-    _ious = np.zeros((proposal_nums.size, total_gt_num), dtype=np.float32)
+    _ious: np.ndarray = np.zeros((proposal_nums.size, total_gt_num), dtype=np.float32)
     for k, proposal_num in enumerate(proposal_nums):
-        tmp_ious = np.zeros(0)
+        tmp_ious: np.ndarray = np.zeros(0)
         for i in range(img_num):
             ious = all_ious[i][:, :proposal_num].copy()
-            gt_ious = np.zeros((ious.shape[0]))
+            gt_ious: np.ndarray = np.zeros((ious.shape[0]))
             if ious.size == 0:
-                tmp_ious = np.hstack((tmp_ious, gt_ious))
+                tmp_ious: np.ndarray = np.hstack((tmp_ious, gt_ious))
                 continue
             for j in range(ious.shape[0]):
-                gt_max_overlaps = ious.argmax(axis=1)
-                max_ious = ious[np.arange(0, ious.shape[0]), gt_max_overlaps]
-                gt_idx = max_ious.argmax()
+                gt_max_overlaps: np.ndarray = ious.argmax(axis=1)
+                max_ious: np.ndarray = ious[np.arange(0, ious.shape[0]), gt_max_overlaps]
+                gt_idx: int = max_ious.argmax()
                 gt_ious[j] = max_ious[gt_idx]
-                box_idx = gt_max_overlaps[gt_idx]
+                box_idx: int = gt_max_overlaps[gt_idx]
                 ious[gt_idx, :] = -1
                 ious[:, box_idx] = -1
-            tmp_ious = np.hstack((tmp_ious, gt_ious))
+            tmp_ious: np.ndarray = np.hstack((tmp_ious, gt_ious))
         _ious[k, :] = tmp_ious
 
-    _ious = np.fliplr(np.sort(_ious, axis=1))
-    recalls = np.zeros((proposal_nums.size, thrs.size))
+    _ious: np.ndarray = np.fliplr(np.sort(_ious, axis=1))
+    recalls: np.ndarray = np.zeros((proposal_nums.size, thrs.size))
     for i, thr in enumerate(thrs):
         recalls[:, i] = (_ious >= thr).sum(axis=1) / float(total_gt_num)
 
     return recalls
 
 
-def set_recall_param(proposal_nums, iou_thrs):
+def set_recall_param(proposal_nums: Union[int, Sequence[int]], iou_thrs: Union[float, Sequence[float]])\
+        -> tuple[np.ndarray, np.ndarray]:
     """Check proposal_nums and iou_thrs and set correct format."""
     if isinstance(proposal_nums, Sequence):
         _proposal_nums = np.array(proposal_nums)
@@ -62,12 +66,12 @@ def set_recall_param(proposal_nums, iou_thrs):
     return _proposal_nums, _iou_thrs
 
 
-def eval_recalls(gts,
-                 proposals,
-                 proposal_nums=None,
-                 iou_thrs=0.5,
-                 logger=None,
-                 use_legacy_coordinate=False):
+def eval_recalls(gts: list,
+                 proposals: list,
+                 proposal_nums: Optional[Union[int, Sequence[int]]] = None,
+                 iou_thrs: Union[float, Sequence[float]] = 0.5,
+                 logger: Optional[Union[logging.Logger, str, None]] = None,
+                 use_legacy_coordinate: bool = False) -> np.ndarray:
     """Calculate recalls.
 
     Args:
@@ -87,39 +91,39 @@ def eval_recalls(gts,
         ndarray: recalls of different ious and proposal nums
     """
 
-    img_num = len(gts)
+    img_num: int = len(gts)
     assert img_num == len(proposals)
     proposal_nums, iou_thrs = set_recall_param(proposal_nums, iou_thrs)
-    all_ious = []
+    all_ious: list = []
     for i in range(img_num):
         if proposals[i].ndim == 2 and proposals[i].shape[1] == 5:
             scores = proposals[i][:, 4]
-            sort_idx = np.argsort(scores)[::-1]
+            sort_idx: int = np.argsort(scores)[::-1]
             img_proposal = proposals[i][sort_idx, :]
         else:
             img_proposal = proposals[i]
-        prop_num = min(img_proposal.shape[0], proposal_nums[-1])
+        prop_num: int = min(img_proposal.shape[0], proposal_nums[-1])
         if gts[i] is None or gts[i].shape[0] == 0:
-            ious = np.zeros((0, img_proposal.shape[0]), dtype=np.float32)
+            ious: np.ndarray = np.zeros((0, img_proposal.shape[0]), dtype=np.float32)
         else:
             ious = bbox_overlaps(
                 gts[i],
                 img_proposal[:prop_num, :4],
                 use_legacy_coordinate=use_legacy_coordinate)
         all_ious.append(ious)
-    all_ious = np.array(all_ious)
-    recalls = _recalls(all_ious, proposal_nums, iou_thrs)
+    all_ious: np.ndarray = np.array(all_ious)
+    recalls: np.ndarray = _recalls(all_ious, proposal_nums, iou_thrs)
 
     print_recall_summary(recalls, proposal_nums, iou_thrs, logger=logger)
     return recalls
 
 
-def print_recall_summary(recalls,
-                         proposal_nums,
-                         iou_thrs,
-                         row_idxs=None,
-                         col_idxs=None,
-                         logger=None):
+def print_recall_summary(recalls: np.ndarray,
+                         proposal_nums: Union[np.ndarray, list],
+                         iou_thrs: Union[np.ndarray, list],
+                         row_idxs: Optional[np.ndarray] = None,
+                         col_idxs: Optional[np.ndarray] = None,
+                         logger: Optional[Union[logging.Logger, str, None]] = None) -> None:
     """Print recalls in a table.
 
     Args:
@@ -131,23 +135,23 @@ def print_recall_summary(recalls,
         logger (logging.Logger | str | None): The way to print the recall
             summary. See `mmcv.utils.print_log()` for details. Default: None.
     """
-    proposal_nums = np.array(proposal_nums, dtype=np.int32)
-    iou_thrs = np.array(iou_thrs)
+    proposal_nums: np.ndarray = np.array(proposal_nums, dtype=np.int32)
+    iou_thrs: np.ndarray = np.array(iou_thrs)
     if row_idxs is None:
-        row_idxs = np.arange(proposal_nums.size)
+        row_idxs: np.ndarray = np.arange(proposal_nums.size)
     if col_idxs is None:
-        col_idxs = np.arange(iou_thrs.size)
-    row_header = [''] + iou_thrs[col_idxs].tolist()
-    table_data = [row_header]
+        col_idxs: np.ndarray = np.arange(iou_thrs.size)
+    row_header: list = [''] + iou_thrs[col_idxs].tolist()
+    table_data: list = [row_header]
     for i, num in enumerate(proposal_nums[row_idxs]):
-        row = [f'{val:.3f}' for val in recalls[row_idxs[i], col_idxs].tolist()]
+        row: list = [f'{val:.3f}' for val in recalls[row_idxs[i], col_idxs].tolist()]
         row.insert(0, num)
         table_data.append(row)
-    table = AsciiTable(table_data)
+    table: AsciiTable = AsciiTable(table_data)
     print_log('\n' + table.table, logger=logger)
 
 
-def plot_num_recall(recalls, proposal_nums):
+def plot_num_recall(recalls: Union[np.ndarray, list], proposal_nums: Union[np.ndarray, list]) -> None:
     """Plot Proposal_num-Recalls curve.
 
     Args:
@@ -172,7 +176,7 @@ def plot_num_recall(recalls, proposal_nums):
     f.show()
 
 
-def plot_iou_recall(recalls, iou_thrs):
+def plot_iou_recall(recalls: Union[np.ndarray, list], iou_thrs: Union[np.ndarray, list]) -> None:
     """Plot IoU-Recalls curve.
 
     Args:
