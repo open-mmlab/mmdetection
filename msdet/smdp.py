@@ -6,9 +6,9 @@ from copy import deepcopy
 
 @DATASETS.register_module()
 class SmdpDataset(CocoDataset):
-    CLASSES = ('boat', 'vessel', 'ferry', 'kayak', 'buoy', 'sail_boat', 'others')
+    CLASSES = ('Boat', 'Vessel/Ship', 'Ferry', 'Kayak', 'Buoy', 'Sail Boat', 'Others')
     PALETTE = [(220, 20, 60), (119, 11, 32), (0, 0, 142), (0, 0, 230), (106, 0, 228), (0, 60, 100), (0, 80, 100)]
-    
+            
 
 @DATASETS.register_module()
 class SmdpContDataset(SmdpDataset):
