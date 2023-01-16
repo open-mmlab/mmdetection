@@ -370,7 +370,7 @@ python tools/misc/download_dataset.py --dataset-name voc2007
 python tools/misc/download_dataset.py --dataset-name lvis
 ```
 
-对于中国境内的用户，我们也推荐使用开源数据平台[OpenDataLab](https://opendatalab.com/)来获取这些数据集，以获得更好的下载体验:
+对于中国境内的用户，我们也推荐使用开源数据平台 [OpenDataLab](https://opendatalab.com/) 来获取这些数据集，以获得更好的下载体验:
 
 - [COCO2017](https://opendatalab.com/COCO_2017/download)
 - [VOC2007](https://opendatalab.com/PASCAL_VOC2007/download)
