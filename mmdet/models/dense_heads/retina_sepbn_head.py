@@ -94,7 +94,7 @@ class RetinaSepBNHead(AnchorHead):
         normal_init(self.retina_cls, std=0.01, bias=bias_cls)
         normal_init(self.retina_reg, std=0.01)
 
-    def forward(self, feats: Tuple[Tensor], *args) -> tuple:
+    def forward(self, feats: Tuple[Tensor]) -> tuple:
         """Forward features from the upstream network.
 
         Args:

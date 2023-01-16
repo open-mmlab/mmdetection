@@ -75,8 +75,10 @@ class GridRoIHead(StandardRoIHead):
         return sampling_results
 
     # TODO: Forward is incorrect and need to refactor.
-    def forward(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
-                *args) -> tuple:
+    def forward(self,
+                x: Tuple[Tensor],
+                rpn_results_list: InstanceList,
+                batch_data_samples: SampleList = None) -> tuple:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
 
@@ -85,6 +87,9 @@ class GridRoIHead(StandardRoIHead):
                 resolutions.
             rpn_results_list (list[:obj:`InstanceData`]): List of region
                 proposals.
+            batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
+            the meta information of each image and corresponding
+            annotations.
 
         Returns
             tuple: A tuple of features from ``bbox_head`` and ``mask_head``

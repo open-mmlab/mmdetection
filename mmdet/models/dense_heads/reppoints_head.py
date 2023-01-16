@@ -274,7 +274,7 @@ class RepPointsHead(AnchorFreeHead):
         ], 1)
         return grid_yx, regressed_bbox
 
-    def forward(self, feats: Tuple[Tensor], *args) -> Tuple[Tensor]:
+    def forward(self, feats: Tuple[Tensor]) -> Tuple[Tensor]:
         return multi_apply(self.forward_single, feats)
 
     def forward_single(self, x: Tensor) -> Tuple[Tensor]:

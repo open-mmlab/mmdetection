@@ -211,7 +211,7 @@ class YOLOXHead(BaseDenseHead):
 
         return cls_score, bbox_pred, objectness
 
-    def forward(self, x: Tuple[Tensor], *args) -> Tuple[List]:
+    def forward(self, x: Tuple[Tensor]) -> Tuple[List]:
         """Forward features from the upstream network.
 
         Args:

@@ -253,7 +253,7 @@ class CornerHead(BaseDenseHead):
                 self.tl_emb[i][-1].conv.reset_parameters()
                 self.br_emb[i][-1].conv.reset_parameters()
 
-    def forward(self, feats: Tuple[Tensor], *args) -> tuple:
+    def forward(self, feats: Tuple[Tensor]) -> tuple:
         """Forward features from the upstream network.
 
         Args:

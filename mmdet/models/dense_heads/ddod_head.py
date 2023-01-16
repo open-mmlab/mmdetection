@@ -124,7 +124,7 @@ class DDODHead(AnchorHead):
         bias_cls = bias_init_with_prob(0.01)
         normal_init(self.atss_cls, std=0.01, bias=bias_cls)
 
-    def forward(self, x: Tuple[Tensor], *args) -> Tuple[List[Tensor]]:
+    def forward(self, x: Tuple[Tensor]) -> Tuple[List[Tensor]]:
         """Forward features from the upstream network.
 
         Args:

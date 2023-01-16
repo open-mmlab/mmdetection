@@ -199,7 +199,7 @@ class SABLRetinaHead(BaseDenseHead):
         bbox_pred = (bbox_cls_pred, bbox_reg_pred)
         return cls_score, bbox_pred
 
-    def forward(self, feats: List[Tensor], *args) -> Tuple[List[Tensor]]:
+    def forward(self, feats: List[Tensor]) -> Tuple[List[Tensor]]:
         return multi_apply(self.forward_single, feats)
 
     def get_anchors(

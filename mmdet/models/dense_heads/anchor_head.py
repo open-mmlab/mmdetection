@@ -142,7 +142,7 @@ class AnchorHead(BaseDenseHead):
         bbox_pred = self.conv_reg(x)
         return cls_score, bbox_pred
 
-    def forward(self, x: Tuple[Tensor], *args) -> Tuple[List[Tensor]]:
+    def forward(self, x: Tuple[Tensor]) -> Tuple[List[Tensor]]:
         """Forward features from the upstream network.
 
         Args:

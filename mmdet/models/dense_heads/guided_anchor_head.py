@@ -247,7 +247,7 @@ class GuidedAnchorHead(AnchorHead):
         bbox_pred = self.conv_reg(x, mask)
         return cls_score, bbox_pred, shape_pred, loc_pred
 
-    def forward(self, x: List[Tensor], *args) -> Tuple[List[Tensor]]:
+    def forward(self, x: List[Tensor]) -> Tuple[List[Tensor]]:
         """Forward features from the upstream network."""
         return multi_apply(self.forward_single, x)
 
