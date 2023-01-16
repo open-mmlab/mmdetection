@@ -1,6 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
-import warnings
 
 try:
     import neptune.new as neptune
@@ -106,14 +105,19 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
             if self.ckpt_hook is None:
                 self.log_checkpoint = False
                 runner.logger.warning(
-                    'WARNING ABOUT CHECKPOINT HOOK NOT PRESENT')
+                    'To log checkpoint in NeptuneHook, `CheckpointHook` is'
+                    'required, please check hooks in the runner.')
             else:
                 self.ckpt_interval = self.ckpt_hook.interval
 
         if self.log_eval_predictions:
             if self.eval_hook is None:
                 self.log_eval_predictions = False
-                runner.logger.warning('WARNING ABOUT EVAL HOOK NOT PRESENT')
+                runner.logger.warning(
+                    'To log evaluation NeptuneHook, '
+                    '`EvalHook` or `DistEvalHook` in mmdet '
+                    'is required, please check whether the validation '
+                    'is enabled.')
             else:
                 self.eval_interval = self.eval_hook.interval
                 self.val_dataset = self.eval_hook.dataloader.dataset
@@ -159,7 +163,8 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                                            f'{file_name}.{ext}')
 
         if not osp.exists(file_path):
-            warnings.warn('WARNING ABOUT CHECKPOINT FILE NOT FOUND')
+            runner.logger.warning(
+                f'Checkpoint {file_path} not found - skipping.')
             return
         with open(file_path, 'rb') as fp:
             self._run[neptune_checkpoint_path] = File.from_stream(fp)
@@ -205,6 +210,6 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         if self.log_model:
             self._log_checkpoint(runner, final=True)
 
-        runner.logger.info('SYNCING')
+        runner.logger.info('Syncing with Neptune.ai')
         self._run.sync()
         self._run.stop()
