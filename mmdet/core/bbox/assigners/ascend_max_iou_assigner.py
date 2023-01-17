@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from ....utils import set_index
+from ....utils import masked_fill
 from ..builder import BBOX_ASSIGNERS
 from ..iou_calculators import build_iou_calculator
 from .ascend_assign_result import AscendAssignResult
@@ -89,7 +89,7 @@ class AscendMaxIoUAssigner(BaseAssigner):
             :obj:`AssignResult`: The assign result.
         """
         batch_overlaps = self.iou_calculator(batch_gt_bboxes, batch_bboxes)
-        batch_overlaps = set_index(
+        batch_overlaps = masked_fill(
             batch_overlaps,
             batch_bboxes_ignore_mask.unsqueeze(1).float(),
             -1,
@@ -98,19 +98,21 @@ class AscendMaxIoUAssigner(BaseAssigner):
             if self.ignore_wrt_candidates:
                 batch_ignore_overlaps = self.iou_calculator(
                     batch_bboxes, batch_gt_bboxes_ignore, mode='iof')
-                batch_ignore_overlaps = set_index(batch_ignore_overlaps,
-                                                  batch_bboxes_ignore_mask, -1)
+                batch_ignore_overlaps = masked_fill(batch_ignore_overlaps,
+                                                    batch_bboxes_ignore_mask,
+                                                    -1)
                 batch_ignore_max_overlaps, _ = batch_ignore_overlaps.max(dim=2)
             else:
                 batch_ignore_overlaps = self.iou_calculator(
                     batch_gt_bboxes_ignore, batch_bboxes, mode='iof')
-                batch_ignore_overlaps = set_index(batch_ignore_overlaps,
-                                                  batch_bboxes_ignore_mask, -1)
+                batch_ignore_overlaps = masked_fill(batch_ignore_overlaps,
+                                                    batch_bboxes_ignore_mask,
+                                                    -1)
                 batch_ignore_max_overlaps, _ = \
                     batch_ignore_overlaps.max(dim=1)
             batch_ignore_mask = \
                 batch_ignore_max_overlaps > self.ignore_iof_thr
-            batch_overlaps = set_index(batch_overlaps, batch_ignore_mask, -1)
+            batch_overlaps = masked_fill(batch_overlaps, batch_ignore_mask, -1)
         batch_assign_result = self.batch_assign_wrt_overlaps(
             batch_overlaps, batch_gt_labels, batch_num_gts)
         return batch_assign_result

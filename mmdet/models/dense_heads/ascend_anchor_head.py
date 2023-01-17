@@ -3,7 +3,7 @@ import torch
 
 from ...core.bbox.assigners import AscendMaxIoUAssigner
 from ...core.bbox.samplers import PseudoSampler
-from ...utils import batch_images_to_levels, get_max_num_gt, set_index
+from ...utils import batch_images_to_levels, get_max_num_gt, masked_fill
 from ..builder import HEADS
 from .anchor_head import AnchorHead
 
@@ -225,25 +225,25 @@ class AscendAnchorHead(AnchorHead):
         else:
             batch_pos_bbox_targets = batch_anchor_gt_bboxes
 
-        batch_bbox_targets = set_index(batch_bbox_targets,
-                                       batch_pos_mask.unsqueeze(2),
-                                       batch_pos_bbox_targets)
-        batch_bbox_weights = set_index(batch_bbox_weights,
-                                       batch_pos_mask.unsqueeze(2), 1.0)
+        batch_bbox_targets = masked_fill(batch_bbox_targets,
+                                         batch_pos_mask.unsqueeze(2),
+                                         batch_pos_bbox_targets)
+        batch_bbox_weights = masked_fill(batch_bbox_weights,
+                                         batch_pos_mask.unsqueeze(2), 1.0)
         if batch_gt_labels is None:
-            batch_labels = set_index(batch_labels, batch_pos_mask, 0.0)
+            batch_labels = masked_fill(batch_labels, batch_pos_mask, 0.0)
         else:
-            batch_labels = set_index(batch_labels, batch_pos_mask,
-                                     batch_anchor_gt_labels)
+            batch_labels = masked_fill(batch_labels, batch_pos_mask,
+                                       batch_anchor_gt_labels)
         if self.train_cfg.pos_weight <= 0:
-            batch_label_weights = set_index(batch_label_weights,
-                                            batch_pos_mask, 1.0)
+            batch_label_weights = masked_fill(batch_label_weights,
+                                              batch_pos_mask, 1.0)
         else:
-            batch_label_weights = set_index(batch_label_weights,
-                                            batch_pos_mask,
-                                            self.train_cfg.pos_weight)
-        batch_label_weights = set_index(batch_label_weights, batch_neg_mask,
-                                        1.0)
+            batch_label_weights = masked_fill(batch_label_weights,
+                                              batch_pos_mask,
+                                              self.train_cfg.pos_weight)
+        batch_label_weights = masked_fill(batch_label_weights, batch_neg_mask,
+                                          1.0)
         return (batch_labels, batch_label_weights, batch_bbox_targets,
                 batch_bbox_weights, batch_pos_mask, batch_neg_mask,
                 sampling_result)
