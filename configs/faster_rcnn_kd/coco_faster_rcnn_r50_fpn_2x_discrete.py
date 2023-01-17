@@ -12,6 +12,7 @@ model = dict(type='FasterRCNN_TS',
                 ),
             )
 
+
 # Distillation Params
 teacher_config_path = 'result/faster_rcnn_ori/faster_rcnn_r50_caffe_c4_1x_coco.py'
 teacher_weight_path = 'result/faster_rcnn_ori/epoch_12.pth'
