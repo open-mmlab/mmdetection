@@ -35,7 +35,7 @@ class FasterRCNN_TS(TwoStageDetector):
         self.teacher_cfg = teacher_cfg
         
 
-    def update_teacher(self, state_dict):
+    def update_teacher(self, state_dict): 
         # Load Teacher Model
         self.teacher = build_detector(self.teacher_cfg.model,
                                       train_cfg=None,
