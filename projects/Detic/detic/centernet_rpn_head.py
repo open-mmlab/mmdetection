@@ -1,6 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet.models.dense_heads import CenterNetUpdateHead
-from mmdet.registry import MODELS
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import torch
@@ -9,11 +7,12 @@ from mmcv.cnn import Scale
 from mmengine.structures import InstanceData
 from torch import Tensor
 
+from mmdet.models.dense_heads import CenterNetUpdateHead
+from mmdet.models.utils import multi_apply
 from mmdet.registry import MODELS
 from mmdet.structures.bbox import bbox2distance
 from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
                          OptInstanceList, reduce_mean)
-from mmdet.models.utils import multi_apply
 
 INF = 1000000000
 RangeType = Sequence[Tuple[int, int]]
@@ -100,6 +99,11 @@ class CenterNetRPNHead(CenterNetUpdateHead):
         self.regress_ranges = regress_ranges
         self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
 
+    def _init_layers(self) -> None:
+        """Initialize layers of the head."""
+        self._init_reg_convs()
+        self._init_predictor()
+
     def _init_predictor(self) -> None:
         """Initialize predictor layers of the head."""
         self.conv_cls = nn.Conv2d(
@@ -138,7 +142,8 @@ class CenterNetRPNHead(CenterNetUpdateHead):
             input feature maps.
         """
         feat = self.reg_convs(x)
-        cls_score = self.conv_cls()
+        cls_score = self.conv_cls(feat)
+        bbox_pred = self.reg_convs(feat)
         # scale the bbox_pred of different level
         # float to avoid overflow when enabling FP16
         bbox_pred = scale(bbox_pred).float()

@@ -1,7 +1,23 @@
 _base_ = 'mmdet::common/lsj-200e_coco-detection.py'
 
+custom_imports = dict(
+    imports=['projects.Detic.detic'], allow_failed_imports=False)
+
 image_size = (1024, 1024)
 batch_augments = [dict(type='BatchFixedSizePad', size=image_size)]
+
+cls_layer = dict(
+    type='ZeroShotClassifier',
+    zs_weight_path='rand',
+    zs_weight_dim=512,
+    use_bias=0.0,
+    norm_weight=True,
+    norm_temperature=50.0)
+reg_layer = [
+    dict(type='Linear', in_features=256, out_features=256),
+    dict(type='ReLU', inplace=True),
+    dict(type='Linear', in_features=256, out_features=4)
+]
 
 model = dict(
     type='CascadeRCNN',
@@ -32,13 +48,14 @@ model = dict(
         init_cfg=dict(type='Caffe2Xavier', layer='Conv2d'),
         relu_before_extra_convs=True),
     rpn_head=dict(
-        type='CenterNetUpdateHead',
+        type='CenterNetRPNHead',
         num_classes=80,
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
         strides=[8, 16, 32, 64, 128],
-        norm_cfg=None,
+        conv_bias=True,
+        norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
         loss_cls=dict(
             type='GaussianFocalLoss',
             pos_weight=0.25,
@@ -47,7 +64,7 @@ model = dict(
         loss_bbox=dict(type='GIoULoss', loss_weight=2.0),
     ),
     roi_head=dict(
-        type='CascadeRoIHead',
+        type='DeticRoIHead',
         num_stages=3,
         stage_loss_weights=[1, 0.5, 0.25],
         bbox_roi_extractor=dict(
@@ -62,9 +79,8 @@ model = dict(
                 fc_out_channels=1024,
                 roi_feat_size=7,
                 num_classes=80,
-                reg_predictor_cfg=[dict(type='Linear', in_features=256, out_features=256),
-                                   dict(type='ReLU', inplace=True),
-                                   dict(type='Linear', in_features=256, out_features=4)],
+                cls_predictor_cfg=cls_layer,
+                reg_predictor_cfg=reg_layer,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -82,9 +98,8 @@ model = dict(
                 fc_out_channels=1024,
                 roi_feat_size=7,
                 num_classes=80,
-                reg_predictor_cfg=[dict(type='Linear', in_features=256, out_features=256),
-                                   dict(type='ReLU', inplace=True),
-                                   dict(type='Linear', in_features=256, out_features=4)],
+                cls_predictor_cfg=cls_layer,
+                reg_predictor_cfg=reg_layer,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -102,9 +117,8 @@ model = dict(
                 fc_out_channels=1024,
                 roi_feat_size=7,
                 num_classes=80,
-                reg_predictor_cfg=[dict(type='Linear', in_features=256, out_features=256),
-                                   dict(type='ReLU', inplace=True),
-                                   dict(type='Linear', in_features=256, out_features=4)],
+                cls_predictor_cfg=cls_layer,
+                reg_predictor_cfg=reg_layer,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -217,7 +231,6 @@ model = dict(
             nms=dict(type='nms', iou_threshold=0.5),
             max_per_img=100,
             mask_thr_binary=0.5)))
-
 
 train_dataloader = dict(batch_size=8, num_workers=4)
 # Enable automatic-mixed-precision training with AmpOptimWrapper.
