@@ -14,9 +14,10 @@ This work investigates a simple yet powerful dense prediction task adapter for V
 
 ## Results and Models
 
-| Backbone | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP |                         Config                         |         Download         |
-| :------: | :-----: | :------: | :------------: | :----: | :-----: | :----------------------------------------------------: | :----------------------: |
-|  DeiT-T  |   3x    |          |                |        |         | [config](./mask-rcnn_vitadapter-deit-t_fpn_3x_coco.py) | [model](<>) \| [log](<>) |
+| Backbone | Lr schd | Mem (GB) | box AP | mask AP |                             Config                             |         Download         |
+| :------: | :-----: | :------: | :----: | :-----: | :------------------------------------------------------------: | :----------------------: |
+|  DeiT-T  |   3x    |          |  45.6  |  40.9   | [config](./configs/mask-rcnn_vitadapter-deit-t_fpn_3x_coco.py) | [model](<>) \| [log](<>) |
+|  BEiT-B  |   3x    |          |  48.7  |  43.1   |   [config](./configs/mask-rcnn_beitadapter-b_fpn_3x_coco.py)   | [model](<>) \| [log](<>) |
 
 ## Usage
 
