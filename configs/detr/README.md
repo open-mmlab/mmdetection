@@ -16,7 +16,7 @@ We present a new method that views object detection as a direct set prediction p
 
 | Backbone | Model | Lr schd | Mem (GB) | Inf time (fps) | box AP |                 Config                 |                                                                                                                                      Download                                                                                                                                      |
 | :------: | :---: | :-----: | :------: | :------------: | :----: | :------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|   R-50   | DETR  |  150e   |   7.9    |                |  40.1  | [config](./detr_r50_8xb2-150e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/detr/detr_r50_8xb2-150e_coco/detr_r50_8xb2-150e_coco_20221023_153551-436d03e8.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/detr/detr_r50_8xb2-150e_coco/detr_r50_8xb2-150e_coco_20221023_153551.log.json) |
+|   R-50   | DETR  |  150e   |   7.9    |                |  39.9  | [config](./detr_r50_8xb2-150e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/detr/detr_r50_8xb2-150e_coco/detr_r50_8xb2-150e_coco_20221023_153551-436d03e8.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/detr/detr_r50_8xb2-150e_coco/detr_r50_8xb2-150e_coco_20221023_153551.log.json) |
 
 ## Citation
 
