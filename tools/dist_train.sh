@@ -19,23 +19,22 @@
 #                                 --launcher pytorch
 
 
-CUDA_VISIBLE_DEVICES=6,7 python -m torch.distributed.launch \
+CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch \
                                 --nproc_per_node=2 \
                                 --master_port 901 \
-                                train.py \
-                                --config configs/faster_rcnn/smdp_faster_rcnn_r50_caffe_c4_1x.py \
+                                tools/train.py \
+                                --config configs/faster_rcnn/coco_faster_rcnn_r50_fpn_1x.py \
                                 --seed 0 \
-                                --work-dir result/smdp/faster_rcnn_r50_c4_1x_ori \
+                                --work-dir result/coco/faster_rcnn_r50_fpn_1x_ori \
                                 --launcher pytorch
 
-
-CUDA_VISIBLE_DEVICES=4,5 python -m torch.distributed.launch \
+CUDA_VISIBLE_DEVICES=2,3 python -m torch.distributed.launch \
                                 --nproc_per_node=2 \
                                 --master_port 911 \
-                                train.py \
-                                --config configs/faster_rcnn_kd/smdp_faster_rcnn_r50_c4_1x_discrete.py \
+                                tools/train.py \
+                                --config configs/faster_rcnn/coco_faster_rcnn_r50_fpn_2x.py \
                                 --seed 0 \
-                                --work-dir result/smdp/faster_rcnn_r50_c4_1x_discrete \
+                                --work-dir result/coco/faster_rcnn_r50_fpn_2x_ori \
                                 --launcher pytorch
 
 
