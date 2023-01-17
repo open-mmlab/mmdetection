@@ -81,8 +81,10 @@ class AscendAnchorHead(AnchorHead):
         Returns:
             batch_gt_bboxes: (Tensor): Ground truth bboxes of all image.
         """
+        # a static ground truth boxes
         if not hasattr(self, 'batch_gt_bboxes'):
             self.batch_gt_bboxes = {}
+        # a min anchor filled the excess anchor
         if not hasattr(self, 'min_anchor'):
             self.min_anchor = (-1354, -1344)
         if gt_bboxes_list is None:

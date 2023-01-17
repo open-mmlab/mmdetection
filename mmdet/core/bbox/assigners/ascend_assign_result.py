@@ -11,7 +11,7 @@ class AscendAssignResult(util_mixins.NiceRepr):
         batch_neg_mask (IntTensor): Negative samples mask in all images.
         batch_max_overlaps (FloatTensor): The max overlaps of all bboxes
             and ground truth boxes.
-        batch_anchor_gt_indes(None | LongTensor): The the assigned truth
+        batch_anchor_gt_indes(None | LongTensor): The assigned truth
             box index of all anchors.
         batch_anchor_gt_labels(None | LongTensor): The gt labels
             of all anchors
