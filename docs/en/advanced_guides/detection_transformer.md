@@ -178,7 +178,8 @@ Hence, while reading or using the codebase, the users should attend to judge whi
 
 #### Unified data flow
 
-##### 1. Two kinds of data flow: ***batch first*** and ***sequnce first***
+##### 1. Two kinds of data flow: ***batch first*** and ***sequence first***
+
 In the previous versions of DETR's implementation, data (image, feature etc.) in the transformer is organized as `[N, B, C]` format, where `N` denotes sequence length, `B` denotes batch size, and `C` denotes embedding dimension. We refer this format to `sequence_first`. Sequence first data flow is originated from the NLP community, hence the CV community inherited this format naturally when introducing transformer into its methodology.
 
 On the other hand, the classic data flow of CV community in CNN-like models is `[B, ...]` instead, namely `batch_first`.
@@ -192,6 +193,14 @@ The repeated conversion of data flow henders the **readability** and **usability
 ##### 3. Examples
 
 We demonstrate the unified data flow from three aspects: Detector, head, attention.
+
+### Compatibility
+
+The DETRs have been refactored in PR [#8763](https://github.com/open-mmlab/mmdetection/pull/8763). The code based on original implementation requires to be adjusted as follows:
+
+1. The Transformer modules are moved from `bbox_head` to `detector`. And the `XTransformer` classes are discarded. The new `detector` acts as the original `XTransformer`. The initialization logic of the original `XTransformer` should be combined with the `_init_layers()` and `init_weights()` of `detector`. The forward logic should be divided according to `DetectionTransformer.forward_transformer()` and implemented in `pre_transformer()`, `forward_encoder()`, `pre_decoder()`, and `forward_decoder()`, respectively.
+2. The new implementation no longer uses the register mechanism to build custom modules, such as encoder, decoder, and position encoding. Hence, the initialization of most modules should be re-written. The config should also be re-written to accommodate the new implementation.
+3. `XTransformerXcoderLayer` modules, including `BaseTransformerLayer` and `DetrTransformerDecoderLayer`, were completely re-written, which may have caused BC breakings in downstream codebases. They should implement new modules according to [Implement Transformer components](<>) and modify their configs.
 
 ### Customize a DETR
 
