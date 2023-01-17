@@ -115,10 +115,10 @@ class AscendMaxIoUAssigner(BaseAssigner):
             batch_overlaps, batch_gt_labels, batch_num_gts)
         return batch_assign_result
 
-    def concat_assign_wrt_overlaps(self,
-                                   batch_overlaps,
-                                   batch_gt_labels=None,
-                                   batch_num_gts=None):
+    def batch_assign_wrt_overlaps(self,
+                                  batch_overlaps,
+                                  batch_gt_labels=None,
+                                  batch_num_gts=None):
         num_images, num_gts, num_bboxes = batch_overlaps.size()
         batch_max_overlaps, batch_argmax_overlaps = batch_overlaps.max(dim=1)
         if isinstance(self.neg_iou_thr, float):
