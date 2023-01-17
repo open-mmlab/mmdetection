@@ -67,11 +67,14 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                  **kwargs) -> None:
         super().__init__(interval=interval, **kwargs)
 
-        api_token = init_kwargs.pop('api_token', None) or api_token
-        project = init_kwargs.pop('project', None) or project
+        if init_kwargs:
+            api_token = init_kwargs.pop('api_token', None) or api_token
+            project = init_kwargs.pop('project', None) or project
 
         self._run = neptune.init_run(
-            api_token=api_token, project=project, **init_kwargs)
+            api_token=api_token,
+            project=project,
+            **init_kwargs if init_kwargs else {})
         self.base_namespace = base_namespace
         self.base_handler = self._run[base_namespace]
 
@@ -151,7 +154,8 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                           'learning_rate'].extend(cur_lr)
 
         for key, value in runner.log_buffer.val_history.items():
-            self.base_handler['train/' + category + '/' + key].log(value[-1])
+            self.base_handler['train/' + category + '/' + key].append(
+                value[-1])
 
         if log_eval and self.eval_hook._should_evaluate(runner):
 
@@ -161,7 +165,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                 results, logger='silent', **self.eval_hook.eval_kwargs)
 
             for key, value in eval_results.items():
-                self.base_handler['val/' + category + '/' + key].log(value)
+                self.base_handler['val/' + category + '/' + key].append(value)
 
     def _log_checkpoint(self,
                         runner,
