@@ -20,7 +20,23 @@ Tested on the following environments
 
 
 ## Train and Evaluation
-- Train Code
-  ```
-  source tools/dist_train.sh
-  ```
+- Train
+  - Train with Multi GPUs
+    ```
+    CUDA_VISIBLE_DEVICES=$GPU_IDs  python -m torch.distributed.launch \
+                                          --nproc_per_node=$NUM_GPUs \
+                                          --master_port $PORT_NUM \
+                                    tools/train.py \
+                                          --config $CONFIG_PATH \
+                                          --seed $SEED_NUM \
+                                          --work-dir $SAVE_DIR \
+                                          --launcher pytorch
+    ```
+
+  - Train with Single GPU
+    ```
+    python train.py --gpu-id $GPU_ID \
+                    --config $CONFIG_PATH \
+                    --seed $SEED_NUM \
+                    --work-dir $SAVE_DIR
+    ```

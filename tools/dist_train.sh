@@ -33,9 +33,9 @@ CUDA_VISIBLE_DEVICES=4,5 python -m torch.distributed.launch \
                                 --nproc_per_node=2 \
                                 --master_port 911 \
                                 train.py \
-                                --config configs/faster_rcnn_kd/smdp_faster_rcnn_r50_c4_1x_naive.py \
+                                --config configs/faster_rcnn_kd/smdp_faster_rcnn_r50_c4_1x_discrete.py \
                                 --seed 0 \
-                                --work-dir result/smdp/faster_rcnn_r50_c4_1x_naive \
+                                --work-dir result/smdp/faster_rcnn_r50_c4_1x_discrete \
                                 --launcher pytorch
 
 
