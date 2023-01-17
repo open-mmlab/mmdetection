@@ -40,3 +40,6 @@ Tested on the following environments
                     --seed $SEED_NUM \
                     --work-dir $SAVE_DIR
     ```
+
+## Notes
+  - Paper Pages : https://www.notion.so/gistailab/Multi-scale-Feature-Consolidation-for-Object-Detection-f7f6d91c4af148c3b141198ffc4dbca7
