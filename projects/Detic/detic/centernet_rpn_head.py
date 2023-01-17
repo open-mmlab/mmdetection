@@ -141,9 +141,10 @@ class CenterNetRPNHead(CenterNetUpdateHead):
             tuple: scores for each class, bbox predictions of
             input feature maps.
         """
-        feat = self.reg_convs(x)
-        cls_score = self.conv_cls(feat)
-        bbox_pred = self.reg_convs(feat)
+        for m in self.reg_convs:
+            x = m(x)
+        cls_score = self.conv_cls(x)
+        bbox_pred = self.conv_reg(x)
         # scale the bbox_pred of different level
         # float to avoid overflow when enabling FP16
         bbox_pred = scale(bbox_pred).float()

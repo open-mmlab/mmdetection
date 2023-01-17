@@ -14,13 +14,20 @@ cls_layer = dict(
     norm_weight=True,
     norm_temperature=50.0)
 reg_layer = [
-    dict(type='Linear', in_features=256, out_features=256),
+    dict(type='Linear', in_features=1024, out_features=1024),
     dict(type='ReLU', inplace=True),
-    dict(type='Linear', in_features=256, out_features=4)
+    dict(type='Linear', in_features=1024, out_features=4)
 ]
+
+num_classes = 1203 - 1
 
 model = dict(
     type='CascadeRCNN',
+    init_cfg=dict(
+        type='Pretrained',
+        checkpoint=
+        '/home/rangilyu/projects/Detic/models/Detic_LbaseI_CLIP_R5021k_640b64_4x_ft4x_max-size_mmdet.pth'
+    ),
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
@@ -32,7 +39,7 @@ model = dict(
         type='ResNet',
         depth=50,
         num_stages=4,
-        out_indices=(0, 1, 2, 3),
+        out_indices=(1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
@@ -40,16 +47,16 @@ model = dict(
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     neck=dict(
         type='FPN',
-        in_channels=[256, 512, 1024, 2048],
+        in_channels=[512, 1024, 2048],
         out_channels=256,
-        start_level=1,
+        start_level=0,
         add_extra_convs='on_output',
         num_outs=5,
         init_cfg=dict(type='Caffe2Xavier', layer='Conv2d'),
         relu_before_extra_convs=True),
     rpn_head=dict(
         type='CenterNetRPNHead',
-        num_classes=80,
+        num_classes=1,
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -71,14 +78,14 @@ model = dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
             out_channels=256,
-            featmap_strides=[4, 8, 16, 32]),
+            featmap_strides=[8, 16, 32]),
         bbox_head=[
             dict(
                 type='Shared2FCBBoxHead',
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
-                num_classes=80,
+                num_classes=num_classes,
                 cls_predictor_cfg=cls_layer,
                 reg_predictor_cfg=reg_layer,
                 bbox_coder=dict(
@@ -87,8 +94,7 @@ model = dict(
                     target_stds=[0.1, 0.1, 0.2, 0.2]),
                 reg_class_agnostic=True,
                 loss_cls=dict(
-                    type='CrossEntropyLoss',
-                    use_sigmoid=False,
+                    type='CrossEntropyLoss', use_sigmoid=True,
                     loss_weight=1.0),
                 loss_bbox=dict(type='SmoothL1Loss', beta=1.0,
                                loss_weight=1.0)),
@@ -97,7 +103,7 @@ model = dict(
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
-                num_classes=80,
+                num_classes=num_classes,
                 cls_predictor_cfg=cls_layer,
                 reg_predictor_cfg=reg_layer,
                 bbox_coder=dict(
@@ -106,8 +112,7 @@ model = dict(
                     target_stds=[0.05, 0.05, 0.1, 0.1]),
                 reg_class_agnostic=True,
                 loss_cls=dict(
-                    type='CrossEntropyLoss',
-                    use_sigmoid=False,
+                    type='CrossEntropyLoss', use_sigmoid=True,
                     loss_weight=1.0),
                 loss_bbox=dict(type='SmoothL1Loss', beta=1.0,
                                loss_weight=1.0)),
@@ -116,7 +121,7 @@ model = dict(
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
-                num_classes=80,
+                num_classes=num_classes,
                 cls_predictor_cfg=cls_layer,
                 reg_predictor_cfg=reg_layer,
                 bbox_coder=dict(
@@ -125,8 +130,7 @@ model = dict(
                     target_stds=[0.033, 0.033, 0.067, 0.067]),
                 reg_class_agnostic=True,
                 loss_cls=dict(
-                    type='CrossEntropyLoss',
-                    use_sigmoid=False,
+                    type='CrossEntropyLoss', use_sigmoid=True,
                     loss_weight=1.0),
                 loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))
         ],
@@ -134,13 +138,14 @@ model = dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=14, sampling_ratio=0),
             out_channels=256,
-            featmap_strides=[4, 8, 16, 32]),
+            featmap_strides=[8, 16, 32]),
         mask_head=dict(
             type='FCNMaskHead',
             num_convs=4,
             in_channels=256,
             conv_out_channels=256,
-            num_classes=80,
+            class_agnostic=True,
+            num_classes=num_classes,
             loss_mask=dict(
                 type='CrossEntropyLoss', use_mask=True, loss_weight=1.0))),
     # model training and testing settings
@@ -168,23 +173,6 @@ model = dict(
             nms=dict(type='nms', iou_threshold=0.7),
             min_bbox_size=0),
         rcnn=[
-            dict(
-                assigner=dict(
-                    type='MaxIoUAssigner',
-                    pos_iou_thr=0.5,
-                    neg_iou_thr=0.5,
-                    min_pos_iou=0.5,
-                    match_low_quality=False,
-                    ignore_iof_thr=-1),
-                sampler=dict(
-                    type='RandomSampler',
-                    num=512,
-                    pos_fraction=0.25,
-                    neg_pos_ub=-1,
-                    add_gt_as_proposals=True),
-                mask_size=28,
-                pos_weight=-1,
-                debug=False),
             dict(
                 assigner=dict(
                     type='MaxIoUAssigner',
@@ -218,17 +206,35 @@ model = dict(
                     add_gt_as_proposals=True),
                 mask_size=28,
                 pos_weight=-1,
+                debug=False),
+            dict(
+                assigner=dict(
+                    type='MaxIoUAssigner',
+                    pos_iou_thr=0.8,
+                    neg_iou_thr=0.8,
+                    min_pos_iou=0.8,
+                    match_low_quality=False,
+                    ignore_iof_thr=-1),
+                sampler=dict(
+                    type='RandomSampler',
+                    num=512,
+                    pos_fraction=0.25,
+                    neg_pos_ub=-1,
+                    add_gt_as_proposals=True),
+                mask_size=28,
+                pos_weight=-1,
                 debug=False)
         ]),
     test_cfg=dict(
         rpn=dict(
+            score_thr=0.0001,
             nms_pre=1000,
-            max_per_img=1000,
-            nms=dict(type='nms', iou_threshold=0.7),
+            max_per_img=256,
+            nms=dict(type='nms', iou_threshold=0.9),
             min_bbox_size=0),
         rcnn=dict(
-            score_thr=0.05,
-            nms=dict(type='nms', iou_threshold=0.5),
+            score_thr=0.02,
+            nms=dict(type='nms', iou_threshold=0.6),
             max_per_img=100,
             mask_thr_binary=0.5)))
 
