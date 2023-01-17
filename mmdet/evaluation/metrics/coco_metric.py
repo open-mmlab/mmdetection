@@ -59,6 +59,8 @@ class CocoMetric(BaseMetric):
             names to disambiguate homonymous metrics of different evaluators.
             If prefix is not provided in the argument, self.default_prefix
             will be used instead. Defaults to None.
+        sort_categories (bool): Whether sort categories in annotations. Only
+            used for `Objects365V1Dataset`. Defaults to False.
     """
     default_prefix: Optional[str] = 'coco'
 
@@ -73,7 +75,8 @@ class CocoMetric(BaseMetric):
                  outfile_prefix: Optional[str] = None,
                  file_client_args: dict = dict(backend='disk'),
                  collect_device: str = 'cpu',
-                 prefix: Optional[str] = None) -> None:
+                 prefix: Optional[str] = None,
+                 sort_categories: bool = False) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
         # coco evaluation metrics
         self.metrics = metric if isinstance(metric, list) else [metric]
@@ -112,6 +115,17 @@ class CocoMetric(BaseMetric):
         if ann_file is not None:
             with self.file_client.get_local_path(ann_file) as local_path:
                 self._coco_api = COCO(local_path)
+                if sort_categories:
+                    # 'categories' list in objects365_train.json and
+                    # objects365_val.json is inconsistent, need sort
+                    # list(or dict) before get cat_ids.
+                    cats = self._coco_api.cats
+                    sorted_cats = {i: cats[i] for i in sorted(cats)}
+                    self._coco_api.cats = sorted_cats
+                    categories = self._coco_api.dataset['categories']
+                    sorted_categories = sorted(
+                        categories, key=lambda i: i['id'])
+                    self._coco_api.dataset['categories'] = sorted_categories
         else:
             self._coco_api = None
 
@@ -258,7 +272,7 @@ class CocoMetric(BaseMetric):
         """
         categories = [
             dict(id=id, name=name)
-            for id, name in enumerate(self.dataset_meta['CLASSES'])
+            for id, name in enumerate(self.dataset_meta['classes'])
         ]
         image_infos = []
         annotations = []
@@ -387,7 +401,7 @@ class CocoMetric(BaseMetric):
         # handle lazy init
         if self.cat_ids is None:
             self.cat_ids = self._coco_api.get_cat_ids(
-                cat_names=self.dataset_meta['CLASSES'])
+                cat_names=self.dataset_meta['classes'])
         if self.img_ids is None:
             self.img_ids = self._coco_api.get_img_ids()
 

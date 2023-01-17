@@ -1,7 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional
+
 from mmcv.cnn import build_conv_layer, build_norm_layer
 from mmengine.model import BaseModule, Sequential
+from torch import Tensor
 from torch import nn as nn
+
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 
 
 class ResLayer(Sequential):
@@ -12,28 +17,28 @@ class ResLayer(Sequential):
         inplanes (int): inplanes of block.
         planes (int): planes of block.
         num_blocks (int): number of blocks.
-        stride (int): stride of the first block. Default: 1
+        stride (int): stride of the first block. Defaults to 1
         avg_down (bool): Use AvgPool instead of stride conv when
-            downsampling in the bottleneck. Default: False
+            downsampling in the bottleneck. Defaults to False
         conv_cfg (dict): dictionary to construct and config conv layer.
-            Default: None
+            Defaults to None
         norm_cfg (dict): dictionary to construct and config norm layer.
-            Default: dict(type='BN')
+            Defaults to dict(type='BN')
         downsample_first (bool): Downsample at the first block or last block.
-            False for Hourglass, True for ResNet. Default: True
+            False for Hourglass, True for ResNet. Defaults to True
     """
 
     def __init__(self,
-                 block,
-                 inplanes,
-                 planes,
-                 num_blocks,
-                 stride=1,
-                 avg_down=False,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN'),
-                 downsample_first=True,
-                 **kwargs):
+                 block: BaseModule,
+                 inplanes: int,
+                 planes: int,
+                 num_blocks: int,
+                 stride: int = 1,
+                 avg_down: bool = False,
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: ConfigType = dict(type='BN'),
+                 downsample_first: bool = True,
+                 **kwargs) -> None:
         self.block = block
 
         downsample = None
@@ -101,7 +106,7 @@ class ResLayer(Sequential):
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                     **kwargs))
-        super(ResLayer, self).__init__(*layers)
+        super().__init__(*layers)
 
 
 class SimplifiedBasicBlock(BaseModule):
@@ -114,19 +119,19 @@ class SimplifiedBasicBlock(BaseModule):
     expansion = 1
 
     def __init__(self,
-                 inplanes,
-                 planes,
-                 stride=1,
-                 dilation=1,
-                 downsample=None,
-                 style='pytorch',
-                 with_cp=False,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN'),
-                 dcn=None,
-                 plugins=None,
-                 init_fg=None):
-        super(SimplifiedBasicBlock, self).__init__(init_fg)
+                 inplanes: int,
+                 planes: int,
+                 stride: int = 1,
+                 dilation: int = 1,
+                 downsample: Optional[Sequential] = None,
+                 style: ConfigType = 'pytorch',
+                 with_cp: bool = False,
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: ConfigType = dict(type='BN'),
+                 dcn: OptConfigType = None,
+                 plugins: OptConfigType = None,
+                 init_cfg: OptMultiConfig = None) -> None:
+        super().__init__(init_cfg=init_cfg)
         assert dcn is None, 'Not implemented yet.'
         assert plugins is None, 'Not implemented yet.'
         assert not with_cp, 'Not implemented yet.'
@@ -159,17 +164,17 @@ class SimplifiedBasicBlock(BaseModule):
         self.with_cp = with_cp
 
     @property
-    def norm1(self):
+    def norm1(self) -> Optional[BaseModule]:
         """nn.Module: normalization layer after the first convolution layer"""
         return getattr(self, self.norm1_name) if self.with_norm else None
 
     @property
-    def norm2(self):
+    def norm2(self) -> Optional[BaseModule]:
         """nn.Module: normalization layer after the second convolution layer"""
         return getattr(self, self.norm2_name) if self.with_norm else None
 
-    def forward(self, x):
-        """Forward function."""
+    def forward(self, x: Tensor) -> Tensor:
+        """Forward function for SimplifiedBasicBlock."""
 
         identity = x
 

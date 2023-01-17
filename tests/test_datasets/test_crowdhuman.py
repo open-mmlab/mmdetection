@@ -13,4 +13,4 @@ class TestCrowdHumanDataset(unittest.TestCase):
             data_prefix=dict(img='Images/'),
             pipeline=[])
         self.assertEqual(len(dataset), 1)
-        self.assertEqual(dataset.metainfo['CLASSES'], ('person', ))
+        self.assertEqual(dataset.metainfo['classes'], ('person', ))

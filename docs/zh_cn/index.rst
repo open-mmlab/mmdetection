@@ -49,7 +49,7 @@ Welcome to MMDetection's documentation!
 
 .. toctree::
    :maxdepth: 1
-   :caption: 说明
+   :caption: 文章
 
    article.md
 

@@ -1,5 +1,112 @@
 # Changelog of v3.x
 
+## v3.0.0rc5 (26/12/2022)
+
+### Highlights
+
+- Support [RTMDet](https://arxiv.org/abs/2212.07784) instance segmentation models. The technical report of RTMDet is on [arxiv](https://arxiv.org/abs/2212.07784)
+- Support SSHContextModule in paper [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979).
+
+### New Features
+
+- Support [RTMDet](https://arxiv.org/abs/2212.07784) instance segmentation models and improve RTMDet test config (#9494)
+- Support SSHContextModule in paper [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979) (#8953)
+- Release [CondInst](https://arxiv.org/abs/2003.05664) pre-trained model (#9406)
+
+### Bug Fixes
+
+- Fix CondInst predict error when `batch_size` is greater than 1 in inference (#9400)
+- Fix the bug of visualization when the dtype of the pipeline output image is not uint8 in browse dataset (#9401)
+- Fix `analyze_logs.py` to plot mAP and calculate train time correctly (#9409)
+- Fix backward inplace error with `PAFPN` (#9450)
+- Fix config import links in model converters (#9441)
+- Fix `DeformableDETRHead` object has no attribute `loss_single` (#9477)
+- Fix the logic of pseudo bboxes predicted by teacher model in SemiBaseDetector (#9414)
+- Fix demo API in instance segmentation tutorial (#9226)
+- Fix `analyze_results` (#9380)
+- Fix the error that Readthedocs API cannot be displayed (#9510)
+
+### Improvements
+
+- Remove legacy `builder.py` (#9479)
+- Make sure the pipeline argument shape is in `(width, height)` order (#9324)
+- Add `.pre-commit-config-zh-cn.yaml` file (#9388)
+- Refactor dataset metainfo to lowercase (#9469)
+- Add PyTorch 1.13 checking in CI (#9478)
+- Adjust `FocalLoss` and `QualityFocalLoss` to allow different kinds of targets (#9481)
+- Refactor `setup.cfg` (#9370)
+- Clip saturation value to valid range `[0, 1]` (#9391)
+- Only keep meta and state_dict when publishing model (#9356)
+- Add segm evaluator in ms-poly_3x_coco_instance config (#9524)
+- Update deployment guide (#9527)
+- Update zh_cn `faq.md` (#9396)
+- Update `get_started` (#9480)
+- Update the zh_cn user_guides of `useful_tools.md` and `useful_hooks.md` (#9453)
+- Add type hints for `bfp` and `channel_mapper` (#9410)
+- Add type hints of several losses (#9397)
+- Add type hints and update docstring for task modules (#9468)
+
+### New Contributors
+
+- @lihua199710 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9388>
+- @twmht made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9450>
+- @tianleiSHI made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9453>
+- @kitecats made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9481>
+- @QJC123654 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9468>
+
+### Contributors
+
+A total of 20 developers contributed to this release.
+
+Thanks @liuyanyi, @RangeKing, @lihua199710, @MambaWong, @sanbuphy, @Xiangxu-0103, @twmht, @JunyaoHu, @Chan-Sun, @tianleiSHI, @zytx121, @kitecats, @QJC123654, @JosonChan1998, @lvhan028, @Czm369, @BIGWangYuDong, @RangiLyu, @hhaAndroid, @ZwwWayne
+
+## v3.0.0rc4 (23/11/2022)
+
+### Highlights
+
+- Support [CondInst](https://arxiv.org/abs/2003.05664)
+- Add `projects/` folder, which will be a place for some experimental models/features.
+- Support [SparseInst](https://arxiv.org/abs/2203.12827) in [`projects`](./projects/SparseInst/README.md)
+
+### New Features
+
+- Support [CondInst](https://arxiv.org/abs/2003.05664) (#9223)
+- Add `projects/` folder, which will be a place for some experimental models/features (#9341)
+- Support [SparseInst](https://arxiv.org/abs/2203.12827) in [`projects`](./projects/SparseInst/README.md) (#9377)
+
+### Bug Fixes
+
+- Fix `pixel_decoder_type` discrimination in MaskFormer Head. (#9176)
+- Fix wrong padding value in cached MixUp (#9259)
+- Rename `utils/typing.py` to `utils/typing_utils.py` to fix `collect_env` error (#9265)
+- Fix resume arg conflict (#9287)
+- Fix the configs of Faster R-CNN with caffe backbone (#9319)
+- Fix torchserve and update related documentation (#9343)
+- Fix bbox refine bug with sigmooid activation (#9538)
+
+### Improvements
+
+- Update the docs of GIoU Loss in README (#8810)
+- Handle dataset wrapper in `inference_detector` (#9144)
+- Update the type of `counts` in COCO’s compressed RLE (#9274)
+- Support saving config file in `print_config` (#9276)
+- Update docs about video inference (#9305)
+- Update guide about model deployment (#9344)
+- Fix doc typos of useful tools (#9177)
+- Allow to resume from specific checkpoint in CLI (#9284)
+- Update FAQ about windows installation issues of pycocotools (#9292)
+
+### New Contributors
+
+- @Daa98 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9274>
+- @lvhan028 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9344>
+
+### Contributors
+
+A total of 12 developers contributed to this release.
+
+Thanks @sanbuphy, @Czm369, @Daa98, @jbwang1997, @BIGWangYuDong, @JosonChan1998, @lvhan028, @RunningLeon, @RangiLyu, @Daa98, @ZwwWayne, @hhaAndroid
+
 ## v3.0.0rc3 (4/11/2022)
 
 Upgrade the minimum version requirement of MMEngine to 0.3.0 to use `ignore_key` of `ConcatDataset` for training VOC datasets (#9058)

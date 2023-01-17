@@ -2,7 +2,6 @@
 import argparse
 import os.path as osp
 
-import numpy as np
 from mmengine.config import Config, DictAction
 from mmengine.utils import ProgressBar
 
@@ -71,13 +70,14 @@ def main():
         gt_masks = gt_instances.get('masks', None)
         if gt_masks is not None:
             masks = mask2ndarray(gt_masks)
-            gt_instances.masks = masks.astype(np.bool)
+            gt_instances.masks = masks.astype(bool)
         data_sample.gt_instances = gt_instances
 
         visualizer.add_datasample(
             osp.basename(img_path),
             img,
             data_sample,
+            draw_pred=False,
             show=not args.not_show,
             wait_time=args.show_interval,
             out_file=out_file)

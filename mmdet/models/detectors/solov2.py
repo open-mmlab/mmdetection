@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
-from ..builder import DETECTORS
 from .single_stage_instance_seg import SingleStageInstanceSegmentor
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class SOLOv2(SingleStageInstanceSegmentor):
     """`SOLOv2: Dynamic and Fast Instance Segmentation
     <https://arxiv.org/abs/2003.10152>`_

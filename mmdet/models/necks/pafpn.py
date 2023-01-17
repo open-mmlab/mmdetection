@@ -109,7 +109,7 @@ class PAFPN(FPN):
         used_backbone_levels = len(laterals)
         for i in range(used_backbone_levels - 1, 0, -1):
             prev_shape = laterals[i - 1].shape[2:]
-            laterals[i - 1] += F.interpolate(
+            laterals[i - 1] = laterals[i - 1] + F.interpolate(
                 laterals[i], size=prev_shape, mode='nearest')
 
         # build outputs
@@ -120,7 +120,8 @@ class PAFPN(FPN):
 
         # part 2: add bottom-up path
         for i in range(0, used_backbone_levels - 1):
-            inter_outs[i + 1] += self.downsample_convs[i](inter_outs[i])
+            inter_outs[i + 1] = inter_outs[i + 1] + \
+                                self.downsample_convs[i](inter_outs[i])
 
         outs = []
         outs.append(inter_outs[0])

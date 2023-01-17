@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
 import warnings
 from pathlib import Path
 from typing import Optional, Sequence, Union
@@ -11,8 +12,9 @@ from mmcv.transforms import Compose
 from mmengine.config import Config
 from mmengine.runner import load_checkpoint
 
+from mmdet.registry import DATASETS
 from ..evaluation import get_classes
-from ..models import build_detector
+from ..registry import MODELS
 from ..structures import DetDataSample, SampleList
 from ..utils import get_test_pipeline_cfg
 
@@ -20,7 +22,7 @@ from ..utils import get_test_pipeline_cfg
 def init_detector(
     config: Union[str, Path, Config],
     checkpoint: Optional[str] = None,
-    palette: str = 'coco',
+    palette: str = 'none',
     device: str = 'cuda:0',
     cfg_options: Optional[dict] = None,
 ) -> nn.Module:
@@ -34,7 +36,7 @@ def init_detector(
         palette (str): Color palette used for visualization. If palette
             is stored in checkpoint, use checkpoint's palette first, otherwise
             use externally passed palette. Currently, supports 'coco', 'voc',
-            'citys' and 'random'. Defaults to coco.
+            'citys' and 'random'. Defaults to none.
         device (str): The device where the anchors will be put on.
             Defaults to cuda:0.
         cfg_options (dict, optional): Options to override some settings in
@@ -52,29 +54,51 @@ def init_detector(
         config.merge_from_dict(cfg_options)
     elif 'init_cfg' in config.model.backbone:
         config.model.backbone.init_cfg = None
-    config.model.train_cfg = None
-    model = build_detector(config.model)
-    if checkpoint is not None:
+    model = MODELS.build(config.model)
+    if checkpoint is None:
+        warnings.simplefilter('once')
+        warnings.warn('checkpoint is None, use COCO classes by default.')
+        model.dataset_meta = {'classes': get_classes('coco')}
+    else:
         checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
         # Weights converted from elsewhere may not have meta fields.
         checkpoint_meta = checkpoint.get('meta', {})
+
         # save the dataset_meta in the model for convenience
         if 'dataset_meta' in checkpoint_meta:
-            # mmdet 3.x
-            model.dataset_meta = checkpoint_meta['dataset_meta']
+            # mmdet 3.x, all keys should be lowercase
+            model.dataset_meta = {
+                k.lower(): v
+                for k, v in checkpoint_meta['dataset_meta'].items()
+            }
         elif 'CLASSES' in checkpoint_meta:
             # < mmdet 3.x
             classes = checkpoint_meta['CLASSES']
-            model.dataset_meta = {'CLASSES': classes, 'PALETTE': palette}
+            model.dataset_meta = {'classes': classes}
         else:
             warnings.simplefilter('once')
             warnings.warn(
                 'dataset_meta or class names are not saved in the '
                 'checkpoint\'s meta data, use COCO classes by default.')
-            model.dataset_meta = {
-                'CLASSES': get_classes('coco'),
-                'PALETTE': palette
-            }
+            model.dataset_meta = {'classes': get_classes('coco')}
+
+    # Priority:  args.palette -> config -> checkpoint
+    if palette != 'none':
+        model.dataset_meta['palette'] = palette
+    else:
+        test_dataset_cfg = copy.deepcopy(config.test_dataloader.dataset)
+        # lazy init. We only need the metainfo.
+        test_dataset_cfg['lazy_init'] = True
+        metainfo = DATASETS.build(test_dataset_cfg).metainfo
+        cfg_palette = metainfo.get('palette', None)
+        if cfg_palette is not None:
+            model.dataset_meta['palette'] = cfg_palette
+        else:
+            if 'palette' not in model.dataset_meta:
+                warnings.warn(
+                    'palette does not exist, random is used by default. '
+                    'You can also set the palette to customize.')
+                model.dataset_meta['palette'] = 'random'
 
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
