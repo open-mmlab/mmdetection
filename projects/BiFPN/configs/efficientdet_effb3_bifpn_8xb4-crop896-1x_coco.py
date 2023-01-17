@@ -5,12 +5,12 @@ _base_ = [
     'mmdet::_base_/default_runtime.py'
 ]
 custom_imports = dict(
-    imports=['projects.EfficientDet.efficientdet'], allow_failed_imports=False)
+    imports=['projects.BiFPN.BiFPN'], allow_failed_imports=False)
 
-image_size = (512, 512)
+image_size = (896, 896)
 batch_augments = [dict(type='BatchFixedSizePad', size=image_size)]
 norm_cfg = dict(type='BN', requires_grad=True)
-checkpoint = 'efficientnet-b0_3rdparty_8xb32_in1k_20220119-a7e2a0b1.pth'  # noqa
+checkpoint = 'https://download.openmmlab.com/mmclassification/v0/efficientnet/efficientnet-b3_3rdparty_8xb32-aa_in1k_20220119-5b4887a0.pth'  # noqa
 model = dict(
     data_preprocessor=dict(
         type='DetDataPreprocessor',
@@ -22,27 +22,26 @@ model = dict(
     backbone=dict(
         _delete_=True,
         type='EfficientNet',
-        arch='b0',
+        arch='b3',
         drop_path_rate=0.2,
         out_indices=(3, 4, 5),
         frozen_stages=0,
-        # norm_cfg=dict(
-        #     type='SyncBN', requires_grad=True, eps=1e-3, momentum=0.01),
-        norm_cfg=norm_cfg,
+        norm_cfg=dict(
+            type='SyncBN', requires_grad=True, eps=1e-3, momentum=0.01),
         norm_eval=False,
         init_cfg=dict(
             type='Pretrained', prefix='backbone', checkpoint=checkpoint)),
     neck=dict(
         _delete_=True,
         type='BiFPN',
-        num_stages=3,
-        in_channels=[40, 112, 320],
+        num_stages=6,
+        in_channels=[48, 136, 384],
         out_channels=64,
-        start_level=0),
+        start_level=160),
     bbox_head=dict(
         type='RetinaSepBNHead',
-        in_channels=64,
-        feat_channels=64,
+        in_channels=160,
+        feat_channels=160,
         num_ins=5,
         norm_cfg=norm_cfg),
     # training and testing settings
@@ -76,7 +75,7 @@ test_pipeline = [
 ]
 
 train_dataloader = dict(
-    batch_size=1, num_workers=4, dataset=dict(pipeline=train_pipeline))
+    batch_size=4, num_workers=4, dataset=dict(pipeline=train_pipeline))
 val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
