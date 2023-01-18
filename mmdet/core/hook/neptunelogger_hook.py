@@ -146,7 +146,18 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                 self.eval_interval = self.eval_hook.interval
                 self.val_dataset = self.eval_hook.dataloader.dataset
 
-    def _log_buffer(self, runner, category, log_eval=True) -> None:
+    def _log_evaluation(self, runner, category):
+        if self.eval_hook._should_evaluate(runner):
+
+            results = self.eval_hook.latest_results
+
+            eval_results = self.val_dataset.evaluate(
+                results, logger='silent', **self.eval_hook.eval_kwargs)
+
+            for key, value in eval_results.items():
+                self.base_handler['val/' + category + '/' + key].append(value)
+
+    def _log_buffer(self, runner, category) -> None:
         assert category in ['epoch', 'iter']
         # only record lr of the first param group
         cur_lr = runner.current_lr()
@@ -156,16 +167,6 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         for key, value in runner.log_buffer.val_history.items():
             self.base_handler['train/' + category + '/' + key].append(
                 value[-1])
-
-        if log_eval and self.eval_hook._should_evaluate(runner):
-
-            results = self.eval_hook.latest_results
-
-            eval_results = self.val_dataset.evaluate(
-                results, logger='silent', **self.eval_hook.eval_kwargs)
-
-            for key, value in eval_results.items():
-                self.base_handler['val/' + category + '/' + key].append(value)
 
     def _log_checkpoint(self,
                         runner,
@@ -202,7 +203,10 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
             return
 
         log_eval = self.every_n_iters(runner, self.eval_hook.interval)
-        self._log_buffer(runner, 'iter', log_eval)
+        if log_eval:
+            self._log_evaluation(runner, 'iter')
+
+        self._log_buffer(runner, 'iter')
         if self._should_upload_checkpoint(runner):
             self._log_checkpoint(runner, final=False, mode='iter')
 
@@ -223,7 +227,10 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         if not isinstance(runner, EpochBasedRunner):
             return
         log_eval = self.every_n_epochs(runner, self.eval_hook.interval)
-        self._log_buffer(runner, 'epoch', log_eval)
+        if log_eval:
+            self._log_evaluation(runner, 'epoch')
+
+        self._log_buffer(runner, 'epoch')
 
         if self._should_upload_checkpoint(runner):
             self._log_checkpoint(runner, final=False)
