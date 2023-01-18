@@ -30,7 +30,7 @@ class TestConditionalDETR(TestCase):
         batch_data_samples.append(img_metas)
 
         config = get_detector_cfg(
-            'conditional_detr/conditional_detr_r50_8xb2-50e_coco.py')
+            'conditional_detr/conditional-detr_r50_8xb2-50e_coco.py')
 
         model = build_detector(config)
         model.init_weights()

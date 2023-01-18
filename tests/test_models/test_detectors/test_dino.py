@@ -27,7 +27,7 @@ class TestDINO(TestCase):
         data_sample = DetDataSample()
         data_sample.set_metainfo(metainfo)
 
-        configs = [get_detector_cfg('dino/dino_4scale_r50_8xb2-12e_coco.py')]
+        configs = [get_detector_cfg('dino/dino-4scale_r50_8xb2-12e_coco.py')]
 
         for config in configs:
             model = build_detector(config)

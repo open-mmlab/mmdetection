@@ -33,10 +33,10 @@ class TestDeformableDETR(TestCase):
             get_detector_cfg(
                 'deformable_detr/deformable-detr_r50_16xb2-50e_coco.py'),
             get_detector_cfg(
-                'deformable_detr/deformable-detr_refine_r50_16xb2-50e_coco.py'  # noqa
+                'deformable_detr/deformable-detr-refine_r50_16xb2-50e_coco.py'  # noqa
             ),
             get_detector_cfg(
-                'deformable_detr/deformable-detr_refine_twostage_r50_16xb2-50e_coco.py'  # noqa
+                'deformable_detr/deformable-detr-refine-twostage_r50_16xb2-50e_coco.py'  # noqa
             )
         ]
 
