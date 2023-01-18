@@ -50,6 +50,16 @@ python tools/train.py projects/BiFPN/configs/efficientdet_effb3_bifpn_8xb4-crop8
 
 Have checked that the same tensor can obtain the same output tensor as the official [BiFPN](https://github.com/google/automl) implementations
 
+## Results
+
+Here we provide the baseline version of SparseInst with ResNet50 backbone.
+
+## Results
+
+|                               Method                                |    Backbone     | Pretrained Model |  Training set  |   Test set   | #epoch | box AP |         Download         |
+| :-----------------------------------------------------------------: | :-------------: | :--------------: | :------------: | :----------: | :----: | :----: | :----------------------: |
+| [BiFPN](./configs/efficientdet_effb3_bifpn_8xb4-crop896-1x_coco.py) | EfficientNet-b3 |    ImageNet1K    | COCO2017 Train | COCO2017 Val |   50   | 0.434  | [model](<>) \| [log](<>) |
+
 ## Citation
 
 ```BibTeX
