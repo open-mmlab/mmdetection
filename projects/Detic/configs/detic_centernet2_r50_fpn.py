@@ -233,12 +233,32 @@ model = dict(
             nms=dict(type='nms', iou_threshold=0.9),
             min_bbox_size=0),
         rcnn=dict(
-            score_thr=0.02,
-            nms=dict(type='nms', iou_threshold=0.6),
-            max_per_img=100,
+            score_thr=0.5,
+            nms=dict(type='nms', iou_threshold=0.5),
+            max_per_img=300,
             mask_thr_binary=0.5)))
 
+backend = 'pillow'
+test_pipeline = [
+    dict(
+        type='LoadImageFromFile',
+        file_client_args=_base_.file_client_args,
+        imdecode_backend=backend),
+    dict(type='Resize', scale=(1333, 800), keep_ratio=True, backend=backend),
+    dict(
+        type='LoadAnnotations',
+        with_bbox=True,
+        with_mask=True,
+        poly2mask=False),
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
+]
+
 train_dataloader = dict(batch_size=8, num_workers=4)
+val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+test_dataloader = val_dataloader
 # Enable automatic-mixed-precision training with AmpOptimWrapper.
 optim_wrapper = dict(
     type='AmpOptimWrapper',

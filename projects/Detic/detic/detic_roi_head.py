@@ -143,43 +143,6 @@ class DeticRoIHead(CascadeRoIHead):
             rcnn_test_cfg=rcnn_test_cfg)
         return results_list
 
-    def bbox_loss(self, stage: int, x: Tuple[Tensor],
-                  sampling_results: List[SamplingResult]) -> dict:
-        """Run forward function and calculate loss for box head in training.
-
-        Args:
-            stage (int): The current stage in Cascade RoI Head.
-            x (tuple[Tensor]): List of multi-level img features.
-            sampling_results (list["obj:`SamplingResult`]): Sampling results.
-
-        Returns:
-            dict: Usually returns a dictionary with keys:
-
-                - `cls_score` (Tensor): Classification scores.
-                - `bbox_pred` (Tensor): Box energies / deltas.
-                - `bbox_feats` (Tensor): Extract bbox RoI features.
-                - `loss_bbox` (dict): A dictionary of bbox loss components.
-                - `rois` (Tensor): RoIs with the shape (n, 5) where the first
-                  column indicates batch id of each RoI.
-                - `bbox_targets` (tuple):  Ground truth for proposals in a
-                  single image. Containing the following list of Tensors:
-                  (labels, label_weights, bbox_targets, bbox_weights)
-        """
-        bbox_head = self.bbox_head[stage]
-        rois = bbox2roi([res.priors for res in sampling_results])
-        bbox_results = self._bbox_forward(stage, x, rois)
-        bbox_results.update(rois=rois)
-
-        bbox_loss_and_target = bbox_head.loss_and_target(
-            cls_score=bbox_results['cls_score'],
-            bbox_pred=bbox_results['bbox_pred'],
-            rois=rois,
-            sampling_results=sampling_results,
-            rcnn_train_cfg=self.train_cfg[stage])
-        bbox_results.update(bbox_loss_and_target)
-
-        return bbox_results
-
     def _mask_forward(self, x: Tuple[Tensor], rois: Tensor) -> dict:
         """Mask head forward function used in both training and testing.
 
@@ -247,68 +210,7 @@ class DeticRoIHead(CascadeRoIHead):
         Returns:
             dict[str, Tensor]: A dictionary of loss components
         """
-        # TODO: May add a new function in baseroihead
-        assert len(rpn_results_list) == len(batch_data_samples)
-        outputs = unpack_gt_instances(batch_data_samples)
-        batch_gt_instances, batch_gt_instances_ignore, batch_img_metas \
-            = outputs
-
-        num_imgs = len(batch_data_samples)
-        losses = dict()
-        results_list = rpn_results_list
-        for stage in range(self.num_stages):
-            self.current_stage = stage
-
-            stage_loss_weight = self.stage_loss_weights[stage]
-
-            # assign gts and sample proposals
-            sampling_results = []
-            if self.with_bbox or self.with_mask:
-                bbox_assigner = self.bbox_assigner[stage]
-                bbox_sampler = self.bbox_sampler[stage]
-
-                for i in range(num_imgs):
-                    results = results_list[i]
-                    # rename rpn_results.bboxes to rpn_results.priors
-                    results.priors = results.pop('bboxes')
-
-                    assign_result = bbox_assigner.assign(
-                        results, batch_gt_instances[i],
-                        batch_gt_instances_ignore[i])
-
-                    sampling_result = bbox_sampler.sample(
-                        assign_result,
-                        results,
-                        batch_gt_instances[i],
-                        feats=[lvl_feat[i][None] for lvl_feat in x])
-                    sampling_results.append(sampling_result)
-
-            # bbox head forward and loss
-            bbox_results = self.bbox_loss(stage, x, sampling_results)
-
-            for name, value in bbox_results['loss_bbox'].items():
-                losses[f's{stage}.{name}'] = (
-                    value * stage_loss_weight if 'loss' in name else value)
-
-            # mask head forward and loss
-            # TODO: only last stage
-            if self.with_mask:
-                mask_results = self.mask_loss(stage, x, sampling_results,
-                                              batch_gt_instances)
-                for name, value in mask_results['loss_mask'].items():
-                    losses[f's{stage}.{name}'] = (
-                        value * stage_loss_weight if 'loss' in name else value)
-
-            # refine bboxes
-            if stage < self.num_stages - 1:
-                bbox_head = self.bbox_head[stage]
-                with torch.no_grad():
-                    results_list = bbox_head.refine_bboxes(
-                        sampling_results, bbox_results, batch_img_metas)
-                    # Empty proposal
-                    if results_list is None:
-                        break
-        return losses
+        raise NotImplementedError
 
     def predict_mask(self,
                      x: Tuple[Tensor],
