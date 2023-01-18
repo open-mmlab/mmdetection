@@ -46,20 +46,24 @@ def batch_images_to_levels(target, num_levels):
     return level_targets
 
 
-def get_max_num_gt(gt_nums, min_num_gt=32, max_num_gt=1024):
+def get_max_num_gt_division_factor(gt_nums,
+                                   min_num_gt=32,
+                                   max_num_gt=1024,
+                                   division_factor=2):
     """Count max num of gt.
 
     Args:
         gt_nums (List[int]):  Ground truth bboxes num of images.
         min_num_gt (int): Min num of ground truth bboxes.
         max_num_gt (int): Max num of ground truth bboxes.
+        division_factor (int): Division factor of result.
     Returns:
         max_gt_nums_align: (int): max num of ground truth bboxes.
     """
     max_gt_nums = max(gt_nums)
     max_gt_nums_align = min_num_gt
     while max_gt_nums_align < max_gt_nums:
-        max_gt_nums_align *= 2
+        max_gt_nums_align *= division_factor
     if max_gt_nums_align > max_num_gt:
         raise RuntimeError
     return max_gt_nums_align

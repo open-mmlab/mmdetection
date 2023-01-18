@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .ascend_util import batch_images_to_levels, get_max_num_gt, masked_fill
+from .ascend_util import batch_images_to_levels, \
+    get_max_num_gt_division_factor, masked_fill
 from .collect_env import collect_env
 from .compat_config import compat_cfg
 from .logger import get_caller_name, get_root_logger, log_img_scale
@@ -15,5 +16,5 @@ __all__ = [
     'update_data_root', 'setup_multi_processes', 'get_caller_name',
     'log_img_scale', 'compat_cfg', 'split_batch', 'build_ddp', 'build_dp',
     'get_device', 'replace_cfg_vals', 'AvoidOOM', 'AvoidCUDAOOM',
-    'get_max_num_gt', 'masked_fill', 'batch_images_to_levels'
+    'get_max_num_gt_division_factor', 'masked_fill', 'batch_images_to_levels'
 ]

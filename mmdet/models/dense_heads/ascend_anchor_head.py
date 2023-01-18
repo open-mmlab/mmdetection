@@ -3,7 +3,8 @@ import torch
 
 from ...core.bbox.assigners import AscendMaxIoUAssigner
 from ...core.bbox.samplers import PseudoSampler
-from ...utils import batch_images_to_levels, get_max_num_gt, masked_fill
+from ...utils import batch_images_to_levels, \
+    get_max_num_gt_division_factor, masked_fill
 from ..builder import HEADS
 from .anchor_head import AnchorHead
 
@@ -81,7 +82,8 @@ class AscendAnchorHead(AnchorHead):
         Returns:
             batch_gt_bboxes: (Tensor): Ground truth bboxes of all image.
         """
-        # a static ground truth boxes
+        # a static ground truth boxes.
+        # Save static gt. Related to Ascend. Helps improve performance
         if not hasattr(self, 'batch_gt_bboxes'):
             self.batch_gt_bboxes = {}
         # a min anchor filled the excess anchor
@@ -329,7 +331,7 @@ class AscendAnchorHead(AnchorHead):
         ], 0)
 
         gt_nums = [len(gt_bbox) for gt_bbox in gt_bboxes_list]
-        max_gt_nums = get_max_num_gt(gt_nums)
+        max_gt_nums = get_max_num_gt_division_factor(gt_nums)
         batch_gt_bboxes = self.get_batch_gt_bboxes(gt_bboxes_list, num_imgs,
                                                    gt_nums, device,
                                                    max_gt_nums)
