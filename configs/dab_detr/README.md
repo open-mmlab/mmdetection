@@ -24,7 +24,7 @@ We provide the config files and models for DAB-DETR: [DAB-DETR: Dynamic Anchor B
 
 | Backbone |  Model   | Lr schd | Mem (GB) | Inf time (fps) | box AP |                  Config                   |                                                                                                                                                Download                                                                                                                                                |
 | :------: | :------: | :-----: | :------: | :------------: | :----: | :---------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|   R-50   | DAB-DETR |   50e   |   6.4    |                |  42.3  | [config](./dab-detr_r50_8xb2-50e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/dab_detr/dab-detr_r50_8xb2-50e_coco/dab-detr_r50_8xb2-50e_coco_20221122_120837-c1035c8c.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/dab_detr/dab-detr_r50_8xb2-50e_coco/dab-detr_r50_8xb2-50e_coco_20221122_120837.log.json) |
+|   R-50   | DAB-DETR |   50e   |          |                |  42.3  | [config](./dab-detr_r50_8xb2-50e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/dab_detr/dab-detr_r50_8xb2-50e_coco/dab-detr_r50_8xb2-50e_coco_20221122_120837-c1035c8c.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/dab_detr/dab-detr_r50_8xb2-50e_coco/dab-detr_r50_8xb2-50e_coco_20221122_120837.log.json) |
 
 ## Citation
 
