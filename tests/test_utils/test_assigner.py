@@ -686,6 +686,7 @@ def test_ascend_max_iou_assigner():
         batch_gt_bboxes,
         batch_gt_labels=batch_gt_labels,
         batch_bboxes_ignore_mask=batch_bboxes_ignore_mask)
+
     expected_batch_pos_mask = torch.IntTensor([1, 0, 1, 0])
     expected_batch_anchor_gt_indes = torch.IntTensor([0, 0, 1, 0])
     expected_batch_anchor_gt_labels = torch.IntTensor([2, 0, 3, 0])
