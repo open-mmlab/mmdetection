@@ -2,6 +2,7 @@
 from .builder import DATASETS, PIPELINES, build_dataloader, build_dataset
 from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
+from .coco_occluded import OccludedSeparatedCocoDataset
 from .coco_panoptic import CocoPanopticDataset
 from .custom import CustomDataset
 from .dataset_wrappers import (ClassBalancedDataset, ConcatDataset,
@@ -26,5 +27,5 @@ __all__ = [
     'build_dataset', 'replace_ImageToTensor', 'get_loading_pipeline',
     'NumClassCheckHook', 'CocoPanopticDataset', 'MultiImageMixDataset',
     'OpenImagesDataset', 'OpenImagesChallengeDataset', 'Objects365V1Dataset',
-    'Objects365V2Dataset'
+    'Objects365V2Dataset', 'OccludedSeparatedCocoDataset'
 ]
