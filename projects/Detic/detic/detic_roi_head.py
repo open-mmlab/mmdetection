@@ -39,6 +39,66 @@ class DeticRoIHead(CascadeRoIHead):
             self.share_roi_extractor = True
             self.mask_roi_extractor = self.bbox_roi_extractor
 
+    def _refine_roi(self, x: Tuple[Tensor], rois: Tensor,
+                    batch_img_metas: List[dict],
+                    num_proposals_per_img: Sequence[int], **kwargs) -> tuple:
+        """Multi-stage refinement of RoI.
+
+        Args:
+            x (tuple[Tensor]): List of multi-level img features.
+            rois (Tensor): shape (n, 5), [batch_ind, x1, y1, x2, y2]
+            batch_img_metas (list[dict]): List of image information.
+            num_proposals_per_img (sequence[int]): number of proposals
+                in each image.
+
+        Returns:
+            tuple:
+
+               - rois (Tensor): Refined RoI.
+               - cls_scores (list[Tensor]): Average predicted
+                   cls score per image.
+               - bbox_preds (list[Tensor]): Bbox branch predictions
+                   for the last stage of per image.
+        """
+        # "ms" in variable names means multi-stage
+        ms_scores = []
+        for stage in range(self.num_stages):
+            bbox_results = self._bbox_forward(
+                stage=stage, x=x, rois=rois, **kwargs)
+
+            # split batch bbox prediction back to each image
+            cls_scores = bbox_results['cls_score'].sigmoid()
+            bbox_preds = bbox_results['bbox_pred']
+
+            rois = rois.split(num_proposals_per_img, 0)
+            cls_scores = cls_scores.split(num_proposals_per_img, 0)
+            ms_scores.append(cls_scores)
+            bbox_preds = bbox_preds.split(num_proposals_per_img, 0)
+
+            if stage < self.num_stages - 1:
+                bbox_head = self.bbox_head[stage]
+                refine_rois_list = []
+                for i in range(len(batch_img_metas)):
+                    if rois[i].shape[0] > 0:
+                        bbox_label = cls_scores[i][:, :-1].argmax(dim=1)
+                        # Refactor `bbox_head.regress_by_class` to only accept
+                        # box tensor without img_idx concatenated.
+                        refined_bboxes = bbox_head.regress_by_class(
+                            rois[i][:, 1:], bbox_label, bbox_preds[i],
+                            batch_img_metas[i])
+                        refined_bboxes = get_box_tensor(refined_bboxes)
+                        refined_rois = torch.cat(
+                            [rois[i][:, [0]], refined_bboxes], dim=1)
+                        refine_rois_list.append(refined_rois)
+                rois = torch.cat(refine_rois_list)
+        # ms_scores aligned
+        # average scores of each image by stages
+        cls_scores = [
+            sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+            for i in range(len(batch_img_metas))
+        ]  # aligned
+        return rois, cls_scores, bbox_preds
+
     def _bbox_forward(self, stage: int, x: Tuple[Tensor],
                       rois: Tensor) -> dict:
         """Box head forward function used in both training and testing.
@@ -111,7 +171,7 @@ class DeticRoIHead(CascadeRoIHead):
                 box_type=self.bbox_head[-1].predict_box_type,
                 num_classes=self.bbox_head[-1].num_classes,
                 score_per_cls=rcnn_test_cfg is None)
-
+        # rois aligned
         rois, cls_scores, bbox_preds = self._refine_roi(
             x=x,
             rois=rois,

@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import Dict, List, Optional, Sequence, Tuple
-
+import copy
 import torch
 import torch.nn as nn
 from mmcv.cnn import Scale
@@ -10,7 +10,7 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.models.dense_heads import CenterNetUpdateHead
-from mmdet.models.utils import multi_apply
+from mmdet.models.utils import multi_apply, filter_scores_and_topk
 from mmdet.registry import MODELS
 from mmdet.structures.bbox import (bbox2distance, cat_boxes, get_box_tensor,
                                    get_box_wh, scale_boxes)
@@ -128,7 +128,8 @@ class CenterNetRPNHead(CenterNetUpdateHead):
             - bbox_preds (list[Tensor]): Box energies / deltas for each \
             scale level, each is a 4D-tensor, the channel number is 4.
         """
-        return multi_apply(self.forward_single, x, self.scales, self.strides)
+        res = multi_apply(self.forward_single, x, self.scales, self.strides)
+        return res
 
     def forward_single(self, x: Tensor, scale: Scale,
                        stride: int) -> Tuple[Tensor, Tensor]:
@@ -159,27 +160,41 @@ class CenterNetRPNHead(CenterNetUpdateHead):
             bbox_pred *= stride
         return cls_score, bbox_pred  # score aligned, box larger
 
-    def _bbox_post_process(self,
-                           results: InstanceData,
-                           cfg: ConfigDict,
-                           rescale: bool = False,
-                           with_nms: bool = True,
-                           img_meta: Optional[dict] = None) -> InstanceData:
-        """bbox post-processing method.
-
-        The boxes would be rescaled to the original image scale and do
-        the nms operation. Usually `with_nms` is False is used for aug test.
+    def _predict_by_feat_single(self,
+                                cls_score_list: List[Tensor],
+                                bbox_pred_list: List[Tensor],
+                                score_factor_list: List[Tensor],
+                                mlvl_priors: List[Tensor],
+                                img_meta: dict,
+                                cfg: ConfigDict,
+                                rescale: bool = False,
+                                with_nms: bool = True) -> InstanceData:
+        """Transform a single image's features extracted from the head into
+        bbox results.
 
         Args:
-            results (:obj:`InstaceData`): Detection instance results,
-                each item has shape (num_bboxes, ).
-            cfg (ConfigDict): Test / postprocessing configuration,
+            cls_score_list (list[Tensor]): Box scores from all scale
+                levels of a single image, each item has shape
+                (num_priors * num_classes, H, W).
+            bbox_pred_list (list[Tensor]): Box energies / deltas from
+                all scale levels of a single image, each item has shape
+                (num_priors * 4, H, W).
+            score_factor_list (list[Tensor]): Score factor from all scale
+                levels of a single image, each item has shape
+                (num_priors * 1, H, W).
+            mlvl_priors (list[Tensor]): Each element in the list is
+                the priors of a single level in feature pyramid. In all
+                anchor-based methods, it has shape (num_priors, 4). In
+                all anchor-free methods, it has shape (num_priors, 2)
+                when `with_stride=True`, otherwise it still has shape
+                (num_priors, 4).
+            img_meta (dict): Image meta info.
+            cfg (mmengine.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
-                Default to False.
+                Defaults to False.
             with_nms (bool): If True, do nms before return boxes.
-                Default to True.
-            img_meta (dict, optional): Image meta info. Defaults to None.
+                Defaults to True.
 
         Returns:
             :obj:`InstanceData`: Detection results of each image
@@ -193,28 +208,85 @@ class CenterNetRPNHead(CenterNetUpdateHead):
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                   the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        # apply sqrt when `with_agn_hm=True` in Detic
-        results.scores = torch.sqrt(results.scores)  # TODO: train
 
-        if rescale:
-            assert img_meta.get('scale_factor') is not None
-            scale_factor = [1 / s for s in img_meta['scale_factor']]
-            results.bboxes = scale_boxes(results.bboxes, scale_factor)
+        cfg = self.test_cfg if cfg is None else cfg
+        cfg = copy.deepcopy(cfg)
+        img_shape = img_meta['img_shape']
+        nms_pre = cfg.get('nms_pre', -1)
 
-        # filter small size bboxes
-        if cfg.get('min_bbox_size', -1) >= 0:
-            w, h = get_box_wh(results.bboxes)
-            valid_mask = (w > cfg.min_bbox_size) & (h > cfg.min_bbox_size)
-            if not valid_mask.all():
-                results = results[valid_mask]
+        mlvl_bbox_preds = []
+        mlvl_valid_priors = []
+        mlvl_scores = []
+        mlvl_labels = []
 
-        if with_nms and results.bboxes.numel() > 0:
-            bboxes = get_box_tensor(results.bboxes)
-            det_bboxes, keep_idxs = batched_nms(bboxes, results.scores,
-                                                results.labels, cfg.nms)
-            results = results[keep_idxs]
-            # some nms would reweight the score, such as softnms
-            results.scores = det_bboxes[:, -1]
-            results = results[:cfg.max_per_img]
+        for level_idx, (cls_score, bbox_pred, score_factor, priors) in \
+                enumerate(zip(cls_score_list, bbox_pred_list,
+                              score_factor_list, mlvl_priors)):
 
-        return results
+            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+
+            dim = self.bbox_coder.encode_size
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, dim)
+            cls_score = cls_score.permute(1, 2,
+                                          0).reshape(-1, self.cls_out_channels)
+            heatmap = cls_score.sigmoid()
+            score_thr = cfg.get('score_thr', 0)
+
+            candidate_inds = heatmap > score_thr  # 0.05
+            pre_nms_top_n = candidate_inds.sum()  # N
+            pre_nms_top_n = pre_nms_top_n.clamp(max=nms_pre)  # N
+
+            per_box_cls = heatmap  # HW x C
+            per_candidate_inds = candidate_inds  # n
+            per_box_cls = per_box_cls[per_candidate_inds]  # n
+
+            per_candidate_nonzeros = per_candidate_inds.nonzero()  # n
+            per_box_loc = per_candidate_nonzeros[:, 0]  # n
+            per_class = per_candidate_nonzeros[:, 1]  # n
+
+            per_box_regression = bbox_pred  # HW x 4
+            per_box_regression = per_box_regression[per_box_loc]  # n x 4
+            per_grids = priors[per_box_loc]  # n x 2
+
+            per_pre_nms_top_n = pre_nms_top_n
+
+            if per_candidate_inds.sum().item() > per_pre_nms_top_n.item():
+                per_box_cls, top_k_indices = \
+                    per_box_cls.topk(per_pre_nms_top_n, sorted=False)
+                per_class = per_class[top_k_indices]
+                per_box_regression = per_box_regression[top_k_indices]
+                per_grids = per_grids[top_k_indices]
+
+            # TODO: replace with box coder
+            detections = torch.stack([
+                per_grids[:, 0] - per_box_regression[:, 0],
+                per_grids[:, 1] - per_box_regression[:, 1],
+                per_grids[:, 0] + per_box_regression[:, 2],
+                per_grids[:, 1] + per_box_regression[:, 3],
+            ], dim=1)  # n x 4
+
+            # avoid invalid boxes in RoI heads
+            detections[:, 2] = torch.max(detections[:, 2], detections[:, 0] + 0.01)
+            detections[:, 3] = torch.max(detections[:, 3], detections[:, 1] + 0.01)
+
+
+            mlvl_bbox_preds.append(detections)
+            mlvl_valid_priors.append(priors)
+            mlvl_scores.append(torch.sqrt(per_box_cls))
+            mlvl_labels.append(per_class)
+
+        bbox_pred = torch.cat(mlvl_bbox_preds)
+        # priors = cat_boxes(mlvl_valid_priors)
+        # bboxes = self.bbox_coder.decode(priors, bbox_pred, max_shape=img_shape)
+
+        results = InstanceData()
+        results.bboxes = bbox_pred
+        results.scores = torch.cat(mlvl_scores)
+        results.labels = torch.cat(mlvl_labels)
+
+        return self._bbox_post_process(
+            results=results,
+            cfg=cfg,
+            rescale=rescale,
+            with_nms=with_nms,
+            img_meta=img_meta)
