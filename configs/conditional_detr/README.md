@@ -23,9 +23,9 @@ Our conditional DETR learns a conditional spatial query from the decoder embeddi
 
 We provide the config files and models for Conditional DETR: [Conditional DETR for Fast Training Convergence](https://arxiv.org/abs/2108.06152).
 
-| Backbone |      Model       | Lr schd | Mem (GB) | Inf time (fps) | box AP |                      Config                       |               Download               |
-| :------: | :--------------: | :-----: | :------: | :------------: | :----: | :-----------------------------------------------: | :----------------------------------: |
-|   R-50   | Conditional DETR |   50e   |   7.9    |                |  40.9  | [config](./conditional_detr_r50_8xb2-50e_coco.py) | \[model\](# TODO) \| \[log\](# TODO) |
+| Backbone |      Model       | Lr schd | Mem (GB) | Inf time (fps) | box AP |                      Config                       |                                                                                                                                                                        Download                                                                                                                                                                        |
+| :------: | :--------------: | :-----: | :------: | :------------: | :----: | :-----------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|   R-50   | Conditional DETR |   50e   |          |                |  40.9  | [config](./conditional-detr_r50_8xb2-50e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/conditional_detr/conditional-detr_r50_8xb2-50e_coco/conditional-detr_r50_8xb2-50e_coco_20221121_180202-c83a1dc0.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/conditional_detr/conditional-detr_r50_8xb2-50e_coco/conditional-detr_r50_8xb2-50e_coco_20221121_180202.log.json) |
 
 ## Citation
 

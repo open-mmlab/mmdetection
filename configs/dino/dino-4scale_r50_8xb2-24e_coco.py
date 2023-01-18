@@ -1,4 +1,4 @@
-_base_ = './dino_4scale_r50_8xb2-12e_coco.py'
+_base_ = './dino-4scale_r50_8xb2-12e_coco.py'
 max_epochs = 24
 train_cfg = dict(
     type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)

@@ -14,9 +14,13 @@ We present DINO (DETR with Improved deNoising anchOr boxes), a state-of-the-art 
 
 ## Results and Models
 
-| Backbone | Model | Lr schd | box AP |                    Config                    | Download |
-| :------: | :---: | :-----: | :----: | :------------------------------------------: | :------: |
-|   R-50   | DINO  |   12e   |  49.0  | [config](./dino_4scale_r50_8xb2-12e_coco.py) |          |
+| Backbone |    Model    | Lr schd | box AP |                    Config                    |                                                                                                                                                  Download                                                                                                                                                  |
+| :------: | :---------: | :-----: | :----: | :------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|   R-50   | DINO-4scale |   12e   |  49.0  | [config](./dino-4scale_r50_8xb2-12e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/dino/dino-4scale_r50_8xb2-12e_coco/dino-4scale_r50_8xb2-12e_coco_20221202_182705-55b2bba2.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/dino/dino-4scale_r50_8xb2-12e_coco/dino-4scale_r50_8xb2-12e_coco_20221202_182705.log.json) |
+
+### NOTE
+
+The performance is unstable. `DINO-4scale` with `R-50` may fluctuate about 0.4 mAP.
 
 ## Citation
 
