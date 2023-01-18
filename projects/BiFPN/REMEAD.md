@@ -46,6 +46,10 @@ In MMDetection's root directory, run the following command to test the model:
 python tools/train.py projects/BiFPN/configs/efficientdet_effb3_bifpn_8xb4-crop896-1x_coco.py ${CHECKPOINT_PATH}
 ```
 
+## Test-time correctness
+
+Have checked that the same tensor can obtain the same output tensor as the official [BiFPN](https://github.com/google/automl) implementations
+
 ## Citation
 
 ```BibTeX

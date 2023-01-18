@@ -5,7 +5,7 @@ _base_ = [
     'mmdet::_base_/default_runtime.py'
 ]
 custom_imports = dict(
-    imports=['projects.BiFPN.BiFPN'], allow_failed_imports=False)
+    imports=['projects.BiFPN.bifpn'], allow_failed_imports=False)
 
 image_size = (896, 896)
 batch_augments = [dict(type='BatchFixedSizePad', size=image_size)]
