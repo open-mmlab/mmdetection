@@ -96,7 +96,7 @@ train_pipeline = [
         type='LoadImageFromFile',
         file_client_args=_base_.file_client_args,
         imdecode_backend=backend),
-    dict(type='LoadAnnotations', with_bbox=True, with_mask=False),
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomFlip', prob=0.5),
     dict(
         type='RandomChoice',
