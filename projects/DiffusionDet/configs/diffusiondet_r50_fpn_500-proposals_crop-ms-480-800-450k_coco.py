@@ -134,7 +134,9 @@ train_pipeline = [
 
 train_dataloader = dict(
     sampler=dict(type='InfiniteSampler'),
-    dataset=dict(pipeline=train_pipeline))
+    dataset=dict(
+        filter_cfg=dict(filter_empty_gt=False, min_size=1e-5),
+        pipeline=train_pipeline))
 
 # optimizer
 optim_wrapper = dict(
