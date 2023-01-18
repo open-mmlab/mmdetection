@@ -553,7 +553,7 @@ Evaluation results have been saved to occluded_separated_recall.json.
 
 ### Online evaluation
 
-We implemented `OccludedSeparatedCocoDataset` which inherited from the `CocoDataset`.
+We implement `OccludedSeparatedCocoDataset` which inherited from the `CocoDataset`.
 To evaluate the recall of separated and occluded masks during training, just replace the validation dataset type with `'OccludedSeparatedCocoDataset'` in your config:
 
 ```python

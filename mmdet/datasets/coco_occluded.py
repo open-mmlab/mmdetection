@@ -23,10 +23,12 @@ class OccludedSeparatedCocoDataset(CocoDataset):
     COCO val dataset, collecting separated objects and partially occluded
     objects for a large variety of categories. In this way, we define
     occlusion into two major categories: separated and partially occluded.
+
     - Separation: target object segmentation mask is separated into distinct
       regions by the occluder.
     - Partial Occlusion: target object is partially occluded but the
       segmentation mask is connected.
+
     These two new scalable real-image datasets are to benchmark a model's
     capability to detect occluded objects of 80 common categories.
 
