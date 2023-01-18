@@ -2,3 +2,4 @@ __pycache__
 result/
 work_dirs/
 *.json
+configs/_base_/datasets/*

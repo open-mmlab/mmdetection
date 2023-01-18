@@ -53,6 +53,7 @@ class Resize_Student:
     def __init__(self,
                  img_scale=None,
                  multiscale_mode='range',
+                 ratio_hr_lr=None,
                  ratio_range=None,
                  keep_ratio=True,
                  bbox_clip_border=True,
@@ -75,6 +76,7 @@ class Resize_Student:
         # TODO: add multiscale mode (now only single image scale is supported)
         self.backend = backend
         self.multiscale_mode = multiscale_mode
+        self.ratio_hr_lr = ratio_hr_lr
         self.ratio_range = ratio_range
         self.keep_ratio = keep_ratio
         
@@ -84,7 +86,7 @@ class Resize_Student:
 
 
     @staticmethod
-    def random_sample_ratio(img_scale, ratio_range):
+    def random_sample_ratio(img_scale, ratio_range, ratio_hr_lr):
         """Randomly sample an img_scale when ``ratio_range`` is specified.
 
         A ratio will be randomly sampled from the range specified by
@@ -106,13 +108,22 @@ class Resize_Student:
         assert isinstance(img_scale, tuple) and len(img_scale) == 2
         min_ratio, max_ratio = ratio_range
         assert min_ratio <= max_ratio
-        ratio = np.random.random_sample() * (max_ratio - min_ratio) + min_ratio
-        scale = int(img_scale[0] * ratio), int(img_scale[1] * ratio)
+        
+        if np.random.random_sample() < ratio_hr_lr:
+            choice = 'hr'
+        else:
+            choice = 'lr'
+            
+        if choice == 'hr':
+            scale = int(img_scale[0]), int(img_scale[1])
+        else:
+            ratio = np.random.random_sample() * (max_ratio - min_ratio) + min_ratio
+            scale = int(img_scale[0] * ratio), int(img_scale[1] * ratio)
         return scale, None
 
 
     @staticmethod
-    def random_select_ratio(img_scale, ratio_range):
+    def random_select_ratio(img_scale, ratio_range, ratio_hr_lr):
         """Randomly sample an img_scale when ``ratio_range`` is specified.
 
         A ratio will be randomly sampled from the range specified by
@@ -130,9 +141,17 @@ class Resize_Student:
                 None is just a placeholder to be consistent with \
                 :func:`random_select`.
         """
-        ratio_idx = np.random.randint(len(ratio_range))
-        ratio = ratio_range[ratio_idx]
-        scale = int(img_scale[0] * ratio), int(img_scale[1] * ratio)
+        if np.random.random_sample() < ratio_hr_lr:
+            choice = 'hr'
+        else:
+            choice = 'lr'
+            
+        if choice == 'hr':
+            scale = int(img_scale[0]), int(img_scale[1])
+        else:
+            ratio_idx = np.random.randint(len(ratio_range))
+            ratio = ratio_range[ratio_idx]
+            scale = int(img_scale[0] * ratio), int(img_scale[1] * ratio)
         return scale, None
 
 
@@ -156,9 +175,9 @@ class Resize_Student:
 
         if self.multiscale_mode == 'range':
             scale, scale_idx = self.random_sample_ratio(
-                self.img_scale[0], self.ratio_range)
+                self.img_scale[0], self.ratio_range, self.ratio_hr_lr)
         elif self.multiscale_mode == 'value':
-            scale, scale_idx = self.random_select_ratio(self.img_scale[0], self.ratio_range)
+            scale, scale_idx = self.random_select_ratio(self.img_scale[0], self.ratio_range, self.ratio_hr_lr)
         else:
             raise NotImplementedError
 
