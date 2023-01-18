@@ -3,8 +3,8 @@ import torch
 
 from ...core.bbox.assigners import AscendMaxIoUAssigner
 from ...core.bbox.samplers import PseudoSampler
-from ...utils import batch_images_to_levels, \
-    get_max_num_gt_division_factor, masked_fill
+from ...utils import (batch_images_to_levels, get_max_num_gt_division_factor,
+                      masked_fill)
 from ..builder import HEADS
 from .anchor_head import AnchorHead
 
