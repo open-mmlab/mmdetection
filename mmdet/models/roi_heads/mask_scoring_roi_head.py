@@ -5,6 +5,7 @@ import torch
 from torch import Tensor
 
 from mmdet.registry import MODELS
+from mmdet.structures import SampleList
 from mmdet.structures.bbox import bbox2roi
 from mmdet.utils import ConfigType, InstanceList
 from ..task_modules.samplers import SamplingResult
@@ -27,8 +28,10 @@ class MaskScoringRoIHead(StandardRoIHead):
         super().__init__(**kwargs)
         self.mask_iou_head = MODELS.build(mask_iou_head)
 
-    def forward(self, x: Tuple[Tensor],
-                rpn_results_list: InstanceList) -> tuple:
+    def forward(self,
+                x: Tuple[Tensor],
+                rpn_results_list: InstanceList,
+                batch_data_samples: SampleList = None) -> tuple:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
 
@@ -37,6 +40,9 @@ class MaskScoringRoIHead(StandardRoIHead):
                 resolutions.
             rpn_results_list (list[:obj:`InstanceData`]): List of region
                 proposals.
+            batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
+            the meta information of each image and corresponding
+            annotations.
 
         Returns
             tuple: A tuple of features from ``bbox_head`` and ``mask_head``
