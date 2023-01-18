@@ -59,8 +59,9 @@ data = dict(
     train=dict(type="CocoContDataset",
                pipeline=train_pipeline,
                pre_pipeline=pre_train_pipeline,
-               multiscale_mode_student='value', # range
-               ratio_range_student=(0.4, 0.6, 0.8, 1.0, 1.0, 1.0)),
+               multiscale_mode_student='range', # range
+               ratio_hr_lr_student=0.5,
+               min_lr_student=0.5),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 

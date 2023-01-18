@@ -1,20 +1,23 @@
 _base_ = [
     '../_base_/models/faster_rcnn_r50_caffe_c4.py',
-    '../_base_/datasets/coco_detection.py',
+    '../_base_/datasets/smdp_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
 # model
 model = dict(type='FasterRCNN_TS',
              roi_head=dict(
-                 type='ContRoIHead'
+                 type='ContRoIHead',
+                 bbox_head=dict(num_classes=7)
                 ),
             )
 
+
 # Distillation Params
-teacher_config_path = 'result/faster_rcnn_ori/faster_rcnn_r50_caffe_c4_1x_coco.py'
-teacher_weight_path = 'result/faster_rcnn_ori/epoch_12.pth'
+teacher_config_path = 'result/smdp/faster_rcnn_r50_c4_1x_ori/smdp_faster_rcnn_r50_caffe_c4_1x.py'
+teacher_weight_path = 'result/smdp/faster_rcnn_r50_c4_1x_ori/epoch_12.pth'
 backbone_pretrain = False
+
 
 # use caffe img_norm
 img_norm_cfg = dict(
@@ -26,6 +29,7 @@ pre_train_pipeline = [
     dict(type='RandomFlip', flip_ratio=0.5),
 ]
 
+
 train_pipeline = [
     dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
     dict(type='Normalize', **img_norm_cfg),
@@ -33,6 +37,7 @@ train_pipeline = [
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
+
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -53,11 +58,12 @@ test_pipeline = [
 data = dict(
     samples_per_gpu=4,
     workers_per_gpu=4,
-    train=dict(type="CocoContDataset",
+    train=dict(type="SmdpContDataset",
                pipeline=train_pipeline,
                pre_pipeline=pre_train_pipeline,
-               multiscale_mode_student='value', # range
-               ratio_range_student=(0.4, 0.6, 0.8, 1.0, 1.0, 1.0)),
+               multiscale_mode_student='range', # range
+               ratio_hr_lr_student=0.5,
+               min_lr_student=0.5),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 

@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/models/faster_rcnn_r50_caffe_c4.py',
-    '../_base_/datasets/coco_detection.py',
+    '../_base_/datasets/minicoco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
@@ -12,8 +12,8 @@ model = dict(type='FasterRCNN_TS',
             )
 
 # Distillation Params
-teacher_config_path = 'result/faster_rcnn_ori/faster_rcnn_r50_caffe_c4_1x_coco.py'
-teacher_weight_path = 'result/faster_rcnn_ori/epoch_12.pth'
+teacher_config_path = 'result/minicoco/faster_rcnn_r50_c4_1x/minicoco_faster_rcnn_r50_c4_1x.py'
+teacher_weight_path = 'result/minicoco/faster_rcnn_r50_c4_1x/epoch_12.pth'
 backbone_pretrain = False
 
 # use caffe img_norm
@@ -58,7 +58,7 @@ data = dict(
                pre_pipeline=pre_train_pipeline,
                multiscale_mode_student='range', # range
                ratio_hr_lr_student=0.5,
-               min_lr_student=0.4),
+               min_lr_student=0.5),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 
