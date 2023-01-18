@@ -233,10 +233,10 @@ class DiffusionDetMatcher(nn.Module):
             cost_matrix = torch.stack(cost_list).sum(0)
             cost_matrix[~valid_mask] = cost_matrix[~valid_mask] + 10000.0
 
-            _, matched_gt_inds = \
+            fg_mask_inboxes, matched_gt_inds = \
                 self.dynamic_k_matching(
-                    cost_matrix, pairwise_ious, num_gt, valid_mask)
-        return valid_mask, matched_gt_inds
+                    cost_matrix, pairwise_ious, num_gt)
+        return fg_mask_inboxes, matched_gt_inds
 
     def get_in_gt_and_in_center_info(
             self, pred_bboxes: Tensor,
@@ -289,8 +289,7 @@ class DiffusionDetMatcher(nn.Module):
         return is_in_boxes_anchor, is_in_boxes_and_center
 
     def dynamic_k_matching(self, cost: Tensor, pairwise_ious: Tensor,
-                           num_gt: int,
-                           valid_mask: Tensor) -> Tuple[Tensor, Tensor]:
+                           num_gt: int) -> Tuple[Tensor, Tensor]:
         """Use IoU and matching cost to calculate the dynamic top-k positive
         targets."""
         matching_matrix = torch.zeros_like(cost, dtype=torch.uint8)
@@ -308,15 +307,11 @@ class DiffusionDetMatcher(nn.Module):
 
         prior_match_gt_mask = matching_matrix.sum(1) > 1
         if prior_match_gt_mask.sum() > 0:
-            cost_min, cost_argmin = torch.min(
-                cost[prior_match_gt_mask, :], dim=1)
+            _, cost_argmin = torch.min(cost[prior_match_gt_mask, :], dim=1)
             matching_matrix[prior_match_gt_mask, :] *= 0
             matching_matrix[prior_match_gt_mask, cost_argmin] = 1
         # get foreground mask inside box and center prior
         fg_mask_inboxes = matching_matrix.sum(1) > 0
-        valid_mask[valid_mask.clone()] = fg_mask_inboxes
-
         matched_gt_inds = matching_matrix[fg_mask_inboxes, :].argmax(1)
-        matched_pred_ious = (matching_matrix *
-                             pairwise_ious).sum(1)[fg_mask_inboxes]
-        return matched_pred_ious, matched_gt_inds
+
+        return fg_mask_inboxes, matched_gt_inds

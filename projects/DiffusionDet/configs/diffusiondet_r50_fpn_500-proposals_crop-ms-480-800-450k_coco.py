@@ -149,7 +149,7 @@ train_cfg = dict(
     type='IterBasedTrainLoop',
     max_iters=450000,
     val_interval=75000)
-# learning rate
+
 # learning rate
 param_scheduler = [
     dict(
