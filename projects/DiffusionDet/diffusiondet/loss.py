@@ -210,7 +210,8 @@ class DiffusionDetMatcher(nn.Module):
             if num_gt == 0:  # empty object in key frame
                 valid_mask = pred_bboxes.new_zeros((pred_bboxes.shape[0], ),
                                                    dtype=torch.bool)
-                matched_gt_inds = pred_bboxes.new_zeros((gt_bboxes.shape[0], ))
+                matched_gt_inds = pred_bboxes.new_zeros((gt_bboxes.shape[0], ),
+                                                        dtype=torch.long)
                 return valid_mask, matched_gt_inds
 
             cost_list = []
