@@ -9,13 +9,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import build_activation_layer
+from mmcv.ops import batched_nms
 from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures import SampleList
 from mmdet.structures.bbox import (bbox2roi, bbox_cxcywh_to_xyxy,
-                                   bbox_xyxy_to_cxcywh)
+                                   bbox_xyxy_to_cxcywh, get_box_wh,
+                                   scale_boxes)
 from mmdet.utils import InstanceList
 
 _DEFAULT_SCALE_CLAMP = math.log(100000.0 / 16)
@@ -73,6 +75,7 @@ class DynamicDiffusionDetHead(nn.Module):
                  box_renewal=True,
                  use_ensemble=True,
                  deep_supervision=True,
+                 ddim_sampling_eta=1.0,
                  criterion=dict(
                      type='DiffusionDetCriterion',
                      num_classes=80,
@@ -108,6 +111,7 @@ class DynamicDiffusionDetHead(nn.Module):
                          type='RoIAlign', output_size=7, sampling_ratio=2),
                      out_channels=256,
                      featmap_strides=[4, 8, 16, 32]),
+                 test_cfg=None,
                  **kwargs) -> None:
         super().__init__()
         self.roi_extractor = MODELS.build(roi_extractor)
@@ -117,8 +121,6 @@ class DynamicDiffusionDetHead(nn.Module):
         self.feat_channels = feat_channels
         self.num_proposals = num_proposals
         self.num_heads = num_heads
-        # self.filter_empty_ann = filter_empty_ann
-
         # Build Diffusion
         assert isinstance(timesteps, int), 'The type of `timesteps` should ' \
                                            f'be int but got {type(timesteps)}'
@@ -128,6 +130,7 @@ class DynamicDiffusionDetHead(nn.Module):
         self.snr_scale = snr_scale
 
         self.ddim_sampling = self.sampling_timesteps < self.timesteps
+        self.ddim_sampling_eta = ddim_sampling_eta
         self.self_condition = self_condition
         self.box_renewal = box_renewal
         self.use_ensemble = use_ensemble
@@ -202,6 +205,8 @@ class DynamicDiffusionDetHead(nn.Module):
             nn.Linear(time_dim, time_dim))
 
         self.prior_prob = prior_prob
+        self.test_cfg = test_cfg
+        self.use_nms = self.test_cfg.get('use_nms', True)
         self._init_weights()
 
     def _init_weights(self):
@@ -298,7 +303,7 @@ class DynamicDiffusionDetHead(nn.Module):
         Returns:
             dict: A dictionary of loss components.
         """
-        prepare_outputs = self.prepare_targets(batch_data_samples)
+        prepare_outputs = self.prepare_training_targets(batch_data_samples)
         (batch_gt_instances, batch_pred_instances, batch_gt_instances_ignore,
          batch_img_metas) = prepare_outputs
 
@@ -324,7 +329,7 @@ class DynamicDiffusionDetHead(nn.Module):
         losses = self.criterion(output, batch_gt_instances, batch_img_metas)
         return losses
 
-    def prepare_targets(self, batch_data_samples):
+    def prepare_training_targets(self, batch_data_samples):
         batch_gt_instances = []
         batch_pred_instances = []
         batch_gt_instances_ignore = []
@@ -428,16 +433,278 @@ class DynamicDiffusionDetHead(nn.Module):
             list[obj:`InstanceData`]: Detection results of each image
             after the post process.
         """
+        device = x[-1].device
 
         batch_img_metas = [
             data_samples.metainfo for data_samples in batch_data_samples
         ]
 
-        outs = self(x)
+        (time_pairs, batch_noise_bboxes, batch_noise_bboxes_raw,
+         batch_image_size) = self.prepare_testing_targets(
+             batch_img_metas, device)
 
         predictions = self.predict_by_feat(
-            *outs, batch_img_metas=batch_img_metas, rescale=rescale)
+            x,
+            time_pairs=time_pairs,
+            batch_noise_bboxes=batch_noise_bboxes,
+            batch_noise_bboxes_raw=batch_noise_bboxes_raw,
+            batch_image_size=batch_image_size,
+            device=device,
+            batch_img_metas=batch_img_metas)
         return predictions
+
+    def predict_by_feat(self,
+                        x,
+                        time_pairs,
+                        batch_noise_bboxes,
+                        batch_noise_bboxes_raw,
+                        batch_image_size,
+                        device,
+                        batch_img_metas=None,
+                        cfg=None,
+                        rescale=True):
+
+        batch_size = len(batch_img_metas)
+
+        cfg = self.test_cfg if cfg is None else cfg
+        cfg = copy.deepcopy(cfg)
+
+        ensemble_score, ensemble_label, ensemble_coord = [], [], []
+        for time, time_next in time_pairs:
+            batch_time = torch.full((batch_size, ),
+                                    time,
+                                    device=device,
+                                    dtype=torch.long)
+            # self_condition = x_start if self.self_condition else None
+            pred_logits, pred_bboxes = self(x, batch_noise_bboxes, batch_time)
+
+            x_start = pred_bboxes[-1]
+
+            x_start = x_start / batch_image_size[:, None, :]
+            x_start = bbox_xyxy_to_cxcywh(x_start)
+            x_start = (x_start * 2 - 1.) * self.snr_scale
+            x_start = torch.clamp(
+                x_start, min=-1 * self.snr_scale, max=self.snr_scale)
+            pred_noise = self.predict_noise_from_start(batch_noise_bboxes_raw,
+                                                       batch_time, x_start)
+            if self.box_renewal:  # filter
+                score_thr = cfg.get('score_thr', 0)
+                for img_id in range(batch_size):
+                    score_per_image = pred_logits[-1][img_id]
+
+                    score_per_image = torch.sigmoid(score_per_image)
+                    value, _ = torch.max(score_per_image, -1, keepdim=False)
+                    keep_idx = value > score_thr
+                    num_remain = torch.sum(keep_idx)
+
+                    pred_noise = pred_noise[img_id, keep_idx, :]
+                    x_start = x_start[img_id, keep_idx, :]
+                    batch_noise_bboxes = batch_noise_bboxes[img_id,
+                                                            keep_idx, :]
+
+            if time_next < 0:
+                batch_noise_bboxes = x_start
+                continue
+
+            alpha = self.alphas_cumprod[time]
+            alpha_next = self.alphas_cumprod[time_next]
+
+            sigma = self.ddim_sampling_eta * ((1 - alpha / alpha_next) *
+                                              (1 - alpha_next) /
+                                              (1 - alpha)).sqrt()
+            c = (1 - alpha_next - sigma**2).sqrt()
+
+            noise = torch.randn_like(batch_noise_bboxes)
+
+            batch_noise_bboxes = x_start * alpha_next.sqrt() + \
+                c * pred_noise + sigma * noise
+
+            if self.box_renewal:  # filter
+                # replenish with randn boxes
+                batch_noise_bboxes = torch.cat(
+                    (batch_noise_bboxes,
+                     torch.randn(
+                         1, self.num_proposals - num_remain, 4,
+                         device=device)),
+                    dim=1)
+            if self.use_ensemble and self.sampling_timesteps > 1:
+                box_pred_per_image, scores_per_image, labels_per_image = \
+                    self.inference(
+                        box_cls=pred_logits[-1],
+                        box_pred=pred_bboxes[-1],
+                        cfg=cfg,
+                        device=device)
+                ensemble_score.append(scores_per_image)
+                ensemble_label.append(labels_per_image)
+                ensemble_coord.append(box_pred_per_image)
+        if self.use_ensemble and self.sampling_timesteps > 1:
+            box_pred_per_image = torch.cat(ensemble_coord, dim=0)
+            scores_per_image = torch.cat(ensemble_score, dim=0)
+            labels_per_image = torch.cat(ensemble_label, dim=0)
+
+            if self.use_nms:
+                det_bboxes, keep_idxs = batched_nms(box_pred_per_image,
+                                                    scores_per_image,
+                                                    labels_per_image, cfg.nms)
+                box_pred_per_image = box_pred_per_image[keep_idxs]
+                labels_per_image = labels_per_image[keep_idxs]
+                scores_per_image = det_bboxes[:, -1]
+            results = InstanceData()
+            results.bboxes = box_pred_per_image
+            results.scores = scores_per_image
+            results.labels = labels_per_image
+            results_list = [results]
+        else:
+            box_cls = pred_logits[-1]
+            box_pred = pred_bboxes[-1]
+            results_list = self.inference(box_cls, box_pred, cfg, device)
+        if rescale:
+            results_list = self.do_results_post_process(
+                results_list, cfg, batch_img_metas=batch_img_metas)
+        return results_list
+
+    @staticmethod
+    def do_results_post_process(results_list, cfg, batch_img_metas=None):
+        processed_results = []
+        for results, img_meta in zip(results_list, batch_img_metas):
+            assert img_meta.get('scale_factor') is not None
+            scale_factor = [1 / s for s in img_meta['scale_factor']]
+            results.bboxes = scale_boxes(results.bboxes, scale_factor)
+            # clip w, h
+            h, w = img_meta['ori_shape']
+            results.bboxes[:, 0::2] = results.bboxes[:, 0::2].clamp(
+                min=0, max=w)
+            results.bboxes[:, 1::2] = results.bboxes[:, 1::2].clamp(
+                min=0, max=h)
+
+            # filter small size bboxes
+            if cfg.get('min_bbox_size', 0) >= 0:
+                w, h = get_box_wh(results.bboxes)
+                valid_mask = (w > cfg.min_bbox_size) & (h > cfg.min_bbox_size)
+                if not valid_mask.all():
+                    results = results[valid_mask]
+            processed_results.append(results)
+
+        return processed_results
+
+    def prepare_testing_targets(self, batch_img_metas, device):
+        # [-1, 0, 1, 2, ..., T-1] when sampling_timesteps == timesteps
+        times = torch.linspace(
+            -1, self.timesteps - 1, steps=self.sampling_timesteps + 1)
+        times = list(reversed(times.int().tolist()))
+        # [(T-1, T-2), (T-2, T-3), ..., (1, 0), (0, -1)]
+        time_pairs = list(zip(times[:-1], times[1:]))
+
+        noise_bboxes_list = []
+        noise_bboxes_raw_list = []
+        image_size_list = []
+        for img_meta in batch_img_metas:
+            h, w = img_meta['img_shape']
+            image_size = torch.tensor([w, h, w, h],
+                                      dtype=torch.float32,
+                                      device=device)
+            noise_bboxes_raw = torch.randn((self.num_proposals, 4),
+                                           device=device)
+            noise_bboxes = torch.clamp(
+                noise_bboxes_raw, min=-1 * self.snr_scale, max=self.snr_scale)
+            noise_bboxes = ((noise_bboxes / self.snr_scale) + 1) / 2
+            noise_bboxes = bbox_cxcywh_to_xyxy(noise_bboxes)
+            noise_bboxes = noise_bboxes * image_size
+
+            noise_bboxes_raw_list.append(noise_bboxes_raw)
+            noise_bboxes_list.append(noise_bboxes)
+            image_size_list.append(image_size[None])
+        batch_noise_bboxes = torch.stack(noise_bboxes_list)
+        batch_image_size = torch.cat(image_size_list)
+        batch_noise_bboxes_raw = torch.stack(noise_bboxes_raw_list)
+        return (time_pairs, batch_noise_bboxes, batch_noise_bboxes_raw,
+                batch_image_size)
+
+    def predict_noise_from_start(self, x_t, t, x0):
+        results = (extract(
+            self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t - x0) / \
+                  extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape)
+        return results
+
+    def inference(self, box_cls, box_pred, cfg, device):
+        """
+        Args:
+            box_cls (Tensor): tensor of shape (batch_size, num_proposals, K).
+                The tensor predicts the classification probability for
+                each proposal.
+            box_pred (Tensor): tensors of shape (batch_size, num_proposals, 4).
+                The tensor predicts 4-vector (x,y,w,h) box
+                regression values for every proposal
+
+        Returns:
+            results (List[Instances]): a list of #images elements.
+        """
+        results = []
+
+        if self.use_focal_loss or self.use_fed_loss:
+            scores = torch.sigmoid(box_cls)
+            labels = torch.arange(
+                self.num_classes,
+                device=device).unsqueeze(0).repeat(self.num_proposals,
+                                                   1).flatten(0, 1)
+
+            for i, (scores_per_image,
+                    box_pred_per_image) in enumerate(zip(scores, box_pred)):
+
+                scores_per_image, topk_indices = scores_per_image.flatten(
+                    0, 1).topk(
+                        self.num_proposals, sorted=False)
+                labels_per_image = labels[topk_indices]
+                box_pred_per_image = box_pred_per_image.view(-1, 1, 4).repeat(
+                    1, self.num_classes, 1).view(-1, 4)
+                box_pred_per_image = box_pred_per_image[topk_indices]
+
+                if self.use_ensemble and self.sampling_timesteps > 1:
+                    return box_pred_per_image, scores_per_image, \
+                           labels_per_image
+
+                if self.use_nms:
+                    det_bboxes, keep_idxs = batched_nms(
+                        box_pred_per_image, scores_per_image, labels_per_image,
+                        cfg.nms)
+                    box_pred_per_image = box_pred_per_image[keep_idxs]
+                    labels_per_image = labels_per_image[keep_idxs]
+                    # some nms would reweight the score, such as softnms
+                    scores_per_image = det_bboxes[:, -1]
+                result = InstanceData()
+                result.bboxes = box_pred_per_image
+                result.scores = scores_per_image
+                result.labels = labels_per_image
+                results.append(result)
+
+        else:
+            # For each box we assign the best class or the second
+            # best if the best on is `no_object`.
+            scores, labels = F.softmax(box_cls, dim=-1)[:, :, :-1].max(-1)
+
+            for i, (scores_per_image, labels_per_image,
+                    box_pred_per_image) in enumerate(
+                        zip(scores, labels, box_pred)):
+                if self.use_ensemble and self.sampling_timesteps > 1:
+                    return box_pred_per_image, scores_per_image, \
+                           labels_per_image
+
+                if self.use_nms:
+                    det_bboxes, keep_idxs = batched_nms(
+                        box_pred_per_image, scores_per_image, labels_per_image,
+                        cfg.nms)
+                    box_pred_per_image = box_pred_per_image[keep_idxs]
+                    labels_per_image = labels_per_image[keep_idxs]
+                    # some nms would reweight the score, such as softnms
+                    scores_per_image = det_bboxes[:, -1]
+
+                result = InstanceData()
+                result.bboxes = box_pred_per_image
+                result.scores = scores_per_image
+                result.labels = labels_per_image
+                results.append(result)
+
+        return results
 
 
 @MODELS.register_module()

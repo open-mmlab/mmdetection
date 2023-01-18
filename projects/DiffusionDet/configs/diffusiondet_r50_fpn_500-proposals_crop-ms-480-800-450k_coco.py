@@ -40,6 +40,7 @@ model = dict(
         deep_supervision=True,
         prior_prob=0.01,
         snr_scale=2.0,
+        ddim_sampling_eta=1.0,
         single_head=dict(
             type='SingleDiffusionDetHead',
             num_cls_convs=1,
@@ -81,13 +82,21 @@ model = dict(
                 loss_weight=2.0),
             loss_bbox=dict(type='L1Loss', reduction='sum', loss_weight=5.0),
             loss_giou=dict(type='GIoULoss', reduction='sum',
-                           loss_weight=2.0))))
+                           loss_weight=2.0))),
+    test_cfg=dict(
+        use_nms=True,
+        score_thr=0.5,
+        min_bbox_size=0,
+        nms=dict(type='nms', iou_threshold=0.5),
+    ))
 
+backend = 'pillow'
 train_pipeline = [
     dict(
         type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
-    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+        file_client_args={{_base_.file_client_args}},
+        imdecode_backend=backend),
+    dict(type='LoadAnnotations', with_bbox=True, with_mask=False),
     dict(type='RandomFlip', prob=0.5),
     dict(
         type='RandomChoice',
@@ -97,13 +106,15 @@ train_pipeline = [
                 scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
                         (608, 1333), (640, 1333), (672, 1333), (704, 1333),
                         (736, 1333), (768, 1333), (800, 1333)],
-                keep_ratio=True)
+                keep_ratio=True,
+                backend=backend),
         ],
                     [
                         dict(
                             type='RandomChoiceResize',
                             scales=[(400, 1333), (500, 1333), (600, 1333)],
-                            keep_ratio=True),
+                            keep_ratio=True,
+                            backend=backend),
                         dict(
                             type='RandomCrop',
                             crop_type='absolute_range',
@@ -115,9 +126,41 @@ train_pipeline = [
                                     (576, 1333), (608, 1333), (640, 1333),
                                     (672, 1333), (704, 1333), (736, 1333),
                                     (768, 1333), (800, 1333)],
-                            keep_ratio=True)
+                            keep_ratio=True,
+                            backend=backend)
                     ]]),
     dict(type='PackDetInputs')
 ]
 
-load_from = '/home/dong/code_sensetime/2022Q3/refactor/mmdetection/work_dirs/diffusiondet_tmp/diffdet_coco_res50_mmdet_version.pth'  # noqa
+train_dataloader = dict(
+    sampler=dict(type='InfiniteSampler'),
+    dataset=dict(pipeline=train_pipeline))
+
+# optimizer
+optim_wrapper = dict(
+    type='OptimWrapper',
+    optimizer=dict(
+        _delete_=True, type='AdamW', lr=0.000025, weight_decay=0.0001),
+    clip_grad=dict(max_norm=35, norm_type=2))
+train_cfg = dict(
+    _delete_=True,
+    type='IterBasedTrainLoop',
+    max_iters=450000,
+    val_interval=75000)
+# learning rate
+# learning rate
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.01, by_epoch=False, begin=0, end=1000),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=450000,
+        by_epoch=False,
+        milestones=[350000, 420000],
+        gamma=0.1)
+]
+
+default_hooks = dict(
+    checkpoint=dict(by_epoch=False, interval=75000, max_keep_ckpts=3))
+log_processor = dict(by_epoch=False)
