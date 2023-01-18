@@ -10,13 +10,11 @@ data_root = 'data/coco/'
 #     }))
 file_client_args = dict(backend='disk')
 
-backend = 'pillow'
-
 train_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
-    dict(type='RandomFlip', prob=0.),
+    dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
