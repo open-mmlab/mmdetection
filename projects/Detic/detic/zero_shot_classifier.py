@@ -7,7 +7,7 @@ from torch.nn import functional as F
 from mmdet.registry import MODELS
 
 
-@MODELS.register_module()
+@MODELS.register_module(force=True)  # avoid bug
 class ZeroShotClassifier(nn.Module):
 
     def __init__(

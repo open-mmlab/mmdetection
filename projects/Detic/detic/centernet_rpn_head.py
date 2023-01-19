@@ -17,7 +17,7 @@ INF = 1000000000
 RangeType = Sequence[Tuple[int, int]]
 
 
-@MODELS.register_module()
+@MODELS.register_module(force=True)  # avoid bug
 class CenterNetRPNHead(CenterNetUpdateHead):
     """CenterNetUpdateHead is an improved version of CenterNet in CenterNet2.
 

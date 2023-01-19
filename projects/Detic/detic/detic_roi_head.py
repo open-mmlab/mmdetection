@@ -15,7 +15,7 @@ from mmdet.structures.bbox import bbox2roi, get_box_tensor
 from mmdet.utils import ConfigType, InstanceList, MultiConfig
 
 
-@MODELS.register_module()
+@MODELS.register_module(force=True)  # avoid bug
 class DeticRoIHead(CascadeRoIHead):
 
     def init_mask_head(self, mask_roi_extractor: MultiConfig,

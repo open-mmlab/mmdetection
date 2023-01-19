@@ -12,7 +12,7 @@ from mmdet.registry import MODELS
 from mmdet.structures.bbox import get_box_tensor, scale_boxes
 
 
-@MODELS.register_module()
+@MODELS.register_module(force=True)  # avoid bug
 class DeticBBoxHead(Shared2FCBBoxHead):
 
     def __init__(self,
