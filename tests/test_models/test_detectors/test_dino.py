@@ -4,7 +4,7 @@ from unittest import TestCase
 import torch
 from mmengine.structures import InstanceData
 
-from mmdet.models import build_detector
+from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
 from mmdet.testing import get_detector_cfg
 from mmdet.utils import register_all_modules
@@ -30,7 +30,7 @@ class TestDINO(TestCase):
         configs = [get_detector_cfg('dino/dino-4scale_r50_8xb2-12e_coco.py')]
 
         for config in configs:
-            model = build_detector(config)
+            model = MODELS.build(config)
             model.init_weights()
             random_image = torch.rand(1, 3, s, s)
 
