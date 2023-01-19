@@ -1,15 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os
+import urllib
 from argparse import ArgumentParser
 
 import mmcv
-from mmdet.apis import inference_detector, init_detector
-from mmengine.logging import print_log
-from mmengine.utils import ProgressBar
-import urllib
 import torch
-from mmengine.utils import scandir
+from mmengine.logging import print_log
+from mmengine.utils import ProgressBar, scandir
 
+from mmdet.apis import inference_detector, init_detector
 from mmdet.registry import VISUALIZERS
 from mmdet.utils import register_all_modules
 
@@ -98,14 +97,16 @@ def main():
 
     # get file list
     files, source_type = get_file_list(args.img)
-    from detic.utils import get_text_embeddings, reset_cls_layer_weight, get_class_names
+    from detic.utils import (get_class_names, get_text_embeddings,
+                             reset_cls_layer_weight)
 
     # class name embeddings
     if args.class_name:
         dataset_classes = args.class_name
     elif args.dataset:
         dataset_classes = get_class_names(args.dataset)
-    embedding = get_text_embeddings(dataset=args.dataset, custom_vocabulary=args.class_name)
+    embedding = get_text_embeddings(
+        dataset=args.dataset, custom_vocabulary=args.class_name)
     visualizer.dataset_meta['classes'] = dataset_classes
     reset_cls_layer_weight(model, embedding)
 
