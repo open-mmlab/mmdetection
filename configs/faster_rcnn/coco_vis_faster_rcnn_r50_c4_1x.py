@@ -4,6 +4,13 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
+# model
+model = dict(type='FasterRCNN_RPN',
+             rpn_head=dict(
+                type='RPNHead_VIS'
+             )
+            )
+
 # use caffe img_norm
 img_norm_cfg = dict(
     mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)

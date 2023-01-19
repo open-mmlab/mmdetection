@@ -7,8 +7,8 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.ops import batched_nms
 
-from ..mmdet.models.builder import HEADS
-from ..mmdet.models.dense_heads.anchor_head import AnchorHead
+from mmdet.models.builder import HEADS
+from mmdet.models.dense_heads.anchor_head import AnchorHead
 
 
 @HEADS.register_module()
@@ -26,6 +26,7 @@ class RPNHead_VIS(AnchorHead):
                  init_cfg=dict(type='Normal', layer='Conv2d', std=0.01),
                  num_convs=1,
                  **kwargs):
+        print('** init RPNHead_VIS')
         self.num_convs = num_convs
         super(RPNHead_VIS, self).__init__(
             1, in_channels, init_cfg=init_cfg, **kwargs)
@@ -211,6 +212,7 @@ class RPNHead_VIS(AnchorHead):
                 are bounding box positions (tl_x, tl_y, br_x, br_y) and the
                 5-th column is a score between 0 and 1.
         """
+        #### TODO HS 
         scores = torch.cat(mlvl_scores)
         anchors = torch.cat(mlvl_valid_anchors)
         rpn_bbox_pred = torch.cat(mlvl_bboxes)

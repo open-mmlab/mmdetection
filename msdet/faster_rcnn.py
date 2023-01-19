@@ -4,6 +4,7 @@ from mmdet.models.detectors.two_stage import TwoStageDetector
 import torch
 import torch.nn.functional as F
 from mmdet.models import build_detector
+import copy
 
 
 @DETECTORS.register_module()
@@ -276,13 +277,15 @@ class FasterRCNN_RPN(TwoStageDetector):
 
     def simple_test(self, img, img_metas, proposals=None, rescale=False):
         """Test without augmentation."""
+        print('** simple_test')
         assert self.with_bbox, 'Bbox head must be implemented.'
         x = self.extract_feat(img)
         if proposals is None:
             #### TODO HS
             proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
+            rpn_proposal_list = copy.deepcopy(proposal_list)
         else:
             proposal_list = proposals
 
         return self.roi_head.simple_test(
-            x, proposal_list, img_metas, rescale=rescale)
+            x, proposal_list, img_metas, rescale=rescale), rpn_proposal_list

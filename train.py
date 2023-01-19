@@ -110,10 +110,10 @@ def parse_args():
 def main():
     args = parse_args()
     ## tmp config
-    args.gpu_id = 3
-    args.config = '/home/heeseon_rho/mm/mmdetection/configs/faster_rcnn/coco_faster_rcnn_r50_c4_1x.py'
-    args.seed = 0
-    args.work_dir = '/home/heeseon_rho/mm/result/tmp/'
+    # args.gpu_id = 3
+    # args.config = '/home/heeseon_rho/mm/mmdetection/configs/faster_rcnn/coco_faster_rcnn_r50_c4_1x.py'
+    # args.seed = 0
+    # args.work_dir = '/home/heeseon_rho/mm/result/tmp/'
 
     cfg = Config.fromfile(args.config)
 

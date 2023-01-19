@@ -131,10 +131,10 @@ def parse_args():
 
 def main():
     args = parse_args()
-    args.config = '/home/heeseon_rho/mm/mmdetection/configs/faster_rcnn/coco_faster_rcnn_r50_c4_1x.py'
+    args.config = '/home/heeseon_rho/mm/mmdetection/configs/faster_rcnn/coco_vis_faster_rcnn_r50_c4_1x.py'
     args.checkpoint = '/home/heeseon_rho/mm/mmdetection/checkpoints/faster_rcnn_r50_caffe_c4_1x_coco_20220316_150152-3f885b85.pth'
     args.work_dir = '/home/heeseon_rho/mm/result/tmp'
-    args.gpu_id = 1
+    args.gpu_id = 2
     args.eval = 'bbox'
     args.show = True
 
@@ -258,7 +258,7 @@ def main():
     if not distributed:
         model = build_dp(model, cfg.device, device_ids=cfg.gpu_ids)
         model.eval()
-        outputs = []
+        results = []
 
         PALETTE = getattr(dataset, 'PALETTE', None)
         prog_bar = mmcv.ProgressBar(len(dataset))
@@ -282,7 +282,7 @@ def main():
             # img_org = ((torch.squeeze(data['img'][0])+128)/255).permute(1,2,0).flip(dims=(2,))
             # print(img_meta)
             with torch.no_grad():
-                result = model(return_loss=False,rescale=True, **data)
+                result, rpn_result = model(return_loss=False,rescale=True, **data)
             batch_size = len(result)
             
             # print(result[i])
@@ -296,6 +296,15 @@ def main():
                         text_color=PALETTE,
                         mask_color=PALETTE,
                         show=args.show,)
+
+                # ## Image with RPN Pred Box
+                # model.module.show_result(
+                #         img_show,
+                #         rpn_result[0],          #####
+                #         bbox_color=PALETTE,
+                #         text_color=PALETTE,
+                #         mask_color=PALETTE,
+                #         show=args.show,)
 
                 ## Image
                 cv2.cvtColor(img_show, cv2.COLOR_BGR2RGB, img_show)
@@ -314,10 +323,16 @@ def main():
                     result[j]['ins_results'] = (bbox_results,
                                                 encode_mask_results(mask_results))
 
-            outputs.extend(result)
+            results.extend(result)
 
             for _ in range(batch_size):
                 prog_bar.update()
+
+            if i == 9: break
+        outputs = []
+        for i in range(500):
+            outputs.extend(results[:])
+        # outputs = results
     else:
         model = build_ddp(
             model,

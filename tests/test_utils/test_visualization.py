@@ -42,7 +42,7 @@ def test_imshow_det_bboxes():
     assert image.shape == out_image.shape
     assert not np.allclose(image, out_image)
     os.remove(tmp_filename)
-
+ 
     # test grayscale images
     image = np.ones((10, 10), np.uint8)
     bbox = np.array([[2, 1, 3, 3], [3, 4, 6, 6]])

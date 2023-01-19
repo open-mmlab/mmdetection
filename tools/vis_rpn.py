@@ -132,7 +132,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    args.config = '/home/heeseon_rho/mm/mmdetection/configs/faster_rcnn/coco_faster_rcnn_r50_c4_1x.py'
+    args.config = '/home/heeseon_rho/mm/mmdetection/configs/faster_rcnn/coco_vis_faster_rcnn_r50_c4_1x.py'
     args.checkpoint = '/home/heeseon_rho/mm/mmdetection/checkpoints/faster_rcnn_r50_caffe_c4_1x_coco_20220316_150152-3f885b85.pth'
     args.work_dir = '/home/heeseon_rho/mm/result/tmp'
     args.gpu_id = 1

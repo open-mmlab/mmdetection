@@ -8,8 +8,8 @@ from mmcv.runner import force_fp32
 from mmdet.core import (anchor_inside_flags, build_assigner, build_bbox_coder,
                         build_prior_generator, build_sampler, images_to_levels,
                         multi_apply, unmap)
-from ..mmdet.models.builder import HEADS, build_loss
-from ..mmdet.models.dense_heads.base_dense_head import BaseDenseHead
+from mmdet.models.builder import HEADS, build_loss
+from mmdet.models.dense_heads.base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin_VIS
 
 
@@ -61,7 +61,7 @@ class AnchorHead_VIS(BaseDenseHead, BBoxTestMixin_VIS):
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=dict(type='Normal', layer='Conv2d', std=0.01)):
-        super(AnchorHead, self).__init__(init_cfg)
+        super(AnchorHead_VIS, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
