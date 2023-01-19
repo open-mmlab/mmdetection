@@ -2,6 +2,8 @@
 import os.path as osp
 from typing import Dict, Optional
 
+import PIL.Image
+
 try:
     import neptune.new as neptune
     from neptune.new.types import File
@@ -10,14 +12,27 @@ except ImportError:
                       'Please refer to the installation guide:'
                       'https://docs.neptune.ai/setup/installation/')
 
+import mmcv
 import mmcv.runner.hooks as mmvch
+import numpy as np
 from mmcv import Config
 from mmcv.runner import HOOKS, EpochBasedRunner, IterBasedRunner
 from mmcv.runner.dist_utils import master_only
 from mmcv.runner.hooks.checkpoint import CheckpointHook
+from PIL import Image
+from PIL import ImageDraw as D
 
 from mmdet import version
 from mmdet.core import DistEvalHook, EvalHook
+
+
+def draw_bboxes(image: np.ndarray,
+                bboxes: np.ndarray,
+                outline_color: str = 'green') -> PIL.Image.Image:
+    im = Image.fromarray(image.astype('uint8'), 'RGB')
+    draw = D.Draw(im)
+    draw.rectangle(bboxes, outline=outline_color)
+    return im
 
 
 @HOOKS.register_module()
@@ -106,6 +121,59 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         else:
             runner.logger.warning('No meta information found in the runner. ')
 
+    def _add_ground_truth(self, runner):
+        # Get image loading pipeline
+        from mmdet.datasets.pipelines import LoadImageFromFile
+        img_loader = None
+        for t in self.val_dataset.pipeline.transforms:
+            if isinstance(t, LoadImageFromFile):
+                img_loader = t
+
+        if img_loader is None:
+            self.log_evaluation = False
+            runner.logger.warning(
+                'LoadImageFromFile is required to add images '
+                'to W&B Tables.')
+            return
+
+        # Select the images to be logged.
+        eval_image_indices = np.arange(len(self.val_dataset))
+        # Set seed so that same validation set is logged each time.
+        np.random.seed(42)
+        np.random.shuffle(eval_image_indices)
+        self.eval_image_indexs = eval_image_indices[:self.num_eval_predictions]
+
+        CLASSES = self.val_dataset.CLASSES
+        self.class_id_to_label = {
+            id + 1: name
+            for id, name in enumerate(CLASSES)
+        }
+
+        img_prefix = self.val_dataset.img_prefix
+
+        for idx in eval_image_indices:
+            img_info = self.val_dataset.data_infos[idx]
+            image_name = img_info.get('filename', f'img_{idx}')
+            # img_height, img_width = img_info['height'], img_info['width']
+
+            img_meta = img_loader(
+                dict(img_info=img_info, img_prefix=img_prefix))
+
+            # Get image and convert from BGR to RGB
+            image = mmcv.bgr2rgb(img_meta['img'])
+
+            data_ann = self.val_dataset.get_ann_info(idx)
+            bboxes = data_ann['bboxes']
+            labels = data_ann['labels']
+            # masks = data_ann.get('masks', None)
+
+            # Get dict of bounding boxes to be logged.
+            assert len(bboxes) == len(labels)
+            im = draw_bboxes(image, bboxes)
+
+            # TODO Add bboxes, labels and masks
+            self._run[image_name].upload(File.as_image(im))
+
     @master_only
     def before_run(self, runner) -> None:
         """Logs config if exists, inspects the hooks in search of checkpointing
@@ -146,10 +214,13 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                 self.eval_interval = self.eval_hook.interval
                 self.val_dataset = self.eval_hook.dataloader.dataset
 
+        self._add_ground_truth(runner)
+
     def _log_evaluation(self, runner, category):
         if self.eval_hook._should_evaluate(runner):
 
             results = self.eval_hook.latest_results
+            self._log_predictions(results)
 
             eval_results = self.val_dataset.evaluate(
                 results, logger='silent', **self.eval_hook.eval_kwargs)
