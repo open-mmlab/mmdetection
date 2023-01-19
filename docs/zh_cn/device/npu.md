@@ -41,6 +41,11 @@ python tools/train.py configs/ssd/ssd300_coco.py
 
 ## Ascend加速模块验证结果
 
+优化方案简介：
+
+1. 修改循环计算为一次整体计算，目的是减少下发指令数量。
+2. 修改索引计算为掩码计算，原因是SIMD架构芯片擅长处理连续数据计算。
+
 |           Model            |                                                          Config                                                           | v100 iter time |       910A iter time       |
 | :------------------------: | :-----------------------------------------------------------------------------------------------------------------------: | :------------: | :------------------------: |
 |    [ascend-ssd300](<>)     |          [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ascend_ssd300_fp16_coco.py)           |  0.165s/iter   | 0.383s/iter -> 0.13s/iter  |
