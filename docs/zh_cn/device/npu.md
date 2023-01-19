@@ -41,9 +41,9 @@ python tools/train.py configs/ssd/ssd300_coco.py
 
 ## Ascend加速模块验证结果
 
-|        Model         | Config | v100 iter time | 1980 iter time |
-| :------------------: | :----: | :------------: | :------------: |
-|[ascend-ssd300](<>)     |[config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ascend_ssd300_fp16_coco.py)  |   0.165s/iter   |    0.13s/iter   | 
-|[ascend-retinanet-r18](<>)  |[config](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/ascend_retinanet_r18_fpn_1x8_1x_coco.py)  |   0.567s/iter   |    0.420s/iter     |
+|           Model            |                                                          Config                                                           | v100 iter time |       910A iter time       |
+| :------------------------: | :-----------------------------------------------------------------------------------------------------------------------: | :------------: | :------------------------: |
+|    [ascend-ssd300](<>)     |          [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ascend_ssd300_fp16_coco.py)           |  0.165s/iter   | 0.383s/iter -> 0.13s/iter  |
+| [ascend-retinanet-r18](<>) | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/ascend_retinanet_r18_fpn_1x8_1x_coco.py) |  0.567s/iter   | 0.780s/iter -> 0.420s/iter |
 
 **以上模型结果由华为昇腾团队提供**
