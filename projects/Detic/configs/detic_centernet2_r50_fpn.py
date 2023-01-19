@@ -76,9 +76,10 @@ model = dict(
         stage_loss_weights=[1, 0.5, 0.25],
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
-            roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
+            roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0, use_torchvision=True),
             out_channels=256,
-            featmap_strides=[8, 16, 32]),
+            featmap_strides=[8, 16, 32],
+            finest_scale=112),  # approximately equal to canonical_box_size=224, canonical_level=4 in D2
         bbox_head=[
             dict(
                 type='Shared2FCBBoxHead',
