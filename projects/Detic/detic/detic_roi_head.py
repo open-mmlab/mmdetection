@@ -1,21 +1,18 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Sequence, Tuple, Union
+from typing import List, Sequence, Tuple
 
 import torch
-import torch.nn as nn
-from mmengine.model import ModuleList
 from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.models.roi_heads import CascadeRoIHead
 from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.models.test_time_augs import merge_aug_masks
-from mmdet.models.utils.misc import empty_instances, unpack_gt_instances
-from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.models.utils.misc import empty_instances
+from mmdet.registry import MODELS
 from mmdet.structures import SampleList
 from mmdet.structures.bbox import bbox2roi, get_box_tensor
-from mmdet.utils import (ConfigType, InstanceList, MultiConfig, OptConfigType,
-                         OptMultiConfig)
+from mmdet.utils import ConfigType, InstanceList, MultiConfig
 
 
 @MODELS.register_module()
@@ -179,19 +176,13 @@ class DeticRoIHead(CascadeRoIHead):
             num_proposals_per_img=num_proposals_per_img,
             **kwargs)
 
-        # TODO
-        self.mult_proposal_score = True
-        self.one_class_per_proposal = True
-
-        # centernet2
-        if self.mult_proposal_score:  # True
-            cls_scores = [(s * ps[:, None]) ** 0.5 \
+        # score reweighting in centernet2
+        cls_scores = [(s * ps[:, None])**0.5
                       for s, ps in zip(cls_scores, proposal_scores)]
-        if self.one_class_per_proposal:  # True
-            cls_scores = [
-                s * (s == s[:, :-1].max(dim=1)[0][:, None]).float()
-                for s in cls_scores
-            ]
+        cls_scores = [
+            s * (s == s[:, :-1].max(dim=1)[0][:, None]).float()
+            for s in cls_scores
+        ]
 
         # fast_rcnn_inference
         results_list = self.bbox_head[-1].predict_by_feat(

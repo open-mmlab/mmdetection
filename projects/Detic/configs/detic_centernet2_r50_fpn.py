@@ -19,15 +19,10 @@ reg_layer = [
     dict(type='Linear', in_features=1024, out_features=4)
 ]
 
-num_classes = 1203 - 1
+num_classes = 1203
 
 model = dict(
     type='CascadeRCNN',
-    init_cfg=dict(
-        type='Pretrained',
-        checkpoint=
-        '/home/rangilyu/projects/Detic/models/Detic_LbaseI_CLIP_R5021k_640b64_4x_ft4x_max-size_mmdet.pth'
-    ),
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
@@ -76,13 +71,19 @@ model = dict(
         stage_loss_weights=[1, 0.5, 0.25],
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
-            roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0, use_torchvision=True),
+            roi_layer=dict(
+                type='RoIAlign',
+                output_size=7,
+                sampling_ratio=0,
+                use_torchvision=True),
             out_channels=256,
             featmap_strides=[8, 16, 32],
-            finest_scale=112),  # approximately equal to canonical_box_size=224, canonical_level=4 in D2
+            # approximately equal to
+            # canonical_box_size=224, canonical_level=4 in D2
+            finest_scale=112),
         bbox_head=[
             dict(
-                type='Shared2FCBBoxHead',
+                type='DeticBBoxHead',
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
@@ -100,7 +101,7 @@ model = dict(
                 loss_bbox=dict(type='SmoothL1Loss', beta=1.0,
                                loss_weight=1.0)),
             dict(
-                type='Shared2FCBBoxHead',
+                type='DeticBBoxHead',
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
@@ -118,7 +119,7 @@ model = dict(
                 loss_bbox=dict(type='SmoothL1Loss', beta=1.0,
                                loss_weight=1.0)),
             dict(
-                type='Shared2FCBBoxHead',
+                type='DeticBBoxHead',
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
@@ -139,7 +140,10 @@ model = dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=14, sampling_ratio=0),
             out_channels=256,
-            featmap_strides=[8, 16, 32]),
+            featmap_strides=[8, 16, 32],
+            # approximately equal to
+            # canonical_box_size=224, canonical_level=4 in D2
+            finest_scale=112),
         mask_head=dict(
             type='FCNMaskHead',
             num_convs=4,

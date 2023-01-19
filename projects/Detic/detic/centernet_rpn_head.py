@@ -1,21 +1,17 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, List, Optional, Sequence, Tuple
 import copy
+from typing import List, Sequence, Tuple
+
 import torch
 import torch.nn as nn
 from mmcv.cnn import Scale
-from mmcv.ops import batched_nms
 from mmengine import ConfigDict
 from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.models.dense_heads import CenterNetUpdateHead
-from mmdet.models.utils import multi_apply, filter_scores_and_topk
+from mmdet.models.utils import multi_apply
 from mmdet.registry import MODELS
-from mmdet.structures.bbox import (bbox2distance, cat_boxes, get_box_tensor,
-                                   get_box_wh, scale_boxes)
-from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
-                         OptInstanceList, reduce_mean)
 
 INF = 1000000000
 RangeType = Sequence[Tuple[int, int]]
@@ -24,83 +20,9 @@ RangeType = Sequence[Tuple[int, int]]
 @MODELS.register_module()
 class CenterNetRPNHead(CenterNetUpdateHead):
     """CenterNetUpdateHead is an improved version of CenterNet in CenterNet2.
+
     Paper link `<https://arxiv.org/abs/2103.07461>`_.
-
-    Args:
-        num_classes (int): Number of categories excluding the background
-            category.
-        in_channels (int): Number of channel in the input feature map.
-        regress_ranges (Sequence[Tuple[int, int]]): Regress range of multiple
-            level points.
-        hm_min_radius (int): Heatmap target minimum radius of cls branch.
-            Defaults to 4.
-        hm_min_overlap (float): Heatmap target minimum overlap of cls branch.
-            Defaults to 0.8.
-        more_pos_thresh (float): The filtering threshold when the cls branch
-            adds more positive samples. Defaults to 0.2.
-        more_pos_topk (int): The maximum number of additional positive samples
-            added to each gt. Defaults to 9.
-        soft_weight_on_reg (bool): Whether to use the soft target of the
-            cls branch as the soft weight of the bbox branch.
-            Defaults to False.
-        loss_cls (:obj:`ConfigDict` or dict): Config of cls loss. Defaults to
-            dict(type='GaussianFocalLoss', loss_weight=1.0)
-        loss_bbox (:obj:`ConfigDict` or dict): Config of bbox loss. Defaults to
-             dict(type='GIoULoss', loss_weight=2.0).
-        norm_cfg (:obj:`ConfigDict` or dict, optional): dictionary to construct
-            and config norm layer.  Defaults to
-            ``norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)``.
-        train_cfg (:obj:`ConfigDict` or dict, optional): Training config.
-            Unused in CenterNet. Reserved for compatibility with
-            SingleStageDetector.
-        test_cfg (:obj:`ConfigDict` or dict, optional): Testing config
-            of CenterNet.
     """
-
-    def __init__(self,
-                 num_classes: int,
-                 in_channels: int,
-                 regress_ranges: RangeType = ((0, 80), (64, 160), (128, 320),
-                                              (256, 640), (512, INF)),
-                 hm_min_radius: int = 4,
-                 hm_min_overlap: float = 0.8,
-                 more_pos_thresh: float = 0.2,
-                 more_pos_topk: int = 9,
-                 soft_weight_on_reg: bool = False,
-                 loss_cls: ConfigType = dict(
-                     type='GaussianFocalLoss',
-                     pos_weight=0.25,
-                     neg_weight=0.75,
-                     loss_weight=1.0),
-                 loss_bbox: ConfigType = dict(
-                     type='GIoULoss', loss_weight=2.0),
-                 norm_cfg: OptConfigType = dict(
-                     type='GN', num_groups=32, requires_grad=True),
-                 train_cfg: OptConfigType = None,
-                 test_cfg: OptConfigType = None,
-                 **kwargs) -> None:
-        super().__init__(
-            num_classes=num_classes,
-            in_channels=in_channels,
-            loss_cls=loss_cls,
-            loss_bbox=loss_bbox,
-            norm_cfg=norm_cfg,
-            train_cfg=train_cfg,
-            test_cfg=test_cfg,
-            **kwargs)
-        self.soft_weight_on_reg = soft_weight_on_reg
-        self.hm_min_radius = hm_min_radius
-        self.more_pos_thresh = more_pos_thresh
-        self.more_pos_topk = more_pos_topk
-        self.delta = (1 - hm_min_overlap) / (1 + hm_min_overlap)
-        self.sigmoid_clamp = 0.0001
-
-        # GaussianFocalLoss must be sigmoid mode
-        self.use_sigmoid_cls = True
-        self.cls_out_channels = num_classes
-
-        self.regress_ranges = regress_ranges
-        self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
 
     def _init_layers(self) -> None:
         """Initialize layers of the head."""
@@ -211,7 +133,6 @@ class CenterNetRPNHead(CenterNetUpdateHead):
 
         cfg = self.test_cfg if cfg is None else cfg
         cfg = copy.deepcopy(cfg)
-        img_shape = img_meta['img_shape']
         nms_pre = cfg.get('nms_pre', -1)
 
         mlvl_bbox_preds = []
@@ -236,51 +157,34 @@ class CenterNetRPNHead(CenterNetUpdateHead):
             pre_nms_top_n = candidate_inds.sum()  # N
             pre_nms_top_n = pre_nms_top_n.clamp(max=nms_pre)  # N
 
-            per_box_cls = heatmap  # HW x C
-            per_candidate_inds = candidate_inds  # n
-            per_box_cls = per_box_cls[per_candidate_inds]  # n
+            heatmap = heatmap[candidate_inds]  # n
 
-            per_candidate_nonzeros = per_candidate_inds.nonzero()  # n
-            per_box_loc = per_candidate_nonzeros[:, 0]  # n
-            per_class = per_candidate_nonzeros[:, 1]  # n
+            candidate_nonzeros = candidate_inds.nonzero()  # n
+            box_loc = candidate_nonzeros[:, 0]  # n
+            labels = candidate_nonzeros[:, 1]  # n
 
-            per_box_regression = bbox_pred  # HW x 4
-            per_box_regression = per_box_regression[per_box_loc]  # n x 4
-            per_grids = priors[per_box_loc]  # n x 2
+            bbox_pred = bbox_pred[box_loc]  # n x 4
+            per_grids = priors[box_loc]  # n x 2
 
-            per_pre_nms_top_n = pre_nms_top_n
-
-            if per_candidate_inds.sum().item() > per_pre_nms_top_n.item():
-                per_box_cls, top_k_indices = \
-                    per_box_cls.topk(per_pre_nms_top_n, sorted=False)
-                per_class = per_class[top_k_indices]
-                per_box_regression = per_box_regression[top_k_indices]
+            if candidate_inds.sum().item() > pre_nms_top_n.item():
+                heatmap, top_k_indices = \
+                    heatmap.topk(pre_nms_top_n, sorted=False)
+                labels = labels[top_k_indices]
+                bbox_pred = bbox_pred[top_k_indices]
                 per_grids = per_grids[top_k_indices]
 
-            # TODO: replace with box coder
-            detections = torch.stack([
-                per_grids[:, 0] - per_box_regression[:, 0],
-                per_grids[:, 1] - per_box_regression[:, 1],
-                per_grids[:, 0] + per_box_regression[:, 2],
-                per_grids[:, 1] + per_box_regression[:, 3],
-            ], dim=1)  # n x 4
-
+            bboxes = self.bbox_coder.decode(per_grids, bbox_pred)
             # avoid invalid boxes in RoI heads
-            detections[:, 2] = torch.max(detections[:, 2], detections[:, 0] + 0.01)
-            detections[:, 3] = torch.max(detections[:, 3], detections[:, 1] + 0.01)
+            bboxes[:, 2] = torch.max(bboxes[:, 2], bboxes[:, 0] + 0.01)
+            bboxes[:, 3] = torch.max(bboxes[:, 3], bboxes[:, 1] + 0.01)
 
-
-            mlvl_bbox_preds.append(detections)
+            mlvl_bbox_preds.append(bboxes)
             mlvl_valid_priors.append(priors)
-            mlvl_scores.append(torch.sqrt(per_box_cls))
-            mlvl_labels.append(per_class)
-
-        bbox_pred = torch.cat(mlvl_bbox_preds)
-        # priors = cat_boxes(mlvl_valid_priors)
-        # bboxes = self.bbox_coder.decode(priors, bbox_pred, max_shape=img_shape)
+            mlvl_scores.append(torch.sqrt(heatmap))
+            mlvl_labels.append(labels)
 
         results = InstanceData()
-        results.bboxes = bbox_pred
+        results.bboxes = torch.cat(mlvl_bbox_preds)
         results.scores = torch.cat(mlvl_scores)
         results.labels = torch.cat(mlvl_labels)
 
