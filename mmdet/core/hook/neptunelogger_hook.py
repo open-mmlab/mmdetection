@@ -220,7 +220,6 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         if self.eval_hook._should_evaluate(runner):
 
             results = self.eval_hook.latest_results
-            self._log_predictions(results)
 
             eval_results = self.val_dataset.evaluate(
                 results, logger='silent', **self.eval_hook.eval_kwargs)
