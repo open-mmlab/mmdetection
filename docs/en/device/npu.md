@@ -39,5 +39,12 @@ python tools/train.py configs/ssd/ssd300_coco.py
   mixed-precision training, users may need to adjust the hyperparameters to achieve better results.
 - (\*\*) The accuracy of yolox-s on the GPU in mixed precision is 40.1, with `persister_woker=True` in the data loader config by default.
   There are currently some bugs on NPUs that prevent the last few epochs from running, but the accuracy is less affected and the difference can be ignored.
+  
+## Ascend Acceleration Module Result
+
+|        Model         | Config | v100 iter time | 1980 iter time |
+| :------------------: | :----: | :------------: | :------------: |
+|[ascend-ssd300](<>)     |[config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ascend_ssd300_fp16_coco.py)  |   0.165s/iter   |    0.13s/iter   | 
+|[ascend-retinanet-r18](<>)  |[config](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/ascend_retinanet_r18_fpn_1x8_1x_coco.py)  |   0.567s/iter   |    0.420s/iter     |
 
 **All above models are provided by Huawei Ascend group.**
