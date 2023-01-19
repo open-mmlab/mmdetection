@@ -22,7 +22,6 @@ from mmdet.utils import (build_ddp, build_dp, compat_cfg, get_device,
 
 import msdet
 
-
 from mmcv.image import tensor2imgs
 from mmdet.core import encode_mask_results
 from mmdet.core import visualization as vis
@@ -292,7 +291,7 @@ def main():
                 ## Image with Pred Box
                 model.module.show_result(
                         img_show,
-                        result[0],          ##### TODO HS need to check
+                        result[0],          #####
                         bbox_color=PALETTE,
                         text_color=PALETTE,
                         mask_color=PALETTE,
