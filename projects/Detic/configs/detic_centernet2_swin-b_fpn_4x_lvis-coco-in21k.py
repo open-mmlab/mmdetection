@@ -19,7 +19,7 @@ reg_layer = [
     dict(type='Linear', in_features=1024, out_features=4)
 ]
 
-num_classes = 1203
+num_classes = 22047
 
 model = dict(
     type='CascadeRCNN',
@@ -31,18 +31,23 @@ model = dict(
         pad_size_divisor=32,
         batch_augments=batch_augments),
     backbone=dict(
-        type='ResNet',
-        depth=50,
-        num_stages=4,
+        type='SwinTransformer',
+        embed_dims=128,
+        depths=[2, 2, 18, 2],
+        num_heads=[4, 8, 16, 32],
+        window_size=7,
+        mlp_ratio=4,
+        qkv_bias=True,
+        qk_scale=None,
+        drop_rate=0.,
+        attn_drop_rate=0.,
+        drop_path_rate=0.3,
+        patch_norm=True,
         out_indices=(1, 2, 3),
-        frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=True),
-        norm_eval=True,
-        style='pytorch',
-        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
+        with_cp=False),
     neck=dict(
         type='FPN',
-        in_channels=[512, 1024, 2048],
+        in_channels=[256, 512, 1024],
         out_channels=256,
         start_level=0,
         add_extra_convs='on_output',

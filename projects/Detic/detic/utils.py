@@ -2,8 +2,18 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
+from mmengine.logging import print_log
 
 from .text_encoder import CLIPTextEncoder
+
+# download from
+# https://github.com/facebookresearch/Detic/tree/main/datasets/metadata
+DATASET_EMBEDDINGS = {
+    'lvis': 'datasets/metadata/lvis_v1_clip_a+cname.npy',
+    'objects365': 'datasets/metadata/o365_clip_a+cnamefix.npy',
+    'openimages': 'datasets/metadata/oid_clip_a+cname.npy',
+    'coco': 'datasets/metadata/coco_clip_a+cname.npy',
+}
 
 
 def get_text_embeddings(dataset=None,
@@ -12,25 +22,18 @@ def get_text_embeddings(dataset=None,
     assert (dataset is None) ^ (custom_vocabulary is None), \
         'Either `dataset` or `custom_vocabulary` should be specified.'
     if dataset:
-        assert dataset in DATASET_EMBEDDINGS
-        return DATASET_EMBEDDINGS[dataset]
-    elif custom_vocabulary:
-        text_encoder = CLIPTextEncoder()
-        text_encoder.eval()
-        texts = [prompt_prefix + x for x in custom_vocabulary]
-        embeddings = text_encoder(texts).detach().permute(
-            1, 0).contiguous().cpu()
-        return embeddings
-    else:
-        raise NotImplementedError
+        if dataset in DATASET_EMBEDDINGS:
+            return DATASET_EMBEDDINGS[dataset]
+        else:
+            custom_vocabulary = get_class_names(dataset)
 
-
-DATASET_EMBEDDINGS = {
-    'lvis': 'datasets/metadata/lvis_v1_clip_a+cname.npy',
-    'objects365': 'datasets/metadata/o365_clip_a+cnamefix.npy',
-    'openimages': 'datasets/metadata/oid_clip_a+cname.npy',
-    'coco': 'datasets/metadata/coco_clip_a+cname.npy',
-}
+    text_encoder = CLIPTextEncoder()
+    text_encoder.eval()
+    texts = [prompt_prefix + x for x in custom_vocabulary]
+    print_log(
+        f'Computing text embeddings for {len(custom_vocabulary)} classes.')
+    embeddings = text_encoder(texts).detach().permute(1, 0).contiguous().cpu()
+    return embeddings
 
 
 def get_class_names(dataset):
@@ -56,7 +59,7 @@ def get_class_names(dataset):
 
 def reset_cls_layer_weight(model, weight):
     if type(weight) == str:
-        print('Resetting cls_layer_weight from file: ', weight)
+        print_log(f'Resetting cls_layer_weight from file: {weight}')
         zs_weight = torch.tensor(
             np.load(weight),
             dtype=torch.float32).permute(1, 0).contiguous()  # D x C

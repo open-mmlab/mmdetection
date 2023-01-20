@@ -32,7 +32,9 @@ First, go to the Detic project folder.
 cd projects/Detic
 ```
 
-Then, download the [dataset metainfo](https://github.com/facebookresearch/Detic/tree/main/datasets/metadata) to the `datasets/metadata` folder. For example, you can download LVIS metainfo with the following command:
+Then, download the pre-computed CLIP embeddings from [dataset metainfo](https://github.com/facebookresearch/Detic/tree/main/datasets/metadata) to the `datasets/metadata` folder.
+The CLIP embeddings will be loaded to the zero-shot classifier during inference.
+For example, you can download LVIS's class name embeddings with the following command:
 
 ```shell
 wget -P datasets/metadata https://raw.githubusercontent.com/facebookresearch/Detic/main/datasets/metadata/lvis_v1_clip_a%2Bcname.npy
@@ -50,7 +52,7 @@ python demo.py \
   --dataset lvis
 ```
 
-![image](https://user-images.githubusercontent.com/12907710/213418957-f105f9a2-1e28-4c98-9c43-ea7cdf27b19c.png)
+![image](https://user-images.githubusercontent.com/12907710/213624759-f0a2ba0c-0f5c-4424-a350-5ba5349e5842.png)
 
 ### Inference with custom vocabularies
 
@@ -68,17 +70,19 @@ python demo.py \
   --class-name headphone webcam paper coffe
 ```
 
-![image](https://user-images.githubusercontent.com/12907710/213418548-64deab8c-3fe4-4988-8d1f-e6320dc0af6d.png)
+![image](https://user-images.githubusercontent.com/12907710/213624637-e9e8a313-9821-4782-a18a-4408c876852b.png)
+
+Note that `headphone`, `paper` and `coffe` (typo intended) are not LVIS classes. Despite the misspelled class name, Detic can produce a reasonable detection for `coffe`.
 
 ## Results
 
-Here we provide the baseline version of SparseInst with ResNet50 backbone.
+Here we only provide the Detic Swin-B model for the open vocabulary demo. Multi-dataset training and open-vocabulary testing will be supported in the future.
 
 To find more variants, please visit the [official model zoo](https://github.com/facebookresearch/Detic/blob/main/docs/MODEL_ZOO.md).
 
-| Backbone |    Training data    | Lr schd | Mem (GB) | FPS | mask AP |                     Config                      |        Download        |
-| :------: | :-----------------: | :-----: | :------: | :-: | :-----: | :---------------------------------------------: | :--------------------: |
-|   R-50   | ImageNet-21K & LVIS |    -    |    -     |  -  |  32.4   | [config](./configs/detic_centernet2_r50_fpn.py) | [model](-) \| [log](-) |
+| Backbone |       Training data        |                                Config                                 |                                                                                      Download                                                                                      |
+| :------: | :------------------------: | :-------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|  Swin-B  | ImageNet-21K & LVIS & COCO | [config](./configs/detic_centernet2_swin-b_fpn_4x_lvis-coco-in21k.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_swin-b_fpn_4x_lvis-coco-in21k/detic_centernet2_swin-b_fpn_4x_lvis-coco-in21k_20230120-0d301978.pth) |
 
 ## Citation
 
