@@ -41,5 +41,10 @@ Tested on the following environments
                     --work-dir $SAVE_DIR
     ```
 
+  - Visualization (Img / Img + GT / Img + RPN (1000) / Img + RPN (top 50) / Img + Pred)
+    ```
+    python vis_rpn.py
+    ```
+
 ## Notes
   - Paper Pages : https://www.notion.so/gistailab/Multi-scale-Feature-Consolidation-for-Object-Detection-f7f6d91c4af148c3b141198ffc4dbca7

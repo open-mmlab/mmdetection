@@ -28,7 +28,7 @@ from mmdet.core import visualization as vis
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
-from tools.visualization_utils import draw_bounding_box_on_image, draw_gt_bounding_box_on_image
+from tools.visualization_utils import draw_bounding_box_on_image, draw_gt_bounding_box_on_image, draw_bounding_box_50_on_image
 
 
 def parse_args():
@@ -300,8 +300,13 @@ def main():
                 plt.imshow(img_gt)
                 plt.show()
 
-                ## Image with RPN Pred Box
+                ## Image with RPN Pred Box (1000)
                 img_rpn = draw_bounding_box_on_image(img[0], rpn_result[0])
+                plt.imshow(img_rpn)
+                plt.show()
+
+                ## Image with RPN Pred Box (top 50)
+                img_rpn = draw_bounding_box_50_on_image(img[0], rpn_result[0])
                 plt.imshow(img_rpn)
                 plt.show()
 

@@ -14,6 +14,17 @@ def draw_bounding_box_on_image(image, rpn_result):
     
     return np.asarray(image_pil)
 
+def draw_bounding_box_50_on_image(image, rpn_result):
+    image_pil = Image.fromarray(np.uint8(image)).convert('RGB')
+
+    draw = ImageDraw.Draw(image_pil)
+
+    for i, rpn in enumerate(rpn_result):
+        tl_x, tl_y, br_x, br_y = rpn[0].item(), rpn[1].item(), rpn[2].item(), rpn[3].item()
+        draw.rectangle([(tl_x, tl_y), (br_x, br_y)])
+        if i == 50: break
+    
+    return np.asarray(image_pil)
 
 def draw_gt_bounding_box_on_image(image, gt_bboxes, gt_labels, CLASSES, PALETTE):
     image_pil = Image.fromarray(np.uint8(image)).convert('RGB')
