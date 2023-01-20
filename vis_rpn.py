@@ -28,6 +28,7 @@ from mmdet.core import visualization as vis
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
+from tools.visualization_utils import draw_bounding_box_on_image
 
 
 def parse_args():
@@ -134,7 +135,7 @@ def main():
     args.config = '/home/heeseon_rho/mm/mmdetection/configs/faster_rcnn/coco_vis_faster_rcnn_r50_c4_1x.py'
     args.checkpoint = '/home/heeseon_rho/mm/mmdetection/checkpoints/faster_rcnn_r50_caffe_c4_1x_coco_20220316_150152-3f885b85.pth'
     args.work_dir = '/home/heeseon_rho/mm/result/tmp'
-    args.gpu_id = 2
+    args.gpu_id = 1
     args.eval = 'bbox'
     args.show = True
 
@@ -297,20 +298,17 @@ def main():
                         mask_color=PALETTE,
                         show=args.show,)
 
-                # ## Image with RPN Pred Box
-                # model.module.show_result(
-                #         img_show,
-                #         rpn_result[0],          #####
-                #         bbox_color=PALETTE,
-                #         text_color=PALETTE,
-                #         mask_color=PALETTE,
-                #         show=args.show,)
-
                 ## Image
                 cv2.cvtColor(img_show, cv2.COLOR_BGR2RGB, img_show)
                 plt.imshow(img_show)
                 plt.show()
-            
+
+
+                ## Image with RPN Pred Box
+                cv2.cvtColor(img[0], cv2.COLOR_BGR2RGB, img[0])
+                img_rpn = draw_bounding_box_on_image(img[0], rpn_result)
+                plt.imshow(img_rpn)
+                plt.show()
 
             # encode mask results
             if isinstance(result[0], tuple):
