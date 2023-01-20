@@ -28,7 +28,7 @@ from mmdet.core import visualization as vis
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
-from tools.visualization_utils import draw_bounding_box_on_image
+from tools.visualization_utils import draw_bounding_box_on_image, draw_gt_bounding_box_on_image
 
 
 def parse_args():
@@ -277,19 +277,36 @@ def main():
 
             ori_h, ori_w = img_meta[0]['ori_shape'][:-1]
             img_show = mmcv.imresize(img_show, (ori_w, ori_h))
-            # img_show_d = np.empty(img_meta[0]['img_shape'], dtype=np.uint8)
 
 
-            # img_org = ((torch.squeeze(data['img'][0])+128)/255).permute(1,2,0).flip(dims=(2,))
-            # print(img_meta)
             with torch.no_grad():
-                result, rpn_result = model(return_loss=False,rescale=True, **data)
+                result, rpn_result = model(return_loss=False,rescale=True, **data)  # rpn_result : [tl_x, tl_y, br_x, br_y, score]
             batch_size = len(result)
             
-            # print(result[i])
-            
             if args.show :
+
+                cv2.cvtColor(img[0], cv2.COLOR_BGR2RGB, img[0])
+                cv2.cvtColor(img_show, cv2.COLOR_BGR2RGB, img_show)
+
+                ## Image
+                plt.imshow(img_show)
+                plt.show()
+
+                ## Image with GT Box
+                annot = dataset.get_ann_info(i)
+                gt_bboxes = annot['bboxes']
+                gt_labels = annot['labels']
+                img_gt = draw_gt_bounding_box_on_image(img_show, gt_bboxes, gt_labels, dataset.CLASSES, PALETTE)
+                plt.imshow(img_gt)
+                plt.show()
+
+                ## Image with RPN Pred Box
+                img_rpn = draw_bounding_box_on_image(img[0], rpn_result[0])
+                plt.imshow(img_rpn)
+                plt.show()
+
                 ## Image with Pred Box
+                cv2.cvtColor(img_show, cv2.COLOR_RGB2BGR, img_show)
                 model.module.show_result(
                         img_show,
                         result[0],          #####
@@ -298,17 +315,7 @@ def main():
                         mask_color=PALETTE,
                         show=args.show,)
 
-                ## Image
-                cv2.cvtColor(img_show, cv2.COLOR_BGR2RGB, img_show)
-                plt.imshow(img_show)
-                plt.show()
 
-
-                ## Image with RPN Pred Box
-                cv2.cvtColor(img[0], cv2.COLOR_BGR2RGB, img[0])
-                img_rpn = draw_bounding_box_on_image(img[0], rpn_result)
-                plt.imshow(img_rpn)
-                plt.show()
 
             # encode mask results
             if isinstance(result[0], tuple):
@@ -326,11 +333,11 @@ def main():
             for _ in range(batch_size):
                 prog_bar.update()
 
-            if i == 9: break
-        outputs = []
-        for i in range(500):
-            outputs.extend(results[:])
-        # outputs = results
+        #     if i == 9: break
+        # outputs = []
+        # for i in range(500):
+        #     outputs.extend(results[:])
+        outputs = results
     else:
         model = build_ddp(
             model,
