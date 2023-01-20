@@ -71,10 +71,7 @@ def parse_args():
     parser.add_argument(
         '--dataset', type=str, help='dataset name to load the text embedding')
     parser.add_argument(
-        '--class-name',
-        nargs='+',
-        type=str,
-        help='Only Save those classes if set')
+        '--class-name', nargs='+', type=str, help='custom class names')
     args = parser.parse_args()
     return args
 
