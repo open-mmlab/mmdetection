@@ -181,8 +181,7 @@ class DeformableDETRHead(DETRHead):
                 enc_outputs_class, \
                 enc_outputs_coord.sigmoid()
         else:
-            return outputs_classes, outputs_coords, \
-                None, None
+            return outputs_classes, outputs_coords
 
     def loss_by_feat(
         self,

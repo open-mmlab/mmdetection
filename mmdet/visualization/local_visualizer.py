@@ -168,7 +168,7 @@ class DetLocalVisualizer(Visualizer):
             elif isinstance(masks, (PolygonMasks, BitmapMasks)):
                 masks = masks.to_ndarray()
 
-            masks = masks.astype(np.bool)
+            masks = masks.astype(bool)
 
             max_label = int(max(labels) if len(labels) > 0 else 0)
             mask_color = palette if self.mask_color is None \

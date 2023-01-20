@@ -922,7 +922,7 @@ class TestMosaic(unittest.TestCase):
     def test_transform_with_no_gt(self):
         self.results['gt_bboxes'] = np.empty((0, 4), dtype=np.float32)
         self.results['gt_bboxes_labels'] = np.empty((0, ), dtype=np.int64)
-        self.results['gt_ignore_flags'] = np.empty((0, ), dtype=np.bool)
+        self.results['gt_ignore_flags'] = np.empty((0, ), dtype=bool)
         transform = Mosaic(img_scale=(12, 10))
         self.results['mix_results'] = [copy.deepcopy(self.results)] * 3
         results = transform(copy.deepcopy(self.results))
@@ -1532,7 +1532,7 @@ class TestAlbu(unittest.TestCase):
         results = albu_transform(results)
         self.assertEqual(results['img'].dtype, np.float64)
         self.assertEqual(results['gt_bboxes'].dtype, np.float32)
-        self.assertEqual(results['gt_ignore_flags'].dtype, np.bool)
+        self.assertEqual(results['gt_ignore_flags'].dtype, bool)
         self.assertEqual(results['gt_bboxes_labels'].dtype, np.int64)
 
     @unittest.skipIf(albumentations is None, 'albumentations is not installed')

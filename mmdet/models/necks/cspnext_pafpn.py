@@ -82,6 +82,7 @@ class CSPNeXtPAFPN(BaseModule):
                     in_channels[idx - 1],
                     num_blocks=num_csp_blocks,
                     add_identity=False,
+                    use_depthwise=use_depthwise,
                     use_cspnext_block=True,
                     expand_ratio=expand_ratio,
                     conv_cfg=conv_cfg,
@@ -108,6 +109,7 @@ class CSPNeXtPAFPN(BaseModule):
                     in_channels[idx + 1],
                     num_blocks=num_csp_blocks,
                     add_identity=False,
+                    use_depthwise=use_depthwise,
                     use_cspnext_block=True,
                     expand_ratio=expand_ratio,
                     conv_cfg=conv_cfg,
@@ -117,7 +119,7 @@ class CSPNeXtPAFPN(BaseModule):
         self.out_convs = nn.ModuleList()
         for i in range(len(in_channels)):
             self.out_convs.append(
-                ConvModule(
+                conv(
                     in_channels[i],
                     out_channels,
                     3,

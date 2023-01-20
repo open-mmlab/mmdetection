@@ -14,10 +14,17 @@ from mmengine.structures import PixelData
 from mmengine.utils import is_list_of
 from torch import Tensor
 
+from mmdet.models.utils import unfold_wo_center
 from mmdet.models.utils.misc import samplelist_boxtype2tensor
 from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
+from mmdet.structures.mask import BitmapMasks
 from mmdet.utils import ConfigType
+
+try:
+    import skimage
+except ImportError:
+    skimage = None
 
 
 @MODELS.register_module()
@@ -645,3 +652,138 @@ class BatchResize(nn.Module):
         padded_tensor = padded_tensor.type_as(tensor)
         padded_tensor[:, :, :target_height, :target_width] = tensor
         return padded_tensor
+
+
+@MODELS.register_module()
+class BoxInstDataPreprocessor(DetDataPreprocessor):
+    """Pseudo mask pre-processor for BoxInst.
+
+    Comparing with the :class:`mmdet.DetDataPreprocessor`,
+
+    1. It generates masks using box annotations.
+    2. It computes the images color similarity in LAB color space.
+
+    Args:
+        mask_stride (int): The mask output stride in boxinst. Defaults to 4.
+        pairwise_size (int): The size of neighborhood for each pixel.
+            Defaults to 3.
+        pairwise_dilation (int): The dilation of neighborhood for each pixel.
+            Defaults to 2.
+        pairwise_color_thresh (float): The thresh of image color similarity.
+            Defaults to 0.3.
+        bottom_pixels_removed (int): The length of removed pixels in bottom.
+            It is caused by the annotation error in coco dataset.
+            Defaults to 10.
+    """
+
+    def __init__(self,
+                 *arg,
+                 mask_stride: int = 4,
+                 pairwise_size: int = 3,
+                 pairwise_dilation: int = 2,
+                 pairwise_color_thresh: float = 0.3,
+                 bottom_pixels_removed: int = 10,
+                 **kwargs) -> None:
+        super().__init__(*arg, **kwargs)
+        self.mask_stride = mask_stride
+        self.pairwise_size = pairwise_size
+        self.pairwise_dilation = pairwise_dilation
+        self.pairwise_color_thresh = pairwise_color_thresh
+        self.bottom_pixels_removed = bottom_pixels_removed
+
+        if skimage is None:
+            raise RuntimeError('skimage is not installed,\
+                 please install it by: pip install scikit-image')
+
+    def get_images_color_similarity(self, inputs: Tensor,
+                                    image_masks: Tensor) -> Tensor:
+        """Compute the image color similarity in LAB color space."""
+        assert inputs.dim() == 4
+        assert inputs.size(0) == 1
+
+        unfolded_images = unfold_wo_center(
+            inputs,
+            kernel_size=self.pairwise_size,
+            dilation=self.pairwise_dilation)
+        diff = inputs[:, :, None] - unfolded_images
+        similarity = torch.exp(-torch.norm(diff, dim=1) * 0.5)
+
+        unfolded_weights = unfold_wo_center(
+            image_masks[None, None],
+            kernel_size=self.pairwise_size,
+            dilation=self.pairwise_dilation)
+        unfolded_weights = torch.max(unfolded_weights, dim=1)[0]
+
+        return similarity * unfolded_weights
+
+    def forward(self, data: dict, training: bool = False) -> dict:
+        """Get pseudo mask labels using color similarity."""
+        det_data = super().forward(data, training)
+        inputs, data_samples = det_data['inputs'], det_data['data_samples']
+
+        if training:
+            # get image masks and remove bottom pixels
+            b_img_h, b_img_w = data_samples[0].batch_input_shape
+            img_masks = []
+            for i in range(inputs.shape[0]):
+                img_h, img_w = data_samples[i].img_shape
+                img_mask = inputs.new_ones((img_h, img_w))
+                pixels_removed = int(self.bottom_pixels_removed *
+                                     float(img_h) / float(b_img_h))
+                if pixels_removed > 0:
+                    img_mask[-pixels_removed:, :] = 0
+                pad_w = b_img_w - img_w
+                pad_h = b_img_h - img_h
+                img_mask = F.pad(img_mask, (0, pad_w, 0, pad_h), 'constant',
+                                 0.)
+                img_masks.append(img_mask)
+            img_masks = torch.stack(img_masks, dim=0)
+            start = int(self.mask_stride // 2)
+            img_masks = img_masks[:, start::self.mask_stride,
+                                  start::self.mask_stride]
+
+            # Get origin rgb image for color similarity
+            ori_imgs = inputs * self.std + self.mean
+            downsampled_imgs = F.avg_pool2d(
+                ori_imgs.float(),
+                kernel_size=self.mask_stride,
+                stride=self.mask_stride,
+                padding=0)
+
+            # Compute color similarity for pseudo mask generation
+            for im_i, data_sample in enumerate(data_samples):
+                # TODO: Support rgb2lab in mmengine?
+                images_lab = skimage.color.rgb2lab(
+                    downsampled_imgs[im_i].byte().permute(1, 2,
+                                                          0).cpu().numpy())
+                images_lab = torch.as_tensor(
+                    images_lab, device=ori_imgs.device, dtype=torch.float32)
+                images_lab = images_lab.permute(2, 0, 1)[None]
+                images_color_similarity = self.get_images_color_similarity(
+                    images_lab, img_masks[im_i])
+                pairwise_mask = (images_color_similarity >=
+                                 self.pairwise_color_thresh).float()
+
+                per_im_bboxes = data_sample.gt_instances.bboxes
+                if per_im_bboxes.shape[0] > 0:
+                    per_im_masks = []
+                    for per_box in per_im_bboxes:
+                        mask_full = torch.zeros((b_img_h, b_img_w),
+                                                device=self.device).float()
+                        mask_full[int(per_box[1]):int(per_box[3] + 1),
+                                  int(per_box[0]):int(per_box[2] + 1)] = 1.0
+                        per_im_masks.append(mask_full)
+                    per_im_masks = torch.stack(per_im_masks, dim=0)
+                    pairwise_masks = torch.cat(
+                        [pairwise_mask for _ in range(per_im_bboxes.shape[0])],
+                        dim=0)
+                else:
+                    per_im_masks = torch.zeros((0, b_img_h, b_img_w))
+                    pairwise_masks = torch.zeros(
+                        (0, self.pairwise_size**2 - 1, b_img_h, b_img_w))
+
+                # TODO: Support BitmapMasks with tensor?
+                data_sample.gt_instances.masks = BitmapMasks(
+                    per_im_masks.cpu().numpy(), b_img_h, b_img_w)
+                data_sample.gt_instances.pairwise_masks = pairwise_masks
+        return {'inputs': inputs, 'data_samples': data_samples}
