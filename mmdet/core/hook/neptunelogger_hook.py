@@ -2,7 +2,7 @@
 import os.path as osp
 from typing import Dict, Optional
 
-import PIL.Image
+from mmdet.core.visualization.image import imshow_det_bboxes
 
 try:
     import neptune.new as neptune
@@ -19,20 +19,9 @@ from mmcv import Config
 from mmcv.runner import HOOKS, EpochBasedRunner, IterBasedRunner
 from mmcv.runner.dist_utils import master_only
 from mmcv.runner.hooks.checkpoint import CheckpointHook
-from PIL import Image
-from PIL import ImageDraw as D
 
 from mmdet import version
 from mmdet.core import DistEvalHook, EvalHook
-
-
-def draw_bboxes(image: np.ndarray,
-                bboxes: np.ndarray,
-                outline_color: str = 'green') -> PIL.Image.Image:
-    im = Image.fromarray(image.astype('uint8'), 'RGB')
-    draw = D.Draw(im)
-    draw.rectangle(bboxes, outline=outline_color)
-    return im
 
 
 @HOOKS.register_module()
@@ -78,7 +67,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                  base_namespace: str = 'training',
                  log_model: bool = False,
                  log_checkpoint: bool = False,
-                 num_eval_predictions: int = 50,
+                 num_eval_predictions: int = 5,
                  **kwargs) -> None:
         super().__init__(interval=interval, **kwargs)
 
@@ -133,7 +122,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
             self.log_evaluation = False
             runner.logger.warning(
                 'LoadImageFromFile is required to add images '
-                'to W&B Tables.')
+                'to the Neptune run.')
             return
 
         # Select the images to be logged.
@@ -141,17 +130,13 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         # Set seed so that same validation set is logged each time.
         np.random.seed(42)
         np.random.shuffle(eval_image_indices)
-        self.eval_image_indexs = eval_image_indices[:self.num_eval_predictions]
+        self.eval_image_indices = eval_image_indices[:self.
+                                                     num_eval_predictions]
 
         CLASSES = self.val_dataset.CLASSES
-        self.class_id_to_label = {
-            id + 1: name
-            for id, name in enumerate(CLASSES)
-        }
 
         img_prefix = self.val_dataset.img_prefix
-
-        for idx in eval_image_indices:
+        for idx in self.eval_image_indices:
             img_info = self.val_dataset.data_infos[idx]
             image_name = img_info.get('filename', f'img_{idx}')
             # img_height, img_width = img_info['height'], img_info['width']
@@ -169,10 +154,13 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
 
             # Get dict of bounding boxes to be logged.
             assert len(bboxes) == len(labels)
-            im = draw_bboxes(image, bboxes)
+            im = imshow_det_bboxes(
+                image, bboxes, labels, class_names=CLASSES, show=False)
+            im = im / im.max()
 
-            # TODO Add bboxes, labels and masks
+            # TODO Add masks
             self._run[image_name].upload(File.as_image(im))
+        breakpoint()
 
     @master_only
     def before_run(self, runner) -> None:
@@ -206,7 +194,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
             if self.eval_hook is None:
                 self.log_eval_predictions = False
                 runner.logger.warning(
-                    'To log evaluation NeptuneHook, '
+                    'To log evaluation with NeptuneHook, '
                     '`EvalHook` or `DistEvalHook` in mmdet '
                     'is required, please check whether the validation '
                     'is enabled.')
@@ -223,6 +211,8 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
 
             eval_results = self.val_dataset.evaluate(
                 results, logger='silent', **self.eval_hook.eval_kwargs)
+
+            breakpoint()
 
             for key, value in eval_results.items():
                 self.base_handler['val/' + category + '/' + key].append(value)
