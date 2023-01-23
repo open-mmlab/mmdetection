@@ -16,11 +16,11 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch \
 MODEL_NAME=faster_rcnn_r50_c4_1x_fskd
 for RATIO in 0.5
 do
-    for MIN_LR in 0.1 0.2 0.9
+    for MIN_LR in 0.7 0.8
     do
-        CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch \
+        CUDA_VISIBLE_DEVICES=4,5,6,7 python -m torch.distributed.launch \
                                     --nproc_per_node=4 \
-                                    --master_port 882 \
+                                    --master_port 822 \
                                     train.py \
                                     --config configs/faster_rcnn_kd/coco_$MODEL_NAME.py \
                                     --seed 0 \
