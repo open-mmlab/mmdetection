@@ -18,7 +18,7 @@ for RATIO in 0.5
 do
     for MIN_LR in 0.7 0.8
     do
-        CUDA_VISIBLE_DEVICES=4,5,6,7 python -m torch.distributed.launch \
+        CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch \
                                     --nproc_per_node=4 \
                                     --master_port 822 \
                                     train.py \
