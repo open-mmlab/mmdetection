@@ -16,7 +16,7 @@
 MODEL_NAME=faster_rcnn_r50_c4_1x_fskd
 for RATIO in 0.5
 do
-    for MIN_LR in 0.1 0.2 0.9
+    for MIN_LR in 0.7 0.8
     do
         CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch \
                                     --nproc_per_node=4 \
