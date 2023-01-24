@@ -127,8 +127,7 @@ class FCOSHead(AnchorFreeHead):
                 centernesses (list[Tensor]): centerness for each scale level, \
                     each is a 4D-tensor, the channel number is num_points * 1.
         """
-        return multi_apply(self.forward_single, feats, self.scales,
-                           self.strides)
+        return multi_apply(self.forward_single, feats, self.scales, self.strides)
 
     def forward_single(self, x, scale, stride):
         """Forward features of a single scale level.
