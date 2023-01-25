@@ -14,7 +14,7 @@ train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Resize_Student', img_scale=(1333, 800), keep_ratio=True, multiscale_mode='range', ratio_hr_lr=0.5,  ratio_range=(0.5, 1.0)),
+    dict(type='Resize_Student', img_scale=(1333, 800), keep_ratio=True, multiscale_mode='range', ratio_hr_lr=0.5,  ratio_range=(0.6, 1.0)),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),

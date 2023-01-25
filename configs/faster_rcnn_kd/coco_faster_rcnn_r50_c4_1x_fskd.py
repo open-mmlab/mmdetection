@@ -59,7 +59,7 @@ data = dict(
                pre_pipeline=pre_train_pipeline,
                multiscale_mode_student='range', # range
                ratio_hr_lr_student=0.5,
-               min_lr_student=0.5),
+               min_lr_student=0.6),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 
