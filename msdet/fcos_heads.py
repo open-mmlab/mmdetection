@@ -75,8 +75,8 @@ class FCOSHead_Cont(FCOSHead):
                 
         self.bbox_roi_extractor = build_roi_extractor(bbox_roi_extractor)
         
-        
-    def forward_single(self, x, scale, stride):
+
+    def forward_single_train(self, x, scale, stride):
         """Forward features of a single scale level.
 
         Args:
@@ -121,7 +121,7 @@ class FCOSHead_Cont(FCOSHead):
             bbox_pred = bbox_pred.exp()
         return cls_score, bbox_pred, centerness, reg_feat, cls_feat
 
-
+    
     def forward_train(self,
                       x,
                       img_metas,
@@ -149,7 +149,7 @@ class FCOSHead_Cont(FCOSHead):
                 losses: (dict[str, Tensor]): A dictionary of loss components.
                 proposal_list (list[Tensor]): Proposals of each image.
         """
-        cls_score, bbox_pred, centerness, reg_feat, cls_feat = self(x)
+        cls_score, bbox_pred, centerness, reg_feat, cls_feat = multi_apply(self.forward_single_train, x, self.scales, self.strides)
         
         # RoI Extraction
         gt_bboxes_ordered = []
