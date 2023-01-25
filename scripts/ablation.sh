@@ -13,10 +13,29 @@
 
 
 # Ablation
+# MODEL_NAME=faster_rcnn_r50_c4_1x_fskd
+# for RATIO in 0.5
+# do
+#     for MIN_LR in 0.7 0.8
+#     do
+#         CUDA_VISIBLE_DEVICES=4,5,6,7 python -m torch.distributed.launch \
+#                                     --nproc_per_node=4 \
+#                                     --master_port 822 \
+#                                     train.py \
+#                                     --config configs/faster_rcnn_kd/coco_$MODEL_NAME.py \
+#                                     --seed 0 \
+#                                     --work-dir result/coco_ablation/$MODEL_NAME-$RATIO-$MIN_LR \
+#                                     --launcher pytorch \
+#                                     --cfg-options data.train.ratio_hr_lr_student=$RATIO data.train.min_lr_student=$MIN_LR
+#     done
+# done
+
+
+
 MODEL_NAME=faster_rcnn_r50_c4_1x_fskd
-for RATIO in 0.5
+for RATIO in 0.25 0.75
 do
-    for MIN_LR in 0.7 0.8
+    for MIN_LR in 0.5
     do
         CUDA_VISIBLE_DEVICES=4,5,6,7 python -m torch.distributed.launch \
                                     --nproc_per_node=4 \
