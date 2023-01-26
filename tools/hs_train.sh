@@ -1,14 +1,14 @@
-#################   FASTER RCNN   ################
+#--------------------------------   FASTER RCNN TEACHER   --------------------------------#
 
-# MODEL_NAME='coco_faster_rcnn_r50_caffe_dc5_1x'
+# MODEL_NAME='coco_faster_rcnn_r50_dc5_1x'
 # CUDA_VISIBLE_DEVICES=4,5,6,7 python -m torch.distributed.launch \
 #                                 --nproc_per_node=4 \
 #                                 --master_port 1025 \
 #                                 train.py \
 #                                 --config configs/faster_rcnn/${MODEL_NAME}.py \
 #                                 --seed 0 \
-#                                 --work-dir /ailab_mat/personal/rho_heeseon/ObjectDetection/${MODEL_NAME} \
-#                                 --resume-from /ailab_mat/personal/rho_heeseon/ObjectDetection/${MODEL_NAME}/{}.pth  \
+#                                 --work-dir result/coco/${MODEL_NAME} \
+#                                 --resume-from result/coco/${MODEL_NAME}/{}.pth  \
 #                                 --launcher pytorch
 
 # MODEL_NAME='coco_faster_rcnn_r101_fpn_1x'
@@ -18,7 +18,7 @@
 #                                 train.py \
 #                                 --config configs/faster_rcnn/${MODEL_NAME}.py \
 #                                 --seed 0 \
-#                                 --work-dir /ailab_mat/personal/rho_heeseon/ObjectDetection/${MODEL_NAME} \
+#                                 --work-dir result/coco/${MODEL_NAME} \
 #                                 --launcher pytorch
 
 # MODEL_NAME='coco_faster_rcnn_r101_fpn_2x'
@@ -28,7 +28,7 @@
 #                                 train.py \
 #                                 --config configs/faster_rcnn/${MODEL_NAME}.py \
 #                                 --seed 0 \
-#                                 --work-dir /ailab_mat/personal/rho_heeseon/ObjectDetection/${MODEL_NAME} \
+#                                 --work-dir result/coco/${MODEL_NAME} \
 #                                 --launcher pytorch
 
 # MODEL_NAME='coco_faster_rcnn_x101_32x4d_fpn_1x'
@@ -38,7 +38,7 @@
 #                                 train.py \
 #                                 --config configs/faster_rcnn/${MODEL_NAME}.py \
 #                                 --seed 0 \
-#                                 --work-dir /ailab_mat/personal/rho_heeseon/ObjectDetection/${MODEL_NAME} \
+#                                 --work-dir result/coco/${MODEL_NAME} \
 #                                 --launcher pytorch
 
 
@@ -49,11 +49,25 @@
 #                                 train.py \
 #                                 --config configs/faster_rcnn/${MODEL_NAME}.py \
 #                                 --seed 0 \
-#                                 --work-dir /ailab_mat/personal/rho_heeseon/ObjectDetection/${MODEL_NAME} \
+#                                 --work-dir result/coco/${MODEL_NAME} \
 #                                 --launcher pytorch
 
 
-#################   MASK RCNN TEACHER   ################
+
+# #--------------------------------   FASTER RCNN STUDENT   --------------------------------#
+
+# MODEL_NAME='faster_rcnn_r50_dc5_1x_fskd'
+# CUDA_VISIBLE_DEVICES=3,4,5,6 python -m torch.distributed.launch \
+#                                 --nproc_per_node=4 \
+#                                 --master_port 1026 \
+#                                 train.py \
+#                                 --config configs/faster_rcnn_kd/coco_${MODEL_NAME}.py \
+#                                 --seed 0 \
+#                                 --work-dir result/coco/${MODEL_NAME} \
+#                                 --launcher pytorch
+
+
+#--------------------------------   MASK RCNN TEACHER   --------------------------------#
 
 # MODEL_NAME='coco_mask_rcnn_r101_fpn_1x'
 # CUDA_VISIBLE_DEVICES=4,5,6,7 python -m torch.distributed.launch \
@@ -62,7 +76,7 @@
 #                                 train.py \
 #                                 --config configs/mask_rcnn/${MODEL_NAME}.py \
 #                                 --seed 0 \
-#                                 --work-dir /ailab_mat/personal/rho_heeseon/ObjectDetection/${MODEL_NAME} \
+#                                 --work-dir result/coco/${MODEL_NAME} \
 #                                 --launcher pytorch
 
 
@@ -73,28 +87,30 @@
 #                                 train.py \
 #                                 --config configs/mask_rcnn/${MODEL_NAME}.py \
 #                                 --seed 0 \
-#                                 --work-dir /ailab_mat/personal/rho_heeseon/ObjectDetection/${MODEL_NAME} \
+#                                 --work-dir result/coco/${MODEL_NAME} \
 #                                 --launcher pytorch
 
 
-#################   MASK RCNN STUDENT   ################
-MODEL_NAME='coco_mask_rcnn_r101_fpn_1x_fskd'
-CUDA_VISIBLE_DEVICES=4,5,6,7 python -m torch.distributed.launch \
+#--------------------------------   MASK RCNN STUDENT   --------------------------------#
+
+MODEL_NAME='mask_rcnn_r101_fpn_1x_fskd'
+CUDA_VISIBLE_DEVICES=3,4,5,6 python -m torch.distributed.launch \
                                 --nproc_per_node=4 \
                                 --master_port 1028 \
                                 train.py \
-                                --config configs/mask_rcnn/${MODEL_NAME}.py \
+                                --config configs/mask_rcnn_kd/coco_${MODEL_NAME}.py \
                                 --seed 0 \
-                                --work-dir /ailab_mat/personal/rho_heeseon/ObjectDetection/${MODEL_NAME} \
+                                --work-dir result/coco/${MODEL_NAME} \
                                 --launcher pytorch
 
 
-MODEL_NAME='coco_mask_rcnn_r50_fpn_1x_fskd'
-CUDA_VISIBLE_DEVICES=4,5,6,7 python -m torch.distributed.launch \
-                                --nproc_per_node=4 \
-                                --master_port 1027 \
-                                train.py \
-                                --config configs/mask_rcnn/${MODEL_NAME}.py \
-                                --seed 0 \
-                                --work-dir /ailab_mat/personal/rho_heeseon/ObjectDetection/${MODEL_NAME} \
-                                --launcher pytorch
+# MODEL_NAME='coco_mask_rcnn_r50_fpn_1x_fskd'
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python -m torch.distributed.launch \
+#                                 --nproc_per_node=4 \
+#                                 --master_port 1027 \
+#                                 train.py \
+#                                 --config configs/mask_rcnn/${MODEL_NAME}.py \
+#                                 --seed 0 \
+#                                 --work-dir result/coco/${MODEL_NAME} \
+#                                 --launcher pytorch
+
