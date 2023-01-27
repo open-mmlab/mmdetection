@@ -6,9 +6,9 @@ _base_ = [
 
 # model
 model = dict(type='FasterRCNN_RPN',
-             rpn_head=dict(
-                type='RPNHead_VIS'
-             )
+            #  rpn_head=dict(
+            #     type='RPNHead_VIS'
+            #  )
             )
 
 # use caffe img_norm

@@ -118,7 +118,7 @@
 #--------------------------------   SPARSE RCNN TEACHER   --------------------------------#
 
 MODEL_NAME='sparse_rcnn_r50_fpn_300_proposals_crop_mstrain_480-800_3x'
-CUDA_VISIBLE_DEVICES=1,2,4,5 python -m torch.distributed.launch \
+CUDA_VISIBLE_DEVICES=1,2,3,5 python -m torch.distributed.launch \
                                 --nproc_per_node=4 \
                                 --master_port 1027 \
                                 train.py \
@@ -129,7 +129,7 @@ CUDA_VISIBLE_DEVICES=1,2,4,5 python -m torch.distributed.launch \
 
 
 MODEL_NAME='sparse_rcnn_r101_fpn_300_proposals_crop_mstrain_480-800_3x'
-CUDA_VISIBLE_DEVICES=1,2,4,5 python -m torch.distributed.launch \
+CUDA_VISIBLE_DEVICES=1,2,3,5 python -m torch.distributed.launch \
                                 --nproc_per_node=4 \
                                 --master_port 1027 \
                                 train.py \
