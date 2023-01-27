@@ -1,4 +1,4 @@
-_base_ = './sparse_rcnn_r50_fpn_mstrain_480-800_3x_coco.py'
+_base_ = './coco_sparse_rcnn_r50_fpn_mstrain_480-800_3x.py'
 num_proposals = 300
 model = dict(
     rpn_head=dict(num_proposals=num_proposals),
