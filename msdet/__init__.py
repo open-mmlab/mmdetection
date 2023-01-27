@@ -7,12 +7,11 @@ from .mask_rcnn import MaskRCNN_TS, MaskRCNNCont
 from .fcos import FCOS_Cont, FCOS_TS
 from .fcos_heads import FCOSHead_Cont
 from .transforms import Resize_Student
-from .rpn_heads import RPNHead_VIS
 from .anchor_head import AnchorHead_VIS
 
 __all__ = [
     'ContRoIHead', 'CocoContDataset', 'SmdpDataset', 'SmdpContDataset', 
     'FasterRCNN_TS', 'FasterRCNNCont', 'FasterRCNN_RPN',
     'MaskRCNN_TS', 'MaskRCNNCont',
-    'FCOS_Cont', 'FCOS_TS', 'FCOSHead_Cont', 'Resize_Student', 'RPNHead_VIS', 'AnchorHead_VIS'
+    'FCOS_Cont', 'FCOS_TS', 'FCOSHead_Cont', 'Resize_Student', 'AnchorHead_VIS'
 ]
