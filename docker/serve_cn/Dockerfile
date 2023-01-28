@@ -9,19 +9,16 @@ ARG MMDET="3.0.0rc5"
 ENV PYTHONUNBUFFERED TRUE
 
 # Avoid Public GPG key error
-RUN rm /etc/apt/sources.list.d/cuda.list
-RUN rm /etc/apt/sources.list.d/nvidia-ml.list
-RUN  apt-get update \
-  && apt-get install -y wget \
-  && rm -rf /var/lib/apt/lists/*
-
-# - Avoid Public GPG key error
 # - https://github.com/NVIDIA/nvidia-docker/issues/1631
-
-RUN apt-key del 7fa2af80
-RUN apt-get update && apt-get install -y --no-install-recommends wget
-RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-keyring_1.0-1_all.deb
-RUN dpkg -i cuda-keyring_1.0-1_all.deb
+RUN rm /etc/apt/sources.list.d/cuda.list \
+  && rm /etc/apt/sources.list.d/nvidia-ml.list \
+  && apt-get update \
+  && apt-get install -y wget \
+  && rm -rf /var/lib/apt/lists/* \
+  && apt-key del 7fa2af80 \
+  && apt-get update && apt-get install -y --no-install-recommends wget \
+  && wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-keyring_1.0-1_all.deb \
+  && dpkg -i cuda-keyring_1.0-1_all.deb
 # (Optional, use Mirror to speed up downloads)
 # RUN sed -i 's/http:\/\/archive.ubuntu.com\/ubuntu\//http:\/\/mirrors.aliyun.com\/ubuntu\//g' /etc/apt/sources.list
 
