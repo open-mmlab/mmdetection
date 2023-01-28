@@ -28,15 +28,6 @@ CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch \
                                 --work-dir result/coco/faster_rcnn_r50_fpn_1x_ori \
                                 --launcher pytorch
 
-CUDA_VISIBLE_DEVICES=2,3 python -m torch.distributed.launch \
-                                --nproc_per_node=2 \
-                                --master_port 911 \
-                                tools/train.py \
-                                --config configs/faster_rcnn/coco_faster_rcnn_r50_fpn_2x.py \
-                                --seed 0 \
-                                --work-dir result/coco/faster_rcnn_r50_fpn_2x_ori \
-                                --launcher pytorch
-
 
 # # Single GPU
 # python train.py --gpu-id 7 \

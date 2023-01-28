@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 from mmdet.models import build_detector
 import copy
+import numpy as np
 
 
 @DETECTORS.register_module()
@@ -17,6 +18,8 @@ class FasterRCNN_TS(TwoStageDetector):
                  train_cfg,
                  test_cfg,
                  teacher_cfg,
+                 distill_type,
+                 distill_neg_param=None,
                  neck=None,
                  pretrained=None,
                  init_cfg=None):
@@ -34,6 +37,12 @@ class FasterRCNN_TS(TwoStageDetector):
         teacher_cfg.model.type = 'FasterRCNNCont'
         teacher_cfg.model.roi_head.type = 'ContRoIHead'
         self.teacher_cfg = teacher_cfg
+        
+        # Distillation Types
+        self.distill_type = distill_type
+        if self.distill_type == 'both':
+            assert distill_neg_param is not None
+            self.distill_neg_param = distill_neg_param
         
 
     def update_teacher(self, state_dict): 
@@ -153,7 +162,29 @@ class FasterRCNN_TS(TwoStageDetector):
         B = gt_feats_ori.size(0)
         gt_feats_ori = gt_feats_ori.view(B, -1)
         gt_feats_aug = gt_feats_aug.view(B, -1)
-        consistency_loss = self.calc_consistency_loss(gt_feats_ori, gt_feats_aug)
+        positive_loss = self.calc_consistency_loss(gt_feats_ori, gt_feats_aug)
+        
+        if self.distill_type == 'both':
+            label_list = torch.cat(data[0]['gt_labels'])
+            label_unique = torch.unique(label_list)
+            
+            index_out = torch.ones(len(label_list)).long()
+            for l_u in label_unique:
+                pos_index = torch.where(label_list == l_u)[0].cpu().detach().numpy()
+                neg_index = torch.where(label_list != l_u)[0].cpu().detach().numpy()
+                neg_index_sampled = torch.tensor(np.random.choice(neg_index, len(pos_index), replace=True)).long()
+                index_out[pos_index] = neg_index_sampled
+            
+            gt_feats_aug_neg = gt_feats_aug[index_out]                
+            negative_loss = self.calc_negative_loss(gt_feats_ori, gt_feats_aug_neg)
+            consistency_loss = positive_loss + negative_loss * self.distill_neg_param
+            
+        elif self.distill_type == 'positive':
+            consistency_loss = positive_loss
+            
+        else:
+            raise('Select Proper Distill Types')            
+    
         losses.update({'consistency_loss': consistency_loss * 1.0})
         
         loss, log_vars = self._parse_losses(losses)
@@ -165,6 +196,11 @@ class FasterRCNN_TS(TwoStageDetector):
     
     def calc_consistency_loss(self, feat_ori, feat_aug):
         return torch.mean(1.0 - F.cosine_similarity(feat_ori, feat_aug))
+
+    def calc_negative_loss(self, feat_ori, feat_aug): 
+        return torch.mean(F.cosine_similarity(feat_ori, feat_aug))
+    
+    
     
     
 @DETECTORS.register_module()

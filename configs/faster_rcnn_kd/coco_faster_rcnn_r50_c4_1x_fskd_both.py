@@ -9,7 +9,8 @@ model = dict(type='FasterRCNN_TS',
              roi_head=dict(
                  type='ContRoIHead'
                 ),
-             distill_type='positive' # positive or both
+             distill_type='both', # positive or both
+             distill_neg_param=1.0
             )
 
 # Distillation Params

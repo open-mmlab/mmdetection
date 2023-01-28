@@ -21,12 +21,12 @@ from mmdet.models import build_detector
 from mmdet.utils import (collect_env, get_device, get_root_logger,
                          replace_cfg_vals, rfnext_init_model,
                          setup_multi_processes, update_data_root)
-
 import msdet
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
-    parser.add_argument('--config', default='configs/mask_rcnn_kd/coco_mask_rcnn_r101_fpn_1x_fskd.py', type=str, help='train config file path')
+    parser.add_argument('--config', default='configs/faster_rcnn_kd/coco_faster_rcnn_r50_c4_1x_fskd.py', type=str, help='train config file path')
     parser.add_argument('--work-dir', help='the dir to save logs and models')
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
