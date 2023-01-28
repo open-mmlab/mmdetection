@@ -79,9 +79,9 @@ Apart from MMDetection, we also released a library [mmcv](https://github.com/ope
 
 **2.28.0** was released in 28/1/2023:
 
-- Support Objects365 Dataset
-- Support Separated and Occluded COCO metric
+- Support Objects365 Dataset, and Separated and Occluded COCO metric
 - Support acceleration of RetinaNet and SSD on Ascend
+- Deprecate the support of Python 3.6
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 

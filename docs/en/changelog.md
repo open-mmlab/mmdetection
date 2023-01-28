@@ -4,15 +4,20 @@
 
 #### Highlights
 
-- Support Objects365 Dataset
-- Support Separated and Occluded COCO metric
+- Support Objects365 Dataset and Separated and Occluded COCO metric
 - Support acceleration of RetinaNet and SSD on Ascend
+- Deprecate the support of Python 3.6
 
-#### Features
+#### New Features and Improvements
 
 - Support Objects365 Dataset (#7525)
 - Support [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046) (#9574)
 - Support acceleration of RetinaNet and SSD on Ascend with documentation (#9648, #9614)
+- Added missing `-` to `--format-only` in documentation.
+
+#### Deprecations
+
+- Upgrade the minimum Python version to 3.7, the support of Python 3.6 is no longer guaranteed (#9604)
 
 #### Bug Fixes
 
@@ -21,18 +26,9 @@
 - Fix argument name for fp32 in `DeformableDETRHead` (#9607)
 - Fix typo of all config file path in Metafile.yml (#9627)
 
-#### Improvements
-
-- Adjust the minimum supported python version to 3.7 (#9604)
-- Update documentation about NPU (#9535)
-
-#### Documents
-
-- Added missing `-` to `--format-only` option by @lpizzinidev in (#9649)
-
 #### Contributors
 
-A total of 12 developers contributed to this release.
+A total of 11 developers contributed to this release.
 Thanks @eantono, @akstt, @@lpizzinidev, @RangiLyu, @kbumsik, @tianleiSHI, @nijkah, @BIGWangYuDong, @wangjiangben-hw, @@jamiechoi1995, @ZwwWayne
 
 ## New Contributors

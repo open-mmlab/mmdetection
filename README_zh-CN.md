@@ -78,9 +78,9 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 最新的 **2.28.0** 版本已经在 2023.1.28 发布:
 
-- 支持 Object365 数据集
-- 支持 遮挡物检测 benchmark
+- 支持 Object365 数据集和遮挡物检测的 benchmark
 - 支持 SSD 和 RetinaNet 算法在昇腾芯片上的加速
+- 不再保证对 Python 3.6 的支持
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/en/changelog.md)。
 
