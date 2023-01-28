@@ -1,5 +1,43 @@
 ## Changelog
 
+### v2.28.0 (28/1/2023)
+
+#### Highlights
+
+- Support Objects365 Dataset and Separated and Occluded COCO metric
+- Support acceleration of RetinaNet and SSD on Ascend
+- Deprecate the support of Python 3.6
+
+#### New Features and Improvements
+
+- Support Objects365 Dataset (#7525)
+- Support [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046) (#9574)
+- Support acceleration of RetinaNet and SSD on Ascend with documentation (#9648, #9614)
+- Added missing `-` to `--format-only` in documentation.
+
+#### Deprecations
+
+- Upgrade the minimum Python version to 3.7, the support of Python 3.6 is no longer guaranteed (#9604)
+
+#### Bug Fixes
+
+- Fix validation loss logging by (#9663)
+- Fix inconsistent float precision between mmdet and mmcv (#9570)
+- Fix argument name for fp32 in `DeformableDETRHead` (#9607)
+- Fix typo of all config file path in Metafile.yml (#9627)
+
+#### Contributors
+
+A total of 11 developers contributed to this release.
+Thanks @eantono, @akstt, @@lpizzinidev, @RangiLyu, @kbumsik, @tianleiSHI, @nijkah, @BIGWangYuDong, @wangjiangben-hw, @@jamiechoi1995, @ZwwWayne
+
+## New Contributors
+
+- @kbumsik made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9627
+- @akstt made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9614
+- @lpizzinidev made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9649
+- @eantono made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9663
+
 ### v2.27.0 (5/1/2023)
 
 #### Highlights
