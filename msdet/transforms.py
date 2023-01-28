@@ -1,7 +1,7 @@
 import mmcv
 import numpy as np
 from mmdet.datasets.builder import PIPELINES
-
+from random import shuffle
 
 
 @PIPELINES.register_module()
@@ -73,7 +73,6 @@ class Resize_Student:
         assert ratio_range is not None
         assert len(self.img_scale) == 1
 
-        # TODO: add multiscale mode (now only single image scale is supported)
         self.backend = backend
         self.multiscale_mode = multiscale_mode
         self.ratio_hr_lr = ratio_hr_lr
@@ -172,7 +171,9 @@ class Resize_Student:
             dict: Two new keys 'scale` and 'scale_idx` are added into \
                 ``results``, which would be used by subsequent pipelines.
         """
-
+        # For multi-scale training
+        shuffle(self.img_scale)
+        
         if self.multiscale_mode == 'range':
             scale, scale_idx = self.random_sample_ratio(
                 self.img_scale[0], self.ratio_range, self.ratio_hr_lr)
