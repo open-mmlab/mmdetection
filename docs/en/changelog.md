@@ -33,11 +33,10 @@ Thanks @eantono, @akstt, @@lpizzinidev, @RangiLyu, @kbumsik, @tianleiSHI, @nijka
 
 ## New Contributors
 
-* @kbumsik made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9627
-* @akstt made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9614
-* @lpizzinidev made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9649
-* @eantono made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9663
-
+- @kbumsik made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9627
+- @akstt made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9614
+- @lpizzinidev made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9649
+- @eantono made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9663
 
 ### v2.27.0 (5/1/2023)
 
