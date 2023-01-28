@@ -44,7 +44,7 @@ python tools/train.py configs/ssd/ssd300_coco.py
 
 Introduction to optimization:
 
-1. Modify the cycle calculation as a whole batch calculation to reduce the number of instructions issued.
+1. Modify the loop calculation as a whole batch calculation to reduce the number of instructions issued.
 2. Modify the index calculation to mask calculation, because the SIMD architecture is good at processing continuous data calculation.
 
 |           Model            |                                                          Config                                                           | v100 iter time |       910A iter time       |
