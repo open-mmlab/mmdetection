@@ -2,8 +2,10 @@ _base_ = [
     '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
 ]
 model = dict(
-    type='DETR',
-    num_queries=100,
+    type='DABDETR',
+    num_queries=300,
+    with_random_refpoints=False,
+    num_patterns=0,
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
@@ -28,51 +30,53 @@ model = dict(
         act_cfg=None,
         norm_cfg=None,
         num_outs=1),
-    encoder=dict(  # DetrTransformerEncoder
+    encoder=dict(
         num_layers=6,
-        layer_cfg=dict(  # DetrTransformerEncoderLayer
-            self_attn_cfg=dict(  # MultiheadAttention
-                embed_dims=256,
-                num_heads=8,
-                dropout=0.1,
-                batch_first=True),
+        layer_cfg=dict(
+            self_attn_cfg=dict(
+                embed_dims=256, num_heads=8, dropout=0., batch_first=True),
             ffn_cfg=dict(
                 embed_dims=256,
                 feedforward_channels=2048,
                 num_fcs=2,
-                ffn_drop=0.1,
-                act_cfg=dict(type='ReLU', inplace=True)))),
-    decoder=dict(  # DetrTransformerDecoder
+                ffn_drop=0.,
+                act_cfg=dict(type='PReLU')))),
+    decoder=dict(
         num_layers=6,
-        layer_cfg=dict(  # DetrTransformerDecoderLayer
-            self_attn_cfg=dict(  # MultiheadAttention
+        query_dim=4,
+        query_scale_type='cond_elewise',
+        with_modulated_hw_attn=True,
+        layer_cfg=dict(
+            self_attn_cfg=dict(
                 embed_dims=256,
                 num_heads=8,
-                dropout=0.1,
-                batch_first=True),
-            cross_attn_cfg=dict(  # MultiheadAttention
+                attn_drop=0.,
+                proj_drop=0.,
+                cross_attn=False),
+            cross_attn_cfg=dict(
                 embed_dims=256,
                 num_heads=8,
-                dropout=0.1,
-                batch_first=True),
+                attn_drop=0.,
+                proj_drop=0.,
+                cross_attn=True),
             ffn_cfg=dict(
                 embed_dims=256,
                 feedforward_channels=2048,
                 num_fcs=2,
-                ffn_drop=0.1,
-                act_cfg=dict(type='ReLU', inplace=True))),
+                ffn_drop=0.,
+                act_cfg=dict(type='PReLU'))),
         return_intermediate=True),
-    positional_encoding=dict(num_feats=128, normalize=True),
+    positional_encoding=dict(num_feats=128, temperature=20, normalize=True),
     bbox_head=dict(
-        type='DETRHead',
+        type='DABDETRHead',
         num_classes=80,
         embed_dims=256,
         loss_cls=dict(
-            type='CrossEntropyLoss',
-            bg_cls_weight=0.1,
-            use_sigmoid=False,
-            loss_weight=1.0,
-            class_weight=1.0),
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
         loss_bbox=dict(type='L1Loss', loss_weight=5.0),
         loss_iou=dict(type='GIoULoss', loss_weight=2.0)),
     # training and testing settings
@@ -80,11 +84,11 @@ model = dict(
         assigner=dict(
             type='HungarianAssigner',
             match_costs=[
-                dict(type='ClassificationCost', weight=1.),
+                dict(type='FocalLossCost', weight=2., eps=1e-8),
                 dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
                 dict(type='IoUCost', iou_mode='giou', weight=2.0)
             ])),
-    test_cfg=dict(max_per_img=100))
+    test_cfg=dict(max_per_img=300))
 
 # train_pipeline, NOTE the img_scale and the Pad's size_divisor is different
 # from the default setting in mmdet.
@@ -135,7 +139,7 @@ optim_wrapper = dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
 
 # learning policy
-max_epochs = 150
+max_epochs = 50
 train_cfg = dict(
     type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
 val_cfg = dict(type='ValLoop')
@@ -147,11 +151,11 @@ param_scheduler = [
         begin=0,
         end=max_epochs,
         by_epoch=True,
-        milestones=[100],
+        milestones=[40],
         gamma=0.1)
 ]
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (2 samples per GPU)
-auto_scale_lr = dict(base_batch_size=16)
+auto_scale_lr = dict(base_batch_size=16, enable=False)

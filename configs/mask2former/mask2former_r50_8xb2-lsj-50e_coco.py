@@ -1,4 +1,5 @@
 _base_ = ['./mask2former_r50_8xb2-lsj-50e_coco-panoptic.py']
+
 num_things_classes = 80
 num_stuff_classes = 0
 num_classes = num_things_classes + num_stuff_classes
@@ -56,7 +57,7 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=_base_.file_client_args),
+    dict(type='LoadImageFromFile', to_float32=True),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     # If you don't have a gt annotation, delete the pipeline
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
@@ -75,7 +76,6 @@ train_dataloader = dict(
         ann_file='annotations/instances_train2017.json',
         data_prefix=dict(img='train2017/'),
         pipeline=train_pipeline))
-
 val_dataloader = dict(
     dataset=dict(
         type=dataset_type,
