@@ -39,4 +39,16 @@ python tools/train.py configs/ssd/ssd300_coco.py
 - (\*\*) GPU 上 yolox-s 在混合精度下的精度为 40.1 低于readme中 40.5 的水平;默认情况下，yolox-s 启用 `persister_woker=True`，但这个参数
   目前在NPU上存在一些bug，会导致在最后几个epoch由于资源耗尽报错退出，对整体精度影响有限可以忽略。
 
+## Ascend加速模块验证结果
+
+优化方案简介：
+
+1. 修改循环计算为一次整体计算，目的是减少下发指令数量。
+2. 修改索引计算为掩码计算，原因是SIMD架构芯片擅长处理连续数据计算。
+
+|           Model            |                                                          Config                                                           | v100 iter time |       910A iter time       |
+| :------------------------: | :-----------------------------------------------------------------------------------------------------------------------: | :------------: | :------------------------: |
+|    [ascend-ssd300](<>)     |          [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ascend_ssd300_fp16_coco.py)           |  0.165s/iter   | 0.383s/iter -> 0.13s/iter  |
+| [ascend-retinanet-r18](<>) | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/ascend_retinanet_r18_fpn_1x8_1x_coco.py) |  0.567s/iter   | 0.780s/iter -> 0.420s/iter |
+
 **以上模型结果由华为昇腾团队提供**
