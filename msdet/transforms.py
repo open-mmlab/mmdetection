@@ -71,7 +71,6 @@ class Resize_Student:
 
         # mode 1: given a scale and a range of image ratio
         assert ratio_range is not None
-        assert len(self.img_scale) == 1
 
         self.backend = backend
         self.multiscale_mode = multiscale_mode
