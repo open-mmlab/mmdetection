@@ -8,8 +8,7 @@ _base_ = [
 model = dict(type='FasterRCNN_TS',
              roi_head=dict(
                  type='ContRoIHead'
-                ),
-             distill_type='positive' # positive or both
+                )
             )
 
 # Distillation Params
