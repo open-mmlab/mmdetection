@@ -55,7 +55,7 @@ visualizer = VISUALIZERS.build(model.cfg.visualizer)
 # 从 checkpoint 中加载 Dataset_meta，并将其传递给模型的 init_detector
 visualizer.dataset_meta = model.dataset_meta
 
-# 显示间隔 (s), 0 表示暂停
+# 显示间隔 (ms), 0 表示暂停
 wait_time = 1
 
 video = mmcv.VideoReader('video.mp4')
