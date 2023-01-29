@@ -152,7 +152,10 @@ class ChannelAttention(BaseModule):
 
     def forward(self, x: Tensor) -> Tensor:
         """Forward function for ChannelAttention."""
-        out = self.global_avgpool(x)
+        if x.dtype == torch.float16:
+            out = self.global_avgpool(x.float()).half()
+        else:
+            out = self.global_avgpool(x)
         out = self.fc(out)
         out = self.act(out)
         return x * out
