@@ -63,7 +63,7 @@ visualizer = VISUALIZERS.build(model.cfg.visualizer)
 # then pass to the model in init_detector
 visualizer.dataset_meta = model.dataset_meta
 
-# The interval of show (s), 0 is block
+# The interval of show (ms), 0 is block
 wait_time = 1
 
 video_reader = mmcv.VideoReader('video.mp4')
