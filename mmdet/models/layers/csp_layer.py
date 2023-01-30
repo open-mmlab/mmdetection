@@ -126,7 +126,7 @@ class CSPNeXtBlock(BaseModule):
             padding=1,
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
-        self.conv2 = DepthwiseSeparableConvModule(
+        self.conv2 = conv(
             hidden_channels,
             out_channels,
             kernel_size,
