@@ -40,6 +40,12 @@ python tools/test.py projects/DiffusionDet/model_converters/diffusiondet_resnet_
 
 **Note:** During inference time, DiffusionDet will randomly generate noisy boxes, which may affect the AP results. If users want to get the same result every inference time, setting seed is a good way.
 
+|                            Repo                            | Backbone | Proposals |  Seed  |    AP     |
+| :--------------------------------------------------------: | :------: | :-------: | :----: | :-------: |
+| [DiffusionDet](https://github.com/ShoufaChen/DiffusionDet) |   R-50   |    500    |   0    |   45.66   |
+|                        MMDetection                         |   R-50   |    500    |   0    |   45.7    |
+|                        MMDetection                         |   R-50   |    500    | random | 45.6~45.8 |
+
 ## Results
 
 Here we provide the baseline version of DiffusionDet with ResNet50 backbone.

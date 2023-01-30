@@ -1,4 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+
+# ========================================
+# Modified by Shoufa Chen
+# ========================================
+# Modified by Peize Sun, Rufeng Zhang
+# Contact: {sunpeize, cxrfzhang}@foxmail.com
+#
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
 import copy
 import math
 import random
@@ -471,7 +480,7 @@ class DynamicDiffusionDetHead(nn.Module):
                         rescale=True):
 
         batch_size = len(batch_img_metas)
-
+        assert batch_size == 1, 'Only support Batch Size = 1'
         cfg = self.test_cfg if cfg is None else cfg
         cfg = copy.deepcopy(cfg)
 
@@ -493,6 +502,8 @@ class DynamicDiffusionDetHead(nn.Module):
                 x_start, min=-1 * self.snr_scale, max=self.snr_scale)
             pred_noise = self.predict_noise_from_start(batch_noise_bboxes_raw,
                                                        batch_time, x_start)
+            pred_noise_list, x_start_list = [], []
+            noise_bboxes_list, num_remain_list = [], []
             if self.box_renewal:  # filter
                 score_thr = cfg.get('score_thr', 0)
                 for img_id in range(batch_size):
@@ -501,15 +512,24 @@ class DynamicDiffusionDetHead(nn.Module):
                     score_per_image = torch.sigmoid(score_per_image)
                     value, _ = torch.max(score_per_image, -1, keepdim=False)
                     keep_idx = value > score_thr
-                    num_remain = torch.sum(keep_idx)
 
-                    pred_noise = pred_noise[img_id, keep_idx, :]
-                    x_start = x_start[img_id, keep_idx, :]
-                    batch_noise_bboxes = batch_noise_bboxes[img_id,
-                                                            keep_idx, :]
-
+                    num_remain_list.append(torch.sum(keep_idx))
+                    pred_noise_list.append(pred_noise[img_id, keep_idx, :])
+                    x_start_list.append(x_start[img_id, keep_idx, :])
+                    noise_bboxes_list.append(batch_noise_bboxes[img_id,
+                                                                keep_idx, :])
             if time_next < 0:
-                batch_noise_bboxes = x_start
+                # Not same as original DiffusionDet
+                if self.use_ensemble:
+                    box_pred_per_image, scores_per_image, labels_per_image = \
+                        self.inference(
+                            box_cls=pred_logits[-1],
+                            box_pred=pred_bboxes[-1],
+                            cfg=cfg,
+                            device=device)
+                    ensemble_score.append(scores_per_image)
+                    ensemble_label.append(labels_per_image)
+                    ensemble_coord.append(box_pred_per_image)
                 continue
 
             alpha = self.alphas_cumprod[time]
@@ -520,19 +540,37 @@ class DynamicDiffusionDetHead(nn.Module):
                                               (1 - alpha)).sqrt()
             c = (1 - alpha_next - sigma**2).sqrt()
 
-            noise = torch.randn_like(batch_noise_bboxes)
+            batch_noise_bboxes_list = []
+            for idx in range(batch_size):
+                pred_noise = pred_noise_list[idx]
+                x_start = x_start_list[idx]
+                noise_bboxes = noise_bboxes_list[idx]
+                num_remain = num_remain_list[idx]
+                noise = torch.randn_like(noise_bboxes)
 
-            batch_noise_bboxes = x_start * alpha_next.sqrt() + \
-                c * pred_noise + sigma * noise
+                noise_bboxes = x_start * alpha_next.sqrt() + \
+                    c * pred_noise + sigma * noise
 
-            if self.box_renewal:  # filter
-                # replenish with randn boxes
-                batch_noise_bboxes = torch.cat(
-                    (batch_noise_bboxes,
-                     torch.randn(
-                         1, self.num_proposals - num_remain, 4,
-                         device=device)),
-                    dim=1)
+                if self.box_renewal:  # filter
+                    # replenish with randn boxes
+                    if num_remain < self.num_proposals:
+                        noise_bboxes = torch.cat(
+                            (noise_bboxes,
+                             torch.randn(
+                                 self.num_proposals - num_remain,
+                                 4,
+                                 device=device)),
+                            dim=0)
+                    else:
+                        select_mask = [True] * self.num_proposals + \
+                                      [False] * (num_remain -
+                                                 self.num_proposals)
+                        random.shuffle(select_mask)
+                        noise_bboxes = noise_bboxes[select_mask]
+
+                batch_noise_bboxes_list.append(noise_bboxes)
+            batch_noise_bboxes = torch.stack(batch_noise_bboxes_list)
+            # TODO: BatchSize > 1 is not support yet.
             if self.use_ensemble and self.sampling_timesteps > 1:
                 box_pred_per_image, scores_per_image, labels_per_image = \
                     self.inference(

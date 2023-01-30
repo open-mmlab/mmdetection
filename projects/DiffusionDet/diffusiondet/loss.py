@@ -1,4 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+
+# ========================================
+# Modified by Shoufa Chen
+# ========================================
+# Modified by Peize Sun, Rufeng Zhang
+# Contact: {sunpeize, cxrfzhang}@foxmail.com
+#
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
 from typing import List, Tuple, Union
 
 import torch

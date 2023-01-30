@@ -40,6 +40,7 @@ model = dict(
         deep_supervision=True,
         prior_prob=0.01,
         snr_scale=2.0,
+        sampling_timesteps=1,
         ddim_sampling_eta=1.0,
         single_head=dict(
             type='SingleDiffusionDetHead',
@@ -159,7 +160,7 @@ optim_wrapper = dict(
     type='OptimWrapper',
     optimizer=dict(
         _delete_=True, type='AdamW', lr=0.000025, weight_decay=0.0001),
-    clip_grad=dict(max_norm=35, norm_type=2))
+    clip_grad=dict(max_norm=1.0, norm_type=2))
 train_cfg = dict(
     _delete_=True,
     type='IterBasedTrainLoop',
