@@ -49,8 +49,6 @@ In MMDetection's root directory, run the following command to test the model:
 python tools/train.py projects/EfficientDet/configs/efficientdet_effb0_bifpn_8xb16-crop512-300e_coco.py ${CHECKPOINT_PATH}
 ```
 
-\<\<\<\<\<\<\< HEAD:projects/EfficientDet/REMEAD.md
-
 ## Results
 
 <!-- List the results as usually done in other model's README. [Example](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/README.md#results-and-models)
@@ -59,23 +57,8 @@ You should claim whether this is based on the pre-trained weights, which are con
 |                                      Method                                      |    Backbone     | Pretrained Model |  Training set  |   Test set   | #epoch | val box AP | official AP |
 | :------------------------------------------------------------------------------: | :-------------: | :--------------: | :------------: | :----------: | :----: | :--------: | :---------: |
 | [efficientdet-d0](./configs/efficientdet_effb0_bifpn_8xb16-crop512-300e_coco.py) | efficientnet-b0 |     ImageNet     | COCO2017 Train | COCO2017 Val |  300   |   0.344    |    0.343    |
-|                                     =======                                      |                 |                  |                |              |        |            |             |
-
-## Test-time correctness
-
-Have checked that the same tensor can obtain the same output tensor as the official [BiFPN](https://github.com/google/automl) implementations
 
 ## Results
-
-Here we provide the baseline version of SparseInst with ResNet50 backbone.
-
-## Results
-
-|                               Method                                |    Backbone     | Pretrained Model |  Training set  |   Test set   | #epoch | box AP |         Download         |
-| :-----------------------------------------------------------------: | :-------------: | :--------------: | :------------: | :----------: | :----: | :----: | :----------------------: |
-| [BiFPN](./configs/efficientdet_effb3_bifpn_8xb4-crop896-1x_coco.py) | EfficientNet-b3 |    ImageNet1K    | COCO2017 Train | COCO2017 Val |   50   | 0.434  | [model](<>) \| [log](<>) |
-
-> > > > > > > bab4017d71b1cd832f522d80d5deb2e4b5f9d2fe:projects/BiFPN/REMEAD.md
 
 ## Citation
 
