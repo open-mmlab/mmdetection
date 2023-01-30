@@ -5,13 +5,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Conv2d, ConvModule
-from mmcv.cnn.bricks.transformer import (build_positional_encoding,
-                                         build_transformer_layer_sequence)
 from mmengine.model import BaseModule, ModuleList, caffe2_xavier_init
 from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, OptMultiConfig
+from .positional_encoding import SinePositionalEncoding
+from .transformer import DetrTransformerEncoder
 
 
 @MODELS.register_module()
@@ -134,12 +134,11 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
             Defaults to dict(type='GN', num_groups=32).
         act_cfg (:obj:`ConfigDict` or dict): Config for activation.
             Defaults to dict(type='ReLU').
-        encoder (:obj:`ConfigDict` or dict): Config for transorformer
-            encoder. Defaults to None.
+        encoder (:obj:`ConfigDict` or dict): Config for transformer encoder.
+            Defaults to None.
         positional_encoding (:obj:`ConfigDict` or dict): Config for
             transformer encoder position encoding. Defaults to
-            dict(type='SinePositionalEncoding', num_feats=128,
-            normalize=True).
+            dict(num_feats=128, normalize=True).
         init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
             dict], optional): Initialization config dict. Defaults to None.
     """
@@ -152,9 +151,7 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
                  act_cfg: ConfigType = dict(type='ReLU'),
                  encoder: ConfigType = None,
                  positional_encoding: ConfigType = dict(
-                     type='SinePositionalEncoding',
-                     num_feats=128,
-                     normalize=True),
+                     num_feats=128, normalize=True),
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             in_channels=in_channels,
@@ -165,13 +162,13 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
             init_cfg=init_cfg)
         self.last_feat_conv = None
 
-        self.encoder = build_transformer_layer_sequence(encoder)
+        self.encoder = DetrTransformerEncoder(**encoder)
         self.encoder_embed_dims = self.encoder.embed_dims
         assert self.encoder_embed_dims == feat_channels, 'embed_dims({}) of ' \
             'tranformer encoder must equal to feat_channels({})'.format(
                 feat_channels, self.encoder_embed_dims)
-        self.positional_encoding = build_positional_encoding(
-            positional_encoding)
+        self.positional_encoding = SinePositionalEncoding(
+            **positional_encoding)
         self.encoder_in_proj = Conv2d(
             in_channels[-1], feat_channels, kernel_size=1)
         self.encoder_out_proj = ConvModule(
@@ -228,19 +225,17 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
 
         pos_embed = self.positional_encoding(padding_mask)
         feat_last = self.encoder_in_proj(feat_last)
-        # (batch_size, c, h, w) -> (num_queries, batch_size, c)
-        feat_last = feat_last.flatten(2).permute(2, 0, 1)
-        pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
+        # (batch_size, c, h, w) -> (batch_size, num_queries, c)
+        feat_last = feat_last.flatten(2).permute(0, 2, 1)
+        pos_embed = pos_embed.flatten(2).permute(0, 2, 1)
         # (batch_size, h, w) -> (batch_size, h*w)
         padding_mask = padding_mask.flatten(1)
         memory = self.encoder(
             query=feat_last,
-            key=None,
-            value=None,
             query_pos=pos_embed,
-            query_key_padding_mask=padding_mask)
-        # (num_queries, batch_size, c) -> (batch_size, c, h, w)
-        memory = memory.permute(1, 2, 0).view(bs, self.encoder_embed_dims, h,
+            key_padding_mask=padding_mask)
+        # (batch_size, num_queries, c) -> (batch_size, c, h, w)
+        memory = memory.permute(0, 2, 1).view(bs, self.encoder_embed_dims, h,
                                               w)
         y = self.encoder_out_proj(memory)
         for i in range(self.num_inputs - 2, -1, -1):

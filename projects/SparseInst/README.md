@@ -48,7 +48,7 @@ python -m torch.distributed.launch --nnodes=1 --node_rank=0 --nproc_per_node=${N
 In MMDetection's root directory, run the following command to test the model:
 
 ```bash
-python tools/train.py projects/SparseInst/configs/sparseinst_r50_iam_8xb8-ms-270k_coco.py ${CHECKPOINT_PATH}
+python tools/test.py projects/SparseInst/configs/sparseinst_r50_iam_8xb8-ms-270k_coco.py ${CHECKPOINT_PATH}
 ```
 
 ## Results

@@ -17,6 +17,7 @@ val_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         ann_file='challenge2019/challenge-2019-validation-detection-bbox.txt',
+        data_prefix=dict(img='OpenImages/'),
         label_file='challenge2019/cls-label-description.csv',
         hierarchy_file='challenge2019/class_label_tree.np',
         meta_file='challenge2019/challenge-2019-validation-metas.pkl',

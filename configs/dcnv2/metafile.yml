@@ -19,7 +19,7 @@ Collections:
 Models:
   - Name: faster-rcnn_r50_fpn_mdconv_c3-c5_1x_coco
     In Collection: Deformable Convolutional Networks v2
-    Config: configs/dcn/faster-rcnn_r50-mdconv-c3-c5_fpn_1x_coco.py
+    Config: configs/dcnv2/faster-rcnn_r50-mdconv-c3-c5_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.1
       inference time (ms/im):
@@ -39,7 +39,7 @@ Models:
 
   - Name: faster-rcnn_r50_fpn_mdconv_c3-c5_group4_1x_coco
     In Collection: Deformable Convolutional Networks v2
-    Config: configs/dcn/faster-rcnn_r50-mdconv-group4-c3-c5_fpn_1x_coco.py
+    Config: configs/dcnv2/faster-rcnn_r50-mdconv-group4-c3-c5_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.2
       inference time (ms/im):
@@ -59,7 +59,7 @@ Models:
 
   - Name: faster-rcnn_r50_fpn_mdpool_1x_coco
     In Collection: Deformable Convolutional Networks v2
-    Config: configs/dcn/faster-rcnn_r50_fpn_mdpool_1x_coco.py
+    Config: configs/dcnv2/faster-rcnn_r50_fpn_mdpool_1x_coco.py
     Metadata:
       Training Memory (GB): 5.8
       inference time (ms/im):
@@ -79,7 +79,7 @@ Models:
 
   - Name: mask-rcnn_r50_fpn_mdconv_c3-c5_1x_coco
     In Collection: Deformable Convolutional Networks v2
-    Config: configs/dcn/mask-rcnn_r50-mdconv-c3-c5_fpn_1x_coco.py
+    Config: configs/dcnv2/mask-rcnn_r50-mdconv-c3-c5_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.5
       inference time (ms/im):
@@ -103,7 +103,7 @@ Models:
 
   - Name: mask-rcnn_r50_fpn_fp16_mdconv_c3-c5_1x_coco
     In Collection: Deformable Convolutional Networks v2
-    Config: configs/dcn/mask-rcnn_r50-mdconv-c3-c5_fpn_amp-1x_coco.py
+    Config: configs/dcnv2/mask-rcnn_r50-mdconv-c3-c5_fpn_amp-1x_coco.py
     Metadata:
       Training Memory (GB): 3.1
       Training Techniques:

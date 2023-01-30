@@ -516,3 +516,66 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             activate_map=True)
 
         return results_list
+
+    def forward(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
+                batch_data_samples: SampleList) -> tuple:
+        """Network forward process. Usually includes backbone, neck and head
+        forward without any post-processing.
+
+        Args:
+            x (List[Tensor]): Multi-level features that may have different
+                resolutions.
+            rpn_results_list (list[:obj:`InstanceData`]): List of region
+                proposals.
+            batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
+                the meta information of each image and corresponding
+                annotations.
+
+        Returns
+            tuple: A tuple of features from ``bbox_head`` and ``mask_head``
+            forward.
+        """
+        results = ()
+        batch_img_metas = [
+            data_samples.metainfo for data_samples in batch_data_samples
+        ]
+        num_imgs = len(batch_img_metas)
+
+        if self.with_semantic:
+            _, semantic_feat = self.semantic_head(x)
+        else:
+            semantic_feat = None
+
+        proposals = [rpn_results.bboxes for rpn_results in rpn_results_list]
+        num_proposals_per_img = tuple(len(p) for p in proposals)
+        rois = bbox2roi(proposals)
+        # bbox head
+        if self.with_bbox:
+            rois, cls_scores, bbox_preds = self._refine_roi(
+                x=x,
+                rois=rois,
+                semantic_feat=semantic_feat,
+                batch_img_metas=batch_img_metas,
+                num_proposals_per_img=num_proposals_per_img)
+            results = results + (cls_scores, bbox_preds)
+        # mask head
+        if self.with_mask:
+            rois = torch.cat(rois)
+            mask_results = self._mask_forward(
+                stage=-1,
+                x=x,
+                rois=rois,
+                semantic_feat=semantic_feat,
+                training=False)
+            aug_masks = [[
+                mask.sigmoid().detach()
+                for mask in mask_preds.split(num_proposals_per_img, 0)
+            ] for mask_preds in mask_results['mask_preds']]
+
+            merged_masks = []
+            for i in range(num_imgs):
+                aug_mask = [mask[i] for mask in aug_masks]
+                merged_mask = merge_aug_masks(aug_mask, batch_img_metas[i])
+                merged_masks.append(merged_mask)
+            results = results + (merged_masks, )
+        return results

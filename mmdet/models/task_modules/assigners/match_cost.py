@@ -206,7 +206,7 @@ class ClassificationCost(BaseMatchCost):
         Args:
             pred_instances (:obj:`InstanceData`): ``scores`` inside is
                 predicted classification logits, of shape
-                (num_query, num_class).
+                (num_queries, num_class).
             gt_instances (:obj:`InstanceData`): ``labels`` inside should have
                 shape (num_gt, ).
             img_meta (Optional[dict]): _description_. Defaults to None.
@@ -253,7 +253,7 @@ class FocalLossCost(BaseMatchCost):
         """
         Args:
             cls_pred (Tensor): Predicted classification logits, shape
-                (num_query, num_class).
+                (num_queries, num_class).
             gt_labels (Tensor): Label of `gt_bboxes`, shape (num_gt,).
 
         Returns:
@@ -272,13 +272,13 @@ class FocalLossCost(BaseMatchCost):
         """
         Args:
             cls_pred (Tensor): Predicted classification logits.
-                in shape (num_query, d1, ..., dn), dtype=torch.float32.
+                in shape (num_queries, d1, ..., dn), dtype=torch.float32.
             gt_labels (Tensor): Ground truth in shape (num_gt, d1, ..., dn),
                 dtype=torch.long. Labels should be binary.
 
         Returns:
             Tensor: Focal cost matrix with weight in shape\
-                (num_query, num_gt).
+                (num_queries, num_gt).
         """
         cls_pred = cls_pred.flatten(1)
         gt_labels = gt_labels.flatten(1).float()
@@ -349,13 +349,13 @@ class DiceCost(BaseMatchCost):
                                gt_masks: Tensor) -> Tensor:
         """
         Args:
-            mask_preds (Tensor): Mask prediction in shape (num_query, *).
+            mask_preds (Tensor): Mask prediction in shape (num_queries, *).
             gt_masks (Tensor): Ground truth in shape (num_gt, *)
                 store 0 or 1, 0 for negative class and 1 for
                 positive class.
 
         Returns:
-            Tensor: Dice cost matrix in shape (num_query, num_gt).
+            Tensor: Dice cost matrix in shape (num_queries, num_gt).
         """
         mask_preds = mask_preds.flatten(1)
         gt_masks = gt_masks.flatten(1).float()
@@ -415,13 +415,13 @@ class CrossEntropyLossCost(BaseMatchCost):
                               gt_labels: Tensor) -> Tensor:
         """
         Args:
-            cls_pred (Tensor): The prediction with shape (num_query, 1, *) or
-                (num_query, *).
+            cls_pred (Tensor): The prediction with shape (num_queries, 1, *) or
+                (num_queries, *).
             gt_labels (Tensor): The learning label of prediction with
                 shape (num_gt, *).
 
         Returns:
-            Tensor: Cross entropy cost matrix in shape (num_query, num_gt).
+            Tensor: Cross entropy cost matrix in shape (num_queries, num_gt).
         """
         cls_pred = cls_pred.flatten(1).float()
         gt_labels = gt_labels.flatten(1).float()

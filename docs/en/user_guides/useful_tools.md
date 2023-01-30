@@ -389,6 +389,13 @@ python tools/misc/download_dataset.py --dataset-name voc2007
 python tools/misc/download_dataset.py --dataset-name lvis
 ```
 
+For users in China, these datasets can also be downloaded from [OpenDataLab](https://opendatalab.com/) with high speed:
+
+- [COCO2017](https://opendatalab.com/COCO_2017/download)
+- [VOC2007](https://opendatalab.com/PASCAL_VOC2007/download)
+- [VOC2012](https://opendatalab.com/PASCAL_VOC2012/download)
+- [LVIS](https://opendatalab.com/LVIS/download)
+
 ## Benchmark
 
 ### Robust Detection Benchmark
