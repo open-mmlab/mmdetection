@@ -518,3 +518,51 @@ class CascadeRoIHead(BaseRoIHead):
             for i in range(len(batch_img_metas))
         ]
         return rois, cls_scores, bbox_preds
+
+    def forward(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
+                batch_data_samples: SampleList) -> tuple:
+        """Network forward process. Usually includes backbone, neck and head
+        forward without any post-processing.
+
+        Args:
+            x (List[Tensor]): Multi-level features that may have different
+                resolutions.
+            rpn_results_list (list[:obj:`InstanceData`]): List of region
+                proposals.
+            batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
+                the meta information of each image and corresponding
+                annotations.
+
+        Returns
+            tuple: A tuple of features from ``bbox_head`` and ``mask_head``
+            forward.
+        """
+        results = ()
+        batch_img_metas = [
+            data_samples.metainfo for data_samples in batch_data_samples
+        ]
+        proposals = [rpn_results.bboxes for rpn_results in rpn_results_list]
+        num_proposals_per_img = tuple(len(p) for p in proposals)
+        rois = bbox2roi(proposals)
+        # bbox head
+        if self.with_bbox:
+            rois, cls_scores, bbox_preds = self._refine_roi(
+                x, rois, batch_img_metas, num_proposals_per_img)
+            results = results + (cls_scores, bbox_preds)
+        # mask head
+        if self.with_mask:
+            aug_masks = []
+            rois = torch.cat(rois)
+            for stage in range(self.num_stages):
+                mask_results = self._mask_forward(stage, x, rois)
+                mask_preds = mask_results['mask_preds']
+                mask_preds = mask_preds.split(num_proposals_per_img, 0)
+                aug_masks.append([m.sigmoid().detach() for m in mask_preds])
+
+            merged_masks = []
+            for i in range(len(batch_img_metas)):
+                aug_mask = [mask[i] for mask in aug_masks]
+                merged_mask = merge_aug_masks(aug_mask, batch_img_metas[i])
+                merged_masks.append(merged_mask)
+            results = results + (merged_masks, )
+        return results
