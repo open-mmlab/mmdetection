@@ -480,7 +480,7 @@ class DynamicDiffusionDetHead(nn.Module):
                         rescale=True):
 
         batch_size = len(batch_img_metas)
-        assert batch_size == 1, 'Only support Batch Size = 1'
+
         cfg = self.test_cfg if cfg is None else cfg
         cfg = copy.deepcopy(cfg)
 
@@ -520,7 +520,7 @@ class DynamicDiffusionDetHead(nn.Module):
                                                                 keep_idx, :])
             if time_next < 0:
                 # Not same as original DiffusionDet
-                if self.use_ensemble:
+                if self.use_ensemble and self.sampling_timesteps > 1:
                     box_pred_per_image, scores_per_image, labels_per_image = \
                         self.inference(
                             box_cls=pred_logits[-1],
@@ -541,6 +541,7 @@ class DynamicDiffusionDetHead(nn.Module):
             c = (1 - alpha_next - sigma**2).sqrt()
 
             batch_noise_bboxes_list = []
+            batch_noise_bboxes_raw_list = []
             for idx in range(batch_size):
                 pred_noise = pred_noise_list[idx]
                 x_start = x_start_list[idx]
@@ -568,9 +569,20 @@ class DynamicDiffusionDetHead(nn.Module):
                         random.shuffle(select_mask)
                         noise_bboxes = noise_bboxes[select_mask]
 
+                    # raw noise boxes
+                    batch_noise_bboxes_raw_list.append(noise_bboxes)
+                    # resize to xyxy
+                    noise_bboxes = torch.clamp(
+                        noise_bboxes,
+                        min=-1 * self.snr_scale,
+                        max=self.snr_scale)
+                    noise_bboxes = ((noise_bboxes / self.snr_scale) + 1) / 2
+                    noise_bboxes = bbox_cxcywh_to_xyxy(noise_bboxes)
+                    noise_bboxes = noise_bboxes * batch_image_size[idx]
+
                 batch_noise_bboxes_list.append(noise_bboxes)
             batch_noise_bboxes = torch.stack(batch_noise_bboxes_list)
-            # TODO: BatchSize > 1 is not support yet.
+            batch_noise_bboxes_raw = torch.stack(batch_noise_bboxes_raw_list)
             if self.use_ensemble and self.sampling_timesteps > 1:
                 box_pred_per_image, scores_per_image, labels_per_image = \
                     self.inference(
@@ -582,22 +594,35 @@ class DynamicDiffusionDetHead(nn.Module):
                 ensemble_label.append(labels_per_image)
                 ensemble_coord.append(box_pred_per_image)
         if self.use_ensemble and self.sampling_timesteps > 1:
-            box_pred_per_image = torch.cat(ensemble_coord, dim=0)
-            scores_per_image = torch.cat(ensemble_score, dim=0)
-            labels_per_image = torch.cat(ensemble_label, dim=0)
+            steps = len(ensemble_score)
+            results_list = []
+            for idx in range(batch_size):
+                ensemble_score_per_img = [
+                    ensemble_score[i][idx] for i in range(steps)
+                ]
+                ensemble_label_per_img = [
+                    ensemble_label[i][idx] for i in range(steps)
+                ]
+                ensemble_coord_per_img = [
+                    ensemble_coord[i][idx] for i in range(steps)
+                ]
 
-            if self.use_nms:
-                det_bboxes, keep_idxs = batched_nms(box_pred_per_image,
-                                                    scores_per_image,
-                                                    labels_per_image, cfg.nms)
-                box_pred_per_image = box_pred_per_image[keep_idxs]
-                labels_per_image = labels_per_image[keep_idxs]
-                scores_per_image = det_bboxes[:, -1]
-            results = InstanceData()
-            results.bboxes = box_pred_per_image
-            results.scores = scores_per_image
-            results.labels = labels_per_image
-            results_list = [results]
+                scores_per_image = torch.cat(ensemble_score_per_img, dim=0)
+                labels_per_image = torch.cat(ensemble_label_per_img, dim=0)
+                box_pred_per_image = torch.cat(ensemble_coord_per_img, dim=0)
+
+                if self.use_nms:
+                    det_bboxes, keep_idxs = batched_nms(
+                        box_pred_per_image, scores_per_image, labels_per_image,
+                        cfg.nms)
+                    box_pred_per_image = box_pred_per_image[keep_idxs]
+                    labels_per_image = labels_per_image[keep_idxs]
+                    scores_per_image = det_bboxes[:, -1]
+                results = InstanceData()
+                results.bboxes = box_pred_per_image
+                results.scores = scores_per_image
+                results.labels = labels_per_image
+            results_list.append(results)
         else:
             box_cls = pred_logits[-1]
             box_pred = pred_bboxes[-1]
@@ -691,7 +716,9 @@ class DynamicDiffusionDetHead(nn.Module):
                 self.num_classes,
                 device=device).unsqueeze(0).repeat(self.num_proposals,
                                                    1).flatten(0, 1)
-
+            box_pred_list = []
+            scores_list = []
+            labels_list = []
             for i, (scores_per_image,
                     box_pred_per_image) in enumerate(zip(scores, box_pred)):
 
@@ -704,8 +731,10 @@ class DynamicDiffusionDetHead(nn.Module):
                 box_pred_per_image = box_pred_per_image[topk_indices]
 
                 if self.use_ensemble and self.sampling_timesteps > 1:
-                    return box_pred_per_image, scores_per_image, \
-                           labels_per_image
+                    box_pred_list.append(box_pred_per_image)
+                    scores_list.append(scores_per_image)
+                    labels_list.append(labels_per_image)
+                    continue
 
                 if self.use_nms:
                     det_bboxes, keep_idxs = batched_nms(
@@ -747,8 +776,10 @@ class DynamicDiffusionDetHead(nn.Module):
                 result.scores = scores_per_image
                 result.labels = labels_per_image
                 results.append(result)
-
-        return results
+        if self.use_ensemble and self.sampling_timesteps > 1:
+            return box_pred_list, scores_list, labels_list
+        else:
+            return results
 
 
 @MODELS.register_module()
