@@ -1,5 +1,4 @@
 _base_ = [
-    'mmdet::_base_/models/retinanet_r50_fpn.py',
     'mmdet::_base_/datasets/coco_detection.py',
     'mmdet::_base_/schedules/schedule_1x.py',
     'mmdet::_base_/default_runtime.py'
@@ -16,6 +15,7 @@ batch_augments = [
 norm_cfg = dict(type='SyncBN', requires_grad=True, eps=1e-3, momentum=0.01)
 checkpoint = 'https://download.openmmlab.com/mmclassification/v0/efficientnet/efficientnet-b0_3rdparty_8xb32-aa-advprop_in1k_20220119-26434485.pth'  # noqa
 model = dict(
+    type='EfficientDet',
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
@@ -24,7 +24,6 @@ model = dict(
         pad_size_divisor=image_size,
         batch_augments=batch_augments),
     backbone=dict(
-        _delete_=True,
         type='EfficientNet',
         arch='b0',
         drop_path_rate=0.2,
@@ -35,7 +34,6 @@ model = dict(
         init_cfg=dict(
             type='Pretrained', prefix='backbone', checkpoint=checkpoint)),
     neck=dict(
-        _delete_=True,
         type='BiFPN',
         num_stages=3,
         in_channels=[40, 112, 320],
@@ -60,16 +58,38 @@ model = dict(
         bbox_coder=dict(
             type='YXYXDeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
-            target_stds=[1.0, 1.0, 1.0, 1.0])),
+            target_stds=[1.0, 1.0, 1.0, 1.0]),
+        loss_cls=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0)),
     # training and testing settings
-    train_cfg=dict(assigner=dict(neg_iou_thr=0.5)),
+    train_cfg=dict(
+        assigner=dict(
+            type='TransMaxIoUAssigner',
+            pos_iou_thr=0.5,
+            neg_iou_thr=0.5,
+            min_pos_iou=0,
+            ignore_iof_thr=-1),
+        sampler=dict(
+            type='PseudoSampler'),  # Focal loss should use PseudoSampler
+        allowed_border=-1,
+        pos_weight=-1,
+        debug=False),
     test_cfg=dict(
+        nms_pre=1000,
+        min_bbox_size=0,
+        score_thr=0.05,
         nms=dict(
             type='soft_nms',
             iou_threshold=0.3,
             sigma=0.5,
             min_score=1e-3,
-            method='gaussian')))
+            method='gaussian'),
+        max_per_img=100))
 
 # dataset settings
 train_pipeline = [
