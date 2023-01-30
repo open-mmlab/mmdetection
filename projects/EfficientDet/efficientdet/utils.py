@@ -3,8 +3,10 @@ from typing import Tuple, Union
 
 import torch
 import torch.nn as nn
-from mmcv.cnn.bricks import Swish
+from mmcv.cnn.bricks import Swish, build_norm_layer
 from torch.nn import functional as F
+
+from mmdet.utils import OptConfigType
 
 
 class SwishImplementation(torch.autograd.Function):
@@ -110,6 +112,7 @@ class DepthWiseConvBlock(nn.Module):
         apply_norm: bool = True,
         conv_bn_act_pattern: bool = False,
         use_meswish: bool = True,
+        norm_cfg: OptConfigType = dict(type='BN', momentum=1e-2, eps=1e-3)
     ) -> None:
         super(DepthWiseConvBlock, self).__init__()
         self.depthwise_conv = Conv2dSamePadding(
@@ -124,8 +127,7 @@ class DepthWiseConvBlock(nn.Module):
 
         self.apply_norm = apply_norm
         if self.apply_norm:
-            self.bn = nn.BatchNorm2d(
-                num_features=out_channels, momentum=0.01, eps=1e-3)
+            self.bn = build_norm_layer(norm_cfg, num_features=out_channels)[1]
 
         self.apply_activation = conv_bn_act_pattern
         if self.apply_activation:
@@ -151,18 +153,19 @@ class DownChannelBlock(nn.Module):
         apply_norm: bool = True,
         conv_bn_act_pattern: bool = False,
         use_meswish: bool = True,
+        norm_cfg: OptConfigType = dict(type='BN', momentum=1e-2, eps=1e-3)
     ) -> None:
         super(DownChannelBlock, self).__init__()
-        self.conv = Conv2dSamePadding(in_channels, out_channels, 1)
+        self.down_conv = Conv2dSamePadding(in_channels, out_channels, 1)
         self.apply_norm = apply_norm
         if self.apply_norm:
-            self.bn = nn.BatchNorm2d(out_channels, momentum=0.01, eps=1e-3)
+            self.bn = build_norm_layer(norm_cfg, num_features=out_channels)[1]
         self.apply_activation = conv_bn_act_pattern
         if self.apply_activation:
             self.swish = MemoryEfficientSwish() if use_meswish else Swish()
 
     def forward(self, x):
-        x = self.conv(x)
+        x = self.down_conv(x)
         if self.apply_norm:
             x = self.bn(x)
         if self.apply_activation:

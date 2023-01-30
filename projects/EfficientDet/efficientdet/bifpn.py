@@ -6,23 +6,28 @@ from mmcv.cnn.bricks import Swish
 from mmengine.model import BaseModule
 
 from mmdet.registry import MODELS
-from mmdet.utils import MultiConfig
+from mmdet.utils import MultiConfig, OptConfigType
 from .utils import (DepthWiseConvBlock, DownChannelBlock, MaxPool2dSamePadding,
                     MemoryEfficientSwish)
 
 
 class BiFPNStage(nn.Module):
-    """
+    '''
         in_channels: List[int], input dim for P3, P4, P5
         out_channels: int, output dim for P2 - P7
-        first_time: bool, is it the first BiFPN
-        apply_bn_for_resampling:
-            bool, whether use bn after downchannelblock or depthwiseblock
-        conv_bn_act_pattern:
-            bool, whether use conv, bn, act pattern as a ConvModule
-        use_meswish: bool, whether use MemoryEfficientSwish, default use
-        epsilon: hyperparameter for fusion nodes
-    """
+        num_outs: int, BiFPN need feature maps num
+        conv_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
+            convolution layer. Defaults to Conv2dAdaptivePadding.
+        norm_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
+            normalization layer. Defaults to None.
+        act_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
+            activation layer in ConvModule. Defaults to None.
+        upsample_cfg (:obj:`ConfigDict` or dict, optional): Config dict
+            for interpolate layer. Defaults to dict(mode='nearest').
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict]): Initialization config dict.
+
+    '''
 
     def __init__(self,
                  in_channels: List[int],
@@ -31,6 +36,8 @@ class BiFPNStage(nn.Module):
                  apply_bn_for_resampling: bool = True,
                  conv_bn_act_pattern: bool = False,
                  use_meswish: bool = True,
+                 norm_cfg: OptConfigType = dict(
+                     type='BN', momentum=1e-2, eps=1e-3),
                  epsilon: float = 1e-4) -> None:
         super().__init__()
         assert isinstance(in_channels, list)
@@ -40,6 +47,7 @@ class BiFPNStage(nn.Module):
         self.apply_bn_for_resampling = apply_bn_for_resampling
         self.conv_bn_act_pattern = conv_bn_act_pattern
         self.use_meswish = use_meswish
+        self.norm_cfg = norm_cfg
         self.epsilon = epsilon
 
         if self.first_time:
@@ -47,35 +55,40 @@ class BiFPNStage(nn.Module):
                 self.in_channels[-1],
                 self.out_channels,
                 apply_norm=self.apply_bn_for_resampling,
-                conv_bn_act_pattern=self.conv_bn_act_pattern)
+                conv_bn_act_pattern=self.conv_bn_act_pattern,
+                norm_cfg=norm_cfg)
             self.p4_down_channel = DownChannelBlock(
                 self.in_channels[-2],
                 self.out_channels,
                 apply_norm=self.apply_bn_for_resampling,
-                conv_bn_act_pattern=self.conv_bn_act_pattern)
+                conv_bn_act_pattern=self.conv_bn_act_pattern,
+                norm_cfg=norm_cfg)
             self.p3_down_channel = DownChannelBlock(
                 self.in_channels[-3],
                 self.out_channels,
                 apply_norm=self.apply_bn_for_resampling,
-                conv_bn_act_pattern=self.conv_bn_act_pattern)
+                conv_bn_act_pattern=self.conv_bn_act_pattern,
+                norm_cfg=norm_cfg)
             self.p5_to_p6 = nn.Sequential(
                 DownChannelBlock(
                     self.in_channels[-1],
                     self.out_channels,
                     apply_norm=self.apply_bn_for_resampling,
-                    conv_bn_act_pattern=self.conv_bn_act_pattern),
-                MaxPool2dSamePadding(3, 2))
+                    conv_bn_act_pattern=self.conv_bn_act_pattern,
+                    norm_cfg=norm_cfg), MaxPool2dSamePadding(3, 2))
             self.p6_to_p7 = MaxPool2dSamePadding(3, 2)
             self.p4_level_connection = DownChannelBlock(
                 self.in_channels[-2],
                 self.out_channels,
                 apply_norm=self.apply_bn_for_resampling,
-                conv_bn_act_pattern=self.conv_bn_act_pattern)
+                conv_bn_act_pattern=self.conv_bn_act_pattern,
+                norm_cfg=norm_cfg)
             self.p5_level_connection = DownChannelBlock(
                 self.in_channels[-1],
                 self.out_channels,
                 apply_norm=self.apply_bn_for_resampling,
-                conv_bn_act_pattern=self.conv_bn_act_pattern)
+                conv_bn_act_pattern=self.conv_bn_act_pattern,
+                norm_cfg=norm_cfg)
 
         self.p6_upsample = nn.Upsample(scale_factor=2, mode='nearest')
         self.p5_upsample = nn.Upsample(scale_factor=2, mode='nearest')
@@ -93,42 +106,50 @@ class BiFPNStage(nn.Module):
             out_channels,
             out_channels,
             apply_norm=self.apply_bn_for_resampling,
-            conv_bn_act_pattern=self.conv_bn_act_pattern)
+            conv_bn_act_pattern=self.conv_bn_act_pattern,
+            norm_cfg=norm_cfg)
         self.conv5_up = DepthWiseConvBlock(
             out_channels,
             out_channels,
             apply_norm=self.apply_bn_for_resampling,
-            conv_bn_act_pattern=self.conv_bn_act_pattern)
+            conv_bn_act_pattern=self.conv_bn_act_pattern,
+            norm_cfg=norm_cfg)
         self.conv4_up = DepthWiseConvBlock(
             out_channels,
             out_channels,
             apply_norm=self.apply_bn_for_resampling,
-            conv_bn_act_pattern=self.conv_bn_act_pattern)
+            conv_bn_act_pattern=self.conv_bn_act_pattern,
+            norm_cfg=norm_cfg)
         self.conv3_up = DepthWiseConvBlock(
             out_channels,
             out_channels,
             apply_norm=self.apply_bn_for_resampling,
-            conv_bn_act_pattern=self.conv_bn_act_pattern)
+            conv_bn_act_pattern=self.conv_bn_act_pattern,
+            norm_cfg=norm_cfg)
         self.conv4_down = DepthWiseConvBlock(
             out_channels,
             out_channels,
             apply_norm=self.apply_bn_for_resampling,
-            conv_bn_act_pattern=self.conv_bn_act_pattern)
+            conv_bn_act_pattern=self.conv_bn_act_pattern,
+            norm_cfg=norm_cfg)
         self.conv5_down = DepthWiseConvBlock(
             out_channels,
             out_channels,
             apply_norm=self.apply_bn_for_resampling,
-            conv_bn_act_pattern=self.conv_bn_act_pattern)
+            conv_bn_act_pattern=self.conv_bn_act_pattern,
+            norm_cfg=norm_cfg)
         self.conv6_down = DepthWiseConvBlock(
             out_channels,
             out_channels,
             apply_norm=self.apply_bn_for_resampling,
-            conv_bn_act_pattern=self.conv_bn_act_pattern)
+            conv_bn_act_pattern=self.conv_bn_act_pattern,
+            norm_cfg=norm_cfg)
         self.conv7_down = DepthWiseConvBlock(
             out_channels,
             out_channels,
             apply_norm=self.apply_bn_for_resampling,
-            conv_bn_act_pattern=self.conv_bn_act_pattern)
+            conv_bn_act_pattern=self.conv_bn_act_pattern,
+            norm_cfg=norm_cfg)
         # weights
         self.p6_w1 = nn.Parameter(
             torch.ones(2, dtype=torch.float32), requires_grad=True)
@@ -251,20 +272,6 @@ class BiFPNStage(nn.Module):
 
 @MODELS.register_module()
 class BiFPN(BaseModule):
-    """
-        num_stages: int, stacked BiFPN nums
-        in_channels: List[int], input dim for P3, P4, P5
-        out_channels: int, output dim for P2 - P7
-        start_level: int, index of backbone outputs
-        first_time: bool, is it the first BiFPN
-        epsilon: hyperparameter for fusion nodes
-        apply_bn_for_resampling:
-            bool, whether use bn after downchannelblock or depthwiseblock
-        conv_bn_act_pattern:
-            bool, whether use conv, bn, act pattern as a ConvModule
-        use_meswish: bool, whether use MemoryEfficientSwish, default use
-        init_cfg: init BiFPN setting
-    """
 
     def __init__(self,
                  num_stages: int,
@@ -275,6 +282,8 @@ class BiFPN(BaseModule):
                  apply_bn_for_resampling: bool = True,
                  conv_bn_act_pattern: bool = False,
                  use_meswish: bool = True,
+                 norm_cfg: OptConfigType = dict(
+                     type='BN', momentum=1e-2, eps=1e-3),
                  init_cfg: MultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         self.start_level = start_level
@@ -286,6 +295,7 @@ class BiFPN(BaseModule):
                 apply_bn_for_resampling=apply_bn_for_resampling,
                 conv_bn_act_pattern=conv_bn_act_pattern,
                 use_meswish=use_meswish,
+                norm_cfg=norm_cfg,
                 epsilon=epsilon) for _ in range(num_stages)
         ])
 

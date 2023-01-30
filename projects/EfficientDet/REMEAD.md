@@ -11,31 +11,34 @@ Mingxing Tan, Ruoming Pang, Quoc V. Le
 
 ## Description
 
-This is an implementation of [BiFPN](https://github.com/zylo117/Yet-Another-EfficientDet-Pytorch) based on [MMDetection](https://github.com/open-mmlab/mmdetection/tree/3.x), [MMCV](https://github.com/open-mmlab/mmcv), and [MMEngine](https://github.com/open-mmlab/mmengine).
+This is an implementation of [EfficientDet](https://github.com/google/automl) based on [MMDetection](https://github.com/open-mmlab/mmdetection/tree/3.x), [MMCV](https://github.com/open-mmlab/mmcv), and [MMEngine](https://github.com/open-mmlab/mmengine).
+<br>
+EfficientDet a new family of object detectors, which consistently achieve much better efficiency than prior art across a wide
+spectrum of resource constraints.
+<br>
+In particular, with singlemodel and single-scale, EfficientDet-D7 achieves stateof-the-art 55.1 AP on COCO test-dev with 77M parameters and 410B FLOP
 <br>
 BiFPN is a simple yet highly effective weighted bi-directional feature pyramid network, which introduces learnable weights to learn the importance of different input features, while repeatedly applying topdown and bottom-up multi-scale feature fusion.
 <br>
 In contrast to other feature pyramid network, such as FPN, FPN + PAN, NAS-FPN, BiFPN achieves  the best accuracy with fewer parameters and FLOPs.
 
 <div align="center">
-<img src="https://github.com/zwhus/pictures/raw/main/bifpn.png">
+<img src="https://github.com/zwhus/pictures/raw/main/Screenshot%20from%202023-01-30%2015-33-42.png">
 </div>
 <br>
 
 ## Usage
 
-### Training commands
-
-In MMDetection's root directory, run the following command to train the model:
+### convert weights from tensorflow to pytorch
 
 ```bash
-python tools/train.py projects/BiFPN/configs/efficientdet_effb3_bifpn_8xb4-crop896-1x_coco.py
+python efficientdet/transfer_efficientdet --backbone {backname} --tensorflow_weight {tensorflow_efficientdet_path} --out_weight {out_path}
 ```
 
-For multi-gpu training, run:
+### For Example
 
 ```bash
-python -m torch.distributed.launch --nnodes=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} --master_port=29506 --master_addr="127.0.0.1" tools/train.py projects/BiFPN/configs/efficientdet_effb3_bifpn_8xb4-crop896-1x_coco.py
+python efficientdet/transfer_efficientdet --backbone efficientnet-b0 --tensorflow_weight efficientdet-d0/model --out_weight demo.pth
 ```
 
 ### Testing commands
@@ -43,8 +46,17 @@ python -m torch.distributed.launch --nnodes=1 --node_rank=0 --nproc_per_node=${N
 In MMDetection's root directory, run the following command to test the model:
 
 ```bash
-python tools/train.py projects/BiFPN/configs/efficientdet_effb3_bifpn_8xb4-crop896-1x_coco.py ${CHECKPOINT_PATH}
+python tools/train.py projects/EfficientDet/configs/efficientdet_effb0_bifpn_8xb16-crop512-300e_coco.py ${CHECKPOINT_PATH}
 ```
+
+## Results
+
+<!-- List the results as usually done in other model's README. [Example](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/README.md#results-and-models)
+You should claim whether this is based on the pre-trained weights, which are converted from the official release; or it's a reproduced result obtained from retraining the model in this project. -->
+
+|                                      Method                                      |    Backbone     | Pretrained Model |  Training set  |   Test set   | #epoch | val box AP | official AP |
+| :------------------------------------------------------------------------------: | :-------------: | :--------------: | :------------: | :----------: | :----: | :--------: | :---------: |
+| [efficientdet-d0](./configs/efficientdet_effb0_bifpn_8xb16-crop512-300e_coco.py) | efficientnet-b0 |     ImageNet     | COCO2017 Train | COCO2017 Val |  300   |   0.344    |    0.343    |
 
 ## Citation
 
