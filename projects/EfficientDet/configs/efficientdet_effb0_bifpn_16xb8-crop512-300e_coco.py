@@ -14,7 +14,7 @@ batch_augments = [
     dict(type='BatchFixedSizePad', size=(image_size, image_size))
 ]
 norm_cfg = dict(type='SyncBN', requires_grad=True, eps=1e-3, momentum=0.01)
-checkpoint = 'https://download.openmmlab.com/mmclassification/v0/efficientnet/efficientnet-b3_3rdparty_8xb32-aa_in1k_20220119-5b4887a0.pth'  # noqa
+checkpoint = 'https://download.openmmlab.com/mmclassification/v0/efficientnet/efficientnet-b0_3rdparty_8xb32-aa-advprop_in1k_20220119-26434485.pth'  # noqa
 model = dict(
     data_preprocessor=dict(
         type='DetDataPreprocessor',
@@ -82,7 +82,7 @@ train_pipeline = [
         scale=(image_size, image_size),
         ratio_range=(0.1, 2.0),
         keep_ratio=True),
-    dict(type='RandomCrop', crop_size=image_size),
+    dict(type='RandomCrop', crop_size=(image_size, image_size)),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]
