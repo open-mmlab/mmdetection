@@ -15,22 +15,30 @@ This is an implementation of [DiffusionDet](https://github.com/ShoufaChen/Diffus
 In MMDetection's root directory, run the following command to train the model:
 
 ```bash
-python tools/train.py projects/DiffusionDet/configs/xxx.py
+python tools/train.py projects/DiffusionDet/model_converters/diffusiondet_resnet_to_mmdet.py
 ```
 
 For multi-gpu training, run:
 
 ```bash
-python -m torch.distributed.launch --nnodes=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} --master_port=29506 --master_addr="127.0.0.1" tools/train.py projects/DiffusionDet/configs/xxx.py
+python -m torch.distributed.launch --nnodes=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} --master_port=29506 --master_addr="127.0.0.1" tools/train.py projects/DiffusionDet/model_converters/diffusiondet_resnet_to_mmdet.py
 ```
 
 ### Testing commands
 
+Users can use [convert checkpoint script](model_converters/diffusiondet_resnet_to_mmdet.py) to convert DiffusionDet-resnet50 model to mmdet version.
+
+```shell
+python projects/DiffusionDet/model_converters/diffusiondet_resnet_to_mmdet.py ${DiffusionDet ckpt path} ${MMDetectron ckpt path}
+```
+
 In MMDetection's root directory, run the following command to test the model:
 
 ```bash
-python tools/test.py projects/DiffusionDet/configs/xxx.py ${CHECKPOINT_PATH}
+python tools/test.py projects/DiffusionDet/model_converters/diffusiondet_resnet_to_mmdet.py ${CHECKPOINT_P
 ```
+
+**Note:** During inference time, DiffusionDet will randomly generate noisy boxes, which may affect the AP results. If users want to get the same result every inference time, setting seed is a good way.
 
 ## Results
 
@@ -38,13 +46,13 @@ Here we provide the baseline version of DiffusionDet with ResNet50 backbone.
 
 To find more variants, please visit the [official model zoo](https://github.com/ShoufaChen/DiffusionDet#models).
 
-| Backbone |  Style  | Lr schd | Mem (GB) | FPS | mask AP val2017 |    Config    |         Download         |
-| :------: | :-----: | :-----: | :------: | :-: | :-------------: | :----------: | :----------------------: |
-|   R-50   | PyTorch |    x    |    x     |  x  |        x        | [config](<>) | [model](<>) \| [log](<>) |
+| Backbone |  Style  | Lr schd | Mem (GB) | FPS | AP  |    Config    |         Download         |
+| :------: | :-----: | :-----: | :------: | :-: | :-: | :----------: | :----------------------: |
+|   R-50   | PyTorch |         |          |     |     | [config](<>) | [model](<>) \| [log](<>) |
 
 ## License
 
-TODO: DiffusionDet is using CC-BY-NC 4.0 license.
+DiffusionDet is under the [CC-BY-NC 4.0 license](https://github.com/ShoufaChen/DiffusionDet/blob/main/LICENSE). Users should be careful about adopting these features in any commercial matters.
 
 ## Citation
 
@@ -84,9 +92,9 @@ A project does not necessarily have to be finished in a single PR, but it's esse
 
     <!-- As this template does. -->
 
-- [x] Milestone 2: Indicates a successful model implementation.
+- [ ] Milestone 2: Indicates a successful model implementation.
 
-  - [x] Training-time correctness
+  - [ ] Training-time correctness
 
     <!-- If you are reproducing the result from a paper, checking this item means that you should have trained your model from scratch based on the original paper's specification and verified that the final result matches the report within a minor error range. -->
 
