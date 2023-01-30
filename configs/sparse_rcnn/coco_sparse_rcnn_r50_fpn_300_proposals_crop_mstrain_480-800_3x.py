@@ -49,4 +49,7 @@ train_pipeline = [
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
 ]
-data = dict(train=dict(pipeline=train_pipeline))
+data = dict(
+    train=dict(pipeline=train_pipeline),
+    samples_per_gpu=4,
+    workers_per_gpu=4,)

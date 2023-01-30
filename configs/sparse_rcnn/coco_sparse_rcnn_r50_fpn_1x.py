@@ -93,3 +93,8 @@ optimizer_config = dict(_delete_=True, grad_clip=dict(max_norm=1, norm_type=2))
 # learning policy
 lr_config = dict(policy='step', step=[8, 11])
 runner = dict(type='EpochBasedRunner', max_epochs=12)
+
+data = dict(
+    samples_per_gpu=4,
+    workers_per_gpu=4,
+)
