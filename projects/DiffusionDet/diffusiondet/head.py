@@ -433,6 +433,12 @@ class DynamicDiffusionDetHead(nn.Module):
             list[obj:`InstanceData`]: Detection results of each image
             after the post process.
         """
+        # hard-setting seed to keep results same (if necessary)
+        # seed = 0
+        # random.seed(seed)
+        # torch.manual_seed(seed)
+        # torch.cuda.manual_seed_all(seed)
+
         device = x[-1].device
 
         batch_img_metas = [

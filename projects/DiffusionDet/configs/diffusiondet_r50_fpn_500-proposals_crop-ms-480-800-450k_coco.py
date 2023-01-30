@@ -132,11 +132,27 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 
+test_pipeline = [
+    dict(
+        type='LoadImageFromFile',
+        file_client_args=_base_.file_client_args,
+        imdecode_backend=backend),
+    dict(type='Resize', scale=(1333, 800), keep_ratio=True, backend=backend),
+    # If you don't have a gt annotation, delete the pipeline
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
+]
 train_dataloader = dict(
     sampler=dict(type='InfiniteSampler'),
     dataset=dict(
         filter_cfg=dict(filter_empty_gt=False, min_size=1e-5),
         pipeline=train_pipeline))
+
+val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+test_dataloader = val_dataloader
 
 # optimizer
 optim_wrapper = dict(

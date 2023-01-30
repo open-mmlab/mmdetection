@@ -62,6 +62,7 @@ def convert(src, dst):
         else:
             # some base parameters such as beta will not convert
             print(f'{k} is not converted!!')
+            continue
 
         if not isinstance(v, np.ndarray) and not isinstance(v, torch.Tensor):
             raise ValueError(
