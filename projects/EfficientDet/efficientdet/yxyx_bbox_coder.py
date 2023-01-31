@@ -228,7 +228,7 @@ def YXbbox2delta(proposals, gt, means=(0., 0., 0., 0.), stds=(1., 1., 1., 1.)):
     dy = (gy - py) / ph
     dw = torch.log(gw / pw)
     dh = torch.log(gh / ph)
-    deltas = torch.stack([dx, dy, dw, dh], dim=-1)
+    deltas = torch.stack([dy, dx, dh, dw], dim=-1)
 
     means = deltas.new_tensor(means).unsqueeze(0)
     stds = deltas.new_tensor(stds).unsqueeze(0)
