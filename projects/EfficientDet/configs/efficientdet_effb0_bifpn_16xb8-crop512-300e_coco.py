@@ -7,7 +7,7 @@ custom_imports = dict(
     imports=['projects.EfficientDet.efficientdet'], allow_failed_imports=False)
 
 image_size = 512
-datasettype = 'Coco90Dataset'
+dataset_type = 'Coco90Dataset'
 evalute_type = 'Coco90Metric'
 batch_augments = [
     dict(type='BatchFixedSizePad', size=(image_size, image_size))
@@ -121,11 +121,11 @@ test_pipeline = [
 train_dataloader = dict(
     batch_size=16,
     num_workers=16,
-    dataset=dict(type=datasettype, pipeline=train_pipeline))
-val_dataloader = dict(dataset=dict(type=datasettype, pipeline=test_pipeline))
+    dataset=dict(type=dataset_type, pipeline=train_pipeline))
+val_dataloader = dict(dataset=dict(type=dataset_type, pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
-val_evaluator = dict(type='Coco90Metric')
+val_evaluator = dict(type=evalute_type)
 test_evaluator = val_evaluator
 
 optim_wrapper = dict(

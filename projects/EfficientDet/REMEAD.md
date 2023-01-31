@@ -1,7 +1,7 @@
 # EfficientDet
 
 > [**EfficientDet: Scalable and Efficient Object Detection**](https://arxiv.org/pdf/1911.09070.pdf),
-> Mingxing Tan, Ruoming Pang, Quoc V. Le
+> Mingxing Tan, Ruoming Pang, Quoc V. Le,
 > *CVPR 2020*
 
 ## Abstract
@@ -24,14 +24,22 @@ In contrast to other feature pyramid network, such as FPN, FPN + PAN, NAS-FPN, B
 
 ### Model conversion
 
+Firstly, download EfficientDet [weights](https://github.com/google/automl/tree/master/efficientdet) and unzip,  please use the following command
+
 ```bash
-python projects/EfficientDet/convert_tf_to_pt.py --backbone {BACKBONE_NAME} --tensorflow_weight {TENSORFLOW_WEIGHT_PATH} --out_weight {OUT_PATH}
+tar -xzvf {EFFICIENTDET_WEIGHT}
 ```
 
-**Note:** if you want convert weights from tensorflow to pytorch, you should firstly install tensorflow, please use the following command
+Then, install tensorflow, please use the following command
 
 ```bash
 pip install tensorflow-gpu==2.6.0
+```
+
+Lastly, convert weights from tensorflow to pytorch, please use the following command
+
+```bash
+python projects/EfficientDet/convert_tf_to_pt.py --backbone {BACKBONE_NAME} --tensorflow_weight {TENSORFLOW_WEIGHT_PATH} --out_weight {OUT_PATH}
 ```
 
 ### Testing commands
@@ -44,8 +52,11 @@ python tools/test.py projects/EfficientDet/configs/efficientdet_effb0_bifpn_8xb1
 
 ## Results
 
-<!-- List the results as usually done in other model's README. [Example](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/README.md#results-and-models)
-You should claim whether this is based on the pre-trained weights, which are converted from the official release; or it's a reproduced result obtained from retraining the model in this project. -->
+Based on mmdetection, this project aligns the test accuracy of the [official model](https://github.com/google/automl).
+<br>
+If you want to reproduce the test results, you need to convert model weights first, then run the test command.
+<br>
+The training accuracy will also be aligned with the official in the future
 
 |                                      Method                                      |    Backbone     | Pretrained Model |  Training set  |   Test set   | Epoch | Val Box AP | Official AP |
 | :------------------------------------------------------------------------------: | :-------------: | :--------------: | :------------: | :----------: | :---: | :--------: | :---------: |
