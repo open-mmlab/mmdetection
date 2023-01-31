@@ -10,34 +10,61 @@ This is an implementation of [DiffusionDet](https://github.com/ShoufaChen/Diffus
 
 <!-- For a typical model, this section should contain the commands for training and testing. You are also suggested to dump your environment specification to env.yml by `conda env export > env.yml`. -->
 
+### Comparison of results
+
+1. Download the [DiffusionDet released model](https://github.com/ShoufaChen/DiffusionDet#models).
+
+2. Convert model from DiffusionDet version to MMDetection version. We give a [sample script](model_converters/diffusiondet_resnet_to_mmdet.py)
+   to convert `DiffusionDet-resnet50` model. Users can download the corresponding models from [here](https://github.com/ShoufaChen/DiffusionDet/releases/download/v0.1/diffdet_coco_res50.pth).
+
+   ```shell
+   python projects/DiffusionDet/model_converters/diffusiondet_resnet_to_mmdet.py ${DiffusionDet ckpt path} ${MMDetectron ckpt path}
+   ```
+
+3. Following \[Testing commands\](#Testing commands) to test the model in MMDetection.
+
+**Note:** During inference time, DiffusionDet will randomly generate noisy boxes,
+which may affect the AP results. If users want to get the same result every inference time, setting seed is a good way.
+We give a table to compare the inference results on `ResNet50-500-proposals` between DiffusionDet and MMDetection.
+
+|                                                         Config                                                          | Step |    AP     |
+| :---------------------------------------------------------------------------------------------------------------------: | :--: | :-------: |
+| [DiffusionDet](https://github.com/ShoufaChen/DiffusionDet/blob/main/configs/diffdet.coco.res50.yaml) (released results) |  1   |   45.5    |
+|      [DiffusionDet](https://github.com/ShoufaChen/DiffusionDet/blob/main/configs/diffdet.coco.res50.yaml) (seed=0)      |  1   |   45.66   |
+|         [MMDetection](configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py) (seed=0)          |  1   |   45.7    |
+|       [MMDetection](configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py) (random seed)       |  1   | 45.6~45.8 |
+| [DiffusionDet](https://github.com/ShoufaChen/DiffusionDet/blob/main/configs/diffdet.coco.res50.yaml) (released results) |  4   |   46.1    |
+|      [DiffusionDet](https://github.com/ShoufaChen/DiffusionDet/blob/main/configs/diffdet.coco.res50.yaml) (seed=0)      |  4   |   46.38   |
+|         [MMDetection](configs/diffusiondet_r50_fpn_500-proposals_4-steps_crop-ms-480-800-450k_coco.py) (seed=0)         |  4   |   46.4    |
+|      [MMDetection](configs/diffusiondet_r50_fpn_500-proposals_4-steps_crop-ms-480-800-450k_coco.py) (random seed)       |  4   | 46.2~46.4 |
+
+- `seed=0` means hard set seed before generating random boxes.
+  ```python
+  # hard set seed=0 before generating random boxes
+  seed = 0
+  random.seed(seed)
+  torch.manual_seed(seed)
+  # torch.cuda.manual_seed(seed)
+  torch.cuda.manual_seed_all(seed)
+  ...
+  noise_bboxes_raw = torch.randn(
+      (self.num_proposals, 4),
+      device=device)
+  ...
+  ```
+- `random seed` means do not hard set seed before generating random boxes.
+
 ### Training commands
 
 MMDetection currently does not fully support training DiffusionDet.
 
 ### Testing commands
 
-Users can use [convert checkpoint script](model_converters/diffusiondet_resnet_to_mmdet.py) to convert DiffusionDet-resnet50 model to mmdet version.
-
-```shell
-python projects/DiffusionDet/model_converters/diffusiondet_resnet_to_mmdet.py ${DiffusionDet ckpt path} ${MMDetectron ckpt path}
-```
-
 In MMDetection's root directory, run the following command to test the model:
 
 ```bash
 python tools/test.py projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py ${CHECKPOINT_PATH}
 ```
-
-**Note:** During inference time, DiffusionDet will randomly generate noisy boxes, which may affect the AP results. If users want to get the same result every inference time, setting seed is a good way.
-
-|                            Repo                            | Backbone | Proposals | Step |  Seed  |    AP     |
-| :--------------------------------------------------------: | :------: | :-------: | :--: | :----: | :-------: |
-| [DiffusionDet](https://github.com/ShoufaChen/DiffusionDet) |   R-50   |    500    |  1   |   0    |   45.66   |
-|                        MMDetection                         |   R-50   |    500    |  1   |   0    |   45.7    |
-|                        MMDetection                         |   R-50   |    500    |  1   | random | 45.6~45.8 |
-| [DiffusionDet](https://github.com/ShoufaChen/DiffusionDet) |   R-50   |    500    |  4   |   0    |   46.38   |
-|                        MMDetection                         |   R-50   |    500    |  4   |   0    |   46.4    |
-|                        MMDetection                         |   R-50   |    500    |  4   | random | 46.2~46.4 |
 
 ## Results
 
