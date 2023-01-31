@@ -525,6 +525,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
                 'panopticapi.git.')
         self.rgb2id = utils.rgb2id
 
+        self.file_client = FileClient(**file_client_args)
         super(LoadPanopticAnnotations, self).__init__(
             with_bbox=with_bbox,
             with_label=with_label,
