@@ -21,6 +21,19 @@ class YXYXAnchorGenerator(AnchorGenerator):
                                       ratios: Tensor,
                                       center: Optional[Tuple[float]] = None) \
             -> Tensor:
+        """Generate base anchors of a single level.
+
+        Args:
+            base_size (int | float): Basic size of an anchor.
+            scales (torch.Tensor): Scales of the anchor.
+            ratios (torch.Tensor): The ratio between the height
+                and width of anchors in a single level.
+            center (tuple[float], optional): The center of the base anchor
+                related to a single feature grid. Defaults to None.
+
+        Returns:
+            torch.Tensor: Anchors in a single-level feature maps.
+        """
 
         w = base_size
         h = base_size

@@ -1,11 +1,10 @@
-import math
+# Copyright (c) OpenMMLab. All rights reserved.
 from typing import Tuple
 
 import torch.nn as nn
 from mmcv.cnn.bricks import build_norm_layer
 from mmengine.model import bias_init_with_prob
 from torch import Tensor
-from torch.nn.init import _calculate_fan_in_and_fan_out, _no_grad_normal_
 
 from mmdet.models.dense_heads.anchor_head import AnchorHead
 from mmdet.registry import MODELS
@@ -13,23 +12,20 @@ from mmdet.utils import OptConfigType, OptMultiConfig
 from .utils import DepthWiseConvBlock, MemoryEfficientSwish
 
 
-def variance_scaling_(tensor, gain=1.):
-    # type: (Tensor, float) -> Tensor
-    r"""
-    initializer for SeparableConv in Regressor/Classifier
-    reference: https://keras.io/zh/initializers/  VarianceScaling
-    """
-    fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor)
-    std = math.sqrt(gain / float(fan_in))
-
-    return _no_grad_normal_(tensor, 0., std)
-
-
 @MODELS.register_module()
 class EfficientDetSepBNHead(AnchorHead):
     """EfficientDetHead with separate BN.
 
-    num_ins: feature maps num
+    num_classes (int): Number of categories excluding the background
+    category. in_channels (int): Number of channels in the input feature map.
+    feat_channels (int): Number of hidden channels. stacked_convs (int): Number
+    of repetitions of conv norm_cfg (dict): Config dict for normalization
+    layer. anchor_generator (dict): Config dict for anchor generator bbox_coder
+    (dict): Config of bounding box coder. loss_cls (dict): Config of
+    classification loss. loss_bbox (dict): Config of localization loss.
+    train_cfg (dict): Training config of anchor head. test_cfg (dict): Testing
+    config of anchor head. init_cfg (dict or list[dict], optional):
+    Initialization config dict.
     """
 
     def __init__(self,

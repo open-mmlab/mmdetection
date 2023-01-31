@@ -38,7 +38,26 @@ class YXYXDeltaXYWHBBoxCoder(DeltaXYWHBBoxCoder):
                pred_bboxes,
                max_shape=None,
                wh_ratio_clip=16 / 1000):
+        """Apply transformation `pred_bboxes` to `boxes`.
 
+        Args:
+            bboxes (torch.Tensor or :obj:`BaseBoxes`): Basic boxes. Shape
+                (B, N, 4) or (N, 4)
+            pred_bboxes (Tensor): Encoded offsets with respect to each roi.
+               Has shape (B, N, num_classes * 4) or (B, N, 4) or
+               (N, num_classes * 4) or (N, 4). Note N = num_anchors * W * H
+               when rois is a grid of anchors.Offset encoding follows [1]_.
+            max_shape (Sequence[int] or torch.Tensor or Sequence[
+               Sequence[int]],optional): Maximum bounds for boxes, specifies
+               (H, W, C) or (H, W). If bboxes shape is (B, N, 4), then
+               the max_shape should be a Sequence[Sequence[int]]
+               and the length of max_shape should also be B.
+            wh_ratio_clip (float, optional): The allowed ratio between
+                width and height.
+
+        Returns:
+            Union[torch.Tensor, :obj:`BaseBoxes`]: Decoded boxes.
+        """
         bboxes = get_box_tensor(bboxes)
         assert pred_bboxes.size(0) == bboxes.size(0)
         if pred_bboxes.ndim == 3:
