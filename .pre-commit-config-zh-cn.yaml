@@ -4,8 +4,8 @@ repos:
     rev: 5.0.4
     hooks:
       - id: flake8
-  - repo: https://gitee.com/zhouzaida/mirrors-isort
-    rev: 5.12.1
+  - repo: https://gitee.com/openmmlab/mirrors-isort
+    rev: 5.11.5
     hooks:
       - id: isort
   - repo: https://gitee.com/openmmlab/mirrors-yapf
