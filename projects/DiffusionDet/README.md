@@ -15,7 +15,7 @@ This is an implementation of [DiffusionDet](https://github.com/ShoufaChen/Diffus
 In MMDetection's root directory, run the following command to train the model:
 
 ```bash
-python tools/train.py projects/DiffusionDet/model_converters/diffusiondet_resnet_to_mmdet.py
+python projects/DiffusionDet/model_converters/diffusiondet_resnet_to_mmdet.py
 ```
 
 For multi-gpu training, run:
