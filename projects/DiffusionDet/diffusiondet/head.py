@@ -1,12 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 
-# ========================================
-# Modified by Shoufa Chen
-# ========================================
-# Modified by Peize Sun, Rufeng Zhang
-# Contact: {sunpeize, cxrfzhang}@foxmail.com
-#
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Modified from https://github.com/ShoufaChen/DiffusionDet/blob/main/diffusiondet/detector.py   # noqa
+# Modified from https://github.com/ShoufaChen/DiffusionDet/blob/main/diffusiondet/head.py   # noqa
+
+# This work is licensed under the CC-BY-NC 4.0 License.
+# Users should be careful about adopting these features in any commercial matters.    # noqa
+# For more details, please refer to https://github.com/ShoufaChen/DiffusionDet/blob/main/LICENSE    # noqa
 
 import copy
 import math

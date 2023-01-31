@@ -12,17 +12,7 @@ This is an implementation of [DiffusionDet](https://github.com/ShoufaChen/Diffus
 
 ### Training commands
 
-In MMDetection's root directory, run the following command to train the model:
-
-```bash
-python projects/DiffusionDet/model_converters/diffusiondet_resnet_to_mmdet.py
-```
-
-For multi-gpu training, run:
-
-```bash
-python -m torch.distributed.launch --nnodes=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} --master_port=29506 --master_addr="127.0.0.1" tools/train.py projects/DiffusionDet/model_converters/diffusiondet_resnet_to_mmdet.py
-```
+MMDetection currently does not fully support training DiffusionDet.
 
 ### Testing commands
 
@@ -35,7 +25,7 @@ python projects/DiffusionDet/model_converters/diffusiondet_resnet_to_mmdet.py ${
 In MMDetection's root directory, run the following command to test the model:
 
 ```bash
-python tools/test.py projects/DiffusionDet/model_converters/diffusiondet_resnet_to_mmdet.py ${CHECKPOINT_P
+python tools/test.py projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py ${CHECKPOINT_PATH}
 ```
 
 **Note:** During inference time, DiffusionDet will randomly generate noisy boxes, which may affect the AP results. If users want to get the same result every inference time, setting seed is a good way.
