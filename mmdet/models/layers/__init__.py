@@ -15,18 +15,47 @@ from .positional_encoding import (LearnedPositionalEncoding,
                                   SinePositionalEncoding)
 from .res_layer import ResLayer, SimplifiedBasicBlock
 from .se_layer import ChannelAttention, DyReLU, SELayer
-from .transformer import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
-                          DynamicConv, PatchEmbed, PatchMerging, Transformer,
+# yapf: disable
+from .transformer import (MLP, AdaptivePadding, CdnQueryGenerator,
+                          ConditionalAttention,
+                          ConditionalDetrTransformerDecoder,
+                          ConditionalDetrTransformerDecoderLayer,
+                          DABDetrTransformerDecoder,
+                          DABDetrTransformerDecoderLayer,
+                          DABDetrTransformerEncoder,
+                          DeformableDetrTransformerDecoder,
+                          DeformableDetrTransformerDecoderLayer,
+                          DeformableDetrTransformerEncoder,
+                          DeformableDetrTransformerEncoderLayer,
+                          DetrTransformerDecoder, DetrTransformerDecoderLayer,
+                          DetrTransformerEncoder, DetrTransformerEncoderLayer,
+                          DinoTransformerDecoder, DynamicConv,
+                          Mask2FormerTransformerDecoder,
+                          Mask2FormerTransformerDecoderLayer,
+                          Mask2FormerTransformerEncoder, PatchEmbed,
+                          PatchMerging, coordinate_to_encoding,
                           inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
+
+# yapf: enable
 
 __all__ = [
     'fast_nms', 'multiclass_nms', 'mask_matrix_nms', 'DropBlock',
     'PixelDecoder', 'TransformerEncoderPixelDecoder',
-    'MSDeformAttnPixelDecoder', 'ResLayer', 'DetrTransformerDecoderLayer',
-    'DetrTransformerDecoder', 'Transformer', 'PatchMerging',
+    'MSDeformAttnPixelDecoder', 'ResLayer', 'PatchMerging',
     'SinePositionalEncoding', 'LearnedPositionalEncoding', 'DynamicConv',
     'SimplifiedBasicBlock', 'NormedLinear', 'NormedConv2d', 'InvertedResidual',
     'SELayer', 'ConvUpsample', 'CSPLayer', 'adaptive_avg_pool2d',
     'AdaptiveAvgPool2d', 'PatchEmbed', 'nchw_to_nlc', 'nlc_to_nchw', 'DyReLU',
-    'ExpMomentumEMA', 'inverse_sigmoid', 'ChannelAttention', 'SiLU'
+    'ExpMomentumEMA', 'inverse_sigmoid', 'ChannelAttention', 'SiLU', 'MLP',
+    'DetrTransformerEncoderLayer', 'DetrTransformerDecoderLayer',
+    'DetrTransformerEncoder', 'DetrTransformerDecoder',
+    'DeformableDetrTransformerEncoder', 'DeformableDetrTransformerDecoder',
+    'DeformableDetrTransformerEncoderLayer',
+    'DeformableDetrTransformerDecoderLayer', 'AdaptivePadding',
+    'coordinate_to_encoding', 'ConditionalAttention',
+    'DABDetrTransformerDecoderLayer', 'DABDetrTransformerDecoder',
+    'DABDetrTransformerEncoder', 'ConditionalDetrTransformerDecoder',
+    'ConditionalDetrTransformerDecoderLayer', 'DinoTransformerDecoder',
+    'CdnQueryGenerator', 'Mask2FormerTransformerEncoder',
+    'Mask2FormerTransformerDecoderLayer', 'Mask2FormerTransformerDecoder'
 ]

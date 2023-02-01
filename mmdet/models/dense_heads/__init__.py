@@ -9,10 +9,13 @@ from .centernet_head import CenterNetHead
 from .centernet_update_head import CenterNetUpdateHead
 from .centripetal_head import CentripetalHead
 from .condinst_head import CondInstBboxHead, CondInstMaskHead
+from .conditional_detr_head import ConditionalDETRHead
 from .corner_head import CornerHead
+from .dab_detr_head import DABDETRHead
 from .ddod_head import DDODHead
 from .deformable_detr_head import DeformableDETRHead
 from .detr_head import DETRHead
+from .dino_head import DINOHead
 from .embedding_rpn_head import EmbeddingRPNHead
 from .fcos_head import FCOSHead
 from .fovea_head import FoveaHead
@@ -61,5 +64,6 @@ __all__ = [
     'TOODHead', 'MaskFormerHead', 'Mask2FormerHead', 'DDODHead',
     'CenterNetUpdateHead', 'RTMDetHead', 'RTMDetSepBNHead', 'CondInstBboxHead',
     'CondInstMaskHead', 'RTMDetInsHead', 'RTMDetInsSepBNHead',
-    'BoxInstBboxHead', 'BoxInstMaskHead'
+    'BoxInstBboxHead', 'BoxInstMaskHead', 'ConditionalDETRHead', 'DINOHead',
+    'DABDETRHead'
 ]
