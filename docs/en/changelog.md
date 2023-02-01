@@ -1,5 +1,19 @@
 ## Changelog
 
+### v2.28.1 (1/2/2023)
+
+#### Bug Fixes
+
+- Enable to set float mlp_ratio in SwinTransformer (#8670)
+- Fix import error that causes training failure (#9694)
+- Fix isort version in lint (#9685)
+- Fix init_cfg of YOLOF (#8243)
+
+#### Contributors
+
+A total of 4 developers contributed to this release.
+Thanks @triple-Mu, @i-aki-y, @twmht, @RangiLyu
+
 ### v2.28.0 (28/1/2023)
 
 #### Highlights
