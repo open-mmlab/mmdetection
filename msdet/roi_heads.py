@@ -634,7 +634,7 @@ class ContSparseRoIHead(CascadeRoIHead):
         imgs_whwh = imgs_whwh.repeat(1, num_proposals, 1)
         all_stage_bbox_results = []
         proposal_list = [proposal_boxes[i] for i in range(len(proposal_boxes))]
-        object_feats = proposal_features
+        gt_object_feats = object_feats = proposal_features
         all_stage_loss = {}
 
         # TODO: Contrastive Loss
@@ -643,6 +643,7 @@ class ContSparseRoIHead(CascadeRoIHead):
             gt_index = list(range(len(gt_bbox)))
             gt_bbox_ordered = gt_bbox[gt_index]
             gt_bboxes_ordered.append(gt_bbox_ordered)
+
 
         for stage in range(self.num_stages):
             rois = bbox2roi(proposal_list)
@@ -686,11 +687,16 @@ class ContSparseRoIHead(CascadeRoIHead):
                 all_stage_loss[f'stage{stage}_{key}'] = value * \
                                     self.stage_loss_weights[stage]
             object_feats = bbox_results['object_feats']
-            ## gt bbox
+
+            ## gt bbox features
             gt_rois = bbox2roi(gt_bboxes_ordered)
-            
-        gt_bboxes_feats = 0
-        return all_stage_loss, gt_bboxes_feats
+            gt_bbox_results = self._bbox_forward(stage, x, gt_rois, gt_object_feats, img_metas)
+
+            gt_object_feats = gt_bbox_results['object_feats']
+
+        # gt_bboxes_feats = gt_object_feats
+
+        return all_stage_loss, gt_object_feats
 
     def simple_test(self,
                     x,
