@@ -79,8 +79,9 @@ Apart from MMDetection, we also released a library [mmcv](https://github.com/ope
 
 **2.28.1** was released in 1/2/2023:
 
-- Fix import error that causes training failure.
-- Enable to set float `mlp_ratio` in SwinTransformer.
+- Support Objects365 Dataset, and Separated and Occluded COCO metric
+- Support acceleration of RetinaNet and SSD on Ascend
+- Deprecate the support of Python 3.6 and fix some bugs of 2.28.0
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
