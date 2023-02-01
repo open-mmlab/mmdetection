@@ -262,7 +262,7 @@ class CocoPanopticMetric(BaseMetric):
         result['img_id'] = img_id
         # shape (1, H, W) -> (H, W)
         pan = pred['pred_panoptic_seg']['sem_seg'].cpu().numpy()[0]
-        pan_labels = np.unique(pan)
+        pan_labels = np.unique(pan)  # 这是色素已经经过处理后的
         segments_info = []
         for pan_label in pan_labels:
             sem_label = pan_label % INSTANCE_OFFSET
@@ -294,7 +294,7 @@ class CocoPanopticMetric(BaseMetric):
 
         return result
 
-    def _compute_batch_pq_stats(self, data_samples: Sequence[dict]):
+    def _compute_batch_pq_stats(self, data_samples: Sequence[dict]):  # 这个是因为有了原始的gt_json，但pred只有data_samples
         """Process gts and predictions when ``outfile_prefix`` is not set, gts
         are from dataset or a json file which is defined by ``ann_file``.
 
@@ -334,7 +334,7 @@ class CocoPanopticMetric(BaseMetric):
 
             if self._coco_api is None:
                 # get segments_info from data_sample
-                seg_map_path = osp.join(self.seg_prefix, segm_file)
+                seg_map_path = osp.join(self.seg_prefix, segm_file) 
                 pan_png = mmcv.imread(seg_map_path).squeeze()
                 pan_png = pan_png[:, :, ::-1]
                 pan_png = rgb2id(pan_png)
