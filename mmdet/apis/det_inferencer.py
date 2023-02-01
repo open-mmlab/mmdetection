@@ -9,17 +9,17 @@ import mmengine
 import numpy as np
 import torch.nn as nn
 from mmengine.dataset import Compose
+from mmengine.fileio import (get_file_backend, isdir, join_path,
+                             list_dir_or_file)
 from mmengine.infer.infer import BaseInferencer, ModelType
-from mmengine.runner import load_checkpoint
+from mmengine.runner.checkpoint import _load_checkpoint_to_model
 from mmengine.visualization import Visualizer
-from mmengine.runner.checkpoint import _load_checkpoint
-from mmengine.config import Config
 
 from mmdet.evaluation import INSTANCE_OFFSET
-from mmdet.registry import DATASETS, MODELS
+from mmdet.registry import DATASETS
 from mmdet.structures import DetDataSample
-from mmdet.structures.mask import encode_mask_results
-from mmdet.utils import ConfigType, register_all_modules, OptConfigType
+from mmdet.structures.mask import encode_mask_results, mask2bbox
+from mmdet.utils import ConfigType, register_all_modules
 from ..evaluation import get_classes
 
 try:
@@ -34,9 +34,12 @@ InputsType = Union[InputType, Sequence[InputType]]
 PredType = List[DetDataSample]
 ImgType = Union[np.ndarray, Sequence[np.ndarray]]
 
+IMG_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif',
+                  '.tiff', '.webp')
+
 
 class DetInferencer(BaseInferencer):
-    """Object Detection Inferencer..
+    """Object Detection Inferencer.
 
     Args:
         model (str, optional): Path to the config file or the model name
@@ -66,7 +69,7 @@ class DetInferencer(BaseInferencer):
     }
 
     def __init__(self,
-                 model: Optional[Union[ModelType, str]]  = None,
+                 model: Optional[Union[ModelType, str]] = None,
                  weights: Optional[str] = None,
                  device: Optional[str] = None,
                  scope: Optional[str] = 'mmdet',
@@ -80,55 +83,19 @@ class DetInferencer(BaseInferencer):
         super().__init__(
             model=model, weights=weights, device=device, scope=scope)
 
-    def _init_model(
-        self,
-        cfg: OptConfigType,
-        weights: Optional[str] = None,
-        device: str = 'cpu',
-    ) -> nn.Module:
-        """Initialize the model with the given config and checkpoint on the
-        specific device.
+    def _load_weights_to_model(self, model: nn.Module,
+                               checkpoint: Optional[dict],
+                               cfg: Optional[ConfigType]) -> None:
+        """Loading model weights and meta information from cfg and checkpoint.
 
         Args:
-            cfg (ConfigType): Config containing the model information.
-            weights (str, optional): Path to the checkpoint.
-            device (str, optional): Device to run inference. Defaults to 'cpu'.
-
-        Returns:
-            nn.Module: Model loaded with checkpoint.
+            model (nn.Module): Model to load weights and meta information.
+            checkpoint (dict, optional): The loaded checkpoint.
+            cfg (Config or ConfigDict, optional): The loaded config.
         """
-        if not cfg:
-            assert weights is not None
-            checkpoint = _load_checkpoint(weights, map_location='cpu')
-            try:
-                # Prefer to get config from `message_hub` since `message_hub`
-                # is a more stable module to store all runtime information.
-                # However, the early version of MMEngine will not save config
-                # in `message_hub`, so we will try to load config from `meta`.
-                cfg_string = checkpoint['message_hub']['runtime_info']['cfg']
-            except KeyError:
-                assert 'meta' in checkpoint, (
-                    'If config is not provided, the checkpoint must contain '
-                    'the config string in `meta` or `message_hub`, but both '
-                    '`meta` and `message_hub` are not found in the checkpoint.'
-                )
-                meta = checkpoint['meta']
-                if 'cfg' in meta:
-                    cfg_string = meta['cfg']
-                else:
-                    raise ValueError(
-                        'Cannot find the config in the checkpoint.')
-            cfg.update(Config.fromstring(cfg_string, file_format='.py')._cfg_dict)
 
-        # Delete the `pretrained` field to prevent model from loading the
-        # the pretrained weights unnecessarily.
-        if cfg.model.get('pretrained') is not None:
-            del cfg.model.pretrained
-
-        model = MODELS.build(cfg.model)
-
-        if weights is not None:
-            checkpoint = load_checkpoint(model, weights, map_location='cpu')
+        if checkpoint is not None:
+            _load_checkpoint_to_model(model, checkpoint)
             checkpoint_meta = checkpoint.get('meta', {})
             # save the dataset_meta in the model for convenience
             if 'dataset_meta' in checkpoint_meta:
@@ -147,6 +114,9 @@ class DetInferencer(BaseInferencer):
                     'checkpoint\'s meta data, use COCO classes by default.')
                 model.dataset_meta = {'classes': get_classes('coco')}
         else:
+            warnings.warn('Checkpoint is not loaded, and the inference '
+                          'result is calculated by the randomly initialized '
+                          'model!')
             warnings.warn('weights is None, use COCO classes by default.')
             model.dataset_meta = {'classes': get_classes('coco')}
 
@@ -167,11 +137,6 @@ class DetInferencer(BaseInferencer):
                         'palette does not exist, random is used by default. '
                         'You can also set the palette to customize.')
                     model.dataset_meta['palette'] = 'random'
-
-        model.cfg = cfg  # save the config in the model for convenience
-        model.to(device)
-        model.eval()
-        return model
 
     def _init_pipeline(self, cfg: ConfigType) -> Compose:
         """Initialize the test pipeline."""
@@ -213,6 +178,41 @@ class DetInferencer(BaseInferencer):
         visualizer = super()._init_visualizer(cfg)
         visualizer.dataset_meta = self.model.dataset_meta
         return visualizer
+
+    def _inputs_to_list(self, inputs: InputsType) -> list:
+        """Preprocess the inputs to a list.
+
+        Preprocess inputs to a list according to its type:
+
+        - list or tuple: return inputs
+        - str:
+            - Directory path: return all files in the directory
+            - other cases: return a list containing the string. The string
+              could be a path to file, a url or other types of string according
+              to the task.
+
+        Args:
+            inputs (InputsType): Inputs for the inferencer.
+
+        Returns:
+            list: List of input for the :meth:`preprocess`.
+        """
+        if isinstance(inputs, str):
+            backend = get_file_backend(inputs)
+            if hasattr(backend, 'isdir') and isdir(inputs):
+                # Backends like HttpsBackend do not implement `isdir`, so only
+                # those backends that implement `isdir` could accept the inputs
+                # as a directory
+                filename_list = list_dir_or_file(
+                    inputs, list_dir=False, suffix=IMG_EXTENSIONS)
+                inputs = [
+                    join_path(inputs, filename) for filename in filename_list
+                ]
+
+        if not isinstance(inputs, (list, tuple)):
+            inputs = [inputs]
+
+        return list(inputs)
 
     def __call__(self,
                  inputs: InputsType,
@@ -424,13 +424,18 @@ class DetInferencer(BaseInferencer):
 
         result = {}
         if 'pred_instances' in data_sample:
+            masks = data_sample.pred_instances.get('masks')
             pred_instances = data_sample.pred_instances.numpy()
             result = {
                 'bboxes': pred_instances.bboxes.tolist(),
                 'labels': pred_instances.labels.tolist(),
                 'scores': pred_instances.scores.tolist()
             }
-            if 'masks' in pred_instances:
+            if masks is not None:
+                if pred_instances.bboxes.sum() == 0:
+                    # Fake bbox, such as the SOLO.
+                    bboxes = mask2bbox(masks.cpu()).numpy().tolist()
+                    result['bboxes'] = bboxes
                 encode_masks = encode_mask_results(pred_instances.masks)
                 for encode_mask in encode_masks:
                     if isinstance(encode_mask['counts'], bytes):
