@@ -28,23 +28,23 @@ class TestMaskFormer(unittest.TestCase):
         model_cfg.panoptic_head.feat_channels = base_channels
         model_cfg.panoptic_head.out_channels = base_channels
         model_cfg.panoptic_head.pixel_decoder.encoder.\
-            transformerlayers.attn_cfgs.embed_dims = base_channels
+            layer_cfg.self_attn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.pixel_decoder.encoder.\
-            transformerlayers.ffn_cfgs.embed_dims = base_channels
+            layer_cfg.ffn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.pixel_decoder.encoder.\
-            transformerlayers.ffn_cfgs.feedforward_channels = base_channels * 8
+            layer_cfg.ffn_cfg.feedforward_channels = base_channels * 8
         model_cfg.panoptic_head.pixel_decoder.\
             positional_encoding.num_feats = base_channels // 2
         model_cfg.panoptic_head.positional_encoding.\
             num_feats = base_channels // 2
         model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.attn_cfgs.embed_dims = base_channels
+            layer_cfg.self_attn_cfg.embed_dims = base_channels
+        model_cfg.panoptic_head.transformer_decoder. \
+            layer_cfg.cross_attn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.ffn_cfgs.embed_dims = base_channels
+            layer_cfg.ffn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.ffn_cfgs.feedforward_channels = base_channels * 8
-        model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.feedforward_channels = base_channels * 8
+            layer_cfg.ffn_cfg.feedforward_channels = base_channels * 8
         return model_cfg
 
     def test_init(self):
@@ -130,23 +130,23 @@ class TestMask2Former(unittest.TestCase):
         model_cfg.panoptic_head.feat_channels = base_channels
         model_cfg.panoptic_head.out_channels = base_channels
         model_cfg.panoptic_head.pixel_decoder.encoder.\
-            transformerlayers.attn_cfgs.embed_dims = base_channels
+            layer_cfg.self_attn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.pixel_decoder.encoder.\
-            transformerlayers.ffn_cfgs.embed_dims = base_channels
+            layer_cfg.ffn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.pixel_decoder.encoder.\
-            transformerlayers.ffn_cfgs.feedforward_channels = base_channels * 4
+            layer_cfg.ffn_cfg.feedforward_channels = base_channels * 4
         model_cfg.panoptic_head.pixel_decoder.\
             positional_encoding.num_feats = base_channels // 2
         model_cfg.panoptic_head.positional_encoding.\
             num_feats = base_channels // 2
         model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.attn_cfgs.embed_dims = base_channels
+            layer_cfg.self_attn_cfg.embed_dims = base_channels
+        model_cfg.panoptic_head.transformer_decoder. \
+            layer_cfg.cross_attn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.ffn_cfgs.embed_dims = base_channels
+            layer_cfg.ffn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.ffn_cfgs.feedforward_channels = base_channels * 8
-        model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.feedforward_channels = base_channels * 8
+            layer_cfg.ffn_cfg.feedforward_channels = base_channels * 8
 
         return model_cfg
 

@@ -95,8 +95,9 @@ class ConvFCBBoxHead(BBoxHead):
             out_dim_reg = box_dim if self.reg_class_agnostic else \
                 box_dim * self.num_classes
             reg_predictor_cfg_ = self.reg_predictor_cfg.copy()
-            reg_predictor_cfg_.update(
-                in_features=self.reg_last_dim, out_features=out_dim_reg)
+            if isinstance(reg_predictor_cfg_, (dict, ConfigDict)):
+                reg_predictor_cfg_.update(
+                    in_features=self.reg_last_dim, out_features=out_dim_reg)
             self.fc_reg = MODELS.build(reg_predictor_cfg_)
 
         if init_cfg is None:
