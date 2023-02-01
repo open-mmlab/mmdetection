@@ -13,13 +13,14 @@ from mmengine.fileio import (get_file_backend, isdir, join_path,
                              list_dir_or_file)
 from mmengine.infer.infer import BaseInferencer, ModelType
 from mmengine.runner.checkpoint import _load_checkpoint_to_model
+from mmengine.utils import import_modules_from_strings
 from mmengine.visualization import Visualizer
 
 from mmdet.evaluation import INSTANCE_OFFSET
 from mmdet.registry import DATASETS
 from mmdet.structures import DetDataSample
 from mmdet.structures.mask import encode_mask_results, mask2bbox
-from mmdet.utils import ConfigType, register_all_modules
+from mmdet.utils import ConfigType
 from ..evaluation import get_classes
 
 try:
@@ -79,7 +80,8 @@ class DetInferencer(BaseInferencer):
         self.num_visualized_imgs = 0
         self.num_predicted_imgs = 0
         self.palette = palette
-        register_all_modules()
+        utils = import_modules_from_strings(f'{scope}.utils')
+        utils.register_all_modules()
         super().__init__(
             model=model, weights=weights, device=device, scope=scope)
 
@@ -153,7 +155,7 @@ class DetInferencer(BaseInferencer):
         if load_img_idx == -1:
             raise ValueError(
                 'LoadImageFromFile is not found in the test pipeline')
-        pipeline_cfg[load_img_idx]['type'] = 'InferencerLoader'
+        pipeline_cfg[load_img_idx]['type'] = 'mmdet.InferencerLoader'
         return Compose(pipeline_cfg)
 
     def _get_transform_idx(self, pipeline_cfg: ConfigType, name: str) -> int:

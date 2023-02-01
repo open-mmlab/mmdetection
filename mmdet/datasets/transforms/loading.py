@@ -851,7 +851,7 @@ class InferencerLoader(BaseTransform):
         self.from_file = TRANSFORMS.build(
             dict(type='LoadImageFromFile', **kwargs))
         self.from_ndarray = TRANSFORMS.build(
-            dict(type='LoadImageFromNDArray', **kwargs))
+            dict(type='mmdet.LoadImageFromNDArray', **kwargs))
 
     def transform(self, single_input: Union[str, np.ndarray, dict]) -> dict:
         """Transform function to add image meta information.
