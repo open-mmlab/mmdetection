@@ -18,6 +18,7 @@ class FasterRCNN_TS(TwoStageDetector):
                  train_cfg,
                  test_cfg,
                  teacher_cfg,
+                 distill_param,
                  neck=None,
                  pretrained=None,
                  init_cfg=None):
@@ -35,6 +36,8 @@ class FasterRCNN_TS(TwoStageDetector):
         teacher_cfg.model.type = 'FasterRCNNCont'
         teacher_cfg.model.roi_head.type = 'ContRoIHead'
         self.teacher_cfg = teacher_cfg
+        
+        self.distill_param = distill_param
         
         # # Distillation Types
         # self.distill_type = distill_type
@@ -185,7 +188,7 @@ class FasterRCNN_TS(TwoStageDetector):
         
         consistency_loss = positive_loss
     
-        losses.update({'consistency_loss': consistency_loss * 1.0})
+        losses.update({'consistency_loss': consistency_loss * self.distill_param})
         
         loss, log_vars = self._parse_losses(losses)
 
@@ -283,7 +286,6 @@ class FasterRCNNCont(TwoStageDetector):
                                                  **kwargs)
         losses.update(roi_losses)
         return losses, gt_bboxes_feats
-
 
 
 

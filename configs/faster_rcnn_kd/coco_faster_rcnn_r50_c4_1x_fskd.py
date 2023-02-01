@@ -6,6 +6,7 @@ _base_ = [
 
 # model
 model = dict(type='FasterRCNN_TS',
+             distill_param=1.0,
              roi_head=dict(
                  type='ContRoIHead'
                 )
@@ -15,6 +16,7 @@ model = dict(type='FasterRCNN_TS',
 teacher_config_path = 'result/coco/faster_rcnn_r50_c4_1x/coco_faster_rcnn_r50_c4_1x.py'
 teacher_weight_path = 'result/coco/faster_rcnn_r50_c4_1x/epoch_12.pth'
 backbone_pretrain = False
+
 
 # use caffe img_norm
 img_norm_cfg = dict(

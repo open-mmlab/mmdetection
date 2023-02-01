@@ -110,9 +110,9 @@ def parse_args():
 def main():
     args = parse_args()
     ## tmp setting for debug
-    args.config = 'configs/sparse_rcnn_kd/coco_sparse_rcnn_r50_fpn_300_proposals_crop_mstrain_480-800_3x_fskd.py'
-    args.work_dir = 'result/coco/sparse_rcnn_r101_fpn_300_proposals_crop_mstrain_480-800_3x_fskd'
-    args.seed = 0
+    # args.config = 'configs/sparse_rcnn_kd/coco_sparse_rcnn_r50_fpn_300_proposals_crop_mstrain_480-800_3x_fskd.py'
+    # args.work_dir = 'result/coco/sparse_rcnn_r101_fpn_300_proposals_crop_mstrain_480-800_3x_fskd'
+    # args.seed = 0
     # args.launcher = 'pytorch'
 
     cfg = Config.fromfile(args.config)
