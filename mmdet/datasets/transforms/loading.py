@@ -853,22 +853,21 @@ class InferencerLoader(BaseTransform):
         self.from_ndarray = TRANSFORMS.build(
             dict(type='mmdet.LoadImageFromNDArray', **kwargs))
 
-    def transform(self, single_input: Union[str, np.ndarray, dict]) -> dict:
+    def transform(self, results: Union[str, np.ndarray, dict]) -> dict:
         """Transform function to add image meta information.
 
         Args:
-            single_input (dict): Result dict with Webcam read image in
-                ``results['img']``.
+            results (str, np.ndarray or dict): The result.
 
         Returns:
             dict: The dict contains loaded image and meta information.
         """
-        if isinstance(single_input, str):
-            inputs = dict(img_path=single_input)
-        elif isinstance(single_input, np.ndarray):
-            inputs = dict(img=single_input)
-        elif isinstance(single_input, dict):
-            inputs = single_input
+        if isinstance(results, str):
+            inputs = dict(img_path=results)
+        elif isinstance(results, np.ndarray):
+            inputs = dict(img=results)
+        elif isinstance(results, dict):
+            inputs = results
         else:
             raise NotImplementedError
 

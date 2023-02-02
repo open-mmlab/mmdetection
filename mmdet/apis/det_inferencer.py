@@ -405,6 +405,8 @@ class DetInferencer(BaseInferencer):
         result_dict['visualization'] = visualization
         return result_dict
 
+    # TODO: The data format and fields saved in json need further discussion.
+    #  Maybe should include model name, timestamp, filename, image info etc.
     def pred2dict(self,
                   data_sample: DetDataSample,
                   pred_out_file: str = '') -> Dict:
