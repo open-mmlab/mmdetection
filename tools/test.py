@@ -4,10 +4,10 @@ import os
 import os.path as osp
 
 from mmengine.config import Config, DictAction
-from mmengine.evaluator import DumpResults
 from mmengine.runner import Runner
 
 from mmdet.engine.hooks.utils import trigger_visualization_hook
+from mmdet.evaluation import DumpDetResults
 from mmdet.registry import RUNNERS
 from mmdet.utils import register_all_modules
 
@@ -97,7 +97,7 @@ def main():
         assert args.out.endswith(('.pkl', '.pickle')), \
             'The dump file must be a pkl file.'
         runner.test_evaluator.metrics.append(
-            DumpResults(out_file_path=args.out))
+            DumpDetResults(out_file_path=args.out))
 
     # start testing
     runner.test()
