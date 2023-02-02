@@ -9,12 +9,11 @@ data_root = 'data/coco/'
 #         './data/': 's3://openmmlab/datasets/detection/',
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
-file_client_args = dict(backend='disk')
 
 # In mstrain 3x config, img_scale=[(1333, 640), (1333, 800)],
 # multiscale_mode='range'
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(
         type='LoadAnnotations',
         with_bbox=True,
@@ -27,7 +26,7 @@ train_pipeline = [
     dict(type='PackDetInputs'),
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     dict(
         type='LoadAnnotations',

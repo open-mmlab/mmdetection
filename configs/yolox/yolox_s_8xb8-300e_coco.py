@@ -76,7 +76,6 @@ dataset_type = 'CocoDataset'
 #         './data/': 's3://openmmlab/datasets/detection/',
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
-file_client_args = dict(backend='disk')
 
 train_pipeline = [
     dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
@@ -117,14 +116,14 @@ train_dataset = dict(
         ann_file='annotations/instances_train2017.json',
         data_prefix=dict(img='train2017/'),
         pipeline=[
-            dict(type='LoadImageFromFile', file_client_args=file_client_args),
+            dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         filter_cfg=dict(filter_empty_gt=False, min_size=32)),
     pipeline=train_pipeline)
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=img_scale, keep_ratio=True),
     dict(
         type='Pad',

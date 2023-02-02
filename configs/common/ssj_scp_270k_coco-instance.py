@@ -5,7 +5,6 @@ data_root = 'data/coco/'
 
 image_size = (1024, 1024)
 
-file_client_args = dict(backend='disk')
 # comment out the code below to use different file client
 # file_client_args = dict(
 #     backend='petrel',
@@ -17,7 +16,7 @@ file_client_args = dict(backend='disk')
 # Standard Scale Jittering (SSJ) resizes and crops an image
 # with a resize range of 0.8 to 1.25 of the original image size.
 load_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='RandomResize',

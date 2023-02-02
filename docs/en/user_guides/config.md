@@ -176,10 +176,9 @@ model = dict(
 ```python
 dataset_type = 'CocoDataset'  # Dataset type, this will be used to define the dataset
 data_root = 'data/coco/'  # Root path of data
-file_client_args = dict(backend='disk')  # file client arguments
 
 train_pipeline = [  # Training data processing pipeline
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),  # First pipeline to load images from file path
+    dict(type='LoadImageFromFile'),  # First pipeline to load images from file path
     dict(
         type='LoadAnnotations',  # Second pipeline to load annotations for current image
         with_bbox=True,  # Whether to use bounding box, True for detection
@@ -196,7 +195,7 @@ train_pipeline = [  # Training data processing pipeline
     dict(type='PackDetInputs')  # Pipeline that formats the annotation data and decides which keys in the data should be packed into data_samples
 ]
 test_pipeline = [  # Testing data processing pipeline
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),  # First pipeline to load images from file path
+    dict(type='LoadImageFromFile'),  # First pipeline to load images from file path
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),  # Pipeline that resizes the images
     dict(
         type='PackDetInputs',  # Pipeline that formats the annotation data and decides which keys in the data should be packed into data_samples
@@ -527,7 +526,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     dict(
         type='PackDetInputs',

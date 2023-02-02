@@ -7,9 +7,7 @@ model = dict(roi_head=dict(bbox_head=dict(num_classes=20)))
 
 # dataset settings
 train_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='RandomChoiceResize',
@@ -21,9 +19,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     # avoid bboxes being resized
     dict(type='LoadAnnotations', with_bbox=True),

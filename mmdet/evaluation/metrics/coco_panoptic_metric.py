@@ -8,7 +8,7 @@ from typing import Dict, Optional, Sequence, Tuple, Union
 import mmcv
 import numpy as np
 from mmengine.evaluator import BaseMetric
-from mmengine.fileio import FileClient, dump, load
+from mmengine.fileio import dump, get_local_path, load
 from mmengine.logging import MMLogger, print_log
 from terminaltables import AsciiTable
 
@@ -56,9 +56,8 @@ class CocoPanopticMetric(BaseMetric):
         nproc (int): Number of processes for panoptic quality computing.
             Defaults to 32. When ``nproc`` exceeds the number of cpu cores,
             the number of cpu cores is used.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmengine.fileio.FileClient` for details.
-            Defaults to ``dict(backend='disk')``.
+        backend_args (dict, optional): Arguments to instantiate the
+            corresponding backend. Defaults to None.
         collect_device (str): Device name used for collecting results from
             different ranks during distributed training. Must be 'cpu' or
             'gpu'. Defaults to 'cpu'.
@@ -76,7 +75,7 @@ class CocoPanopticMetric(BaseMetric):
                  format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
                  nproc: int = 32,
-                 file_client_args: dict = dict(backend='disk'),
+                 backend_args: dict = None,
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None) -> None:
         if panopticapi is None:
@@ -108,18 +107,16 @@ class CocoPanopticMetric(BaseMetric):
         self.cat_ids = None
         self.cat2label = None
 
-        self.file_client_args = file_client_args
-        self.file_client = FileClient(**file_client_args)
+        self.backend_args = backend_args
 
         if ann_file:
-            with self.file_client.get_local_path(ann_file) as local_path:
+            with get_local_path(
+                    ann_file, backend_args=self.backend_args) as local_path:
                 self._coco_api = COCOPanoptic(local_path)
             self.categories = self._coco_api.cats
         else:
             self._coco_api = None
             self.categories = None
-
-        self.file_client = FileClient(**file_client_args)
 
     def __del__(self) -> None:
         """Clean up."""
@@ -370,7 +367,7 @@ class CocoPanopticMetric(BaseMetric):
                 gt_folder=self.seg_prefix,
                 pred_folder=self.seg_out_dir,
                 categories=categories,
-                file_client=self.file_client)
+                backend_args=self.backend_args)
 
             self.results.append(pq_stats)
 
@@ -497,7 +494,7 @@ class CocoPanopticMetric(BaseMetric):
                 gt_folder,
                 pred_folder,
                 self.categories,
-                file_client=self.file_client,
+                backend_args=self.backend_args,
                 nproc=self.nproc)
 
         else:

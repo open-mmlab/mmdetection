@@ -176,10 +176,9 @@ model = dict(
 ```python
 dataset_type = 'CocoDataset'  # 数据集类型，这将被用来定义数据集。
 data_root = 'data/coco/'  # 数据的根路径。
-file_client_args = dict(backend='disk')  # 文件读取后端的配置，默认从硬盘读取
 
 train_pipeline = [  # 训练数据处理流程
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),  # 第 1 个流程，从文件路径里加载图像。
+    dict(type='LoadImageFromFile'),  # 第 1 个流程，从文件路径里加载图像。
     dict(
         type='LoadAnnotations',  # 第 2 个流程，对于当前图像，加载它的注释信息。
         with_bbox=True,  # 是否使用标注框(bounding box)， 目标检测需要设置为 True。
@@ -196,7 +195,7 @@ train_pipeline = [  # 训练数据处理流程
     dict(type='PackDetInputs')  # 将数据转换为检测器输入格式的流程
 ]
 test_pipeline = [  # 测试数据处理流程
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),  # 第 1 个流程，从文件路径里加载图像。
+    dict(type='LoadImageFromFile'),  # 第 1 个流程，从文件路径里加载图像。
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),  # 变化图像大小的流程。
     dict(
         type='PackDetInputs',  # 将数据转换为检测器输入格式的流程
@@ -519,7 +518,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     dict(
         type='PackDetInputs',

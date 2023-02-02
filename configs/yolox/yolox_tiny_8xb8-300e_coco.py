@@ -21,7 +21,6 @@ img_scale = (640, 640)  # width, height
 #         './data/': 's3://openmmlab/datasets/detection/',
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
-file_client_args = dict(backend='disk')
 
 train_pipeline = [
     dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
@@ -44,7 +43,7 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(416, 416), keep_ratio=True),
     dict(
         type='Pad',

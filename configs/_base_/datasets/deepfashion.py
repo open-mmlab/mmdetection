@@ -8,17 +8,16 @@ data_root = 'data/DeepFashion/In-shop/'
 #         './data/': 's3://openmmlab/datasets/detection/',
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
-file_client_args = dict(backend='disk')
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(type='Resize', scale=(750, 1101), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(750, 1101), keep_ratio=True),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(

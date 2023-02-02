@@ -8,10 +8,9 @@ data_root = 'data/lvis_v0.5/'
 #         './data/': 's3://openmmlab/datasets/detection/',
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
-file_client_args = dict(backend='disk')
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='RandomChoiceResize',
@@ -22,7 +21,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(

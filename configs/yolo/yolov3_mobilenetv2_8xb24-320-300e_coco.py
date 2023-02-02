@@ -15,11 +15,10 @@ model = dict(
 #         './data/': 's3://openmmlab/datasets/detection/',
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
-file_client_args = dict(backend='disk')
 
 input_size = (320, 320)
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     # `mean` and `to_rgb` should be the same with the `preprocess_cfg`
     dict(
@@ -37,7 +36,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=input_size, keep_ratio=True),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(

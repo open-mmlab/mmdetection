@@ -93,9 +93,7 @@ model = dict(
 
 # dataset settings
 train_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='RandomResize',
@@ -107,9 +105,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(image_size, image_size), keep_ratio=True),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(

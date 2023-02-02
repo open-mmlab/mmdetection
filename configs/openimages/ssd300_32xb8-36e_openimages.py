@@ -11,9 +11,7 @@ dataset_type = 'OpenImagesDataset'
 data_root = 'data/OpenImages/'
 input_size = 300
 train_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PhotoMetricDistortion',

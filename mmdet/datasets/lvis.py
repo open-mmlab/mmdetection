@@ -3,6 +3,8 @@ import copy
 import warnings
 from typing import List
 
+from mmengine.fileio import get_local_path
+
 from mmdet.registry import DATASETS
 from .coco import CocoDataset
 
@@ -285,7 +287,8 @@ class LVISV05Dataset(CocoDataset):
             raise ImportError(
                 'Package lvis is not installed. Please run "pip install git+https://github.com/lvis-dataset/lvis-api.git".'  # noqa: E501
             )
-        with self.file_client.get_local_path(self.ann_file) as local_path:
+        with get_local_path(
+                self.ann_file, backend_args=self.backend_args) as local_path:
             self.lvis = LVIS(local_path)
         self.cat_ids = self.lvis.get_cat_ids()
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}

@@ -22,9 +22,8 @@ class DumpProposals(BaseMetric):
         proposals_file (str): Proposals file path. Defaults to 'proposals.pkl'.
         num_max_proposals (int, optional): Maximum number of proposals to dump.
             If not specified, all proposals will be dumped.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmengine.fileio.FileClient` for details.
-            Defaults to ``dict(backend='disk')``.
+        backend_args (dict, optional): Arguments to instantiate the
+            corresponding backend. Defaults to None.
         collect_device (str): Device name used for collecting results from
             different ranks during distributed training. Must be 'cpu' or
             'gpu'. Defaults to 'cpu'.
@@ -40,13 +39,13 @@ class DumpProposals(BaseMetric):
                  output_dir: str = '',
                  proposals_file: str = 'proposals.pkl',
                  num_max_proposals: Optional[int] = None,
-                 file_client_args: dict = dict(backend='disk'),
+                 backend_args: dict = None,
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
         self.num_max_proposals = num_max_proposals
         # TODO: update after mmengine finish refactor fileio.
-        self.file_client_args = file_client_args
+        self.backend_args = backend_args
         self.output_dir = output_dir
         assert proposals_file.endswith(('.pkl', '.pickle')), \
             'The output file must be a pkl file.'
@@ -106,6 +105,6 @@ class DumpProposals(BaseMetric):
         dump(
             dump_results,
             file=self.proposals_file,
-            file_client_args=self.file_client_args)
+            backend_args=self.backend_args)
         logger.info(f'Results are saved at {self.proposals_file}')
         return {}

@@ -8,19 +8,18 @@ data_root = 'data/coco/'
 #         './data/': 's3://openmmlab/datasets/detection/',
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
-file_client_args = dict(backend='disk')
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
-    dict(type='LoadPanopticAnnotations', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
+    dict(type='LoadPanopticAnnotations'),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
-    dict(type='LoadPanopticAnnotations', file_client_args=file_client_args),
+    dict(type='LoadPanopticAnnotations'),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
@@ -60,7 +59,6 @@ val_evaluator = dict(
     type='CocoPanopticMetric',
     ann_file=data_root + 'annotations/panoptic_val2017.json',
     seg_prefix=data_root + 'annotations/panoptic_val2017/',
-    file_client_args=file_client_args,
 )
 test_evaluator = val_evaluator
 
