@@ -70,12 +70,19 @@ model = dict(
 data_root = 'data/coco/'
 dataset_type = 'CocoDataset'
 
-# file_client_args = dict(
+# Example to use different file client
+# Method 1: Infer from prefix (not support LMDB and Memcache)
+
+# data_root = 's3://openmmlab/datasets/detection/coco/'
+
+# Method 2: Use backend_args
+# backend_args = dict(
 #     backend='petrel',
 #     path_mapping=dict({
 #         './data/': 's3://openmmlab/datasets/detection/',
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
+backend_args = None
 
 train_pipeline = [
     dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
@@ -116,14 +123,15 @@ train_dataset = dict(
         ann_file='annotations/instances_train2017.json',
         data_prefix=dict(img='train2017/'),
         pipeline=[
-            dict(type='LoadImageFromFile'),
+            dict(type='LoadImageFromFile', backend_args=backend_args),
             dict(type='LoadAnnotations', with_bbox=True)
         ],
-        filter_cfg=dict(filter_empty_gt=False, min_size=32)),
+        filter_cfg=dict(filter_empty_gt=False, min_size=32),
+        backend_args=backend_args),
     pipeline=train_pipeline)
 
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='Resize', scale=img_scale, keep_ratio=True),
     dict(
         type='Pad',
@@ -154,13 +162,15 @@ val_dataloader = dict(
         ann_file='annotations/instances_val2017.json',
         data_prefix=dict(img='val2017/'),
         test_mode=True,
-        pipeline=test_pipeline))
+        pipeline=test_pipeline,
+        backend_args=backend_args))
 test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CocoMetric',
     ann_file=data_root + 'annotations/instances_val2017.json',
-    metric='bbox')
+    metric='bbox',
+    backend_args=backend_args)
 test_evaluator = val_evaluator
 
 # training settings

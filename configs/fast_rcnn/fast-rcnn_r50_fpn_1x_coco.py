@@ -4,7 +4,7 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 train_pipeline = [
-    dict(type='LoadImageFromFile', ),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadProposals', num_max_proposals=2000),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
@@ -16,7 +16,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadProposals', num_max_proposals=None),
     dict(
         type='ProposalBroadcaster',

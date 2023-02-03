@@ -45,7 +45,7 @@ model = dict(
 
 # data settings
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PhotoMetricDistortion',
@@ -72,7 +72,10 @@ train_pipeline = [
 
 # TODO: mstest is not currently implemented
 test_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True),
+    dict(
+        type='LoadImageFromFile',
+        to_float32=True,
+        backend_args={{_base_.backend_args}}),
     # don't need Resize
     dict(
         type='RandomCenterCropPad',

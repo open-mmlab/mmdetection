@@ -62,7 +62,7 @@ model = dict(
 )
 
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='CachedMosaic', img_scale=(640, 640), pad_val=114.0),
     dict(
@@ -84,7 +84,7 @@ train_pipeline = [
 ]
 
 train_pipeline_stage2 = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='RandomResize',
@@ -99,7 +99,7 @@ train_pipeline_stage2 = [
 ]
 
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='Resize', scale=(640, 640), keep_ratio=True),
     dict(type='Pad', size=(640, 640), pad_val=dict(img=(114, 114, 114))),
     dict(

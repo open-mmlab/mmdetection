@@ -1,7 +1,7 @@
 _base_ = './ga-retinanet_r101-caffe_fpn_1x_coco.py'
 
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='RandomResize', scale=[(1333, 480), (1333, 960)],

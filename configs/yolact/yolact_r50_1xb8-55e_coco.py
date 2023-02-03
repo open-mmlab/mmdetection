@@ -95,7 +95,7 @@ model = dict(
         mask_thr_binary=0.5))
 # dataset settings
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(4.0, 4.0)),
     dict(

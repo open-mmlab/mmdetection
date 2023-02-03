@@ -22,7 +22,7 @@ dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='RandomResize',
@@ -39,7 +39,7 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='Resize', scale=image_size, keep_ratio=True),
     dict(
         type='PackDetInputs',

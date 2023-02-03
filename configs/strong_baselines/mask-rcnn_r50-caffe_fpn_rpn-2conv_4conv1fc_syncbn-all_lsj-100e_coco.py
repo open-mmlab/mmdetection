@@ -37,7 +37,7 @@ model = dict(
         mask_head=dict(norm_cfg=head_norm_cfg)))
 
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='RandomResize',

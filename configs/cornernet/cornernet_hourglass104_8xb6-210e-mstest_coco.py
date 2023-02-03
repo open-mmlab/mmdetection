@@ -45,7 +45,7 @@ model = dict(
 
 # data settings
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PhotoMetricDistortion',
@@ -75,6 +75,7 @@ train_pipeline = [
 test_pipeline = [
     dict(
         type='LoadImageFromFile',
+        backend_args={{_base_.backend_args}},
         to_float32=True,
     ),
     # don't need Resize

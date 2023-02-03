@@ -93,7 +93,10 @@ model = dict(
 
 backend = 'pillow'
 train_pipeline = [
-    dict(type='LoadImageFromFile', imdecode_backend=backend),
+    dict(
+        type='LoadImageFromFile',
+        backend_args=_base_.backend_args,
+        imdecode_backend=backend),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomFlip', prob=0.5),
     dict(
@@ -131,7 +134,10 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', imdecode_backend=backend),
+    dict(
+        type='LoadImageFromFile',
+        backend_args=_base_.backend_args,
+        imdecode_backend=backend),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True, backend=backend),
     # If you don't have a gt annotation, delete the pipeline
     dict(type='LoadAnnotations', with_bbox=True),

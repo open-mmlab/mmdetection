@@ -20,7 +20,7 @@ model = dict(
                 type='CrossEntropyLoss', ignore_index=255, loss_weight=0.2))))
 
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(
         type='LoadAnnotations', with_bbox=True, with_mask=True, with_seg=True),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),

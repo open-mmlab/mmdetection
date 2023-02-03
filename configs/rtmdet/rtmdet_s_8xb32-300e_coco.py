@@ -10,7 +10,7 @@ model = dict(
     bbox_head=dict(in_channels=128, feat_channels=128, exp_on_reg=False))
 
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='CachedMosaic', img_scale=(640, 640), pad_val=114.0),
     dict(
@@ -32,7 +32,7 @@ train_pipeline = [
 ]
 
 train_pipeline_stage2 = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='RandomResize',

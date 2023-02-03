@@ -8,7 +8,7 @@ model = dict(
         with_deform=True,
         norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)))
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='RandomChoiceResize',

@@ -132,8 +132,23 @@ model = dict(
 
 dataset_type = 'CrowdHumanDataset'
 data_root = 'data/CrowdHuman/'
+
+# Example to use different file client
+# Method 1: Infer from prefix (not support LMDB and Memcache)
+
+# data_root = 's3://openmmlab/datasets/detection/coco/'
+
+# Method 2: Use backend_args
+# backend_args = dict(
+#     backend='petrel',
+#     path_mapping=dict({
+#         './data/': 's3://openmmlab/datasets/detection/',
+#         'data/': 's3://openmmlab/datasets/detection/'
+#     }))
+backend_args = None
+
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomFlip', prob=0.5),
     dict(
@@ -142,7 +157,7 @@ train_pipeline = [
                    'flip_direction'))
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='Resize', scale=(1400, 800), keep_ratio=True),
     # avoid bboxes being resized
     dict(type='LoadAnnotations', with_bbox=True),
@@ -164,7 +179,8 @@ train_dataloader = dict(
         ann_file='annotation_train.odgt',
         data_prefix=dict(img='Images/'),
         filter_cfg=dict(filter_empty_gt=True, min_size=32),
-        pipeline=train_pipeline))
+        pipeline=train_pipeline,
+        backend_args=backend_args))
 val_dataloader = dict(
     batch_size=1,
     num_workers=2,
@@ -177,13 +193,15 @@ val_dataloader = dict(
         ann_file='annotation_val.odgt',
         data_prefix=dict(img='Images/'),
         test_mode=True,
-        pipeline=test_pipeline))
+        pipeline=test_pipeline,
+        backend_args=backend_args))
 test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CrowdHumanMetric',
     ann_file=data_root + 'annotation_val.odgt',
-    metric=['AP', 'MR', 'JI'])
+    metric=['AP', 'MR', 'JI'],
+    backend_args=backend_args)
 test_evaluator = val_evaluator
 
 train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=30, val_interval=1)

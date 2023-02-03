@@ -10,7 +10,7 @@ model = dict(
     bbox_head=dict(in_channels=128, feat_channels=128))
 
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(
         type='LoadAnnotations',
         with_bbox=True,

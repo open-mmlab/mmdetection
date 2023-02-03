@@ -14,7 +14,7 @@ model = dict(
             checkpoint='open-mmlab://detectron2/resnet50_caffe')))
 
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='RandomChoiceResize',
