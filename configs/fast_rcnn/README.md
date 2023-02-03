@@ -68,6 +68,7 @@ The `pred_instance` is an `InstanceData` containing the sorted boxes and scores 
   train_pipeline = [
       dict(
           type='LoadImageFromFile',
+          backend_args={{_base_.backend_args}}
           ),
       dict(type='LoadProposals', num_max_proposals=2000),
       dict(type='LoadAnnotations', with_bbox=True),
@@ -82,6 +83,7 @@ The `pred_instance` is an `InstanceData` containing the sorted boxes and scores 
   test_pipeline = [
       dict(
           type='LoadImageFromFile',
+          backend_args={{_base_.backend_args}}
           ),
       dict(type='LoadProposals', num_max_proposals=None),
       dict(

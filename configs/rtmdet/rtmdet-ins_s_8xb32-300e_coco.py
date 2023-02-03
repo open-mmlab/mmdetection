@@ -41,7 +41,7 @@ train_pipeline = [
 ]
 
 train_pipeline_stage2 = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(
         type='LoadAnnotations',
         with_bbox=True,

@@ -120,7 +120,8 @@ train_dataloader = dict(
             ann_file='annotations/instances_train2017.json',
             data_prefix=dict(img='train2017/'),
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
-            pipeline=train_pipeline)))
+            pipeline=train_pipeline,
+            backend_args={{_base_.backend_args}})))
 val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
