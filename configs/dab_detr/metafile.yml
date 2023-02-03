@@ -1,5 +1,5 @@
 Collections:
-  - Name: DABDETR
+  - Name: DAB-DETR
     Metadata:
       Training Data: COCO
       Training Techniques:
@@ -20,7 +20,7 @@ Collections:
 
 Models:
   - Name: dab-detr_r50_8xb2-50e_coco.py
-    In Collection: DABDETR
+    In Collection: DAB-DETR
     Config: configs/dab_detr/dab-detr_r50_8xb2-50e_coco.py
     Metadata:
       Epochs: 50
