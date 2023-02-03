@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, Scale, is_norm
+from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule, Scale, is_norm
 from mmengine.model import bias_init_with_prob, constant_init, normal_init
 from mmengine.structures import InstanceData
 from torch import Tensor
@@ -536,6 +536,8 @@ class RTMDetSepBNHead(RTMDetHead):
         in_channels (int): Number of channels in the input feature map.
         share_conv (bool): Whether to share conv layers between stages.
             Defaults to True.
+        use_depthwise (bool): Whether to use depthwise separable convolution in
+            head. Defaults to False.
         norm_cfg (:obj:`ConfigDict` or dict)): Config dict for normalization
             layer. Defaults to dict(type='BN', momentum=0.03, eps=0.001).
         act_cfg (:obj:`ConfigDict` or dict)): Config dict for activation layer.
@@ -547,6 +549,7 @@ class RTMDetSepBNHead(RTMDetHead):
                  num_classes: int,
                  in_channels: int,
                  share_conv: bool = True,
+                 use_depthwise: bool = False,
                  norm_cfg: ConfigType = dict(
                      type='BN', momentum=0.03, eps=0.001),
                  act_cfg: ConfigType = dict(type='SiLU'),
@@ -555,6 +558,7 @@ class RTMDetSepBNHead(RTMDetHead):
                  **kwargs) -> None:
         self.share_conv = share_conv
         self.exp_on_reg = exp_on_reg
+        self.use_depthwise = use_depthwise
         super().__init__(
             num_classes,
             in_channels,
@@ -565,6 +569,8 @@ class RTMDetSepBNHead(RTMDetHead):
 
     def _init_layers(self) -> None:
         """Initialize layers of the head."""
+        conv = DepthwiseSeparableConvModule \
+            if self.use_depthwise else ConvModule
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
 
@@ -578,7 +584,7 @@ class RTMDetSepBNHead(RTMDetHead):
             for i in range(self.stacked_convs):
                 chn = self.in_channels if i == 0 else self.feat_channels
                 cls_convs.append(
-                    ConvModule(
+                    conv(
                         chn,
                         self.feat_channels,
                         3,
@@ -588,7 +594,7 @@ class RTMDetSepBNHead(RTMDetHead):
                         norm_cfg=self.norm_cfg,
                         act_cfg=self.act_cfg))
                 reg_convs.append(
-                    ConvModule(
+                    conv(
                         chn,
                         self.feat_channels,
                         3,

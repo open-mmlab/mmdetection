@@ -74,20 +74,17 @@ class TestTransformerEncoderPixelDecoder(unittest.TestCase):
                 out_channels=base_channels,
                 norm_cfg=dict(type='GN', num_groups=32),
                 act_cfg=dict(type='ReLU'),
-                encoder=dict(
-                    type='DetrTransformerEncoder',
+                encoder=dict(  # DetrTransformerEncoder
                     num_layers=6,
-                    transformerlayers=dict(
-                        type='BaseTransformerLayer',
-                        attn_cfgs=dict(
-                            type='MultiheadAttention',
+                    layer_cfg=dict(  # DetrTransformerEncoderLayer
+                        self_attn_cfg=dict(  # MultiheadAttention
                             embed_dims=base_channels,
                             num_heads=8,
                             attn_drop=0.1,
                             proj_drop=0.1,
                             dropout_layer=None,
-                            batch_first=False),
-                        ffn_cfgs=dict(
+                            batch_first=True),
+                        ffn_cfg=dict(
                             embed_dims=base_channels,
                             feedforward_channels=base_channels * 8,
                             num_fcs=2,
@@ -95,15 +92,11 @@ class TestTransformerEncoderPixelDecoder(unittest.TestCase):
                             ffn_drop=0.1,
                             dropout_layer=None,
                             add_identity=True),
-                        operation_order=('self_attn', 'norm', 'ffn', 'norm'),
                         norm_cfg=dict(type='LN'),
-                        init_cfg=None,
-                        batch_first=False),
+                        init_cfg=None),
                     init_cfg=None),
                 positional_encoding=dict(
-                    type='SinePositionalEncoding',
-                    num_feats=base_channels // 2,
-                    normalize=True)))
+                    num_feats=base_channels // 2, normalize=True)))
         self = MODELS.build(pixel_decoder_cfg)
         self.init_weights()
         img_metas = [{
@@ -138,36 +131,29 @@ class TestMSDeformAttnPixelDecoder(unittest.TestCase):
                 num_outs=3,
                 norm_cfg=dict(type='GN', num_groups=32),
                 act_cfg=dict(type='ReLU'),
-                encoder=dict(
-                    type='DetrTransformerEncoder',
+                encoder=dict(  # DeformableDetrTransformerEncoder
                     num_layers=6,
-                    transformerlayers=dict(
-                        type='BaseTransformerLayer',
-                        attn_cfgs=dict(
-                            type='MultiScaleDeformableAttention',
+                    layer_cfg=dict(  # DeformableDetrTransformerEncoderLayer
+                        self_attn_cfg=dict(  # MultiScaleDeformableAttention
                             embed_dims=base_channels,
                             num_heads=8,
                             num_levels=3,
                             num_points=4,
                             im2col_step=64,
                             dropout=0.0,
-                            batch_first=False,
+                            batch_first=True,
                             norm_cfg=None,
                             init_cfg=None),
-                        ffn_cfgs=dict(
-                            type='FFN',
+                        ffn_cfg=dict(
                             embed_dims=base_channels,
                             feedforward_channels=base_channels * 4,
                             num_fcs=2,
                             ffn_drop=0.0,
-                            act_cfg=dict(type='ReLU', inplace=True)),
-                        operation_order=('self_attn', 'norm', 'ffn', 'norm')),
+                            act_cfg=dict(type='ReLU', inplace=True))),
                     init_cfg=None),
                 positional_encoding=dict(
-                    type='SinePositionalEncoding',
-                    num_feats=base_channels // 2,
-                    normalize=True),
-                init_cfg=None), )
+                    num_feats=base_channels // 2, normalize=True),
+                init_cfg=None))
         self = MODELS.build(pixel_decoder_cfg)
         self.init_weights()
         feats = [

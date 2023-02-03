@@ -5,7 +5,7 @@ repos:
     hooks:
       - id: flake8
   - repo: https://gitee.com/openmmlab/mirrors-isort
-    rev: 5.10.1
+    rev: 5.11.5
     hooks:
       - id: isort
   - repo: https://gitee.com/openmmlab/mirrors-yapf
@@ -48,7 +48,7 @@ repos:
     hooks:
       - id: pyupgrade
         args: ["--py36-plus"]
-  - repo: https://github.com/open-mmlab/pre-commit-hooks
+  - repo: https://gitee.com/open-mmlab/pre-commit-hooks
     rev: v0.2.0
     hooks:
       - id: check-algo-readme

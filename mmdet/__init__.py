@@ -5,7 +5,7 @@ from mmengine.utils import digit_version
 
 from .version import __version__, version_info
 
-mmcv_minimum_version = '2.0.0rc0'
+mmcv_minimum_version = '2.0.0rc4'
 mmcv_maximum_version = '2.1.0'
 mmcv_version = digit_version(mmcv.__version__)
 

@@ -122,6 +122,9 @@ class SingleStageDetector(BaseDetector):
 
          Args:
             batch_inputs (Tensor): Inputs with shape (N, C, H, W).
+            batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
+                the meta information of each image and corresponding
+                annotations.
 
         Returns:
             tuple[list]: A tuple of features from ``bbox_head`` forward.
