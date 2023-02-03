@@ -7,8 +7,8 @@ model = dict(type='SparseRCNN_TS',
              ))
 
 # Distillation Params
-teacher_config_path = 'result/coco/coco_sparse_rcnn_r50_fpn_mstrain_480-800_3x/coco_sparse_rcnn_r50_fpn_mstrain_480-800_3x.py'
-teacher_weight_path = 'result/coco/coco_sparse_rcnn_r50_fpn_mstrain_480-800_3x/epoch_36.pth'
+teacher_config_path = 'result/coco/sparse_rcnn_r50_fpn_mstrain_480-800_3x/coco_sparse_rcnn_r50_fpn_mstrain_480-800_3x.py'
+teacher_weight_path = 'result/coco/sparse_rcnn_r50_fpn_mstrain_480-800_3x/epoch_36.pth'
 backbone_pretrain = False
 
 img_norm_cfg = dict(
