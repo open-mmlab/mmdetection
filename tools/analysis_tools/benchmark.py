@@ -110,7 +110,7 @@ def main():
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 
-    init_default_scope(cfg.get())
+    init_default_scope(cfg.get('default_scope', 'mmdet'))
 
     distributed = False
     if args.launcher != 'none':
