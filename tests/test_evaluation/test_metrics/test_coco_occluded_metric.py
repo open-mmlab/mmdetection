@@ -9,7 +9,7 @@ from mmdet.datasets import CocoDataset
 from mmdet.evaluation import CocoOccludedSeparatedMetric
 
 
-def test_occluded_separated_coco_dataset():
+def test_coco_occluded_separated_metric():
     ann = [[
         'fake1.jpg', 'person', 8, [219.9, 176.12, 11.14, 34.23], {
             'size': [480, 640],
