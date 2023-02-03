@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from __future__ import annotations
 import os.path as osp
 from typing import Dict, Optional
 
@@ -88,11 +89,11 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         self.num_eval_predictions = num_eval_predictions
         self.log_eval_predictions = (num_eval_predictions > 0)
 
-        self.ckpt_hook: CheckpointHook = None
-        self.ckpt_interval: int = None
+        self.ckpt_hook: CheckpointHook | None = None
+        self.ckpt_interval: int | None = None
 
-        self.eval_hook: EvalHook = None
-        self.eval_interval: int = None
+        self.eval_hook: EvalHook | None = None
+        self.eval_interval: int | None = None
 
         self.val_dataset = None
 
@@ -160,7 +161,6 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
 
             # TODO Add masks
             self._run[image_name].upload(File.as_image(im))
-        breakpoint()
 
     @master_only
     def before_run(self, runner) -> None:
@@ -211,8 +211,6 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
 
             eval_results = self.val_dataset.evaluate(
                 results, logger='silent', **self.eval_hook.eval_kwargs)
-
-            breakpoint()
 
             for key, value in eval_results.items():
                 self.base_handler['val/' + category + '/' + key].append(value)
