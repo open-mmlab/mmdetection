@@ -59,17 +59,17 @@
 
 
 # #--------------------------------   SPARSE RCNN TEACHER   --------------------------------#
-                                # --resume-from result/coco/${MODEL_NAME}/epoch_2.pth  \
 
-MODEL_NAME='sparse_rcnn_r101_fpn_mstrain_480-800_3x'
-CUDA_VISIBLE_DEVICES=1,2,3,4 python -m torch.distributed.launch \
-                                --nproc_per_node=4 \
-                                --master_port 1027 \
-                                train.py \
-                                --config configs/sparse_rcnn/coco_${MODEL_NAME}.py \
-                                --seed 0 \
-                                --work-dir result/coco/${MODEL_NAME} \
-                                --launcher pytorch
+# MODEL_NAME='sparse_rcnn_r101_fpn_mstrain_480-800_3x'
+# CUDA_VISIBLE_DEVICES=1,2,3,4 python -m torch.distributed.launch \
+#                                 --nproc_per_node=4 \
+#                                 --master_port 1027 \
+#                                 train.py \
+#                                 --config configs/sparse_rcnn/coco_${MODEL_NAME}.py \
+#                                 --seed 0 \
+#                                 --work-dir result/coco/${MODEL_NAME} \
+#                                 --resume-from result/coco/${MODEL_NAME}/epoch_6.pth  \
+#                                 --launcher pytorch
 
 
 # MODEL_NAME='sparse_rcnn_r101_fpn_300_proposals_crop_mstrain_480-800_3x'
@@ -82,21 +82,20 @@ CUDA_VISIBLE_DEVICES=1,2,3,4 python -m torch.distributed.launch \
 #                                 --work-dir result/coco/${MODEL_NAME} \
 #                                 --launcher pytorch
 
-# #--------------------------------   SPARSE RCNN STUDENT   --------------------------------#
-
-# MODEL_NAME='sparse_rcnn_r101_fpn_300_proposals_crop_mstrain_480-800_3x'
-# MODEL_NAME='sparse_rcnn_r101_fpn_300_proposals_crop_mstrain_480-800_3x'
-# MODEL_NAME='sparse_rcnn_r50_fpn_mstrain_480-800_3x'
-# MODEL_NAME='sparse_rcnn_r101_fpn_mstrain_480-800_3x'
-# CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch \
-#                                 --nproc_per_node=4 \
-#                                 --master_port 1027 \
-#                                 train.py \
-#                                 --config configs/sparse_rcnn_kd/coco_${MODEL_NAME}.py \
-#                                 --seed 0 \
-#                                 --work-dir result/coco/${MODEL_NAME} \
-#                                 --launcher pytorch
-
 #--------------------------------   SPARSE RCNN STUDENT   --------------------------------#
+
+# # MODEL_NAME='sparse_rcnn_r101_fpn_300_proposals_crop_mstrain_480-800_3x'
+# # MODEL_NAME='sparse_rcnn_r101_fpn_300_proposals_crop_mstrain_480-800_3x'
+# # MODEL_NAME='sparse_rcnn_r50_fpn_mstrain_480-800_3x'
+MODEL_NAME='sparse_rcnn_r101_fpn_mstrain_480-800_3x_fskd'
+CUDA_VISIBLE_DEVICES=5,6 python -m torch.distributed.launch \
+                                --nproc_per_node=2 \
+                                --master_port 1028 \
+                                train.py \
+                                --config configs/sparse_rcnn_kd/coco_${MODEL_NAME}.py \
+                                --seed 0 \
+                                --work-dir result/coco/${MODEL_NAME} \
+                                --launcher pytorch
+
 
 

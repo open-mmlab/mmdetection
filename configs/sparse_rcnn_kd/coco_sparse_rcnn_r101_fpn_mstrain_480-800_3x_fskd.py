@@ -1,4 +1,4 @@
-_base_ = './coco_sparse_rcnn_r101_fpn_mstrain_480-800_3x.py'
+_base_ = './coco_sparse_rcnn_r50_fpn_mstrain_480-800_3x_fskd.py'
 
 model = dict(
     backbone=dict(
@@ -9,6 +9,6 @@ model = dict(
 
 # Distillation Params
 teacher_config_path = 'result/coco/sparse_rcnn_r101_fpn_mstrain_480-800_3x/coco_sparse_rcnn_r101_fpn_mstrain_480-800_3x.py'
-teacher_weight_path = 'result/coco/sparse_rcnn_r101_fpn_mstrain_480-800_3x/epoch_36.pth'
+teacher_weight_path = 'result/coco/sparse_rcnn_r101_fpn_mstrain_480-800_3x/epoch_2.pth'
 backbone_pretrain = False
 

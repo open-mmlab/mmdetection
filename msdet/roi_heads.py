@@ -689,7 +689,8 @@ class ContSparseRoIHead(CascadeRoIHead):
             object_feats = bbox_results['object_feats']
 
             ## gt bbox features
-            gt_rois = bbox2roi(gt_bboxes_ordered)
+            gt_rois = bbox2roi(gt_bboxes)
+            ###### error
             gt_bbox_results = self._bbox_forward(stage, x, gt_rois, gt_object_feats, img_metas)
 
             gt_object_feats = gt_bbox_results['object_feats']
