@@ -75,8 +75,8 @@ train_pipeline = [
 test_pipeline = [
     dict(
         type='LoadImageFromFile',
-        backend_args={{_base_.backend_args}},
         to_float32=True,
+        backend_args={{_base_.backend_args}},
     ),
     # don't need Resize
     dict(
