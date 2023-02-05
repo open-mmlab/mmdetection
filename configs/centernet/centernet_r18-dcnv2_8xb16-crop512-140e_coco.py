@@ -145,27 +145,29 @@ tta_pipeline = [
         file_client_args=dict(backend='disk')),
     dict(
         type='TestTimeAug',
-        transforms=[[
-            dict(type='RandomFlip', prob=1.),
-            dict(type='RandomFlip', prob=0.)
-        ],
-                    [
-                        dict(
-                            type='RandomCenterCropPad',
-                            ratios=None,
-                            border=None,
-                            mean=[0, 0, 0],
-                            std=[1, 1, 1],
-                            to_rgb=True,
-                            test_mode=True,
-                            test_pad_mode=['logical_or', 31],
-                            test_pad_add_pix=1),
-                    ],
-                    [
-                        dict(
-                            type='PackDetInputs',
-                            meta_keys=('img_id', 'img_path', 'ori_shape',
-                                       'img_shape', 'flip', 'flip_direction',
-                                       'border'))
-                    ]])
+        transforms=[
+            [
+                # ``RandomFlip`` must be placed before ``RandomCenterCropPad``
+                dict(type='RandomFlip', prob=1.),
+                dict(type='RandomFlip', prob=0.)
+            ],
+            [
+                dict(
+                    type='RandomCenterCropPad',
+                    ratios=None,
+                    border=None,
+                    mean=[0, 0, 0],
+                    std=[1, 1, 1],
+                    to_rgb=True,
+                    test_mode=True,
+                    test_pad_mode=['logical_or', 31],
+                    test_pad_add_pix=1),
+            ],
+            [
+                dict(
+                    type='PackDetInputs',
+                    meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                               'flip', 'flip_direction', 'border'))
+            ]
+        ])
 ]

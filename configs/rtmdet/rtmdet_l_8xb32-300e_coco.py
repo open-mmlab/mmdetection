@@ -191,25 +191,28 @@ tta_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=dict(backend='disk')),
     dict(
         type='TestTimeAug',
-        transforms=[[
-            dict(type='Resize', scale=(640, 640), keep_ratio=True),
-            dict(type='Resize', scale=(672, 672), keep_ratio=True),
-            dict(type='Resize', scale=(608, 608), keep_ratio=True),
-        ], [
-            dict(type='RandomFlip', prob=1.),
-            dict(type='RandomFlip', prob=0.)
-        ],
-                    [
-                        dict(
-                            type='Pad',
-                            size=(640, 640),
-                            pad_val=dict(img=(114, 114, 114))),
-                    ], [dict(type='LoadAnnotations', with_bbox=True)],
-                    [
-                        dict(
-                            type='PackDetInputs',
-                            meta_keys=('img_id', 'img_path', 'ori_shape',
-                                       'img_shape', 'scale_factor', 'flip',
-                                       'flip_direction'))
-                    ]])
+        transforms=[
+            [
+                dict(type='Resize', scale=(640, 640), keep_ratio=True),
+                dict(type='Resize', scale=(672, 672), keep_ratio=True),
+                dict(type='Resize', scale=(608, 608), keep_ratio=True),
+            ],
+            [
+                # ``RandomFlip`` must be placed before ``Pad``
+                dict(type='RandomFlip', prob=1.),
+                dict(type='RandomFlip', prob=0.)
+            ],
+            [
+                dict(
+                    type='Pad',
+                    size=(640, 640),
+                    pad_val=dict(img=(114, 114, 114))),
+            ],
+            [
+                dict(
+                    type='PackDetInputs',
+                    meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                               'scale_factor', 'flip', 'flip_direction'))
+            ]
+        ])
 ]
