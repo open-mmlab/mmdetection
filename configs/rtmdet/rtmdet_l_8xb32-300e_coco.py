@@ -192,11 +192,7 @@ tta_pipeline = [
     dict(
         type='TestTimeAug',
         transforms=[
-            [
-                dict(type='Resize', scale=(640, 640), keep_ratio=True),
-                dict(type='Resize', scale=(672, 672), keep_ratio=True),
-                dict(type='Resize', scale=(608, 608), keep_ratio=True),
-            ],
+            [dict(type='Resize', scale=(640, 640), keep_ratio=True)],
             [
                 # ``RandomFlip`` must be placed before ``Pad``
                 dict(type='RandomFlip', prob=1.),

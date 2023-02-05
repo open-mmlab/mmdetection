@@ -75,14 +75,11 @@ tta_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=dict(backend='disk')),
     dict(
         type='TestTimeAug',
-        transforms=[[
-            dict(type='Resize', scale=(1333, 800), keep_ratio=True),
-            dict(type='Resize', scale=(1333, 600), keep_ratio=True),
-            dict(type='Resize', scale=(1333, 1000), keep_ratio=True),
-        ], [
-            dict(type='RandomFlip', prob=1.),
-            dict(type='RandomFlip', prob=0.)
-        ],
+        transforms=[[dict(type='Resize', scale=(1333, 800), keep_ratio=True)],
+                    [
+                        dict(type='RandomFlip', prob=1.),
+                        dict(type='RandomFlip', prob=0.)
+                    ],
                     [
                         dict(
                             type='PackDetInputs',
