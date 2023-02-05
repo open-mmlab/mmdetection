@@ -10,6 +10,7 @@ from mmengine.structures import InstanceData
 from mmdet.structures import DetDataSample
 from mmdet.structures.bbox import bbox_flip
 
+
 def merge_aug_bboxes(aug_bboxes, aug_scores, img_metas):
     """Merge augmented detection bboxes and scores.
 
@@ -28,9 +29,7 @@ def merge_aug_bboxes(aug_bboxes, aug_scores, img_metas):
         flip_direction = img_info['flip_direction']
         if flip:
             bboxes = bbox_flip(
-                bboxes=bboxes,
-                img_shape=ori_shape,
-                direction=flip_direction)
+                bboxes=bboxes, img_shape=ori_shape, direction=flip_direction)
         recovered_bboxes.append(bboxes)
     bboxes = torch.cat(recovered_bboxes, dim=0)
     if aug_scores is None:
@@ -39,19 +38,19 @@ def merge_aug_bboxes(aug_bboxes, aug_scores, img_metas):
         scores = torch.cat(aug_scores, dim=0)
         return bboxes, scores
 
+
 @MODELS.register_module()
 class DetTTAModel(BaseTTAModel):
     """Merge augmented detection results, only bboxes corresponding score under
-    flipping and multi-scale resizing can be processed now.
-    """
+    flipping and multi-scale resizing can be processed now."""
 
     def __init__(self, tta_cfg=None, **kwargs):
         super().__init__(**kwargs)
         self.tta_cfg = tta_cfg
 
-
     def merge_preds(self, data_samples_list: List[List[DetDataSample]]):
         """Merge predictions of enhanced data to one prediction.
+
         Args:
             data_samples_list (List[List[ClsDataSample]]): List of predictions
                 of all enhanced data.
@@ -85,8 +84,7 @@ class DetTTAModel(BaseTTAModel):
             ]
 
         det_bboxes, keep_idxs = batched_nms(merged_bboxes, merged_scores,
-                                            merged_labels,
-                                            self.tta_cfg.nms)
+                                            merged_labels, self.tta_cfg.nms)
 
         det_bboxes = det_bboxes[:self.tta_cfg.max_per_img]
         det_labels = merged_labels[keep_idxs][:self.tta_cfg.max_per_img]
