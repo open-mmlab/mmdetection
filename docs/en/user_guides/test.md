@@ -201,7 +201,11 @@ Or you can set it through `--cfg-options` as `--cfg-options test_dataloader.batc
 
 ## Test Time Augmentation (TTA)
 
-MMDetection supports test time augmentation with a single image or batched images. By default, we set the `Flip` as augmentation. And you can directly run:
+Test time augmentation (TTA) is a data augmentation strategy used during the testing phase. It involves applying various augmentations, such as flipping and scaling, to the same image and then merging the predictions of each augmented image to produce a more accurate prediction.  To make it easier for users to use TTA, MMEngine provides [BaseTTAModel](https://mmengine.readthedocs.io/en/latest/api/generated/mmengine.model.BaseTTAModel.html#mmengine.model.BaseTTAModel) class, which allows users to implement different TTA strategies by simply extending the BaseTTAModel class according to their needs.
+
+In MMDetection, we provides [DetTTAModel](../../../mmdet/models/test_time_augs/det_tta.py) class, which inherits from BaseTTAModel.
+
+You can simplely run:
 
 ```shell
 # Single-gpu testing
@@ -226,7 +230,8 @@ bash tools/dist_test.sh \
     [--tta]
 ```
 
-You can also modify the TTA config by yourself, such as adding multi-scale testing:
+By default, we only use 2 flipping enhancements (flipping and not flipping).
+You can also modify the config of TTA by yourself, such as adding scaling enhancement:
 
 ```shell
 tta_model = dict(
@@ -256,6 +261,8 @@ tta_pipeline = [
        ]])]
 ```
 
+The above data augmentation pipeline will first perform 3 multi-scaling enhancements on the image, followed by 2 flipping enhancements (flipping and not flipping). Finally, the image is packaged into the final result using PackDetInputs.
+
 Here are some TTA configs for your reference:
 
 - [RetinaNet](../../../configs/_base_/models/retinanet_r50_fpn.py)
@@ -263,4 +270,4 @@ Here are some TTA configs for your reference:
 - [YOLOX](../../../configs/rtmdet/rtmdet-ins_l_8xb32-300e_coco.py)
 - [RTMDet](../../../configs/yolox/yolox_s_8xb8-300e_coco.py)
 
-We will support instance segmentation TTA latter.
+For more advanced usage and data flow of TTA, please refer to [MMEngine](https://mmengine.readthedocs.io/en/latest/advanced_tutorials/test_time_augmentation.html#data-flow). We will support instance segmentation TTA latter.
