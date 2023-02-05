@@ -1,4 +1,7 @@
-_base_ = ['../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py']
+_base_ = [
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py',
+    '../_base_/tta/yolox_tta.py'
+]
 
 img_scale = (640, 640)  # width, height
 
@@ -235,39 +238,3 @@ custom_hooks = [
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (8 samples per GPU)
 auto_scale_lr = dict(base_batch_size=64)
-
-tta_model = dict(
-    type='DetTTAModel',
-    tta_cfg=dict(nms=dict(type='nms', iou_threshold=0.65), max_per_img=100))
-
-img_scales = [(640, 640), (320, 320), (960, 960)]
-tta_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=dict(backend='disk')),
-    dict(
-        type='TestTimeAug',
-        transforms=[
-            [
-                dict(type='Resize', scale=s, keep_ratio=True)
-                for s in img_scales
-            ],
-            [
-                # ``RandomFlip`` must be placed before ``Pad``, otherwise
-                # bounding box coordinates after flipping cannot be
-                # recovered correctly.
-                dict(type='RandomFlip', prob=1.),
-                dict(type='RandomFlip', prob=0.)
-            ],
-            [
-                dict(
-                    type='Pad',
-                    pad_to_square=True,
-                    pad_val=dict(img=(114.0, 114.0, 114.0))),
-            ],
-            [
-                dict(
-                    type='PackDetInputs',
-                    meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                               'scale_factor', 'flip', 'flip_direction'))
-            ]
-        ])
-]

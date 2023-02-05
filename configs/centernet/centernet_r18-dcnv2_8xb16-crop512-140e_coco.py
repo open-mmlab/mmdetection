@@ -1,6 +1,7 @@
 _base_ = [
     '../_base_/datasets/coco_detection.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py',
+    '../_base_/tta/centernet_tta.py'
 ]
 
 dataset_type = 'CocoDataset'
@@ -133,43 +134,3 @@ train_cfg = dict(max_epochs=max_epochs)  # the real epoch is 28*5=140
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (16 samples per GPU)
 auto_scale_lr = dict(base_batch_size=128)
-
-tta_model = dict(
-    type='DetTTAModel',
-    tta_cfg=dict(nms=dict(type='nms', iou_threshold=0.5), max_per_img=100))
-
-tta_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        to_float32=True,
-        file_client_args=dict(backend='disk')),
-    dict(
-        type='TestTimeAug',
-        transforms=[
-            [
-                # ``RandomFlip`` must be placed before ``RandomCenterCropPad``,
-                # otherwise bounding box coordinates after flipping cannot be
-                # recovered correctly.
-                dict(type='RandomFlip', prob=1.),
-                dict(type='RandomFlip', prob=0.)
-            ],
-            [
-                dict(
-                    type='RandomCenterCropPad',
-                    ratios=None,
-                    border=None,
-                    mean=[0, 0, 0],
-                    std=[1, 1, 1],
-                    to_rgb=True,
-                    test_mode=True,
-                    test_pad_mode=['logical_or', 31],
-                    test_pad_add_pix=1),
-            ],
-            [
-                dict(
-                    type='PackDetInputs',
-                    meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                               'flip', 'flip_direction', 'border'))
-            ]
-        ])
-]

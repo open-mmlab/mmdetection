@@ -93,14 +93,10 @@ def main():
                 tta_cfg=dict(
                     nms=dict(type='nms', iou_threshold=0.5), max_per_img=100))
         if 'tta_pipeline' not in cfg:
-            if cfg.test_dataloader.dataset.type in ('MultiImageMixDataset',
-                                                    'ClassBalancedDataset',
-                                                    'RepeatDataset',
-                                                    'ConcatDataset'):
-                test_pipeline = cfg.test_dataloader.dataset.dataset.pipeline
-            else:
-                test_pipeline = cfg.test_dataloader.dataset.pipeline
-            cfg.tta_pipeline = deepcopy(test_pipeline)
+            test_data_cfg = cfg.test_dataloader.dataset
+            while 'dataset' in test_data_cfg:
+                test_data_cfg = test_data_cfg['dataset']
+            cfg.tta_pipeline = deepcopy(test_data_cfg.pipeline)
             flip_tta = dict(
                 type='TestTimeAug',
                 transforms=[
