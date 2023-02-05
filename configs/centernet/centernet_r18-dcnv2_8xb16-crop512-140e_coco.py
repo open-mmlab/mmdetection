@@ -147,7 +147,9 @@ tta_pipeline = [
         type='TestTimeAug',
         transforms=[
             [
-                # ``RandomFlip`` must be placed before ``RandomCenterCropPad``
+                # ``RandomFlip`` must be placed before ``RandomCenterCropPad``,
+                # otherwise bounding box coordinates after flipping cannot be
+                # recovered correctly.
                 dict(type='RandomFlip', prob=1.),
                 dict(type='RandomFlip', prob=0.)
             ],

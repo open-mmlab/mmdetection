@@ -240,14 +240,20 @@ tta_model = dict(
     type='DetTTAModel',
     tta_cfg=dict(nms=dict(type='nms', iou_threshold=0.65), max_per_img=100))
 
+img_scales = [(640, 640), (320, 320), (960, 960)]
 tta_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=dict(backend='disk')),
     dict(
         type='TestTimeAug',
         transforms=[
-            [dict(type='Resize', scale=img_scale, keep_ratio=True)],
             [
-                # ``RandomFlip`` must be placed before ``Pad``
+                dict(type='Resize', scale=s, keep_ratio=True)
+                for s in img_scales
+            ],
+            [
+                # ``RandomFlip`` must be placed before ``Pad``, otherwise
+                # bounding box coordinates after flipping cannot be
+                # recovered correctly.
                 dict(type='RandomFlip', prob=1.),
                 dict(type='RandomFlip', prob=0.)
             ],
