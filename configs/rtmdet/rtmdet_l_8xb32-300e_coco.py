@@ -182,3 +182,34 @@ custom_hooks = [
         switch_epoch=max_epochs - stage2_num_epochs,
         switch_pipeline=train_pipeline_stage2)
 ]
+
+tta_model = dict(
+    type='DetTTAModel',
+    tta_cfg=dict(nms=dict(type='nms', iou_threshold=0.6), max_per_img=100))
+
+tta_pipeline = [
+    dict(type='LoadImageFromFile', file_client_args=dict(backend='disk')),
+    dict(
+        type='TestTimeAug',
+        transforms=[[
+            dict(type='Resize', scale=(640, 640), keep_ratio=True),
+            dict(type='Resize', scale=(672, 672), keep_ratio=True),
+            dict(type='Resize', scale=(608, 608), keep_ratio=True),
+        ], [
+            dict(type='RandomFlip', prob=1.),
+            dict(type='RandomFlip', prob=0.)
+        ],
+                    [
+                        dict(
+                            type='Pad',
+                            size=(640, 640),
+                            pad_val=dict(img=(114, 114, 114))),
+                    ], [dict(type='LoadAnnotations', with_bbox=True)],
+                    [
+                        dict(
+                            type='PackDetInputs',
+                            meta_keys=('img_id', 'img_path', 'ori_shape',
+                                       'img_shape', 'scale_factor', 'flip',
+                                       'flip_direction'))
+                    ]])
+]

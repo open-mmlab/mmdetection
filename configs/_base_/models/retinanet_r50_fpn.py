@@ -77,11 +77,12 @@ tta_pipeline = [
         type='TestTimeAug',
         transforms=[[
             dict(type='Resize', scale=(1333, 800), keep_ratio=True),
-            dict(type='Resize', scale=(1333, 600), keep_ratio=True)
+            dict(type='Resize', scale=(1333, 600), keep_ratio=True),
+            dict(type='Resize', scale=(1333, 1000), keep_ratio=True),
         ], [
             dict(type='RandomFlip', prob=1.),
             dict(type='RandomFlip', prob=0.)
-        ], [dict(type='LoadAnnotations', with_bbox=True)],
+        ],
                     [
                         dict(
                             type='PackDetInputs',

@@ -11,34 +11,6 @@ from mmdet.structures import DetDataSample
 from mmdet.structures.bbox import bbox_flip
 
 
-def merge_aug_bboxes(aug_bboxes, aug_scores, img_metas):
-    """Merge augmented detection bboxes and scores.
-
-    Args:
-        aug_bboxes (list[Tensor]): shape (n, 4*#class)
-        aug_scores (list[Tensor] or None): shape (n, #class)
-    Returns:
-        tuple[Tensor]: ``bboxes`` with shape (n,4), where
-        4 represent (tl_x, tl_y, br_x, br_y)
-        and ``scores`` with shape (n,).
-    """
-    recovered_bboxes = []
-    for bboxes, img_info in zip(aug_bboxes, img_metas):
-        ori_shape = img_info['ori_shape']
-        flip = img_info['flip']
-        flip_direction = img_info['flip_direction']
-        if flip:
-            bboxes = bbox_flip(
-                bboxes=bboxes, img_shape=ori_shape, direction=flip_direction)
-        recovered_bboxes.append(bboxes)
-    bboxes = torch.cat(recovered_bboxes, dim=0)
-    if aug_scores is None:
-        return bboxes
-    else:
-        scores = torch.cat(aug_scores, dim=0)
-        return bboxes, scores
-
-
 @MODELS.register_module()
 class DetTTAModel(BaseTTAModel):
     """Merge augmented detection results, only bboxes corresponding score under
@@ -47,6 +19,35 @@ class DetTTAModel(BaseTTAModel):
     def __init__(self, tta_cfg=None, **kwargs):
         super().__init__(**kwargs)
         self.tta_cfg = tta_cfg
+
+    def merge_aug_bboxes(self, aug_bboxes, aug_scores, img_metas):
+        """Merge augmented detection bboxes and scores.
+
+        Args:
+            aug_bboxes (list[Tensor]): shape (n, 4*#class)
+            aug_scores (list[Tensor] or None): shape (n, #class)
+        Returns:
+            tuple[Tensor]: ``bboxes`` with shape (n,4), where
+            4 represent (tl_x, tl_y, br_x, br_y)
+            and ``scores`` with shape (n,).
+        """
+        recovered_bboxes = []
+        for bboxes, img_info in zip(aug_bboxes, img_metas):
+            ori_shape = img_info['ori_shape']
+            flip = img_info['flip']
+            flip_direction = img_info['flip_direction']
+            if flip:
+                bboxes = bbox_flip(
+                    bboxes=bboxes,
+                    img_shape=ori_shape,
+                    direction=flip_direction)
+            recovered_bboxes.append(bboxes)
+        bboxes = torch.cat(recovered_bboxes, dim=0)
+        if aug_scores is None:
+            return bboxes
+        else:
+            scores = torch.cat(aug_scores, dim=0)
+            return bboxes, scores
 
     def merge_preds(self, data_samples_list: List[List[DetDataSample]]):
         """Merge predictions of enhanced data to one prediction.
@@ -73,7 +74,7 @@ class DetTTAModel(BaseTTAModel):
             aug_labels.append(data_sample.pred_instances.labels)
             img_metas.append(data_sample.metainfo)
 
-        merged_bboxes, merged_scores = merge_aug_bboxes(
+        merged_bboxes, merged_scores = self.merge_aug_bboxes(
             aug_bboxes, aug_scores, img_metas)
         merged_labels = torch.cat(aug_labels, dim=0)
 
@@ -91,8 +92,8 @@ class DetTTAModel(BaseTTAModel):
 
         results = InstanceData()
         _det_bboxes = det_bboxes.clone()
-        results.bboxes = _det_bboxes[:, :4]
-        results.scores = _det_bboxes[:, 4]
+        results.bboxes = _det_bboxes[:, :-1]
+        results.scores = _det_bboxes[:, -1]
         results.labels = det_labels
         det_results = data_samples[0]
         det_results.pred_instances = results
