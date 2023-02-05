@@ -23,7 +23,7 @@ class DetTTAModel(BaseTTAModel):
         >>>     tta_cfg=dict(nms=dict(
         >>>                     type='nms',
         >>>                     iou_threshold=0.5),
-        >>>                     max_per_img=100)
+        >>>                     max_per_img=100))
         >>>
         >>> tta_pipeline = [
         >>>     dict(type='LoadImageFromFile',

@@ -198,3 +198,69 @@ data = dict(train_dataloader=dict(...), val_dataloader=dict(...), test_dataloade
 ```
 
 Or you can set it through `--cfg-options` as `--cfg-options test_dataloader.batch_size=2`
+
+## Test Time Augmentation (TTA)
+
+MMDetection supports test time augmentation with a single image or batched images. By default, we set the `Flip` as augmentation. And you can directly run:
+
+```shell
+# Single-gpu testing
+python tools/test.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--tta]
+
+# CPU: disable GPUs and run single-gpu testing script
+export CUDA_VISIBLE_DEVICES=-1
+python tools/test.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--out ${RESULT_FILE}] \
+    [--tta]
+
+# Multi-gpu testing
+bash tools/dist_test.sh \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    ${GPU_NUM} \
+    [--tta]
+```
+
+You can also modify the TTA config by yourself, such as adding multi-scale testing:
+
+```shell
+tta_model = dict(
+    type='DetTTAModel',
+    tta_cfg=dict(nms=dict(
+                   type='nms',
+                   iou_threshold=0.5),
+                   max_per_img=100))
+
+img_scales = [(1333, 800), (666, 400), (2000, 1200)]
+tta_pipeline = [
+    dict(type='LoadImageFromFile',
+        file_client_args=dict(backend='disk')),
+    dict(
+        type='TestTimeAug',
+        transforms=[[
+            dict(type='Resize', scale=s, keep_ratio=True) for s in img_scales
+        ], [
+            dict(type='RandomFlip', prob=1.),
+            dict(type='RandomFlip', prob=0.)
+        ], [
+            dict(
+               type='PackDetInputs',
+               meta_keys=('img_id', 'img_path', 'ori_shape',
+                       'img_shape', 'scale_factor', 'flip',
+                       'flip_direction'))
+       ]])]
+```
+
+Here are some TTA configs for your reference:
+
+- [RetinaNet](../../../configs/_base_/models/retinanet_r50_fpn.py)
+- [CenterNet](../../../configs/centernet/centernet-update_r18_fpn_8xb8-amp-lsj-200e_coco.py)
+- [YOLOX](../../../configs/rtmdet/rtmdet-ins_l_8xb32-300e_coco.py)
+- [RTMDet](../../../configs/yolox/yolox_s_8xb8-300e_coco.py)
+
+We will support instance segmentation TTA latter.
