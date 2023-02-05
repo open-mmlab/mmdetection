@@ -125,3 +125,24 @@ model = dict(
             nms=dict(type='nms', iou_threshold=0.5),
             max_per_img=100,
             mask_thr_binary=0.5)))
+
+tta_model = dict(type='TwoStageTestTimeAugModel')
+tta_pipeline = [
+    dict(type='LoadImageFromFile', file_client_args=dict(backend='disk')),
+    dict(
+        type='TestTimeAug',
+        transforms=[[
+            dict(type='Resize', scale=(1333, 800), keep_ratio=True),
+            dict(type='Resize', scale=(1333, 600), keep_ratio=True)
+        ], [
+            dict(type='RandomFlip', prob=1.),
+            dict(type='RandomFlip', prob=0.)
+        ], [dict(type='LoadAnnotations', with_bbox=True)],
+                    [
+                        dict(
+                            type='PackDetInputs',
+                            meta_keys=('img_id', 'img_path', 'ori_shape',
+                                       'img_shape', 'scale_factor', 'flip',
+                                       'flip_direction'))
+                    ]])
+]
