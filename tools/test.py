@@ -49,6 +49,7 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
+    parser.add_argument('--tta', action='store_true')
     parser.add_argument('--local_rank', type=int, default=0)
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
@@ -82,6 +83,11 @@ def main():
 
     if args.show or args.show_dir:
         cfg = trigger_visualization_hook(cfg, args)
+
+    if args.tta:
+        cfg['test_dataloader']['dataset']['pipeline'] = cfg['tta_pipeline']
+        cfg['tta_model']['module'] = cfg.model
+        cfg.model = cfg['tta_model']
 
     # build the runner from config
     if 'runner_type' not in cfg:
