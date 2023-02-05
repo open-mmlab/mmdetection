@@ -112,6 +112,9 @@ class DetTTAModel(BaseTTAModel):
         aug_scores = []
         aug_labels = []
         img_metas = []
+        # TODO: support instance segmentation TTA
+        assert data_samples[0].pred_instances.get('masks', None) is None, \
+            'TTA of instance segmentation does not support now.'
         for data_sample in data_samples:
             aug_bboxes.append(data_sample.pred_instances.bboxes)
             aug_scores.append(data_sample.pred_instances.scores)
