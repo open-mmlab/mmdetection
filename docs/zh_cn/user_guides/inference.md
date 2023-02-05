@@ -14,11 +14,19 @@ MMDetection 提供了许多预训练好的检测模型，可以在 [Model Zoo](h
 MMDetection 为在图片上推理提供了 Python 的高层编程接口。下面是建立模型和在图像或视频上进行推理的例子。
 
 ```python
-from mmdet.apis import init_detector, inference_detector
+import cv2
 import mmcv
+from mmcv.transforms import Compose
+from mmengine.utils import track_iter_progress
+from mmdet.registry import VISUALIZERS
+from mmdet.utils import register_all_modules
+from mmdet.apis import init_detector, inference_detector
+
+# 注册 mmdet 中的所有模块
+register_all_modules()
 
 # 指定模型的配置文件和 checkpoint 文件路径
-config_file = 'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
+config_file = 'configs/faster_rcnn/faster-rcnn_r50-fpn_1x_coco.py'
 checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
 
 # 根据配置文件和 checkpoint 文件构建模型
@@ -138,7 +146,7 @@ python demo/video_demo.py \
 
 ```shell
 python demo/video_demo.py demo/demo.mp4 \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --out result.mp4
 ```
@@ -165,7 +173,7 @@ python demo/video_gpuaccel_demo.py \
 
 ```shell
 python demo/video_gpuaccel_demo.py demo/demo.mp4 \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --nvdecode --out result.mp4
 ```
