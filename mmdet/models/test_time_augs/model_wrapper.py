@@ -74,7 +74,11 @@ def merge_aug_masks(aug_masks, img_metas):
 
 
 @MODELS.register_module()
-class TwoStageTestTimeAugModel(BaseTTAModel):
+class DetTTAModel(BaseTTAModel):
+
+    def __init__(self, tta_cfg, **kwargs):
+        super().__init__(**kwargs)
+        self.tta_cfg = tta_cfg
 
     def merge_preds(self, data_samples_list: List[List[DetDataSample]]):
         aug_bboxes = []
@@ -105,78 +109,21 @@ class TwoStageTestTimeAugModel(BaseTTAModel):
                 (det_bboxes, merged_labels),
             ]
 
-        if hasattr(self.module, 'module'):
-            model = self.module.module
-        else:
-            model = self.module
         det_bboxes, keep_idxs = batched_nms(merged_bboxes, merged_scores,
-                                            merged_labels,
-                                            model.test_cfg.rcnn.nms)
-        det_bboxes = det_bboxes[:model.test_cfg.rcnn.max_per_img]
-        det_labels = merged_labels[keep_idxs][:model.test_cfg.rcnn.max_per_img]
+                                            merged_labels, self.tta_cfg.nms)
+        det_bboxes = det_bboxes[:self.tta_cfg.max_per_img]
+        det_labels = merged_labels[keep_idxs][:self.tta_cfg.max_per_img]
         det_masks = merged_masks[
-            keep_idxs][:model.test_cfg.rcnn.
+            keep_idxs][:self.tta_cfg.
                        max_per_img] if merged_masks is not None else None
 
         results = InstanceData()
-
         _det_bboxes = det_bboxes.clone()
-
         results.bboxes = _det_bboxes[:, :4]
         results.scores = _det_bboxes[:, 4]
         results.labels = det_labels
         if len(aug_masks) > 0:
             results.masks = det_masks
-        det_results = data_samples_list[0][0]
-        det_results.pred_instances = results
-        return [det_results]
-
-
-@MODELS.register_module()
-class SingleStageTestTimeAugModel(BaseTTAModel):
-
-    def merge_preds(self, data_samples_list: List[List[DetDataSample]]):
-        aug_bboxes = []
-        aug_scores = []
-        aug_labels = []
-        img_metas = []
-
-        for data_samples in data_samples_list:
-            _img_metas = []
-            aug_bboxes.append(data_samples[0].pred_instances.bboxes)
-            aug_scores.append(data_samples[0].pred_instances.scores)
-            aug_labels.append(data_samples[0].pred_instances.labels)
-            _img_metas.append(data_samples[0].metainfo)
-            img_metas.append(_img_metas)
-
-        merged_bboxes, merged_scores = merge_aug_bboxes(
-            aug_bboxes, aug_scores, img_metas)
-        merged_labels = torch.cat(aug_labels, dim=0)
-
-        if merged_bboxes.numel() == 0:
-            det_bboxes = torch.cat([merged_bboxes, merged_scores[:, None]], -1)
-            return [
-                (det_bboxes, merged_labels),
-            ]
-
-        if hasattr(self.module, 'module'):
-            model = self.module.module
-        else:
-            model = self.module
-        det_bboxes, keep_idxs = batched_nms(merged_bboxes, merged_scores,
-                                            merged_labels,
-                                            model.bbox_head.test_cfg.nms)
-        det_bboxes = det_bboxes[:model.bbox_head.test_cfg.max_per_img]
-        det_labels = merged_labels[keep_idxs][:model.bbox_head.test_cfg.
-                                              max_per_img]
-
-        results = InstanceData()
-
-        _det_bboxes = det_bboxes.clone()
-
-        results.bboxes = _det_bboxes[:, :4]
-        results.scores = _det_bboxes[:, 4]
-        results.labels = det_labels
         det_results = data_samples_list[0][0]
         det_results.pred_instances = results
         return [det_results]

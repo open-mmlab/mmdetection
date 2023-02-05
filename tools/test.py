@@ -2,7 +2,9 @@
 import argparse
 import os
 import os.path as osp
+from copy import deepcopy
 
+from mmengine import ConfigDict
 from mmengine.config import Config, DictAction
 from mmengine.evaluator import DumpResults
 from mmengine.runner import Runner
@@ -85,9 +87,32 @@ def main():
         cfg = trigger_visualization_hook(cfg, args)
 
     if args.tta:
-        cfg['test_dataloader']['dataset']['pipeline'] = cfg['tta_pipeline']
-        cfg['tta_model']['module'] = cfg.model
-        cfg.model = cfg['tta_model']
+        if 'tta_model' not in cfg:
+            cfg.tta_model = dict(
+                type='DetTTAModel',
+                tta_cfg=dict(
+                    nms=dict(type='nms', iou_threshold=0.5), max_per_img=100))
+        if 'tta_pipeline' not in cfg:
+            test_pipeline = cfg.test_dataloader.dataset.pipeline
+            cfg.tta_pipeline = deepcopy(test_pipeline)
+            flip_tta = dict(
+                type='TestTimeAug',
+                transforms=[
+                    [
+                        dict(type='RandomFlip', prob=1.),
+                        dict(type='RandomFlip', prob=0.)
+                    ],
+                    [
+                        dict(
+                            type='PackDetInputs',
+                            meta_keys=('img_id', 'img_path', 'ori_shape',
+                                       'img_shape', 'scale_factor', 'flip',
+                                       'flip_direction'))
+                    ],
+                ])
+            cfg.tta_pipeline[-1] = flip_tta
+        cfg.model = ConfigDict(**cfg.tta_model, module=cfg.model)
+        cfg.test_dataloader.dataset.pipeline = cfg.tta_pipeline
 
     # build the runner from config
     if 'runner_type' not in cfg:

@@ -67,7 +67,10 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100))
 
-tta_model = dict(type='SingleStageTestTimeAugModel')
+tta_model = dict(
+    type='DetTTAModel',
+    tta_cfg=dict(nms=dict(type='nms', iou_threshold=0.5), max_per_img=100))
+
 tta_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=dict(backend='disk')),
     dict(
