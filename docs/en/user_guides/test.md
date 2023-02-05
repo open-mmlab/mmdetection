@@ -265,9 +265,9 @@ The above data augmentation pipeline will first perform 3 multi-scaling enhancem
 
 Here are some TTA configs for your reference:
 
-- [RetinaNet](../../../configs/_base_/models/retinanet_r50_fpn.py)
-- [CenterNet](../../../configs/centernet/centernet-update_r18_fpn_8xb8-amp-lsj-200e_coco.py)
-- [YOLOX](../../../configs/rtmdet/rtmdet-ins_l_8xb32-300e_coco.py)
-- [RTMDet](../../../configs/yolox/yolox_s_8xb8-300e_coco.py)
+- [RetinaNet](../../../configs/_base_/tta/retinanet_tta.py)
+- [CenterNet](../../../configs/_base_/tta/centernet_tta.py)
+- [YOLOX](../../../configs/_base_/tta/rtmdet_tta_.py)
+- [RTMDet](../../../configs/_base_/tta/yolox_tta.py)
 
 For more advanced usage and data flow of TTA, please refer to [MMEngine](https://mmengine.readthedocs.io/en/latest/advanced_tutorials/test_time_augmentation.html#data-flow). We will support instance segmentation TTA latter.
