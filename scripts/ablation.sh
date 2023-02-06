@@ -57,7 +57,7 @@ for RATIO in 0.5
 do
     for MIN_LR in 0.6
     do
-        for D_PARAM in 0.2 0.4 0.6 0.8 1.2 1.4 1.6 1.8 2.0
+        for D_PARAM in 0.5 1.0 1.5 2.0
         do
             CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch \
                                         --nproc_per_node=4 \
@@ -79,7 +79,7 @@ for RATIO in 0.5
 do
     for MIN_LR in 0.6
     do
-        for D_PARAM in 2.2 2.4 2.6 2.8 3.0 3.2 3.4 3.6 3.8 4.0
+        for D_PARAM in 2.5 3.0 3.5 4.0
         do
             CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch \
                                         --nproc_per_node=4 \
