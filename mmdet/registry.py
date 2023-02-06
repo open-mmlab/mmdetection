@@ -117,4 +117,5 @@ VISBACKENDS = Registry(
 LOG_PROCESSORS = Registry(
     'log_processor',
     parent=MMENGINE_LOG_PROCESSORS,
-    locations=['mmdet.visualization'])
+    # TODO: update the location when mmdet has its own log processor
+    locations=['mmdet.engine'])

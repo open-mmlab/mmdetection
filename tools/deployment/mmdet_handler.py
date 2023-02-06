@@ -5,12 +5,9 @@ import os
 import mmcv
 import numpy as np
 import torch
-from mmengine.registry import init_default_scope
 from ts.torch_handler.base_handler import BaseHandler
 
 from mmdet.apis import inference_detector, init_detector
-
-init_default_scope('mmdet')
 
 
 class MMdetHandler(BaseHandler):
