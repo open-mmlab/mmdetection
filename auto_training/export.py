@@ -99,6 +99,7 @@ def parse_args():
 
 
 if __name__ == '__main__':
+    os.environ["ONNX_BACKEND"] = "MMCVTensorRT"
     args = parse_args()
     warnings.warn('Arguments like `--mean`, `--std`, `--dataset` would be \
         parsed directly from config file and are deprecated and \

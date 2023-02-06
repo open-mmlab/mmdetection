@@ -6,7 +6,9 @@ from auto_training.utils.utils import parse_training_data_classes
 def make_pvt_cfg(data_path: str,
                  input_res = (512, 384),
                  work_dir='./work_dirs/pvtb0',
-                 keep_ratio = False):
+                 keep_ratio = False,
+                 max_epochs=12
+                 ):
 
     cfg = Config()
     cfg.work_dir = work_dir
@@ -27,14 +29,14 @@ def make_pvt_cfg(data_path: str,
     cfg.train_pipeline = [
         dict(type='LoadImageFromFile'),
         dict(type='LoadAnnotations', with_bbox=True),
-        dict(type='Resize', img_scale=[input_res, min_res], keep_ratio=keep_ratio),
+        dict(type='Resize', img_scale=[input_res], keep_ratio=keep_ratio),
         # dict(type='Rot90'),
+        dict(type='RandomAffine'),
         dict(
             type='RandomCrop',
             crop_type='relative_range',
-            crop_size=(0.7, 1.0),
+            crop_size=(0.5, 1.0),
             allow_negative_crop=True),
-        dict(type='RandomAffine'),
         dict(type='RandomFlip', flip_ratio=0.5),
         dict(
             type='Normalize',
@@ -65,7 +67,7 @@ def make_pvt_cfg(data_path: str,
             ])
     ]
     cfg.data = dict(
-        samples_per_gpu=4,
+        samples_per_gpu=8,
         workers_per_gpu=2,
         train=dict(
             type='RepeatDataset',
@@ -81,15 +83,15 @@ def make_pvt_cfg(data_path: str,
                     dict(type='LoadAnnotations', with_bbox=True),
                     dict(
                         type='Resize',
-                        img_scale=[input_res, min_res],
+                        img_scale=[input_res],
                         keep_ratio=keep_ratio),
                     # dict(type='Rot90'),
+                    dict(type='RandomAffine'),
                     dict(
                         type='RandomCrop',
                         crop_type='relative_range',
-                        crop_size=(0.7, 1.0),
+                        crop_size=(0.5, 1.0),
                         allow_negative_crop=True),
-                    dict(type='RandomAffine'),
                     dict(type='RandomFlip', flip_ratio=0.5),
                     dict(
                         type='Normalize',
@@ -154,8 +156,8 @@ def make_pvt_cfg(data_path: str,
         warmup='linear',
         warmup_iters=500,
         warmup_ratio=0.001,
-        step=[16, 22])
-    cfg.runner = dict(type='EpochBasedRunner', max_epochs=24)
+        step=[max_epochs-4, max_epochs-1])
+    cfg.runner = dict(type='EpochBasedRunner', max_epochs=max_epochs)
     cfg.checkpoint_config = dict(interval=1)
     cfg.log_config = dict(
         interval=50,
