@@ -70,8 +70,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         boxtype2tensor (bool): Whether to keep the ``BaseBoxes`` type of
             bboxes data or not. Defaults to True.
         non_blocking (bool): Whether block current process
-            when transferring data to device. New in version v0.3.0.
-            Defaults to False.
+            when transferring data to device. Defaults to False.
         batch_augments (list[dict], optional): Batch-level augmentations
     """
 
