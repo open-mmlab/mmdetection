@@ -5,6 +5,7 @@ import torch
 from mmdet.models.builder import DETECTORS, build_backbone, build_head, build_neck
 from mmdet.models.detectors.two_stage import TwoStageDetector
 from mmdet.models import build_detector
+import torch.nn.functional as F
 
 
 @DETECTORS.register_module()
@@ -73,6 +74,7 @@ class SparseRCNN_TS(TwoStageDetector):
         x = self.extract_feat(img)
         proposal_boxes, proposal_features, imgs_whwh = \
             self.rpn_head.forward_train(x, img_metas)
+        
         roi_losses, gt_bboxes_feats = self.roi_head.forward_train(
             x,
             proposal_boxes,
@@ -131,6 +133,8 @@ class SparseRCNN_TS(TwoStageDetector):
                                                dummy_img_metas)
         return roi_outs
 
+    def calc_consistency_loss(self, feat_ori, feat_aug):
+        return torch.mean(1.0 - F.cosine_similarity(feat_ori, feat_aug))
     
     def train_step(self, data, optimizer):
         """The iteration step during training.

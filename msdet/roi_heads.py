@@ -493,7 +493,7 @@ class ContSparseRoIHead(CascadeRoIHead):
                 assert isinstance(self.bbox_sampler[stage], PseudoSampler), \
                     'Sparse R-CNN and QueryInst only support `PseudoSampler`'
 
-    def _bbox_forward(self, stage, x, rois, object_feats, img_metas):
+    def _bbox_forward(self, stage, x, rois, object_feats, img_metas, gt_rois=None):
         """Box head forward function used in both training and testing. Returns
         all regression, classification results and a intermediate feature.
 
@@ -533,6 +533,10 @@ class ContSparseRoIHead(CascadeRoIHead):
         num_imgs = len(img_metas)
         bbox_roi_extractor = self.bbox_roi_extractor[stage]
         bbox_head = self.bbox_head[stage]
+
+        if gt_rois is not None:
+            gt_bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs], gt_rois)
+
         bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
                                         rois)
         cls_score, bbox_pred, object_feats, attn_feats = bbox_head(
@@ -554,6 +558,8 @@ class ContSparseRoIHead(CascadeRoIHead):
             ],
             detach_proposal_list=[item.detach() for item in proposal_list])
 
+        if gt_rois is not None:
+            return bbox_results, gt_bbox_feats
         return bbox_results
 
     def _mask_forward(self, stage, x, rois, attn_feats):
@@ -634,7 +640,7 @@ class ContSparseRoIHead(CascadeRoIHead):
         imgs_whwh = imgs_whwh.repeat(1, num_proposals, 1)
         all_stage_bbox_results = []
         proposal_list = [proposal_boxes[i] for i in range(len(proposal_boxes))]
-        gt_object_feats = object_feats = proposal_features
+        object_feats = proposal_features
         all_stage_loss = {}
 
         # TODO: Contrastive Loss
@@ -646,9 +652,14 @@ class ContSparseRoIHead(CascadeRoIHead):
 
 
         for stage in range(self.num_stages):
+            # GT RoI Selection
+            gt_rois = bbox2roi(gt_bboxes_ordered)
+
+            # Original RoIs for Proposal
             rois = bbox2roi(proposal_list)
-            bbox_results = self._bbox_forward(stage, x, rois, object_feats,
-                                              img_metas)
+            bbox_results, gt_bboxes_feats = self._bbox_forward(stage, x, rois, object_feats,
+                                              img_metas, gt_rois)
+
             all_stage_bbox_results.append(bbox_results)
             if gt_bboxes_ignore is None:
                 # TODO support ignore
@@ -688,15 +699,8 @@ class ContSparseRoIHead(CascadeRoIHead):
                                     self.stage_loss_weights[stage]
             object_feats = bbox_results['object_feats']
 
-            ## gt bbox features
-            gt_rois = bbox2roi(gt_bboxes_ordered)
-            gt_bbox_results = self._bbox_forward(stage, x, gt_rois, gt_object_feats, img_metas)
 
-            gt_object_feats = gt_bbox_results['object_feats']
-
-        # gt_bboxes_feats = gt_object_feats
-
-        return all_stage_loss, gt_object_feats
+        return all_stage_loss, gt_bboxes_feats
 
     def simple_test(self,
                     x,
