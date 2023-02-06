@@ -1,8 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
+import os
 import os.path as osp
+import warnings
 
 from mmengine.config import Config, DictAction
+from mmengine.logging import print_log
 from mmengine.utils import ProgressBar
 
 from mmdet.models.utils import mask2ndarray
@@ -15,11 +18,11 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Browse a dataset')
     parser.add_argument('config', help='train config file path')
     parser.add_argument(
-        '--output-dir',
-        default=None,
-        type=str,
-        help='If there is no display interface, you can save it')
-    parser.add_argument('--not-show', default=False, action='store_true')
+        '--show', action='store_true', help='Show the dataset results')
+    parser.add_argument(
+        '--out-dir', default='outputs', help='Dir to output file')
+    parser.add_argument(
+        '--no-save', action='store_true', help='Do not save dataset results')
     parser.add_argument(
         '--show-interval',
         type=float,
@@ -41,6 +44,14 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if args.no_save and not args.show:
+        warnings.warn('It doesn\'t make sense to neither save the dataset '
+                      'result nor display it. Force set args.no_save to False')
+        args.no_save = False
+
+    if not osp.exists(args.out_dir) and not args.no_save:
+        os.mkdir(args.out_dir)
+
     cfg = Config.fromfile(args.config)
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
@@ -60,8 +71,7 @@ def main():
         img_path = osp.basename(item['data_samples'].img_path)
 
         out_file = osp.join(
-            args.output_dir,
-            osp.basename(img_path)) if args.output_dir is not None else None
+            args.out_dir, osp.basename(img_path)) if not args.no_save else None
 
         img = img[..., [2, 1, 0]]  # bgr to rgb
         gt_bboxes = gt_instances.get('bboxes', None)
@@ -78,11 +88,14 @@ def main():
             img,
             data_sample,
             draw_pred=False,
-            show=not args.not_show,
+            show=args.show,
             wait_time=args.show_interval,
             out_file=out_file)
 
         progress_bar.update()
+
+    if not args.no_save:
+        print_log(f'\nResults have been saved at {args.out_dir}')
 
 
 if __name__ == '__main__':
