@@ -6,7 +6,7 @@ Collections:
         - AdamW
         - Multi Scale Train
         - Gradient Clip
-      Training Resources: 8x a100 GPUs
+      Training Resources: 8x A100 GPUs
       Architecture:
         - ResNet
         - Transformer
