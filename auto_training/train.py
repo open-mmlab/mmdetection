@@ -21,7 +21,6 @@ from mmdet.utils import (collect_env, get_device, get_root_logger,
                          replace_cfg_vals, setup_multi_processes,
                          update_data_root)
 
-
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('data_path', help='prepared training data')
@@ -94,6 +93,11 @@ def parse_args():
         'Note that the quotation marks are necessary and that no white space '
         'is allowed.')
     parser.add_argument(
+        '--max-epochs',
+        type=int,
+        default=12,
+        help='Train for how many epochs.')
+    parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
@@ -114,7 +118,6 @@ def parse_args():
     if args.options:
         warnings.warn('--options is deprecated in favor of --cfg-options')
         args.cfg_options = args.options
-
     return args
 
 
@@ -122,7 +125,8 @@ def main():
     args = parse_args()
     # replace the ${key} with the value of cfg.key
     cfg = make_pvt_cfg(data_path=args.data_path,
-                       input_res=tuple(args.training_res))
+                       input_res=tuple(args.training_res),
+                       max_epochs=args.max_epochs)
     cfg = replace_cfg_vals(cfg)
 
     # update data root according to MMDET_DATASETS

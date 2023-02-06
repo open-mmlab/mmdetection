@@ -33,15 +33,17 @@ def recreate_dir(dir_name: str):
 
 
 def write_detector_yaml(cfg: Config, write_dir: str, name: str) -> None:
-    detector_name = "KeypointTrtDetector"
+    detector_name = "PvtTrtDetector"
+    threshold = 0.5
     export_name = f"{name}.onnx"
     onnx_file_path = f"/data/ml_models/models/pvt_trt/{cfg.project_name}/{export_name}"
     yaml_contents =  f"- !<{detector_name}>\n" \
                      f"  name: {name}\n" \
-                     f"  input_shape: !!python/tuple {cfg.input_res}\n" \
+                     f"  input_shape: !!python/tuple {list(cfg.input_res)}\n" \
                      f"  onnx_file_path: {onnx_file_path}\n" \
+                     f"  threshold: {threshold}\n" \
                      f"  classes: {cfg.used_classes}\n" \
-                     f"  report classes: {cfg.used_classes}\n" \
+                     f"  report_classes: {cfg.used_classes}\n" \
                      f"  engine_cache_path: /opt/{name}.engine\n"
     write_path = os.path.join(write_dir, "detectors.yaml")
     write_string_as_file(write_path, yaml_contents)
@@ -81,7 +83,7 @@ def export_for_lv(args):
     cfg.author = args.author
     export_folder = os.path.join(cfg.work_dir, "export")
     recreate_dir(export_folder)
-    model_name = f"keypoint_detector_{cfg.project_name}_{time.strftime('%y%m%d')}"
+    model_name = f"pvt_detector_{cfg.project_name}_{time.strftime('%y%m%d')}"
     write_detector_yaml(cfg=cfg, write_dir=export_folder, name=model_name)
     write_info_file(cfg=cfg, write_dir=export_folder)
     copy_training_specs(cfg=cfg, write_dir=export_folder)
