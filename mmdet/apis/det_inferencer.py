@@ -12,8 +12,8 @@ from mmengine.dataset import Compose
 from mmengine.fileio import (get_file_backend, isdir, join_path,
                              list_dir_or_file)
 from mmengine.infer.infer import BaseInferencer, ModelType
+from mmengine.registry import init_default_scope
 from mmengine.runner.checkpoint import _load_checkpoint_to_model
-from mmengine.utils import import_modules_from_strings
 from mmengine.visualization import Visualizer
 
 from mmdet.evaluation import INSTANCE_OFFSET
@@ -80,8 +80,7 @@ class DetInferencer(BaseInferencer):
         self.num_visualized_imgs = 0
         self.num_predicted_imgs = 0
         self.palette = palette
-        utils = import_modules_from_strings(f'{scope}.utils')
-        utils.register_all_modules()
+        init_default_scope(scope)
         super().__init__(
             model=model, weights=weights, device=device, scope=scope)
 
