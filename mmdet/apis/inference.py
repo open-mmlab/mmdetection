@@ -10,6 +10,7 @@ import torch.nn as nn
 from mmcv.ops import RoIPool
 from mmcv.transforms import Compose
 from mmengine.config import Config
+from mmengine.registry import init_default_scope
 from mmengine.runner import load_checkpoint
 
 from mmdet.registry import DATASETS
@@ -54,6 +55,8 @@ def init_detector(
         config.merge_from_dict(cfg_options)
     elif 'init_cfg' in config.model.backbone:
         config.model.backbone.init_cfg = None
+    init_default_scope(config.get('default_scope', 'mmdet'))
+
     model = MODELS.build(config.model)
     if checkpoint is None:
         warnings.simplefilter('once')
