@@ -128,6 +128,11 @@ class BaseBoxes(metaclass=ABCMeta):
             sizes, fill, dtype=dtype, device=device)
         return type(self)(fake_boxes, clone=False)
 
+    def pin_memory(self):
+        """BaseBoxes supports pin_memory function to speed up training."""
+        self.tensor = self.tensor.pin_memory()
+        return self
+
     def __getitem__(self: T, index: IndexType) -> T:
         """Rewrite getitem to protect the last dimension shape."""
         boxes = self.tensor
