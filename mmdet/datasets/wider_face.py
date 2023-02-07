@@ -52,3 +52,27 @@ class WIDERFaceDataset(XMLDataset):
                     height=height))
 
         return data_infos
+
+    def get_ann_info(self, idx):
+        """Get annotation from XML file by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+        # minusing 1 is unnecessary in `XMLDataset.get_ann_info`
+        # for WIDERFace dataset converted by the above script,
+        # so add 1 back
+        ann = super().get_ann_info(idx)
+        bboxes = ann['bboxes']
+        bboxes_ignore = ann['bboxes_ignore']
+
+        if bboxes.shape[0] > 0:
+            ann['bboxes'] = bboxes + 1
+
+        if bboxes_ignore.shape[0] > 0:
+            ann['bboxes_ignore'] = bboxes_ignore + 1
+
+        return ann
