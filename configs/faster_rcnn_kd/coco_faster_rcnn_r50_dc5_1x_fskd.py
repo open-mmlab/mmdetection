@@ -6,6 +6,7 @@ _base_ = [
 
 # model
 model = dict(type='FasterRCNN_TS',
+             distill_param=1.0,
              roi_head=dict(
                  type='ContRoIHead'
                 ),
@@ -27,10 +28,7 @@ pre_train_pipeline = [
 ]
 
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),

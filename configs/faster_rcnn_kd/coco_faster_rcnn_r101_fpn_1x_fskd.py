@@ -1,26 +1,21 @@
-_base_ = [
-    '../_base_/models/faster_rcnn_r50_caffe_c4.py',
-    '../_base_/datasets/coco_detection.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
-]
+_base_ = '../faster_rcnn/coco_faster_rcnn_r101_fpn_1x.py'
 
-# model
 model = dict(type='FasterRCNN_TS',
+             distill_param=1.0,
              roi_head=dict(
                  type='ContRoIHead'
                 ),
-             distill_type='both', # positive or both
-             distill_neg_param=1.0
             )
 
+
 # Distillation Params
-teacher_config_path = 'result/coco/faster_rcnn_r50_c4_1x/coco_faster_rcnn_r50_c4_1x.py'
-teacher_weight_path = 'result/coco/faster_rcnn_r50_c4_1x/epoch_12.pth'
+teacher_config_path = 'result/coco/faster_rcnn_r101_fpn_1x/coco_faster_rcnn_r101_fpn_1x.py'
+teacher_weight_path = 'result/coco/faster_rcnn_r101_fpn_1x/epoch_12.pth'
 backbone_pretrain = False
 
-# use caffe img_norm
+
 img_norm_cfg = dict(
-    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 pre_train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -51,7 +46,6 @@ test_pipeline = [
             dict(type='Collect', keys=['img']),
         ])
 ]
-
 
 data = dict(
     samples_per_gpu=4,
