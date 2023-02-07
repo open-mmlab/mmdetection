@@ -7,7 +7,6 @@ import mmcv
 from mmdet.apis import (async_inference_detector, inference_detector,
                         init_detector)
 from mmdet.registry import VISUALIZERS
-from mmdet.utils import register_all_modules
 
 
 def parse_args():
@@ -34,9 +33,6 @@ def parse_args():
 
 
 def main(args):
-    # register all modules in mmdet into the registries
-    register_all_modules()
-
     # TODO: Support inference of image directory.
     # build the model from a config file and a checkpoint file
     model = init_detector(

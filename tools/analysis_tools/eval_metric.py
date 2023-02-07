@@ -4,9 +4,9 @@ import argparse
 import mmengine
 from mmengine import Config, DictAction
 from mmengine.evaluator import Evaluator
+from mmengine.registry import init_default_scope
 
 from mmdet.registry import DATASETS
-from mmdet.utils import register_all_modules
 
 
 def parse_args():
@@ -31,9 +31,8 @@ def parse_args():
 def main():
     args = parse_args()
 
-    register_all_modules(init_default_scope=True)
-
     cfg = Config.fromfile(args.config)
+    init_default_scope(cfg.get('default_scope', 'mmdet'))
 
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)

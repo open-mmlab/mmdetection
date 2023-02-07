@@ -5,9 +5,9 @@ import os
 from mmengine import MMLogger
 from mmengine.config import Config, DictAction
 from mmengine.dist import init_dist
+from mmengine.registry import init_default_scope
 from mmengine.utils import mkdir_or_exist
 
-from mmdet.utils import register_all_modules
 from mmdet.utils.benchmark import (DataLoaderBenchmark, DatasetBenchmark,
                                    InferenceBenchmark)
 
@@ -105,13 +105,12 @@ def dataset_benchmark(args, cfg, distributed, logger):
 
 
 def main():
-    register_all_modules()
-
     args = parse_args()
     cfg = Config.fromfile(args.config)
-
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
+
+    init_default_scope(cfg.get('default_scope', 'mmdet'))
 
     distributed = False
     if args.launcher != 'none':

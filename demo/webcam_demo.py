@@ -7,7 +7,6 @@ import torch
 
 from mmdet.apis import inference_detector, init_detector
 from mmdet.registry import VISUALIZERS
-from mmdet.utils import register_all_modules
 
 
 def parse_args():
@@ -26,9 +25,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-
-    # register all modules in mmdet into the registries
-    register_all_modules()
 
     # build the model from a config file and a checkpoint file
     device = torch.device(args.device)

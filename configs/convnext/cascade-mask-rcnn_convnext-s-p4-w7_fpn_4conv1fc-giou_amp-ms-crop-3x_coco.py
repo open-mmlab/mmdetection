@@ -1,5 +1,6 @@
 _base_ = './cascade-mask-rcnn_convnext-t-p4-w7_fpn_4conv1fc-giou_amp-ms-crop-3x_coco.py'  # noqa
 
+# TODO: delete custom_imports after mmcls supports auto import
 # please install mmcls>=1.0
 # import mmcls.models to trigger register_module in mmcls
 custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
