@@ -55,7 +55,7 @@ model = dict(
 
 ## 数据集的修改
 
-用户可能还需要准备数据集并编写有关数据集的配置，可在 [Customize Datasets](../advanced_guides/customize_dataset.md) 中获取更多信息。目前 MMDetection V3.0 的配置文件已经支持 VOC、WIDERFACE、COCO、LIVS、OpenImages、DeepFashion 和 Cityscapes Dataset 的数据集信息。
+用户可能还需要准备数据集并编写有关数据集的配置，可在 [Customize Datasets](../advanced_guides/customize_dataset.md) 中获取更多信息。目前 MMDetection V3.0 的配置文件已经支持 VOC、WIDERFACE、COCO、LIVS、OpenImages、DeepFashion、Objects365 和 Cityscapes Dataset 的数据集信息。
 
 ## 训练策略的修改
 
@@ -89,7 +89,7 @@ default_hooks = dict(logger=dict(interval=100)),
 
 ## 使用预训练模型
 
-要使用预训练模型，可以在 `load_from` 中查阅新的配置信息，用户需要在训练开始之前下载好需要的模型权重，从而避免在训练过程中浪费了宝贵时间。
+如果要使用预训练模型，可以在 `load_from` 中查阅新的配置信息，用户需要在训练开始之前下载好需要的模型权重，从而避免在训练过程中浪费了宝贵时间。
 
 ```python
 load_from = 'https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco_bbox_mAP-0.408__segm_mAP-0.37_20200504_163245-42aa3d00.pth'  # noqa
