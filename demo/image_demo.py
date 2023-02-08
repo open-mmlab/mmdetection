@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import warnings
 from argparse import ArgumentParser
 
 from mmengine.logging import print_log
@@ -19,10 +18,10 @@ def parse_args():
         'from .pth if the parameter is a .pth weights file.')
     parser.add_argument('--weights', default=None, help='Checkpoint file')
     parser.add_argument(
-        '--img-out-dir',
+        '--out-dir',
         type=str,
         default='outputs',
-        help='Output directory of images.')
+        help='Output directory of images or prediction results.')
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
@@ -37,19 +36,17 @@ def parse_args():
         action='store_true',
         help='Display the image in a popup window.')
     parser.add_argument(
-        '--no-save-image',
+        '--no-save-img',
         action='store_true',
         help='Do not save detection vis results')
+    parser.add_argument(
+        '--no-save-pred',
+        action='store_true',
+        help='Do not save detection json results')
     parser.add_argument(
         '--print-result',
         action='store_true',
         help='Whether to print the results.')
-    parser.add_argument(
-        '--pred-out-file',
-        type=str,
-        default='',
-        help='File to save the inference results. '
-        'Currently only supports json suffix.')
     parser.add_argument(
         '--palette',
         default='none',
@@ -58,26 +55,14 @@ def parse_args():
 
     call_args = vars(parser.parse_args())
 
+    if call_args['no_save_img'] and call_args['no_save_pred']:
+        call_args['out-dir'] = ''
+
     if call_args['model'].endswith('.pth'):
         print_log('The model is a weight file, automatically '
                   'assign the model to --weights')
         call_args['weights'] = call_args['model']
         call_args['model'] = None
-
-    no_save_image = call_args.pop('no_save_image')
-    if no_save_image and not call_args['show'] and call_args[
-            'pred_out_file'] == '':
-        warnings.warn(
-            'It doesn\'t make sense to neither save the prediction '
-            'result nor display it. Force set args.no-save-image to False')
-        no_save_image = False
-    if no_save_image:
-        call_args['img_out_dir'] = ''
-
-    if call_args['pred_out_file'] != '':
-        assert call_args['pred_out_file'].endswith('.json'), \
-            f'The --pred-out-file: {call_args["pred_out_file"]} ' \
-            'must be a json file.'
 
     init_kws = ['model', 'weights', 'device', 'palette']
     init_args = {}
@@ -92,12 +77,9 @@ def main():
     inferencer = DetInferencer(**init_args)
     inferencer(**call_args)
 
-    if call_args['img_out_dir'] != '':
-        print_log('\nVisualized results have been saved at '
-                  f'{call_args["img_out_dir"]}')
-    if call_args['pred_out_file'] != '':
-        print_log('Predicted Results have been saved at '
-                  f'{call_args["pred_out_file"]}')
+    if call_args['out_dir'] != '' and not (call_args['no_save_img']
+                                           and call_args['no_save_pred']):
+        print_log(f'results have been saved at {call_args["out_dir"]}')
 
 
 if __name__ == '__main__':

@@ -85,7 +85,7 @@ class TestDetInferencer(TestCase):
         inferencer = DetInferencer(model)
         # img_out_dir
         with tempfile.TemporaryDirectory() as tmp_dir:
-            inferencer(img_paths, img_out_dir=tmp_dir)
+            inferencer(img_paths, out_dir=tmp_dir)
             for img_dir in ['color.jpg', 'gray.jpg']:
                 self.assertTrue(osp.exists(osp.join(tmp_dir, img_dir)))
 
@@ -97,14 +97,12 @@ class TestDetInferencer(TestCase):
         # return_datasample
         img_path = 'tests/data/color.jpg'
         inferencer = DetInferencer(model)
-        res = inferencer(img_path, return_datasamples=True)
+        res = inferencer(img_path, return_datasample=True)
         self.assertTrue(is_list_of(res['predictions'], DetDataSample))
 
-        # pred_out_file
         with tempfile.TemporaryDirectory() as tmp_dir:
-            pred_out_file = osp.join(tmp_dir, 'tmp.json')
-            res = inferencer(
-                img_path, print_result=True, pred_out_file=pred_out_file)
-            dumped_res = mmengine.load(pred_out_file)
-            self.assert_predictions_equal(res['predictions'],
+            res = inferencer(img_path, out_dir=tmp_dir)
+            dumped_res = mmengine.load(
+                osp.join(tmp_dir, 'predicts', 'color_pred_panoptic_seg.json'))
+            self.assert_predictions_equal(res['predictions'][0],
                                           dumped_res['predictions'])

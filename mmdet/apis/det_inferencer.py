@@ -15,6 +15,7 @@ from mmengine.infer.infer import BaseInferencer, ModelType
 from mmengine.registry import init_default_scope
 from mmengine.runner.checkpoint import _load_checkpoint_to_model
 from mmengine.visualization import Visualizer
+from rich.progress import track
 
 from mmdet.evaluation import INSTANCE_OFFSET
 from mmdet.registry import DATASETS
@@ -62,11 +63,19 @@ class DetInferencer(BaseInferencer):
     preprocess_kwargs: set = set()
     forward_kwargs: set = set()
     visualize_kwargs: set = {
-        'return_vis', 'show', 'wait_time', 'draw_pred', 'pred_score_thr',
-        'img_out_dir'
+        'return_vis',
+        'show',
+        'wait_time',
+        'draw_pred',
+        'pred_score_thr',
+        'img_out_dir',
+        'no_save_img',
     }
     postprocess_kwargs: set = {
-        'print_result', 'pred_out_file', 'return_datasample'
+        'print_result',
+        'pred_out_dir',
+        'return_datasample',
+        'no_save_pred',
     }
 
     def __init__(self,
@@ -217,36 +226,39 @@ class DetInferencer(BaseInferencer):
 
     def __call__(self,
                  inputs: InputsType,
-                 return_datasamples: bool = False,
                  batch_size: int = 1,
                  return_vis: bool = False,
                  show: bool = False,
                  wait_time: int = 0,
+                 no_save_img: bool = False,
                  draw_pred: bool = True,
                  pred_score_thr: float = 0.3,
-                 img_out_dir: str = '',
+                 return_datasample: bool = False,
                  print_result: bool = False,
-                 pred_out_file: str = '',
+                 no_save_pred: bool = False,
+                 out_dir: str = '',
                  **kwargs) -> dict:
         """Call the inferencer.
 
         Args:
             inputs (InputsType): Inputs for the inferencer.
-            return_datasamples (bool): Whether to return results as
-                :obj:`DetDataSample`. Defaults to False.
             batch_size (int): Inference batch size. Defaults to 1.
             show (bool): Whether to display the visualization results in a
                 popup window. Defaults to False.
             wait_time (float): The interval of show (s). Defaults to 0.
+            no_save_img (bool): Whether to force not to save prediction
+                vis results. Defaults to False.
             draw_pred (bool): Whether to draw predicted bounding boxes.
                 Defaults to True.
             pred_score_thr (float): Minimum score of bboxes to draw.
                 Defaults to 0.3.
-            img_out_dir (str): Output directory of visualization results.
-                If left as empty, no file will be saved. Defaults to ''.
+            return_datasample (bool): Whether to return results as
+                :obj:`DetDataSample`. Defaults to False.
             print_result (bool): Whether to print the inference result w/o
                 visualization to the console. Defaults to False.
-            pred_out_file: File to save the inference results w/o
+            no_save_pred (bool): Whether to force not to save prediction
+                results. Defaults to False.
+            out_file: Dir to save the inference results or
                 visualization. If left as empty, no file will be saved.
                 Defaults to ''.
 
@@ -259,23 +271,43 @@ class DetInferencer(BaseInferencer):
         Returns:
             dict: Inference and visualization results.
         """
-        if pred_out_file != '':
-            assert pred_out_file.endswith('.json'), \
-                f'The pred_out_file: {pred_out_file} must be a json file.'
+        (
+            preprocess_kwargs,
+            forward_kwargs,
+            visualize_kwargs,
+            postprocess_kwargs,
+        ) = self._dispatch_kwargs(**kwargs)
 
-        return super().__call__(
-            inputs,
-            return_datasamples,
-            batch_size,
-            return_vis=return_vis,
-            show=show,
-            wait_time=wait_time,
-            draw_pred=draw_pred,
-            pred_score_thr=pred_score_thr,
-            img_out_dir=img_out_dir,
-            print_result=print_result,
-            pred_out_file=pred_out_file,
-            **kwargs)
+        ori_inputs = self._inputs_to_list(inputs)
+        inputs = self.preprocess(
+            ori_inputs, batch_size=batch_size, **preprocess_kwargs)
+
+        results_dict = {'predictions': [], 'visualization': []}
+        for ori_inputs, data in track(inputs, description='Inference'):
+            preds = self.forward(data, **forward_kwargs)
+            visualization = self.visualize(
+                ori_inputs,
+                preds,
+                return_vis=return_vis,
+                show=show,
+                wait_time=wait_time,
+                draw_pred=draw_pred,
+                pred_score_thr=pred_score_thr,
+                no_save_img=no_save_img,
+                img_out_dir=out_dir,
+                **visualize_kwargs)
+            results = self.postprocess(
+                preds,
+                visualization,
+                return_datasample=return_datasample,
+                print_result=print_result,
+                no_save_pred=no_save_pred,
+                pred_out_dir=out_dir,
+                **postprocess_kwargs)
+            results_dict['predictions'].extend(results['predictions'])
+            if results['visualization'] is not None:
+                results_dict['visualization'].extend(results['visualization'])
+        return results_dict
 
     def visualize(self,
                   inputs: InputsType,
@@ -285,7 +317,9 @@ class DetInferencer(BaseInferencer):
                   wait_time: int = 0,
                   draw_pred: bool = True,
                   pred_score_thr: float = 0.3,
-                  img_out_dir: str = '') -> Union[List[np.ndarray], None]:
+                  no_save_img: bool = False,
+                  img_out_dir: str = '',
+                  **kwargs) -> Union[List[np.ndarray], None]:
         """Visualize predictions.
 
         Args:
@@ -300,6 +334,8 @@ class DetInferencer(BaseInferencer):
                 Defaults to True.
             pred_score_thr (float): Minimum score of bboxes to draw.
                 Defaults to 0.3.
+            no_save_img (bool): Whether to force not to save prediction
+                vis results. Defaults to False.
             img_out_dir (str): Output directory of visualization results.
                 If left as empty, no file will be saved. Defaults to ''.
 
@@ -307,6 +343,9 @@ class DetInferencer(BaseInferencer):
             List[np.ndarray] or None: Returns visualization results only if
             applicable.
         """
+        if no_save_img is True:
+            img_out_dir = ''
+
         if not show and img_out_dir == '' and not return_vis:
             return None
 
@@ -330,8 +369,8 @@ class DetInferencer(BaseInferencer):
                 raise ValueError('Unsupported input type: '
                                  f'{type(single_input)}')
 
-            out_file = osp.join(img_out_dir, img_name) if img_out_dir != '' \
-                else None
+            out_file = osp.join(img_out_dir, 'vis',
+                                img_name) if img_out_dir != '' else None
 
             self.visualizer.add_datasample(
                 img_name,
@@ -355,7 +394,9 @@ class DetInferencer(BaseInferencer):
         visualization: Optional[List[np.ndarray]] = None,
         return_datasample: bool = False,
         print_result: bool = False,
-        pred_out_file: str = '',
+        no_save_pred: bool = False,
+        pred_out_dir: str = '',
+        **kwargs,
     ) -> Dict:
         """Process the predictions and visualization results from ``forward``
         and ``visualize``.
@@ -373,7 +414,9 @@ class DetInferencer(BaseInferencer):
                 inference results. If False, dict will be used.
             print_result (bool): Whether to print the inference result w/o
                 visualization to the console. Defaults to False.
-            pred_out_file: File to save the inference results w/o
+            no_save_pred (bool): Whether to force not to save prediction
+                results. Defaults to False.
+            pred_out_dir: Dir to save the inference results w/o
                 visualization. If left as empty, no file will be saved.
                 Defaults to ''.
 
@@ -388,19 +431,23 @@ class DetInferencer(BaseInferencer):
                 json-serializable dict containing only basic data elements such
                 as strings and numbers.
         """
+        if no_save_pred is True:
+            pred_out_dir = ''
+
         result_dict = {}
         results = preds
         if not return_datasample:
             results = []
             for pred in preds:
-                result = self.pred2dict(pred, pred_out_file)
+                result = self.pred2dict(pred, pred_out_dir)
                 results.append(result)
+        else:
+            warnings.warn(
+                'Not yet implemented. Prediction results are not saved')
         # Add img to the results after printing and dumping
         result_dict['predictions'] = results
         if print_result:
             print(result_dict)
-        if pred_out_file != '':
-            mmengine.dump(result_dict, pred_out_file)
         result_dict['visualization'] = visualization
         return result_dict
 
@@ -408,7 +455,7 @@ class DetInferencer(BaseInferencer):
     #  Maybe should include model name, timestamp, filename, image info etc.
     def pred2dict(self,
                   data_sample: DetDataSample,
-                  pred_out_file: str = '') -> Dict:
+                  pred_out_dir: str = '') -> Dict:
         """Extract elements necessary to represent a prediction into a
         dictionary.
 
@@ -417,13 +464,29 @@ class DetInferencer(BaseInferencer):
 
         Args:
             data_sample (:obj:`DetDataSample`): Predictions of the model.
-            pred_out_file: File to save the inference results w/o
+            pred_out_dir: Dir to save the inference results w/o
                 visualization. If left as empty, no file will be saved.
                 Defaults to ''.
 
         Returns:
             dict: Prediction results.
         """
+        if pred_out_dir == '':
+            return {}
+
+        if 'img_path' in data_sample:
+            img_path = osp.basename(data_sample.img_path)
+            img_path = osp.splitext(img_path)[0]
+            out_img_path = osp.join(pred_out_dir, 'preds',
+                                    img_path + '_panoptic_seg.png')
+            out_json_path = osp.join(pred_out_dir, 'preds', img_path + '.json')
+        else:
+            out_img_path = osp.join(
+                pred_out_dir, 'preds',
+                f'{self.num_predicted_imgs}_panoptic_seg.png')
+            out_json_path = osp.join(pred_out_dir, 'preds',
+                                     f'{self.num_predicted_imgs}.json')
+            self.num_predicted_imgs += 1
 
         result = {}
         if 'pred_instances' in data_sample:
@@ -445,7 +508,7 @@ class DetInferencer(BaseInferencer):
                         encode_mask['counts'] = encode_mask['counts'].decode()
                 result['masks'] = encode_masks
 
-        if 'pred_panoptic_seg' in data_sample and pred_out_file != '':
+        if 'pred_panoptic_seg' in data_sample:
             if VOID is None:
                 raise RuntimeError(
                     'panopticapi is not installed, please install it by: '
@@ -457,17 +520,8 @@ class DetInferencer(BaseInferencer):
                 self.model.dataset_meta['classes'])] = VOID
             pan = id2rgb(pan).astype(np.uint8)
 
-            if 'img_path' in data_sample:
-                img_path = osp.basename(data_sample.img_path)
-                out_path = osp.splitext(img_path)[0] + '.png'
-                out_path = osp.join(osp.dirname(pred_out_file), out_path)
-            else:
-                out_path = osp.join(
-                    osp.dirname(pred_out_file),
-                    f'{self.num_predicted_imgs}.png')
-                self.num_predicted_imgs += 1
+            mmcv.imwrite(pan[:, :, ::-1], out_img_path)
+            result['panoptic_seg_path'] = out_img_path
 
-            mmcv.imwrite(pan[:, :, ::-1], out_path)
-            result['panoptic_seg_path'] = out_path
-
+        mmengine.dump(result, out_json_path)
         return result
