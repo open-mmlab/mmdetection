@@ -18,7 +18,7 @@ class WIDERFaceDataset(XMLDataset):
     Conversion scripts can be found in
     https://github.com/sovrasov/wider-face-pascal-voc-annotations
     """
-    METAINFO = {'CLASSES': ('face', ), 'PALETTE': [(0, 255, 0)]}
+    METAINFO = {'classes': ('face', ), 'palette': [(0, 255, 0)]}
 
     def load_data_list(self) -> List[dict]:
         """Load annotation from XML style ann_file.
@@ -26,11 +26,11 @@ class WIDERFaceDataset(XMLDataset):
         Returns:
             list[dict]: Annotation info from XML file.
         """
-        assert self._metainfo.get('CLASSES', None) is not None, \
-            'CLASSES in `XMLDataset` can not be None.'
+        assert self._metainfo.get('classes', None) is not None, \
+            'classes in `XMLDataset` can not be None.'
         self.cat2label = {
             cat: i
-            for i, cat in enumerate(self._metainfo['CLASSES'])
+            for i, cat in enumerate(self._metainfo['classes'])
         }
 
         data_list = []
