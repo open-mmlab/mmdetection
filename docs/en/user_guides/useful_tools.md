@@ -389,12 +389,12 @@ python tools/misc/download_dataset.py --dataset-name voc2007
 python tools/misc/download_dataset.py --dataset-name lvis
 ```
 
-For users in China, these datasets can also be downloaded from [OpenDataLab](https://opendatalab.com/) with high speed:
+For users in China, these datasets can also be downloaded from [OpenDataLab](https://opendatalab.com/?source=OpenMMLab%20GitHub) with high speed:
 
-- [COCO2017](https://opendatalab.com/COCO_2017/download)
-- [VOC2007](https://opendatalab.com/PASCAL_VOC2007/download)
-- [VOC2012](https://opendatalab.com/PASCAL_VOC2012/download)
-- [LVIS](https://opendatalab.com/LVIS/download)
+- [COCO2017](https://opendatalab.com/COCO_2017/download?source=OpenMMLab%20GitHub)
+- [VOC2007](https://opendatalab.com/PASCAL_VOC2007/download?source=OpenMMLab%20GitHub)
+- [VOC2012](https://opendatalab.com/PASCAL_VOC2012/download?source=OpenMMLab%20GitHub)
+- [LVIS](https://opendatalab.com/LVIS/download?source=OpenMMLab%20GitHub)
 
 ## Benchmark
 
