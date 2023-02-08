@@ -7,7 +7,7 @@ It is recommended to download and extract the dataset somewhere outside the proj
 If your folder structure is different, you may need to change the corresponding paths in config files.
 
 We provide a script to download datasets such as COCO, you can run `python tools/misc/download_dataset.py --dataset-name coco2017` to download COCO dataset.
-For users in China, more datasets can be downloaded from the opensource dataset platform: [OpenDataLab](https://opendatalab.com/).
+For users in China, more datasets can be downloaded from the opensource dataset platform: [OpenDataLab](https://opendatalab.com/?source=OpenMMLab%20GitHub).
 
 For more usage please refer to [dataset-download](./useful_tools.md#dataset-download)
 
