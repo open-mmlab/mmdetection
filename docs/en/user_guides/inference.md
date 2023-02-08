@@ -34,11 +34,11 @@ visualizer = VISUALIZERS.build(model.cfg.visualizer)
 visualizer.dataset_meta = model.dataset_meta
 # Ttest a single image and show the results
 
-img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
+img_path = 'test.jpg'  
+img = mmcv.imread(img_path)
 result = inference_detector(model, img)
 
 # Show the results
-img = mmcv.imread(img)
 img = mmcv.imconvert(img, 'bgr', 'rgb')
 
 
