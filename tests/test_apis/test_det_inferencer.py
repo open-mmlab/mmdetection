@@ -83,11 +83,11 @@ class TestDetInferencer(TestCase):
     def test_visualize(self, model):
         img_paths = ['tests/data/color.jpg', 'tests/data/gray.jpg']
         inferencer = DetInferencer(model)
-        # img_out_dir
+
         with tempfile.TemporaryDirectory() as tmp_dir:
             inferencer(img_paths, out_dir=tmp_dir)
             for img_dir in ['color.jpg', 'gray.jpg']:
-                self.assertTrue(osp.exists(osp.join(tmp_dir, img_dir)))
+                self.assertTrue(osp.exists(osp.join(tmp_dir, 'vis', img_dir)))
 
     @parameterized.expand([
         'yolox-tiny', 'mask-rcnn_r50_fpn_1x_coco',
@@ -103,6 +103,5 @@ class TestDetInferencer(TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             res = inferencer(img_path, out_dir=tmp_dir)
             dumped_res = mmengine.load(
-                osp.join(tmp_dir, 'predicts', 'color_pred_panoptic_seg.json'))
-            self.assert_predictions_equal(res['predictions'][0],
-                                          dumped_res['predictions'])
+                osp.join(tmp_dir, 'preds', 'color.json'))
+            self.assertEqual(res['predictions'][0], dumped_res)
