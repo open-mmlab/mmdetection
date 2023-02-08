@@ -2,7 +2,7 @@
 import copy
 import os.path as osp
 import warnings
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict, Iterable, List, Optional, Sequence, Union
 
 import mmcv
 import mmengine
@@ -223,6 +223,56 @@ class DetInferencer(BaseInferencer):
             inputs = [inputs]
 
         return list(inputs)
+
+    def preprocess(self, inputs: InputsType, batch_size: int = 1, **kwargs):
+        """Process the inputs into a model-feedable format.
+
+        Customize your preprocess by overriding this method. Preprocess should
+        return an iterable object, of which each item will be used as the
+        input of ``model.test_step``.
+
+        ``BaseInferencer.preprocess`` will return an iterable chunked data,
+        which will be used in __call__ like this:
+
+        .. code-block:: python
+
+            def __call__(self, inputs, batch_size=1, **kwargs):
+                chunked_data = self.preprocess(inputs, batch_size, **kwargs)
+                for batch in chunked_data:
+                    preds = self.forward(batch, **kwargs)
+
+        Args:
+            inputs (InputsType): Inputs given by user.
+            batch_size (int): batch size. Defaults to 1.
+
+        Yields:
+            Any: Data processed by the ``pipeline`` and ``collate_fn``.
+        """
+        chunked_data = self._get_chunk_data(inputs, batch_size)
+        yield from map(self.collate_fn, chunked_data)
+
+    def _get_chunk_data(self, inputs: Iterable, chunk_size: int):
+        """Get batch data from dataset.
+
+        Args:
+            inputs (Iterable): An iterable dataset.
+            chunk_size (int): Equivalent to batch size.
+
+        Yields:
+            list: batch data.
+        """
+        inputs_iter = iter(inputs)
+        while True:
+            try:
+                chunk_data = []
+                for _ in range(chunk_size):
+                    inputs_ = next(inputs_iter)
+                    chunk_data.append((inputs_, self.pipeline(inputs_)))
+                yield chunk_data
+            except StopIteration:
+                if chunk_data:
+                    yield chunk_data
+                break
 
     def __call__(self,
                  inputs: InputsType,
