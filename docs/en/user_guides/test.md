@@ -205,7 +205,38 @@ Test time augmentation (TTA) is a data augmentation strategy used during the tes
 
 In MMDetection, we provides [DetTTAModel](../../../mmdet/models/test_time_augs/det_tta.py) class, which inherits from BaseTTAModel.
 
-You can simplely run:
+### Use case
+
+Using TTA requires two steps. First, you need to add `tta_model` and `tta_pipeline` in the configuration file:
+
+```shell
+tta_model = dict(
+    type='DetTTAModel',
+    tta_cfg=dict(nms=dict(
+                   type='nms',
+                   iou_threshold=0.5),
+                   max_per_img=100))
+
+tta_pipeline = [
+    dict(type='LoadImageFromFile',
+        file_client_args=dict(backend='disk')),
+    dict(
+        type='TestTimeAug',
+        transforms=[[
+            dict(type='Resize', scale=(1333, 800), keep_ratio=True)
+        ], [ # It uses 2 flipping enhancements (flipping and not flipping).
+            dict(type='RandomFlip', prob=1.),
+            dict(type='RandomFlip', prob=0.)
+        ], [
+            dict(
+               type='PackDetInputs',
+               meta_keys=('img_id', 'img_path', 'ori_shape',
+                       'img_shape', 'scale_factor', 'flip',
+                       'flip_direction'))
+       ]])]
+```
+
+Second, you can simplely run:
 
 ```shell
 # Single-gpu testing
@@ -230,8 +261,7 @@ bash tools/dist_test.sh \
     [--tta]
 ```
 
-By default, we only use 2 flipping enhancements (flipping and not flipping).
-You can also modify the config of TTA by yourself, such as adding scaling enhancement:
+You can also modify the TTA config by yourself, such as adding scaling enhancement:
 
 ```shell
 tta_model = dict(
@@ -263,11 +293,11 @@ tta_pipeline = [
 
 The above data augmentation pipeline will first perform 3 multi-scaling enhancements on the image, followed by 2 flipping enhancements (flipping and not flipping). Finally, the image is packaged into the final result using PackDetInputs.
 
-Here are some TTA configs for your reference:
+Here are more TTA use cases for your reference:
 
-- [RetinaNet](../../../configs/_base_/tta/retinanet_tta.py)
-- [CenterNet](../../../configs/_base_/tta/centernet_tta.py)
-- [YOLOX](../../../configs/_base_/tta/rtmdet_tta_.py)
-- [RTMDet](../../../configs/_base_/tta/yolox_tta.py)
+- [RetinaNet](../../../configs/retinanet/retinanet_tta.py)
+- [CenterNet](../../../configs/centernet/centernet_tta.py)
+- [YOLOX](../../../configs/rtmdet/rtmdet_tta.py)
+- [RTMDet](../../../configs/yolox/yolox_tta.py)
 
 For more advanced usage and data flow of TTA, please refer to [MMEngine](https://mmengine.readthedocs.io/en/latest/advanced_tutorials/test_time_augmentation.html#data-flow). We will support instance segmentation TTA latter.

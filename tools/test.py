@@ -2,6 +2,7 @@
 import argparse
 import os
 import os.path as osp
+import warnings
 from copy import deepcopy
 
 from mmengine import ConfigDict
@@ -87,12 +88,17 @@ def main():
         cfg = trigger_visualization_hook(cfg, args)
 
     if args.tta:
+
         if 'tta_model' not in cfg:
+            warnings.warn('Cannot find ``tta_model`` in config, '
+                          'we will set it as default.')
             cfg.tta_model = dict(
                 type='DetTTAModel',
                 tta_cfg=dict(
                     nms=dict(type='nms', iou_threshold=0.5), max_per_img=100))
         if 'tta_pipeline' not in cfg:
+            warnings.warn('Cannot find ``tta_pipeline`` in config, '
+                          'we will set it as default.')
             test_data_cfg = cfg.test_dataloader.dataset
             while 'dataset' in test_data_cfg:
                 test_data_cfg = test_data_cfg['dataset']
