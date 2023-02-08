@@ -55,7 +55,7 @@ model.cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromNDArray'
 test_pipeline = Compose(model.cfg.test_dataloader.dataset.pipeline)
 
 # visualizer has been created in line 31 and 34, if you run this demo in one notebook,
-# you need not register the visualizer again.
+# you need not build the visualizer again.
 
 # Init visualizer
 visualizer = VISUALIZERS.build(model.cfg.visualizer)
