@@ -89,7 +89,7 @@ def coco_classes() -> list:
 
 
 def coco_panoptic_classes() -> list:
-    """Class names of COCO."""
+    """Class names of COCO panoptic."""
     return [
         'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
         'truck', 'boat', 'traffic light', 'fire hydrant', 'stop sign',
