@@ -1,4 +1,27 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+"""Image Demo.
+
+This script adopts a new infenence class, currently supports image path,
+np.array and folder input formats, and will support video and webcam
+in the future.
+
+Example:
+    Save visualizations and predictions results::
+
+        python demo/image_demo.py demo/demo.jpg rtmdet-s
+
+        python demo/image_demo.py demo/demo.jpg \
+        configs/rtmdet/rtmdet_s_8xb32-300e_coco.py
+        --weights rtmdet_s_8xb32-300e_coco_20220905_161602-387a891e.pth
+
+    Visualize prediction results::
+
+        python demo/image_demo.py demo/demo.jpg rtmdet-ins-s --show
+
+        python demo/image_demo.py demo/demo.jpg rtmdet-ins_s_8xb32-300e_coco \
+        --show
+"""
+
 from argparse import ArgumentParser
 
 from mmengine.logging import print_log
@@ -13,9 +36,10 @@ def parse_args():
     parser.add_argument(
         'model',
         type=str,
-        help='Config or checkpoint .pth file or the model name defined '
-        'in metafile. The model configuration file will try to read '
-        'from .pth if the parameter is a .pth weights file.')
+        help='Config or checkpoint .pth file or the model name '
+        'and alias defined in metafile. The model configuration '
+        'file will try to read from .pth if the parameter is '
+        'a .pth weights file.')
     parser.add_argument('--weights', default=None, help='Checkpoint file')
     parser.add_argument(
         '--out-dir',
@@ -36,7 +60,7 @@ def parse_args():
         action='store_true',
         help='Display the image in a popup window.')
     parser.add_argument(
-        '--no-save-img',
+        '--no-save-vis',
         action='store_true',
         help='Do not save detection vis results')
     parser.add_argument(
@@ -55,8 +79,8 @@ def parse_args():
 
     call_args = vars(parser.parse_args())
 
-    if call_args['no_save_img'] and call_args['no_save_pred']:
-        call_args['out-dir'] = ''
+    if call_args['no_save_vis'] and call_args['no_save_pred']:
+        call_args['out_dir'] = ''
 
     if call_args['model'].endswith('.pth'):
         print_log('The model is a weight file, automatically '
@@ -74,10 +98,13 @@ def parse_args():
 
 def main():
     init_args, call_args = parse_args()
+    # TODO: Video and Webcam are currently not supported and
+    #  may consume too much memory if your input folder has a lot of images.
+    #  We will be optimized later.
     inferencer = DetInferencer(**init_args)
     inferencer(**call_args)
 
-    if call_args['out_dir'] != '' and not (call_args['no_save_img']
+    if call_args['out_dir'] != '' and not (call_args['no_save_vis']
                                            and call_args['no_save_pred']):
         print_log(f'results have been saved at {call_args["out_dir"]}')
 
