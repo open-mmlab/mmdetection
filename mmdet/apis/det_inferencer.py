@@ -12,6 +12,7 @@ from mmengine.dataset import Compose
 from mmengine.fileio import (get_file_backend, isdir, join_path,
                              list_dir_or_file)
 from mmengine.infer.infer import BaseInferencer, ModelType
+from mmengine.model.utils import revert_sync_batchnorm
 from mmengine.registry import init_default_scope
 from mmengine.runner.checkpoint import _load_checkpoint_to_model
 from mmengine.visualization import Visualizer
@@ -93,6 +94,7 @@ class DetInferencer(BaseInferencer):
         init_default_scope(scope)
         super().__init__(
             model=model, weights=weights, device=device, scope=scope)
+        self.model = revert_sync_batchnorm(self.model)
 
     def _load_weights_to_model(self, model: nn.Module,
                                checkpoint: Optional[dict],

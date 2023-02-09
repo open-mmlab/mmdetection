@@ -19,9 +19,8 @@ from mmdet.structures import DetDataSample
 
 class TestDetInferencer(TestCase):
 
-    @mock.patch('mmengine.infer.infer._load_checkpoint')
-    def test_init(self, mock_load):
-        mock_load.side_effect = lambda *x, **y: None
+    @mock.patch('mmengine.infer.infer._load_checkpoint', return_value=None)
+    def test_init(self, mock):
         # init from metafile
         DetInferencer('rtmdet-t')
         # init from cfg
@@ -118,8 +117,7 @@ class TestDetInferencer(TestCase):
                 self.assertTrue(osp.exists(osp.join(tmp_dir, 'vis', img_dir)))
 
     @parameterized.expand([
-        # 'rtmdet-t', 'mask-rcnn_r50_fpn_1x_coco',
-        'panoptic_fpn_r50_fpn_1x_coco'
+        'rtmdet-t', 'mask-rcnn_r50_fpn_1x_coco', 'panoptic_fpn_r50_fpn_1x_coco'
     ])
     def test_postprocess(self, model):
         # return_datasample
@@ -146,9 +144,8 @@ class TestDetInferencer(TestCase):
                 osp.join(tmp_dir, 'preds', 'color.json'))
             self.assertEqual(res['predictions'][0], dumped_res)
 
-    @mock.patch('mmengine.infer.infer._load_checkpoint')
-    def test_pred2dict(self, mock_load):
-        mock_load.side_effect = lambda *x, **y: None
+    @mock.patch('mmengine.infer.infer._load_checkpoint', return_value=None)
+    def test_pred2dict(self, mock):
         data_sample = DetDataSample()
         data_sample.pred_instances = InstanceData()
 
