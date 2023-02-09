@@ -11,7 +11,7 @@ Example:
         python demo/image_demo.py demo/demo.jpg rtmdet-s
 
         python demo/image_demo.py demo/demo.jpg \
-        configs/rtmdet/rtmdet_s_8xb32-300e_coco.py
+        configs/rtmdet/rtmdet_s_8xb32-300e_coco.py \
         --weights rtmdet_s_8xb32-300e_coco_20220905_161602-387a891e.pth
 
     Visualize prediction results::
