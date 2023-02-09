@@ -4,8 +4,6 @@ _base_ = [
     'mmcls::_base_/default_runtime.py'
 ]
 
-custom_imports = dict(imports=['mmdet.models'], allow_failed_imports=False)
-
 model = dict(
     type='ImageClassifier',
     backbone=dict(

@@ -4,9 +4,11 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-# please install mmcls>=0.20.0
+# TODO: delete custom_imports after mmcls supports auto import
+# please install mmcls>=1.0
 # import mmcls.models to trigger register_module in mmcls
 custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
+
 model = dict(
     backbone=dict(
         _delete_=True,

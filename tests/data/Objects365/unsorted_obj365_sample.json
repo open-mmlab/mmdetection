@@ -1,0 +1,178 @@
+{
+    "images": [
+        {
+            "file_name": "fake1.jpg",
+            "height": 800,
+            "width": 800,
+            "id": 0
+        },
+        {
+            "file_name": "fake2.jpg",
+            "height": 800,
+            "width": 800,
+            "id": 1
+        },
+        {
+            "file_name": "fake3.jpg",
+            "height": 800,
+            "width": 800,
+            "id": 2
+        },
+        {
+            "file_name": "fake4.jpg",
+            "height": 20,
+            "width": 20,
+            "id": 3
+        }
+    ],
+    "annotations": [
+        {
+            "bbox": [
+                0,
+                0,
+                20,
+                20
+            ],
+            "area": 400.00,
+            "score": 1.0,
+            "category_id": 1,
+            "id": 1,
+            "image_id": 0,
+            "iscrowd": 0,
+            "ignore": 0,
+            "segmentation": [
+                [
+                    0,
+                    0,
+                    10,
+                    0,
+                    10,
+                    10,
+                    0,
+                    10,
+                    0,
+                    0
+                ]
+            ]
+        },
+        {
+            "bbox": [
+                0,
+                0,
+                20,
+                20
+            ],
+            "area": 400.00,
+            "score": 1.0,
+            "category_id": 2,
+            "id": 2,
+            "image_id": 0,
+            "iscrowd": 1,
+            "ignore": 0
+        },
+        {
+            "bbox": [
+                0,
+                0,
+                20,
+                20
+            ],
+            "area": 400.00,
+            "score": 1.0,
+            "category_id": 1,
+            "id": 3,
+            "image_id": 1,
+            "iscrowd": 0,
+            "ignore": 0
+        },
+        {
+            "bbox": [
+                0,
+                0,
+                20,
+                20
+            ],
+            "area": 400.00,
+            "score": 1.0,
+            "category_id": 1,
+            "id": 4,
+            "image_id": 1,
+            "iscrowd": 0,
+            "ignore": 1
+        },
+        {
+            "bbox": [
+                0,
+                0,
+                0,
+                10
+            ],
+            "area": 0.0,
+            "score": 1.0,
+            "category_id": 1,
+            "id": 5,
+            "image_id": 1,
+            "iscrowd": 0,
+            "ignore": 0
+        },
+        {
+            "bbox": [
+                0,
+                0,
+                10,
+                10
+            ],
+            "area": 100.0,
+            "score": 1.0,
+            "category_id": 3,
+            "id": 6,
+            "image_id": 1,
+            "iscrowd": 0,
+            "ignore": 0
+        },
+        {
+            "bbox": [
+                0,
+                0,
+                10,
+                10
+            ],
+            "area": 0.0,
+            "score": 1.0,
+            "category_id": 1,
+            "id": 7,
+            "image_id": 3,
+            "iscrowd": 0,
+            "ignore": 0
+        },
+        {
+            "bbox": [
+                0,
+                0,
+                1,
+                0.1
+            ],
+            "area": 0.1,
+            "score": 1.0,
+            "category_id": 1,
+            "id": 9,
+            "image_id": 3,
+            "iscrowd": 0,
+            "ignore": 0
+        }
+    ],
+    "categories": [
+        {
+            "id": 2,
+            "name": "car",
+            "supercategory": "none"
+        },
+        {
+            "id": 1,
+            "name": "bus",
+            "supercategory": "none"
+        }
+    ],
+    "licenses": [],
+    "info": null
+}

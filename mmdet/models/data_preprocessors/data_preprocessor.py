@@ -68,7 +68,9 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         rgb_to_bgr (bool): whether to convert image from RGB to RGB.
             Defaults to False.
         boxtype2tensor (bool): Whether to keep the ``BaseBoxes`` type of
-            bboxes data or not. Defaults to False.
+            bboxes data or not. Defaults to True.
+        non_blocking (bool): Whether block current process
+            when transferring data to device. Defaults to False.
         batch_augments (list[dict], optional): Batch-level augmentations
     """
 
@@ -84,6 +86,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                  bgr_to_rgb: bool = False,
                  rgb_to_bgr: bool = False,
                  boxtype2tensor: bool = True,
+                 non_blocking: Optional[bool] = False,
                  batch_augments: Optional[List[dict]] = None):
         super().__init__(
             mean=mean,
@@ -91,7 +94,8 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             pad_size_divisor=pad_size_divisor,
             pad_value=pad_value,
             bgr_to_rgb=bgr_to_rgb,
-            rgb_to_bgr=rgb_to_bgr)
+            rgb_to_bgr=rgb_to_bgr,
+            non_blocking=non_blocking)
         if batch_augments is not None:
             self.batch_augments = nn.ModuleList(
                 [MODELS.build(aug) for aug in batch_augments])
