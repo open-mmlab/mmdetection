@@ -410,7 +410,7 @@ class CdnQueryGenerator(BaseModule):
         # calculate the random part of the added noise
         rand_part = torch.rand_like(gt_bboxes_expand)  # [0, 1)
         rand_part[negative_idx] += 1.0  # pos: [0, 1); neg: [1, 2)
-        rand_part *= rand_sign  # pos: (-1, 1); neg: (-2, 1] U [1, 2)
+        rand_part *= rand_sign  # pos: (-1, 1); neg: (-2, -1] U [1, 2)
 
         # add noise to the bboxes
         bboxes_whwh = bbox_xyxy_to_cxcywh(gt_bboxes_expand)[:, 2:].repeat(1, 2)
