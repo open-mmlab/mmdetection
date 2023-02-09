@@ -30,10 +30,11 @@ class DumpDetResults(DumpResults):
             data_sample.pop('ignored_instances', None)
             data_sample.pop('gt_panoptic_seg', None)
 
-            pred = data_sample['pred_instances']
-            # encode mask to RLE
-            if 'masks' in pred:
-                pred['masks'] = encode_mask_results(pred['masks'].numpy())
+            if 'pred_instances' in data_sample:
+                pred = data_sample['pred_instances']
+                # encode mask to RLE
+                if 'masks' in pred:
+                    pred['masks'] = encode_mask_results(pred['masks'].numpy())
             if 'pred_panoptic_seg' in data_sample:
                 warnings.warn(
                     'Panoptic segmentation map will not be compressed. '
