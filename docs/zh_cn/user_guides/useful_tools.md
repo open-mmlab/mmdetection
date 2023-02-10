@@ -485,3 +485,78 @@ python tools/analysis_tools/confusion_matrix.py ${CONFIG}  ${DETECTION_RESULTS} 
 最后你可以得到如图的混淆矩阵：
 
 ![confusion_matrix_example](https://user-images.githubusercontent.com/12907710/140513068-994cdbf4-3a4a-48f0-8fd8-2830d93fd963.png)
+
+## COCO 分离和遮挡实例分割性能评估
+
+对于最先进的目标检测器来说，检测被遮挡的物体仍然是一个挑战。
+我们实现了论文 [A Tri-Layer Plugin to Improve Occluded Detection](https://arxiv.org/abs/2210.10046) 中提出的指标来计算分离和遮挡目标的召回率。
+
+使用此评价指标有两种方法：
+
+### 离线评测
+
+我们提供了一个脚本对存储后的检测结果文件计算指标。
+
+首先，使用 `tools/test.py` 脚本存储检测结果：
+
+```shell
+python tools/test.py ${CONFIG} ${MODEL_PATH} --out results.pkl
+```
+
+然后，运行 `tools/analysis_tools/coco_occluded_separated_recall.py` 脚本来计算分离和遮挡目标的掩码的召回率:
+
+```shell
+python tools/analysis_tools/coco_occluded_separated_recall.py results.pkl --out occluded_separated_recall.json
+```
+
+输出如下：
+
+```
+loading annotations into memory...
+Done (t=0.51s)
+creating index...
+index created!
+processing detection results...
+[>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>] 5000/5000, 109.3 task/s, elapsed: 46s, ETA:     0s
+computing occluded mask recall...
+[>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>] 5550/5550, 780.5 task/s, elapsed: 7s, ETA:     0s
+COCO occluded mask recall: 58.79%
+COCO occluded mask success num: 3263
+computing separated mask recall...
+[>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>] 3522/3522, 778.3 task/s, elapsed: 5s, ETA:     0s
+COCO separated mask recall: 31.94%
+COCO separated mask success num: 1125
+
++-----------+--------+-------------+
+| mask type | recall | num correct |
++-----------+--------+-------------+
+| occluded  | 58.79% | 3263        |
+| separated | 31.94% | 1125        |
++-----------+--------+-------------+
+Evaluation results have been saved to occluded_separated_recall.json.
+```
+
+### 在线评测
+
+我们实现继承自 `CocoMetic` 的 `CocoOccludedSeparatedMetric`。
+要在训练期间评估分离和遮挡掩码的召回率，只需在配置中将 evaluator 类型替换为 `CocoOccludedSeparatedMetric`：
+
+```python
+val_evaluator = dict(
+    type='CocoOccludedSeparatedMetric',  # 修改此处
+    ann_file=data_root + 'annotations/instances_val2017.json',
+    metric=['bbox', 'segm'],
+    format_only=False)
+test_evaluator = val_evaluator
+```
+
+如果您使用了此指标，请引用论文：
+
+```latex
+@article{zhan2022triocc,
+    title={A Tri-Layer Plugin to Improve Occluded Detection},
+    author={Zhan, Guanqi and Xie, Weidi and Zisserman, Andrew},
+    journal={British Machine Vision Conference},
+    year={2022}
+}
+```
