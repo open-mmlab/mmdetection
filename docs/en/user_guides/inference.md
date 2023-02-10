@@ -57,11 +57,13 @@ visualizer.add_datasample(
 model.cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromNDArray'
 test_pipeline = Compose(model.cfg.test_dataloader.dataset.pipeline)
 
-# Init visualizer
-visualizer = VISUALIZERS.build(model.cfg.visualizer)
-# The dataset_meta is loaded from the checkpoint and
-# then pass to the model in init_detector
-visualizer.dataset_meta = model.dataset_meta
+# visualizer has been created, if you run this demo in one notebook,
+# you need not build the visualizer again.
+# # Init visualizer
+# visualizer = VISUALIZERS.build(model.cfg.visualizer)
+# # The dataset_meta is loaded from the checkpoint and
+# # then pass to the model in init_detector
+# visualizer.dataset_meta = model.dataset_meta
 
 # The interval of show (s), 0 is block
 wait_time = 1
