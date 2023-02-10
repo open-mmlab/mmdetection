@@ -9,7 +9,7 @@ from .grid_assigner import GridAssigner
 from .hungarian_assigner import HungarianAssigner
 from .iou2d_calculator import BboxOverlaps2D
 from .match_cost import (BBoxL1Cost, ClassificationCost, CrossEntropyLossCost,
-                         DiceCost, FocalLossCost, IoUCost)
+                         DiceCost, FocalLossCost, IoUCost, MaskCost)
 from .max_iou_assigner import MaxIoUAssigner
 from .multi_instance_assigner import MultiInstanceAssigner
 from .point_assigner import PointAssigner
@@ -24,5 +24,6 @@ __all__ = [
     'HungarianAssigner', 'RegionAssigner', 'UniformAssigner', 'SimOTAAssigner',
     'TaskAlignedAssigner', 'BBoxL1Cost', 'ClassificationCost',
     'CrossEntropyLossCost', 'DiceCost', 'FocalLossCost', 'IoUCost',
-    'BboxOverlaps2D', 'DynamicSoftLabelAssigner', 'MultiInstanceAssigner'
+    'BboxOverlaps2D', 'DynamicSoftLabelAssigner', 'MultiInstanceAssigner',
+    'MaskCost'
 ]
