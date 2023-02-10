@@ -98,9 +98,9 @@ This script performs inference on a single image.
 python demo/image_demo.py \
     ${IMAGE_FILE} \
     ${CONFIG_FILE} \
-    ${CHECKPOINT_FILE} \
+    [--weights ${WEIGHTS}] \
     [--device ${GPU_ID}] \
-    [--score-thr ${SCORE_THR}]
+    [--pred-score-thr ${SCORE_THR}]
 ```
 
 Examples:
@@ -108,7 +108,7 @@ Examples:
 ```shell
 python demo/image_demo.py demo/demo.jpg \
     configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    --weights checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --device cpu
 ```
 

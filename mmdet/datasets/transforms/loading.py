@@ -819,3 +819,58 @@ class LoadEmptyAnnotations(BaseTransform):
         repr_str += f'with_seg={self.with_seg}, '
         repr_str += f'seg_ignore_label={self.seg_ignore_label})'
         return repr_str
+
+
+@TRANSFORMS.register_module()
+class InferencerLoader(BaseTransform):
+    """Load an image from ``results['img']``.
+
+    Similar with :obj:`LoadImageFromFile`, but the image has been loaded as
+    :obj:`np.ndarray` in ``results['img']``. Can be used when loading image
+    from webcam.
+
+    Required Keys:
+
+    - img
+
+    Modified Keys:
+
+    - img
+    - img_path
+    - img_shape
+    - ori_shape
+
+    Args:
+        to_float32 (bool): Whether to convert the loaded image to a float32
+            numpy array. If set to False, the loaded image is an uint8 array.
+            Defaults to False.
+    """
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__()
+        self.from_file = TRANSFORMS.build(
+            dict(type='LoadImageFromFile', **kwargs))
+        self.from_ndarray = TRANSFORMS.build(
+            dict(type='mmdet.LoadImageFromNDArray', **kwargs))
+
+    def transform(self, results: Union[str, np.ndarray, dict]) -> dict:
+        """Transform function to add image meta information.
+
+        Args:
+            results (str, np.ndarray or dict): The result.
+
+        Returns:
+            dict: The dict contains loaded image and meta information.
+        """
+        if isinstance(results, str):
+            inputs = dict(img_path=results)
+        elif isinstance(results, np.ndarray):
+            inputs = dict(img=results)
+        elif isinstance(results, dict):
+            inputs = results
+        else:
+            raise NotImplementedError
+
+        if 'img' in inputs:
+            return self.from_ndarray(inputs)
+        return self.from_file(inputs)

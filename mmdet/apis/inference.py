@@ -10,6 +10,7 @@ import torch.nn as nn
 from mmcv.ops import RoIPool
 from mmcv.transforms import Compose
 from mmengine.config import Config
+from mmengine.model.utils import revert_sync_batchnorm
 from mmengine.registry import init_default_scope
 from mmengine.runner import load_checkpoint
 
@@ -58,6 +59,7 @@ def init_detector(
     init_default_scope(config.get('default_scope', 'mmdet'))
 
     model = MODELS.build(config.model)
+    model = revert_sync_batchnorm(model)
     if checkpoint is None:
         warnings.simplefilter('once')
         warnings.warn('checkpoint is None, use COCO classes by default.')

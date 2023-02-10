@@ -86,10 +86,10 @@ The downloading will take several seconds or more, depending on your network env
 Case a: If you install MMDetection from source, just run the following command.
 
 ```shell
-python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
+python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.py --weights yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu
 ```
 
-You will see a new image `result.jpg` on your current folder, where bounding boxes are plotted on cars, benches, etc.
+You will see a new image `demo.jpg` on your `./outputs/vis` folder, where bounding boxes are plotted on cars, benches, etc.
 
 Case b: If you install MMDetection with MIM, open your python interpreter and copy&paste the following codes.
 
