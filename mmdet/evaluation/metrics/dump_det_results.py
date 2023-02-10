@@ -13,6 +13,9 @@ from mmdet.structures.mask import encode_mask_results
 class DumpDetResults(DumpResults):
     """Dump model predictions to a pickle file for offline evaluation.
 
+    Different from `DumpResults` in MMEngine, it compresses instance
+    segmentation masks into RLE format.
+
     Args:
         out_file_path (str): Path of the dumped file. Must end with '.pkl'
             or '.pickle'.
