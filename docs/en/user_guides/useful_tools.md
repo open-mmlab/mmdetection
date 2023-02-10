@@ -562,7 +562,7 @@ Evaluation results have been saved to occluded_separated_recall.json.
 
 ### Online evaluation
 
-We implement `CocoOccludedSeparatedMetric` which inherited from the `CocoMetic`.
+We implement `CocoOccludedSeparatedMetric` which inherits from the `CocoMetic`.
 To evaluate the recall of separated and occluded masks during training, just replace the evaluator metric type with `'CocoOccludedSeparatedMetric'` in your config:
 
 ```python
