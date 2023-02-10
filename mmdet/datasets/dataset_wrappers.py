@@ -149,6 +149,19 @@ class ConcatDataset(_ConcatDataset):
             self.datasets[0].data_infos = original_data_infos
             return eval_results
 
+    def update_skip_type_keys(self, skip_type_keys):
+        """Update skip_type_keys. It is called by an external hook.
+
+        Args:
+            skip_type_keys (list[str], optional): Sequence of type
+                string to be skip pipeline.
+        """
+        assert all([
+            isinstance(skip_type_key, str) for skip_type_key in skip_type_keys
+        ])
+        for dataset in self.datasets:
+            dataset.update_skip_type_keys(skip_type_keys)
+
 
 @DATASETS.register_module()
 class RepeatDataset:
