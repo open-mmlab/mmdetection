@@ -182,7 +182,7 @@ class MaskFormerHead(AnchorFreeHead):
         targets = multi_apply(preprocess_panoptic_gt, gt_labels_list,
                               gt_masks_list, gt_semantic_segs, num_things_list,
                               num_stuff_list)
-        labels, masks = targets
+        labels, masks, _, _ = targets
         batch_gt_instances = [
             InstanceData(labels=label, masks=mask)
             for label, mask in zip(labels, masks)
