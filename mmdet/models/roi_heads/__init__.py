@@ -8,6 +8,7 @@ from .double_roi_head import DoubleHeadRoIHead
 from .dynamic_roi_head import DynamicRoIHead
 from .grid_roi_head import GridRoIHead
 from .htc_roi_head import HybridTaskCascadeRoIHead
+from .kernel_iter_head import KernelIterHead
 from .mask_heads import (CoarseMaskHead, FCNMaskHead, FeatureRelayHead,
                          FusedSemanticHead, GlobalContextHead, GridHead,
                          HTCMaskHead, MaskIoUHead, MaskPointHead,
@@ -34,5 +35,6 @@ __all__ = [
     'SingleRoIExtractor', 'PISARoIHead', 'PointRendRoIHead', 'MaskPointHead',
     'CoarseMaskHead', 'DynamicRoIHead', 'SparseRoIHead', 'TridentRoIHead',
     'SCNetRoIHead', 'SCNetMaskHead', 'SCNetSemanticHead', 'SCNetBBoxHead',
-    'FeatureRelayHead', 'GlobalContextHead', 'MultiInstanceRoIHead'
+    'FeatureRelayHead', 'GlobalContextHead', 'MultiInstanceRoIHead',
+    'KernelIterHead'
 ]
