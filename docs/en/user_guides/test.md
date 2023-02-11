@@ -201,7 +201,7 @@ Or you can set it through `--cfg-options` as `--cfg-options test_dataloader.batc
 
 ## Test Time Augmentation (TTA)
 
-Test time augmentation (TTA) is a data augmentation strategy used during the testing phase. It involves applying various augmentations, such as flipping and scaling, to the same image and then merging the predictions of each augmented image to produce a more accurate prediction. To make it easier for users to use TTA, MMEngine provides [BaseTTAModel](https://mmengine.readthedocs.io/en/latest/api/generated/mmengine.model.BaseTTAModel.html#mmengine.model.BaseTTAModel) class, which allows users to implement different TTA strategies by simply extending the BaseTTAModel class according to their needs.
+Test time augmentation (TTA) is a data augmentation strategy used during the test phase. It applies different augmentations, such as flipping and scaling, to the same image for model inference, and then merges the predictions of each augmented image to obtain more accurate predictions. To make it easier for users to use TTA, MMEngine provides [BaseTTAModel](https://mmengine.readthedocs.io/en/latest/api/generated/mmengine.model.BaseTTAModel.html#mmengine.model.BaseTTAModel) class, which allows users to implement different TTA strategies by simply extending the BaseTTAModel class according to their needs.
 
 In MMDetection, we provides [DetTTAModel](../../../mmdet/models/test_time_augs/det_tta.py) class, which inherits from BaseTTAModel.
 
