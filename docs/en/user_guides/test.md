@@ -224,7 +224,7 @@ tta_pipeline = [
         type='TestTimeAug',
         transforms=[[
             dict(type='Resize', scale=(1333, 800), keep_ratio=True)
-        ], [ # It uses 2 flipping enhancements (flipping and not flipping).
+        ], [ # It uses 2 flipping transformations (flipping and not flipping).
             dict(type='RandomFlip', prob=1.),
             dict(type='RandomFlip', prob=0.)
         ], [
@@ -236,7 +236,7 @@ tta_pipeline = [
        ]])]
 ```
 
-Second, you can simplely run:
+Second, set `--tta` when running the test scripts as examples below:
 
 ```shell
 # Single-gpu testing
@@ -291,7 +291,7 @@ tta_pipeline = [
        ]])]
 ```
 
-The above data augmentation pipeline will first perform 3 multi-scaling enhancements on the image, followed by 2 flipping enhancements (flipping and not flipping). Finally, the image is packaged into the final result using PackDetInputs.
+The above data augmentation pipeline will first perform 3 multi-scaling transformations on the image, followed by 2 flipping transformations (flipping and not flipping). Finally, the image is packaged into the final result using PackDetInputs.
 
 Here are more TTA use cases for your reference:
 

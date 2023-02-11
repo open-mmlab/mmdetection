@@ -1,3 +1,5 @@
+# This is different from the TTA of official CenterNet.
+
 tta_model = dict(
     type='DetTTAModel',
     tta_cfg=dict(nms=dict(type='nms', iou_threshold=0.5), max_per_img=100))
