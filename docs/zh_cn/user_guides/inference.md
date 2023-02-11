@@ -6,7 +6,7 @@ MMDetection 提供了许多预训练好的检测模型，可以在 [Model Zoo](h
 
 在 MMDetection 中，一个模型被定义为一个[配置文件](config.md)和对应被存储在 checkpoint 文件内的模型参数的集合。
 
-首先，我们建议从 [Faster RCNN](../../../configs/faster_rcnn) 开始，其 [配置](../../../configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py) 文件和 [checkpoint](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth) 文件在此。
+首先，我们建议从 [Faster RCNN](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn) 开始，其 [配置](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py) 文件和 [checkpoint](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth) 文件在此。
 我们建议将 checkpoint 文件下载到 `checkpoints` 文件夹内。
 
 ## 推理的高层编程接口
@@ -19,11 +19,8 @@ import mmcv
 from mmcv.transforms import Compose
 from mmengine.utils import track_iter_progress
 from mmdet.registry import VISUALIZERS
-from mmdet.utils import register_all_modules
 from mmdet.apis import init_detector, inference_detector
 
-# 注册 mmdet 中的所有模块
-register_all_modules()
 
 # 指定模型的配置文件和 checkpoint 文件路径
 config_file = 'configs/faster_rcnn/faster-rcnn_r50-fpn_1x_coco.py'
@@ -58,6 +55,8 @@ visualizer.add_datasample(
 model.cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromNDArray'
 test_pipeline = Compose(model.cfg.test_dataloader.dataset.pipeline)
 
+# 可视化工具在第33行和35行已经初完成了初始化，如果直接在一个 jupyter nodebook 中运行这个 demo，
+# 这里则不需要再创建一个可视化工具了。
 # 初始化可视化工具
 visualizer = VISUALIZERS.build(model.cfg.visualizer)
 # 从 checkpoint 中加载 Dataset_meta，并将其传递给模型的 init_detector
@@ -84,23 +83,32 @@ for frame in track_iter_progress(video_reader):
 cv2.destroyAllWindows()
 ```
 
-jupyter notebook 上的演示样例在 [demo/inference_demo.ipynb](../../../demo/inference_demo.ipynb) 。
+Jupyter notebook 上的演示样例在 [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/3.x/demo/inference_demo.ipynb) 。
 
 注意: `inference_detector` 目前仅支持单张图片的推理。
 
 ## 演示样例
 
-我们还提供了三个演示脚本，它们是使用高层编程接口实现的。 [源码在此](../../../demo) 。
+我们还提供了三个演示脚本，它们是使用高层编程接口实现的。 [源码在此](https://github.com/open-mmlab/mmdetection/blob/3.x/demo) 。
 
 ### 图片样例
 
-这是在单张图片上进行推理的脚本，
+这是在单张图片上进行推理的脚本。
+
+```shell
+python demo/image_demo.py \
+    ${IMAGE_FILE} \
+    ${CONFIG_FILE} \
+    [--weights ${WEIGHTS}] \
+    [--device ${GPU_ID}] \
+    [--pred-score-thr ${SCORE_THR}]
+```
 
 运行样例：
 
 ```shell
 python demo/image_demo.py demo/demo.jpg \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     --weights checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --device cpu
 ```
@@ -122,7 +130,7 @@ python demo/webcam_demo.py \
 
 ```shell
 python demo/webcam_demo.py \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
 ```
 
