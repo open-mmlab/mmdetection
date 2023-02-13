@@ -1,0 +1,46 @@
+# Copyright (c) OpenMMLab. All rights reserved.
+from mmcv.cnn import build_norm_layer
+from mmcv.cnn.bricks.transformer import FFN
+from torch.nn import ModuleList
+
+from mmdet.models.layers.transformer.conditional_detr_layers import ConditionalDetrTransformerDecoder, ConditionalDetrTransformerDecoderLayer
+from mmdet.models.layers.transformer.utils import ConditionalAttention, MLP
+from .group_attention import GroupAttention
+
+class GroupDetrTransformerDecoder(ConditionalDetrTransformerDecoder):
+    """Decoder of Conditional DETR."""
+
+    def _init_layers(self) -> None:
+        """Initialize decoder layers and other layers."""
+        self.layers = ModuleList([
+            GroupDetrTransformerDecoderLayer(**self.layer_cfg)
+            for _ in range(self.num_layers)
+        ])
+        self.embed_dims = self.layers[0].embed_dims
+        self.post_norm = build_norm_layer(self.post_norm_cfg,
+                                          self.embed_dims)[1]
+        # conditional detr affline
+        self.query_scale = MLP(self.embed_dims, self.embed_dims,
+                               self.embed_dims, 2)
+        self.ref_point_head = MLP(self.embed_dims, self.embed_dims, 2, 2)
+        # we have substitute 'qpos_proj' with 'qpos_sine_proj' except for
+        # the first decoder layer), so 'qpos_proj' should be deleted
+        # in other layers.
+        for layer_id in range(self.num_layers - 1):
+            self.layers[layer_id + 1].cross_attn.qpos_proj = None
+
+class GroupDetrTransformerDecoderLayer(ConditionalDetrTransformerDecoderLayer):
+    """Implements decoder layer in Conditional DETR transformer."""
+
+    def _init_layers(self):
+        """Initialize self-attention, cross-attention, FFN, and
+        normalization."""
+        self.self_attn = GroupAttention(**self.self_attn_cfg)
+        self.cross_attn = ConditionalAttention(**self.cross_attn_cfg)
+        self.embed_dims = self.self_attn.embed_dims
+        self.ffn = FFN(**self.ffn_cfg)
+        norms_list = [
+            build_norm_layer(self.norm_cfg, self.embed_dims)[1]
+            for _ in range(3)
+        ]
+        self.norms = ModuleList(norms_list)
