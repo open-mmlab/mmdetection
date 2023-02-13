@@ -73,7 +73,7 @@ class GroupDETR(ConditionalDETR):
             query_pos = self.query_embedding.weight
         else:
             # only use one group in inference
-            query_pos = self.query_embed.weight[:self.num_queries]
+            query_pos = self.query_embedding.weight[:self.num_queries]
         # (num_queries, dim) -> (bs, num_queries, dim)
         query_pos = query_pos.unsqueeze(0).repeat(batch_size, 1, 1)
         query = torch.zeros_like(query_pos)
