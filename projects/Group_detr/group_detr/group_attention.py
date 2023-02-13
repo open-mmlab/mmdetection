@@ -34,7 +34,9 @@ class GroupAttention(ConditionalAttention):
 
     def forward(self,
                 query: Tensor,
+                key: Tensor,
                 query_pos: Tensor = None,
+                key_pos: Tensor = None,
                 attn_mask: Tensor = None,
                 key_padding_mask: Tensor = None) -> Tensor:
         """Forward function for `ConditionalAttention`.
