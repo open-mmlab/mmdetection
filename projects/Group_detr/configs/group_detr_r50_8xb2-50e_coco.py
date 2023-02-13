@@ -5,7 +5,7 @@ custom_imports = dict(
 
 group_detr = 11
 model = dict(
-    type='ConditionalDETR',
+    type='GroupDETR',
     group_detr=group_detr,
     decoder=dict(
         layer_cfg=dict(
