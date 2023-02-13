@@ -79,14 +79,14 @@ class GroupAttention(ConditionalAttention):
         v = self.v_proj(query)
         q = q_content if q_pos is None else q_content + q_pos
         k = k_content if k_pos is None else k_content + k_pos
-        num_queries, bs, _ = q_content.shape
+        bs, num_queries, _ = q_content.shape
         if self.training:
             q = torch.cat(
-                q.split(num_queries // self.group_detr, dim=0), dim=1)
+                q.split(num_queries // self.group_detr, dim=1), dim=0)
             k = torch.cat(
-                k.split(num_queries // self.group_detr, dim=0), dim=1)
+                k.split(num_queries // self.group_detr, dim=1), dim=0)
             v = torch.cat(
-                v.split(num_queries // self.group_detr, dim=0), dim=1)
+                v.split(num_queries // self.group_detr, dim=1), dim=0)
         sa_output = self.forward_attn(
             query=q,
             key=k,
@@ -94,7 +94,7 @@ class GroupAttention(ConditionalAttention):
             attn_mask=attn_mask,
             key_padding_mask=key_padding_mask)[0]
         if self.training:
-            sa_output = torch.cat(sa_output.split(bs, dim=1), dim=0)
+            sa_output = torch.cat(sa_output.split(bs, dim=0), dim=1)
         query = query + self.proj_drop(sa_output)
 
         return query
