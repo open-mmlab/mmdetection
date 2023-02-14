@@ -16,11 +16,8 @@ file_client_args = dict(backend='disk')
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
 
-
 train_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args=file_client_args),
+    dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='RandomResize',
@@ -39,9 +36,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args=file_client_args),
+    dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='Resize', scale=image_size, keep_ratio=True),
     dict(type='Pad', size=image_size, pad_val=dict(img=(114, 114, 114))),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),

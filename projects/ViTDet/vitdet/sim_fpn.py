@@ -1,30 +1,29 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from typing import List
 
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule
+from mmcv.cnn import ConvModule, build_norm_layer
 from mmengine.model import BaseModule
 from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.utils import MultiConfig, OptConfigType
-from mmcv.cnn import build_norm_layer
+
 
 @MODELS.register_module()
 class SimFPN(BaseModule):
     """Simple Feature Pyramid Network for ViTDet."""
 
-    def __init__(
-        self,
-        backbone_channel: int,
-        in_channels: List[int],
-        out_channels: int,
-        num_outs: int,
-        conv_cfg: OptConfigType = None,
-        norm_cfg: OptConfigType = None,
-        act_cfg: OptConfigType = None,
-        init_cfg: MultiConfig = None
-    ) -> None:
+    def __init__(self,
+                 backbone_channel: int,
+                 in_channels: List[int],
+                 out_channels: int,
+                 num_outs: int,
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: OptConfigType = None,
+                 act_cfg: OptConfigType = None,
+                 init_cfg: MultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         assert isinstance(in_channels, list)
         self.backbone_channel = backbone_channel
@@ -34,19 +33,21 @@ class SimFPN(BaseModule):
         self.num_outs = num_outs
 
         self.fpn1 = nn.Sequential(
-            nn.ConvTranspose2d(self.backbone_channel, self.backbone_channel // 2, 2, 2),
-            build_norm_layer(norm_cfg, self.backbone_channel// 2)[1],
+            nn.ConvTranspose2d(self.backbone_channel,
+                               self.backbone_channel // 2, 2, 2),
+            build_norm_layer(norm_cfg, self.backbone_channel // 2)[1],
             nn.GELU(),
-            nn.ConvTranspose2d(self.backbone_channel // 2, self.backbone_channel // 4, 2, 2))
+            nn.ConvTranspose2d(self.backbone_channel // 2,
+                               self.backbone_channel // 4, 2, 2))
         self.fpn2 = nn.Sequential(
-            nn.ConvTranspose2d(self.backbone_channel, self.backbone_channel // 2, 2, 2))
+            nn.ConvTranspose2d(self.backbone_channel,
+                               self.backbone_channel // 2, 2, 2))
         self.fpn3 = nn.Sequential(nn.Identity())
-        self.fpn4 = nn.Sequential(
-            nn.MaxPool2d(kernel_size=2, stride=2))
-        
+        self.fpn4 = nn.Sequential(nn.MaxPool2d(kernel_size=2, stride=2))
+
         self.lateral_convs = nn.ModuleList()
         self.fpn_convs = nn.ModuleList()
-        
+
         for i in range(self.num_ins):
             l_conv = ConvModule(
                 in_channels[i],
@@ -69,9 +70,9 @@ class SimFPN(BaseModule):
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
 
-                
     def forward(self, input: Tensor) -> tuple:
         """Forward function.
+
         Args:
             inputs (Tensor): Features from the upstream network, 4D-tensor
         Returns:
@@ -92,10 +93,8 @@ class SimFPN(BaseModule):
 
         # build outputs
         # part 1: from original levels
-        outs = [
-            self.fpn_convs[i](laterals[i]) for i in range(self.num_ins)
-        ]
-        
+        outs = [self.fpn_convs[i](laterals[i]) for i in range(self.num_ins)]
+
         # part 2: add extra levels
         if self.num_outs > len(outs):
             for i in range(self.num_outs - self.num_ins):

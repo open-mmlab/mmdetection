@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import json
 from typing import List
 
@@ -12,6 +13,7 @@ from mmdet.registry import OPTIM_WRAPPER_CONSTRUCTORS
 def get_layer_id_for_vit(var_name, max_layer_id):
     """Get the layer id to set the different learning rates in ``layer_wise``
     decay_type.
+
     Args:
         var_name (str): The key of the model.
         max_layer_id (int): Maximum layer id.
@@ -19,10 +21,10 @@ def get_layer_id_for_vit(var_name, max_layer_id):
         int: The id number corresponding to different learning rate in
         ``LayerDecayOptimizerConstructor``.
     """
-    if var_name.startswith("backbone"):
-        if "patch_embed" in var_name or "pos_embed" in var_name:
+    if var_name.startswith('backbone'):
+        if 'patch_embed' in var_name or 'pos_embed' in var_name:
             return 0
-        elif ".blocks." in var_name:
+        elif '.blocks.' in var_name:
             layer_id = int(var_name.split('.')[2]) + 1
             return layer_id
         else:
@@ -31,15 +33,15 @@ def get_layer_id_for_vit(var_name, max_layer_id):
         return max_layer_id + 1
 
 
-
 @OPTIM_WRAPPER_CONSTRUCTORS.register_module()
 class LayerDecayOptimizerConstructor(DefaultOptimWrapperConstructor):
     # Different learning rates are set for different layers of backbone.
-    # Note: Currently, this optimizer constructor is built for VisionTransformer.
+    # Note: Currently, this optimizer constructor is built for ViT.
 
     def add_params(self, params: List[dict], module: nn.Module,
                    **kwargs) -> None:
         """Add all parameters of module to the params list.
+
         The parameters of the given module will be added to the list of param
         groups, with specific rules defined by paramwise_cfg.
         Args:
@@ -61,16 +63,16 @@ class LayerDecayOptimizerConstructor(DefaultOptimWrapperConstructor):
         for name, param in module.named_parameters():
             if not param.requires_grad:
                 continue  # frozen weights
-            if name.startswith("backbone.blocks") and "norm" in name:
+            if name.startswith('backbone.blocks') and 'norm' in name:
                 group_name = 'no_decay'
                 this_weight_decay = 0.
-            elif "pos_embed" in name:
-                group_name = "no_decay_pos_embed"
+            elif 'pos_embed' in name:
+                group_name = 'no_decay_pos_embed'
                 this_weight_decay = 0
             else:
-                group_name = "decay"
+                group_name = 'decay'
                 this_weight_decay = weight_decay
-            
+
             layer_id = get_layer_id_for_vit(
                 name, self.paramwise_cfg.get('num_layers'))
             logger.info(f'set param {name} as id {layer_id}')
@@ -92,7 +94,7 @@ class LayerDecayOptimizerConstructor(DefaultOptimWrapperConstructor):
 
             parameter_groups[group_name]['params'].append(param)
             parameter_groups[group_name]['param_names'].append(name)
-            
+
         rank, _ = get_dist_info()
         if rank == 0:
             to_display = {}

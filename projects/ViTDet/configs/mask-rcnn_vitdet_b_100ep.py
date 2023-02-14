@@ -14,9 +14,7 @@ batch_augments = [
 
 # model settings
 model = dict(
-    data_preprocessor=dict(
-        pad_size_divisor=32,
-        batch_augments=batch_augments),
+    data_preprocessor=dict(pad_size_divisor=32, batch_augments=batch_augments),
     backbone=dict(
         _delete_=True,
         type='ViT',
@@ -41,10 +39,11 @@ model = dict(
             10,
         ],
         use_rel_pos=True,
-        init_cfg=dict(type='Pretrained', checkpoint='mae_pretrain_vit_base.pth')),
+        init_cfg=dict(
+            type='Pretrained', checkpoint='mae_pretrain_vit_base.pth')),
     neck=dict(
         _delete_=True,
-        type='SimFPN', 
+        type='SimFPN',
         backbone_channel=768,
         in_channels=[192, 384, 768, 768],
         out_channels=256,
@@ -57,5 +56,3 @@ model = dict(
             conv_out_channels=256,
             norm_cfg=norm_cfg),
         mask_head=dict(norm_cfg=norm_cfg)))
-
-
