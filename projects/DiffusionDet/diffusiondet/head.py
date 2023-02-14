@@ -317,7 +317,7 @@ class DynamicDiffusionDetHead(nn.Module):
          batch_img_metas) = prepare_outputs
 
         batch_diff_bboxes = torch.stack([
-            pred_instances.diff_bboxes
+            pred_instances.diff_bboxes_abs
             for pred_instances in batch_pred_instances
         ])
         batch_time = torch.stack(
@@ -339,6 +339,13 @@ class DynamicDiffusionDetHead(nn.Module):
         return losses
 
     def prepare_training_targets(self, batch_data_samples):
+        # hard-setting seed to keep results same (if necessary)
+        # random.seed(0)
+        # torch.manual_seed(0)
+        # torch.cuda.manual_seed_all(0)
+        # torch.backends.cudnn.deterministic = True
+        # torch.backends.cudnn.benchmark = False
+
         batch_gt_instances = []
         batch_pred_instances = []
         batch_gt_instances_ignore = []
@@ -357,7 +364,7 @@ class DynamicDiffusionDetHead(nn.Module):
                                                     image_size)
 
             gt_instances.set_metainfo(dict(image_size=image_size))
-            gt_instances.norm_bboxes = norm_gt_bboxes
+            gt_instances.norm_bboxes_cxcywh = norm_gt_bboxes_cxcywh
 
             batch_gt_instances.append(gt_instances)
             batch_pred_instances.append(pred_instances)
@@ -399,11 +406,12 @@ class DynamicDiffusionDetHead(nn.Module):
 
         diff_bboxes = bbox_cxcywh_to_xyxy(x)
         # convert to abs bboxes
-        diff_bboxes = diff_bboxes * image_size
+        diff_bboxes_abs = diff_bboxes * image_size
 
         metainfo = dict(time=time.squeeze(-1))
         pred_instances = InstanceData(metainfo=metainfo)
         pred_instances.diff_bboxes = diff_bboxes
+        pred_instances.diff_bboxes_abs = diff_bboxes_abs
         pred_instances.noise = noise
         return pred_instances
 
