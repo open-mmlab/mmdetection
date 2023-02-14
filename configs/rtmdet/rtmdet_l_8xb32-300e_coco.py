@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/default_runtime.py', '../_base_/schedules/schedule_1x.py',
-    '../_base_/datasets/coco_detection.py'
+    '../_base_/datasets/coco_detection.py', './rtmdet_tta.py'
 ]
 model = dict(
     type='RTMDet',
