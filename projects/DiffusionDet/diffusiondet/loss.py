@@ -101,8 +101,7 @@ class DiffusionDetCriterion(nn.Module):
         src_logits = src_logits.flatten(0, 1)
         target_classes = target_classes.flatten(0, 1)
         # comp focal loss.
-        num_instances = torch.cat(target_classes_list).shape[0] if \
-            len(target_classes_list) != 0 else 1
+        num_instances = max(torch.cat(target_classes_list).shape[0], 1)
         loss_cls = self.loss_cls(
             src_logits,
             target_classes,
