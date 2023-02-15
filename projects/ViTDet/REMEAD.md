@@ -30,9 +30,9 @@ If you want to reproduce the test results, you need to convert model weights fir
 <br>
 The training accuracy will also be aligned with the official in the future
 
-|                     Method                      | Backbone | Pretrained Model |  Training set  |   Test set   | Epoch | Val Box AP | Official AP |
-| :---------------------------------------------: | :------: | :--------------: | :------------: | :----------: | :---: | :--------: | :---------: |
-| [ViTDet](./configs/mask-rcnn_vitdet_b_100ep.py) |  ViT-B   |       MAE        | COCO2017 Train | COCO2017 Val |  100  |    51.7    |    51.6     |
+|                     Method                      | Backbone | Pretrained Model |  Training set  |   Test set   | Epoch | Val Box AP | Val Mask  AP | Official Box AP | Official Mask AP |
+| :---------------------------------------------: | :------: | :--------------: | :------------: | :----------: | :---: | :--------: | :----------: | :-------------: | :--------------: |
+| [ViTDet](./configs/mask-rcnn_vitdet_b_100ep.py) |  ViT-B   |       MAE        | COCO2017 Train | COCO2017 Val |  100  |    51.7    |     46.0     |      51.6       |       45.9       |
 
 ## Citation
 
