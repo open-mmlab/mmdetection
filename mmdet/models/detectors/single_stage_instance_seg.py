@@ -95,7 +95,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
             mask_outs = self.mask_head.forward(x)
         else:
             mask_outs = self.mask_head.forward(x, positive_infos)
-        outs = outs + (mask_outs, )
+        outs = outs + (mask_outs[0], )
         return outs
 
     def loss(self, batch_inputs: Tensor, batch_data_samples: SampleList,
