@@ -15,8 +15,7 @@ from mmdet.registry import METRICS
 
 try:
     import cityscapesscripts
-    from cityscapesscripts.evaluation import \
-        evalInstanceLevelSemanticLabeling as CSEval
+    from ..functional import cityspaces_utils as CSEval
     from cityscapesscripts.helpers import labels as CSLabels
 except ImportError:
     cityscapesscripts = None
@@ -58,7 +57,8 @@ class CityScapesMetric(BaseMetric):
                  format_only: bool = False,
                  keep_results: bool = False,
                  collect_device: str = 'cpu',
-                 prefix: Optional[str] = None) -> None:
+                 prefix: Optional[str] = None,
+                 backend_args: dict = None) -> None:
         if cityscapesscripts is None:
             raise RuntimeError('Please run "pip install cityscapesscripts" to '
                                'install cityscapesscripts first.')
@@ -73,6 +73,7 @@ class CityScapesMetric(BaseMetric):
         self.format_only = format_only
         self.keep_results = keep_results
         self.seg_out_dir = osp.abspath(f'{outfile_prefix}.results')
+        self.backend_args = backend_args
         self.seg_prefix = seg_prefix
 
         if is_main_process():
@@ -127,8 +128,7 @@ class CityScapesMetric(BaseMetric):
             gt = dict()
             img_path = filename.replace('leftImg8bit.png',
                                         'gtFine_instanceIds.png')
-            img_path = img_path.replace('leftImg8bit', 'gtFine')
-            gt['file_name'] = osp.join(self.seg_prefix, img_path)
+            gt['file_name'] = img_path.replace('leftImg8bit', 'gtFine')
 
             self.results.append((gt, result))
 
@@ -159,6 +159,7 @@ class CityScapesMetric(BaseMetric):
         CSEval.args.colorized = False
         CSEval.args.gtInstancesFile = osp.join(self.seg_out_dir,
                                                'gtInstances.json')
+        CSEval.args.backend_args = self.backend_args
 
         groundTruthImgList = [gt['file_name'] for gt in gts]
         predictionImgList = [pred['pred_txt'] for pred in preds]

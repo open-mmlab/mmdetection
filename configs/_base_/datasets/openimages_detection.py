@@ -76,6 +76,5 @@ val_evaluator = dict(
     iou_thrs=0.5,
     ioa_thrs=0.5,
     use_group_of=True,
-    get_supercategory=True,
-    backend_args=backend_args)
+    get_supercategory=True)
 test_evaluator = val_evaluator

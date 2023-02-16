@@ -118,7 +118,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='Resize', scale=(input_size, input_size), keep_ratio=False),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(

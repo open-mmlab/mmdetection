@@ -587,7 +587,7 @@ class LVISV1Dataset(LVISDataset):
         """Load annotations from an annotation file named as ``self.ann_file``
 
         Returns:
-            List[dict]: A list of annotation.
+            List[dict]: A list of annotation. 
         """  # noqa: E501
         try:
             import lvis
@@ -600,7 +600,9 @@ class LVISV1Dataset(LVISDataset):
             raise ImportError(
                 'Package lvis is not installed. Please run "pip install git+https://github.com/lvis-dataset/lvis-api.git".'  # noqa: E501
             )
-        self.lvis = LVIS(self.ann_file)
+        with get_local_path(
+                self.ann_file, backend_args=self.backend_args) as local_path:
+           self.lvis = LVIS(local_path)
         self.cat_ids = self.lvis.get_cat_ids()
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.cat_img_map = copy.deepcopy(self.lvis.cat_img_map)
