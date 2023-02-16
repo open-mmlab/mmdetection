@@ -157,19 +157,21 @@ class CocoPanopticDataset(CocoDataset):
     # ann_id is not unique in coco panoptic dataset.
     ANN_ID_UNIQUE = False
 
-    def __init__(self,
-                 ann_file: str = '',
-                 metainfo: Optional[dict] = None,
-                 data_root: Optional[str] = None,
-                 data_prefix: dict = dict(img=None, ann=None, seg=None),
-                 filter_cfg: Optional[dict] = None,
-                 indices: Optional[Union[int, Sequence[int]]] = None,
-                 serialize_data: bool = True,
-                 pipeline: List[Union[dict, Callable]] = [],
-                 test_mode: bool = False,
-                 lazy_init: bool = False,
-                 max_refetch: int = 1000,
-                 backend_args: dict = None, ) -> None:
+    def __init__(
+        self,
+        ann_file: str = '',
+        metainfo: Optional[dict] = None,
+        data_root: Optional[str] = None,
+        data_prefix: dict = dict(img=None, ann=None, seg=None),
+        filter_cfg: Optional[dict] = None,
+        indices: Optional[Union[int, Sequence[int]]] = None,
+        serialize_data: bool = True,
+        pipeline: List[Union[dict, Callable]] = [],
+        test_mode: bool = False,
+        lazy_init: bool = False,
+        max_refetch: int = 1000,
+        backend_args: dict = None,
+    ) -> None:
         super().__init__(
             ann_file=ann_file,
             metainfo=metainfo,

@@ -15,8 +15,9 @@ from mmdet.registry import METRICS
 
 try:
     import cityscapesscripts
-    from ..functional import cityspaces_utils as CSEval
     from cityscapesscripts.helpers import labels as CSLabels
+
+    from ..functional import cityspaces_utils as CSEval
 except ImportError:
     cityscapesscripts = None
     CSLabels = None

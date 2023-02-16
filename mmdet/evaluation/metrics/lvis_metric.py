@@ -7,8 +7,8 @@ from collections import OrderedDict
 from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
-from mmengine.logging import MMLogger
 from mmengine.fileio import get_local_path
+from mmengine.logging import MMLogger
 from terminaltables import AsciiTable
 
 from mmdet.registry import METRICS
@@ -118,7 +118,8 @@ class LVISMetric(CocoMetric):
         # if ann_file is not specified,
         # initialize lvis api with the converted dataset
         if ann_file is not None:
-            with get_local_path(ann_file, backend_args=self.backend_args) as local_path:
+            with get_local_path(
+                    ann_file, backend_args=self.backend_args) as local_path:
                 self._lvis_api = LVIS(local_path)
         else:
             self._lvis_api = None
