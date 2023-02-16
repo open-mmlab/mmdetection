@@ -153,8 +153,8 @@ class ConcatDataset(_ConcatDataset):
         """Update skip_type_keys. It is called by an external hook.
 
         Args:
-            skip_type_keys (list[str]): Sequence of type string to be skipped in pipeline
-                string to be skip pipeline.
+            skip_type_keys (list[str]): Sequence of type string
+            to be skip pipeline.
         """
         assert all([
             isinstance(skip_type_key, str) for skip_type_key in skip_type_keys
