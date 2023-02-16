@@ -59,6 +59,10 @@ def parse_args():
         action='store_true',
         help='Output FLOPs and params counts in a string form.')
     parser.add_argument(
+        '--noeval',
+        action='store_true',
+        help='test configs/detectors flops can nor use model.eval()')
+    parser.add_argument(
         '--cfg-options',
         nargs='+',
         action=DictAction,
@@ -125,9 +129,13 @@ def inference(config_file, checkpoint, work_dir, args, exp_name):
                 input = input.cuda()
             model = revert_sync_batchnorm(model)
             inputs = (input, )
-            model.eval()
-            flops, activations, params, _, __ = get_model_complexity_info(
-                model, input_shape, inputs, show_table=False)
+            if not args.noeval:
+                model.eval()
+            outputs = get_model_complexity_info(
+                model, input_shape, inputs, show_table=False, show_arch=False)
+            flops = outputs['flops']
+            params = outputs['params']
+            activations = outputs['activations']
             result['Get Types'] = 'direct'
         except:  # noqa 772
             logger = MMLogger.get_instance(name='MMLogger')
@@ -146,14 +154,19 @@ def inference(config_file, checkpoint, work_dir, args, exp_name):
             if torch.cuda.is_available():
                 model = model.cuda()
             model = revert_sync_batchnorm(model)
-            model.eval()
+            if not args.noeval:
+                model.eval()
             _forward = model.forward
             data = model.data_preprocessor(data_batch)
             del data_loader
             model.forward = partial(
                 _forward, data_samples=data['data_samples'])
             outputs = get_model_complexity_info(
-                model, input_shape, data['inputs'], show_table=False)
+                model,
+                input_shape,
+                data['inputs'],
+                show_table=False,
+                show_arch=False)
             flops = outputs['flops']
             params = outputs['params']
             activations = outputs['activations']
