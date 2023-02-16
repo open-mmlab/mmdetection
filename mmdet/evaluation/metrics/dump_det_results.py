@@ -17,6 +17,11 @@ class DumpDetResults(DumpResults):
     segmentation masks into RLE format.
 
     Args:
+        keep_gt (bool): Whether dumped `gt_instances` simultaneously. It
+            should be True if offline VOCMetric is used. Defaults to False.
+        keep_gt_ignore (bool): Whether dumped `ignored_instances`
+            simultaneously. It should be True if offline VOCMetric is used.
+            Defaults to False.
         out_file_path (str): Path of the dumped file. Must end with '.pkl'
             or '.pickle'.
         collect_device (str): Device name used for collecting results from
@@ -24,13 +29,23 @@ class DumpDetResults(DumpResults):
             'gpu'. Defaults to 'cpu'.
     """
 
+    def __init__(self,
+                 keep_gt: bool = False,
+                 keep_gt_ignore: bool = False,
+                 **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.keep_gt = keep_gt
+        self.keep_gt_ignore = keep_gt_ignore
+
     def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
         """transfer tensors in predictions to CPU."""
         data_samples = _to_cpu(data_samples)
         for data_sample in data_samples:
             # remove gt
-            data_sample.pop('gt_instances', None)
-            data_sample.pop('ignored_instances', None)
+            if not self.keep_gt:
+                data_sample.pop('gt_instances', None)
+            if not self.keep_gt_ignore:
+                data_sample.pop('ignored_instances', None)
             data_sample.pop('gt_panoptic_seg', None)
 
             if 'pred_instances' in data_sample:
