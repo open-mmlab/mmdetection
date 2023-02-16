@@ -1,3 +1,3 @@
 cityscapesscripts
 imagecorruptions
-scikit
+sklearn
