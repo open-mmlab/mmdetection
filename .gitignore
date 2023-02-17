@@ -121,3 +121,6 @@ work_dirs/
 *.pth
 *.py~
 *.sh~
+
+vitdet
+dev_bifpn
