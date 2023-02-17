@@ -10,14 +10,14 @@ from torch import Tensor
 from mmdet.models.dense_heads.anchor_head import AnchorHead
 from mmdet.models.utils import images_to_levels, multi_apply
 from mmdet.registry import MODELS
-from mmdet.structures.bbox import cat_boxes
+from mmdet.structures.bbox import cat_boxes, get_box_tensor
 from mmdet.utils import (InstanceList, OptConfigType, OptInstanceList,
                          OptMultiConfig, reduce_mean)
-from .utils import DepthWiseConvBlock, variance_scaling_trunc
+from .utils import DepthWiseConvBlock
 
 
 @MODELS.register_module()
-class EfficientDetSepBNHead(AnchorHead):
+class EfficientDetSepBNHead_Huber(AnchorHead):
     """EfficientDetHead with separate BN.
 
     num_classes (int): Number of categories excluding the background
@@ -92,19 +92,11 @@ class EfficientDetSepBNHead(AnchorHead):
     def init_weights(self) -> None:
         """Initialize weights of the head."""
         for m in self.reg_conv_list:
-            variance_scaling_trunc(m.depthwise_conv.conv.weight)
-            variance_scaling_trunc(m.pointwise_conv.conv.weight)
             nn.init.constant_(m.pointwise_conv.bias, 0.0)
         for m in self.cls_conv_list:
-            variance_scaling_trunc(m.depthwise_conv.conv.weight)
-            variance_scaling_trunc(m.pointwise_conv.conv.weight)
             nn.init.constant_(m.pointwise_conv.bias, 0.0)
         bias_cls = bias_init_with_prob(0.01)
-        variance_scaling_trunc(self.cls_header.depthwise_conv.weight)
-        variance_scaling_trunc(self.cls_header.pointwise_conv.weight)
         nn.init.constant_(self.cls_header.pointwise_conv.bias, bias_cls)
-        variance_scaling_trunc(self.reg_header.depthwise_conv.weight)
-        variance_scaling_trunc(self.reg_header.pointwise_conv.weight)
         nn.init.constant_(self.reg_header.pointwise_conv.bias, 0.0)
 
     def forward_single_bbox(self, feat: Tensor, level_id: int,
@@ -214,3 +206,56 @@ class EfficientDetSepBNHead(AnchorHead):
             bbox_weights_list,
             avg_factor=avg_factor)
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
+
+    def loss_by_feat_single(self, cls_score: Tensor, bbox_pred: Tensor,
+                            anchors: Tensor, labels: Tensor,
+                            label_weights: Tensor, bbox_targets: Tensor,
+                            bbox_weights: Tensor, avg_factor: int) -> tuple:
+        """Calculate the loss of a single scale level based on the features
+        extracted by the detection head.
+
+        Args:
+            cls_score (Tensor): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W).
+            bbox_pred (Tensor): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W).
+            anchors (Tensor): Box reference for each scale level with shape
+                (N, num_total_anchors, 4).
+            labels (Tensor): Labels of each anchors with shape
+                (N, num_total_anchors).
+            label_weights (Tensor): Label weights of each anchor with shape
+                (N, num_total_anchors)
+            bbox_targets (Tensor): BBox regression targets of each anchor
+                weight shape (N, num_total_anchors, 4).
+            bbox_weights (Tensor): BBox regression loss weights of each anchor
+                with shape (N, num_total_anchors, 4).
+            avg_factor (int): Average factor that is used to average the loss.
+
+        Returns:
+            tuple: loss components.
+        """
+
+        # classification loss
+        labels = labels.reshape(-1)
+        label_weights = label_weights.reshape(-1)
+        cls_score = cls_score.permute(0, 2, 3,
+                                      1).reshape(-1, self.cls_out_channels)
+        loss_cls = self.loss_cls(
+            cls_score, labels, label_weights, avg_factor=avg_factor)
+        # regression loss
+        target_dim = bbox_targets.size(-1)
+        bbox_targets = bbox_targets.reshape(-1, target_dim)
+        bbox_weights = bbox_weights.reshape(-1, target_dim)
+        bbox_pred = bbox_pred.permute(0, 2, 3,
+                                      1).reshape(-1,
+                                                 self.bbox_coder.encode_size)
+        if self.reg_decoded_bbox:
+            # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
+            # is applied directly on the decoded bounding boxes, it
+            # decodes the already encoded coordinates to absolute format.
+            anchors = anchors.reshape(-1, anchors.size(-1))
+            bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
+            bbox_pred = get_box_tensor(bbox_pred)
+        loss_bbox = self.loss_bbox(
+            bbox_pred, bbox_targets, bbox_weights, avg_factor=avg_factor * 4)
+        return loss_cls, loss_bbox

@@ -1,5 +1,3 @@
-# Copyright (c) OpenMMLab. All rights reserved.
-# Modified from https://github.com/zylo117/Yet-Another-EfficientDet-Pytorch
 from typing import List
 
 import torch
@@ -9,20 +7,25 @@ from mmengine.model import BaseModule
 
 from mmdet.registry import MODELS
 from mmdet.utils import MultiConfig, OptConfigType
-from .utils import (DepthWiseConvBlock, DownChannelBlock, MaxPool2dSamePadding,
-                    MemoryEfficientSwish)
+from .utils import DepthWiseConvBlock, DownChannelBlock, MaxPool2dSamePadding
 
 
 class BiFPNStage(nn.Module):
     '''
         in_channels: List[int], input dim for P3, P4, P5
         out_channels: int, output dim for P2 - P7
-        first_time: int, whether is the first bifpnstage
         num_outs: int, BiFPN need feature maps num
-        use_swish: whether use MemoryEfficientSwish
-        norm_cfg: (:obj:`ConfigDict` or dict, optional): Config dict for
-            normalization layer.
-        epsilon: float, hyperparameter in fusion features
+        conv_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
+            convolution layer. Defaults to Conv2dAdaptivePadding.
+        norm_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
+            normalization layer. Defaults to None.
+        act_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
+            activation layer in ConvModule. Defaults to None.
+        upsample_cfg (:obj:`ConfigDict` or dict, optional): Config dict
+            for interpolate layer. Defaults to dict(mode='nearest').
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict]): Initialization config dict.
+
     '''
 
     def __init__(self,
@@ -31,7 +34,6 @@ class BiFPNStage(nn.Module):
                  first_time: bool = False,
                  apply_bn_for_resampling: bool = True,
                  conv_bn_act_pattern: bool = False,
-                 use_meswish: bool = True,
                  norm_cfg: OptConfigType = dict(
                      type='BN', momentum=1e-2, eps=1e-3),
                  epsilon: float = 1e-4) -> None:
@@ -42,7 +44,6 @@ class BiFPNStage(nn.Module):
         self.first_time = first_time
         self.apply_bn_for_resampling = apply_bn_for_resampling
         self.conv_bn_act_pattern = conv_bn_act_pattern
-        self.use_meswish = use_meswish
         self.norm_cfg = norm_cfg
         self.epsilon = epsilon
 
@@ -173,7 +174,7 @@ class BiFPNStage(nn.Module):
             torch.ones(2, dtype=torch.float32), requires_grad=True)
         self.p7_w2_relu = nn.ReLU()
 
-        self.swish = MemoryEfficientSwish() if use_meswish else Swish()
+        self.swish = Swish()
 
     def combine(self, x):
         if not self.conv_bn_act_pattern:
@@ -268,19 +269,6 @@ class BiFPNStage(nn.Module):
 
 @MODELS.register_module()
 class BiFPN(BaseModule):
-    '''
-        num_stages: int, bifpn number of repeats
-        in_channels: List[int], input dim for P3, P4, P5
-        out_channels: int, output dim for P2 - P7
-        start_level: int, Index of input features in backbone
-        epsilon: float, hyperparameter in fusion features
-        apply_bn_for_resampling: bool, whether use bn after resampling
-        conv_bn_act_pattern: bool, whether use conv_bn_act_pattern
-        use_swish: whether use MemoryEfficientSwish
-        norm_cfg: (:obj:`ConfigDict` or dict, optional): Config dict for
-            normalization layer.
-        init_cfg: MultiConfig: init method
-    '''
 
     def __init__(self,
                  num_stages: int,
@@ -290,11 +278,9 @@ class BiFPN(BaseModule):
                  epsilon: float = 1e-4,
                  apply_bn_for_resampling: bool = True,
                  conv_bn_act_pattern: bool = False,
-                 use_meswish: bool = True,
                  norm_cfg: OptConfigType = dict(
                      type='BN', momentum=1e-2, eps=1e-3),
                  init_cfg: MultiConfig = None) -> None:
-
         super().__init__(init_cfg=init_cfg)
         self.start_level = start_level
         self.bifpn = nn.Sequential(*[
@@ -304,10 +290,21 @@ class BiFPN(BaseModule):
                 first_time=True if _ == 0 else False,
                 apply_bn_for_resampling=apply_bn_for_resampling,
                 conv_bn_act_pattern=conv_bn_act_pattern,
-                use_meswish=use_meswish,
                 norm_cfg=norm_cfg,
                 epsilon=epsilon) for _ in range(num_stages)
         ])
+
+    """
+    def init_weights(self) -> None:
+        # Initialize weights of the head
+        for name, module in self.bifpn.named_modules():
+            is_conv_layer = isinstance(module, nn.Conv2d)
+
+            if is_conv_layer:
+                nn.init.xavier_uniform_(module.weight)
+                if module.bias is not None:
+                    module.bias.data.zero_()
+    """
 
     def forward(self, x):
         x = x[self.start_level:]

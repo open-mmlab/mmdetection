@@ -49,14 +49,14 @@ model = dict(
         stacked_convs=3,
         norm_cfg=norm_cfg,
         anchor_generator=dict(
-            type='YXYXAnchorGenerator',
+            type='AnchorGenerator',
             octave_base_scale=4,
             scales_per_octave=3,
             ratios=[1.0, 0.5, 2.0],
             strides=[8, 16, 32, 64, 128],
             center_offset=0.5),
         bbox_coder=dict(
-            type='YXYXDeltaXYWHBBoxCoder',
+            type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
             target_stds=[1.0, 1.0, 1.0, 1.0]),
         loss_cls=dict(
@@ -69,7 +69,7 @@ model = dict(
     # training and testing settings
     train_cfg=dict(
         assigner=dict(
-            type='TransMaxIoUAssigner',
+            type='MaxIoUAssigner',
             pos_iou_thr=0.5,
             neg_iou_thr=0.5,
             min_pos_iou=0,
@@ -125,7 +125,7 @@ train_dataloader = dict(
 val_dataloader = dict(dataset=dict(type=dataset_type, pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
-val_evaluator = dict(type=evalute_type)
+val_evaluator = dict(type='Coco90Metric')
 test_evaluator = val_evaluator
 
 optim_wrapper = dict(
