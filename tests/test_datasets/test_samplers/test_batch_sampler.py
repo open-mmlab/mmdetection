@@ -12,7 +12,8 @@ from mmdet.datasets.samplers import AspectRatioBatchSampler
 
 class DummyDataset(Dataset):
 
-    def __init__(self, length):
+    def __init__(self, length, has_wh=True):
+        self.has_wh = has_wh
         self.length = length
         self.shapes = np.random.random((length, 2))
 
@@ -23,6 +24,8 @@ class DummyDataset(Dataset):
         return self.shapes[idx]
 
     def get_data_info(self, idx):
+        if not self.has_wh:
+            return {}
         return dict(width=self.shapes[idx][0], height=self.shapes[idx][1])
 
 
@@ -78,3 +81,19 @@ class TestAspectRatioBatchSampler(TestCase):
             flag = batch[0][0] < batch[0][1]
             for i in range(1, batch_size):
                 self.assertEqual(batch[i][0] < batch[i][1], flag)
+
+    @patch('mmengine.dist.get_dist_info', return_value=(0, 1))
+    def test_no_wh(self, mock):
+        batch_size = 5
+        dataset = DummyDataset(self.length, False)
+        sampler = DefaultSampler(dataset, shuffle=False)
+        batch_sampler = AspectRatioBatchSampler(
+            sampler, batch_size=batch_size, drop_last=False)
+        with self.assertWarnsRegex(
+                Warning, 'Since width and height are not in data_info '
+                'it is not possible to use the group batch sampler '
+                'by image width and height. If you want to use '
+                'this feature, please return the width and height '
+                'fields in the dataset!'):
+            for _ in batch_sampler:
+                pass
