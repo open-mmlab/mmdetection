@@ -19,7 +19,7 @@ class DumpDetResults(DumpResults):
     Args:
         keep_gt (bool): Whether to dump `gt_instances` simultaneously. It
             should be True if offline VOCMetric is used. Defaults to False.
-        keep_gt_ignore (bool): Whether dumped `ignored_instances`
+        keep_gt_ignore (bool): Whether to dump `ignored_instances`
             simultaneously. It should be True if offline VOCMetric is used.
             Defaults to False.
         out_file_path (str): Path of the dumped file. Must end with '.pkl'
