@@ -59,10 +59,6 @@ def parse_args():
         action='store_true',
         help='Output FLOPs and params counts in a string form.')
     parser.add_argument(
-        '--noeval',
-        action='store_true',
-        help='test configs/detectors flops can nor use model.eval()')
-    parser.add_argument(
         '--cfg-options',
         nargs='+',
         action=DictAction,
@@ -83,6 +79,8 @@ def parse_args():
 
 
 def inference(config_file, checkpoint, work_dir, args, exp_name):
+    logger = MMLogger.get_instance(name='MMLogger')
+    logger.warning('if you want test flops, please make sure torch>=1.12')
     cfg = Config.fromfile(config_file)
     cfg.work_dir = work_dir
     cfg.load_from = checkpoint
@@ -129,8 +127,7 @@ def inference(config_file, checkpoint, work_dir, args, exp_name):
                 input = input.cuda()
             model = revert_sync_batchnorm(model)
             inputs = (input, )
-            if not args.noeval:
-                model.eval()
+            model.eval()
             outputs = get_model_complexity_info(
                 model, input_shape, inputs, show_table=False, show_arch=False)
             flops = outputs['flops']
@@ -154,8 +151,7 @@ def inference(config_file, checkpoint, work_dir, args, exp_name):
             if torch.cuda.is_available():
                 model = model.cuda()
             model = revert_sync_batchnorm(model)
-            if not args.noeval:
-                model.eval()
+            model.eval()
             _forward = model.forward
             data = model.data_preprocessor(data_batch)
             del data_loader

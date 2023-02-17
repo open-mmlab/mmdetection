@@ -95,12 +95,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
             mask_outs = self.mask_head.forward(x)
         else:
             mask_outs = self.mask_head.forward(x, positive_infos)
-        # YOLACT segmentation branch,
-        # if not training will not process the forward function.
-        if hasattr(self.mask_head, 'segm_branch') and not self.training:
-            outs = outs + (mask_outs[0], )
-        else:
-            outs = outs + (mask_outs, )
+        outs = outs + (mask_outs, )
         return outs
 
     def loss(self, batch_inputs: Tensor, batch_data_samples: SampleList,
