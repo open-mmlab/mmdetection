@@ -17,7 +17,7 @@ class DumpDetResults(DumpResults):
     segmentation masks into RLE format.
 
     Args:
-        keep_gt (bool): Whether dumped `gt_instances` simultaneously. It
+        keep_gt (bool): Whether to dump `gt_instances` simultaneously. It
             should be True if offline VOCMetric is used. Defaults to False.
         keep_gt_ignore (bool): Whether dumped `ignored_instances`
             simultaneously. It should be True if offline VOCMetric is used.
