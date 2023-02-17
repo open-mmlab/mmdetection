@@ -578,7 +578,7 @@ class SparseRoIHead(CascadeRoIHead):
                     batch_img_metas=batch_img_metas,
                     batch_gt_instances=batch_gt_instances)
                 bbox_results.pop('loss_bbox')
-                # JIT don't support type NoneType
+                # JIT don't support type SamplingResult
                 bbox_results.pop('results_list')
                 bbox_res = bbox_results.copy()
                 bbox_res.pop('sampling_results')
