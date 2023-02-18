@@ -57,7 +57,7 @@ def test_preprocess_panoptic_gt():
 
     # empty stuff
     gt_semantic_seg = torch.full(
-        (1, ) + img_metas['batch_input_shape'], 255, dtype=int)
+        (1, ) + img_metas['batch_input_shape'], 255, dtype=torch.long)
     gt_semantic_seg[0, :5, :5] = 0
     gt_semantic_seg[0, 5:] = 1
 
@@ -93,7 +93,8 @@ def test_preprocess_panoptic_gt():
         torch.Tensor) and out[1].shape[-2:] == img_metas['batch_input_shape']
     assert out[2].shape[0] == 0 and out[3].shape[0] == 0
 
-    gt_semantic_seg = torch.full((1, ) + img_metas['batch_input_shape'], 255)
+    gt_semantic_seg = torch.full(
+        (1, ) + img_metas['batch_input_shape'], 255, dtype=torch.long)
     gt_semantic_seg[0, :5, :5] = 0
     gt_semantic_seg[0, 5:] = 1
     gt_semantic_seg[0, :, 5:] = num_things + 2
