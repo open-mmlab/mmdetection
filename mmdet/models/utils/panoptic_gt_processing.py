@@ -50,7 +50,7 @@ def preprocess_panoptic_gt(
     things_labels = gt_labels
 
     if gt_semantic_seg is None:
-        return things_labels, things_masks, None, None
+        return things_labels, things_masks.long(), None, None
 
     gt_semantic_seg = gt_semantic_seg.squeeze(0)
 
@@ -77,7 +77,7 @@ def preprocess_panoptic_gt(
                 size=(0, ) + gt_semantic_seg.shape[-2:])
             stuff_labels = gt_semantic_seg.new_zeros(size=(0, ))
 
-        return things_labels, things_masks, stuff_labels, stuff_masks
+        return things_labels, things_masks.long(), stuff_labels, stuff_masks
     else:
         if len(stuff_masks_list) > 0:
             stuff_masks = torch.stack(stuff_masks_list, dim=0)
@@ -88,4 +88,4 @@ def preprocess_panoptic_gt(
             labels = things_labels
             masks = things_masks
 
-        return labels, masks, None, None
+        return labels, masks.long(), None, None
