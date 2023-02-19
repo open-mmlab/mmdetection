@@ -1,0 +1,249 @@
+Collections:
+  - Name: RF-Next
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - RF-Next
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RF-Next
+    Paper:
+      URL: http://mftp.mmcheng.net/Papers/22TPAMI-ActionSeg.pdf
+      Title: "RF-Next: Efficient Receptive Field Search for Convolutional Neural Networks"
+    README: configs/rfnext/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/mmdet/utils/rfnext.py
+      Version: v2.27.0
+
+Models:
+  - Name: rfnext_search_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k
+    In Collection: RF-Next
+    Config: configs/rfnext/rfnext_search_cascade_mask_rcnn_convnext-t_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco.py
+    Metadata:
+      Training Memory (GB): 11.9
+      Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        RF-Next (search)
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 50.9
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 44.3
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_search_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k/rfnext_search_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k-f47db42b.pth
+    Paper:
+      URL: https://arxiv.org/pdf/2206.06637.pdf
+      Title: 'RF-Next: Efficient Receptive Field Search for CNN'
+    README: configs/rfnext/README.md
+
+  - Name: rfnext_fixed_single_branch_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k
+    In Collection: RF-Next
+    Config: configs/rfnext/rfnext_fixed_single_branch_cascade_mask_rcnn_convnext-t_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco.py
+    Metadata:
+      Training Memory (GB): 9.4
+      Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        RF-Next (fixed_single_branch)
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 50.6
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 44.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_fixed_single_branch_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k/rfnext_fixed_single_branch_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k-71aeb991.pth
+    Paper:
+      URL: https://arxiv.org/pdf/2206.06637.pdf
+      Title: 'RF-Next: Efficient Receptive Field Search for CNN'
+    README: configs/rfnext/README.md
+
+  - Name: rfnext_search_cascade_mask_rcnn_hrnetv2p_w18_20e_coco
+    In Collection: RF-Next
+    Config: configs/rfnext/rfnext_search_cascade_mask_rcnn_hrnetv2p_w18_20e_coco.py
+    Metadata:
+      Training Memory (GB): 12.9
+      Epochs: 20
+      Training Data: COCO
+      Training Techniques:
+        RF-Next (search)
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 43.7
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 38.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_search_cascade_mask_rcnn_hrnetv2p_w18_20e_coco/rfnext_search_cascade_mask_rcnn_hrnetv2p_w18_20e_coco-7b9c7885.pth
+    Paper:
+      URL: https://arxiv.org/pdf/2206.06637.pdf
+      Title: 'RF-Next: Efficient Receptive Field Search for CNN'
+    README: configs/rfnext/README.md
+
+  - Name: rfnext_fixed_single_branch_cascade_mask_rcnn_hrnetv2p_w18_20e_coco
+    In Collection: RF-Next
+    Config: configs/rfnext/rfnext_fixed_single_branch_cascade_mask_rcnn_hrnetv2p_w18_20e_coco.py
+    Metadata:
+      Training Memory (GB): 8.4
+      Epochs: 20
+      Training Data: COCO
+      Training Techniques:
+        RF-Next (fixed_single_branch)
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 43.0
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 37.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_fixed_single_branch_cascade_mask_rcnn_hrnetv2p_w18_20e_coco/rfnext_fixed_single_branch_cascade_mask_rcnn_hrnetv2p_w18_20e_coco-682f121d.pth
+    Paper:
+      URL: https://arxiv.org/pdf/2206.06637.pdf
+      Title: 'RF-Next: Efficient Receptive Field Search for CNN'
+    README: configs/rfnext/README.md
+
+  - Name: rfnext_search_cascade_mask_rcnn_r2_101_fpn_20e_coco
+    In Collection: RF-Next
+    Config: configs/rfnext/rfnext_search_cascade_mask_rcnn_r2_101_fpn_20e_coco.py
+    Metadata:
+      Training Memory (GB): 11.9
+      Epochs: 20
+      Training Data: COCO
+      Training Techniques:
+        RF-Next (search)
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 47.9
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 41.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_search_cascade_mask_rcnn_r2_101_fpn_20e_coco/rfnext_search_cascade_mask_rcnn_r2_101_fpn_20e_coco-e17510a0.pth
+    Paper:
+      URL: https://arxiv.org/pdf/2206.06637.pdf
+      Title: 'RF-Next: Efficient Receptive Field Search for CNN'
+    README: configs/rfnext/README.md
+
+  - Name: rfnext_fixed_single_branch_cascade_mask_rcnn_r2_101_fpn_20e_coco
+    In Collection: RF-Next
+    Config: configs/rfnext/rfnext_fixed_single_branch_cascade_mask_rcnn_r2_101_fpn_20e_coco.py
+    Metadata:
+      Training Memory (GB): 9.3
+      Epochs: 20
+      Training Data: COCO
+      Training Techniques:
+        RF-Next (fixed_single_branch)
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 46.9
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 40.7
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_fixed_single_branch_cascade_mask_rcnn_r2_101_fpn_20e_coco/rfnext_fixed_single_branch_cascade_mask_rcnn_r2_101_fpn_20e_coco-e22d5257.pth
+    Paper:
+      URL: https://arxiv.org/pdf/2206.06637.pdf
+      Title: 'RF-Next: Efficient Receptive Field Search for CNN'
+    README: configs/rfnext/README.md
+
+  - Name: rfnext_search_mask_rcnn_pvtv2-b0_fpn_1x_coco
+    In Collection: RF-Next
+    Config: configs/rfnext/rfnext_search_mask_rcnn_pvtv2-b0_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 10.3
+      Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        RF-Next (search)
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 39.3
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 37.1
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_search_mask_rcnn_pvtv2-b0_fpn_1x_coco/rfnext_search_mask_rcnn_pvtv2-b0_fpn_1x_coco-dc8fd5de.pth
+    Paper:
+      URL: https://arxiv.org/pdf/2206.06637.pdf
+      Title: 'RF-Next: Efficient Receptive Field Search for CNN'
+    README: configs/rfnext/README.md
+
+  - Name: rfnext_fixed_single_branch_mask_rcnn_pvtv2-b0_fpn_1x_coco
+    In Collection: RF-Next
+    Config: configs/rfnext/rfnext_fixed_single_branch_mask_rcnn_pvtv2-b0_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 8.3
+      Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        RF-Next (fixed_single_branch)
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 38.9
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 36.8
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_fixed_single_branch_mask_rcnn_pvtv2-b0_fpn_1x_coco/rfnext_fixed_single_branch_mask_rcnn_pvtv2-b0_fpn_1x_coco-7b25d72e.pth
+    Paper:
+      URL: https://arxiv.org/pdf/2206.06637.pdf
+      Title: 'RF-Next: Efficient Receptive Field Search for CNN'
+    README: configs/rfnext/README.md
+
+  - Name: rfnext_search_panoptic_fpn_r2_50_fpn_fp16_1x_coco
+    In Collection: RF-Next
+    Config: configs/rfnext/rfnext_search_panoptic_fpn_r2_50_fpn_fp16_1x_coco.py
+    Metadata:
+      Training Memory (GB): 4.3
+      Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        RF-Next (search)
+    Results:
+      - Task: Panoptic Segmentation
+        Dataset: COCO
+        Metrics:
+          box AP: 44.3
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_search_panoptic_fpn_r2_50_fpn_fp16_1x_coco/rfnext_search_panoptic_fpn_r2_50_fpn_fp16_1x_coco-34a893a0.pth
+    Paper:
+      URL: https://arxiv.org/pdf/2206.06637.pdf
+      Title: 'RF-Next: Efficient Receptive Field Search for CNN'
+    README: configs/rfnext/README.md
+
+  - Name: rfnext_fixed_single_branch_panoptic_fpn_r2_50_fpn_fp16_1x_coco
+    In Collection: RF-Next
+    Config: configs/rfnext/rfnext_fixed_single_branch_panoptic_fpn_r2_50_fpn_fp16_1x_coco.py
+    Metadata:
+      Training Memory (GB): 3.5
+      Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        RF-Next (fixed_single_branch)
+    Results:
+      - Task: Panoptic Segmentation
+        Dataset: COCO
+        Metrics:
+          box AP: 44.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rfnext/rfnext_fixed_single_branch_panoptic_fpn_r2_50_fpn_fp16_1x_coco/rfnext_fixed_single_branch_panoptic_fpn_r2_50_fpn_fp16_1x_coco-52181d5b.pth
+    Paper:
+      URL: https://arxiv.org/pdf/2206.06637.pdf
+      Title: 'RF-Next: Efficient Receptive Field Search for CNN'
+    README: configs/rfnext/README.md

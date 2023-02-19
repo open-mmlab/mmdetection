@@ -1,0 +1,189 @@
+
+
+version: 2.1
+
+# the default pipeline parameters, which will be updated according to
+# the results of the path-filtering orb
+parameters:
+  lint_only:
+    type: boolean
+    default: true
+
+jobs:
+  lint:
+    docker:
+      - image: cimg/python:3.7.4
+    steps:
+      - checkout
+      - run:
+          name: Install pre-commit hook
+          command: |
+            pip install pre-commit
+            pre-commit install
+      - run:
+          name: Linting
+          command: pre-commit run --all-files
+      - run:
+          name: Check docstring coverage
+          command: |
+            pip install interrogate
+            interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --ignore-regex "__repr__" --fail-under 50 mmdet
+  build_cpu:
+    parameters:
+      # The python version must match available image tags in
+      # https://circleci.com/developer/images/image/cimg/python
+      python:
+        type: string
+      torch:
+        type: string
+      torchvision:
+        type: string
+    docker:
+      - image: cimg/python:<< parameters.python >>
+    resource_class: large
+    steps:
+      - checkout
+      - run:
+          name: Get MMCV_TORCH as environment variables
+          command: |
+            . .circleci/scripts/get_mmcv_var.sh << parameters.torch >>
+            source $BASH_ENV
+      - run:
+          name: Install Libraries
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 libgl1-mesa-glx libjpeg-dev zlib1g-dev libtinfo-dev libncurses5 libgeos-dev cmake git
+      - run:
+          name: Configure Python & pip
+          command: |
+            python -m pip install --upgrade pip
+            python -m pip install wheel
+      - run:
+          name: Install PyTorch
+          command: |
+            python -V
+            python -m pip install torch==<< parameters.torch >>+cpu torchvision==<< parameters.torchvision >>+cpu -f https://download.pytorch.org/whl/torch_stable.html
+      - run:
+          name: Install mmdet dependencies
+          command: |
+            python -m pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cpu/torch${MMCV_TORCH}/index.html
+            python -m pip install -r requirements.txt
+            python -m pip install albumentations --no-binary qudida,albumentations
+            python -m pip install git+https://github.com/cocodataset/panopticapi.git
+      - run:
+          name: Build and install
+          command: |
+            python -m pip install -e .
+      - run:
+          name: Run unittests
+          command: |
+            python -m coverage run --branch --source mmdet -m pytest tests/
+            python -m coverage xml
+            python -m coverage report -m
+  build_cuda:
+    parameters:
+      torch:
+        type: string
+      cuda:
+        type: enum
+        enum: ["10.1", "10.2", "11.1"]
+      cudnn:
+        type: integer
+        default: 7
+    machine:
+      image: ubuntu-2004-cuda-11.4:202110-01
+      docker_layer_caching: true
+    resource_class: gpu.nvidia.small
+    steps:
+      - checkout
+      - run:
+          name: Get MMCV_TORCH and MMCV_CUDA as environment variables
+          command: |
+            . .circleci/scripts/get_mmcv_var.sh << parameters.torch >> << parameters.cuda >>
+            source $BASH_ENV
+      - run:
+          name: Build Docker image
+          command: |
+            docker build .circleci/docker -t mmdet:gpu --build-arg PYTORCH=<< parameters.torch >> --build-arg CUDA=<< parameters.cuda >> --build-arg CUDNN=<< parameters.cudnn >>
+            docker run --gpus all -t -d -v /home/circleci/project:/mmdet -w /mmdet --name mmdet mmdet:gpu
+      - run:
+          name: Install mmdet dependencies
+          command: |
+            docker exec mmdet pip install --upgrade pip
+            docker exec mmdet pip install wheel
+            docker exec mmdet pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/${MMCV_CUDA}/torch${MMCV_TORCH}/index.html
+            docker exec mmdet pip install -r requirements.txt
+            docker exec mmdet pip install typing-extensions -U
+            docker exec mmdet pip install albumentations --use-pep517 qudida albumentations
+            docker exec mmdet python -c 'import albumentations; print(albumentations.__version__)'
+            docker exec mmdet pip install git+https://github.com/cocodataset/panopticapi.git
+      - run:
+          name: Build and install
+          command: |
+            docker exec mmdet pip install -e .
+      - run:
+          name: Run unittests
+          command: |
+            docker exec mmdet python -m pytest tests/
+workflows:
+  pr_stage_lint:
+    when: << pipeline.parameters.lint_only >>
+    jobs:
+      - lint:
+          name: lint
+          filters:
+            branches:
+              ignore:
+                - master
+  pr_stage_test:
+    when:
+      not:
+        << pipeline.parameters.lint_only >>
+    jobs:
+      - lint:
+          name: lint
+          filters:
+            branches:
+              ignore:
+                - master
+      - build_cpu:
+          name: minimum_version_cpu
+          torch: 1.6.0
+          torchvision: 0.7.0
+          python: 3.7.7
+          requires:
+            - lint
+      - build_cpu:
+          name: maximum_version_cpu
+          torch: 1.9.0
+          torchvision: 0.10.0
+          python: 3.8.0
+          requires:
+            - minimum_version_cpu
+      - hold:
+          type: approval
+          requires:
+            - maximum_version_cpu
+      - build_cuda:
+          name: mainstream_version_gpu
+          torch: 1.8.1
+          # Use double quotation mark to explicitly specify its type
+          # as string instead of number
+          cuda: "10.2"
+          requires:
+            - hold
+  merge_stage_test:
+    when:
+      not:
+        << pipeline.parameters.lint_only >>
+    jobs:
+      - build_cuda:
+          name: minimum_version_gpu
+          torch: 1.6.0
+          # Use double quotation mark to explicitly specify its type
+          # as string instead of number
+          cuda: "10.1"
+          filters:
+            branches:
+              only:
+                - master

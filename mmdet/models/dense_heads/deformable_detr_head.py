@@ -180,7 +180,7 @@ class DeformableDETRHead(DETRHead):
             return outputs_classes, outputs_coords, \
                 None, None
 
-    @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
+    @force_fp32(apply_to=('all_cls_scores', 'all_bbox_preds'))
     def loss(self,
              all_cls_scores,
              all_bbox_preds,
@@ -265,7 +265,7 @@ class DeformableDETRHead(DETRHead):
             num_dec_layer += 1
         return loss_dict
 
-    @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
+    @force_fp32(apply_to=('all_cls_scores', 'all_bbox_preds'))
     def get_bboxes(self,
                    all_cls_scores,
                    all_bbox_preds,

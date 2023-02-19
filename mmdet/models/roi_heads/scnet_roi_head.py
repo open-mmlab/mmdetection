@@ -110,7 +110,7 @@ class SCNetRoIHead(CascadeRoIHead):
             if bbox_semantic_feat.shape[-2:] != bbox_feats.shape[-2:]:
                 bbox_semantic_feat = adaptive_avg_pool2d(
                     bbox_semantic_feat, bbox_feats.shape[-2:])
-            bbox_feats += bbox_semantic_feat
+            bbox_feats = bbox_feats + bbox_semantic_feat
         if self.with_glbctx and glbctx_feat is not None:
             bbox_feats = self._fuse_glbctx(bbox_feats, glbctx_feat, rois)
         cls_score, bbox_pred, relayed_feat = bbox_head(
@@ -137,7 +137,7 @@ class SCNetRoIHead(CascadeRoIHead):
             if mask_semantic_feat.shape[-2:] != mask_feats.shape[-2:]:
                 mask_semantic_feat = F.adaptive_avg_pool2d(
                     mask_semantic_feat, mask_feats.shape[-2:])
-            mask_feats += mask_semantic_feat
+            mask_feats = mask_feats + mask_semantic_feat
         if self.with_glbctx and glbctx_feat is not None:
             mask_feats = self._fuse_glbctx(mask_feats, glbctx_feat, rois)
         if self.with_feat_relay and relayed_feat is not None:

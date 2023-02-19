@@ -43,6 +43,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 39.1
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/groie/grid_rcnn_r50_fpn_gn-head_groie_1x_coco/grid_rcnn_r50_fpn_gn-head_groie_1x_coco_20200605_202059-4b75d86f.pth
 
   - Name: mask_rcnn_r50_fpn_groie_1x_coco
     In Collection: GRoIE

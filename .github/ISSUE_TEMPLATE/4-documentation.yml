@@ -1,0 +1,34 @@
+name: 📚 Documentation
+description: Report an issue related to the documentation.
+labels: "kind/doc,status/unconfirmed"
+title: "[Docs] "
+
+body:
+- type: dropdown
+  id: branch
+  attributes:
+    label: Branch
+    description: This issue is related to the
+    options:
+      - master branch  https://mmdetection.readthedocs.io/en/latest/
+      - 3.x branch https://mmdetection.readthedocs.io/en/3.x/
+  validations:
+    required: true
+
+- type: textarea
+  attributes:
+    label: 📚 The doc issue
+    description: >
+      A clear and concise description the issue.
+  validations:
+    required: true
+
+- type: textarea
+  attributes:
+    label: Suggest a potential alternative/fix
+    description: >
+      Tell us how we could improve the documentation in this regard.
+- type: markdown
+  attributes:
+    value: >
+      Thanks for contributing 🎉!

@@ -9,6 +9,7 @@ import pytest
 import torch
 
 from mmdet.core.bbox.assigners import (ApproxMaxIoUAssigner,
+                                       AscendMaxIoUAssigner,
                                        CenterRegionAssigner, HungarianAssigner,
                                        MaskHungarianAssigner, MaxIoUAssigner,
                                        PointAssigner, SimOTAAssigner,
@@ -661,3 +662,39 @@ def test_mask_hungarian_match_assigner():
         dice_cost=dict(type='DiceCost', weight=0.0, pred_act=True, eps=1.0))
     with pytest.raises(AssertionError):
         self = MaskHungarianAssigner(**assigner_cfg)
+
+
+def test_ascend_max_iou_assigner():
+    self = AscendMaxIoUAssigner(
+        pos_iou_thr=0.5,
+        neg_iou_thr=0.5,
+    )
+    batch_bboxes = torch.FloatTensor([[
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+        [5, 5, 15, 15],
+        [32, 32, 38, 42],
+    ]])
+    batch_gt_bboxes = torch.FloatTensor([[
+        [0, 0, 10, 9],
+        [0, 10, 10, 19],
+    ]])
+    batch_gt_labels = torch.LongTensor([[2, 3]])
+    batch_bboxes_ignore_mask = torch.IntTensor([[1, 1, 1, 1]])
+    assign_result = self.assign(
+        batch_bboxes,
+        batch_gt_bboxes,
+        batch_gt_labels=batch_gt_labels,
+        batch_bboxes_ignore_mask=batch_bboxes_ignore_mask)
+
+    expected_batch_pos_mask = torch.IntTensor([1, 0, 1, 0])
+    expected_batch_anchor_gt_indes = torch.IntTensor([0, 0, 1, 0])
+    expected_batch_anchor_gt_labels = torch.IntTensor([2, 0, 3, 0])
+
+    assert torch.all(assign_result.batch_pos_mask == expected_batch_pos_mask)
+    assert torch.all(
+        assign_result.batch_anchor_gt_indes *
+        assign_result.batch_pos_mask == expected_batch_anchor_gt_indes)
+    assert torch.all(
+        assign_result.batch_anchor_gt_labels *
+        assign_result.batch_pos_mask == expected_batch_anchor_gt_labels)

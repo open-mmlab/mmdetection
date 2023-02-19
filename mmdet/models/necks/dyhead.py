@@ -44,7 +44,7 @@ class DyDCNv2(nn.Module):
 
     def forward(self, x, offset, mask):
         """Forward function."""
-        x = self.conv(x.contiguous(), offset, mask)
+        x = self.conv(x.contiguous(), offset.contiguous(), mask)
         if self.with_norm:
             x = self.norm(x)
         return x
@@ -109,7 +109,8 @@ class DyHeadBlock(nn.Module):
             summed_levels = 1
             if level > 0:
                 low_feat = self.spatial_conv_low(x[level - 1], offset, mask)
-                sum_feat += low_feat * self.scale_attn_module(low_feat)
+                sum_feat = sum_feat + \
+                    low_feat * self.scale_attn_module(low_feat)
                 summed_levels += 1
             if level < len(x) - 1:
                 # this upsample order is weird, but faster than natural order
@@ -119,7 +120,8 @@ class DyHeadBlock(nn.Module):
                     size=x[level].shape[-2:],
                     mode='bilinear',
                     align_corners=True)
-                sum_feat += high_feat * self.scale_attn_module(high_feat)
+                sum_feat = sum_feat + high_feat * \
+                    self.scale_attn_module(high_feat)
                 summed_levels += 1
             outs.append(self.task_attn_module(sum_feat / summed_levels))
 

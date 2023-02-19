@@ -481,7 +481,7 @@ class SwinTransformer(BaseModule):
         embed_dims (int): The feature dimension. Default: 96.
         patch_size (int | tuple[int]): Patch size. Default: 4.
         window_size (int): Window size. Default: 7.
-        mlp_ratio (int): Ratio of mlp hidden dim to embedding dim.
+        mlp_ratio (int | float): Ratio of mlp hidden dim to embedding dim.
             Default: 4.
         depths (tuple[int]): Depths of each Swin Transformer stage.
             Default: (2, 2, 6, 2).
@@ -588,9 +588,8 @@ class SwinTransformer(BaseModule):
         if self.use_abs_pos_embed:
             patch_row = pretrain_img_size[0] // patch_size
             patch_col = pretrain_img_size[1] // patch_size
-            num_patches = patch_row * patch_col
             self.absolute_pos_embed = nn.Parameter(
-                torch.zeros((1, num_patches, embed_dims)))
+                torch.zeros((1, embed_dims, patch_row, patch_col)))
 
         self.drop_after_pos = nn.Dropout(p=drop_rate)
 
@@ -616,7 +615,7 @@ class SwinTransformer(BaseModule):
             stage = SwinBlockSequence(
                 embed_dims=in_channels,
                 num_heads=num_heads[i],
-                feedforward_channels=mlp_ratio * in_channels,
+                feedforward_channels=int(mlp_ratio * in_channels),
                 depth=depths[i],
                 window_size=window_size,
                 qkv_bias=qkv_bias,
@@ -746,7 +745,17 @@ class SwinTransformer(BaseModule):
         x, hw_shape = self.patch_embed(x)
 
         if self.use_abs_pos_embed:
-            x = x + self.absolute_pos_embed
+            h, w = self.absolute_pos_embed.shape[1:3]
+            if hw_shape[0] != h or hw_shape[1] != w:
+                absolute_pos_embed = F.interpolate(
+                    self.absolute_pos_embed,
+                    size=hw_shape,
+                    mode='bicubic',
+                    align_corners=False).flatten(2).transpose(1, 2)
+            else:
+                absolute_pos_embed = self.absolute_pos_embed.flatten(
+                    2).transpose(1, 2)
+            x = x + absolute_pos_embed
         x = self.drop_after_pos(x)
 
         outs = []
