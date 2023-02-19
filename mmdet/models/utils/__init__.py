@@ -14,7 +14,7 @@ from .point_sample import (get_uncertain_point_coords_with_randomness,
                            get_uncertainty)
 from .positional_encoding import (LearnedPositionalEncoding,
                                   SinePositionalEncoding)
-from .query_denoising import build_dn_generator
+from .query_denoising import CdnQueryGenerator
 from .res_layer import ResLayer, SimplifiedBasicBlock
 from .se_layer import DyReLU, SELayer
 from .transformer import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
@@ -32,5 +32,5 @@ __all__ = [
     'nlc_to_nchw', 'pvt_convert', 'sigmoid_geometric_mean',
     'preprocess_panoptic_gt', 'DyReLU',
     'get_uncertain_point_coords_with_randomness', 'get_uncertainty',
-    'build_dn_generator'
+    'CdnQueryGenerator'
 ]

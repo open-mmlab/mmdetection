@@ -30,8 +30,7 @@ model = dict(
         sync_cls_avg_factor=True,
         as_two_stage=True,
         with_box_refine=True,
-        dn_cfg=dict(
-            type='CdnQueryGenerator',
+        dn_cfg=dict(  # CdnQueryGenerator
             noise_scale=dict(label=0.5, box=1.0),  # 0.5, 0.4 for DN-DETR
             group_cfg=dict(dynamic=True, num_groups=None, num_dn_queries=100)),
         transformer=dict(

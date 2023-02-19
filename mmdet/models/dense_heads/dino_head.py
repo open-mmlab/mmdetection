@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 from mmdet.core import (bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh, multi_apply,
                         reduce_mean)
-from mmdet.models.utils import build_dn_generator
+from mmdet.models.utils import CdnQueryGenerator
 from mmdet.models.utils.transformer import inverse_sigmoid
 from ..builder import HEADS
 from .deformable_detr_head import DeformableDETRHead
@@ -50,7 +50,7 @@ class DINOHead(DeformableDETRHead):
             dn_cfg['num_classes'] = self.num_classes
             dn_cfg['num_queries'] = self.num_query
             dn_cfg['hidden_dim'] = self.embed_dims
-        self.dn_generator = build_dn_generator(dn_cfg)
+        self.dn_generator = CdnQueryGenerator(**dn_cfg)
 
     def forward_train(self,
                       x,

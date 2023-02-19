@@ -5,7 +5,7 @@ from mmdet.core import bbox_xyxy_to_cxcywh
 from .transformer import inverse_sigmoid
 
 
-class DnQueryGenerator:
+class CdnQueryGenerator:
 
     def __init__(self,
                  num_queries,
@@ -14,7 +14,6 @@ class DnQueryGenerator:
                  noise_scale=dict(label=0.5, box=0.4),
                  group_cfg=dict(
                      dynamic=True, num_groups=None, num_dn_queries=None)):
-        super(DnQueryGenerator, self).__init__()
         self.num_queries = num_queries
         self.hidden_dim = hidden_dim
         self.num_classes = num_classes
@@ -201,29 +200,3 @@ class DnQueryGenerator:
             'num_dn_group': num_groups,
         }
         return input_query_label, input_query_bbox, attn_mask, dn_meta
-
-
-class CdnQueryGenerator(DnQueryGenerator):
-
-    def __init__(self, *args, **kwargs):
-        super(CdnQueryGenerator, self).__init__(*args, **kwargs)
-
-
-def build_dn_generator(dn_args):
-    """
-
-    Args:
-        dn_args (dict):
-
-    Returns:
-
-    """
-    if dn_args is None:
-        return None
-    type = dn_args.pop('type')
-    if type == 'DnQueryGenerator':
-        return DnQueryGenerator(**dn_args)
-    elif type == 'CdnQueryGenerator':
-        return CdnQueryGenerator(**dn_args)
-    else:
-        raise NotImplementedError(f'{type} is not supported yet')
