@@ -19,6 +19,7 @@ file_client_args = dict(backend='disk')
 train_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+    dict(type='RandomFlip', prob=0.5),
     dict(
         type='RandomResize',
         scale=image_size,
@@ -30,7 +31,6 @@ train_pipeline = [
         crop_size=image_size,
         recompute_bbox=True,
         allow_negative_crop=True),
-    dict(type='RandomFlip', prob=0.5),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(type='Pad', size=image_size, pad_val=dict(img=(114, 114, 114))),
     dict(type='PackDetInputs')
@@ -56,7 +56,7 @@ train_dataloader = dict(
         data_root=data_root,
         ann_file='annotations/instances_train2017.json',
         data_prefix=dict(img='train2017/'),
-        filter_cfg=dict(filter_empty_gt=True, min_size=32),
+        filter_cfg=dict(filter_empty_gt=True),
         pipeline=train_pipeline))
 
 val_dataloader = dict(
