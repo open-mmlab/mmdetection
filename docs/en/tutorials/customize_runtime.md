@@ -287,7 +287,7 @@ There are some common hooks that are not registered through `custom_hooks`, they
 
 In those hooks, only the logger hook has the `VERY_LOW` priority, others' priority are `NORMAL`.
 The above-mentioned tutorials already covers how to modify `optimizer_config`, `momentum_config`, and `lr_config`.
-Here we reveals how what we can do with `log_config`, `checkpoint_config`, and `evaluation`.
+Here we reveal how what we can do with `log_config`, `checkpoint_config`, and `evaluation`.
 
 #### Checkpoint config
 
@@ -297,7 +297,7 @@ The MMCV runner will use `checkpoint_config` to initialize [`CheckpointHook`](ht
 checkpoint_config = dict(interval=1)
 ```
 
-The users could set `max_keep_ckpts` to only save only small number of checkpoints or decide whether to store state dict of optimizer by `save_optimizer`. More details of the arguments are [here](https://mmcv.readthedocs.io/en/latest/api.html#mmcv.runner.CheckpointHook)
+The users could set `max_keep_ckpts` to save only small number of checkpoints or decide whether to store state dict of optimizer by `save_optimizer`. More details of the arguments are [here](https://mmcv.readthedocs.io/en/latest/api.html#mmcv.runner.CheckpointHook)
 
 #### Log config
 
