@@ -9,6 +9,10 @@ model = dict(
 
 # Distillation Params
 teacher_config_path = 'result/coco/sparse_rcnn_r101_fpn_mstrain_480-800_3x/coco_sparse_rcnn_r101_fpn_mstrain_480-800_3x.py'
-teacher_weight_path = 'result/coco/sparse_rcnn_r101_fpn_mstrain_480-800_3x/epoch_36.pth'
+teacher_weight_path = 'result/coco/sparse_rcnn_r101_fpn_mstrain_480-800_3x/epoch_1.pth'
 backbone_pretrain = False
 
+data = dict(
+    samples_per_gpu=1,
+    workers_per_gpu=1,
+)

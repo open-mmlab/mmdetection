@@ -75,7 +75,7 @@ class SparseRCNN_TS(TwoStageDetector):
         proposal_boxes, proposal_features, imgs_whwh = \
             self.rpn_head.forward_train(x, img_metas)
         
-        roi_losses, gt_bboxes_feats = self.roi_head.forward_train(
+        roi_losses, gt_bboxes_feats, all_stage_feats = self.roi_head.forward_train(
             x,
             proposal_boxes,
             proposal_features,
@@ -85,7 +85,7 @@ class SparseRCNN_TS(TwoStageDetector):
             gt_bboxes_ignore=gt_bboxes_ignore,
             gt_masks=gt_masks,
             imgs_whwh=imgs_whwh)
-        return roi_losses, gt_bboxes_feats
+        return roi_losses, gt_bboxes_feats, all_stage_feats
 
     def simple_test(self, img, img_metas, rescale=False):
         """Test function without test time augmentation.
@@ -165,9 +165,9 @@ class SparseRCNN_TS(TwoStageDetector):
         """
         self.teacher.eval()
         with torch.no_grad():
-            _, gt_feats_ori = self.teacher(**data[0])
+            _, gt_feats_ori, all_stage_feats_ori = self.teacher(**data[0])
             
-        losses, gt_feats_aug = self(**data[1])
+        losses, gt_feats_aug, all_stage_feats_aug = self(**data[1])
 
         # Calc Consistency Loss
         B = gt_feats_ori.size(0)
@@ -256,7 +256,7 @@ class SparseRCNNCont(TwoStageDetector):
         x = self.extract_feat(img)
         proposal_boxes, proposal_features, imgs_whwh = \
             self.rpn_head.forward_train(x, img_metas)
-        roi_losses, gt_bboxes_feats = self.roi_head.forward_train(
+        roi_losses, gt_bboxes_feats, all_stage_feats = self.roi_head.forward_train(
             x,
             proposal_boxes,
             proposal_features,
@@ -266,7 +266,7 @@ class SparseRCNNCont(TwoStageDetector):
             gt_bboxes_ignore=gt_bboxes_ignore,
             gt_masks=gt_masks,
             imgs_whwh=imgs_whwh)
-        return roi_losses, gt_bboxes_feats
+        return roi_losses, gt_bboxes_feats, all_stage_feats
 
     def simple_test(self, img, img_metas, rescale=False):
         """Test function without test time augmentation.

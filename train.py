@@ -109,9 +109,9 @@ def parse_args():
 
 def main():
     args = parse_args()
-    # # temporary setting for debug
+    # # # temporary setting for debug
     # args.config = 'configs/sparse_rcnn_kd/coco_sparse_rcnn_r50_fpn_mstrain_480-800_3x_fskd.py'
-    # args.work_dir = 'result/coco/sparse_rcnn_r50_fpn_mstrain_480-800_3x_fskd'
+    # args.work_dir = 'result/coco/debugging'
     # args.seed = 0
     # args.gpu_id = 0
 
