@@ -87,7 +87,7 @@ python tools/test.py projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-prop
 python tools/test.py projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py ${CHECKPOINT_PATH} --cfg-options model.bbox_head.sampling_timesteps=4
 ```
 
-**Note:** There is no difference between 1 step or 4 steps (or other multi-step) during training. Users can set different steps during inference through `--cfg-options model.bbox_head.sampling_timesteps=${STEPS}`, but the larger `step` will affect the inference time.
+**Note:** There is no difference between 1 step or 4 steps (or other multi-step) during training. Users can set different steps during inference through `--cfg-options model.bbox_head.sampling_timesteps=${STEPS}`, but larger `sampling_timesteps` will affect the inference time.
 
 ## Results
 
