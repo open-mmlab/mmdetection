@@ -9,7 +9,8 @@ from mmdet.models.detectors.conditional_detr import ConditionalDETR
 from mmdet.models.layers.positional_encoding import SinePositionalEncoding
 from mmdet.models.layers.transformer.detr_layers import DetrTransformerEncoder
 from mmdet.registry import MODELS
-from .group_conditional_detr_decoder import GroupConditionalDetrTransformerDecoder
+from .group_conditional_detr_decoder import \
+    GroupConditionalDetrTransformerDecoder
 
 
 @MODELS.register_module()
@@ -39,8 +40,8 @@ class GroupConditionalDETR(ConditionalDETR):
         # NOTE The embed_dims is typically passed from the inside out.
         # For example in DETR, The embed_dims is passed as
         # self_attn -> the first encoder layer -> encoder -> detector.
-        self.query_embedding = nn.Embedding(self.num_queries * self.num_query_groups,
-                                            self.embed_dims)
+        self.query_embedding = nn.Embedding(
+            self.num_queries * self.num_query_groups, self.embed_dims)
 
         num_feats = self.positional_encoding.num_feats
         assert num_feats * 2 == self.embed_dims, \

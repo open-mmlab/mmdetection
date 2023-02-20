@@ -15,11 +15,12 @@ Detection Transformer (DETR) relies on One-to-One assignment, i.e., assigning on
 
 We provide the config files and models for Group DETR: [FAST DETR TRAINING WITH GROUPWISE ONE-TO-MANY ASSIGNMENT](https://arxiv.org/abs/2207.13085).
 
-| Backbone |   Model    | Lr schd | Mem (GB) | Inf time (fps) | box AP |                      Config                       |                                                                                                                                                                        Download                                                                                                                                                                        |
-| :------: |:----------:| :-----: | :------: | :------------: |:------:| :-----------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|   R-50   | Group DETR |   50e   |          |                |        | [config](./configs/group_detr_r50_8xb2-50e_coco.py) | [model]() \| [log]() |
+| Backbone |   Model    | Lr schd | Mem (GB) | Inf time (fps) | box AP |                       Config                        |         Download         |
+| :------: | :--------: | :-----: | :------: | :------------: | :----: | :-------------------------------------------------: | :----------------------: |
+|   R-50   | Group DETR |   50e   |          |                |        | [config](./configs/group_detr_r50_8xb2-50e_coco.py) | [model](<>) \| [log](<>) |
 
 Please note that there is no extra computational cost during inference when compared to original Conditional DETR.
+
 ## Citation
 
 ```latex

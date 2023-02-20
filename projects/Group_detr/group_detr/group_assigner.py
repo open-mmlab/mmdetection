@@ -1,18 +1,16 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Optional, Union
+
 import numpy as np
 import torch
+from mmengine import ConfigDict
+from mmengine.structures import InstanceData
+from scipy.optimize import linear_sum_assignment
+from torch import Tensor
 
 from mmdet.models.task_modules.assigners import BaseAssigner
 from mmdet.models.task_modules.assigners.assign_result import AssignResult
 from mmdet.registry import TASK_UTILS
-
-from typing import List, Optional, Union
-
-from mmengine import ConfigDict
-from mmengine.structures import InstanceData
-from scipy.optimize import linear_sum_assignment
-
-from torch import Tensor
 
 
 @TASK_UTILS.register_module()
@@ -145,7 +143,8 @@ class GroupHungarianAssigner(BaseAssigner):
                     matched_row_inds_g, matched_col_inds_g
             else:
                 matched_row_inds = np.concatenate([
-                    matched_row_inds, matched_row_inds_g + num_queries_one_group * g_index
+                    matched_row_inds,
+                    matched_row_inds_g + num_queries_one_group * g_index
                 ])
                 matched_col_inds = np.concatenate(
                     [matched_col_inds, matched_col_inds_g])

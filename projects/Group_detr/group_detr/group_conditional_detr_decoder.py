@@ -9,7 +9,8 @@ from mmdet.models.layers.transformer.utils import MLP, ConditionalAttention
 from .group_conditional_attention import GroupConditionalAttention
 
 
-class GroupConditionalDetrTransformerDecoder(ConditionalDetrTransformerDecoder):
+class GroupConditionalDetrTransformerDecoder(ConditionalDetrTransformerDecoder
+                                             ):
     """Decoder of Group DETR, the only change is in self.layers."""
 
     def _init_layers(self) -> None:
@@ -32,8 +33,10 @@ class GroupConditionalDetrTransformerDecoder(ConditionalDetrTransformerDecoder):
             self.layers[layer_id + 1].cross_attn.qpos_proj = None
 
 
-class GroupConditionalDetrTransformerDecoderLayer(ConditionalDetrTransformerDecoderLayer):
-    """Implements decoder layer in Group DETR transformer, the only change is in self.self_attn."""
+class GroupConditionalDetrTransformerDecoderLayer(
+        ConditionalDetrTransformerDecoderLayer):
+    """Implements decoder layer in Group DETR transformer, the only change is
+    in self.self_attn."""
 
     def _init_layers(self):
         """Initialize self-attention, cross-attention, FFN, and

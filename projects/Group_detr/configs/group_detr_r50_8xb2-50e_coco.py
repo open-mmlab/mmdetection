@@ -9,7 +9,8 @@ num_query_groups = 11
 model = dict(
     type='GroupConditionalDETR',
     num_query_groups=num_query_groups,
-    decoder=dict(layer_cfg=dict(self_attn_cfg=dict(num_query_groups=num_query_groups))),
+    decoder=dict(
+        layer_cfg=dict(self_attn_cfg=dict(num_query_groups=num_query_groups))),
     # training and testing settings
     train_cfg=dict(
         assigner=dict(
