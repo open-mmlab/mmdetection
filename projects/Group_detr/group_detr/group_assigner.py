@@ -34,6 +34,7 @@ class GHungarianAssigner(BaseAssigner):
     Args:
         match_costs (:obj:`ConfigDict` or dict or \
             List[Union[:obj:`ConfigDict`, dict]]): Match cost configs.
+        num_query_groups (int): The number of decoder query groups.
     """
 
     def __init__(self,

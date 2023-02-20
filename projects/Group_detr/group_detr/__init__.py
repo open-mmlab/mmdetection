@@ -1,4 +1,4 @@
-from .assigner import GHungarianAssigner
+from .group_assigner import GHungarianAssigner
 from .group_attention import GroupAttention
 from .group_decoder import (GroupDetrTransformerDecoder,
                             GroupDetrTransformerDecoderLayer)
