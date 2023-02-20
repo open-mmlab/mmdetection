@@ -39,8 +39,8 @@ We give a table to compare the inference results on `ResNet50-500-proposals` bet
 |       [MMDetection](configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py) (random seed)       |  1   | 45.6~45.8 |
 | [DiffusionDet](https://github.com/ShoufaChen/DiffusionDet/blob/main/configs/diffdet.coco.res50.yaml) (released results) |  4   |   46.1    |
 |      [DiffusionDet](https://github.com/ShoufaChen/DiffusionDet/blob/main/configs/diffdet.coco.res50.yaml) (seed=0)      |  4   |   46.38   |
-|         [MMDetection](configs/diffusiondet_r50_fpn_500-proposals_4-steps_crop-ms-480-800-450k_coco.py) (seed=0)         |  4   |   46.4    |
-|      [MMDetection](configs/diffusiondet_r50_fpn_500-proposals_4-steps_crop-ms-480-800-450k_coco.py) (random seed)       |  4   | 46.2~46.4 |
+|         [MMDetection](configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py) (seed=0)          |  4   |   46.4    |
+|       [MMDetection](configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py) (random seed)       |  4   | 46.2~46.4 |
 
 - `seed=0` means hard set seed before generating random boxes.
   ```python
@@ -78,13 +78,16 @@ In MMDetection's root directory, run the following command to test the model:
 
 ```bash
 # for 1 step inference
-export CONFIG_FILE=projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py
+# test command
+python tools/test.py projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py ${CHECKPOINT_PATH}
+
 # for 4 steps inference
-# export CONFIG_FILE=projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py
 
 # test command
-python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_PATH}
+python tools/test.py projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py ${CHECKPOINT_PATH} --cfg-options model.bbox_head.sampling_timesteps=4
 ```
+
+**Note:** There is no difference between 1 step or 4 steps (or other multi-step) during training. Users can set different steps during inference through `--cfg-options model.bbox_head.sampling_timesteps=${STEPS}`, but the larger `step` will affect the inference time.
 
 ## Results
 
