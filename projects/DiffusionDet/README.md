@@ -60,14 +60,24 @@ We give a table to compare the inference results on `ResNet50-500-proposals` bet
 
 ### Training commands
 
-MMDetection currently does not fully support training DiffusionDet.
+In MMDetection's root directory, run the following command to train the model:
+
+```bash
+python tools/train.py projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py
+```
+
+For multi-gpu training, run:
+
+```bash
+python -m torch.distributed.launch --nnodes=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} --master_port=29506 --master_addr="127.0.0.1" tools/train.py projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py
+```
 
 ### Testing commands
 
 In MMDetection's root directory, run the following command to test the model:
 
 ```bash
-python tools/test.py projects/DiffusionDet/configs/${CONFIG_PATH} ${CHECKPOINT_PATH}
+python tools/test.py projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py ${CHECKPOINT_PATH}
 ```
 
 ## Results
@@ -76,9 +86,9 @@ Here we provide the baseline version of DiffusionDet with ResNet50 backbone.
 
 To find more variants, please visit the [official model zoo](https://github.com/ShoufaChen/DiffusionDet#models).
 
-| Backbone |  Style  | Lr schd | Mem (GB) | FPS | AP  |    Config    |         Download         |
-| :------: | :-----: | :-----: | :------: | :-: | :-: | :----------: | :----------------------: |
-|   R-50   | PyTorch |         |          |     |     | [config](<>) | [model](<>) \| [log](<>) |
+| Backbone |  Style  | Lr schd | AP (Step=1) | AP (Step=4) |                                           Config                                           |                                                                                                                                                                                                                                      Download                                                                                                                                                                                                                                      |
+| :------: | :-----: | :-----: | :---------: | :---------: | :----------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|   R-50   | PyTorch |  450k   |    44.5     |    46.2     | [config](./configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/diffusiondet/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco_20230215_090925-7d6ed504.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/diffusiondet/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco_20230215_090925.log.json) |
 
 ## License
 
@@ -122,9 +132,9 @@ A project does not necessarily have to be finished in a single PR, but it's esse
 
     <!-- As this template does. -->
 
-- [ ] Milestone 2: Indicates a successful model implementation.
+- [x] Milestone 2: Indicates a successful model implementation.
 
-  - [ ] Training-time correctness
+  - [x] Training-time correctness
 
     <!-- If you are reproducing the result from a paper, checking this item means that you should have trained your model from scratch based on the original paper's specification and verified that the final result matches the report within a minor error range. -->
 
