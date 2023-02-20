@@ -3,7 +3,9 @@ _base_ = ['mmdet::conditional_detr/conditional-detr_r50_8xb2-50e_coco.py']
 custom_imports = dict(
     imports=['projects.Group_detr.group_detr'], allow_failed_imports=False)
 
+# The number of decoder query groups.
 num_query_groups = 11
+
 model = dict(
     type='GroupDETR',
     num_query_groups=num_query_groups,

@@ -9,25 +9,10 @@ class GroupAttention(ConditionalAttention):
     """A wrapper of conditional attention, dropout and residual connection.
 
     Args:
-        embed_dims (int): The embedding dimension.
-        num_heads (int): Parallel attention heads.
-        attn_drop (float): A Dropout layer on attn_output_weights.
-            Default: 0.0.
-        proj_drop: A Dropout layer after `nn.MultiheadAttention`.
-            Default: 0.0.
-        cross_attn (bool): Whether the attention module is for cross attention.
-            Default: False
-        keep_query_pos (bool): Whether to transform query_pos before cross
-            attention.
-            Default: False.
-        batch_first (bool): When it is True, Key, Query and Value are shape of
-            (batch, n, embed_dim), otherwise (n, batch, embed_dim).
-             Default: True.
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
-            Default: None.
+        num_query_groups (int): The number of decoder query groups.
     """
 
-    def __init__(self, *arg, num_query_groups=1, **kwargs) -> None:
+    def __init__(self, *arg, num_query_groups: int = 1, **kwargs) -> None:
         self.num_query_groups = num_query_groups
         super().__init__(*arg, **kwargs)
 
