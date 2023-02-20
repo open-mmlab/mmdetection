@@ -6,11 +6,12 @@ from mmdet.models.task_modules.assigners import BaseAssigner
 from mmdet.models.task_modules.assigners.assign_result import AssignResult
 from mmdet.registry import TASK_UTILS
 
-from scipy.optimize import linear_sum_assignment
 from typing import List, Optional, Union
 
 from mmengine import ConfigDict
 from mmengine.structures import InstanceData
+from scipy.optimize import linear_sum_assignment
+
 from torch import Tensor
 
 

@@ -10,7 +10,7 @@ from .group_attention import GroupAttention
 
 
 class GroupDetrTransformerDecoder(ConditionalDetrTransformerDecoder):
-    """Decoder of Conditional DETR."""
+    """Decoder of Group DETR, the only change is in self.layers."""
 
     def _init_layers(self) -> None:
         """Initialize decoder layers and other layers."""
@@ -33,7 +33,7 @@ class GroupDetrTransformerDecoder(ConditionalDetrTransformerDecoder):
 
 
 class GroupDetrTransformerDecoderLayer(ConditionalDetrTransformerDecoderLayer):
-    """Implements decoder layer in Conditional DETR transformer."""
+    """Implements decoder layer in Group DETR transformer, the only change is in self.self_attn."""
 
     def _init_layers(self):
         """Initialize self-attention, cross-attention, FFN, and
