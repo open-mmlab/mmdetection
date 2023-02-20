@@ -15,7 +15,8 @@ from .group_conditional_detr_decoder import \
 
 @MODELS.register_module()
 class GroupConditionalDETR(ConditionalDETR):
-    r"""Implementation of `Fast DETR Training with Group-Wise One-to-Many Assignment.
+    r"""Implementation of `Fast DETR Training with Group-Wise
+     One-to-Many Assignment.
 
     <https://arxiv.org/abs/2207.13085>`_.
 
