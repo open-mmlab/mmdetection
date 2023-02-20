@@ -8,9 +8,6 @@ import torch
 from ts.torch_handler.base_handler import BaseHandler
 
 from mmdet.apis import inference_detector, init_detector
-from mmdet.utils import register_all_modules
-
-register_all_modules(True)
 
 
 class MMdetHandler(BaseHandler):

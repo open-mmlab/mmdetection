@@ -17,11 +17,8 @@ import mmcv
 from mmcv.transforms import Compose
 from mmengine.utils import track_iter_progress
 from mmdet.registry import VISUALIZERS
-from mmdet.utils import register_all_modules
 from mmdet.apis import init_detector, inference_detector
 
-# Register all modules in mmdet into the registries
-register_all_modules()
 
 # Specify the path to model config and checkpoint file
 config_file = 'configs/faster_rcnn/faster-rcnn_r50-fpn_1x_coco.py'
@@ -56,6 +53,9 @@ visualizer.add_datasample(
 # Build test pipeline
 model.cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromNDArray'
 test_pipeline = Compose(model.cfg.test_dataloader.dataset.pipeline)
+
+# visualizer has been created in line 31 and 34, if you run this demo in one notebook,
+# you need not build the visualizer again.
 
 # Init visualizer
 visualizer = VISUALIZERS.build(model.cfg.visualizer)
@@ -101,9 +101,9 @@ This script performs inference on a single image.
 python demo/image_demo.py \
     ${IMAGE_FILE} \
     ${CONFIG_FILE} \
-    ${CHECKPOINT_FILE} \
+    [--weights ${WEIGHTS}] \
     [--device ${GPU_ID}] \
-    [--score-thr ${SCORE_THR}]
+    [--pred-score-thr ${SCORE_THR}]
 ```
 
 Examples:
@@ -111,7 +111,7 @@ Examples:
 ```shell
 python demo/image_demo.py demo/demo.jpg \
     configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    --weights checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --device cpu
 ```
 

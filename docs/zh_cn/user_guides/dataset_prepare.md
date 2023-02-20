@@ -9,7 +9,7 @@
 我们建议将数据集下载，然后解压到项目外部的某个文件夹内，然后通过符号链接的方式，将数据集根目录链接到 `$MMDETECTION/data` 文件夹下，格式如下所示。
 如果你的文件夹结构和下方不同的话，你需要在配置文件中改变对应的路径。
 我们提供了下载 COCO 等数据集的脚本，你可以运行 `python tools/misc/download_dataset.py --dataset-name coco2017` 下载 COCO 数据集。
-对于中国境内的用户，我们也推荐通过开源数据平台 [OpenDataLab](https://opendatalab.com/) 来下载数据，以获得更好的下载体验。
+对于中国境内的用户，我们也推荐通过开源数据平台 [OpenDataLab](https://opendatalab.com/?source=OpenMMLab%20GitHub) 来下载数据，以获得更好的下载体验。
 
 ```plain
 mmdetection

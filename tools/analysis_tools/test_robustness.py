@@ -12,7 +12,6 @@ from mmengine.runner import Runner
 
 from mmdet.engine.hooks.utils import trigger_visualization_hook
 from mmdet.registry import RUNNERS
-from mmdet.utils import register_all_modules
 from tools.analysis_tools.robustness_eval import get_results
 
 
@@ -95,10 +94,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-
-    # register all modules in mmdet into the registries
-    # do not init the default scope here because it will be init in the runner
-    register_all_modules(init_default_scope=False)
 
     assert args.out or args.show or args.show_dir, \
         ('Please specify at least one operation (save or show the results) '

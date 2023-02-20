@@ -13,7 +13,6 @@ from mmengine.utils import track_iter_progress
 from mmdet.apis import init_detector
 from mmdet.registry import VISUALIZERS
 from mmdet.structures import DetDataSample
-from mmdet.utils import register_all_modules
 
 try:
     import ffmpegcv
@@ -80,9 +79,6 @@ def main():
     assert args.out or args.show, \
         ('Please specify at least one operation (save/show the '
          'video) with the argument "--out" or "--show"')
-
-    # register all modules in mmdet into the registries
-    register_all_modules()
 
     model = init_detector(args.config, args.checkpoint, device=args.device)
 
