@@ -134,18 +134,18 @@ class GHungarianAssigner(BaseAssigner):
                               'to install scipy first.')
 
         # indices = []
-        g_num_queries = num_preds // self.num_query_groups
-        cost_list = cost.split(g_num_queries, dim=0)
-        for g_i in range(self.num_query_groups):
-            cost_g = cost_list[g_i]
+        num_queries_one_group = num_preds // self.num_query_groups
+        cost_list = cost.split(num_queries_one_group, dim=0)
+        for g_index in range(self.num_query_groups):
+            cost_g = cost_list[g_index]
             matched_row_inds_g, matched_col_inds_g = linear_sum_assignment(
                 cost_g)
-            if g_i == 0:
+            if g_index == 0:
                 matched_row_inds, matched_col_inds = \
                     matched_row_inds_g, matched_col_inds_g
             else:
                 matched_row_inds = np.concatenate([
-                    matched_row_inds, matched_row_inds_g + g_num_queries * g_i
+                    matched_row_inds, matched_row_inds_g + num_queries_one_group * g_index
                 ])
                 matched_col_inds = np.concatenate(
                     [matched_col_inds, matched_col_inds_g])
