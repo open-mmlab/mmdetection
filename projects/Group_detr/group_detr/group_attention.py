@@ -6,7 +6,7 @@ from mmdet.models.layers.transformer.utils import ConditionalAttention
 
 
 class GroupAttention(ConditionalAttention):
-    """A wrapper of conditional attention, dropout and residual connection.
+    """A wrapper of conditional attention in group-detr.
 
     Args:
         num_query_groups (int): The number of decoder query groups.
@@ -64,6 +64,7 @@ class GroupAttention(ConditionalAttention):
         q = q_content if q_pos is None else q_content + q_pos
         k = k_content if k_pos is None else k_content + k_pos
         bs, num_queries, _ = q_content.shape
+        # split the qkv groups of decoder self-attention
         if self.training:
             q = torch.cat(
                 q.split(num_queries // self.num_query_groups, dim=1), dim=0)
@@ -77,6 +78,7 @@ class GroupAttention(ConditionalAttention):
             value=v,
             attn_mask=attn_mask,
             key_padding_mask=key_padding_mask)[0]
+        # concat the output of decoder self-attention
         if self.training:
             sa_output = torch.cat(sa_output.split(bs, dim=0), dim=1)
         query = query + self.proj_drop(sa_output)
