@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import warnings
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -55,6 +54,8 @@ class OpenImagesMetric(OIDMeanAP):
             Defaults to 4.
         drop_class_ap (bool): Whether to drop the class without ground truth
             when calculating the average precision for each class.
+        classwise (bool): Whether to return the computed results of each
+            class. Defaults to True.
         dist_backend (str | None): The name of the distributed communication
             backend. Refer to :class:`mmeval.BaseMetric`.
             Defaults to 'torch_cuda'.
@@ -74,21 +75,11 @@ class OpenImagesMetric(OIDMeanAP):
                  use_legacy_coordinate: bool = False,
                  nproc: int = 4,
                  drop_class_ap: bool = True,
+                 classwise: bool = True,
                  dist_backend: str = 'torch_cuda',
                  **kwargs) -> None:
-        ioa_thrs = kwargs.pop('ioa_thrs', None)
-        if ioa_thrs is not None and 'iof_thrs' not in kwargs:
-            kwargs['iof_thrs'] = ioa_thrs
-            warnings.warn(
-                'DeprecationWarning: The `ioa_thrs` parameter of '
-                '`OpenImagesMetric` is deprecated, use `iof_thrs` instead!')
-
-        collect_device = kwargs.pop('collect_device', None)
-        if collect_device is not None:
-            warnings.warn(
-                'DeprecationWarning: The `collect_device` parameter of '
-                '`OpenImagesMetric` is deprecated, use `dist_backend` instead.'
-            )
+        assert classwise, \
+            '`OpenImagesMetric` should force set `classwise=True`'
 
         super().__init__(
             iou_thrs=iou_thrs,
@@ -102,7 +93,7 @@ class OpenImagesMetric(OIDMeanAP):
             eval_mode=eval_mode,
             use_legacy_coordinate=use_legacy_coordinate,
             nproc=nproc,
-            classwise_result=True,
+            classwise=classwise,
             drop_class_ap=drop_class_ap,
             dist_backend=dist_backend,
             **kwargs)
@@ -149,10 +140,10 @@ class OpenImagesMetric(OIDMeanAP):
         metric_results = self.compute(*args, **kwargs)
         self.reset()
 
-        classwise_result = metric_results['classwise_result']
-        del metric_results['classwise_result']
+        assert 'classwise_result' in metric_results
+        classwise_result = metric_results.pop('classwise_result')
 
-        classes = self.dataset_meta['CLASSES']
+        classes = self.dataset_meta['classes']
         header = ['class', 'gts', 'dets', 'recall', 'ap']
 
         for i, (iou_thr,
