@@ -77,7 +77,13 @@ python -m torch.distributed.launch --nnodes=1 --node_rank=0 --nproc_per_node=${N
 In MMDetection's root directory, run the following command to test the model:
 
 ```bash
-python tools/test.py projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py ${CHECKPOINT_PATH}
+# for 1 step inference
+export CONFIG_FILE=projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py
+# for 4 steps inference
+# export CONFIG_FILE=projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py
+
+# test command
+python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_PATH}
 ```
 
 ## Results
