@@ -7,13 +7,13 @@ custom_imports = dict(
 num_query_groups = 11
 
 model = dict(
-    type='GroupDETR',
+    type='GroupConditionalDETR',
     num_query_groups=num_query_groups,
-    decoder=dict(layer_cfg=dict(self_attn_cfg=dict(group_detr=num_query_groups))),
+    decoder=dict(layer_cfg=dict(self_attn_cfg=dict(num_query_groups=num_query_groups))),
     # training and testing settings
     train_cfg=dict(
         assigner=dict(
-            type='GHungarianAssigner',
+            type='GroupHungarianAssigner',
             match_costs=[
                 dict(type='FocalLossCost', weight=2.0),
                 dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),

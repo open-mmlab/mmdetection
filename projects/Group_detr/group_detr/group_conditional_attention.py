@@ -5,7 +5,7 @@ from torch import Tensor
 from mmdet.models.layers.transformer.utils import ConditionalAttention
 
 
-class GroupAttention(ConditionalAttention):
+class GroupConditionalAttention(ConditionalAttention):
     """A wrapper of conditional attention in group-detr.
 
     Args:

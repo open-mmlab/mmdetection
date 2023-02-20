@@ -16,7 +16,7 @@ from torch import Tensor
 
 
 @TASK_UTILS.register_module()
-class GHungarianAssigner(BaseAssigner):
+class GroupHungarianAssigner(BaseAssigner):
     """Computes one-to-one matching between predictions and ground truth.
 
     This class computes an assignment between the targets and the predictions

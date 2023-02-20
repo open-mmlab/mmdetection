@@ -9,11 +9,11 @@ from mmdet.models.detectors.conditional_detr import ConditionalDETR
 from mmdet.models.layers.positional_encoding import SinePositionalEncoding
 from mmdet.models.layers.transformer.detr_layers import DetrTransformerEncoder
 from mmdet.registry import MODELS
-from .group_decoder import GroupDetrTransformerDecoder
+from .group_conditional_detr_decoder import GroupConditionalDetrTransformerDecoder
 
 
 @MODELS.register_module()
-class GroupDETR(ConditionalDETR):
+class GroupConditionalDETR(ConditionalDETR):
     r"""Implementation of `Fast DETR Training with Group-Wise One-to-Many Assignment.
 
     <https://arxiv.org/abs/2207.13085>`_.
@@ -34,7 +34,7 @@ class GroupDETR(ConditionalDETR):
         self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding)
         self.encoder = DetrTransformerEncoder(**self.encoder)
-        self.decoder = GroupDetrTransformerDecoder(**self.decoder)
+        self.decoder = GroupConditionalDetrTransformerDecoder(**self.decoder)
         self.embed_dims = self.encoder.embed_dims
         # NOTE The embed_dims is typically passed from the inside out.
         # For example in DETR, The embed_dims is passed as
