@@ -14,17 +14,16 @@ from .group_decoder import GroupDetrTransformerDecoder
 
 @MODELS.register_module()
 class GroupDETR(ConditionalDETR):
-    r"""Implementation of `Conditional DETR for Fast Training Convergence.
+    r"""Implementation of `Fast DETR Training with Group-Wise One-to-Many Assignment.
 
-    <https://arxiv.org/abs/2108.06152>`_.
+    <https://arxiv.org/abs/2207.13085>`_.
 
     Code is modified from the `official github repo
-    <https://github.com/Atten4Vis/ConditionalDETR>`_.
+    <https://github.com/Atten4Vis/ConditionalDETR/tree/GroupDETR>`_.
 
     Args:
         num_query_groups (int): The number of decoder query groups.
     """
-
 
     def __init__(self, *arg, num_query_groups: int = 1, **kwargs) -> None:
         self.num_query_groups = num_query_groups
