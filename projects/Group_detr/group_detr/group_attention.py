@@ -27,8 +27,8 @@ class GroupAttention(ConditionalAttention):
             Default: None.
     """
 
-    def __init__(self, *arg, group_detr=1, **kwargs) -> None:
-        self.group_detr = group_detr
+    def __init__(self, *arg, num_query_groups=1, **kwargs) -> None:
+        self.num_query_groups = num_query_groups
         super().__init__(*arg, **kwargs)
 
     def forward(self,
@@ -81,11 +81,11 @@ class GroupAttention(ConditionalAttention):
         bs, num_queries, _ = q_content.shape
         if self.training:
             q = torch.cat(
-                q.split(num_queries // self.group_detr, dim=1), dim=0)
+                q.split(num_queries // self.num_query_groups, dim=1), dim=0)
             k = torch.cat(
-                k.split(num_queries // self.group_detr, dim=1), dim=0)
+                k.split(num_queries // self.num_query_groups, dim=1), dim=0)
             v = torch.cat(
-                v.split(num_queries // self.group_detr, dim=1), dim=0)
+                v.split(num_queries // self.num_query_groups, dim=1), dim=0)
         sa_output = self.forward_attn(
             query=q,
             key=k,

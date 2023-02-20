@@ -22,8 +22,8 @@ class GroupDETR(ConditionalDETR):
     <https://github.com/Atten4Vis/ConditionalDETR>`_.
     """
 
-    def __init__(self, *arg, group_detr=1, **kwargs) -> None:
-        self.group_detr = group_detr
+    def __init__(self, *arg, num_query_groups=1, **kwargs) -> None:
+        self.num_query_groups = num_query_groups
         super().__init__(*arg, **kwargs)
 
     def _init_layers(self) -> None:
@@ -36,7 +36,7 @@ class GroupDETR(ConditionalDETR):
         # NOTE The embed_dims is typically passed from the inside out.
         # For example in DETR, The embed_dims is passed as
         # self_attn -> the first encoder layer -> encoder -> detector.
-        self.query_embedding = nn.Embedding(self.num_queries * self.group_detr,
+        self.query_embedding = nn.Embedding(self.num_queries * self.num_query_groups,
                                             self.embed_dims)
 
         num_feats = self.positional_encoding.num_feats

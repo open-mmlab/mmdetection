@@ -38,7 +38,7 @@ class GHungarianAssigner(BaseAssigner):
     def __init__(self,
                  match_costs: Union[List[Union[dict, ConfigDict]], dict,
                                     ConfigDict],
-                 group_detr=1) -> None:
+                 num_query_groups=1) -> None:
 
         if isinstance(match_costs, dict):
             match_costs = [match_costs]
@@ -49,7 +49,7 @@ class GHungarianAssigner(BaseAssigner):
         self.match_costs = [
             TASK_UTILS.build(match_cost) for match_cost in match_costs
         ]
-        self.group_detr = group_detr
+        self.num_query_groups = num_query_groups
 
     def assign(self,
                pred_instances: InstanceData,
@@ -132,9 +132,9 @@ class GHungarianAssigner(BaseAssigner):
                               'to install scipy first.')
 
         # indices = []
-        g_num_queries = num_preds // self.group_detr
+        g_num_queries = num_preds // self.num_query_groups
         cost_list = cost.split(g_num_queries, dim=0)
-        for g_i in range(self.group_detr):
+        for g_i in range(self.num_query_groups):
             cost_g = cost_list[g_i]
             matched_row_inds_g, matched_col_inds_g = linear_sum_assignment(
                 cost_g)
