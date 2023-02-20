@@ -11,7 +11,7 @@ from mmengine.dist import barrier, broadcast, get_dist_info
 from mmengine.logging import MessageHub
 from mmengine.model import BaseDataPreprocessor, ImgDataPreprocessor
 from mmengine.structures import PixelData
-from mmengine.utils import is_list_of
+from mmengine.utils import is_seq_of
 from torch import Tensor
 
 from mmdet.models.utils import unfold_wo_center
@@ -153,7 +153,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         pad_size_divisor."""
         _batch_inputs = data['inputs']
         # Process data with `pseudo_collate`.
-        if is_list_of(_batch_inputs, torch.Tensor):
+        if is_seq_of(_batch_inputs, torch.Tensor):
             batch_pad_shape = []
             for ori_input in _batch_inputs:
                 pad_h = int(
@@ -177,7 +177,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                         self.pad_size_divisor)) * self.pad_size_divisor
             batch_pad_shape = [(pad_h, pad_w)] * _batch_inputs.shape[0]
         else:
-            raise TypeError('Output of `cast_data` should be a list of dict '
+            raise TypeError('Output of `cast_data` should be a dict '
                             'or a tuple with inputs and data_samples, but got'
                             f'{type(data)}： {data}')
         return batch_pad_shape
