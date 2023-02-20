@@ -20,9 +20,13 @@ class GroupDETR(ConditionalDETR):
 
     Code is modified from the `official github repo
     <https://github.com/Atten4Vis/ConditionalDETR>`_.
+
+    Args:
+        num_query_groups (int): The number of decoder query groups.
     """
 
-    def __init__(self, *arg, num_query_groups=1, **kwargs) -> None:
+
+    def __init__(self, *arg, num_query_groups: int = 1, **kwargs) -> None:
         self.num_query_groups = num_query_groups
         super().__init__(*arg, **kwargs)
 
@@ -72,6 +76,7 @@ class GroupDETR(ConditionalDETR):
 
         batch_size = memory.size(0)  # (bs, num_feat_points, dim)
         if self.training:
+            # use all groups in training
             query_pos = self.query_embedding.weight
         else:
             # only use one group in inference
