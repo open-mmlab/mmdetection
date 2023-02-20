@@ -71,7 +71,7 @@ class TestLoadAnnotations(unittest.TestCase):
         self.assertEqual(results['gt_bboxes'].dtype, np.float32)
         self.assertTrue((results['gt_ignore_flags'] == np.array([0, 0,
                                                                  1])).all())
-        self.assertEqual(results['gt_ignore_flags'].dtype, np.bool)
+        self.assertEqual(results['gt_ignore_flags'].dtype, bool)
 
     def test_load_labels(self):
         transform = LoadAnnotations(
@@ -122,7 +122,7 @@ class TestLoadAnnotations(unittest.TestCase):
                               'with_label=False, with_mask=False, '
                               'with_seg=False, poly2mask=True, '
                               "imdecode_backend='cv2', "
-                              "file_client_args={'backend': 'disk'})"))
+                              'file_client_args=None)'))
 
 
 class TestFilterAnnotations(unittest.TestCase):
@@ -344,7 +344,7 @@ class TestLoadImageFromNDArray(unittest.TestCase):
                               'to_float32=False, '
                               "color_type='color', "
                               "imdecode_backend='cv2', "
-                              "file_client_args={'backend': 'disk'})"))
+                              'backend_args=None)'))
 
 
 class TestLoadMultiChannelImageFromFiles(unittest.TestCase):
@@ -394,22 +394,50 @@ class TestLoadProposals(unittest.TestCase):
 
     def test_transform(self):
         transform = LoadProposals()
-        results = {'proposals': np.zeros((4, 5), dtype=np.int64)}
+        results = {
+            'proposals':
+            dict(
+                bboxes=np.zeros((5, 4), dtype=np.int64),
+                scores=np.zeros((5, ), dtype=np.int64))
+        }
         results = transform(results)
         self.assertEqual(results['proposals'].dtype, np.float32)
         self.assertEqual(results['proposals'].shape[-1], 4)
+        self.assertEqual(results['proposals_scores'].dtype, np.float32)
 
-        results = {'proposals': np.zeros((4, 3), dtype=np.float32)}
+        #  bboxes.shape[1] should be 4
+        results = {'proposals': dict(bboxes=np.zeros((5, 5), dtype=np.int64))}
         with self.assertRaises(AssertionError):
             transform(results)
 
-        results = {'proposals': np.zeros((0, 4), dtype=np.float32)}
+        # bboxes.shape[0] should equal to scores.shape[0]
+        results = {
+            'proposals':
+            dict(
+                bboxes=np.zeros((5, 4), dtype=np.int64),
+                scores=np.zeros((3, ), dtype=np.int64))
+        }
+        with self.assertRaises(AssertionError):
+            transform(results)
+
+        # empty bboxes
+        results = {
+            'proposals': dict(bboxes=np.zeros((0, 4), dtype=np.float32))
+        }
         results = transform(results)
-        excepted_proposals = np.array([[0, 0, 0, 0]], dtype=np.float32)
+        excepted_proposals = np.zeros((0, 4), dtype=np.float32)
+        excepted_proposals_scores = np.zeros(0, dtype=np.float32)
         self.assertTrue((results['proposals'] == excepted_proposals).all())
+        self.assertTrue(
+            (results['proposals_scores'] == excepted_proposals_scores).all())
 
         transform = LoadProposals(num_max_proposals=2)
-        results = {'proposals': np.zeros((4, 4), dtype=np.float32)}
+        results = {
+            'proposals':
+            dict(
+                bboxes=np.zeros((5, 4), dtype=np.int64),
+                scores=np.zeros((5, ), dtype=np.int64))
+        }
         results = transform(results)
         self.assertEqual(results['proposals'].shape[0], 2)
 

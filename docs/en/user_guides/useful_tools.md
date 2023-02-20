@@ -10,7 +10,7 @@ log file. Run `pip install seaborn` first to install the dependency.
 python tools/analysis_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--eval-interval ${EVALUATION_INTERVAL}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
 ```
 
-![loss curve image](../../resources/loss_curve.png)
+![loss curve image](../../../resources/loss_curve.png)
 
 Examples:
 
@@ -151,7 +151,7 @@ Assume that you have got [Mask R-CNN checkpoint file](https://download.openmmlab
 You can modify the test_evaluator to save the results bbox by:
 
 1. Find which dataset in 'configs/base/datasets' the current config corresponds to.
-2. Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in dateset config.
+2. Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in dataset config.
 3. Use the following command to get the results bbox and segmentation json file.
 
 ```shell
@@ -160,7 +160,7 @@ python tools/test.py \
        checkpoint/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
 ```
 
-1. Get COCO bbox error results per category , save analyze result images to the directory(In  [config](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets/coco_instance.py) the default directory is './work_dirs/coco_instance/test')
+1. Get COCO bbox error results per category , save analyze result images to the directory(In  [config](../../../configs/_base_/datasets/coco_instance.py) the default directory is './work_dirs/coco_instance/test')
 
 ```shell
 python tools/analysis_tools/coco_error_analysis.py \
@@ -183,7 +183,19 @@ python tools/analysis_tools/coco_error_analysis.py \
 
 In order to serve an `MMDetection` model with [`TorchServe`](https://pytorch.org/serve/), you can follow the steps:
 
-### 1. Convert model from MMDetection to TorchServe
+### 1. Install TorchServe
+
+Suppose you have a `Python` environment with `PyTorch` and `MMDetection` successfully installed,
+then you could run the following command to install `TorchServe` and its dependencies.
+For more other installation options, please refer to the [quick start](https://github.com/pytorch/serve/blob/master/README.md#serve-a-model).
+
+```shell
+python -m pip install torchserve torch-model-archiver torch-workflow-archiver nvgpu
+```
+
+**Note**: Please refer to [torchserve docker](https://github.com/pytorch/serve/blob/master/docker/README.md) if you want to use `TorchServe` in docker.
+
+### 2. Convert model from MMDetection to TorchServe
 
 ```shell
 python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
@@ -191,32 +203,13 @@ python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
 --model-name ${MODEL_NAME}
 ```
 
-**Note**: ${MODEL_STORE} needs to be an absolute path to a folder.
-
-### 2. Build `mmdet-serve` docker image
+### 3. Start `TorchServe`
 
 ```shell
-docker build -t mmdet-serve:latest docker/serve/
+torchserve --start --ncs \
+  --model-store ${MODEL_STORE} \
+  --models  ${MODEL_NAME}.mar
 ```
-
-### 3. Run `mmdet-serve`
-
-Check the official docs for [running TorchServe with docker](https://github.com/pytorch/serve/blob/master/docker/README.md#running-torchserve-in-a-production-docker-environment).
-
-In order to run in GPU, you need to install [nvidia-docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html). You can omit the `--gpus` argument in order to run in CPU.
-
-Example:
-
-```shell
-docker run --rm \
---cpus 8 \
---gpus device=0 \
--p8080:8080 -p8081:8081 -p8082:8082 \
---mount type=bind,source=$MODEL_STORE,target=/home/model-server/model-store \
-mmdet-serve:latest
-```
-
-[Read the docs](https://github.com/pytorch/serve/blob/072f5d088cce9bb64b2a18af065886c9b01b317b/docs/rest_api.md/) about the Inference (8080), Management (8081) and Metrics (8082) APis
 
 ### 4. Test deployment
 
@@ -230,6 +223,7 @@ You should obtain a response similar to:
 ```json
 [
   {
+    "class_label": 16,
     "class_name": "dog",
     "bbox": [
       294.63409423828125,
@@ -240,6 +234,7 @@ You should obtain a response similar to:
     "score": 0.9987992644309998
   },
   {
+    "class_label": 16,
     "class_name": "dog",
     "bbox": [
       404.26019287109375,
@@ -250,6 +245,7 @@ You should obtain a response similar to:
     "score": 0.9979367256164551
   },
   {
+    "class_label": 16,
     "class_name": "dog",
     "bbox": [
       197.2144775390625,
@@ -262,11 +258,13 @@ You should obtain a response similar to:
 ]
 ```
 
-And you can use `test_torchserver.py` to compare result of torchserver and pytorch, and visualize them.
+#### Compare results
+
+And you can use `test_torchserver.py` to compare result of `TorchServe` and `PyTorch`, and visualize them.
 
 ```shell
 python tools/deployment/test_torchserver.py ${IMAGE_FILE} ${CONFIG_FILE} ${CHECKPOINT_FILE} ${MODEL_NAME}
-[--inference-addr ${INFERENCE_ADDR}] [--device ${DEVICE}] [--score-thr ${SCORE_THR}]
+[--inference-addr ${INFERENCE_ADDR}] [--device ${DEVICE}] [--score-thr ${SCORE_THR}] [--work-dir ${WORK_DIR}]
 ```
 
 Example:
@@ -276,7 +274,14 @@ python tools/deployment/test_torchserver.py \
 demo/demo.jpg \
 configs/yolo/yolov3_d53_8xb8-320-273e_coco.py \
 checkpoint/yolov3_d53_320_273e_coco-421362b6.pth \
-yolov3
+yolov3 \
+--work-dir ./work-dir
+```
+
+### 5. Stop `TorchServe`
+
+```shell
+torchserve --stop
 ```
 
 ## Model Complexity
@@ -383,6 +388,13 @@ python tools/misc/download_dataset.py --dataset-name coco2017
 python tools/misc/download_dataset.py --dataset-name voc2007
 python tools/misc/download_dataset.py --dataset-name lvis
 ```
+
+For users in China, these datasets can also be downloaded from [OpenDataLab](https://opendatalab.com/?source=OpenMMLab%20GitHub) with high speed:
+
+- [COCO2017](https://opendatalab.com/COCO_2017/download?source=OpenMMLab%20GitHub)
+- [VOC2007](https://opendatalab.com/PASCAL_VOC2007/download?source=OpenMMLab%20GitHub)
+- [VOC2012](https://opendatalab.com/PASCAL_VOC2012/download?source=OpenMMLab%20GitHub)
+- [LVIS](https://opendatalab.com/LVIS/download?source=OpenMMLab%20GitHub)
 
 ## Benchmark
 
@@ -497,3 +509,78 @@ python tools/analysis_tools/confusion_matrix.py ${CONFIG}  ${DETECTION_RESULTS} 
 And you will get a confusion matrix like this:
 
 ![confusion_matrix_example](https://user-images.githubusercontent.com/12907710/140513068-994cdbf4-3a4a-48f0-8fd8-2830d93fd963.png)
+
+## COCO Separated & Occluded Mask Metric
+
+Detecting occluded objects still remains a challenge for state-of-the-art object detectors.
+We implemented the metric presented in paper [A Tri-Layer Plugin to Improve Occluded Detection](https://arxiv.org/abs/2210.10046) to calculate the recall of separated and occluded masks.
+
+There are two ways to use this metric:
+
+### Offline evaluation
+
+We provide a script to calculate the metric with a dumped prediction file.
+
+First, use the `tools/test.py` script to dump the detection results:
+
+```shell
+python tools/test.py ${CONFIG} ${MODEL_PATH} --out results.pkl
+```
+
+Then, run the `tools/analysis_tools/coco_occluded_separated_recall.py` script to get the recall of separated and occluded masks:
+
+```shell
+python tools/analysis_tools/coco_occluded_separated_recall.py results.pkl --out occluded_separated_recall.json
+```
+
+The output should be like this:
+
+```
+loading annotations into memory...
+Done (t=0.51s)
+creating index...
+index created!
+processing detection results...
+[>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>] 5000/5000, 109.3 task/s, elapsed: 46s, ETA:     0s
+computing occluded mask recall...
+[>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>] 5550/5550, 780.5 task/s, elapsed: 7s, ETA:     0s
+COCO occluded mask recall: 58.79%
+COCO occluded mask success num: 3263
+computing separated mask recall...
+[>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>] 3522/3522, 778.3 task/s, elapsed: 5s, ETA:     0s
+COCO separated mask recall: 31.94%
+COCO separated mask success num: 1125
+
++-----------+--------+-------------+
+| mask type | recall | num correct |
++-----------+--------+-------------+
+| occluded  | 58.79% | 3263        |
+| separated | 31.94% | 1125        |
++-----------+--------+-------------+
+Evaluation results have been saved to occluded_separated_recall.json.
+```
+
+### Online evaluation
+
+We implement `CocoOccludedSeparatedMetric` which inherits from the `CocoMetic`.
+To evaluate the recall of separated and occluded masks during training, just replace the evaluator metric type with `'CocoOccludedSeparatedMetric'` in your config:
+
+```python
+val_evaluator = dict(
+    type='CocoOccludedSeparatedMetric',  # modify this
+    ann_file=data_root + 'annotations/instances_val2017.json',
+    metric=['bbox', 'segm'],
+    format_only=False)
+test_evaluator = val_evaluator
+```
+
+Please cite the paper if you use this metric:
+
+```latex
+@article{zhan2022triocc,
+    title={A Tri-Layer Plugin to Improve Occluded Detection},
+    author={Zhan, Guanqi and Xie, Weidi and Zisserman, Andrew},
+    journal={British Machine Vision Conference},
+    year={2022}
+}
+```

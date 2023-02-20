@@ -22,9 +22,11 @@ class BaseDetDataset(BaseDataset):
 
     def __init__(self,
                  *args,
+                 seg_map_suffix: str = '.png',
                  proposal_file: Optional[str] = None,
                  file_client_args: dict = dict(backend='disk'),
                  **kwargs) -> None:
+        self.seg_map_suffix = seg_map_suffix
         self.proposal_file = proposal_file
         self.file_client_args = file_client_args
         self.file_client = FileClient(**file_client_args)

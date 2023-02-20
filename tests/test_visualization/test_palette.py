@@ -1,6 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import numpy as np
+
 from mmdet.datasets import CocoDataset
-from mmdet.visualization import get_palette, palette_val
+from mmdet.visualization import get_palette, jitter_color, palette_val
 
 
 def test_palette():
@@ -25,8 +27,8 @@ def test_palette():
         assert color == (255, 0, 0)
 
     # test dataset str
-    palette = get_palette('coco', len(CocoDataset.METAINFO['CLASSES']))
-    assert len(palette) == len(CocoDataset.METAINFO['CLASSES'])
+    palette = get_palette('coco', len(CocoDataset.METAINFO['classes']))
+    assert len(palette) == len(CocoDataset.METAINFO['classes'])
     assert palette[0] == (220, 20, 60)
 
     # TODO: Awaiting refactoring
@@ -47,3 +49,10 @@ def test_palette():
         assert isinstance(color1, tuple)
         assert isinstance(color2, tuple)
         assert color1 == color2
+
+
+def test_jitter_color():
+    color = tuple(np.random.randint(0, 255, 3, np.uint8))
+    jittered_color = jitter_color(color)
+    for c in jittered_color:
+        assert 0 <= c <= 255

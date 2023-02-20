@@ -3,14 +3,19 @@ from .anchor_free_head import AnchorFreeHead
 from .anchor_head import AnchorHead
 from .atss_head import ATSSHead
 from .autoassign_head import AutoAssignHead
+from .boxinst_head import BoxInstBboxHead, BoxInstMaskHead
 from .cascade_rpn_head import CascadeRPNHead, StageCascadeRPNHead
 from .centernet_head import CenterNetHead
 from .centernet_update_head import CenterNetUpdateHead
 from .centripetal_head import CentripetalHead
+from .condinst_head import CondInstBboxHead, CondInstMaskHead
+from .conditional_detr_head import ConditionalDETRHead
 from .corner_head import CornerHead
+from .dab_detr_head import DABDETRHead
 from .ddod_head import DDODHead
 from .deformable_detr_head import DeformableDETRHead
 from .detr_head import DETRHead
+from .dino_head import DINOHead
 from .embedding_rpn_head import EmbeddingRPNHead
 from .fcos_head import FCOSHead
 from .fovea_head import FoveaHead
@@ -33,6 +38,7 @@ from .retina_head import RetinaHead
 from .retina_sepbn_head import RetinaSepBNHead
 from .rpn_head import RPNHead
 from .rtmdet_head import RTMDetHead, RTMDetSepBNHead
+from .rtmdet_ins_head import RTMDetInsHead, RTMDetInsSepBNHead
 from .sabl_retina_head import SABLRetinaHead
 from .solo_head import DecoupledSOLOHead, DecoupledSOLOLightHead, SOLOHead
 from .solov2_head import SOLOV2Head
@@ -56,5 +62,8 @@ __all__ = [
     'DeformableDETRHead', 'CenterNetHead', 'YOLOXHead', 'SOLOHead',
     'DecoupledSOLOHead', 'DecoupledSOLOLightHead', 'SOLOV2Head', 'LADHead',
     'TOODHead', 'MaskFormerHead', 'Mask2FormerHead', 'DDODHead',
-    'CenterNetUpdateHead', 'RTMDetHead', 'RTMDetSepBNHead'
+    'CenterNetUpdateHead', 'RTMDetHead', 'RTMDetSepBNHead', 'CondInstBboxHead',
+    'CondInstMaskHead', 'RTMDetInsHead', 'RTMDetInsSepBNHead',
+    'BoxInstBboxHead', 'BoxInstMaskHead', 'ConditionalDETRHead', 'DINOHead',
+    'DABDETRHead'
 ]

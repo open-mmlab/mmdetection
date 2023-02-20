@@ -134,7 +134,7 @@ class YOLOXHead(BaseDenseHead):
         self.train_cfg = train_cfg
 
         if self.train_cfg:
-            self.assigner = TASK_UTILS.build(self.train_cfg.assigner)
+            self.assigner = TASK_UTILS.build(self.train_cfg['assigner'])
             # YOLOX does not support sampling
             self.sampler = PseudoSampler()
 

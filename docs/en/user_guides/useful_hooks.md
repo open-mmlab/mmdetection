@@ -6,9 +6,9 @@ MMDetection and MMEngine provide users with various useful hooks including log h
 
 ## NumClassCheckHook
 
-## [MemoryProfilerHook](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/engine/hooks/memory_profiler_hook.py)
+## MemoryProfilerHook
 
-Memory profiler hook records memory information including virtual memory, swap memory, and the memory of the current process. This hook helps grasp the memory usage of the system and discover potential memory leak bugs. To use this hook, users should install `memory_profiler` and `psutil` by `pip install memory_profiler psutil` first.
+[Memory profiler hook](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/engine/hooks/memory_profiler_hook.py) records memory information including virtual memory, swap memory, and the memory of the current process. This hook helps grasp the memory usage of the system and discover potential memory leak bugs. To use this hook, users should install `memory_profiler` and `psutil` by `pip install memory_profiler psutil` first.
 
 ### Usage
 
@@ -22,7 +22,11 @@ custom_hooks = [
 
 ### Result
 
-During training, you can see the messages in the log recorded by `MemoryProfilerHook` as below. The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 MB) of swap memory in total. Currently 9407 MB (4.4%) of memory and 5740 MB (29.9%) of swap memory were consumed. And the current training process consumed 5434 MB of memory.
+During training, you can see the messages in the log recorded by `MemoryProfilerHook` as below.
+
+```text
+The system has 250 GB (246360 MB + 9407 MB) of memory and 8 GB (5740 MB + 2452 MB) of swap memory in total. Currently 9407 MB (4.4%) of memory and 5740 MB (29.9%) of swap memory were consumed. And the current training process consumed 5434 MB of memory.
+```
 
 ```text
 2022-04-21 08:49:56,881 - mmengine - INFO - Memory information available_memory: 246360 MB, used_memory: 9407 MB, memory_utilization: 4.4 %, available_swap_memory: 5740 MB, used_swap_memory: 2452 MB, swap_memory_utilization: 29.9 %, current_process_memory: 5434 MB
@@ -98,4 +102,4 @@ class CheckInvalidLossHook(Hook):
                 runner.logger.info('loss become infinite or NaN!')
 ```
 
-Please read [customize_runtime](https://github.com/open-mmlab/mmdetection/blob/3.x/docs/en/advanced_guides/customize_runtime.md) for more about implementing a custom hook.
+Please read [customize_runtime](../advanced_guides/customize_runtime.md) for more about implementing a custom hook.

@@ -55,7 +55,7 @@ Optional arguments:
 Assuming that you have already downloaded the checkpoints to the directory `checkpoints/`.
 
 1. Test Faster R-CNN and visualize the results. Press any key for the next image.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/faster_rcnn).
+   Config and checkpoint files are available [here](../../../configs/faster_rcnn).
 
    ```shell
    python tools/test.py \
@@ -65,7 +65,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
    ```
 
 2. Test Faster R-CNN and save the painted images for future visualization.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/faster_rcnn).
+   Config and checkpoint files are available [here](../../../configs/faster_rcnn).
 
    ```shell
    python tools/test.py \
@@ -75,7 +75,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
    ```
 
 3. Test Faster R-CNN on PASCAL VOC (without saving the test results).
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/pascal_voc).
+   Config and checkpoint files are available [here](../../../configs/pascal_voc).
 
    ```shell
    python tools/test.py \
@@ -84,7 +84,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
    ```
 
 4. Test Mask R-CNN with 8 GPUs, and evaluate.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/mask_rcnn).
+   Config and checkpoint files are available [here](../../../configs/mask_rcnn).
 
    ```shell
    ./tools/dist_test.sh \
@@ -95,7 +95,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
    ```
 
 5. Test Mask R-CNN with 8 GPUs, and evaluate the metric **class-wise**.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/mask_rcnn).
+   Config and checkpoint files are available [here](../../../configs/mask_rcnn).
 
    ```shell
    ./tools/dist_test.sh \
@@ -107,9 +107,9 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
    ```
 
 6. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate JSON files for submitting to the official evaluation server.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/mask_rcnn).
+   Config and checkpoint files are available [here](../../../configs/mask_rcnn).
 
-   Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets/coco_instance.py) and run:
+   Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](../../../configs/_base_/datasets/coco_instance.py) and run:
 
    ```shell
    ./tools/dist_test.sh \
@@ -121,9 +121,9 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
    This command generates two JSON files `./work_dirs/coco_instance/test.bbox.json` and `./work_dirs/coco_instance/test.segm.json`.
 
 7. Test Mask R-CNN on Cityscapes test with 8 GPUs, and generate txt and png files for submitting to the official evaluation server.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/cityscapes).
+   Config and checkpoint files are available [here](../../../configs/cityscapes).
 
-   Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets/cityscapes_instance.py) and run:
+   Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](../../../configs/_base_/datasets/cityscapes_instance.py) and run:
 
    ```shell
    ./tools/dist_test.sh \
@@ -136,7 +136,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
 
 ## Test without Ground Truth Annotations
 
-MMDetection supports to test models without ground-truth annotations using `CocoDataset`. If your dataset format is not in COCO format, please convert them to COCO format. For example, if your dataset format is VOC, you can directly convert it to COCO format by the [script in tools.](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/tools/dataset_converters/pascal_voc.py) If your dataset format is Cityscapes, you can directly convert it to COCO format by the [script in tools.](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/tools/dataset_converters/cityscapes.py) The rest of the formats can be converted using [this script](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/tools/dataset_converters/images2coco.py).
+MMDetection supports to test models without ground-truth annotations using `CocoDataset`. If your dataset format is not in COCO format, please convert them to COCO format. For example, if your dataset format is VOC, you can directly convert it to COCO format by the [script in tools.](../../../tools/dataset_converters/pascal_voc.py) If your dataset format is Cityscapes, you can directly convert it to COCO format by the [script in tools.](../../../tools/dataset_converters/cityscapes.py) The rest of the formats can be converted using [this script](../../../tools/dataset_converters/images2coco.py).
 
 ```shel
 python tools/dataset_converters/images2coco.py \
@@ -153,7 +153,7 @@ arguments：
 - `OUT`: The output annotation json file name. The save dir is in the same directory as `IMG_PATH`.
 - `exclude-extensions`: The suffix of images to be excluded, such as 'png' and 'bmp'.
 
-After the conversion is complete, you need to replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets/coco_detection.py)(find which dataset in 'configs/_base_/datasets' the current config corresponds to) and run:
+After the conversion is complete, you need to replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](../../../configs/_base_/datasets/coco_detection.py)(find which dataset in 'configs/_base_/datasets' the current config corresponds to) and run:
 
 ```shell
 # Single-gpu testing
@@ -198,3 +198,106 @@ data = dict(train_dataloader=dict(...), val_dataloader=dict(...), test_dataloade
 ```
 
 Or you can set it through `--cfg-options` as `--cfg-options test_dataloader.batch_size=2`
+
+## Test Time Augmentation (TTA)
+
+Test time augmentation (TTA) is a data augmentation strategy used during the test phase. It applies different augmentations, such as flipping and scaling, to the same image for model inference, and then merges the predictions of each augmented image to obtain more accurate predictions. To make it easier for users to use TTA, MMEngine provides [BaseTTAModel](https://mmengine.readthedocs.io/en/latest/api/generated/mmengine.model.BaseTTAModel.html#mmengine.model.BaseTTAModel) class, which allows users to implement different TTA strategies by simply extending the BaseTTAModel class according to their needs.
+
+In MMDetection, we provides [DetTTAModel](../../../mmdet/models/test_time_augs/det_tta.py) class, which inherits from BaseTTAModel.
+
+### Use case
+
+Using TTA requires two steps. First, you need to add `tta_model` and `tta_pipeline` in the configuration file:
+
+```shell
+tta_model = dict(
+    type='DetTTAModel',
+    tta_cfg=dict(nms=dict(
+                   type='nms',
+                   iou_threshold=0.5),
+                   max_per_img=100))
+
+tta_pipeline = [
+    dict(type='LoadImageFromFile',
+        file_client_args=dict(backend='disk')),
+    dict(
+        type='TestTimeAug',
+        transforms=[[
+            dict(type='Resize', scale=(1333, 800), keep_ratio=True)
+        ], [ # It uses 2 flipping transformations (flipping and not flipping).
+            dict(type='RandomFlip', prob=1.),
+            dict(type='RandomFlip', prob=0.)
+        ], [
+            dict(
+               type='PackDetInputs',
+               meta_keys=('img_id', 'img_path', 'ori_shape',
+                       'img_shape', 'scale_factor', 'flip',
+                       'flip_direction'))
+       ]])]
+```
+
+Second, set `--tta` when running the test scripts as examples below:
+
+```shell
+# Single-gpu testing
+python tools/test.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--tta]
+
+# CPU: disable GPUs and run single-gpu testing script
+export CUDA_VISIBLE_DEVICES=-1
+python tools/test.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--out ${RESULT_FILE}] \
+    [--tta]
+
+# Multi-gpu testing
+bash tools/dist_test.sh \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    ${GPU_NUM} \
+    [--tta]
+```
+
+You can also modify the TTA config by yourself, such as adding scaling enhancement:
+
+```shell
+tta_model = dict(
+    type='DetTTAModel',
+    tta_cfg=dict(nms=dict(
+                   type='nms',
+                   iou_threshold=0.5),
+                   max_per_img=100))
+
+img_scales = [(1333, 800), (666, 400), (2000, 1200)]
+tta_pipeline = [
+    dict(type='LoadImageFromFile',
+        file_client_args=dict(backend='disk')),
+    dict(
+        type='TestTimeAug',
+        transforms=[[
+            dict(type='Resize', scale=s, keep_ratio=True) for s in img_scales
+        ], [
+            dict(type='RandomFlip', prob=1.),
+            dict(type='RandomFlip', prob=0.)
+        ], [
+            dict(
+               type='PackDetInputs',
+               meta_keys=('img_id', 'img_path', 'ori_shape',
+                       'img_shape', 'scale_factor', 'flip',
+                       'flip_direction'))
+       ]])]
+```
+
+The above data augmentation pipeline will first perform 3 multi-scaling transformations on the image, followed by 2 flipping transformations (flipping and not flipping). Finally, the image is packaged into the final result using PackDetInputs.
+
+Here are more TTA use cases for your reference:
+
+- [RetinaNet](../../../configs/retinanet/retinanet_tta.py)
+- [CenterNet](../../../configs/centernet/centernet_tta.py)
+- [YOLOX](../../../configs/rtmdet/rtmdet_tta.py)
+- [RTMDet](../../../configs/yolox/yolox_tta.py)
+
+For more advanced usage and data flow of TTA, please refer to [MMEngine](https://mmengine.readthedocs.io/en/latest/advanced_tutorials/test_time_augmentation.html#data-flow). We will support instance segmentation TTA latter.

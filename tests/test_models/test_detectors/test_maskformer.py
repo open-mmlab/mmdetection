@@ -4,7 +4,7 @@ import unittest
 import torch
 from parameterized import parameterized
 
-from mmdet.models import build_detector
+from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
 from mmdet.testing._utils import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
@@ -28,28 +28,28 @@ class TestMaskFormer(unittest.TestCase):
         model_cfg.panoptic_head.feat_channels = base_channels
         model_cfg.panoptic_head.out_channels = base_channels
         model_cfg.panoptic_head.pixel_decoder.encoder.\
-            transformerlayers.attn_cfgs.embed_dims = base_channels
+            layer_cfg.self_attn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.pixel_decoder.encoder.\
-            transformerlayers.ffn_cfgs.embed_dims = base_channels
+            layer_cfg.ffn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.pixel_decoder.encoder.\
-            transformerlayers.ffn_cfgs.feedforward_channels = base_channels * 8
+            layer_cfg.ffn_cfg.feedforward_channels = base_channels * 8
         model_cfg.panoptic_head.pixel_decoder.\
             positional_encoding.num_feats = base_channels // 2
         model_cfg.panoptic_head.positional_encoding.\
             num_feats = base_channels // 2
         model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.attn_cfgs.embed_dims = base_channels
+            layer_cfg.self_attn_cfg.embed_dims = base_channels
+        model_cfg.panoptic_head.transformer_decoder. \
+            layer_cfg.cross_attn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.ffn_cfgs.embed_dims = base_channels
+            layer_cfg.ffn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.ffn_cfgs.feedforward_channels = base_channels * 8
-        model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.feedforward_channels = base_channels * 8
+            layer_cfg.ffn_cfg.feedforward_channels = base_channels * 8
         return model_cfg
 
     def test_init(self):
         model_cfg = self._create_model_cfg()
-        detector = build_detector(model_cfg)
+        detector = MODELS.build(model_cfg)
         detector.init_weights()
         assert detector.backbone
         assert detector.panoptic_head
@@ -57,7 +57,7 @@ class TestMaskFormer(unittest.TestCase):
     @parameterized.expand([('cpu', ), ('cuda', )])
     def test_forward_loss_mode(self, device):
         model_cfg = self._create_model_cfg()
-        detector = build_detector(model_cfg)
+        detector = MODELS.build(model_cfg)
 
         if device == 'cuda' and not torch.cuda.is_available():
             return unittest.skip('test requires GPU and torch+cuda')
@@ -77,7 +77,7 @@ class TestMaskFormer(unittest.TestCase):
     @parameterized.expand([('cpu', ), ('cuda', )])
     def test_forward_predict_mode(self, device):
         model_cfg = self._create_model_cfg()
-        detector = build_detector(model_cfg)
+        detector = MODELS.build(model_cfg)
         if device == 'cuda' and not torch.cuda.is_available():
             return unittest.skip('test requires GPU and torch+cuda')
         detector = detector.to(device)
@@ -98,7 +98,7 @@ class TestMaskFormer(unittest.TestCase):
     @parameterized.expand([('cpu', ), ('cuda', )])
     def test_forward_tensor_mode(self, device):
         model_cfg = self._create_model_cfg()
-        detector = build_detector(model_cfg)
+        detector = MODELS.build(model_cfg)
         if device == 'cuda' and not torch.cuda.is_available():
             return unittest.skip('test requires GPU and torch+cuda')
         detector = detector.to(device)
@@ -130,30 +130,30 @@ class TestMask2Former(unittest.TestCase):
         model_cfg.panoptic_head.feat_channels = base_channels
         model_cfg.panoptic_head.out_channels = base_channels
         model_cfg.panoptic_head.pixel_decoder.encoder.\
-            transformerlayers.attn_cfgs.embed_dims = base_channels
+            layer_cfg.self_attn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.pixel_decoder.encoder.\
-            transformerlayers.ffn_cfgs.embed_dims = base_channels
+            layer_cfg.ffn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.pixel_decoder.encoder.\
-            transformerlayers.ffn_cfgs.feedforward_channels = base_channels * 4
+            layer_cfg.ffn_cfg.feedforward_channels = base_channels * 4
         model_cfg.panoptic_head.pixel_decoder.\
             positional_encoding.num_feats = base_channels // 2
         model_cfg.panoptic_head.positional_encoding.\
             num_feats = base_channels // 2
         model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.attn_cfgs.embed_dims = base_channels
+            layer_cfg.self_attn_cfg.embed_dims = base_channels
+        model_cfg.panoptic_head.transformer_decoder. \
+            layer_cfg.cross_attn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.ffn_cfgs.embed_dims = base_channels
+            layer_cfg.ffn_cfg.embed_dims = base_channels
         model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.ffn_cfgs.feedforward_channels = base_channels * 8
-        model_cfg.panoptic_head.transformer_decoder.\
-            transformerlayers.feedforward_channels = base_channels * 8
+            layer_cfg.ffn_cfg.feedforward_channels = base_channels * 8
 
         return model_cfg
 
     def test_init(self):
         model_cfg = self._create_model_cfg(
             'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py')
-        detector = build_detector(model_cfg)
+        detector = MODELS.build(model_cfg)
         detector.init_weights()
         assert detector.backbone
         assert detector.panoptic_head
@@ -168,7 +168,7 @@ class TestMask2Former(unittest.TestCase):
         print(device, cfg_path)
         with_semantic = 'panoptic' in cfg_path
         model_cfg = self._create_model_cfg(cfg_path)
-        detector = build_detector(model_cfg)
+        detector = MODELS.build(model_cfg)
 
         if device == 'cuda' and not torch.cuda.is_available():
             return unittest.skip('test requires GPU and torch+cuda')
@@ -194,7 +194,7 @@ class TestMask2Former(unittest.TestCase):
     def test_forward_predict_mode(self, device, cfg_path):
         with_semantic = 'panoptic' in cfg_path
         model_cfg = self._create_model_cfg(cfg_path)
-        detector = build_detector(model_cfg)
+        detector = MODELS.build(model_cfg)
         if device == 'cuda' and not torch.cuda.is_available():
             return unittest.skip('test requires GPU and torch+cuda')
         detector = detector.to(device)
@@ -221,7 +221,7 @@ class TestMask2Former(unittest.TestCase):
     def test_forward_tensor_mode(self, device, cfg_path):
         with_semantic = 'panoptic' in cfg_path
         model_cfg = self._create_model_cfg(cfg_path)
-        detector = build_detector(model_cfg)
+        detector = MODELS.build(model_cfg)
         if device == 'cuda' and not torch.cuda.is_available():
             return unittest.skip('test requires GPU and torch+cuda')
         detector = detector.to(device)

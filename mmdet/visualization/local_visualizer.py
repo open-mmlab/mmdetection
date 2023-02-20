@@ -13,7 +13,7 @@ from ..evaluation import INSTANCE_OFFSET
 from ..registry import VISUALIZERS
 from ..structures import DetDataSample
 from ..structures.mask import BitmapMasks, PolygonMasks, bitmap_to_polygon
-from .palette import _get_adaptive_scales, get_palette
+from .palette import _get_adaptive_scales, get_palette, jitter_color
 
 
 @VISUALIZERS.register_module()
@@ -39,7 +39,7 @@ class DetLocalVisualizer(Visualizer):
         line_width (int, float): The linewidth of lines.
             Defaults to 3.
         alpha (int, float): The transparency of bboxes or mask.
-                Defaults to 0.8.
+            Defaults to 0.8.
 
     Examples:
         >>> import numpy as np
@@ -84,7 +84,7 @@ class DetLocalVisualizer(Visualizer):
                                             Tuple[int]]] = (200, 200, 200),
                  mask_color: Optional[Union[str, Tuple[int]]] = None,
                  line_width: Union[int, float] = 3,
-                 alpha: float = 0.8):
+                 alpha: float = 0.8) -> None:
         super().__init__(
             name=name,
             image=image,
@@ -168,14 +168,13 @@ class DetLocalVisualizer(Visualizer):
             elif isinstance(masks, (PolygonMasks, BitmapMasks)):
                 masks = masks.to_ndarray()
 
-            masks = masks.astype(np.bool)
+            masks = masks.astype(bool)
 
             max_label = int(max(labels) if len(labels) > 0 else 0)
             mask_color = palette if self.mask_color is None \
                 else self.mask_color
             mask_palette = get_palette(mask_color, max_label + 1)
-            colors = [mask_palette[label] for label in labels]
-
+            colors = [jitter_color(mask_palette[label]) for label in labels]
             text_palette = get_palette(self.text_color, max_label + 1)
             text_colors = [text_palette[label] for label in labels]
 
@@ -196,9 +195,10 @@ class DetLocalVisualizer(Visualizer):
                 for mask in masks:
                     _, _, stats, centroids = cv2.connectedComponentsWithStats(
                         mask.astype(np.uint8), connectivity=8)
-                    largest_id = np.argmax(stats[1:, -1]) + 1
-                    positions.append(centroids[largest_id])
-                    areas.append(stats[largest_id, -1])
+                    if stats.shape[0] > 1:
+                        largest_id = np.argmax(stats[1:, -1]) + 1
+                        positions.append(centroids[largest_id])
+                        areas.append(stats[largest_id, -1])
                 areas = np.stack(areas, axis=0)
                 scales = _get_adaptive_scales(areas)
 
@@ -335,8 +335,9 @@ class DetLocalVisualizer(Visualizer):
                 and masks. Defaults to 0.3.
             step (int): Global step value to record. Defaults to 0.
         """
-        classes = self.dataset_meta.get('CLASSES', None)
-        palette = self.dataset_meta.get('PALETTE', None)
+        image = image.clip(0, 255).astype(np.uint8)
+        classes = self.dataset_meta.get('classes', None)
+        palette = self.dataset_meta.get('palette', None)
 
         gt_img_data = None
         pred_img_data = None

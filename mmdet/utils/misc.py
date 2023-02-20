@@ -3,6 +3,7 @@ import glob
 import os
 import os.path as osp
 import warnings
+from typing import Union
 
 from mmengine.config import Config, ConfigDict
 from mmengine.logging import print_log
@@ -76,17 +77,29 @@ def update_data_root(cfg, logger=None):
     cfg.data_root = dst_root
 
 
-def add_dump_metric(args, cfg):
-    dump_metric = dict(type='DumpResults', out_file_path=args.out)
-    if isinstance(cfg.test_evaluator, (list, tuple)):
-        cfg.test_evaluator = list(cfg.test_evaluator).append(dump_metric)
-    elif isinstance(cfg.test_evaluator, dict):
-        if isinstance(cfg.test_evaluator.metric, str):
-            cfg.test_evaluator = [cfg.test_evaluator, dump_metric]
-        elif isinstance(cfg.test_evaluator.metric, (list, tuple)):
-            cfg.test_evaluator.metric = list(
-                cfg.test_evaluator.metric).append(dump_metric)
-        else:
-            cfg.test_evaluator.metric = [
-                cfg.test_evaluator.metric, dump_metric
-            ]
+def get_test_pipeline_cfg(cfg: Union[str, ConfigDict]) -> ConfigDict:
+    """Get the test dataset pipeline from entire config.
+
+    Args:
+        cfg (str or :obj:`ConfigDict`): the entire config. Can be a config
+            file or a ``ConfigDict``.
+
+    Returns:
+        :obj:`ConfigDict`: the config of test dataset.
+    """
+    if isinstance(cfg, str):
+        cfg = Config.fromfile(cfg)
+
+    def _get_test_pipeline_cfg(dataset_cfg):
+        if 'pipeline' in dataset_cfg:
+            return dataset_cfg.pipeline
+        # handle dataset wrapper
+        elif 'dataset' in dataset_cfg:
+            return _get_test_pipeline_cfg(dataset_cfg.dataset)
+        # handle dataset wrappers like ConcatDataset
+        elif 'datasets' in dataset_cfg:
+            return _get_test_pipeline_cfg(dataset_cfg.datasets[0])
+
+        raise RuntimeError('Cannot find `pipeline` in `test_dataloader`')
+
+    return _get_test_pipeline_cfg(cfg.test_dataloader.dataset)

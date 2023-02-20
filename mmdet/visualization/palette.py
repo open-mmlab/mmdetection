@@ -48,15 +48,15 @@ def get_palette(palette: Union[List[tuple], str, tuple],
         dataset_palette = [tuple(c) for c in palette]
     elif palette == 'coco':
         from mmdet.datasets import CocoDataset, CocoPanopticDataset
-        dataset_palette = CocoDataset.METAINFO['PALETTE']
+        dataset_palette = CocoDataset.METAINFO['palette']
         if len(dataset_palette) < num_classes:
-            dataset_palette = CocoPanopticDataset.METAINFO['PALETTE']
+            dataset_palette = CocoPanopticDataset.METAINFO['palette']
     elif palette == 'citys':
         from mmdet.datasets import CityscapesDataset
-        dataset_palette = CityscapesDataset.METAINFO['PALETTE']
+        dataset_palette = CityscapesDataset.METAINFO['palette']
     elif palette == 'voc':
         from mmdet.datasets import VOCDataset
-        dataset_palette = VOCDataset.METAINFO['PALETTE']
+        dataset_palette = VOCDataset.METAINFO['palette']
     elif is_str(palette):
         dataset_palette = [mmcv.color_val(palette)[::-1]] * num_classes
     else:
@@ -90,3 +90,19 @@ def _get_adaptive_scales(areas: np.ndarray,
     scales = 0.5 + (areas - min_area) / (max_area - min_area)
     scales = np.clip(scales, 0.5, 1.0)
     return scales
+
+
+def jitter_color(color: tuple) -> tuple:
+    """Randomly jitter the given color in order to better distinguish instances
+    with the same class.
+
+    Args:
+        color (tuple): The RGB color tuple. Each value is between [0, 255].
+
+    Returns:
+        tuple: The jittered color tuple.
+    """
+    jitter = np.random.rand(3)
+    jitter = (jitter / np.linalg.norm(jitter) - 0.5) * 0.5 * 255
+    color = np.clip(jitter + color, 0, 255).astype(np.uint8)
+    return tuple(color)

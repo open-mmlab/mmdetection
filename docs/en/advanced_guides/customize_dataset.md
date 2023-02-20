@@ -60,7 +60,7 @@ Here we give an example to show the above two steps, which uses a customized dat
 
 There are two aspects involved in the modification of config file:
 
-1. The `data` field. Specifically, you need to explicitly add the `metainfo=dict(CLASSES=classes)` fields in `train_dataloader.dataset`, `val_dataloader.dataset` and `test_dataloader.dataset` and `classes` must be a tuple type.
+1. The `data` field. Specifically, you need to explicitly add the `metainfo=dict(classes=classes)` fields in `train_dataloader.dataset`, `val_dataloader.dataset` and `test_dataloader.dataset` and `classes` must be a tuple type.
 2. The `num_classes` field in the `model` part. Explicitly over-write all the `num_classes` from default value (e.g. 80 in COCO) to your classes number.
 
 In `configs/my_custom_config.py`:
@@ -81,7 +81,7 @@ train_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         # explicitly add your class names to the field `metainfo`
-        metainfo=dict(CLASSES=classes),
+        metainfo=dict(classes=classes),
         data_root=data_root,
         ann_file='train/annotation_data',
         data_prefix=dict(img='train/image_data')
@@ -95,7 +95,7 @@ val_dataloader = dict(
         type=dataset_type,
         test_mode=True,
         # explicitly add your class names to the field `metainfo`
-        metainfo=dict(CLASSES=classes),
+        metainfo=dict(classes=classes),
         data_root=data_root,
         ann_file='val/annotation_data',
         data_prefix=dict(img='val/image_data')
@@ -109,7 +109,7 @@ test_dataloader = dict(
         type=dataset_type,
         test_mode=True,
         # explicitly add your class names to the field `metainfo`
-        metainfo=dict(CLASSES=classes),
+        metainfo=dict(classes=classes),
         data_root=data_root,
         ann_file='test/annotation_data',
         data_prefix=dict(img='test/image_data')
@@ -173,7 +173,7 @@ Here is a valid example of annotations:
  ]
 ```
 
-We use this way to support CityScapes dataset. The script is in [cityscapes.py](https://github.com/open-mmlab/mmdetection/blob/3.x/tools/dataset_converters/cityscapes.py) and we also provide the finetuning [configs](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/cityscapes).
+We use this way to support CityScapes dataset. The script is in [cityscapes.py](../../../tools/dataset_converters/cityscapes.py) and we also provide the finetuning [configs](../../../configs/cityscapes).
 
 **Note**
 
@@ -237,7 +237,7 @@ Here is an example.
 
 Some datasets may provide annotations like crowd/difficult/ignored bboxes, we use `ignore_flag`to cover them.
 
-After obtaining the above standard data annotation format, you can directly use [BaseDetDataset](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/datasets/base_det_dataset.py#L13) of MMDetection in the configuration , without conversion.
+After obtaining the above standard data annotation format, you can directly use [BaseDetDataset](../../../mmdet/datasets/base_det_dataset.py#L13) of MMDetection in the configuration , without conversion.
 
 ### An example of customized dataset
 
@@ -273,8 +273,8 @@ from mmdet.registry import DATASETS
 class MyDataset(BaseDetDataset):
 
     METAINFO = {
-       'CLASSES': ('person', 'bicycle', 'car', 'motorcycle'),
-        'PALETTE': [(220, 20, 60), (119, 11, 32), (0, 0, 142), (0, 0, 230)]
+       'classes': ('person', 'bicycle', 'car', 'motorcycle'),
+        'palette': [(220, 20, 60), (119, 11, 32), (0, 0, 142), (0, 0, 230)]
     }
 
     def load_data_list(self, ann_file):
@@ -341,15 +341,15 @@ The dataset will filter out the ground truth boxes of other classes automaticall
 classes = ('person', 'bicycle', 'car')
 train_dataloader = dict(
     dataset=dict(
-        metainfo=dict(CLASSES=classes))
+        metainfo=dict(classes=classes))
     )
 val_dataloader = dict(
     dataset=dict(
-        metainfo=dict(CLASSES=classes))
+        metainfo=dict(classes=classes))
     )
 test_dataloader = dict(
     dataset=dict(
-        metainfo=dict(CLASSES=classes))
+        metainfo=dict(classes=classes))
     )
 ```
 
@@ -357,7 +357,7 @@ test_dataloader = dict(
 
 - Before MMDetection v2.5.0, the dataset will filter out the empty GT images automatically if the classes are set and there is no way to disable that through config. This is an undesirable behavior and introduces confusion because if the classes are not set, the dataset only filter the empty GT images when `filter_empty_gt=True` and `test_mode=False`. After MMDetection v2.5.0, we decouple the image filtering process and the classes modification, i.e., the dataset will only filter empty GT images when `filter_cfg=dict(filter_empty_gt=True)` and `test_mode=False`, no matter whether the classes are set. Thus, setting the classes only influences the annotations of classes used for training and users could decide whether to filter empty GT images by themselves.
 - When directly using `BaseDataset` in MMEngine or `BaseDetDataset` in MMDetection, users cannot filter images without GT by modifying the configuration, but it can be solved in an offline way.
-- Please remember to modify the `num_classes` in the head when specifying `classes` in dataset. We implemented [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/engine/hooks/num_class_check_hook.py) to check whether the numbers are consistent since v2.9.0(after PR#4508).
+- Please remember to modify the `num_classes` in the head when specifying `classes` in dataset. We implemented [NumClassCheckHook](../../../mmdet/engine/hooks/num_class_check_hook.py) to check whether the numbers are consistent since v2.9.0(after PR#4508).
 
 ## COCO Panoptic Dataset
 

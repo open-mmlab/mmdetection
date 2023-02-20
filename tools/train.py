@@ -9,8 +9,6 @@ from mmengine.logging import print_log
 from mmengine.registry import RUNNERS
 from mmengine.runner import Runner
 
-from mmdet.utils import register_all_modules
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
@@ -27,8 +25,12 @@ def parse_args():
         help='enable automatically scaling LR.')
     parser.add_argument(
         '--resume',
-        action='store_true',
-        help='resume from the latest checkpoint in the work_dir automatically')
+        nargs='?',
+        type=str,
+        const='auto',
+        help='If specify checkpoint path, resume from it, while if not '
+        'specify, try to auto resume from the latest checkpoint '
+        'in the work directory.')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
@@ -54,10 +56,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-
-    # register all modules in mmdet into the registries
-    # do not init the default scope here because it will be init in the runner
-    register_all_modules(init_default_scope=False)
 
     # load config
     cfg = Config.fromfile(args.config)
@@ -101,7 +99,13 @@ def main():
                                '"auto_scale_lr.base_batch_size" in your'
                                ' configuration file.')
 
-    cfg.resume = args.resume
+    # resume is determined in this priority: resume from > auto_resume
+    if args.resume == 'auto':
+        cfg.resume = True
+        cfg.load_from = None
+    elif args.resume is not None:
+        cfg.resume = True
+        cfg.load_from = args.resume
 
     # build the runner from config
     if 'runner_type' not in cfg:

@@ -1,5 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import itertools
 from abc import ABCMeta, abstractmethod
+from typing import Sequence, Type, TypeVar
 
 import cv2
 import mmcv
@@ -7,6 +9,8 @@ import numpy as np
 import pycocotools.mask as maskUtils
 import torch
 from mmcv.ops.roi_align import roi_align
+
+T = TypeVar('T')
 
 
 class BaseInstanceMasks(metaclass=ABCMeta):
@@ -205,6 +209,18 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         _, box_type_cls = get_box_type(dst_type)
         return box_type_cls.from_instance_masks(self)
 
+    @classmethod
+    @abstractmethod
+    def cat(cls: Type[T], masks: Sequence[T]) -> T:
+        """Concatenate a sequence of masks into one single mask instance.
+
+        Args:
+            masks (Sequence[T]): A sequence of mask instances.
+
+        Returns:
+            T: Concatenated mask instance.
+        """
+
 
 class BitmapMasks(BaseInstanceMasks):
     """This class represents masks in the form of bitmaps.
@@ -219,7 +235,7 @@ class BitmapMasks(BaseInstanceMasks):
         >>> from mmdet.data_elements.mask.structures import *  # NOQA
         >>> num_masks, H, W = 3, 32, 32
         >>> rng = np.random.RandomState(0)
-        >>> masks = (rng.rand(num_masks, H, W) > 0.1).astype(np.int)
+        >>> masks = (rng.rand(num_masks, H, W) > 0.1).astype(np.int64)
         >>> self = BitmapMasks(masks, height=H, width=W)
 
         >>> # demo crop_and_resize
@@ -422,7 +438,6 @@ class BitmapMasks(BaseInstanceMasks):
             >>> border_value = 0
             >>> interpolation = 'bilinear'
             >>> # Note, There seem to be issues when:
-            >>> # * out_shape is different than self's shape
             >>> # * the mask dtype is not supported by cv2.AffineWarp
             >>> new = self.translate(out_shape, offset, direction,
             >>>                      border_value, interpolation)
@@ -432,8 +447,16 @@ class BitmapMasks(BaseInstanceMasks):
         if len(self.masks) == 0:
             translated_masks = np.empty((0, *out_shape), dtype=np.uint8)
         else:
+            masks = self.masks
+            if masks.shape[-2:] != out_shape:
+                empty_masks = np.zeros((masks.shape[0], *out_shape),
+                                       dtype=masks.dtype)
+                min_h = min(out_shape[0], masks.shape[1])
+                min_w = min(out_shape[1], masks.shape[2])
+                empty_masks[:, :min_h, :min_w] = masks[:, :min_h, :min_w]
+                masks = empty_masks
             translated_masks = mmcv.imtranslate(
-                self.masks.transpose((1, 2, 0)),
+                masks.transpose((1, 2, 0)),
                 offset,
                 direction,
                 border_value=border_value,
@@ -553,6 +576,24 @@ class BitmapMasks(BaseInstanceMasks):
         self = cls(masks, height=height, width=width)
         return self
 
+    @classmethod
+    def cat(cls: Type[T], masks: Sequence[T]) -> T:
+        """Concatenate a sequence of masks into one single mask instance.
+
+        Args:
+            masks (Sequence[BitmapMasks]): A sequence of mask instances.
+
+        Returns:
+            BitmapMasks: Concatenated mask instance.
+        """
+        assert isinstance(masks, Sequence)
+        if len(masks) == 0:
+            raise ValueError('masks should not be an empty list.')
+        assert all(isinstance(m, cls) for m in masks)
+
+        mask_array = np.concatenate([m.masks for m in masks], axis=0)
+        return cls(mask_array, *mask_array.shape[1:])
+
 
 class PolygonMasks(BaseInstanceMasks):
     """This class represents masks in the form of polygons.
@@ -614,7 +655,10 @@ class PolygonMasks(BaseInstanceMasks):
             :obj:`PolygonMasks`: The indexed polygon masks.
         """
         if isinstance(index, np.ndarray):
-            index = index.tolist()
+            if index.dtype == bool:
+                index = np.where(index)[0].tolist()
+            else:
+                index = index.tolist()
         if isinstance(index, list):
             masks = [self.masks[i] for i in index]
         else:
@@ -780,7 +824,7 @@ class PolygonMasks(BaseInstanceMasks):
         """Translate the PolygonMasks.
 
         Example:
-            >>> self = PolygonMasks.random(dtype=np.int)
+            >>> self = PolygonMasks.random(dtype=np.int64)
             >>> out_shape = (self.height, self.width)
             >>> new = self.translate(out_shape, 4., direction='horizontal')
             >>> assert np.all(new.masks[0][0][1::2] == self.masks[0][0][1::2])
@@ -1051,6 +1095,24 @@ class PolygonMasks(BaseInstanceMasks):
 
         self = cls(masks, height, width)
         return self
+
+    @classmethod
+    def cat(cls: Type[T], masks: Sequence[T]) -> T:
+        """Concatenate a sequence of masks into one single mask instance.
+
+        Args:
+            masks (Sequence[PolygonMasks]): A sequence of mask instances.
+
+        Returns:
+            PolygonMasks: Concatenated mask instance.
+        """
+        assert isinstance(masks, Sequence)
+        if len(masks) == 0:
+            raise ValueError('masks should not be an empty list.')
+        assert all(isinstance(m, cls) for m in masks)
+
+        mask_list = list(itertools.chain(*[m.masks for m in masks]))
+        return cls(mask_list, masks[0].height, masks[0].width)
 
 
 def polygon_to_bitmap(polygons, height, width):

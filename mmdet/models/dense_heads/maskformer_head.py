@@ -9,10 +9,12 @@ from mmengine.model import caffe2_xavier_init
 from mmengine.structures import InstanceData, PixelData
 from torch import Tensor
 
+from mmdet.models.layers.pixel_decoder import PixelDecoder
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures import SampleList
 from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
                          OptMultiConfig, reduce_mean)
+from ..layers import DetrTransformerDecoder, SinePositionalEncoding
 from ..utils import multi_apply, preprocess_panoptic_gt
 from .anchor_free_head import AnchorFreeHead
 
@@ -65,9 +67,7 @@ class MaskFormerHead(AnchorFreeHead):
                  enforce_decoder_input_project: bool = False,
                  transformer_decoder: ConfigType = ...,
                  positional_encoding: ConfigType = dict(
-                     type='SinePositionalEncoding',
-                     num_feats=128,
-                     normalize=True),
+                     num_feats=128, normalize=True),
                  loss_cls: ConfigType = dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=False,
@@ -100,17 +100,17 @@ class MaskFormerHead(AnchorFreeHead):
             feat_channels=feat_channels,
             out_channels=out_channels)
         self.pixel_decoder = MODELS.build(pixel_decoder)
-        self.transformer_decoder = MODELS.build(transformer_decoder)
+        self.transformer_decoder = DetrTransformerDecoder(
+            **transformer_decoder)
         self.decoder_embed_dims = self.transformer_decoder.embed_dims
-        pixel_decoder_type = pixel_decoder.get('type')
-        if pixel_decoder_type == 'PixelDecoder' and (
+        if type(self.pixel_decoder) == PixelDecoder and (
                 self.decoder_embed_dims != in_channels[-1]
                 or enforce_decoder_input_project):
             self.decoder_input_proj = Conv2d(
                 in_channels[-1], self.decoder_embed_dims, kernel_size=1)
         else:
             self.decoder_input_proj = nn.Identity()
-        self.decoder_pe = MODELS.build(positional_encoding)
+        self.decoder_pe = SinePositionalEncoding(**positional_encoding)
         self.query_embed = nn.Embedding(self.num_queries, out_channels)
 
         self.cls_embed = nn.Linear(feat_channels, self.num_classes + 1)
@@ -122,9 +122,9 @@ class MaskFormerHead(AnchorFreeHead):
         self.test_cfg = test_cfg
         self.train_cfg = train_cfg
         if train_cfg:
-            self.assigner = TASK_UTILS.build(train_cfg.assigner)
+            self.assigner = TASK_UTILS.build(train_cfg['assigner'])
             self.sampler = TASK_UTILS.build(
-                train_cfg.sampler, default_args=dict(context=self))
+                train_cfg['sampler'], default_args=dict(context=self))
 
         self.class_weight = loss_cls.class_weight
         self.loss_cls = MODELS.build(loss_cls)
@@ -492,26 +492,24 @@ class MaskFormerHead(AnchorFreeHead):
         mask_features, memory = self.pixel_decoder(x, batch_img_metas)
         pos_embed = self.decoder_pe(padding_mask)
         memory = self.decoder_input_proj(memory)
-        # shape (batch_size, c, h, w) -> (h*w, batch_size, c)
-        memory = memory.flatten(2).permute(2, 0, 1)
-        pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
+        # shape (batch_size, c, h, w) -> (batch_size, h*w, c)
+        memory = memory.flatten(2).permute(0, 2, 1)
+        pos_embed = pos_embed.flatten(2).permute(0, 2, 1)
         # shape (batch_size, h * w)
         padding_mask = padding_mask.flatten(1)
         # shape = (num_queries, embed_dims)
         query_embed = self.query_embed.weight
-        # shape = (num_queries, batch_size, embed_dims)
-        query_embed = query_embed.unsqueeze(1).repeat(1, batch_size, 1)
+        # shape = (batch_size, num_queries, embed_dims)
+        query_embed = query_embed.unsqueeze(0).repeat(batch_size, 1, 1)
         target = torch.zeros_like(query_embed)
         # shape (num_decoder, num_queries, batch_size, embed_dims)
         out_dec = self.transformer_decoder(
             query=target,
             key=memory,
             value=memory,
-            key_pos=pos_embed,
             query_pos=query_embed,
+            key_pos=pos_embed,
             key_padding_mask=padding_mask)
-        # shape (num_decoder, batch_size, num_queries, embed_dims)
-        out_dec = out_dec.transpose(1, 2)
 
         # cls_scores
         all_cls_scores = self.cls_embed(out_dec)

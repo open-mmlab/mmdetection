@@ -3,15 +3,14 @@ from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, Scale, is_norm
+from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule, Scale, is_norm
 from mmengine.model import bias_init_with_prob, constant_init, normal_init
 from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures.bbox import distance2bbox
-from mmdet.utils import reduce_mean
-from mmdet.utils.typing import ConfigType, InstanceList, OptInstanceList
+from mmdet.utils import ConfigType, InstanceList, OptInstanceList, reduce_mean
 from ..layers.transformer import inverse_sigmoid
 from ..task_modules import anchor_inside_flags
 from ..utils import (images_to_levels, multi_apply, sigmoid_geometric_mean,
@@ -43,7 +42,7 @@ class RTMDetHead(ATSSHead):
         self.with_objectness = with_objectness
         super().__init__(num_classes, in_channels, **kwargs)
         if self.train_cfg:
-            self.assigner = TASK_UTILS.build(self.train_cfg.assigner)
+            self.assigner = TASK_UTILS.build(self.train_cfg['assigner'])
 
     def _init_layers(self):
         """Initialize layers of the head."""
@@ -267,7 +266,7 @@ class RTMDetHead(ATSSHead):
             batch_img_metas,
             batch_gt_instances_ignore=batch_gt_instances_ignore)
         (anchor_list, labels_list, label_weights_list, bbox_targets_list,
-         assign_metrics_list) = cls_reg_targets
+         assign_metrics_list, sampling_results_list) = cls_reg_targets
 
         losses_cls, losses_bbox,\
             cls_avg_factors, bbox_avg_factors = multi_apply(
@@ -354,7 +353,7 @@ class RTMDetHead(ATSSHead):
             batch_gt_instances_ignore = [None] * num_imgs
         # anchor_list: list(b * [-1, 4])
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
-         all_assign_metrics) = multi_apply(
+         all_assign_metrics, sampling_results_list) = multi_apply(
              self._get_targets_single,
              cls_scores.detach(),
              bbox_preds.detach(),
@@ -379,7 +378,7 @@ class RTMDetHead(ATSSHead):
                                                num_level_anchors)
 
         return (anchors_list, labels_list, label_weights_list,
-                bbox_targets_list, assign_metrics_list)
+                bbox_targets_list, assign_metrics_list, sampling_results_list)
 
     def _get_targets_single(self,
                             cls_scores: Tensor,
@@ -427,7 +426,7 @@ class RTMDetHead(ATSSHead):
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
-                                           self.train_cfg.allowed_border)
+                                           self.train_cfg['allowed_border'])
         if not inside_flags.any():
             return (None, ) * 7
         # assign gt and sample anchors
@@ -461,10 +460,10 @@ class RTMDetHead(ATSSHead):
             bbox_targets[pos_inds, :] = pos_bbox_targets
 
             labels[pos_inds] = sampling_result.pos_gt_labels
-            if self.train_cfg.pos_weight <= 0:
+            if self.train_cfg['pos_weight'] <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
+                label_weights[pos_inds] = self.train_cfg['pos_weight']
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 
@@ -487,7 +486,8 @@ class RTMDetHead(ATSSHead):
             bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
             assign_metrics = unmap(assign_metrics, num_total_anchors,
                                    inside_flags)
-        return (anchors, labels, label_weights, bbox_targets, assign_metrics)
+        return (anchors, labels, label_weights, bbox_targets, assign_metrics,
+                sampling_result)
 
     def get_anchors(self,
                     featmap_sizes: List[tuple],
@@ -536,6 +536,8 @@ class RTMDetSepBNHead(RTMDetHead):
         in_channels (int): Number of channels in the input feature map.
         share_conv (bool): Whether to share conv layers between stages.
             Defaults to True.
+        use_depthwise (bool): Whether to use depthwise separable convolution in
+            head. Defaults to False.
         norm_cfg (:obj:`ConfigDict` or dict)): Config dict for normalization
             layer. Defaults to dict(type='BN', momentum=0.03, eps=0.001).
         act_cfg (:obj:`ConfigDict` or dict)): Config dict for activation layer.
@@ -547,6 +549,7 @@ class RTMDetSepBNHead(RTMDetHead):
                  num_classes: int,
                  in_channels: int,
                  share_conv: bool = True,
+                 use_depthwise: bool = False,
                  norm_cfg: ConfigType = dict(
                      type='BN', momentum=0.03, eps=0.001),
                  act_cfg: ConfigType = dict(type='SiLU'),
@@ -555,6 +558,7 @@ class RTMDetSepBNHead(RTMDetHead):
                  **kwargs) -> None:
         self.share_conv = share_conv
         self.exp_on_reg = exp_on_reg
+        self.use_depthwise = use_depthwise
         super().__init__(
             num_classes,
             in_channels,
@@ -565,6 +569,8 @@ class RTMDetSepBNHead(RTMDetHead):
 
     def _init_layers(self) -> None:
         """Initialize layers of the head."""
+        conv = DepthwiseSeparableConvModule \
+            if self.use_depthwise else ConvModule
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
 
@@ -578,7 +584,7 @@ class RTMDetSepBNHead(RTMDetHead):
             for i in range(self.stacked_convs):
                 chn = self.in_channels if i == 0 else self.feat_channels
                 cls_convs.append(
-                    ConvModule(
+                    conv(
                         chn,
                         self.feat_channels,
                         3,
@@ -588,7 +594,7 @@ class RTMDetSepBNHead(RTMDetHead):
                         norm_cfg=self.norm_cfg,
                         act_cfg=self.act_cfg))
                 reg_convs.append(
-                    ConvModule(
+                    conv(
                         chn,
                         self.feat_channels,
                         3,

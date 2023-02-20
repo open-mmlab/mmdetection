@@ -3,9 +3,10 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmengine.model import BaseModule
-from mmengine.utils import is_tuple_of
+from mmengine.utils import digit_version, is_tuple_of
+from torch import Tensor
 
-from mmdet.utils.typing import OptMultiConfig
+from mmdet.utils import MultiConfig, OptConfigType, OptMultiConfig
 
 
 class SELayer(BaseModule):
@@ -14,26 +15,27 @@ class SELayer(BaseModule):
     Args:
         channels (int): The input (and output) channels of the SE layer.
         ratio (int): Squeeze ratio in SELayer, the intermediate channel will be
-            ``int(channels/ratio)``. Default: 16.
+            ``int(channels/ratio)``. Defaults to 16.
         conv_cfg (None or dict): Config dict for convolution layer.
-            Default: None, which means using conv2d.
+            Defaults to None, which means using conv2d.
         act_cfg (dict or Sequence[dict]): Config dict for activation layer.
             If act_cfg is a dict, two activation layers will be configurated
             by this dict. If act_cfg is a sequence of dicts, the first
             activation layer will be configurated by the first dict and the
             second activation layer will be configurated by the second dict.
-            Default: (dict(type='ReLU'), dict(type='Sigmoid'))
+            Defaults to (dict(type='ReLU'), dict(type='Sigmoid'))
         init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
+            Defaults to None
     """
 
     def __init__(self,
-                 channels,
-                 ratio=16,
-                 conv_cfg=None,
-                 act_cfg=(dict(type='ReLU'), dict(type='Sigmoid')),
-                 init_cfg=None):
-        super(SELayer, self).__init__(init_cfg)
+                 channels: int,
+                 ratio: int = 16,
+                 conv_cfg: OptConfigType = None,
+                 act_cfg: MultiConfig = (dict(type='ReLU'),
+                                         dict(type='Sigmoid')),
+                 init_cfg: OptMultiConfig = None) -> None:
+        super().__init__(init_cfg=init_cfg)
         if isinstance(act_cfg, dict):
             act_cfg = (act_cfg, act_cfg)
         assert len(act_cfg) == 2
@@ -54,7 +56,8 @@ class SELayer(BaseModule):
             conv_cfg=conv_cfg,
             act_cfg=act_cfg[1])
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
+        """Forward function for SELayer."""
         out = self.global_avgpool(x)
         out = self.conv1(out)
         out = self.conv2(out)
@@ -73,27 +76,30 @@ class DyReLU(BaseModule):
         channels (int): The input (and output) channels of DyReLU module.
         ratio (int): Squeeze ratio in Squeeze-and-Excitation-like module,
             the intermediate channel will be ``int(channels/ratio)``.
-            Default: 4.
+            Defaults to 4.
         conv_cfg (None or dict): Config dict for convolution layer.
-            Default: None, which means using conv2d.
+            Defaults to None, which means using conv2d.
         act_cfg (dict or Sequence[dict]): Config dict for activation layer.
             If act_cfg is a dict, two activation layers will be configurated
             by this dict. If act_cfg is a sequence of dicts, the first
             activation layer will be configurated by the first dict and the
             second activation layer will be configurated by the second dict.
-            Default: (dict(type='ReLU'), dict(type='HSigmoid', bias=3.0,
+            Defaults to (dict(type='ReLU'), dict(type='HSigmoid', bias=3.0,
             divisor=6.0))
         init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
+            Defaults to None
     """
 
     def __init__(self,
-                 channels,
-                 ratio=4,
-                 conv_cfg=None,
-                 act_cfg=(dict(type='ReLU'),
-                          dict(type='HSigmoid', bias=3.0, divisor=6.0)),
-                 init_cfg=None):
+                 channels: int,
+                 ratio: int = 4,
+                 conv_cfg: OptConfigType = None,
+                 act_cfg: MultiConfig = (dict(type='ReLU'),
+                                         dict(
+                                             type='HSigmoid',
+                                             bias=3.0,
+                                             divisor=6.0)),
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         if isinstance(act_cfg, dict):
             act_cfg = (act_cfg, act_cfg)
@@ -117,7 +123,7 @@ class DyReLU(BaseModule):
             conv_cfg=conv_cfg,
             act_cfg=act_cfg[1])
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         """Forward function."""
         coeffs = self.global_avgpool(x)
         coeffs = self.conv1(coeffs)
@@ -135,17 +141,22 @@ class ChannelAttention(BaseModule):
     Args:
         channels (int): The input (and output) channels of the attention layer.
         init_cfg (dict or list[dict], optional): Initialization config dict.
-            Defaults to None.
+            Defaults to None
     """
 
     def __init__(self, channels: int, init_cfg: OptMultiConfig = None) -> None:
-        super().__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         self.global_avgpool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Conv2d(channels, channels, 1, 1, 0, bias=True)
-        self.act = nn.Hardsigmoid(inplace=True)
+        if digit_version(torch.__version__) < (1, 7, 0):
+            self.act = nn.Hardsigmoid()
+        else:
+            self.act = nn.Hardsigmoid(inplace=True)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = self.global_avgpool(x)
+    def forward(self, x: Tensor) -> Tensor:
+        """Forward function for ChannelAttention."""
+        with torch.cuda.amp.autocast(enabled=False):
+            out = self.global_avgpool(x)
         out = self.fc(out)
         out = self.act(out)
         return x * out

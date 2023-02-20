@@ -76,12 +76,13 @@ class SemiBaseDetector(BaseDetector):
         losses = dict()
         losses.update(**self.loss_by_gt_instances(
             multi_batch_inputs['sup'], multi_batch_data_samples['sup']))
-        origin_pseudo_instances, batch_info = self.get_pseudo_instances(
+
+        origin_pseudo_data_samples, batch_info = self.get_pseudo_instances(
             multi_batch_inputs['unsup_teacher'],
             multi_batch_data_samples['unsup_teacher'])
         multi_batch_data_samples[
             'unsup_student'] = self.project_pseudo_instances(
-                origin_pseudo_instances,
+                origin_pseudo_data_samples,
                 multi_batch_data_samples['unsup_student'])
         losses.update(**self.loss_by_pseudo_instances(
             multi_batch_inputs['unsup_student'],
@@ -145,11 +146,16 @@ class SemiBaseDetector(BaseDetector):
             self, batch_inputs: Tensor, batch_data_samples: SampleList
     ) -> Tuple[SampleList, Optional[dict]]:
         """Get pseudo instances from teacher model."""
-        results_list = self.teacher(
-            batch_inputs, batch_data_samples, mode='predict')
+        self.teacher.eval()
+        results_list = self.teacher.predict(
+            batch_inputs, batch_data_samples, rescale=False)
+        batch_info = {}
         for data_samples, results in zip(batch_data_samples, results_list):
             data_samples.gt_instances = results.pred_instances
-        batch_info = None
+            data_samples.gt_instances.bboxes = bbox_project(
+                data_samples.gt_instances.bboxes,
+                torch.from_numpy(data_samples.homography_matrix).inverse().to(
+                    self.data_preprocessor.device), data_samples.ori_shape)
         return batch_data_samples, batch_info
 
     def project_pseudo_instances(self, batch_pseudo_instances: SampleList,

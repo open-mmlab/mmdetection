@@ -56,8 +56,8 @@ pip install cityscapesscripts
 python tools/dataset_converters/cityscapes.py ./data/cityscapes --nproc 8 --out-dir ./data/cityscapes/annotations
 ```
 
-Currently the config files in `cityscapes` use COCO pre-trained weights to initialize.
-You could download the pre-trained models in advance if network is unavailable or slow, otherwise it would cause errors at the beginning of training.
+Currently, the config files in `cityscapes` use COCO pre-trained weights to initialize.
+You could download the pre-trained models in advance if the network is unavailable or slow, otherwise, it would cause errors at the beginning of training.
 
 ## Prepare your own customized model
 
@@ -131,8 +131,8 @@ _base_ = [
 ]
 
 model = dict(
-    # set None to avoid loading ImageNet pretrained backbone,
-    # instead here we set `load_from` to load from COCO pretrained detectors.
+    # set None to avoid loading ImageNet pre-trained backbone,
+    # instead here we set `load_from` to load from COCO pre-trained detectors.
     backbone=dict(init_cfg=None),
     # replace neck from defaultly `FPN` to our new implemented module `AugFPN`
     neck=dict(
@@ -203,7 +203,7 @@ model = dict(
             num_convs=4,
             in_channels=256,
             conv_out_channels=256,
-            # change the number of classes from defaultly COCO to cityscapes
+            # change the number of classes from default COCO to cityscapes
             num_classes=8,
             loss_mask=dict(
                 type='CrossEntropyLoss', use_mask=True, loss_weight=1.0))))
@@ -266,7 +266,7 @@ param_scheduler = [
 # train, val, test loop config
 train_cfg = dict(max_epochs=10, val_interval=1)
 
-# We can use the COCO pretrained Cascade Mask R-CNN R50 model for more stable performance initialization
+# We can use the COCO pre-trained Cascade Mask R-CNN R50 model for a more stable performance initialization
 load_from = 'https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco/cascade_mask_rcnn_r50_fpn_1x_coco_20200203-9d4dcb24.pth'
 ```
 
