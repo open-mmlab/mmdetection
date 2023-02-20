@@ -19,4 +19,4 @@ model = dict(
                 dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
                 dict(type='IoUCost', iou_mode='giou', weight=2.0)
             ],
-            group_detr=num_query_groups)))
+            num_query_groups=num_query_groups)))
