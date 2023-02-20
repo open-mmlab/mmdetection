@@ -7,9 +7,7 @@ group_detr = 11
 model = dict(
     type='GroupDETR',
     group_detr=group_detr,
-    decoder=dict(
-        layer_cfg=dict(
-            self_attn_cfg=dict(group_detr=group_detr))),
+    decoder=dict(layer_cfg=dict(self_attn_cfg=dict(group_detr=group_detr))),
     # training and testing settings
     train_cfg=dict(
         assigner=dict(
@@ -20,4 +18,3 @@ model = dict(
                 dict(type='IoUCost', iou_mode='giou', weight=2.0)
             ],
             group_detr=group_detr)))
-

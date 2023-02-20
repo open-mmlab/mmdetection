@@ -3,9 +3,11 @@ from mmcv.cnn import build_norm_layer
 from mmcv.cnn.bricks.transformer import FFN
 from torch.nn import ModuleList
 
-from mmdet.models.layers.transformer.conditional_detr_layers import ConditionalDetrTransformerDecoder, ConditionalDetrTransformerDecoderLayer
-from mmdet.models.layers.transformer.utils import ConditionalAttention, MLP
+from mmdet.models.layers.transformer.conditional_detr_layers import (
+    ConditionalDetrTransformerDecoder, ConditionalDetrTransformerDecoderLayer)
+from mmdet.models.layers.transformer.utils import MLP, ConditionalAttention
 from .group_attention import GroupAttention
+
 
 class GroupDetrTransformerDecoder(ConditionalDetrTransformerDecoder):
     """Decoder of Conditional DETR."""
@@ -28,6 +30,7 @@ class GroupDetrTransformerDecoder(ConditionalDetrTransformerDecoder):
         # in other layers.
         for layer_id in range(self.num_layers - 1):
             self.layers[layer_id + 1].cross_attn.qpos_proj = None
+
 
 class GroupDetrTransformerDecoderLayer(ConditionalDetrTransformerDecoderLayer):
     """Implements decoder layer in Conditional DETR transformer."""

@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
-from torch import Tensor, nn
+from torch import Tensor
 
-from mmdet.utils import OptMultiConfig
 from mmdet.models.layers.transformer.utils import ConditionalAttention
+
 
 class GroupAttention(ConditionalAttention):
     """A wrapper of conditional attention, dropout and residual connection.
@@ -30,7 +30,6 @@ class GroupAttention(ConditionalAttention):
     def __init__(self, *arg, group_detr=1, **kwargs) -> None:
         self.group_detr = group_detr
         super().__init__(*arg, **kwargs)
-
 
     def forward(self,
                 query: Tensor,

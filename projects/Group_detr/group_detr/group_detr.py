@@ -5,11 +5,12 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from mmdet.registry import MODELS
 from mmdet.models.detectors.conditional_detr import ConditionalDETR
-from mmdet.models.layers.transformer.detr_layers import DetrTransformerEncoder
 from mmdet.models.layers.positional_encoding import SinePositionalEncoding
+from mmdet.models.layers.transformer.detr_layers import DetrTransformerEncoder
+from mmdet.registry import MODELS
 from .group_decoder import GroupDetrTransformerDecoder
+
 
 @MODELS.register_module()
 class GroupDETR(ConditionalDETR):
@@ -35,7 +36,8 @@ class GroupDETR(ConditionalDETR):
         # NOTE The embed_dims is typically passed from the inside out.
         # For example in DETR, The embed_dims is passed as
         # self_attn -> the first encoder layer -> encoder -> detector.
-        self.query_embedding = nn.Embedding(self.num_queries * self.group_detr, self.embed_dims)
+        self.query_embedding = nn.Embedding(self.num_queries * self.group_detr,
+                                            self.embed_dims)
 
         num_feats = self.positional_encoding.num_feats
         assert num_feats * 2 == self.embed_dims, \
