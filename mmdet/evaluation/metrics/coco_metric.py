@@ -108,8 +108,8 @@ class CocoMetric(_CocoMetric):
             if 'masks' in pred_instances:
                 pred['masks'] = encode_mask_results(
                     pred_instances['masks'].detach().cpu().numpy(
-                    ) if isinstance(pred_instances['masks'], Tensor
-                                    ) else pred_instances['masks'])
+                    )) if isinstance(pred_instances['masks'],
+                                     Tensor) else pred_instances['masks']
             # some detectors use different scores for bbox and mask
             if 'mask_scores' in pred_instances:
                 pred['mask_scores'] = \
@@ -188,6 +188,7 @@ class CocoMetric(_CocoMetric):
                 break
 
             if metric == 'proposal':
+                table_title = '  Recall Results (%)'
                 if self.metric_items is None:
                     assert len(result) == 6
                     headers = [
@@ -202,6 +203,7 @@ class CocoMetric(_CocoMetric):
                     assert len(result) == len(self.metric_items)
                     headers = self.metric_items
             else:
+                table_title = f' {metric} Results (%)'
                 if self.metric_items is None:
                     assert len(result) == 6
                     headers = [
@@ -215,7 +217,7 @@ class CocoMetric(_CocoMetric):
                         f'{metric}_{item}' for item in self.metric_items
                     ]
             table_data = [headers, result]
-            table = AsciiTable(table_data)
+            table = AsciiTable(table_data, title=table_title)
             print_log('\n' + table.table, logger='current')
 
             if self.classwise and \
@@ -223,7 +225,7 @@ class CocoMetric(_CocoMetric):
                 print_log(
                     f'Evaluating {metric} metric of each category...',
                     logger='current')
-
+                classwise_table_title = f' {metric} Classwise Results (%)'
                 classwise_result = metric_results.pop(
                     f'{metric}_classwise_result')
 
@@ -235,10 +237,10 @@ class CocoMetric(_CocoMetric):
                 ])
                 table_data = [headers]
                 table_data += [result for result in results_2d]
-                table = AsciiTable(table_data)
+                table = AsciiTable(table_data, title=classwise_table_title)
                 print_log('\n' + table.table, logger='current')
         evaluate_results = {
-            f'coco/{k}': round(float(v), 3)
+            f'coco/{k}(%)': round(float(v) * 100, 4)
             for k, v in metric_results.items()
         }
         return evaluate_results

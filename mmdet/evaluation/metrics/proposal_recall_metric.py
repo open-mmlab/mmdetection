@@ -82,13 +82,10 @@ class ProposalRecallMetric(_ProposalRecall):
 
         This method would be invoked by ``mmengine.Evaluator``.
         """
-        import time
-        t1 = time.time()
         metric_results = self.compute(*args, **kwargs)
         self.reset()
-        t2 = time.time()
-        print(t2 - t1)
 
+        tabel_title = ' Recall Results (%)'
         result = metric_results.pop('proposal_result')
         headers = [''] + [
             f'AR_{iou_thr * 100:.0f}' for iou_thr in self.iou_thrs
@@ -96,13 +93,14 @@ class ProposalRecallMetric(_ProposalRecall):
         table_data = [headers]
         for i in range(len(self.proposal_nums)):
             row = [f'{self.proposal_nums[i]}'] + \
-                  [f'{100 * round(val, 4):.2f}' for val in result[i].tolist()]
+                  [f'{round(100 * val, 2)}' for val in result[i].tolist()]
             table_data.append(row)
-        table = AsciiTable(table_data)
+
+        table = AsciiTable(table_data, title=tabel_title)
         print_log('\n' + table.table, logger='current')
 
         evaluate_results = {
-            k: round(float(v), 4)
+            f'{k}(%)': round(float(v) * 100, 4)
             for k, v in metric_results.items()
         }
         return evaluate_results
