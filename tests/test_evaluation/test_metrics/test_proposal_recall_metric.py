@@ -7,7 +7,7 @@ import torch
 from mmdet.evaluation import ProposalRecallMetric
 
 
-class TestCocoMetric(TestCase):
+class TesPoporsalRecallMetric(TestCase):
 
     def _create_dummy_gt(self):
         bboxes = np.array([[50, 60, 70, 80], [100, 120, 130, 150],
@@ -49,9 +49,9 @@ class TestCocoMetric(TestCase):
             {}, [dict(gt_instances=dummy_gt, pred_instances=dummy_pred)])
         eval_results = proposal_metric.evaluate()
         target = {
-            'AR@1(%)': 25.0,
-            'AR@10(%)': 100.0,
-            'AR@100(%)': 100.0,
-            'AR@1000(%)': 100.0
+            'proposals/AR@1(%)': 25.0,
+            'proposals/AR@10(%)': 100.0,
+            'proposals/AR@100(%)': 100.0,
+            'proposals/AR@1000(%)': 100.0
         }
         self.assertDictEqual(eval_results, target)
