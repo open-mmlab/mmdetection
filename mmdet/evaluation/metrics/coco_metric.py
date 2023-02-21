@@ -7,6 +7,7 @@ from collections import OrderedDict
 from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
+import torch
 from mmengine.evaluator import BaseMetric
 from mmengine.fileio import FileClient, dump, load
 from mmengine.logging import MMLogger
@@ -350,7 +351,8 @@ class CocoMetric(BaseMetric):
             # encode mask to RLE
             if 'masks' in pred:
                 result['masks'] = encode_mask_results(
-                    pred['masks'].detach().cpu().numpy())
+                    pred['masks'].detach().cpu().numpy()) if isinstance(
+                        pred['masks'], torch.Tensor) else pred['masks']
             # some detectors use different scores for bbox and mask
             if 'mask_scores' in pred:
                 result['mask_scores'] = pred['mask_scores'].cpu().numpy()

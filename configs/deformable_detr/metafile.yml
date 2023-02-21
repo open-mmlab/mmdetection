@@ -33,7 +33,7 @@ Models:
 
   - Name: deformable-detr_refine_r50_16xb2-50e_coco
     In Collection: Deformable DETR
-    Config: configs/deformable_detr/deformable-detr_refine_r50_16xb2-50e_coco.py
+    Config: configs/deformable_detr/deformable-detr-refine_r50_16xb2-50e_coco.py
     Metadata:
       Epochs: 50
     Results:
@@ -45,7 +45,7 @@ Models:
 
   - Name: deformable-detr_refine_twostage_r50_16xb2-50e_coco
     In Collection: Deformable DETR
-    Config: configs/deformable_detr/deformable-detr_refine_twostage_r50_16xb2-50e_coco.py
+    Config: configs/deformable_detr/deformable-detr-refine-twostage_r50_16xb2-50e_coco.py
     Metadata:
       Epochs: 50
     Results:
