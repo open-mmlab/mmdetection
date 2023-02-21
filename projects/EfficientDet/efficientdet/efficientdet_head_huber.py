@@ -193,8 +193,8 @@ class EfficientDetSepBNHead_Huber(AnchorHead):
                                            num_level_anchors)
 
         avg_factor = reduce_mean(
-            torch.tensor(avg_factor, dtype=torch.float,
-                         device=device)).clamp_(min=1).item()
+            torch.tensor(avg_factor, dtype=torch.float, device=device)).item()
+        avg_factor = max(avg_factor, 1.0)
         losses_cls, losses_bbox = multi_apply(
             self.loss_by_feat_single,
             cls_scores,

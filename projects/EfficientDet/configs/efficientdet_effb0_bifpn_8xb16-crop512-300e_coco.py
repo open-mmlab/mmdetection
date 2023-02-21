@@ -7,11 +7,11 @@ custom_imports = dict(
     imports=['projects.EfficientDet.efficientdet'], allow_failed_imports=False)
 
 image_size = 512
-dataset_type = 'Coco90Dataset'
-evalute_type = 'Coco90Metric'
 batch_augments = [
     dict(type='BatchFixedSizePad', size=(image_size, image_size))
 ]
+dataset_type = 'Coco90Dataset'
+evalute_type = 'Coco90Metric'
 norm_cfg = dict(type='SyncBN', requires_grad=True, eps=1e-3, momentum=0.01)
 checkpoint = 'https://download.openmmlab.com/mmclassification/v0/efficientnet/efficientnet-b0_3rdparty_8xb32-aa-advprop_in1k_20220119-26434485.pth'  # noqa
 model = dict(
@@ -29,6 +29,7 @@ model = dict(
         drop_path_rate=0.2,
         out_indices=(3, 4, 5),
         frozen_stages=0,
+        conv_cfg=dict(type='Conv2dSamePadding'),
         norm_cfg=norm_cfg,
         norm_eval=False,
         init_cfg=dict(
@@ -41,7 +42,7 @@ model = dict(
         start_level=0,
         norm_cfg=norm_cfg),
     bbox_head=dict(
-        type='EfficientDetSepBNHead',
+        type='EfficientDetSepBNHead_Huber',
         num_classes=90,
         num_ins=5,
         in_channels=64,
@@ -62,10 +63,10 @@ model = dict(
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
-            gamma=2.0,
+            gamma=1.5,
             alpha=0.25,
             loss_weight=1.0),
-        loss_bbox=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0)),
+        loss_bbox=dict(type='HuberLoss', beta=0.1, loss_weight=50)),
     # training and testing settings
     train_cfg=dict(
         assigner=dict(
@@ -129,8 +130,10 @@ val_evaluator = dict(type='Coco90Metric')
 test_evaluator = val_evaluator
 
 optim_wrapper = dict(
-    optimizer=dict(lr=0.16),
-    paramwise_cfg=dict(norm_decay_mult=0, bypass_duplicate=True))
+    optimizer=dict(lr=0.16, weight_decay=4e-5),
+    paramwise_cfg=dict(
+        norm_decay_mult=0, bias_decay_mult=0, bypass_duplicate=True),
+    clip_grad=dict(max_norm=10, norm_type=2))
 
 # learning policy
 max_epochs = 300
@@ -138,10 +141,10 @@ param_scheduler = [
     dict(type='LinearLR', start_factor=0.1, by_epoch=False, begin=0, end=917),
     dict(
         type='CosineAnnealingLR',
-        eta_min=0.0016,
+        eta_min=0.0,
         begin=1,
-        T_max=284,
-        end=285,
+        T_max=299,
+        end=300,
         by_epoch=True,
         convert_to_iter_based=True)
 ]
@@ -155,6 +158,14 @@ visualizer = dict(
     type='DetLocalVisualizer', vis_backends=vis_backends, name='visualizer')
 
 default_hooks = dict(checkpoint=dict(type='CheckpointHook', interval=15))
+custom_hooks = [
+    dict(
+        type='EMAHook',
+        ema_type='ExpMomentumEMA',
+        momentum=0.0002,
+        update_buffers=True,
+        priority=49)
+]
 # cudnn_benchmark=True can accelerate fix-size training
 env_cfg = dict(cudnn_benchmark=True)
 
