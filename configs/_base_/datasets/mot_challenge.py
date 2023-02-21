@@ -72,14 +72,11 @@ val_dataloader = dict(
     num_workers=2,
     persistent_workers=True,
     drop_last=False,
-    sampler=dict(type='VideoSampler'),
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
         ann_file='annotations/half-val_cocoformat.json',
         data_prefix=dict(img_path='train'),
-        ref_img_sampler=None,
-        load_as_video=True,
         test_mode=True,
         pipeline=test_pipeline))
 test_dataloader = val_dataloader

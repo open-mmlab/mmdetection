@@ -253,6 +253,8 @@ class BaseVideoDataset(BaseDataset):
                 for key, value in frame_ann.items():
                     final_data_info[key].append(value)
                 # copy the info in video-level into img-level
+                # TODO: the value of this key is the same as that of
+                # `video_length` in test mode
                 final_data_info['ori_video_length'].append(
                     data_info['video_length'])
 

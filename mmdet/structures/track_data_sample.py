@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Sequence
+from typing import List, Optional, Sequence
 
 from mmengine.structures import BaseDataElement
 
@@ -52,3 +52,7 @@ class TrackDataSample(BaseDataElement):
     def __len__(self):
         return len(self._video_data_samples) if hasattr(
             self, '_video_data_samples') else 0
+
+
+SampleTrackList = List[TrackDataSample]
+OptSampleTrackList = Optional[SampleTrackList]
