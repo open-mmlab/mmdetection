@@ -4,8 +4,10 @@ import math
 import torch
 import torch.nn as nn
 from mmengine.model import BaseModule
+from torch import Tensor
 
 from mmdet.registry import MODELS
+from mmdet.utils import MultiConfig, OptMultiConfig
 
 
 @MODELS.register_module()
@@ -31,18 +33,18 @@ class SinePositionalEncoding(BaseModule):
         offset (float): offset add to embed when do the normalization.
             Defaults to 0.
         init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
+            Defaults to None
     """
 
     def __init__(self,
-                 num_feats,
-                 temperature=10000,
-                 normalize=False,
-                 scale=2 * math.pi,
-                 eps=1e-6,
-                 offset=0.,
-                 init_cfg=None):
-        super(SinePositionalEncoding, self).__init__(init_cfg)
+                 num_feats: int,
+                 temperature: int = 10000,
+                 normalize: bool = False,
+                 scale: float = 2 * math.pi,
+                 eps: float = 1e-6,
+                 offset: float = 0.,
+                 init_cfg: OptMultiConfig = None) -> None:
+        super().__init__(init_cfg=init_cfg)
         if normalize:
             assert isinstance(scale, (float, int)), 'when normalize is set,' \
                 'scale should be provided and in float or int type, ' \
@@ -54,7 +56,7 @@ class SinePositionalEncoding(BaseModule):
         self.eps = eps
         self.offset = offset
 
-    def forward(self, mask):
+    def forward(self, mask: Tensor) -> Tensor:
         """Forward function for `SinePositionalEncoding`.
 
         Args:
@@ -93,7 +95,7 @@ class SinePositionalEncoding(BaseModule):
         pos = torch.cat((pos_y, pos_x), dim=3).permute(0, 3, 1, 2)
         return pos
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """str: a string that describes the module"""
         repr_str = self.__class__.__name__
         repr_str += f'(num_feats={self.num_feats}, '
@@ -113,25 +115,27 @@ class LearnedPositionalEncoding(BaseModule):
             along x-axis or y-axis. The final returned dimension for
             each position is 2 times of this value.
         row_num_embed (int, optional): The dictionary size of row embeddings.
-            Default 50.
+            Defaults to 50.
         col_num_embed (int, optional): The dictionary size of col embeddings.
-            Default 50.
+            Defaults to 50.
         init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
-    def __init__(self,
-                 num_feats,
-                 row_num_embed=50,
-                 col_num_embed=50,
-                 init_cfg=dict(type='Uniform', layer='Embedding')):
-        super(LearnedPositionalEncoding, self).__init__(init_cfg)
+    def __init__(
+        self,
+        num_feats: int,
+        row_num_embed: int = 50,
+        col_num_embed: int = 50,
+        init_cfg: MultiConfig = dict(type='Uniform', layer='Embedding')
+    ) -> None:
+        super().__init__(init_cfg=init_cfg)
         self.row_embed = nn.Embedding(row_num_embed, num_feats)
         self.col_embed = nn.Embedding(col_num_embed, num_feats)
         self.num_feats = num_feats
         self.row_num_embed = row_num_embed
         self.col_num_embed = col_num_embed
 
-    def forward(self, mask):
+    def forward(self, mask: Tensor) -> Tensor:
         """Forward function for `LearnedPositionalEncoding`.
 
         Args:
@@ -155,7 +159,7 @@ class LearnedPositionalEncoding(BaseModule):
                             1).unsqueeze(0).repeat(mask.shape[0], 1, 1, 1)
         return pos
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """str: a string that describes the module"""
         repr_str = self.__class__.__name__
         repr_str += f'(num_feats={self.num_feats}, '

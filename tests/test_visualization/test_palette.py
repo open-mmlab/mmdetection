@@ -27,8 +27,8 @@ def test_palette():
         assert color == (255, 0, 0)
 
     # test dataset str
-    palette = get_palette('coco', len(CocoDataset.METAINFO['CLASSES']))
-    assert len(palette) == len(CocoDataset.METAINFO['CLASSES'])
+    palette = get_palette('coco', len(CocoDataset.METAINFO['classes']))
+    assert len(palette) == len(CocoDataset.METAINFO['classes'])
     assert palette[0] == (220, 20, 60)
 
     # TODO: Awaiting refactoring

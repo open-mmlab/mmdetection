@@ -9,6 +9,7 @@ from mmcv.transforms import BaseTransform
 from mmcv.transforms import LoadAnnotations as MMCV_LoadAnnotations
 from mmcv.transforms import LoadImageFromFile
 from mmengine.fileio import FileClient
+from mmengine.structures import BaseDataElement
 
 from mmdet.registry import TRANSFORMS
 from mmdet.structures.bbox import get_box_type
@@ -217,7 +218,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
     - gt_bboxes_labels (np.int64)
     - gt_masks (BitmapMasks | PolygonMasks)
     - gt_seg_map (np.uint8)
-    - gt_ignore_flags (np.bool)
+    - gt_ignore_flags (bool)
 
     Args:
         with_bbox (bool): Whether to parse and load the bbox annotation.
@@ -269,7 +270,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         else:
             _, box_type_cls = get_box_type(self.box_type)
             results['gt_bboxes'] = box_type_cls(gt_bboxes, dtype=torch.float32)
-        results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=np.bool)
+        results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=bool)
 
     def _load_labels(self, results: dict) -> None:
         """Private function to load label annotations.
@@ -347,7 +348,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             elif isinstance(gt_mask, dict) and \
                     not (gt_mask.get('counts') is not None and
                          gt_mask.get('size') is not None and
-                         isinstance(gt_mask['counts'], list)):
+                         isinstance(gt_mask['counts'], (list, str))):
                 # if gt_mask is a dict, it should include `counts` and `size`,
                 # so that `BitmapMasks` can uncompressed RLE
                 instance['ignore_flag'] = 1
@@ -355,7 +356,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             gt_masks.append(gt_mask)
             # re-process gt_ignore_flags
             gt_ignore_flags.append(instance['ignore_flag'])
-        results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=np.bool)
+        results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=bool)
         return gt_masks
 
     def _load_masks(self, results: dict) -> None:
@@ -484,7 +485,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
     - gt_bboxes_labels (np.int64)
     - gt_masks (BitmapMasks | PolygonMasks)
     - gt_seg_map (np.uint8)
-    - gt_ignore_flags (np.bool)
+    - gt_ignore_flags (bool)
 
     Args:
         with_bbox (bool): Whether to parse and load the bbox annotation.
@@ -524,6 +525,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
                 'panopticapi.git.')
         self.rgb2id = utils.rgb2id
 
+        self.file_client = FileClient(**file_client_args)
         super(LoadPanopticAnnotations, self).__init__(
             with_bbox=with_bbox,
             with_label=with_label,
@@ -545,7 +547,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
             results (dict): Result dict from :obj:``mmdet.CustomDataset``.
         """
         # seg_map_path is None, when inference on the dataset without gts.
-        if results['seg_map_path'] is None:
+        if results.get('seg_map_path', None) is None:
             return
 
         img_bytes = self.file_client.get(results['seg_map_path'])
@@ -626,17 +628,30 @@ class LoadProposals(BaseTransform):
         """
 
         proposals = results['proposals']
-        assert proposals.shape[1] in (4, 5), ('proposals should have shapes '
-                                              '(n, 4) or (n, 5), but found'
-                                              f'{proposals.shape}')
-        proposals = proposals[:, :4].astype(np.float32)
+        # the type of proposals should be `dict` or `InstanceData`
+        assert isinstance(proposals, dict) \
+               or isinstance(proposals, BaseDataElement)
+        bboxes = proposals['bboxes'].astype(np.float32)
+        assert bboxes.shape[1] == 4, \
+            f'Proposals should have shapes (n, 4), but found {bboxes.shape}'
+
+        if 'scores' in proposals:
+            scores = proposals['scores'].astype(np.float32)
+            assert bboxes.shape[0] == scores.shape[0]
+        else:
+            scores = np.zeros(bboxes.shape[0], dtype=np.float32)
 
         if self.num_max_proposals is not None:
-            proposals = proposals[:self.num_max_proposals]
+            # proposals should sort by scores during dumping the proposals
+            bboxes = bboxes[:self.num_max_proposals]
+            scores = scores[:self.num_max_proposals]
 
-        if len(proposals) == 0:
-            proposals = np.array([[0, 0, 0, 0]], dtype=np.float32)
-        results['proposals'] = proposals
+        if len(bboxes) == 0:
+            bboxes = np.zeros((0, 4), dtype=np.float32)
+            scores = np.zeros(0, dtype=np.float32)
+
+        results['proposals'] = bboxes
+        results['proposals_scores'] = scores
         return results
 
     def __repr__(self):
@@ -653,7 +668,7 @@ class FilterAnnotations(BaseTransform):
     - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
-    - gt_ignore_flags (np.bool) (optional)
+    - gt_ignore_flags (bool) (optional)
 
     Modified Keys:
 
@@ -744,7 +759,7 @@ class LoadEmptyAnnotations(BaseTransform):
     - gt_bboxes_labels (np.int64)
     - gt_masks (BitmapMasks | PolygonMasks)
     - gt_seg_map (np.uint8)
-    - gt_ignore_flags (np.bool)
+    - gt_ignore_flags (bool)
 
     Args:
         with_bbox (bool): Whether to load the pseudo bbox annotation.
@@ -804,3 +819,58 @@ class LoadEmptyAnnotations(BaseTransform):
         repr_str += f'with_seg={self.with_seg}, '
         repr_str += f'seg_ignore_label={self.seg_ignore_label})'
         return repr_str
+
+
+@TRANSFORMS.register_module()
+class InferencerLoader(BaseTransform):
+    """Load an image from ``results['img']``.
+
+    Similar with :obj:`LoadImageFromFile`, but the image has been loaded as
+    :obj:`np.ndarray` in ``results['img']``. Can be used when loading image
+    from webcam.
+
+    Required Keys:
+
+    - img
+
+    Modified Keys:
+
+    - img
+    - img_path
+    - img_shape
+    - ori_shape
+
+    Args:
+        to_float32 (bool): Whether to convert the loaded image to a float32
+            numpy array. If set to False, the loaded image is an uint8 array.
+            Defaults to False.
+    """
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__()
+        self.from_file = TRANSFORMS.build(
+            dict(type='LoadImageFromFile', **kwargs))
+        self.from_ndarray = TRANSFORMS.build(
+            dict(type='mmdet.LoadImageFromNDArray', **kwargs))
+
+    def transform(self, results: Union[str, np.ndarray, dict]) -> dict:
+        """Transform function to add image meta information.
+
+        Args:
+            results (str, np.ndarray or dict): The result.
+
+        Returns:
+            dict: The dict contains loaded image and meta information.
+        """
+        if isinstance(results, str):
+            inputs = dict(img_path=results)
+        elif isinstance(results, np.ndarray):
+            inputs = dict(img=results)
+        elif isinstance(results, dict):
+            inputs = results
+        else:
+            raise NotImplementedError
+
+        if 'img' in inputs:
+            return self.from_ndarray(inputs)
+        return self.from_file(inputs)

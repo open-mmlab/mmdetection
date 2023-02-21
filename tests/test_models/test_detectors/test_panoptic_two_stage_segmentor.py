@@ -4,7 +4,7 @@ import unittest
 import torch
 from parameterized import parameterized
 
-from mmdet.models import build_detector
+from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
 from mmdet.testing._utils import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
@@ -25,7 +25,7 @@ class TestTwoStagePanopticSegmentor(unittest.TestCase):
 
     def test_init(self):
         model_cfg = self._create_model_cfg()
-        detector = build_detector(model_cfg)
+        detector = MODELS.build(model_cfg)
         assert detector.backbone
         assert detector.neck
         assert detector.rpn_head
@@ -37,7 +37,7 @@ class TestTwoStagePanopticSegmentor(unittest.TestCase):
     @parameterized.expand([('cpu', ), ('cuda', )])
     def test_forward_loss_mode(self, device):
         model_cfg = self._create_model_cfg()
-        detector = build_detector(model_cfg)
+        detector = MODELS.build(model_cfg)
 
         if device == 'cuda' and not torch.cuda.is_available():
             return unittest.skip('test requires GPU and torch+cuda')
@@ -57,7 +57,7 @@ class TestTwoStagePanopticSegmentor(unittest.TestCase):
     @parameterized.expand([('cpu', ), ('cuda', )])
     def test_forward_predict_mode(self, device):
         model_cfg = self._create_model_cfg()
-        detector = build_detector(model_cfg)
+        detector = MODELS.build(model_cfg)
         if device == 'cuda' and not torch.cuda.is_available():
             return unittest.skip('test requires GPU and torch+cuda')
         detector = detector.to(device)
@@ -78,7 +78,7 @@ class TestTwoStagePanopticSegmentor(unittest.TestCase):
     @parameterized.expand([('cpu', ), ('cuda', )])
     def test_forward_tensor_mode(self, device):
         model_cfg = self._create_model_cfg()
-        detector = build_detector(model_cfg)
+        detector = MODELS.build(model_cfg)
         if device == 'cuda' and not torch.cuda.is_available():
             return unittest.skip('test requires GPU and torch+cuda')
         detector = detector.to(device)

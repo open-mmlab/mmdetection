@@ -196,3 +196,27 @@ Output of the above script is as below:
 ```
 
 Users can get the channels of the new backbone by Replacing the `ResNet(depth=18)` in this script with their customized backbone.
+
+# Use Detectron2 Model in MMDetection
+
+Users can use Detectron2Wrapper to run Detectron2's model in MMDetection. We provide examples of [Faster R-CNN](../../../configs/misc/d2_faster-rcnn_r50-caffe_fpn_ms-90k_coco.py),
+[Mask R-CNN](../../../configs/misc/d2_mask-rcnn_r50-caffe_fpn_ms-90k_coco.py), and [RetinaNet](../../../configs/misc/d2_retinanet_r50-caffe_fpn_ms-90k_coco.py) in MMDetection.
+
+The algorithm components in config file should be the same as those of in Detectron2. During setup, we will first initialize the default settings, which can be found in [Detectron2](https://github.com/facebookresearch/detectron2/blob/main/detectron2/config/defaults.py).
+Then, the settings in config file will overwrite the default settings and the model will be built with these settings.
+The input data will first convert to Detectron2's type and feed into Detectron2's model.
+During inference the results calculate from Detectron2's model will reconvert back to the MMDetection's type.
+
+## Use Detectron2's pre-trained weights
+
+The weight initialization in `Detectron2Wrapper` will not use the logic of MMDetection. Users can set `model.d2_detector.weights=xxx` to load pre-trained weights.
+For example, we can use `model.d2_detector.weights='detectron2://ImageNetPretrained/MSRA/R-50.pkl'` to load the pre-trained ResNet-50 or use
+`model.d2_detector.weights='detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x/137260431/model_final_a54504.pkl'` to load the pre-trained Mask R-CNN weights proposed in Detectron2.
+
+**Note:** Detectron2's pretrained model cannot be loaded directly by using `load_from`, it should be first converted via `tools/model_converters/detectron2_to_mmdet.py`
+
+For inference of released detectron2 checkpoints, users should first use `tools/model_converters/detectron2_to_mmdet.py` to convert Detectron2 checkpoint to MMDetection.
+
+```shell
+python tools/model_converters/detectron2_to_mmdet.py ${Detectron2 ckpt path} ${MMDetectron ckpt path}
+```

@@ -1,8 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
-import warnings
+import os
 
-from mmcv import Config, DictAction
+from mmengine import Config, DictAction
 
 from mmdet.utils import replace_cfg_vals, update_data_root
 
@@ -11,12 +11,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Print the whole config')
     parser.add_argument('config', help='config file path')
     parser.add_argument(
-        '--options',
-        nargs='+',
-        action=DictAction,
-        help='override some settings in the used config, the key-value pair '
-        'in xxx=yyy format will be merged into config file (deprecate), '
-        'change to --cfg-options instead.')
+        '--save-path',
+        default=None,
+        help='save path of whole config, suffixed with .py, .json or .yml')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
@@ -28,14 +25,6 @@ def parse_args():
         'Note that the quotation marks are necessary and that no white space '
         'is allowed.')
     args = parser.parse_args()
-
-    if args.options and args.cfg_options:
-        raise ValueError(
-            '--options and --cfg-options cannot be both '
-            'specified, --options is deprecated in favor of --cfg-options')
-    if args.options:
-        warnings.warn('--options is deprecated in favor of --cfg-options')
-        args.cfg_options = args.options
 
     return args
 
@@ -54,6 +43,17 @@ def main():
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
     print(f'Config:\n{cfg.pretty_text}')
+
+    if args.save_path is not None:
+        save_path = args.save_path
+
+        suffix = os.path.splitext(save_path)[-1]
+        assert suffix in ['.py', '.json', '.yml']
+
+        if not os.path.exists(os.path.split(save_path)[0]):
+            os.makedirs(os.path.split(save_path)[0])
+        cfg.dump(save_path)
+        print(f'Config saving at {save_path}')
 
 
 if __name__ == '__main__':

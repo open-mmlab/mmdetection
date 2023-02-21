@@ -27,8 +27,8 @@ class TestTwoStageBBox(TestCase):
         model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
-        from mmdet.models import build_detector
-        detector = build_detector(model)
+        from mmdet.registry import MODELS
+        detector = MODELS.build(model)
         self.assertTrue(detector.backbone)
         self.assertTrue(detector.neck)
         self.assertTrue(detector.rpn_head)
@@ -37,7 +37,7 @@ class TestTwoStageBBox(TestCase):
         # if rpn.num_classes > 1, force set rpn.num_classes = 1
         if hasattr(model.rpn_head, 'num_classes'):
             model.rpn_head.num_classes = 2
-            detector = build_detector(model)
+            detector = MODELS.build(model)
             self.assertEqual(detector.rpn_head.num_classes, 1)
 
     @parameterized.expand([
@@ -52,8 +52,8 @@ class TestTwoStageBBox(TestCase):
         model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
-        from mmdet.models import build_detector
-        detector = build_detector(model)
+        from mmdet.registry import MODELS
+        detector = MODELS.build(model)
 
         if not torch.cuda.is_available():
             return unittest.skip('test requires GPU and torch+cuda')
@@ -78,8 +78,8 @@ class TestTwoStageBBox(TestCase):
         model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
-        from mmdet.models import build_detector
-        detector = build_detector(model)
+        from mmdet.registry import MODELS
+        detector = MODELS.build(model)
 
         if not torch.cuda.is_available():
             return unittest.skip('test requires GPU and torch+cuda')
@@ -140,8 +140,8 @@ class TestTwoStageMask(TestCase):
         model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
-        from mmdet.models import build_detector
-        detector = build_detector(model)
+        from mmdet.registry import MODELS
+        detector = MODELS.build(model)
         self.assertTrue(detector.backbone)
         self.assertTrue(detector.neck)
         self.assertTrue(detector.rpn_head)
@@ -151,7 +151,7 @@ class TestTwoStageMask(TestCase):
         # if rpn.num_classes > 1, force set rpn.num_classes = 1
         if hasattr(model.rpn_head, 'num_classes'):
             model.rpn_head.num_classes = 2
-            detector = build_detector(model)
+            detector = MODELS.build(model)
             self.assertEqual(detector.rpn_head.num_classes, 1)
 
     @parameterized.expand([
@@ -166,8 +166,8 @@ class TestTwoStageMask(TestCase):
         model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
-        from mmdet.models import build_detector
-        detector = build_detector(model)
+        from mmdet.registry import MODELS
+        detector = MODELS.build(model)
 
         if not torch.cuda.is_available():
             return unittest.skip('test requires GPU and torch+cuda')
@@ -192,8 +192,8 @@ class TestTwoStageMask(TestCase):
         model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
-        from mmdet.models import build_detector
-        detector = build_detector(model)
+        from mmdet.registry import MODELS
+        detector = MODELS.build(model)
 
         if not torch.cuda.is_available():
             return unittest.skip('test requires GPU and torch+cuda')

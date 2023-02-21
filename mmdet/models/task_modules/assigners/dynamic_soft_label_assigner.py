@@ -7,12 +7,33 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import TASK_UTILS
+from mmdet.structures.bbox import BaseBoxes
 from mmdet.utils import ConfigType
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
 INF = 100000000
 EPS = 1.0e-7
+
+
+def center_of_mass(masks: Tensor, eps: float = 1e-7) -> Tensor:
+    """Compute the masks center of mass.
+
+    Args:
+        masks: Mask tensor, has shape (num_masks, H, W).
+        eps: a small number to avoid normalizer to be zero.
+            Defaults to 1e-7.
+    Returns:
+        Tensor: The masks center of mass. Has shape (num_masks, 2).
+    """
+    n, h, w = masks.shape
+    grid_h = torch.arange(h, device=masks.device)[:, None]
+    grid_w = torch.arange(w, device=masks.device)
+    normalizer = masks.sum(dim=(1, 2)).float().clamp(min=eps)
+    center_y = (masks * grid_h).sum(dim=(1, 2)) / normalizer
+    center_x = (masks * grid_w).sum(dim=(1, 2)) / normalizer
+    center = torch.cat([center_x[:, None], center_y[:, None]], dim=1)
+    return center
 
 
 @TASK_UTILS.register_module()
@@ -80,20 +101,7 @@ class DynamicSoftLabelAssigner(BaseAssigner):
         assigned_gt_inds = decoded_bboxes.new_full((num_bboxes, ),
                                                    0,
                                                    dtype=torch.long)
-
-        prior_center = priors[:, :2]
-        lt_ = prior_center[:, None] - gt_bboxes[:, :2]
-        rb_ = gt_bboxes[:, 2:] - prior_center[:, None]
-
-        deltas = torch.cat([lt_, rb_], dim=-1)
-        is_in_gts = deltas.min(dim=-1).values > 0
-        valid_mask = is_in_gts.sum(dim=1) > 0
-
-        valid_decoded_bbox = decoded_bboxes[valid_mask]
-        valid_pred_scores = pred_scores[valid_mask]
-        num_valid = valid_decoded_bbox.size(0)
-
-        if num_gt == 0 or num_bboxes == 0 or num_valid == 0:
+        if num_gt == 0 or num_bboxes == 0:
             # No ground truth or boxes, return empty assignment
             max_overlaps = decoded_bboxes.new_zeros((num_bboxes, ))
             if num_gt == 0:
@@ -104,7 +112,39 @@ class DynamicSoftLabelAssigner(BaseAssigner):
                                                       dtype=torch.long)
             return AssignResult(
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
-        gt_center = (gt_bboxes[:, :2] + gt_bboxes[:, 2:]) / 2.0
+
+        prior_center = priors[:, :2]
+        if isinstance(gt_bboxes, BaseBoxes):
+            is_in_gts = gt_bboxes.find_inside_points(prior_center)
+        else:
+            # Tensor boxes will be treated as horizontal boxes by defaults
+            lt_ = prior_center[:, None] - gt_bboxes[:, :2]
+            rb_ = gt_bboxes[:, 2:] - prior_center[:, None]
+
+            deltas = torch.cat([lt_, rb_], dim=-1)
+            is_in_gts = deltas.min(dim=-1).values > 0
+
+        valid_mask = is_in_gts.sum(dim=1) > 0
+
+        valid_decoded_bbox = decoded_bboxes[valid_mask]
+        valid_pred_scores = pred_scores[valid_mask]
+        num_valid = valid_decoded_bbox.size(0)
+
+        if num_valid == 0:
+            # No ground truth or boxes, return empty assignment
+            max_overlaps = decoded_bboxes.new_zeros((num_bboxes, ))
+            assigned_labels = decoded_bboxes.new_full((num_bboxes, ),
+                                                      -1,
+                                                      dtype=torch.long)
+            return AssignResult(
+                num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
+        if hasattr(gt_instances, 'masks'):
+            gt_center = center_of_mass(gt_instances.masks, eps=EPS)
+        elif isinstance(gt_bboxes, BaseBoxes):
+            gt_center = gt_bboxes.centers
+        else:
+            # Tensor boxes will be treated as horizontal boxes by defaults
+            gt_center = (gt_bboxes[:, :2] + gt_bboxes[:, 2:]) / 2.0
         valid_prior = priors[valid_mask]
         strides = valid_prior[:, 2]
         distance = (valid_prior[:, None, :2] - gt_center[None, :, :]

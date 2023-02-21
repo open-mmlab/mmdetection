@@ -11,13 +11,20 @@ from mmengine.dist import barrier, broadcast, get_dist_info
 from mmengine.logging import MessageHub
 from mmengine.model import BaseDataPreprocessor, ImgDataPreprocessor
 from mmengine.structures import PixelData
-from mmengine.utils import is_list_of
+from mmengine.utils import is_seq_of
 from torch import Tensor
 
+from mmdet.models.utils import unfold_wo_center
 from mmdet.models.utils.misc import samplelist_boxtype2tensor
 from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
+from mmdet.structures.mask import BitmapMasks
 from mmdet.utils import ConfigType
+
+try:
+    import skimage
+except ImportError:
+    skimage = None
 
 
 @MODELS.register_module()
@@ -61,7 +68,9 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         rgb_to_bgr (bool): whether to convert image from RGB to RGB.
             Defaults to False.
         boxtype2tensor (bool): Whether to keep the ``BaseBoxes`` type of
-            bboxes data or not. Defaults to False.
+            bboxes data or not. Defaults to True.
+        non_blocking (bool): Whether block current process
+            when transferring data to device. Defaults to False.
         batch_augments (list[dict], optional): Batch-level augmentations
     """
 
@@ -77,6 +86,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                  bgr_to_rgb: bool = False,
                  rgb_to_bgr: bool = False,
                  boxtype2tensor: bool = True,
+                 non_blocking: Optional[bool] = False,
                  batch_augments: Optional[List[dict]] = None):
         super().__init__(
             mean=mean,
@@ -84,7 +94,8 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             pad_size_divisor=pad_size_divisor,
             pad_value=pad_value,
             bgr_to_rgb=bgr_to_rgb,
-            rgb_to_bgr=rgb_to_bgr)
+            rgb_to_bgr=rgb_to_bgr,
+            non_blocking=non_blocking)
         if batch_augments is not None:
             self.batch_augments = nn.ModuleList(
                 [MODELS.build(aug) for aug in batch_augments])
@@ -142,7 +153,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         pad_size_divisor."""
         _batch_inputs = data['inputs']
         # Process data with `pseudo_collate`.
-        if is_list_of(_batch_inputs, torch.Tensor):
+        if is_seq_of(_batch_inputs, torch.Tensor):
             batch_pad_shape = []
             for ori_input in _batch_inputs:
                 pad_h = int(
@@ -166,7 +177,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                         self.pad_size_divisor)) * self.pad_size_divisor
             batch_pad_shape = [(pad_h, pad_w)] * _batch_inputs.shape[0]
         else:
-            raise TypeError('Output of `cast_data` should be a list of dict '
+            raise TypeError('Output of `cast_data` should be a dict '
                             'or a tuple with inputs and data_samples, but got'
                             f'{type(data)}： {data}')
         return batch_pad_shape
@@ -552,3 +563,231 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
         """
 
         return self.data_preprocessor.cpu(*args, **kwargs)
+
+
+@MODELS.register_module()
+class BatchResize(nn.Module):
+    """Batch resize during training. This implementation is modified from
+    https://github.com/Purkialo/CrowdDet/blob/master/lib/data/CrowdHuman.py.
+
+    It provides the data pre-processing as follows:
+    - A batch of all images will pad to a uniform size and stack them into
+      a torch.Tensor by `DetDataPreprocessor`.
+    - `BatchFixShapeResize` resize all images to the target size.
+    - Padding images to make sure the size of image can be divisible by
+      ``pad_size_divisor``.
+
+    Args:
+        scale (tuple): Images scales for resizing.
+        pad_size_divisor (int): Image size divisible factor.
+            Defaults to 1.
+        pad_value (Number): The padded pixel value. Defaults to 0.
+    """
+
+    def __init__(
+        self,
+        scale: tuple,
+        pad_size_divisor: int = 1,
+        pad_value: Union[float, int] = 0,
+    ) -> None:
+        super().__init__()
+        self.min_size = min(scale)
+        self.max_size = max(scale)
+        self.pad_size_divisor = pad_size_divisor
+        self.pad_value = pad_value
+
+    def forward(
+        self, inputs: Tensor, data_samples: List[DetDataSample]
+    ) -> Tuple[Tensor, List[DetDataSample]]:
+        """resize a batch of images and bboxes."""
+
+        batch_height, batch_width = inputs.shape[-2:]
+        target_height, target_width, scale = self.get_target_size(
+            batch_height, batch_width)
+
+        inputs = F.interpolate(
+            inputs,
+            size=(target_height, target_width),
+            mode='bilinear',
+            align_corners=False)
+
+        inputs = self.get_padded_tensor(inputs, self.pad_value)
+
+        if data_samples is not None:
+            batch_input_shape = tuple(inputs.size()[-2:])
+            for data_sample in data_samples:
+                img_shape = [
+                    int(scale * _) for _ in list(data_sample.img_shape)
+                ]
+                data_sample.set_metainfo({
+                    'img_shape': tuple(img_shape),
+                    'batch_input_shape': batch_input_shape,
+                    'pad_shape': batch_input_shape,
+                    'scale_factor': (scale, scale)
+                })
+
+                data_sample.gt_instances.bboxes *= scale
+                data_sample.ignored_instances.bboxes *= scale
+
+        return inputs, data_samples
+
+    def get_target_size(self, height: int,
+                        width: int) -> Tuple[int, int, float]:
+        """Get the target size of a batch of images based on data and scale."""
+        im_size_min = np.min([height, width])
+        im_size_max = np.max([height, width])
+        scale = self.min_size / im_size_min
+        if scale * im_size_max > self.max_size:
+            scale = self.max_size / im_size_max
+        target_height, target_width = int(round(height * scale)), int(
+            round(width * scale))
+        return target_height, target_width, scale
+
+    def get_padded_tensor(self, tensor: Tensor, pad_value: int) -> Tensor:
+        """Pad images according to pad_size_divisor."""
+        assert tensor.ndim == 4
+        target_height, target_width = tensor.shape[-2], tensor.shape[-1]
+        divisor = self.pad_size_divisor
+        padded_height = (target_height + divisor - 1) // divisor * divisor
+        padded_width = (target_width + divisor - 1) // divisor * divisor
+        padded_tensor = torch.ones([
+            tensor.shape[0], tensor.shape[1], padded_height, padded_width
+        ]) * pad_value
+        padded_tensor = padded_tensor.type_as(tensor)
+        padded_tensor[:, :, :target_height, :target_width] = tensor
+        return padded_tensor
+
+
+@MODELS.register_module()
+class BoxInstDataPreprocessor(DetDataPreprocessor):
+    """Pseudo mask pre-processor for BoxInst.
+
+    Comparing with the :class:`mmdet.DetDataPreprocessor`,
+
+    1. It generates masks using box annotations.
+    2. It computes the images color similarity in LAB color space.
+
+    Args:
+        mask_stride (int): The mask output stride in boxinst. Defaults to 4.
+        pairwise_size (int): The size of neighborhood for each pixel.
+            Defaults to 3.
+        pairwise_dilation (int): The dilation of neighborhood for each pixel.
+            Defaults to 2.
+        pairwise_color_thresh (float): The thresh of image color similarity.
+            Defaults to 0.3.
+        bottom_pixels_removed (int): The length of removed pixels in bottom.
+            It is caused by the annotation error in coco dataset.
+            Defaults to 10.
+    """
+
+    def __init__(self,
+                 *arg,
+                 mask_stride: int = 4,
+                 pairwise_size: int = 3,
+                 pairwise_dilation: int = 2,
+                 pairwise_color_thresh: float = 0.3,
+                 bottom_pixels_removed: int = 10,
+                 **kwargs) -> None:
+        super().__init__(*arg, **kwargs)
+        self.mask_stride = mask_stride
+        self.pairwise_size = pairwise_size
+        self.pairwise_dilation = pairwise_dilation
+        self.pairwise_color_thresh = pairwise_color_thresh
+        self.bottom_pixels_removed = bottom_pixels_removed
+
+        if skimage is None:
+            raise RuntimeError('skimage is not installed,\
+                 please install it by: pip install scikit-image')
+
+    def get_images_color_similarity(self, inputs: Tensor,
+                                    image_masks: Tensor) -> Tensor:
+        """Compute the image color similarity in LAB color space."""
+        assert inputs.dim() == 4
+        assert inputs.size(0) == 1
+
+        unfolded_images = unfold_wo_center(
+            inputs,
+            kernel_size=self.pairwise_size,
+            dilation=self.pairwise_dilation)
+        diff = inputs[:, :, None] - unfolded_images
+        similarity = torch.exp(-torch.norm(diff, dim=1) * 0.5)
+
+        unfolded_weights = unfold_wo_center(
+            image_masks[None, None],
+            kernel_size=self.pairwise_size,
+            dilation=self.pairwise_dilation)
+        unfolded_weights = torch.max(unfolded_weights, dim=1)[0]
+
+        return similarity * unfolded_weights
+
+    def forward(self, data: dict, training: bool = False) -> dict:
+        """Get pseudo mask labels using color similarity."""
+        det_data = super().forward(data, training)
+        inputs, data_samples = det_data['inputs'], det_data['data_samples']
+
+        if training:
+            # get image masks and remove bottom pixels
+            b_img_h, b_img_w = data_samples[0].batch_input_shape
+            img_masks = []
+            for i in range(inputs.shape[0]):
+                img_h, img_w = data_samples[i].img_shape
+                img_mask = inputs.new_ones((img_h, img_w))
+                pixels_removed = int(self.bottom_pixels_removed *
+                                     float(img_h) / float(b_img_h))
+                if pixels_removed > 0:
+                    img_mask[-pixels_removed:, :] = 0
+                pad_w = b_img_w - img_w
+                pad_h = b_img_h - img_h
+                img_mask = F.pad(img_mask, (0, pad_w, 0, pad_h), 'constant',
+                                 0.)
+                img_masks.append(img_mask)
+            img_masks = torch.stack(img_masks, dim=0)
+            start = int(self.mask_stride // 2)
+            img_masks = img_masks[:, start::self.mask_stride,
+                                  start::self.mask_stride]
+
+            # Get origin rgb image for color similarity
+            ori_imgs = inputs * self.std + self.mean
+            downsampled_imgs = F.avg_pool2d(
+                ori_imgs.float(),
+                kernel_size=self.mask_stride,
+                stride=self.mask_stride,
+                padding=0)
+
+            # Compute color similarity for pseudo mask generation
+            for im_i, data_sample in enumerate(data_samples):
+                # TODO: Support rgb2lab in mmengine?
+                images_lab = skimage.color.rgb2lab(
+                    downsampled_imgs[im_i].byte().permute(1, 2,
+                                                          0).cpu().numpy())
+                images_lab = torch.as_tensor(
+                    images_lab, device=ori_imgs.device, dtype=torch.float32)
+                images_lab = images_lab.permute(2, 0, 1)[None]
+                images_color_similarity = self.get_images_color_similarity(
+                    images_lab, img_masks[im_i])
+                pairwise_mask = (images_color_similarity >=
+                                 self.pairwise_color_thresh).float()
+
+                per_im_bboxes = data_sample.gt_instances.bboxes
+                if per_im_bboxes.shape[0] > 0:
+                    per_im_masks = []
+                    for per_box in per_im_bboxes:
+                        mask_full = torch.zeros((b_img_h, b_img_w),
+                                                device=self.device).float()
+                        mask_full[int(per_box[1]):int(per_box[3] + 1),
+                                  int(per_box[0]):int(per_box[2] + 1)] = 1.0
+                        per_im_masks.append(mask_full)
+                    per_im_masks = torch.stack(per_im_masks, dim=0)
+                    pairwise_masks = torch.cat(
+                        [pairwise_mask for _ in range(per_im_bboxes.shape[0])],
+                        dim=0)
+                else:
+                    per_im_masks = torch.zeros((0, b_img_h, b_img_w))
+                    pairwise_masks = torch.zeros(
+                        (0, self.pairwise_size**2 - 1, b_img_h, b_img_w))
+
+                # TODO: Support BitmapMasks with tensor?
+                data_sample.gt_instances.masks = BitmapMasks(
+                    per_im_masks.cpu().numpy(), b_img_h, b_img_w)
+                data_sample.gt_instances.pairwise_masks = pairwise_masks
+        return {'inputs': inputs, 'data_samples': data_samples}

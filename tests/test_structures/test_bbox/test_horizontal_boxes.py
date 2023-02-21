@@ -123,6 +123,9 @@ class TestHorizontalBoxes(TestCase):
         boxes2.translate_([x_translate, y_translate])
         boxes2.rescale_([scale_factor, scale_factor])
         assert_allclose(boxes1.tensor, boxes2.tensor)
+        # test empty boxes
+        empty_boxes = HorizontalBoxes(torch.zeros((0, 4)))
+        empty_boxes.project_(matrix)
 
     def test_rescale(self):
         scale_factor = [0.4, 0.8]

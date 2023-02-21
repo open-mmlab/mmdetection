@@ -145,8 +145,8 @@ class CocoPanopticMetric(BaseMetric):
         converted_json_path = f'{outfile_prefix}.gt.json'
 
         categories = []
-        for id, name in enumerate(self.dataset_meta['CLASSES']):
-            isthing = 1 if name in self.dataset_meta['THING_CLASSES'] else 0
+        for id, name in enumerate(self.dataset_meta['classes']):
+            isthing = 1 if name in self.dataset_meta['thing_classes'] else 0
             categories.append({'id': id, 'name': name, 'isthing': isthing})
 
         image_infos = []
@@ -266,8 +266,8 @@ class CocoPanopticMetric(BaseMetric):
         segments_info = []
         for pan_label in pan_labels:
             sem_label = pan_label % INSTANCE_OFFSET
-            # We reserve the length of self.CLASSES for VOID label
-            if sem_label == len(self.dataset_meta['CLASSES']):
+            # We reserve the length of dataset_meta['classes'] for VOID label
+            if sem_label == len(self.dataset_meta['classes']):
                 continue
             mask = pan == pan_label
             area = mask.sum()
@@ -283,7 +283,7 @@ class CocoPanopticMetric(BaseMetric):
                 int(area)
             })
         # evaluation script uses 0 for VOID label.
-        pan[pan % INSTANCE_OFFSET == len(self.dataset_meta['CLASSES'])] = VOID
+        pan[pan % INSTANCE_OFFSET == len(self.dataset_meta['classes'])] = VOID
         pan = id2rgb(pan).astype(np.uint8)
         mmcv.imwrite(pan[:, :, ::-1], osp.join(self.seg_out_dir, segm_file))
         result = {
@@ -303,15 +303,15 @@ class CocoPanopticMetric(BaseMetric):
         """
         if self._coco_api is None:
             categories = dict()
-            for id, name in enumerate(self.dataset_meta['CLASSES']):
-                isthing = 1 if name in self.dataset_meta['THING_CLASSES']\
+            for id, name in enumerate(self.dataset_meta['classes']):
+                isthing = 1 if name in self.dataset_meta['thing_classes']\
                     else 0
                 categories[id] = {'id': id, 'name': name, 'isthing': isthing}
             label2cat = None
         else:
             categories = self.categories
             cat_ids = self._coco_api.get_cat_ids(
-                cat_names=self.dataset_meta['CLASSES'])
+                cat_names=self.dataset_meta['classes'])
             label2cat = {i: cat_id for i, cat_id in enumerate(cat_ids)}
 
         for data_sample in data_samples:
@@ -455,7 +455,7 @@ class CocoPanopticMetric(BaseMetric):
                 gt_folder = self.seg_prefix
 
             self.cat_ids = self._coco_api.get_cat_ids(
-                cat_names=self.dataset_meta['CLASSES'])
+                cat_names=self.dataset_meta['classes'])
             self.cat2label = {
                 cat_id: i
                 for i, cat_id in enumerate(self.cat_ids)
@@ -504,9 +504,9 @@ class CocoPanopticMetric(BaseMetric):
             # aggregate the results generated in process
             if self._coco_api is None:
                 categories = dict()
-                for id, name in enumerate(self.dataset_meta['CLASSES']):
+                for id, name in enumerate(self.dataset_meta['classes']):
                     isthing = 1 if name in self.dataset_meta[
-                        'THING_CLASSES'] else 0
+                        'thing_classes'] else 0
                     categories[id] = {
                         'id': id,
                         'name': name,
@@ -531,7 +531,7 @@ class CocoPanopticMetric(BaseMetric):
         if self.classwise:
             classwise_results = {
                 k: v
-                for k, v in zip(self.dataset_meta['CLASSES'],
+                for k, v in zip(self.dataset_meta['classes'],
                                 pq_results['classwise'].values())
             }
 

@@ -92,7 +92,7 @@ class TestDetLocalVisualizer(TestCase):
         self._assert_image_and_shape(out_file, (h, w, 3))
 
         # test gt_panoptic_seg and pred_panoptic_seg
-        det_local_visualizer.dataset_meta = dict(CLASSES=('1', '2'))
+        det_local_visualizer.dataset_meta = dict(classes=('1', '2'))
         gt_sem_seg = _create_panoptic_data(num_bboxes, h, w)
         panoptic_seg = PixelData(sem_seg=gt_sem_seg)
 

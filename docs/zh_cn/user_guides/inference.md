@@ -85,24 +85,14 @@ asyncio.run(main())
 
 ### 图片样例
 
-这是在单张图片上进行推理的脚本，可以开启 `--async-test` 来进行异步推理。
-
-```shell
-python demo/image_demo.py \
-    ${IMAGE_FILE} \
-    ${CONFIG_FILE} \
-    ${CHECKPOINT_FILE} \
-    [--device ${GPU_ID}] \
-    [--score-thr ${SCORE_THR}] \
-    [--async-test]
-```
+这是在单张图片上进行推理的脚本，
 
 运行样例：
 
 ```shell
 python demo/image_demo.py demo/demo.jpg \
     configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    --weights checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --device cpu
 ```
 

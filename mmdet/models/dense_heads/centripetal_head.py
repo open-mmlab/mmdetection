@@ -10,7 +10,6 @@ from torch import Tensor
 from mmdet.registry import MODELS
 from mmdet.utils import (ConfigType, InstanceList, OptInstanceList,
                          OptMultiConfig)
-from ..builder import build_loss
 from ..utils import multi_apply
 from .corner_head import CornerHead
 
@@ -74,8 +73,8 @@ class CentripetalHead(CornerHead):
         self.guiding_shift_channels = guiding_shift_channels
         self.feat_adaption_conv_kernel = feat_adaption_conv_kernel
         super().__init__(*args, init_cfg=init_cfg, **kwargs)
-        self.loss_guiding_shift = build_loss(loss_guiding_shift)
-        self.loss_centripetal_shift = build_loss(loss_centripetal_shift)
+        self.loss_guiding_shift = MODELS.build(loss_guiding_shift)
+        self.loss_centripetal_shift = MODELS.build(loss_centripetal_shift)
 
     def _init_centripetal_layers(self) -> None:
         """Initialize centripetal layers.
