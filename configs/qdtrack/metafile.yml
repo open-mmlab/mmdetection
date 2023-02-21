@@ -1,0 +1,78 @@
+Collections:
+  - Name: QDTrack
+    Metadata:
+      Training Data: MOT17, crowdhuman
+      Training Techniques:
+        - SGD
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - ResNet
+    Paper:
+      URL: https://arxiv.org/pdf/2006.06664.pdf
+      Title: Quasi-Dense Similarity Learning for Multiple Object Tracking
+    README: configs/mot/qdtrack/README.md
+
+Models:
+  - Name: qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval
+    In Collection: QDTrack
+    Config: configs/mot/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py
+    Metadata:
+      Training Data: MOT17
+      Training Memory (GB): 5.83
+      Epochs: 4
+    Results:
+      - Task: Multi-object Tracking
+        Dataset: MOT17
+        Metrics:
+          HOTA: 57.1
+          MOTA: 68.2
+          IDF1: 68.5
+    Weights: https://download.openmmlab.com/mmtracking/mot/qdtrack/mot_dataset/qdtrack_faster-rcnn_r50_fpn_4e_mot17_20220315_145635-76f295ef.pth
+
+  - Name: qdtrack_faster-rcnn_r50_fpn_8xb2-4e_crowdhuman-mot17halftrain_test-mot17halfval
+    In Collection: QDTrack
+    Config: configs/mot/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_crowdhuman-mot17halftrain_test-mot17halfval.py
+    Metadata:
+      Training Data: MOT17, crowdhuman
+      Training Memory (GB): 6.31
+      Epochs: 4
+    Results:
+      - Task: Multi-object Tracking
+        Dataset: MOT17
+        Metrics:
+          HOTA: 59.1
+          MOTA: 71.7
+          IDF1: 71.6
+    Weights: https://download.openmmlab.com/mmtracking/mot/qdtrack/mot_dataset/qdtrack_faster-rcnn_r50_fpn_4e_crowdhuman_mot17_20220315_163453-68899b0a.pth
+
+  - Name: qdtrack_faster-rcnn_r101_fpn_8xb2-24e_lvis_test-tao
+    In Collection: QDTrack
+    Config: configs/mot/qdtrack/qdtrack_faster-rcnn_r101_fpn_8xb2-24e_lvis_test-tao.py
+    Metadata:
+      Training Data: LVIS
+      Training Memory (GB): 9.78
+      Epochs: 24
+    Results:
+      - Task: Multi-object Tracking
+        Dataset: TAO
+        Metrics:
+          AP: 17.2
+          AP50: 28.6
+          AP75: 17.7
+    Weights: https://download.openmmlab.com/mmtracking/mot/qdtrack/tao_dataset/qdtrack_faster-rcnn_r101_fpn_24e_lvis_20220430_024513-88911daf.pth
+
+  - Name: qdtrack_faster-rcnn_r101_fpn_8xb2-12e_tao
+    In Collection: QDTrack
+    Config: configs/mot/qdtrack/qdtrack_faster-rcnn_r101_fpn_8xb2-12e_tao.py
+    Metadata:
+      Training Data: TAO
+      Training Memory (GB): 1.36
+      Epochs: 12
+    Results:
+      - Task: Multi-object Tracking
+        Dataset: TAO
+        Metrics:
+          Track AP: 11.0
+          Track AP50: 15.8
+          Track AP75: 6.1
+    Weights: https://download.openmmlab.com/mmtracking/mot/qdtrack/tao_dataset/qdtrack_faster-rcnn_r101_fpn_12e_tao_20220613_211934-7cbf4062.pth

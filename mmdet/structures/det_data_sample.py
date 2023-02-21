@@ -148,6 +148,19 @@ class DetDataSample(BaseDataElement):
     def pred_instances(self):
         del self._pred_instances
 
+    # TODO: whether to add pred_track_instances
+    @property
+    def pred_track_instances(self) -> InstanceData:
+        return self._pred_track_instances
+
+    @pred_track_instances.setter
+    def pred_track_instances(self, value: InstanceData):
+        self.set_field(value, '_pred_track_instances', dtype=InstanceData)
+
+    @pred_track_instances.deleter
+    def pred_track_instances(self):
+        del self._pred_track_instances
+
     @property
     def ignored_instances(self) -> InstanceData:
         return self._ignored_instances

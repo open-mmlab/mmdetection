@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import Optional
 
-from mmtrack.registry import MODELS, TASK_UTILS
 from torch import Tensor
 
-from mmdet.structures import SampleTrackList
+from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures import TrackSampleList
 from mmdet.utils import OptConfigType
 from .base import BaseMOTModel
 
@@ -50,7 +50,7 @@ class DeepSORT(BaseMOTModel):
 
         self.preprocess_cfg = data_preprocessor
 
-    def loss(self, inputs: Tensor, data_samples: SampleTrackList,
+    def loss(self, inputs: Tensor, data_samples: TrackSampleList,
              **kwargs) -> dict:
         """Calculate losses from a batch of inputs and data samples."""
         raise NotImplementedError(
@@ -59,9 +59,9 @@ class DeepSORT(BaseMOTModel):
 
     def predict(self,
                 inputs: Tensor,
-                data_samples: SampleTrackList,
+                data_samples: TrackSampleList,
                 rescale: bool = True,
-                **kwargs) -> SampleTrackList:
+                **kwargs) -> TrackSampleList:
         """Predict results from a video and data samples with post- processing.
 
         Args:
@@ -77,7 +77,7 @@ class DeepSORT(BaseMOTModel):
                 will fit the scale of original image shape. Defaults to True.
 
         Returns:
-            SampleTrackList: List[TrackDataSample]
+            TrackSampleList: List[TrackDataSample]
             Tracking results of the input videos.
             Each DetDataSample usually contains ``pred_track_instances``.
         """

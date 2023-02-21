@@ -146,7 +146,7 @@ class MOTChallengeMetrics(BaseVideoMetric):
 
                 # load gts
                 if 'instances' in img_data_sample:
-                    gt_instances = img_data_sample['gt_instances']
+                    gt_instances = img_data_sample['instances']
                     gt_tracks = [
                         np.array([
                             frame_id + 1, gt_instances[i]['instance_id'],
@@ -164,7 +164,7 @@ class MOTChallengeMetrics(BaseVideoMetric):
                     self.seq_info[video]['gt_tracks'].extend(gt_tracks)
 
                 # load predictions
-                assert 'pred_track_instances' in data_sample
+                assert 'pred_track_instances' in img_data_sample
                 pred_instances = img_data_sample['pred_track_instances']
                 pred_tracks = [
                     np.array([

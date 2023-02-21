@@ -54,5 +54,5 @@ class TrackDataSample(BaseDataElement):
             self, '_video_data_samples') else 0
 
 
-SampleTrackList = List[TrackDataSample]
-OptSampleTrackList = Optional[SampleTrackList]
+TrackSampleList = List[TrackDataSample]
+OptTrackSampleList = Optional[TrackSampleList]

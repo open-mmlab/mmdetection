@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional
+from typing import Dict, Optional, Union
 
 from torch import Tensor
 
 from mmdet.registry import MODELS
-from mmdet.structures import SampleTrackList
+from mmdet.structures import TrackSampleList
 from mmdet.utils import OptConfigType, OptMultiConfig
 from .base import BaseMOTModel
 
@@ -52,9 +52,9 @@ class QDTrack(BaseMOTModel):
 
     def predict(self,
                 inputs: Tensor,
-                data_samples: SampleTrackList,
+                data_samples: TrackSampleList,
                 rescale: bool = True,
-                **kwargs) -> SampleTrackList:
+                **kwargs) -> TrackSampleList:
         """Predict results from a video and data samples with post- processing.
 
         Args:
@@ -70,15 +70,13 @@ class QDTrack(BaseMOTModel):
                 will fit the scale of original image shape. Defaults to True.
 
         Returns:
-            SampleTrackList: List[TrackDataSample]
+            TrackSampleList: List[TrackDataSample]
             Tracking results of the input videos.
             Each DetDataSample usually contains ``pred_track_instances``.
         """
-        img = inputs
-        assert img.dim() == 5, 'The img must be 5D Tensor (N, T, C, H, W).'
-        assert img.size(0) == 1, \
+        assert inputs.dim() == 5, 'The img must be 5D Tensor (N, T, C, H, W).'
+        assert inputs.size(0) == 1, \
             'QDTrack inference only support 1 batch size per gpu for now.'
-        img = img[:, 0]
 
         assert len(data_samples) == 1, \
             'QDTrack only support 1 batch size per gpu for now.'
@@ -88,23 +86,26 @@ class QDTrack(BaseMOTModel):
 
         for frame_id in range(video_len):
             img_data_sample = track_data_sample[frame_id]
-            x = self.detector.extract_feat(img)
+            single_img = inputs[:, frame_id]
+            x = self.detector.extract_feat(single_img)
             rpn_results_list = self.detector.rpn_head.predict(
                 x, [img_data_sample])
+            # det_results List[InstanceData]
             det_results = self.detector.roi_head.predict(
                 x, rpn_results_list, [img_data_sample], rescale=rescale)
-            # det_results List[InstanceData]
             assert len(det_results) == 1, 'Batch inference is not supported.'
-            img_data_sample.pred_det_instances = \
-                det_results[0].pred_instances.clone()
+            img_data_sample.pred_instances = det_results[0].clone()
             frame_pred_track_instances = self.tracker.track(
                 model=self,
-                img=img,
+                img=single_img,
                 feats=x,
                 data_sample=img_data_sample,
                 **kwargs)
-            img_data_sample.pred_instances = frame_pred_track_instances
+            img_data_sample.pred_track_instances = frame_pred_track_instances
 
         return [track_data_sample]
 
-    # TODO: QDTrack loss
+    def loss(self, inputs: Dict[str, Tensor], data_samples: TrackSampleList,
+             **kwargs) -> Union[dict, tuple]:
+        """Calculate losses from a batch of inputs and data samples."""
+        pass

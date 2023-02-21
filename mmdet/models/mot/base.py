@@ -5,10 +5,12 @@ from typing import Dict, List, Tuple, Union
 from mmengine.model import BaseModel
 from torch import Tensor
 
-from mmdet.structures import OptSampleTrackList, SampleTrackList
+from mmdet.registry import MODELS
+from mmdet.structures import OptTrackSampleList, TrackSampleList
 from mmdet.utils import OptConfigType, OptMultiConfig
 
 
+@MODELS.register_module()
 class BaseMOTModel(BaseModel, metaclass=ABCMeta):
     """Base class for multiple object tracking.
 
@@ -67,7 +69,7 @@ class BaseMOTModel(BaseModel, metaclass=ABCMeta):
 
     def forward(self,
                 inputs: Dict[str, Tensor],
-                data_samples: OptSampleTrackList = None,
+                data_samples: OptTrackSampleList = None,
                 mode: str = 'predict',
                 **kwargs):
         """The unified entry for a forward process in both training and test.
@@ -113,21 +115,21 @@ class BaseMOTModel(BaseModel, metaclass=ABCMeta):
                                'Only supports loss, predict and tensor mode')
 
     @abstractmethod
-    def loss(self, inputs: Dict[str, Tensor], data_samples: SampleTrackList,
+    def loss(self, inputs: Dict[str, Tensor], data_samples: TrackSampleList,
              **kwargs) -> Union[dict, tuple]:
         """Calculate losses from a batch of inputs and data samples."""
         pass
 
     @abstractmethod
-    def predict(self, inputs: Dict[str, Tensor], data_samples: SampleTrackList,
-                **kwargs) -> SampleTrackList:
+    def predict(self, inputs: Dict[str, Tensor], data_samples: TrackSampleList,
+                **kwargs) -> TrackSampleList:
         """Predict results from a batch of inputs and data samples with post-
         processing."""
         pass
 
     def _forward(self,
                  inputs: Dict[str, Tensor],
-                 data_samples: OptSampleTrackList = None,
+                 data_samples: OptTrackSampleList = None,
                  **kwargs):
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
