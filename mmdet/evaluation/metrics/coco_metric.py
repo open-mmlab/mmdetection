@@ -5,7 +5,7 @@ from typing import List, Optional, Sequence, Union
 
 import numpy as np
 from mmengine.logging import print_log
-from mmeval import COCODetection as _CocoMetric
+from mmeval import COCODetection
 from terminaltables import AsciiTable
 from torch import Tensor
 
@@ -15,8 +15,8 @@ from mmdet.structures.mask import (BitmapMasks, PolygonMasks,
 
 
 @METRICS.register_module()
-class CocoMetric(_CocoMetric):
-    """COCO object detection task evaluation metric.
+class CocoMetric(COCODetection):
+    """A wrapper of :class:`mmeval.COCODetection`.
 
     Evaluate AR, AP, and mAP for detection tasks including proposal/box
     detection and instance segmentation. Please refer to

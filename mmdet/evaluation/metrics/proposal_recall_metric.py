@@ -3,15 +3,15 @@ import copy
 from typing import Optional, Sequence, Union
 
 from mmengine.logging import print_log
-from mmeval.metrics import ProposalRecall as _ProposalRecall
+from mmeval.metrics import ProposalRecall
 from terminaltables import AsciiTable
 
 from mmdet.registry import METRICS
 
 
 @METRICS.register_module()
-class ProposalRecallMetric(_ProposalRecall):
-    """Proposals recall evaluation metric.
+class ProposalRecallMetric(ProposalRecall):
+    """A wrapper of :class:`mmeval.ProposalRecall`.
 
     The speed of calculating recall is faster than COCO Detection metric.
 
@@ -37,7 +37,7 @@ class ProposalRecallMetric(_ProposalRecall):
 
     def __init__(self,
                  iou_thrs: Optional[Union[float, Sequence[float]]] = None,
-                 proposal_nums: Union[int, Sequence[int]] = (100, 300, 1000),
+                 proposal_nums: Union[int, Sequence[int]] = (1, 10, 100, 1000),
                  use_legacy_coordinate: bool = False,
                  nproc: int = 4,
                  dist_backend: str = 'torch_cuda',

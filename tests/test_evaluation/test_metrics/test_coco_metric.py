@@ -90,7 +90,7 @@ class TestCocoMetric(TestCase):
     def _create_dummy_results(self):
         bboxes = np.array([[50, 60, 70, 80], [100, 120, 130, 150],
                            [150, 160, 190, 200], [250, 260, 350, 360]])
-        scores = np.array([1.0, 0.98, 0.96, 0.95])
+        scores = np.array([100.0, 0.98, 0.96, 0.95])
         labels = np.array([0, 0, 1, 0])
         dummy_mask = np.zeros((4, 10, 10), dtype=np.uint8)
         dummy_mask[:, :5, :5] = 1
@@ -129,12 +129,12 @@ class TestCocoMetric(TestCase):
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = coco_metric.evaluate()
         target = {
-            'coco/bbox_mAP': 1.0,
-            'coco/bbox_mAP_50': 1.0,
-            'coco/bbox_mAP_75': 1.0,
-            'coco/bbox_mAP_s': 1.0,
-            'coco/bbox_mAP_m': 1.0,
-            'coco/bbox_mAP_l': 1.0,
+            'coco/bbox_mAP(%)': 100.0,
+            'coco/bbox_mAP_50(%)': 100.0,
+            'coco/bbox_mAP_75(%)': 100.0,
+            'coco/bbox_mAP_s(%)': 100.0,
+            'coco/bbox_mAP_m(%)': 100.0,
+            'coco/bbox_mAP_l(%)': 100.0,
         }
         self.assertDictEqual(eval_results, target)
         self.assertTrue(
@@ -152,18 +152,18 @@ class TestCocoMetric(TestCase):
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = coco_metric.evaluate()
         target = {
-            'coco/bbox_mAP': 1.0,
-            'coco/bbox_mAP_50': 1.0,
-            'coco/bbox_mAP_75': 1.0,
-            'coco/bbox_mAP_s': 1.0,
-            'coco/bbox_mAP_m': 1.0,
-            'coco/bbox_mAP_l': 1.0,
-            'coco/segm_mAP': 1.0,
-            'coco/segm_mAP_50': 1.0,
-            'coco/segm_mAP_75': 1.0,
-            'coco/segm_mAP_s': 1.0,
-            'coco/segm_mAP_m': 1.0,
-            'coco/segm_mAP_l': 1.0,
+            'coco/bbox_mAP(%)': 100.0,
+            'coco/bbox_mAP_50(%)': 100.0,
+            'coco/bbox_mAP_75(%)': 100.0,
+            'coco/bbox_mAP_s(%)': 100.0,
+            'coco/bbox_mAP_m(%)': 100.0,
+            'coco/bbox_mAP_l(%)': 100.0,
+            'coco/segm_mAP(%)': 100.0,
+            'coco/segm_mAP_50(%)': 100.0,
+            'coco/segm_mAP_75(%)': 100.0,
+            'coco/segm_mAP_s(%)': 100.0,
+            'coco/segm_mAP_m(%)': 100.0,
+            'coco/segm_mAP_l(%)': 100.0,
         }
         self.assertDictEqual(eval_results, target)
         self.assertTrue(
@@ -194,7 +194,7 @@ class TestCocoMetric(TestCase):
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = coco_metric.evaluate()
         target = {
-            'coco/bbox_mAP_m': 1.0,
+            'coco/bbox_mAP_m(%)': 100.0,
         }
         self.assertDictEqual(eval_results, target)
 
@@ -215,14 +215,14 @@ class TestCocoMetric(TestCase):
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = coco_metric.evaluate()
         target = {
-            'coco/bbox_mAP': 1.0,
-            'coco/bbox_mAP_50': 1.0,
-            'coco/bbox_mAP_75': 1.0,
-            'coco/bbox_mAP_s': 1.0,
-            'coco/bbox_mAP_m': 1.0,
-            'coco/bbox_mAP_l': 1.0,
-            'coco/bbox_car_precision': 1.0,
-            'coco/bbox_bicycle_precision': 1.0,
+            'coco/bbox_mAP(%)': 100.0,
+            'coco/bbox_mAP_50(%)': 100.0,
+            'coco/bbox_mAP_75(%)': 100.0,
+            'coco/bbox_mAP_s(%)': 100.0,
+            'coco/bbox_mAP_m(%)': 100.0,
+            'coco/bbox_mAP_l(%)': 100.0,
+            'coco/bbox_car_precision(%)': 100.0,
+            'coco/bbox_bicycle_precision(%)': 100.0,
         }
         self.assertDictEqual(eval_results, target)
 
@@ -256,7 +256,7 @@ class TestCocoMetric(TestCase):
     #         [dict(pred_instances=dummy_pred, img_id=0,
     #         ori_shape=(640, 640))])
     #     eval_results = coco_metric.evaluate()
-    #     target = {'coco/AR@100': 1.0, 'coco/AR@300': 1.0,
+    #     target = {'coco/AR@100': 100.0, 'coco/AR@300': 100.0,
     #     'coco/AR@1000': 1.0}
     #     self.assertDictEqual(eval_results, target)
     #
@@ -289,12 +289,12 @@ class TestCocoMetric(TestCase):
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = coco_metric.evaluate()
         target = {
-            'coco/AR@100': 1,
-            'coco/AR@300': 1.0,
-            'coco/AR@1000': 1.0,
-            'coco/AR_s@1000': 1.0,
-            'coco/AR_m@1000': 1.0,
-            'coco/AR_l@1000': 1.0
+            'coco/AR@1(%)': 25.0,
+            'coco/AR@10(%)': 100.0,
+            'coco/AR@100(%)': 100.0,
+            'coco/AR_s@100(%)': 100.0,
+            'coco/AR_m@100(%)': 100.0,
+            'coco/AR_l@100(%)': 100.0
         }
         self.assertDictEqual(eval_results, target)
 
@@ -368,18 +368,18 @@ class TestCocoMetric(TestCase):
         ])
         eval_results = coco_metric.evaluate()
         target = {
-            'coco/bbox_mAP': 1.0,
-            'coco/bbox_mAP_50': 1.0,
-            'coco/bbox_mAP_75': 1.0,
-            'coco/bbox_mAP_s': 1.0,
-            'coco/bbox_mAP_m': 1.0,
-            'coco/bbox_mAP_l': 1.0,
-            'coco/segm_mAP': 1.0,
-            'coco/segm_mAP_50': 1.0,
-            'coco/segm_mAP_75': 1.0,
-            'coco/segm_mAP_s': 1.0,
-            'coco/segm_mAP_m': 1.0,
-            'coco/segm_mAP_l': 1.0,
+            'coco/bbox_mAP(%)': 100.0,
+            'coco/bbox_mAP_50(%)': 100.0,
+            'coco/bbox_mAP_75(%)': 100.0,
+            'coco/bbox_mAP_s(%)': 100.0,
+            'coco/bbox_mAP_m(%)': 100.0,
+            'coco/bbox_mAP_l(%)': 100.0,
+            'coco/segm_mAP(%)': 100.0,
+            'coco/segm_mAP_50(%)': 100.0,
+            'coco/segm_mAP_75(%)': 100.0,
+            'coco/segm_mAP_s(%)': 100.0,
+            'coco/segm_mAP_m(%)': 100.0,
+            'coco/segm_mAP_l(%)': 100.0,
         }
         self.assertDictEqual(eval_results, target)
         self.assertTrue(
@@ -407,18 +407,18 @@ class TestCocoMetric(TestCase):
         ])
         eval_results = coco_metric.evaluate()
         target = {
-            'coco/bbox_mAP': 1.0,
-            'coco/bbox_mAP_50': 1.0,
-            'coco/bbox_mAP_75': 1.0,
-            'coco/bbox_mAP_s': 1.0,
-            'coco/bbox_mAP_m': -1.0,
-            'coco/bbox_mAP_l': -1.0,
-            'coco/segm_mAP': 1.0,
-            'coco/segm_mAP_50': 1.0,
-            'coco/segm_mAP_75': 1.0,
-            'coco/segm_mAP_s': 1.0,
-            'coco/segm_mAP_m': -1.0,
-            'coco/segm_mAP_l': -1.0,
+            'coco/bbox_mAP(%)': 100.0,
+            'coco/bbox_mAP_50(%)': 100.0,
+            'coco/bbox_mAP_75(%)': 100.0,
+            'coco/bbox_mAP_s(%)': 100.0,
+            'coco/bbox_mAP_m(%)': -100.0,
+            'coco/bbox_mAP_l(%)': -100.0,
+            'coco/segm_mAP(%)': 100.0,
+            'coco/segm_mAP_50(%)': 100.0,
+            'coco/segm_mAP_75(%)': 100.0,
+            'coco/segm_mAP_s(%)': 100.0,
+            'coco/segm_mAP_m(%)': -100.0,
+            'coco/segm_mAP_l(%)': -100.0,
         }
         self.assertDictEqual(eval_results, target)
 
