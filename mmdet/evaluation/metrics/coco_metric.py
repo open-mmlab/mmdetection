@@ -5,8 +5,9 @@ from typing import List, Optional, Sequence, Union
 
 import numpy as np
 from mmengine.logging import print_log
-from mmeval import CocoDetectionMetric as _CocoMetric
+from mmeval import COCODetection as _CocoMetric
 from terminaltables import AsciiTable
+from torch import Tensor
 
 from mmdet.registry import METRICS
 from mmdet.structures.mask import (BitmapMasks, PolygonMasks,
@@ -60,7 +61,7 @@ class CocoMetric(_CocoMetric):
                  ann_file: Optional[str] = None,
                  metric: Union[str, List[str]] = 'bbox',
                  iou_thrs: Optional[Union[float, Sequence[float]]] = None,
-                 classwise_result: bool = False,
+                 classwise: bool = False,
                  proposal_nums: Sequence[int] = (100, 300, 1000),
                  metric_items: Optional[Sequence[str]] = None,
                  format_only: bool = False,
@@ -73,7 +74,7 @@ class CocoMetric(_CocoMetric):
             ann_file=ann_file,
             metric=metric,
             iou_thrs=iou_thrs,
-            classwise_result=classwise_result,
+            classwise=classwise,
             proposal_nums=proposal_nums,
             metric_items=metric_items,
             format_only=format_only,
@@ -105,7 +106,9 @@ class CocoMetric(_CocoMetric):
             pred['labels'] = pred_instances['labels'].cpu().numpy()
             if 'masks' in pred_instances:
                 pred['masks'] = encode_mask_results(
-                    pred_instances['masks'].detach().cpu().numpy())
+                    pred_instances['masks'].detach().cpu().numpy(
+                    ) if isinstance(pred_instances['masks'], Tensor
+                                    ) else pred_instances['masks'])
             # some detectors use different scores for bbox and mask
             if 'mask_scores' in pred_instances:
                 pred['mask_scores'] = \
@@ -183,22 +186,34 @@ class CocoMetric(_CocoMetric):
                     logger='current')
                 break
 
-            assert len(result) == 6
             if metric == 'proposal':
-                headers = [
-                    'AR@100', 'AR@300', 'AR@1000', 'AR_s@1000', 'AR_m@1000',
-                    'AR_l@1000'
-                ]
+                if self.metric_items is None:
+                    assert len(result) == 6
+                    headers = [
+                        'AR@100', 'AR@300', 'AR@1000', 'AR_s@1000',
+                        'AR_m@1000', 'AR_l@1000'
+                    ]
+                else:
+                    assert len(result) == len(self.metric_items)
+                    headers = self.metric_items
             else:
-                headers = [
-                    f'{metric}_mAP', f'{metric}_mAP_50', f'{metric}_mAP_75',
-                    f'{metric}_mAP_s', f'{metric}_mAP_m', f'{metric}_mAP_l'
-                ]
+                if self.metric_items is None:
+                    assert len(result) == 6
+                    headers = [
+                        f'{metric}_mAP', f'{metric}_mAP_50',
+                        f'{metric}_mAP_75', f'{metric}_mAP_s',
+                        f'{metric}_mAP_m', f'{metric}_mAP_l'
+                    ]
+                else:
+                    assert len(result) == len(self.metric_items)
+                    headers = [
+                        f'{metric}_{item}' for item in self.metric_items
+                    ]
             table_data = [headers, result]
             table = AsciiTable(table_data)
             print_log('\n' + table.table, logger='current')
 
-            if self.classwise_result and \
+            if self.classwise and \
                     f'{metric}_classwise_result' in metric_results:
                 print_log(
                     f'Evaluating {metric} metric of each category...',
@@ -217,5 +232,8 @@ class CocoMetric(_CocoMetric):
                 table_data += [result for result in results_2d]
                 table = AsciiTable(table_data)
                 print_log('\n' + table.table, logger='current')
-
-        return metric_results
+        evaluate_results = {
+            f'coco/{k}': round(float(v), 3)
+            for k, v in metric_results.items()
+        }
+        return evaluate_results
