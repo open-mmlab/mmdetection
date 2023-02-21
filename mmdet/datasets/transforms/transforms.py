@@ -613,6 +613,7 @@ class RandomCrop(BaseTransform):
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_ignore_flags (bool) (optional)
     - gt_seg_map (np.uint8) (optional)
+    - gt_instances_id (np.int64) (optional, only used in MOT/VIS)
 
     Modified Keys:
 
@@ -623,6 +624,7 @@ class RandomCrop(BaseTransform):
     - gt_masks (optional)
     - gt_ignore_flags (optional)
     - gt_seg_map (optional)
+    - gt_instances_id (options, only used in MOT/VIS)
 
     Added Keys:
 
@@ -753,6 +755,10 @@ class RandomCrop(BaseTransform):
                 if self.recompute_bbox:
                     results['gt_bboxes'] = results['gt_masks'].get_bboxes(
                         type(results['gt_bboxes']))
+
+            if results.get('gt_instances_id', None) is not None:
+                results['gt_instances_id'] = \
+                    results['gt_instances_id'][valid_inds]
 
         # crop semantic seg
         if results.get('gt_seg_map', None) is not None:

@@ -8,6 +8,7 @@ from mmengine.config import Config
 from mmengine.dataset import pseudo_collate
 from mmengine.structures import InstanceData, PixelData
 
+from mmdet.structures import TrackDataSample
 from ..registry import TASK_UTILS
 from ..structures import DetDataSample
 from ..structures.bbox import HorizontalBoxes
@@ -270,6 +271,109 @@ def demo_mm_sampling_results(proposals_list,
         sampling_results.append(sampling_result)
 
     return sampling_results
+
+
+def demo_track_inputs(batch_size=1,
+                      num_frames=2,
+                      image_shapes=(3, 128, 128),
+                      num_items=None,
+                      num_classes=10,
+                      with_mask=False,
+                      with_semantic=False):
+    """Create a superset of inputs needed to run test or train batches.
+
+    Args:
+        batch_size (int): batch size. Default to 2.
+        frame_id (int): the frame id.
+        num_key_imgs (int): the number of key images. This input is used in
+            all methods except for training in SOT.
+        num_ref_imgs (int): the number of reference images. This input is
+            used in all methods except for training in SOT.
+        image_shapes (List[tuple], Optional): image shape.
+            Default to (3, 128, 128)
+        num_items (None | List[int]): specifies the number
+            of boxes in each batch item. Default to None.
+        num_classes (int): number of different labels a
+            box might have. Default to 10.
+        ref_prefix (str): the prefix of reference images (or search images
+            in SOT).
+        with_mask (bool): Whether to return mask annotation.
+            Defaults to False.
+        with_semantic (bool): whether to return semantic.
+            Default to False.
+        num_template_imgs (int): the number of template images. This input is
+            only used in training in SOT.
+        num_search_imgs (int): the number of search images. This input is
+            only used in training in SOT.
+    """
+    rng = np.random.RandomState(0)
+
+    # Make sure the length of image_shapes is equal to ``batch_size``
+    if isinstance(image_shapes, list):
+        assert len(image_shapes) == batch_size
+    else:
+        image_shapes = [image_shapes] * batch_size
+
+    packed_inputs = []
+    for idx in range(batch_size):
+        mm_inputs = dict(inputs=dict())
+        _, h, w = image_shapes[idx]
+        imgs = rng.randint(
+            0, 255, size=(num_frames, *image_shapes[idx]), dtype=np.uint8)
+        mm_inputs['inputs'] = torch.from_numpy(imgs)
+
+        img_meta = {
+            'img_id': idx,
+            'img_shape': image_shapes[idx][-2:],
+            'ori_shape': image_shapes[idx][-2:],
+            'filename': '<demo>.png',
+            'scale_factor': np.array([1.1, 1.2]),
+            'flip': False,
+            'flip_direction': None,
+            'is_video_data': True,
+        }
+
+        video_data_samples = []
+        for i in range(num_frames):
+            data_sample = DetDataSample()
+            img_meta['frame_id'] = i
+            data_sample.set_metainfo(img_meta)
+
+            # gt_instances
+            gt_instances = InstanceData()
+            if num_items is None:
+                num_boxes = rng.randint(1, 10)
+            else:
+                num_boxes = num_items[idx]
+
+            bboxes = _rand_bboxes(rng, num_boxes, w, h)
+            labels = rng.randint(0, num_classes, size=num_boxes)
+            instances_id = rng.randint(100, num_classes + 100, size=num_boxes)
+            gt_instances.bboxes = torch.FloatTensor(bboxes)
+            gt_instances.labels = torch.LongTensor(labels)
+            gt_instances.instances_id = torch.LongTensor(instances_id)
+
+            if with_mask:
+                masks = _rand_masks(rng, num_boxes, bboxes, w, h)
+                gt_instances.masks = masks
+
+            data_sample.gt_instances = gt_instances
+            # ignore_instances
+            ignore_instances = InstanceData()
+            bboxes = _rand_bboxes(rng, num_boxes, w, h)
+            ignore_instances.bboxes = bboxes
+            data_sample.ignored_instances = ignore_instances
+
+            video_data_samples.append(data_sample)
+
+        track_data_sample = TrackDataSample()
+        track_data_sample.video_data_samples = video_data_samples
+        mm_inputs['data_samples'] = track_data_sample
+
+        # TODO: gt_ignore
+        packed_inputs.append(mm_inputs)
+    data = pseudo_collate(packed_inputs)
+    return data
 
 
 # TODO: Support full ceph
