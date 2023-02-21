@@ -51,7 +51,7 @@ class TesVOCMetric(unittest.TestCase):
         metric.dataset_meta = dataset.metainfo
         metric.process({}, [data_sample])
         results = metric.evaluate()
-        targets = {'pascal_voc/mAP@0.5': 1.0, 'pascal_voc/mAP': 1.0}
+        targets = {'pascal_voc/mAP@0.5(%)': 100.0, 'pascal_voc/mAP(%)': 100.0}
         self.assertDictEqual(results, targets)
 
         # test multi-threshold
@@ -62,8 +62,8 @@ class TesVOCMetric(unittest.TestCase):
         metric.process({}, [data_sample])
         results = metric.evaluate()
         targets = {
-            'pascal_voc/mAP@0.1': 1.0,
-            'pascal_voc/mAP@0.5': 1.0,
-            'pascal_voc/mAP': 1.0
+            'pascal_voc/mAP@0.1(%)': 100.0,
+            'pascal_voc/mAP@0.5(%)': 100.0,
+            'pascal_voc/mAP(%)': 100.0
         }
         self.assertDictEqual(results, targets)
