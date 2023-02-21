@@ -294,18 +294,6 @@ class BiFPN(BaseModule):
                 epsilon=epsilon) for _ in range(num_stages)
         ])
 
-    """
-    def init_weights(self) -> None:
-        # Initialize weights of the head
-        for name, module in self.bifpn.named_modules():
-            is_conv_layer = isinstance(module, nn.Conv2d)
-
-            if is_conv_layer:
-                nn.init.xavier_uniform_(module.weight)
-                if module.bias is not None:
-                    module.bias.data.zero_()
-    """
-
     def forward(self, x):
         x = x[self.start_level:]
         x = self.bifpn(x)
