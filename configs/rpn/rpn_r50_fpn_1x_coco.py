@@ -7,6 +7,7 @@ val_evaluator = dict(
     _delete_=True,
     type='ProposalRecallMetric',
     proposal_nums=(1, 10, 100, 1000),
+    prefix='coco',
     use_legacy_coordinate=False,  # VOCDataset should set True, else False
 )
 test_evaluator = val_evaluator

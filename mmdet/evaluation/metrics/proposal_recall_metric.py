@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
+import warnings
 from typing import Optional, Sequence, Union
 
 from mmengine.logging import print_log
@@ -29,19 +30,33 @@ class ProposalRecallMetric(ProposalRecall):
         nproc (int): Processes used for computing TP and FP. If nproc
             is less than or equal to 1, multiprocessing will not be used.
             Defaults to 4.
+        prefix (str, optional): The prefix that will be added in the metric
+            names to disambiguate homonymous metrics of different evaluators.
+            If prefix is not provided in the argument, self.default_prefix
+            will be used instead. Defaults to None.
         dist_backend (str | None): The name of the distributed communication
             backend. Refer to :class:`mmeval.BaseMetric`.
             Defaults to 'torch_cuda'.
         **kwargs: Keyword parameters passed to :class:`BaseMetric`.
     """
+    default_prefix: Optional[str] = 'proposals'
 
     def __init__(self,
                  iou_thrs: Optional[Union[float, Sequence[float]]] = None,
                  proposal_nums: Union[int, Sequence[int]] = (1, 10, 100, 1000),
                  use_legacy_coordinate: bool = False,
                  nproc: int = 4,
+                 prefix: Optional[str] = None,
                  dist_backend: str = 'torch_cuda',
                  **kwargs) -> None:
+
+        collect_device = kwargs.pop('collect_device', None)
+        if collect_device is not None:
+            warnings.warn(
+                'DeprecationWarning: The `collect_device` parameter of '
+                '`ProposalRecallMetric` is deprecated, '
+                'use `dist_backend` instead.')
+
         super().__init__(
             iou_thrs=iou_thrs,
             proposal_nums=proposal_nums,
@@ -49,6 +64,8 @@ class ProposalRecallMetric(ProposalRecall):
             nproc=nproc,
             dist_backend=dist_backend,
             **kwargs)
+
+        self.prefix = prefix or self.default_prefix
 
     # TODO: data_batch is no longer needed, consider adjusting the
     #  parameter position
@@ -100,7 +117,7 @@ class ProposalRecallMetric(ProposalRecall):
         print_log('\n' + table.table, logger='current')
 
         evaluate_results = {
-            f'{k}(%)': round(float(v) * 100, 4)
+            f'{self.prefix}/{k}(%)': round(float(v) * 100, 4)
             for k, v in metric_results.items()
         }
         return evaluate_results

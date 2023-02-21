@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import itertools
 import os.path as osp
+import warnings
 from typing import List, Optional, Sequence, Union
 
 import numpy as np
@@ -51,6 +52,10 @@ class CocoMetric(COCODetection):
             ann_file. If True, the GT instance area will be the mask area,
             else the bounding box area. It will not be used when loading
             ann_file. Defaults to True.
+        prefix (str, optional): The prefix that will be added in the metric
+            names to disambiguate homonymous metrics of different evaluators.
+            If prefix is not provided in the argument, self.default_prefix
+            will be used instead. Defaults to None.
         dist_backend (str | None): The name of the distributed communication
             backend. Refer to :class:`mmeval.BaseMetric`.
             Defaults to 'torch_cuda'.
@@ -69,8 +74,16 @@ class CocoMetric(COCODetection):
                  outfile_prefix: Optional[str] = None,
                  backend_args: Optional[dict] = None,
                  gt_mask_area: bool = True,
+                 prefix: Optional[str] = None,
                  dist_backend: str = 'torch_cuda',
                  **kwargs) -> None:
+
+        collect_device = kwargs.pop('collect_device', None)
+        if collect_device is not None:
+            warnings.warn(
+                'DeprecationWarning: The `collect_device` parameter of '
+                '`CocoMetric` is deprecated, use `dist_backend` instead.')
+
         super().__init__(
             ann_file=ann_file,
             metric=metric,
@@ -84,6 +97,8 @@ class CocoMetric(COCODetection):
             gt_mask_area=gt_mask_area,
             dist_backend=dist_backend,
             **kwargs)
+
+        self.prefix = prefix or self.default_prefix
 
     # TODO: data_batch is no longer needed, consider adjusting the
     #  parameter position
@@ -240,7 +255,7 @@ class CocoMetric(COCODetection):
                 table = AsciiTable(table_data, title=classwise_table_title)
                 print_log('\n' + table.table, logger='current')
         evaluate_results = {
-            f'coco/{k}(%)': round(float(v) * 100, 4)
+            f'{self.prefix}/{k}(%)': round(float(v) * 100, 4)
             for k, v in metric_results.items()
         }
         return evaluate_results
