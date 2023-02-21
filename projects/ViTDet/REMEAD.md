@@ -11,7 +11,7 @@ This is an implementation of [ViTDet](https://github.com/facebookresearch/detect
 In MMDetection's root directory, run the following command to train the model:
 
 ```bash
-python tools/train.py projects/ViTDet/configs/mask-rcnn_vit-base_fpn_rpn-2conv_4conv1fc_ln-all_lsj-100e_coco.py
+python tools/train.py projects/ViTDet/configs/vitdet_mask-rcnn_vit-b-mae_lsj-100e.py
 ```
 
 ### Testing commands
@@ -19,7 +19,7 @@ python tools/train.py projects/ViTDet/configs/mask-rcnn_vit-base_fpn_rpn-2conv_4
 In MMDetection's root directory, run the following command to test the model:
 
 ```bash
-python tools/train.py projects/ViTDet/configs/mask-rcnn_vit-base_fpn_rpn-2conv_4conv1fc_ln-all_lsj-100e_coco.py ${CHECKPOINT_PATH}
+python tools/train.py projects/ViTDet/configs/vitdet_mask-rcnn_vit-b-mae_lsj-100e.py ${CHECKPOINT_PATH}
 ```
 
 ## Results
@@ -30,9 +30,9 @@ If you want to reproduce the test results, you need to convert model weights fir
 <br>
 The training accuracy will also be aligned with the official in the future
 
-|                                        Method                                         | Backbone | Pretrained Model |  Training set  |   Test set   | Epoch | Val Box AP | Val Mask  AP | Official Box AP | Official Mask AP | Download |
-| :-----------------------------------------------------------------------------------: | :------: | :--------------: | :------------: | :----------: | :---: | :--------: | :----------: | :-------------: | :--------------: | :------: |
-| [ViTDet](./configs/mask-rcnn_vit-base_fpn_rpn-2conv_4conv1fc_ln-all_lsj-100e_coco.py) |  ViT-B   |       MAE        | COCO2017 Train | COCO2017 Val |  100  |    51.4    |     45.8     |      51.6       |       45.9       | model()  |
+|                           Method                           | Backbone | Pretrained Model |  Training set  |   Test set   | Epoch | Val Box AP | Val Mask  AP | Official Box AP | Official Mask AP | Download |
+| :--------------------------------------------------------: | :------: | :--------------: | :------------: | :----------: | :---: | :--------: | :----------: | :-------------: | :--------------: | :------: |
+| [ViTDet](./configs/vitdet_mask-rcnn_vit-b-mae_lsj-100e.py) |  ViT-B   |       MAE        | COCO2017 Train | COCO2017 Val |  100  |    51.4    |     45.8     |      51.6       |       45.9       | model()  |
 
 ## Citation
 
