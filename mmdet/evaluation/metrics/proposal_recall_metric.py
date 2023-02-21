@@ -20,7 +20,8 @@ class ProposalRecallMetric(_ProposalRecall):
             If not specified, IoUs from 0.5 to 0.95 will be used.
             Defaults to None.
         proposal_nums (Sequence[int]): Numbers of proposals to be evaluated.
-            Defaults to (100, 300, 1000).
+            Defaults to (1, 10, 100, 1000).
+            Note: it defaults to (100, 300, 1000) in MMDet 2.x.
         use_legacy_coordinate (bool): Whether to use coordinate
             system in mmdet v1.x. which means width, height should be
             calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
@@ -63,7 +64,6 @@ class ProposalRecallMetric(_ProposalRecall):
         predictions, groundtruths = [], []
         for data_sample in data_samples:
             gt = copy.deepcopy(data_sample)
-            # TODO: Need to refactor to support LoadAnnotations
             gt_instances = gt['gt_instances']
             ann = dict(
                 labels=gt_instances['labels'].cpu().numpy(),
@@ -92,7 +92,7 @@ class ProposalRecallMetric(_ProposalRecall):
         result = metric_results.pop('proposal_result')
         headers = [''] + [
             f'AR_{iou_thr * 100:.0f}' for iou_thr in self.iou_thrs
-        ] + [' AR']
+        ] + ['AR']
         table_data = [headers]
         for i in range(len(self.proposal_nums)):
             row = [f'{self.proposal_nums[i]}'] + \
@@ -101,4 +101,8 @@ class ProposalRecallMetric(_ProposalRecall):
         table = AsciiTable(table_data)
         print_log('\n' + table.table, logger='current')
 
-        return metric_results
+        evaluate_results = {
+            k: round(float(v), 4)
+            for k, v in metric_results.items()
+        }
+        return evaluate_results

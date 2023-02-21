@@ -55,11 +55,17 @@ val_dataloader = dict(
         pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
+# val_evaluator = dict(
+#     type='CocoMetric',
+#     ann_file=data_root + 'annotations/instances_val2017.json',
+#     metric='bbox',
+#     classwise=False,
+#     format_only=False)
 val_evaluator = dict(
-    type='CocoMetric',
-    ann_file=data_root + 'annotations/instances_val2017.json',
-    metric='bbox',
-    format_only=False)
+    type='ProposalRecallMetric',
+    proposal_nums=(1, 10, 100, 1000),
+    use_legacy_coordinate=False,  # VOCDataset should set True, else False
+)
 test_evaluator = val_evaluator
 
 # inference on test dataset and

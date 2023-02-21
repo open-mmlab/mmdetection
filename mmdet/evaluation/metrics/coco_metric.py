@@ -31,10 +31,11 @@ class CocoMetric(_CocoMetric):
         iou_thrs (float | List[float], optional): IoU threshold to compute AP
             and AR. If not specified, IoUs from 0.5 to 0.95 will be used.
             Defaults to None.
-        classwise_result (bool):Whether to return the computed
+        classwise (bool):Whether to return the computed
             results of each class. Defaults to False.
-        proposal_nums (Sequence[int]nig): Numbers of proposals to be evaluated.
-            Defaults to (100, 300, 1000).
+        proposal_nums (Sequence[int]): Numbers of proposals to be evaluated.
+            Defaults to (1, 10, 100).
+            Note: it defaults to (100, 300, 1000) in MMDet 2.x.
         metric_items (List[str], optional): Metric result names to be
             recorded in the evaluation result. Defaults to None.
         format_only (bool): Format the output results without perform
@@ -62,7 +63,7 @@ class CocoMetric(_CocoMetric):
                  metric: Union[str, List[str]] = 'bbox',
                  iou_thrs: Optional[Union[float, Sequence[float]]] = None,
                  classwise: bool = False,
-                 proposal_nums: Sequence[int] = (100, 300, 1000),
+                 proposal_nums: Sequence[int] = (1, 10, 100),
                  metric_items: Optional[Sequence[str]] = None,
                  format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
@@ -190,8 +191,12 @@ class CocoMetric(_CocoMetric):
                 if self.metric_items is None:
                     assert len(result) == 6
                     headers = [
-                        'AR@100', 'AR@300', 'AR@1000', 'AR_s@1000',
-                        'AR_m@1000', 'AR_l@1000'
+                        f'AR@{self.proposal_nums[0]}',
+                        f'AR@{self.proposal_nums[1]}',
+                        f'AR@{self.proposal_nums[2]}',
+                        f'AR_s@{self.proposal_nums[2]}',
+                        f'AR_m@{self.proposal_nums[2]}',
+                        f'AR_l@{self.proposal_nums[2]}'
                     ]
                 else:
                     assert len(result) == len(self.metric_items)
