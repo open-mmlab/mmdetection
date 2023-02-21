@@ -92,6 +92,13 @@ class OpenImagesMetric(OIDMeanAP):
                 '`ProposalRecallMetric` is deprecated, '
                 'use `dist_backend` instead.')
 
+        ioa_thrs = kwargs.pop('ioa_thrs', None)
+        if ioa_thrs is not None and 'iof_thrs' not in kwargs:
+            kwargs['iof_thrs'] = ioa_thrs
+            warnings.warn(
+                'DeprecationWarning: The `ioa_thrs` parameter of '
+                '`OpenImagesMetric` is deprecated, use `iof_thrs` instead!')
+
         assert classwise, \
             '`OpenImagesMetric` should force set `classwise=True`'
 
