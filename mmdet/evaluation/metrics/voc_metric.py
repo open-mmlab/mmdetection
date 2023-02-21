@@ -132,11 +132,11 @@ class VOCMetric(VOCMeanAP):
         classwise_result = metric_results.pop('classwise_result')
 
         classes = self.dataset_meta['classes']
-        header = ['class', 'gts', 'dets', 'recall', 'ap']
+        header = ['class', 'gts', 'dets', 'recall(%)', 'ap(%)']
 
         for i, iou_thr in enumerate(self.iou_thrs):
             for j, scale_range in enumerate(self.scale_ranges):
-                table_title = f' IoU thr: {iou_thr} '
+                table_title = f' Bbox Results (IoU thr={iou_thr})'
                 if scale_range != (None, None):
                     table_title += f'Scale range: {scale_range} '
 
@@ -149,21 +149,22 @@ class VOCMetric(VOCMeanAP):
                     row_data = [
                         classes[k], class_results['num_gts'][i, j],
                         class_results['num_dets'],
-                        round(recall, 3),
-                        round(class_results['ap'][i, j], 3)
+                        round(recall * 100, 2),
+                        round(class_results['ap'][i, j] * 100, 2)
                     ]
                     table_data.append(row_data)
                     if class_results['num_gts'][i, j] > 0:
                         aps.append(class_results['ap'][i, j])
 
                 mean_ap = np.mean(aps) if aps != [] else 0
-                table_data.append(['mAP', '', '', '', f'{mean_ap:.3f}'])
+                table_data.append(
+                    ['mAP', '', '', '', f'{round(mean_ap * 100, 2)}'])
                 table = AsciiTable(table_data, title=table_title)
                 table.inner_footing_row_border = True
                 print_log('\n' + table.table, logger='current')
 
         evaluate_results = {
-            f'pascal_voc/{k}': round(float(v), 3)
+            f'pascal_voc/{k}(%)': round(float(v) * 100, 4)
             for k, v in metric_results.items()
         }
         return evaluate_results
