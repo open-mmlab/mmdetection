@@ -47,11 +47,16 @@ class VOCMetric(VOCMeanAP):
             when calculating the average precision for each class.
         classwise (bool): Whether to return the computed results of each
             class. Defaults to True.
+        prefix (str, optional): The prefix that will be added in the metric
+            names to disambiguate homonymous metrics of different evaluators.
+            If prefix is not provided in the argument, self.default_prefix
+            will be used instead. Defaults to None.
         dist_backend (str | None): The name of the distributed communication
             backend. Refer to :class:`mmeval.BaseMetric`.
             Defaults to 'torch_cuda'.
         **kwargs: Keyword parameters passed to :class:`mmeval.BaseMetric`.
     """
+    default_prefix: Optional[str] = 'pascal_voc'
 
     def __init__(self,
                  iou_thrs: Union[float, List[float]] = 0.5,
@@ -62,8 +67,17 @@ class VOCMetric(VOCMeanAP):
                  nproc: int = 4,
                  drop_class_ap: bool = True,
                  classwise: bool = True,
+                 prefix: Optional[str] = None,
                  dist_backend: str = 'torch_cuda',
                  **kwargs) -> None:
+
+        collect_device = kwargs.pop('collect_device', None)
+        if collect_device is not None:
+            warnings.warn(
+                'DeprecationWarning: The `collect_device` parameter of '
+                '`ProposalRecallMetric` is deprecated, '
+                'use `dist_backend` instead.')
+
         assert classwise, '`VOCMetric` should force set `classwise=True`'
 
         super().__init__(
@@ -77,6 +91,8 @@ class VOCMetric(VOCMeanAP):
             drop_class_ap=drop_class_ap,
             dist_backend=dist_backend,
             **kwargs)
+
+        self.prefix = prefix or self.default_prefix
 
     # TODO: data_batch is no longer needed, consider adjusting the
     #  parameter position
@@ -164,7 +180,7 @@ class VOCMetric(VOCMeanAP):
                 print_log('\n' + table.table, logger='current')
 
         evaluate_results = {
-            f'pascal_voc/{k}(%)': round(float(v) * 100, 4)
+            f'{self.prefix}/{k}(%)': round(float(v) * 100, 4)
             for k, v in metric_results.items()
         }
         return evaluate_results
