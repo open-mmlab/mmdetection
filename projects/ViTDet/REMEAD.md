@@ -30,9 +30,9 @@ If you want to reproduce the test results, you need to convert model weights fir
 <br>
 The training accuracy will also be aligned with the official in the future
 
-|                     Method                      | Backbone | Pretrained Model |  Training set  |   Test set   | Epoch | Val Box AP | Val Mask  AP | Official Box AP | Official Mask AP |
-| :---------------------------------------------: | :------: | :--------------: | :------------: | :----------: | :---: | :--------: | :----------: | :-------------: | :--------------: |
-| [ViTDet](./configs/mask-rcnn_vitdet_b_100ep.py) |  ViT-B   |       MAE        | COCO2017 Train | COCO2017 Val |  100  |    51.7    |     46.0     |      51.6       |       45.9       |
+|                     Method                      | Backbone | Pretrained Model |  Training set  |   Test set   | Epoch | Val Box AP | Val Mask  AP | Official Box AP | Official Mask AP | Download |
+| :---------------------------------------------: | :------: | :--------------: | :------------: | :----------: | :---: | :--------: | :----------: | :-------------: | :--------------: | :------: |
+| [ViTDet](./configs/mask-rcnn_vitdet_b_100ep.py) |  ViT-B   |       MAE        | COCO2017 Train | COCO2017 Val |  100  |    51.4    |     45.8     |      51.6       |       45.9       | model()  |
 
 ## Citation
 
@@ -70,9 +70,9 @@ A project does not necessarily have to be finished in a single PR, but it's esse
 
     <!-- As this template does. -->
 
-- [ ] Milestone 2: Indicates a successful model implementation.
+- [x] Milestone 2: Indicates a successful model implementation.
 
-  - [ ] Training-time correctness
+  - [x] Training-time correctness
 
     <!-- If you are reproducing the result from a paper, checking this item means that you should have trained your model from scratch based on the original paper's specification and verified that the final result matches the report within a minor error range. -->
 
