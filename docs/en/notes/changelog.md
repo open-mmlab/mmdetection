@@ -4,9 +4,9 @@
 
 ### Highlights
 
-- Support [Boxinst](https://arxiv.org/abs/2012.02310), [Objects365 Dataset](https://openaccess.thecvf.com/content_ICCV_2019/papers/Shao_Objects365_A_Large-Scale_High-Quality_Dataset_for_Object_Detection_ICCV_2019_paper.pdf), and [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046)
-- Support [ConvNeXt-V2](http://arxiv.org/abs/2301.00808), [DiffusionDet](https://arxiv.org/abs/2211.09788), and inference of [EfficientDet](https://arxiv.org/abs/1911.09070) and [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046) in `Projects`
-- Refactor DETR series and support C-DETR, DAB-DETR, and DINO
+- Support [Boxinst](../../../configs/boxinst), [Objects365 Dataset](../../../configs/objects365), and [Separated and Occluded COCO metric](../user_guides/useful_tools.md#COCO-Separated-&-Occluded-Mask-Metric)
+- Support [ConvNeXt-V2](../../../projects/ConvNeXt-V2), [DiffusionDet](../../../projects/DiffusionDet), and inference of [EfficientDet](../../../projects/EfficientDet) and [Detic](../../../projects/Detic) in `Projects`
+- Refactor DETR series and support Conditional-DETR, DAB-DETR, and DINO
 - Support DetInferencer, Test Time Augmentation, and auto import modules from registry
 
 ### New Features
@@ -19,7 +19,7 @@
 - Support [EfficientDet](https://arxiv.org/abs/1911.09070) inference in `Projects` (#9645)
 - Support [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046) (#9710)
 - Support auto import modules from registry (#9143)
-- Refactor DETR series and support C-DETR, DAB-DETR and DINO (#9646)
+- Refactor DETR series and support Conditional-DETR, DAB-DETR and DINO (#9646)
 - Support DetInferencer (#9561)
 - Support Test Time Augmentation (#9452)
 
@@ -28,7 +28,7 @@
 - Fix deprecating old type alias due to new version of numpy (#9625, #9537)
 - Fix VOC metrics (#9784)
 - Fix the wrong link of RTMDet-x log (#9549)
-- Fix RTEMDet link in README (#9575)
+- Fix RTMDet link in README (#9575)
 - Fix MMDet get flops error (#9589)
 - Fix `use_depthwise` in RTMDet (#9624)
 - Fix `albumentations` augmentation post process with masks (#9551)
@@ -43,12 +43,12 @@
 
 - Replace NumPy transpose with PyTorch permute to speed-up (#9762)
 - Deprecate `sklearn` (#9725)
-- Add benchmark model files (#9635)
-- Update RTEMDet config and README (#9603)
+- Update RTMDet config and README (#9603)
 - Adjust the minimum supported python version to 3.7 (#9602)
 - Support modifying palette through configuration (#9445)
 - Update README document in `Project` (#9599)
-- Replace `github` with `gitee` in pre-commit file (#9586)
+- Replace `github` with `gitee` in `.pre-commit-config-zh-cn.yaml` file (#9586)
+- Use official `isort` in `.pre-commit-config.yaml` file (#9701)
 - Change MMCV minimum version to `2.0.0rc4` for `dev-3.x` (#9695)
 - Add Chinese version of single_stage_as_rpn.md and test_results_submission.md (#9434)
 - Add OpenDataLab download link (#9605, #9738)
@@ -57,7 +57,6 @@
 - Add dockerfile (#9659)
 - Add twitter, discord, medium, and youtube link (#9775)
 - Prepare for merging refactor-detr (#9656)
-- Use official `isort` in pre-commit file (#9701)
 - Add metafile to ConditionalDETR, DABDETR and DINO (#9715)
 - Support to modify `non_blocking` parameters (#9723)
 - Comment repeater visualizer register (#9740)

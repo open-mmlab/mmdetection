@@ -95,9 +95,9 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 **v3.0.0rc6** 版本已经在 2023.1.24 发布：
 
-- 支持了 [Boxinst](https://arxiv.org/abs/2012.02310), [Objects365 Dataset](https://openaccess.thecvf.com/content_ICCV_2019/papers/Shao_Objects365_A_Large-Scale_High-Quality_Dataset_for_Object_Detection_ICCV_2019_paper.pdf) 和 [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046)
-- 在 `Projects` 中支持了 [ConvNeXt-V2](http://arxiv.org/abs/2301.00808), [DiffusionDet](https://arxiv.org/abs/2211.09788) 和 [EfficientDet](https://arxiv.org/abs/1911.09070), [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046) 的推理
-- 重构了 DETR 系列并支持了 C-DETR, DAB-DETR 和 DINO
+- [Boxinst](https://arxiv.org/abs/2012.02310), [Objects365 Dataset](https://openaccess.thecvf.com/content_ICCV_2019/papers/Shao_Objects365_A_Large-Scale_High-Quality_Dataset_for_Object_Detection_ICCV_2019_paper.pdf) 和 [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046)
+- 在 `Projects` 中支持了 [ConvNeXt-V2](projects/ConvNeXt-V2), [DiffusionDet](projects/DiffusionDet) 和 [EfficientDet](projects/EfficientDet), [Detic](projects/Detic) 的推理
+- 重构了 DETR 系列并支持了 Conditional-DETR, DAB-DETR 和 DINO
 - 支持了 DetInferencer, Test Time Augmentation 以及从注册表(registry)自动导入模块
 
 ## 安装
@@ -209,6 +209,9 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
             <li><a href="configs/ddod">DDOD (ACM MM'2021)</a></li>
             <li><a href="configs/RTMDet">RTMDet (ArXiv'2022)</a></li>
+            <li><a href="projects/DiffusionDet">DiffusionDet (ArXiv'2023)</a></li>
+            <li><a href="projects/EfficientDet">EfficientDet (CVPR'2020)</a></li>
+            <li><a href="projects/Detic">Detic (ECCV'2022)</a></li>
       </ul>
       </td>
       <td>
@@ -229,6 +232,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/condinst">CondInst (ECCV 2020)</a></li>
           <li><a href="projects/SparseInst">SparseInst (CVPR 2022)</a></li>
           <li><a href="configs/RTMDet">RTMDet (ArXiv'2022)</a></li>
+          <li><a href="configs/boxinst">RTMDet (CVPR'2021)</a></li>
         </ul>
       </td>
       <td>
@@ -308,6 +312,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
         <li><a href="configs/resnet_strikes_back">ResNet strikes back (ArXiv'2021)</a></li>
         <li><a href="configs/efficientnet">EfficientNet (ArXiv'2021)</a></li>
         <li><a href="configs/convnext">ConvNeXt (CVPR'2022)</a></li>
+        <li><a href="projects/ConvNeXt-V2">ConvNeXtv2 (ArXiv'2023)</a></li>
       </ul>
       </td>
       <td>

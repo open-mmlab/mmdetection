@@ -110,9 +110,9 @@ We are excited to announce our latest work on real-time object recognition tasks
 
 **v3.0.0rc6** was released in 24/1/2023:
 
-- Support [Boxinst](https://arxiv.org/abs/2012.02310), [Objects365 Dataset](https://openaccess.thecvf.com/content_ICCV_2019/papers/Shao_Objects365_A_Large-Scale_High-Quality_Dataset_for_Object_Detection_ICCV_2019_paper.pdf), and [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046)
-- Support [ConvNeXt-V2](http://arxiv.org/abs/2301.00808), [DiffusionDet](https://arxiv.org/abs/2211.09788), and inference of [EfficientDet](https://arxiv.org/abs/1911.09070) and [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046) in `Projects`
-- Refactor DETR series and support C-DETR, DAB-DETR, and DINO
+- Support [Boxinst](configs/boxinst), [Objects365 Dataset](configs/objects365), and [Separated and Occluded COCO metric](docs/en/user_guides/useful_tools.md#COCO-Separated-&-Occluded-Mask-Metric)
+- Support [ConvNeXt-V2](projects/ConvNeXt-V2), [DiffusionDet](projects/DiffusionDet), and inference of [EfficientDet](projects/EfficientDet) and [Detic](projects/Detic) in `Projects`
+- Refactor DETR series and support Conditional-DETR, DAB-DETR, and DINO
 - Support DetInferencer, Test Time Augmentation, and auto import modules from registry
 
 ## Installation
@@ -222,6 +222,9 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
             <li><a href="configs/ddod">DDOD (ACM MM'2021)</a></li>
             <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
+            <li><a href="projects/DiffusionDet">DiffusionDet (ArXiv'2023)</a></li>
+            <li><a href="projects/EfficientDet">EfficientDet (CVPR'2020)</a></li>
+            <li><a href="projects/Detic">Detic (ECCV'2022)</a></li>
       </ul>
       </td>
       <td>
@@ -242,6 +245,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/condinst">CondInst (ECCV 2020)</a></li>
           <li><a href="projects/SparseInst">SparseInst (CVPR 2022)</a></li>
           <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
+          <li><a href="configs/boxinst">RTMDet (CVPR'2021)</a></li>
         </ul>
       </td>
       <td>
@@ -321,6 +325,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <li><a href="configs/resnet_strikes_back">ResNet strikes back (ArXiv'2021)</a></li>
         <li><a href="configs/efficientnet">EfficientNet (ArXiv'2021)</a></li>
         <li><a href="configs/convnext">ConvNeXt (CVPR'2022)</a></li>
+        <li><a href="projects/ConvNeXt-V2">ConvNeXtv2 (ArXiv'2023)</a></li>
       </ul>
       </td>
       <td>
