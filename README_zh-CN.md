@@ -93,10 +93,12 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
 
-**v3.0.0rc5** 版本已经在 2022.12.26 发布：
+**v3.0.0rc6** 版本已经在 2023.1.24 发布：
 
-- 支持了 [RTMDet](https://arxiv.org/abs/2212.07784) 的实例分割模型。RTMDet 的技术报告发布在了 [arxiv](https://arxiv.org/abs/2212.07784) 上。
-- 支持了 [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979) 论文中的 SSHContextModule
+- 支持了 [Boxinst](https://arxiv.org/abs/2012.02310), [Objects365 Dataset](https://openaccess.thecvf.com/content_ICCV_2019/papers/Shao_Objects365_A_Large-Scale_High-Quality_Dataset_for_Object_Detection_ICCV_2019_paper.pdf) 和 [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046)
+- 在 `Projects` 中支持了 [ConvNeXt-V2](http://arxiv.org/abs/2301.00808), [DiffusionDet](https://arxiv.org/abs/2211.09788) 和 [EfficientDet](https://arxiv.org/abs/1911.09070), [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046) 的推理
+- 重构了 DETR 系列并支持了 C-DETR, DAB-DETR 和 DINO
+- 支持了 DetInferencer, Test Time Augmentation 以及从注册表(registry)自动导入模块
 
 ## 安装
 

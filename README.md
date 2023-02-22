@@ -108,10 +108,12 @@ We are excited to announce our latest work on real-time object recognition tasks
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
 
-**v3.0.0rc5** was released in 26/12/2022:
+**v3.0.0rc6** was released in 24/1/2023:
 
-- Support [RTMDet](https://arxiv.org/abs/2212.07784) instance segmentation models. The technical report of RTMDet is on [arxiv](https://arxiv.org/abs/2212.07784)
-- Support SSHContextModule in paper [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979)
+- Support [Boxinst](https://arxiv.org/abs/2012.02310), [Objects365 Dataset](https://openaccess.thecvf.com/content_ICCV_2019/papers/Shao_Objects365_A_Large-Scale_High-Quality_Dataset_for_Object_Detection_ICCV_2019_paper.pdf), and [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046)
+- Support [ConvNeXt-V2](http://arxiv.org/abs/2301.00808), [DiffusionDet](https://arxiv.org/abs/2211.09788), and inference of [EfficientDet](https://arxiv.org/abs/1911.09070) and [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046) in `Projects`
+- Refactor DETR series and support C-DETR, DAB-DETR, and DINO
+- Support DetInferencer, Test Time Augmentation, and auto import modules from registry
 
 ## Installation
 
