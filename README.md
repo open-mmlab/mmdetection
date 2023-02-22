@@ -222,6 +222,9 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
             <li><a href="configs/ddod">DDOD (ACM MM'2021)</a></li>
             <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
+            <li><a href="configs/conditional_detr">Conditional DETR (ICCV'2021)</a></li>
+            <li><a href="configs/dab_detr">DAB-DETR (ArXiv'2022)</a></li>
+            <li><a href="configs/dino">DINO (ICLR'2022)</a></li>
             <li><a href="projects/DiffusionDet">DiffusionDet (ArXiv'2023)</a></li>
             <li><a href="projects/EfficientDet">EfficientDet (CVPR'2020)</a></li>
             <li><a href="projects/Detic">Detic (ECCV'2022)</a></li>
