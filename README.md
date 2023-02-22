@@ -112,7 +112,7 @@ We are excited to announce our latest work on real-time object recognition tasks
 
 - Support [Boxinst](configs/boxinst), [Objects365 Dataset](configs/objects365), and [Separated and Occluded COCO metric](docs/en/user_guides/useful_tools.md#coco-separated--occluded-mask-metric)
 - Support [ConvNeXt-V2](projects/ConvNeXt-V2), [DiffusionDet](projects/DiffusionDet), and inference of [EfficientDet](projects/EfficientDet) and [Detic](projects/Detic) in `Projects`
-- Refactor DETR series and support Conditional-DETR, DAB-DETR, and DINO
+- Refactor [DETR](configs/detr) series and support [Conditional-DETR](configs/conditional_detr), [DAB-DETR](configs/dab_detr), and [DINO](configs/dino)
 - Support DetInferencer, Test Time Augmentation, and auto import modules from registry
 
 ## Installation
