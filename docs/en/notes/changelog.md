@@ -1,6 +1,6 @@
 # Changelog of v3.x
 
-## v3.0.0rc6 (23/1/2023)
+## v3.0.0rc6 (24/1/2023)
 
 ### Highlights
 
