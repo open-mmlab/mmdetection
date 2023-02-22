@@ -208,7 +208,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
             <li><a href="configs/ddod">DDOD (ACM MM'2021)</a></li>
-            <li><a href="configs/RTMDet">RTMDet (ArXiv'2022)</a></li>
+            <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
             <li><a href="configs/conditional_detr">Conditional DETR (ICCV'2021)</a></li>
             <li><a href="configs/dab_detr">DAB-DETR (ArXiv'2022)</a></li>
             <li><a href="configs/dino">DINO (ICLR'2022)</a></li>
@@ -234,8 +234,8 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
           <li><a href="configs/condinst">CondInst (ECCV 2020)</a></li>
           <li><a href="projects/SparseInst">SparseInst (CVPR 2022)</a></li>
-          <li><a href="configs/RTMDet">RTMDet (ArXiv'2022)</a></li>
-          <li><a href="configs/boxinst">RTMDet (CVPR'2021)</a></li>
+          <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
+          <li><a href="configs/boxinst">BoxInst (CVPR'2021)</a></li>
         </ul>
       </td>
       <td>

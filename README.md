@@ -248,7 +248,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/condinst">CondInst (ECCV 2020)</a></li>
           <li><a href="projects/SparseInst">SparseInst (CVPR 2022)</a></li>
           <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
-          <li><a href="configs/boxinst">RTMDet (CVPR'2021)</a></li>
+          <li><a href="configs/boxinst">BoxInst (CVPR'2021)</a></li>
         </ul>
       </td>
       <td>
