@@ -8,8 +8,10 @@
 
 Detection Transformer (DETR) relies on One-to-One assignment, i.e., assigning one ground-truth object to only one positive object query, for end-to-end object detection and lacks the capability of exploiting multiple positive object queries. Group DETR is proposed to support Group-wise One-to-Many assignment. It makes simple modifications during training: (i) adopt K groups of object queries; (ii) conduct decoder self-attention on each group of object queries with the same parameters; (iii) perform One-to-One label assignment for each group, leading to K positive object queries for each ground-truth object. In inference, It only uses one group of object queries, making no modifications to DETR architecture and processes. It is effective on DETR variants, including Conditional DETR, DAB-DETR, DN-DETR, and DINO.
 
-![img.png](img.png)
-![img_1.png](img_1.png)
+<div align=center>
+<img src="https://user-images.githubusercontent.com/70597027/220554743-bc1b8784-d01a-444f-ab06-5501c4a89c5d.png" width="95%"/>
+<img src="https://user-images.githubusercontent.com/70597027/220554770-c13a5f8d-621d-4197-9ac9-1e8d62b423ff.png" width="95%"/>
+</div>
 
 ## Results and Models
 
