@@ -76,11 +76,9 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ### 💎 稳定版本
 
-最新的 **2.28.1** 版本已经在 2023.2.1 发布:
+最新的 **2.28.2** 版本已经在 2023.2.24 发布:
 
-- 支持 Object365 数据集和遮挡物检测的 benchmark
-- 支持 SSD 和 RetinaNet 算法在昇腾芯片上的加速
-- 不再保证对 Python 3.6 的支持并修复了 2.28.0 的一些 bug
+- 修复了一些已知的文档、配置和链接错误问题
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/en/changelog.md)。
 
@@ -106,10 +104,9 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
 
-全新的 **v3.0.0rc5** 版本已经在 2022.12.26 发布：
+全新的 **v3.0.0rc6** 版本已经在 2023.2.24 发布：
 
-- 支持了 [RTMDet](https://arxiv.org/abs/2212.07784) 的实例分割模型。RTMDet 的技术报告发布在了 [arxiv](https://arxiv.org/abs/2212.07784) 上。
-- 支持了 [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979) 论文中的 SSHContextModule
+- TODO
 
 ## 安装
 
