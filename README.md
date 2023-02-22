@@ -110,7 +110,7 @@ We are excited to announce our latest work on real-time object recognition tasks
 
 **v3.0.0rc6** was released in 24/1/2023:
 
-- Support [Boxinst](configs/boxinst), [Objects365 Dataset](configs/objects365), and [Separated and Occluded COCO metric](docs/en/user_guides/useful_tools.md#COCO-Separated-&-Occluded-Mask-Metric)
+- Support [Boxinst](configs/boxinst), [Objects365 Dataset](configs/objects365), and [Separated and Occluded COCO metric](docs/en/user_guides/useful_tools.md#coco-separated--occluded-mask-metric)
 - Support [ConvNeXt-V2](projects/ConvNeXt-V2), [DiffusionDet](projects/DiffusionDet), and inference of [EfficientDet](projects/EfficientDet) and [Detic](projects/Detic) in `Projects`
 - Refactor DETR series and support Conditional-DETR, DAB-DETR, and DINO
 - Support DetInferencer, Test Time Augmentation, and auto import modules from registry

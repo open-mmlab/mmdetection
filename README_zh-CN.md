@@ -95,7 +95,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 **v3.0.0rc6** 版本已经在 2023.1.24 发布：
 
-- [Boxinst](https://arxiv.org/abs/2012.02310), [Objects365 Dataset](https://openaccess.thecvf.com/content_ICCV_2019/papers/Shao_Objects365_A_Large-Scale_High-Quality_Dataset_for_Object_Detection_ICCV_2019_paper.pdf) 和 [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046)
+- 支持了 [Boxinst](configs/boxinst), [Objects365 Dataset](configs/objects365) 和 [Separated and Occluded COCO metric](docs/zh_cn/user_guides/useful_tools.md#coco-分离和遮挡实例分割性能评估)
 - 在 `Projects` 中支持了 [ConvNeXt-V2](projects/ConvNeXt-V2), [DiffusionDet](projects/DiffusionDet) 和 [EfficientDet](projects/EfficientDet), [Detic](projects/Detic) 的推理
 - 重构了 DETR 系列并支持了 Conditional-DETR, DAB-DETR 和 DINO
 - 支持了 DetInferencer, Test Time Augmentation 以及从注册表(registry)自动导入模块
