@@ -6,7 +6,7 @@ from mmdet.models.layers.transformer.utils import ConditionalAttention
 
 
 class GroupConditionalAttention(ConditionalAttention):
-    """A wrapper of conditional attention in group-detr.
+    """A wrapper of conditional attention in GroupDETR.
 
     Args:
         num_query_groups (int): The number of decoder query groups.

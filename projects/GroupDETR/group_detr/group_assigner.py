@@ -15,7 +15,8 @@ from mmdet.registry import TASK_UTILS
 
 @TASK_UTILS.register_module()
 class GroupHungarianAssigner(BaseAssigner):
-    """Computes one-to-one matching between predictions and ground truth.
+    """Group-Wise One-to-Many Assignment.Computes one-to-one matching between
+    predictions and ground truth in group.
 
     This class computes an assignment between the targets and the predictions
     based on the costs. The costs are weighted sum of some components.
@@ -127,9 +128,6 @@ class GroupHungarianAssigner(BaseAssigner):
 
         # 3. do Hungarian matching on CPU using linear_sum_assignment
         cost = cost.detach().cpu()
-        if linear_sum_assignment is None:
-            raise ImportError('Please run "pip install scipy" '
-                              'to install scipy first.')
 
         # indices = []
         num_queries_one_group = num_preds // self.num_query_groups
