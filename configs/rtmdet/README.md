@@ -322,7 +322,7 @@ target_link_libraries(${name} PRIVATE mmdeploy ${OpenCV_LIBS})
 
 ### Deploy RTMDet Instance Segmentation Model
 
-We support RTMDet-Ins ONNXRuntime and TensorRT deployment in [MMDeploy v1.0.0rc2](https://github.com/open-mmlab/mmdeploy/tree/v1.0.0rc2). And its deployment process is almost consistent with the detection model.
+We support RTMDet-Ins ONNXRuntime and TensorRT deployment after [MMDeploy v1.0.0rc2](https://github.com/open-mmlab/mmdeploy/tree/v1.0.0rc2). And its deployment process is almost consistent with the detection model.
 
 #### Step1. Install MMDeploy >= v1.0.0rc2
 
