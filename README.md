@@ -108,7 +108,7 @@ We are excited to announce our latest work on real-time object recognition tasks
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
 
-**v3.0.0rc6** was released in 24/1/2023:
+**v3.0.0rc6** was released in 24/2/2023:
 
 - Support [Boxinst](configs/boxinst), [Objects365 Dataset](configs/objects365), and [Separated and Occluded COCO metric](docs/en/user_guides/useful_tools.md#coco-separated--occluded-mask-metric)
 - Support [ConvNeXt-V2](projects/ConvNeXt-V2), [DiffusionDet](projects/DiffusionDet), and inference of [EfficientDet](projects/EfficientDet) and [Detic](projects/Detic) in `Projects`
