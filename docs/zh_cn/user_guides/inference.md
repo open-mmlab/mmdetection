@@ -1,8 +1,12 @@
-# 使用已有模型在标准数据集上进行推理（待更新）
+# 使用已有模型在标准数据集上进行推理
 
-推理是指使用训练好的模型来检测图像上的目标。在 MMDetection 中，一个模型被定义为一个配置文件和对应的存储在 checkpoint 文件内的模型参数的集合。
+MMDetection 提供了许多预训练好的检测模型，可以在 [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html) 查看具体有哪些模型.
 
-首先，我们建议从 [Faster RCNN](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn) 开始，其 [配置](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py) 文件和 [checkpoint](http://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth) 文件在此。
+推理具体指使用训练好的模型来检测图像上的目标，本文将会展示具体步骤。
+
+在 MMDetection 中，一个模型被定义为一个[配置文件](config.md)和对应被存储在 checkpoint 文件内的模型参数的集合。
+
+首先，我们建议从 [Faster RCNN](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn) 开始，其 [配置](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py) 文件和 [checkpoint](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth) 文件在此。
 我们建议将 checkpoint 文件下载到 `checkpoints` 文件夹内。
 
 ## 推理的高层编程接口
@@ -10,88 +14,101 @@
 MMDetection 为在图片上推理提供了 Python 的高层编程接口。下面是建立模型和在图像或视频上进行推理的例子。
 
 ```python
-from mmdet.apis import init_detector, inference_detector
+import cv2
 import mmcv
+from mmcv.transforms import Compose
+from mmengine.utils import track_iter_progress
+from mmdet.registry import VISUALIZERS
+from mmdet.apis import init_detector, inference_detector
+
 
 # 指定模型的配置文件和 checkpoint 文件路径
-config_file = 'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
+config_file = 'configs/faster_rcnn/faster-rcnn_r50-fpn_1x_coco.py'
 checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
 
 # 根据配置文件和 checkpoint 文件构建模型
 model = init_detector(config_file, checkpoint_file, device='cuda:0')
 
+# 初始化可视化工具
+visualizer = VISUALIZERS.build(model.cfg.visualizer)
+# 从 checkpoint 中加载 Dataset_meta，并将其传递给模型的 init_detector
+visualizer.dataset_meta = model.dataset_meta
+
 # 测试单张图片并展示结果
 img = 'test.jpg'  # 或者 img = mmcv.imread(img)，这样图片仅会被读一次
 result = inference_detector(model, img)
-# 在一个新的窗口中将结果可视化
-model.show_result(img, result)
-# 或者将可视化结果保存为图片
-model.show_result(img, result, out_file='result.jpg')
+
+# 显示结果
+img = mmcv.imread(img)
+img = mmcv.imconvert(img, 'bgr', 'rgb')
+
+
+visualizer.add_datasample(
+    'result',
+    img,
+    data_sample=result,
+    draw_gt=False,
+    show=True)
 
 # 测试视频并展示结果
+# 构建测试 pipeline
+model.cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromNDArray'
+test_pipeline = Compose(model.cfg.test_dataloader.dataset.pipeline)
+
+# 可视化工具在第33行和35行已经初完成了初始化，如果直接在一个 jupyter nodebook 中运行这个 demo，
+# 这里则不需要再创建一个可视化工具了。
+# 初始化可视化工具
+visualizer = VISUALIZERS.build(model.cfg.visualizer)
+# 从 checkpoint 中加载 Dataset_meta，并将其传递给模型的 init_detector
+visualizer.dataset_meta = model.dataset_meta
+
+# 显示间隔 (ms), 0 表示暂停
+wait_time = 1
+
 video = mmcv.VideoReader('video.mp4')
-for frame in video:
-    result = inference_detector(model, frame)
-    model.show_result(frame, result, wait_time=1)
+
+cv2.namedWindow('video', 0)
+
+for frame in track_iter_progress(video_reader):
+    result = inference_detector(model, frame, test_pipeline=test_pipeline)
+    visualizer.add_datasample(
+        name='video',
+        image=frame,
+        data_sample=result,
+        draw_gt=False,
+        show=False)
+    frame = visualizer.get_image()
+    mmcv.imshow(frame, 'video', wait_time)
+
+cv2.destroyAllWindows()
 ```
 
-jupyter notebook 上的演示样例在 [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/master/demo/inference_demo.ipynb) 。
+Jupyter notebook 上的演示样例在 [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/3.x/demo/inference_demo.ipynb) 。
 
-## 异步接口-支持 Python 3.7+
-
-对于 Python 3.7+，MMDetection 也有异步接口。利用 CUDA 流，绑定 GPU 的推理代码不会阻塞 CPU，从而使得 CPU/GPU 在单线程应用中能达到更高的利用率。在推理流程中，不同数据样本的推理和不同模型的推理都能并发地运行。
-
-您可以参考 `tests/async_benchmark.py` 来对比同步接口和异步接口的运行速度。
-
-```python
-import asyncio
-import torch
-from mmdet.apis import init_detector, async_inference_detector
-from mmdet.utils.contextmanagers import concurrent
-
-async def main():
-    config_file = 'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
-    checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
-    device = 'cuda:0'
-    model = init_detector(config_file, checkpoint=checkpoint_file, device=device)
-
-    # 此队列用于并行推理多张图像
-    streamqueue = asyncio.Queue()
-    # 队列大小定义了并行的数量
-    streamqueue_size = 3
-
-    for _ in range(streamqueue_size):
-        streamqueue.put_nowait(torch.cuda.Stream(device=device))
-
-    # 测试单张图片并展示结果
-    img = 'test.jpg'  # or 或者 img = mmcv.imread(img)，这样图片仅会被读一次
-
-    async with concurrent(streamqueue):
-        result = await async_inference_detector(model, img)
-
-    # 在一个新的窗口中将结果可视化
-    model.show_result(img, result)
-    # 或者将可视化结果保存为图片
-    model.show_result(img, result, out_file='result.jpg')
-
-
-asyncio.run(main())
-
-```
+注意: `inference_detector` 目前仅支持单张图片的推理。
 
 ## 演示样例
 
-我们还提供了三个演示脚本，它们是使用高层编程接口实现的。 [源码在此](https://github.com/open-mmlab/mmdetection/tree/master/demo) 。
+我们还提供了三个演示脚本，它们是使用高层编程接口实现的。 [源码在此](https://github.com/open-mmlab/mmdetection/blob/3.x/demo) 。
 
 ### 图片样例
 
-这是在单张图片上进行推理的脚本，
+这是在单张图片上进行推理的脚本。
+
+```shell
+python demo/image_demo.py \
+    ${IMAGE_FILE} \
+    ${CONFIG_FILE} \
+    [--weights ${WEIGHTS}] \
+    [--device ${GPU_ID}] \
+    [--pred-score-thr ${SCORE_THR}]
+```
 
 运行样例：
 
 ```shell
 python demo/image_demo.py demo/demo.jpg \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     --weights checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --device cpu
 ```
@@ -113,7 +130,7 @@ python demo/webcam_demo.py \
 
 ```shell
 python demo/webcam_demo.py \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
 ```
 
@@ -137,7 +154,7 @@ python demo/video_demo.py \
 
 ```shell
 python demo/video_demo.py demo/demo.mp4 \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --out result.mp4
 ```
@@ -164,7 +181,7 @@ python demo/video_gpuaccel_demo.py \
 
 ```shell
 python demo/video_gpuaccel_demo.py demo/demo.mp4 \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --nvdecode --out result.mp4
 ```
