@@ -140,7 +140,7 @@ class MaskDINODecoder(nn.Module):
         _bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
         nn.init.constant_(_bbox_embed.layers[-1].weight.data, 0)
         nn.init.constant_(_bbox_embed.layers[-1].bias.data, 0)
-        box_embed_layerlist = [_bbox_embed for i in range(self.num_layers)]  # share box prediction each layer
+        box_embed_layerlist = [_bbox_embed for i in range(self.num_layers)]  # TODO: Notice: share box prediction each layer
         self.bbox_embed = nn.ModuleList(box_embed_layerlist)
         # self.decoder.bbox_embed = self.bbox_embed  # TODO: add a param to forward
 
@@ -354,7 +354,9 @@ class MaskDINODecoder(nn.Module):
             output_memory, output_proposals = gen_encoder_output_proposals(src_flatten, mask_flatten, spatial_shapes)
             output_memory = self.enc_output_norm(self.enc_output(output_memory))
             enc_outputs_class_unselected = self.class_embed(output_memory)
-            enc_outputs_coord_unselected = self._bbox_embed(
+            # enc_outputs_coord_unselected = self._bbox_embed(
+            #     output_memory) + output_proposals  # (bs, \sum{hw}, 4) unsigmoid
+            enc_outputs_coord_unselected = self.bbox_embed[-1](
                 output_memory) + output_proposals  # (bs, \sum{hw}, 4) unsigmoid
             topk = self.num_queries
             topk_proposals = torch.topk(enc_outputs_class_unselected.max(-1)[0], topk, dim=1)[1]
@@ -420,7 +422,8 @@ class MaskDINODecoder(nn.Module):
             level_start_index=level_start_index,
             spatial_shapes=spatial_shapes,
             valid_ratios=valid_ratios,
-            tgt_mask=tgt_mask
+            tgt_mask=tgt_mask,
+            bbox_embed=self.bbox_embed
         )
         for i, output in enumerate(hs):
             outputs_class, outputs_mask = self.forward_prediction_heads(output.transpose(0, 1), mask_features, self.training or (i == len(hs)-1))
@@ -455,7 +458,8 @@ class MaskDINODecoder(nn.Module):
         return out, mask_dict
 
     def forward_prediction_heads(self, output, mask_features, pred_mask=True):
-        decoder_output = self.decoder_norm(output)
+        # decoder_output = self.decoder_norm(output)  # TODO: again ???
+        decoder_output = self.decoder.norm(output)
         decoder_output = decoder_output.transpose(0, 1)
         outputs_class = self.class_embed(decoder_output)
         outputs_mask = None
@@ -521,7 +525,7 @@ class TransformerDecoder(nn.Module):
         else:
             raise NotImplementedError
             self.query_scale = MLP(d_model, d_model, d_model, 2)
-        self.bbox_embed = None
+        # self.bbox_embed = None
         self.class_embed = None
 
         self.d_model = d_model
@@ -570,7 +574,7 @@ class TransformerDecoder(nn.Module):
                 level_start_index: Optional[Tensor] = None,  # num_levels
                 spatial_shapes: Optional[Tensor] = None,  # bs, num_levels, 2
                 valid_ratios: Optional[Tensor] = None,
-
+                bbox_embed: Optional[nn.Module] = None
                 ):
         """
         Input:
@@ -617,9 +621,9 @@ class TransformerDecoder(nn.Module):
             )
 
             # iter update
-            if self.bbox_embed is not None:
+            if bbox_embed is not None:
                 reference_before_sigmoid = inverse_sigmoid(reference_points)
-                delta_unsig = self.bbox_embed[layer_id](output)
+                delta_unsig = bbox_embed[layer_id](output)
                 outputs_unsig = delta_unsig + reference_before_sigmoid
                 new_reference_points = outputs_unsig.sigmoid()
 
@@ -651,8 +655,8 @@ class DeformableTransformerDecoderLayer(nn.Module):
         else:
             self.cross_attn = MultiScaleDeformableAttention(
                 embed_dims=d_model, num_levels=n_levels,
-                num_heads=n_heads, num_points=n_points)
-        self.dropout1 = nn.Dropout(dropout)
+                num_heads=n_heads, num_points=n_points, dropout=dropout)
+        # self.dropout1 = nn.Dropout(dropout)
         self.norm1 = nn.LayerNorm(d_model)
 
         # self attention
@@ -726,11 +730,15 @@ class DeformableTransformerDecoderLayer(nn.Module):
                 tgt = tgt + self.key_aware_proj(memory).mean(0, keepdim=True)
             else:
                 raise NotImplementedError("Unknown key_aware_type: {}".format(self.key_aware_type))
-        tgt2 = self.cross_attn(self.with_pos_embed(tgt, tgt_query_pos).transpose(0, 1),
-                               tgt_reference_points.transpose(0, 1).contiguous(),
-                               memory.transpose(0, 1), memory_spatial_shapes, memory_level_start_index,
-                               memory_key_padding_mask).transpose(0, 1)
-        tgt = tgt + self.dropout1(tgt2)
+        # tgt2 = self.cross_attn(self.with_pos_embed(tgt, tgt_query_pos).transpose(0, 1),
+        #                        tgt_reference_points.transpose(0, 1).contiguous(),
+        #                        memory.transpose(0, 1), memory_spatial_shapes, memory_level_start_index,
+        #                        memory_key_padding_mask).transpose(0, 1)
+        tgt = self.cross_attn(
+            query=tgt, query_pos=tgt_query_pos, value=memory,
+            key_padding_mask=memory_key_padding_mask, reference_points=tgt_reference_points,
+            spatial_shapes=memory_spatial_shapes, level_start_index=memory_level_start_index)
+        # tgt = tgt + self.dropout1(tgt2)
         tgt = self.norm1(tgt)
 
         # ffn

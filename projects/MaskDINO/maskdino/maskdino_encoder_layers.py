@@ -193,6 +193,9 @@ class MaskDINOEncoder(nn.Module):
         :param masks: image mask
         :return: enhanced multi-scale features and mask feature (1/4 resolution) for the decoder to produce binary mask
         """
+        # this hard code make detectron2 style feature # TODO: refactor this
+        features = {f'res{i+2}': feat for i, feat in enumerate(features)}
+
         # backbone features
         srcs = []
         pos = []
@@ -208,13 +211,19 @@ class MaskDINOEncoder(nn.Module):
                 else:
                     src = self.input_proj[l](srcsl[-1])
                 srcsl.append(src)
-                posl.append(self.pe_layer(src))
+                # TODO: Here generate a dummy mask
+                mask = torch.zeros((src.size(0), src.size(2), src.size(3)),
+                                   device=src.device, dtype=torch.bool)
+                posl.append(self.pe_layer(mask))
         srcsl = srcsl[::-1]
         # Reverse feature maps
         for idx, f in enumerate(self.transformer_in_features[::-1]):
             x = features[f].float()  # deformable detr does not support half precision
             srcs.append(self.input_proj[idx](x))
-            pos.append(self.pe_layer(x))
+            # TODO: Here generate a dummy mask
+            mask = torch.zeros((x.size(0), x.size(2), x.size(3)),
+                               device=x.device, dtype=torch.bool)
+            pos.append(self.pe_layer(mask))
         srcs.extend(srcsl) if self.feature_order == 'low2high' else srcsl.extend(srcs)
         pos.extend(posl) if self.feature_order == 'low2high' else posl.extend(pos)
         if self.feature_order != 'low2high':

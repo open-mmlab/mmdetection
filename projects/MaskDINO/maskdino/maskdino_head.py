@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
+import warnings
 from typing import List, Tuple
 
 import torch
@@ -14,8 +15,10 @@ from torch import Tensor
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures import SampleList
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig, reduce_mean
+from mmdet.structures.bbox import bbox_xyxy_to_cxcywh
 from .maskdino_encoder_layers import MaskDINOEncoder
 from .maskdino_decoder_layers import MaskDINODecoder
+from .criterion import SetCriterion
 # from ..layers import Mask2FormerTransformerDecoder, SinePositionalEncoding
 # from ..utils import get_uncertain_point_coords_with_randomness
 # from .anchor_free_head import AnchorFreeHead
@@ -35,7 +38,7 @@ class MaskDINOHead(nn.Module):
         ignore_value: int = -1,
         *
         # detector
-        criterion: nn.Module,
+        criterion: OptConfigType,
         num_queries: int,
         object_mask_threshold: float,
         overlap_threshold: float,
@@ -79,6 +82,8 @@ class MaskDINOHead(nn.Module):
         self.common_stride = 4
         self.loss_weight = loss_weight
 
+        self.criterion = SetCriterion(**train_cfg)
+
         self.pixel_decoder = MaskDINOEncoder(**encoder)
         self.predictor = MaskDINODecoder(**decoder)
 
@@ -96,7 +101,8 @@ class MaskDINOHead(nn.Module):
         return predictions
 
     def loss(self, feats, batch_data_samples):
-        outputs, mask_dict = self(feats, targets)
+        targets = self.prepare_targets(batch_data_samples)
+        outputs, mask_dict = self(feats, mask=None, targets=targets)  # TODO: deal with masks
         # bipartite matching-based loss
         losses = self.criterion(outputs, targets, mask_dict)
 
@@ -215,3 +221,30 @@ class MaskDINOHead(nn.Module):
         scale_fct = scale_fct.to(out_bbox)
         boxes = boxes * scale_fct
         return boxes
+
+    def prepare_targets(self, batch_data_samples):
+        # h_pad, w_pad = images.tensor.shape[-2:]  # TODO: Here is confusing
+        h_pad, w_pad = batch_data_samples[0].batch_input_shape  # TODO: make a check
+        new_targets = []
+        for data_sample in batch_data_samples:
+            # pad gt
+            device = data_sample.gt_instances.bboxes.device
+            h, w, _ = data_sample.img_shape
+            image_size_xyxy = torch.as_tensor([w, h, w, h], dtype=torch.float, device=device)
+
+            gt_masks = torch.from_numpy(data_sample.gt_instances.masks.masks).bool().to(device)
+            padded_masks = torch.zeros((gt_masks.shape[0], h_pad, w_pad), dtype=gt_masks.dtype, device=device)
+            padded_masks[:, : gt_masks.shape[1], : gt_masks.shape[2]] = gt_masks
+            new_targets.append(
+                {
+                    "labels": data_sample.gt_instances.labels,
+                    "masks": padded_masks,
+                    "boxes": bbox_xyxy_to_cxcywh(data_sample.gt_instances.bboxes) / image_size_xyxy
+                }
+            )
+
+            warnings.warn(  # TODO: aligh the lsj pipeline
+                'The lsj for MaskDINO and Mask2Former has not been fully aligned '
+                'with COCOPanopticNewBaselineDatasetMapper in original repo')
+
+        return new_targets

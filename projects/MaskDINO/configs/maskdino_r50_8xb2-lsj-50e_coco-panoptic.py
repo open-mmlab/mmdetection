@@ -3,7 +3,7 @@ _base_ = [
 ]
 custom_imports = dict(
     imports=['projects.MaskDINO.maskdino'], allow_failed_imports=False)
-image_size = (1024, 1024)
+image_size = (256, 256)
 batch_augments = [
     dict(
         type='BatchFixedSizePad',
@@ -110,18 +110,27 @@ model = dict(
 
     ),
     train_cfg=dict(  # corresponds to SetCriterion
-        num_points=12544,
+        num_classes=num_things_classes + num_stuff_classes,
+        matcher=dict(
+            cost_class=4.0, cost_box=5.0, cost_giou=2.0,
+            cost_mask=5.0, cost_dice=5.0, num_points=100),
+        class_weight=4.0,
+        box_weight=5.0,
+        giou_weight=2.0,
+        mask_weight=5.0,
+        dice_weight=5.0,
+        dn='seg',
+        dec_layers=9,
+        box_loss=True,
+        two_stage=True,
+        eos_coef=0.1,
+        num_points=100,
         oversample_ratio=3.0,
         importance_sample_ratio=0.75,
-        assigner=dict(
-            type='HungarianAssigner',
-            match_costs=[
-                dict(type='ClassificationCost', weight=2.0),
-                dict(
-                    type='CrossEntropyLossCost', weight=5.0, use_sigmoid=True),
-                dict(type='DiceCost', weight=5.0, pred_act=True, eps=1.0)
-            ]),
-        sampler=dict(type='MaskPseudoSampler')),
+        semantic_ce_loss=False,
+        panoptic_on=False,  # TODO: Why?
+        deep_supervision=True
+    ),
     test_cfg=dict(
         panoptic_on=True,
         # For now, the dataset does not support
