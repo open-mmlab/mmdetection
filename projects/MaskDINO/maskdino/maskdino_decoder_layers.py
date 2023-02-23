@@ -125,7 +125,8 @@ class MaskDINODecoder(nn.Module):
         self.mask_embed = MLP(hidden_dim, hidden_dim, mask_dim, 3)
 
         # init decoder
-        self.decoder_norm = decoder_norm = nn.LayerNorm(hidden_dim)
+        # self.decoder_norm = decoder_norm = nn.LayerNorm(hidden_dim)
+        decoder_norm = nn.LayerNorm(hidden_dim)
         decoder_layer = DeformableTransformerDecoderLayer(hidden_dim, dim_feedforward,
                                                           dropout, activation,
                                                           self.num_feature_levels, nhead, dec_n_points)
@@ -135,12 +136,13 @@ class MaskDINODecoder(nn.Module):
                                           num_feature_levels=self.num_feature_levels,
                                           dec_layer_share=dec_layer_share)
         self.hidden_dim = hidden_dim
-        self._bbox_embed = _bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
+        # self._bbox_embed = _bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
+        _bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
         nn.init.constant_(_bbox_embed.layers[-1].weight.data, 0)
         nn.init.constant_(_bbox_embed.layers[-1].bias.data, 0)
         box_embed_layerlist = [_bbox_embed for i in range(self.num_layers)]  # share box prediction each layer
         self.bbox_embed = nn.ModuleList(box_embed_layerlist)
-        self.decoder.bbox_embed = self.bbox_embed
+        # self.decoder.bbox_embed = self.bbox_embed  # TODO: add a param to forward
 
     def prepare_for_dn(self, targets, tgt, refpoint_emb, batch_size):
         """

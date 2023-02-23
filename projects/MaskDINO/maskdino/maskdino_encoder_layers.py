@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
 import numpy as np
 from typing import List
 from collections import namedtuple
@@ -56,11 +57,13 @@ class MaskDINOEncoder(nn.Module):
         super().__init__()
 
         # Make a dummy detectron2.layers.ShapeSpec to let input_shape happy
-        assert len(in_channels) == len(in_strides)  # TODO: refine this
+        assert len(in_channels) == len(in_strides) == 4  # TODO: refine this
         DummyShapeSpec = namedtuple('DummyShapeSpec', ('channels', 'stride'))
-        input_shape = {i: DummyShapeSpec(channels=in_channels[i],
+        input_shape = {f'res{i+2}': DummyShapeSpec(channels=in_channels[i],
                                          stride=in_strides[i])
                        for i in range(len(in_channels))}
+        warnings.warn(f'The input feature names are set '
+                      f'{input_shape.keys()} with hardcode.')
 
         transformer_input_shape = {
             k: v for k, v in input_shape.items() if k in transformer_in_features
@@ -128,15 +131,13 @@ class MaskDINOEncoder(nn.Module):
 
         self.mask_dim = mask_dim
         # use 1x1 conv instead
-        self.mask_features = ConvModule(
-            conv_dim,
-            mask_dim,
-            kernel_size=1,
-            stride=1,
-            padding=0,
-            bias=True,
-            norm_cfg=None,
-            act_cfg=None)
+        # self.mask_features = ConvModule(conv_dim, mask_dim, kernel_size=1,
+        #                                 stride=1, padding=0, bias=True,
+        #                                 norm_cfg=None, act_cfg=None)
+        ## This raise the following error, may be because of fvcore init func
+        ## AttributeError: 'ConvModule' object has no attribute 'weight'
+        self.mask_features = nn.Conv2d(conv_dim, mask_dim, kernel_size=1,
+                                       stride=1, padding=0)
         weight_init.c2_xavier_fill(self.mask_features)  # TODO: Ask Mask2Former whether fvcore is essential
         # extra fpn levels
         stride = min(self.transformer_feature_strides)
@@ -147,7 +148,8 @@ class MaskDINOEncoder(nn.Module):
 
         use_bias = False
         for idx, in_channels in enumerate(self.feature_channels[:self.num_fpn_levels]):
-            lateral_conv = ConvModule(  # TODO: check along with Mask2Former
+            # TODO: check along with Mask2Former
+            lateral_conv = ConvModule(
                 in_channels,
                 conv_dim,
                 kernel_size=1,
@@ -165,8 +167,15 @@ class MaskDINOEncoder(nn.Module):
                 bias=use_bias,
                 norm_cfg=norm_cfg,
                 act_cfg=dict(type='ReLU'))
-            weight_init.c2_xavier_fill(lateral_conv)  # TODO: Ask Mask2Former whether fvcore is essential
-            weight_init.c2_xavier_fill(output_conv)  # TODO: Ask Mask2Former whether fvcore is essential
+            # This is because ConvModule raise the following error in fvcore
+            # AttributeError: 'ConvModule' object has no attribute 'weight'
+            # lateral_conv.weight = lateral_conv.conv.weight
+            # lateral_conv.bias = lateral_conv.conv.bias
+            # output_conv.weight = output_conv.conv.weight  # TODO: Whether to create a pr for ConvModule, or only pass conv to c2_xavier_fill
+            # output_conv.bias = output_conv.conv.bias
+            # weight_init.c2_xavier_fill(lateral_conv)  # TODO: Ask Mask2Former whether fvcore is essential
+            # weight_init.c2_xavier_fill(output_conv)  # TODO: Ask Mask2Former whether fvcore is essential
+
             self.add_module("adapter_{}".format(idx + 1), lateral_conv)
             self.add_module("layer_{}".format(idx + 1), output_conv)
 

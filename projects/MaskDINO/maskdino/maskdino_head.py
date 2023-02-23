@@ -32,7 +32,35 @@ class MaskDINOHead(nn.Module):
         encoder: OptConfigType,
         decoder: OptConfigType,
         loss_weight: float = 1.0,
-        ignore_value: int = -1
+        ignore_value: int = -1,
+        *
+        # detector
+        criterion: nn.Module,
+        num_queries: int,
+        object_mask_threshold: float,
+        overlap_threshold: float,
+        # metadata,  # TODO: what to replace this?
+        size_divisibility: int,
+        sem_seg_postprocess_before_inference: bool,
+
+        # TODO: move to preprocessor ?
+        # pixel_mean: Tuple[float],
+        # pixel_std: Tuple[float],
+
+        # # inference  # move to test_cfg for mmdet style
+        # semantic_on: bool,
+        # panoptic_on: bool,
+        # instance_on: bool,
+        # test_topk_per_image: int,
+        # data_loader: str,
+        # pano_temp: float,
+        # focus_on_box: bool = False,
+        # transform_eval: bool = False,
+        # semantic_ce_loss: bool = False,
+
+        # train_cfg and test_cfg for mmdet style
+        train_cfg: OptConfigType = None,
+        test_cfg: OptConfigType = None,
     ):
         """
         Args:
@@ -68,7 +96,122 @@ class MaskDINOHead(nn.Module):
         return predictions
 
     def loss(self, feats, batch_data_samples):
-        pass
+        outputs, mask_dict = self(feats, targets)
+        # bipartite matching-based loss
+        losses = self.criterion(outputs, targets, mask_dict)
+
+        for k in list(losses.keys()):
+            if k in self.criterion.weight_dict:
+                losses[k] *= self.criterion.weight_dict[k]
+            else:
+                # remove this loss if not specified in `weight_dict`
+                losses.pop(k)
+
+        return losses
 
     def predict(self, feats, batch_data_samples):
-        pass
+        outputs, mask_dict = self(feats)
+        mask_cls_results = outputs["pred_logits"]
+        mask_pred_results = outputs["pred_masks"]
+        mask_box_results = outputs["pred_boxes"]
+        # upsample masks
+        mask_pred_results = F.interpolate(
+            mask_pred_results,
+            size=(images.tensor.shape[-2], images.tensor.shape[-1]),
+            mode="bilinear",
+            align_corners=False,
+        )
+
+        del outputs
+
+        processed_results = []
+        for mask_cls_result, mask_pred_result, mask_box_result, input_per_image, image_size in zip(
+                mask_cls_results, mask_pred_results, mask_box_results,
+                batched_inputs, images.image_sizes
+        ):  # image_size is augmented size, not divisible to 32
+            height = input_per_image.get("height", image_size[0])  # real size
+            width = input_per_image.get("width", image_size[1])
+            processed_results.append({})
+            new_size = mask_pred_result.shape[
+                       -2:]  # padded size (divisible to 32)
+
+            if self.sem_seg_postprocess_before_inference:
+                mask_pred_result = retry_if_cuda_oom(sem_seg_postprocess)(
+                    mask_pred_result, image_size, height, width
+                )
+                mask_cls_result = mask_cls_result.to(mask_pred_result)
+                # mask_box_result = mask_box_result.to(mask_pred_result)
+                # mask_box_result = self.box_postprocess(mask_box_result, height, width)
+
+            # semantic segmentation inference
+            if self.semantic_on:
+                r = retry_if_cuda_oom(self.semantic_inference)(mask_cls_result,
+                                                               mask_pred_result)
+                if not self.sem_seg_postprocess_before_inference:
+                    r = retry_if_cuda_oom(sem_seg_postprocess)(r, image_size,
+                                                               height, width)
+                processed_results[-1]["sem_seg"] = r
+
+            # panoptic segmentation inference
+            if self.panoptic_on:
+                panoptic_r = retry_if_cuda_oom(self.panoptic_inference)(
+                    mask_cls_result, mask_pred_result)
+                processed_results[-1]["panoptic_seg"] = panoptic_r
+
+            # instance segmentation inference
+            if self.instance_on:
+                mask_box_result = mask_box_result.to(mask_pred_result)
+                height = new_size[0] / image_size[0] * height
+                width = new_size[1] / image_size[1] * width
+                mask_box_result = self.box_postprocess(mask_box_result, height,
+                                                       width)
+
+                instance_r = retry_if_cuda_oom(self.instance_inference)(
+                    mask_cls_result, mask_pred_result, mask_box_result)
+                processed_results[-1]["instances"] = instance_r
+
+        return processed_results
+
+    def instance_inference(self, mask_cls, mask_pred, mask_box_result):
+        # mask_pred is already processed to have the same shape as original input
+        image_size = mask_pred.shape[-2:]
+        scores = mask_cls.sigmoid()  # [100, 80]
+        labels = torch.arange(self.sem_seg_head.num_classes, device=self.device).unsqueeze(0).repeat(self.num_queries, 1).flatten(0, 1)
+        scores_per_image, topk_indices = scores.flatten(0, 1).topk(self.test_topk_per_image, sorted=False)  # select 100
+        labels_per_image = labels[topk_indices]
+        topk_indices = topk_indices // self.sem_seg_head.num_classes
+        mask_pred = mask_pred[topk_indices]
+        # if this is panoptic segmentation, we only keep the "thing" classes
+        if self.panoptic_on:
+            keep = torch.zeros_like(scores_per_image).bool()
+            for i, lab in enumerate(labels_per_image):
+                keep[i] = lab in self.metadata.thing_dataset_id_to_contiguous_id.values()
+            scores_per_image = scores_per_image[keep]
+            labels_per_image = labels_per_image[keep]
+            mask_pred = mask_pred[keep]
+        result = Instances(image_size)
+        # mask (before sigmoid)
+        result.pred_masks = (mask_pred > 0).float()
+        # half mask box half pred box
+        mask_box_result = mask_box_result[topk_indices]
+        if self.panoptic_on:
+            mask_box_result = mask_box_result[keep]
+        result.pred_boxes = Boxes(mask_box_result)
+        # Uncomment the following to get boxes from masks (this is slow)
+        # result.pred_boxes = BitMasks(mask_pred > 0).get_bounding_boxes()
+
+        # calculate average mask prob
+        mask_scores_per_image = (mask_pred.sigmoid().flatten(1) * result.pred_masks.flatten(1)).sum(1) / (result.pred_masks.flatten(1).sum(1) + 1e-6)
+        if self.focus_on_box:
+            mask_scores_per_image = 1.0
+        result.scores = scores_per_image * mask_scores_per_image
+        result.pred_classes = labels_per_image
+        return result
+
+    def box_postprocess(self, out_bbox, img_h, img_w):
+        # postprocess box height and width
+        boxes = box_ops.box_cxcywh_to_xyxy(out_bbox)
+        scale_fct = torch.tensor([img_w, img_h, img_w, img_h])
+        scale_fct = scale_fct.to(out_bbox)
+        boxes = boxes * scale_fct
+        return boxes
