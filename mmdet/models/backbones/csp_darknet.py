@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
 from typing import Optional, Sequence, Tuple
-from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig, MultiConfig
+
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
@@ -9,6 +9,7 @@ from mmcv.runner import BaseModule
 from torch import Tensor
 from torch.nn.modules.batchnorm import _BatchNorm
 
+from mmdet.utils import ConfigType, MultiConfig, OptConfigType, OptMultiConfig
 from ..builder import BACKBONES
 from ..utils import CSPLayer
 
@@ -29,16 +30,16 @@ class Focus(nn.Module):
             Default: dict(type='Swish').
     """
 
-    def __init__(self,
-                 in_channels: int,
-                 out_channels: int,
-                 kernel_size: int = 1,
-                 stride: int = 1,
-                 conv_cfg: OptConfigType = None,
-                 norm_cfg: ConfigType = dict(
-                     type='BN', momentum=0.03, eps=0.001),
-                 act_cfg: ConfigType = dict(
-                     type='Swish')) -> None:
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int = 1,
+        stride: int = 1,
+        conv_cfg: OptConfigType = None,
+        norm_cfg: ConfigType = dict(type='BN', momentum=0.03, eps=0.001),
+        act_cfg: ConfigType = dict(type='Swish')
+    ) -> None:
         super().__init__()
         self.conv = ConvModule(
             in_channels * 4,
@@ -95,7 +96,7 @@ class SPPBottleneck(BaseModule):
                      type='BN', momentum=0.03, eps=0.001),
                  act_cfg: ConfigType = dict(type='Swish'),
                  init_cfg: OptMultiConfig = None) -> None:
-        super().__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         mid_channels = in_channels // 2
         self.conv1 = ConvModule(
             in_channels,
@@ -119,6 +120,7 @@ class SPPBottleneck(BaseModule):
             act_cfg=act_cfg)
 
     def forward(self, x: Tensor) -> Tensor:
+        """Forward function."""
         x = self.conv1(x)
         x = torch.cat([x] + [pooling(x) for pooling in self.poolings], dim=1)
         x = self.conv2(x)
@@ -179,27 +181,29 @@ class CSPDarknet(BaseModule):
                [768, 1024, 3, False, True]]
     }
 
-    def __init__(self,
-                 arch: str = 'P5',
-                 deepen_factor: float = 1.0,
-                 widen_factor: float = 1.0,
-                 out_indices: Sequence[int] = (2, 3, 4),
-                 frozen_stages: int = -1,
-                 use_depthwise: bool = False,
-                 arch_ovewrite: Optional[list] = None,
-                 spp_kernal_sizes: Tuple[int] = (5, 9, 13),
-                 conv_cfg: OptConfigType = None,
-                 norm_cfg: ConfigType = dict(type='BN', momentum=0.03, eps=0.001),
-                 act_cfg: ConfigType = dict(type='Swish'),
-                 norm_eval: bool = False,
-                 init_cfg: MultiConfig = dict(
-                     type='Kaiming',
-                     layer='Conv2d',
-                     a=math.sqrt(5),
-                     distribution='uniform',
-                     mode='fan_in',
-                     nonlinearity='leaky_relu')) -> None:
-        super().__init__(init_cfg)
+    def __init__(
+        self,
+        arch: str = 'P5',
+        deepen_factor: float = 1.0,
+        widen_factor: float = 1.0,
+        out_indices: Sequence[int] = (2, 3, 4),
+        frozen_stages: int = -1,
+        use_depthwise: bool = False,
+        arch_ovewrite: Optional[list] = None,
+        spp_kernal_sizes: Tuple[int] = (5, 9, 13),
+        conv_cfg: OptConfigType = None,
+        norm_cfg: ConfigType = dict(type='BN', momentum=0.03, eps=0.001),
+        act_cfg: ConfigType = dict(type='Swish'),
+        norm_eval: bool = False,
+        init_cfg: MultiConfig = dict(
+            type='Kaiming',
+            layer='Conv2d',
+            a=math.sqrt(5),
+            distribution='uniform',
+            mode='fan_in',
+            nonlinearity='leaky_relu')
+    ) -> None:
+        super().__init__(init_cfg=init_cfg)
         arch_setting = self.arch_settings[arch]
         if arch_ovewrite:
             arch_setting = arch_ovewrite
@@ -280,6 +284,7 @@ class CSPDarknet(BaseModule):
                     m.eval()
 
     def forward(self, x: Tensor) -> Tensor:
+        """Forward function."""
         outs = []
         for i, layer_name in enumerate(self.layers):
             layer = getattr(self, layer_name)
