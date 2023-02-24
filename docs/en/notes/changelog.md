@@ -43,6 +43,7 @@
 
 - Replace NumPy transpose with PyTorch permute to speed-up (#9762)
 - Deprecate `sklearn` (#9725)
+- Add RTMDet-Ins deployment guide (#9823)
 - Update RTMDet config and README (#9603)
 - Adjust the minimum supported python version to 3.7 (#9602)
 - Support modifying palette through configuration (#9445)
@@ -60,6 +61,7 @@
 - Add metafile to ConditionalDETR, DABDETR and DINO (#9715)
 - Support to modify `non_blocking` parameters (#9723)
 - Comment repeater visualizer register (#9740)
+- Update user guide: `finetune.md` and `inference.md` (#9578)
 
 ### New Contributors
 
@@ -69,12 +71,13 @@
 - @zwhus made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9589>
 - @zylo117 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9670>
 - @chg0901 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9740>
+- @DanShouzhu made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9578
 
 ### Contributors
 
-A total of 26 developers contributed to this release.
+A total of 27 developers contributed to this release.
 
-Thanks @JosonChan1998, @RangeKing, @NoFish-528, @likyoo, @Xiangxu-0103, @137208, @PeterH0323, @tianleiSHI, @wufan-tb, @lyviva, @zwhus, @jshilong, @Li-Qingyun, @sanbuphy, @zylo117, @triple-Mu, @KeiChiTse, @LYMDLUT, @nijkah, @chg0901, @zytx121, @vansin, @BIGWangYuDong, @hhaAndroid, @RangiLyu, @ZwwWayne
+Thanks @JosonChan1998, @RangeKing, @NoFish-528, @likyoo, @Xiangxu-0103, @137208, @PeterH0323, @tianleiSHI, @wufan-tb, @lyviva, @zwhus, @jshilong, @Li-Qingyun, @sanbuphy, @zylo117, @triple-Mu, @KeiChiTse, @LYMDLUT, @nijkah, @chg0901, @DanShouzhu, @zytx121, @vansin, @BIGWangYuDong, @hhaAndroid, @RangiLyu, @ZwwWayne
 
 ## v3.0.0rc5 (26/12/2022)
 
