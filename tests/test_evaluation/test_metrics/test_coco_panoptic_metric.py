@@ -19,7 +19,7 @@ except ImportError:
 
 class TestCocoPanopticMetric(unittest.TestCase):
 
-    def _create_panoptic_gt_annotations(self, ann_file, seg_map_dir):
+    def _create_panoptic_gt_annotations(self, ann_file, seg_map_dir):   # 必须先要执行这一步，写入一张相片！
         categories = [{
             'id': 0,
             'name': 'person',

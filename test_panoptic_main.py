@@ -1,9 +1,7 @@
-import os
-import os.path as osp
-import tempfile
-import unittest
 from copy import deepcopy
-
+import tempfile
+import os.path as osp
+import os
 import mmcv
 import numpy as np
 import torch
@@ -14,9 +12,9 @@ from mmdet.evaluation import INSTANCE_OFFSET
 from mmdet.evaluation.metrics.coco_panoptic_metric_mmeval import CocoPanopticMetricMMEval
 from mmdet.apis import inference_detector, init_detector
 from PIL import Image
-
 import sys
-sys.path.append('D:\\1课程资料\\大四上\\实习\\mmlab比赛\\even_mmdetection\\mmdetection')
+sys.path.append('/home/PJLAB/liangyiwen/Even/code/mmdetection')
+
 
 try:
     import panopticapi
@@ -27,6 +25,7 @@ tmp_dir = tempfile.TemporaryDirectory()
 gt_json_path = osp.join(tmp_dir.name, 'gt.json')
 gt_seg_dir = osp.join(tmp_dir.name, 'gt_seg')
 os.mkdir(gt_seg_dir)
+
 
 def _create_panoptic_gt_annotations(ann_file, seg_map_dir):
     categories = [{
@@ -84,10 +83,8 @@ def _create_panoptic_gt_annotations(ann_file, seg_map_dir):
             'bbox': [0, 0, 80, 60],
             'area': 3950
         }],
-        'file_name':
-        'fake_name1.png',
-        'image_id':
-        0
+        'file_name': 'fake_name1.png',
+        'image_id': 0
     }]
 
     gt_json = {
@@ -120,7 +117,7 @@ def _create_panoptic_gt_annotations(ann_file, seg_map_dir):
 def _create_panoptic_data_samples():
     # predictions
     # TP for background class, IoU=3576/4324=0.827
-    # 2 the category id of the background class
+    # ３ the category id of the background class
     pred = np.zeros((60, 80), dtype=np.int64) + 4 * INSTANCE_OFFSET + 3
     pred_bboxes = np.array(
         [
@@ -129,12 +126,12 @@ def _create_panoptic_data_samples():
             [51, 10, 10, 5]  # TP IoU=45/55=0.818
         ],
         dtype=np.int64)
-    pred_labels = np.array([0, 0, 2], dtype=np.int64)
-    for i in range(3):  # i代表instance
+    pred_labels = np.array([0, 0, 1], dtype=np.int64)   # 对于背景不pred
+    for i in range(len(pred_bboxes)):  # i代表instance
         x, y, w, h = pred_bboxes[i]
         pred[y:y + h, x:x + w] = (i + 1) * INSTANCE_OFFSET + pred_labels[i]
 
-    data_samples = [{  
+    data_samples = [{
         'img_id':
         0,
         'ori_shape': (60, 80),
@@ -154,7 +151,7 @@ def _create_panoptic_data_samples():
             'is_thing': 1
         }, {
             'id': 4,
-            'category': 2,
+            'category': 3,
             'is_thing': 0
         }],
         'seg_map_path':
@@ -165,6 +162,7 @@ def _create_panoptic_data_samples():
     }]
 
     return data_samples
+
 
 def test_evaluate_without_json(data_samples, dataset_meta):
     # with tmpfile, without json
@@ -194,7 +192,8 @@ def test_evaluate_without_json(data_samples, dataset_meta):
     eval_results = metric.evaluate(size=1)
     # assertDictEqual(eval_results, target)
 
-def test_evaluate_with_json(data_samples,dataset_meta):
+
+def test_evaluate_with_json(data_samples, dataset_meta):
     # with tmpfile and json
     metric = CocoPanopticMetricMMEval(
         ann_file=gt_json_path,
@@ -215,7 +214,7 @@ def test_evaluate_with_json(data_samples,dataset_meta):
         classwise=True,
         nproc=1,
         outfile_prefix=None)
-    metric.dataset_meta =dataset_meta
+    metric.dataset_meta = dataset_meta
     metric.process({}, deepcopy(data_samples))
     eval_results = metric.evaluate(size=1)
     # assertDictEqual(eval_results, self.target)
@@ -234,15 +233,15 @@ def test_evaluate_with_json(data_samples,dataset_meta):
     # assertDictEqual(eval_results, target)
 
 
-def test_format_only(data_samples,dataset_meta):
+def test_format_only(data_samples, dataset_meta):
 
     metric = CocoPanopticMetricMMEval(
-            ann_file=gt_json_path,
-            seg_prefix=gt_seg_dir,
-            classwise=False,
-            nproc=1,
-            format_only=True,
-            outfile_prefix=None)
+        ann_file=gt_json_path,
+        seg_prefix=gt_seg_dir,
+        classwise=False,
+        nproc=1,
+        format_only=True,
+        outfile_prefix=None)
 
     outfile_prefix = f'{tmp_dir.name}/test'
     metric = CocoPanopticMetricMMEval(
@@ -255,6 +254,7 @@ def test_format_only(data_samples,dataset_meta):
     metric.dataset_meta = dataset_meta
     metric.process({}, deepcopy(data_samples))
     eval_results = metric.evaluate(size=1)
+
 
 def test_with_dataset_meta():
     config_name = 'D:\\1课程资料\大四上\\实习\\mmlab比赛\\even_mmdetection\\mmdetection\\configs\\panoptic_fpn\\panoptic-fpn_r50_fpn_1x_coco.py'
@@ -278,9 +278,9 @@ def test_with_dataset_meta():
     # for img_name in os.listdir(img_path):
     #     _img_path = osp.join(img_path, img_name)
     #     imgs.append(_img_path)
-        # image = Image.open(_img_path)
-        # image_pil = np.array(image, dtype=np.uint32)
-        # imgs.append(image_pil)
+    # image = Image.open(_img_path)
+    # image_pil = np.array(image, dtype=np.uint32)
+    # imgs.append(image_pil)
     dataset = cfg.test_dataloader.dataset
     results = inference_detector(model, imgs)
     for i in range(len(results)):
@@ -300,30 +300,29 @@ def test_with_dataset_meta():
     # metric.process({}, deepcopy(data_samples))
     # eval_results = metric.evaluate(size=1)
 
-if __name__ == '__main__': 
-    _create_panoptic_gt_annotations(gt_json_path,gt_seg_dir)   # 把json文件写入一个temp路径里面
+
+if __name__ == '__main__':
+    _create_panoptic_gt_annotations(
+        gt_json_path, gt_seg_dir)   # 把json文件写入一个temp路径里面, 写入fake_image图片
     dataset_meta = {
-            'classes': ('person', 'dog', 'wall'),
-            'thing_classes': ('person', 'dog'),
-            'stuff_classes': ('wall', )
-        }
+        'classes': ('person', 'cat', 'dog', 'wall'),
+        'thing_classes': ('person', 'cat', 'dog'),
+        'stuff_classes': ('wall', )
+    }
     target = {
-            'coco_panoptic/PQ': 67.86874803219071,
-            'coco_panoptic/SQ': 80.89770126158936,
-            'coco_panoptic/RQ': 83.33333333333334,
-            'coco_panoptic/PQ_th': 60.45252075318891,
-            'coco_panoptic/SQ_th': 79.9959505972869,
-            'coco_panoptic/RQ_th': 75.0,
-            'coco_panoptic/PQ_st': 82.70120259019427,
-            'coco_panoptic/SQ_st': 82.70120259019427,
-            'coco_panoptic/RQ_st': 100.0
-        }
+        'coco_panoptic/PQ': 67.86874803219071,
+        'coco_panoptic/SQ': 80.89770126158936,
+        'coco_panoptic/RQ': 83.33333333333334,
+        'coco_panoptic/PQ_th': 60.45252075318891,
+        'coco_panoptic/SQ_th': 79.9959505972869,
+        'coco_panoptic/RQ_th': 75.0,
+        'coco_panoptic/PQ_st': 82.70120259019427,
+        'coco_panoptic/SQ_st': 82.70120259019427,
+        'coco_panoptic/RQ_st': 100.0
+    }
     data_samples = _create_panoptic_data_samples()
 
-    # test_evaluate_without_json(data_samples,dataset_meta)
+    test_evaluate_without_json(data_samples, dataset_meta)
     # test_evaluate_with_json(data_samples,dataset_meta)
     # test_format_only(data_samples,dataset_meta)
-    test_with_dataset_meta()
-
-
-
+    # test_with_dataset_meta()

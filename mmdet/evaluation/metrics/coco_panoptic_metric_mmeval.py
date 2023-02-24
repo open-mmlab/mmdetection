@@ -1,4 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+
+import sys
+sys.path.append('/home/PJLAB/liangyiwen/Even/code/mmeval_exp/mmeval')
+from mmeval.metrics.coco_panoptic import COCOPanopticMetric
 import datetime
 import itertools
 import os.path as osp
@@ -26,10 +30,6 @@ except ImportError:
     VOID = None
     PQStat = None
 
-import sys
-sys.path.append('D:\\1课程资料\\大四上\\实习\\mmlab比赛\\mmeval')
-
-from mmeval.metrics.coco_panoptic import COCOPanopticMetric
 
 
 @METRICS.register_module()
@@ -66,16 +66,16 @@ class CocoPanopticMetricMMEval(COCOPanopticMetric):
     default_prefix: Optional[str] = 'coco_panoptic'
 
     def __init__(self,
-                 ann_file: Optional[str] = None,   
-                 seg_prefix: Optional[str] = None,  
+                 ann_file: Optional[str] = None,
+                 seg_prefix: Optional[str] = None,
                  classwise: bool = False,
                  format_only: bool = False,
-                 outfile_prefix: Optional[str] = None, 
+                 outfile_prefix: Optional[str] = None,
                  nproc: int = 32,
                  file_client_args: dict = dict(backend='local')):
 
         super().__init__(ann_file=ann_file, outfile_prefix=outfile_prefix, gt_folder=seg_prefix,
-                        classwise=classwise, nproc=nproc, backend_args=file_client_args)
+                         classwise=classwise, nproc=nproc, backend_args=file_client_args)
 
         self.format_only = format_only
         if self.format_only:
@@ -205,7 +205,7 @@ class CocoPanopticMetricMMEval(COCOPanopticMetric):
         result['img_id'] = img_id
         # shape (1, H, W) -> (H, W)
         pan = pred['pred_panoptic_seg']['sem_seg'].cpu().numpy()[0]
-        pan_labels = np.unique(pan)  
+        pan_labels = np.unique(pan)
         segments_info = []
         for pan_label in pan_labels:
             sem_label = pan_label % INSTANCE_OFFSET
@@ -213,7 +213,7 @@ class CocoPanopticMetricMMEval(COCOPanopticMetric):
             area = mask.sum()
             segments_info.append({
                 'id':
-                int(pan_label // INSTANCE_OFFSET),  
+                int(pan_label // INSTANCE_OFFSET),
                 # when ann_file provided, sem_label should be cat_id, otherwise
                 # sem_label should be a continuous id, not the cat_id
                 # defined in dataset
@@ -269,7 +269,7 @@ class CocoPanopticMetricMMEval(COCOPanopticMetric):
         self.add(predictions, groundtruths)
 
     def results2json(self, results: Sequence[dict],
-                    outfile_prefix: str) -> Tuple[str, str]:
+                     outfile_prefix: str) -> Tuple[str, str]:
         """Dump the panoptic results to a COCO style json file and a directory.
 
         Args:
@@ -286,11 +286,11 @@ class CocoPanopticMetricMMEval(COCOPanopticMetric):
 
         _coco_api = COCOPanoptic(self.ann_file)
         cat_ids = _coco_api.get_cat_ids(
-                cat_names=self.dataset_meta['classes'])
+            cat_names=self.dataset_meta['classes'])
         cat2label = {
-                cat_id: i
-                for i, cat_id in enumerate(cat_ids)
-            }
+            cat_id: i
+            for i, cat_id in enumerate(cat_ids)
+        }
         label2cat = dict((v, k) for (k, v) in cat2label.items())
         categories = _coco_api.cats
         pred_annotations = []
@@ -311,9 +311,9 @@ class CocoPanopticMetricMMEval(COCOPanopticMetric):
             self.seg_out_dir
             if self.tmp_dir is None else tempfile.gettempdir())
 
-    def print_panoptic_table(self, 
-            results: dict,
-            logger: Optional[Union['MMLogger', str]] = None) -> None:
+    def print_panoptic_table(self,
+                             results: dict,
+                             logger: Optional[Union['MMLogger', str]] = None) -> None:
         """Print the panoptic evaluation results table.
 
         Args:
@@ -339,12 +339,13 @@ class CocoPanopticMetricMMEval(COCOPanopticMetric):
             row = [name] + numbers + [pq_results[name]['n']]
             data.append(row)
         table = AsciiTable(data)
-        print_log('Panoptic Evaluation Results:\n' + table.table, logger=logger)
+        print_log('Panoptic Evaluation Results:\n' +
+                  table.table, logger=logger)
 
         if classwise_results is not None:
             class_metrics = [(name, ) + tuple(f'{(metrics[k] * 100):0.3f}'
-                                            for k in ['pq', 'sq', 'rq'])
-                            for name, metrics in classwise_results.items()]
+                                              for k in ['pq', 'sq', 'rq'])
+                             for name, metrics in classwise_results.items()]
             num_columns = min(8, len(class_metrics) * 4)
             results_flatten = list(itertools.chain(*class_metrics))
             headers = ['category', 'PQ', 'SQ', 'RQ'] * (num_columns // 4)
@@ -370,9 +371,8 @@ class CocoPanopticMetricMMEval(COCOPanopticMetric):
 
         if self.ann_file is None:
             coco_json_path, gt_folder = self.gt_to_coco_json(
-                        gt_dicts=gts, outfile_prefix=self.outfile_prefix)
+                gt_dicts=gts, outfile_prefix=self.outfile_prefix)
 
             self.ann_file = coco_json_path
-        results= self.compute(*args, **kwargs)
+        results = self.compute(*args, **kwargs)
         self.print_panoptic_table(results, logger=logger)
-
