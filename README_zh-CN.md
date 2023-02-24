@@ -99,6 +99,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 - 在 `Projects` 中支持了 [ConvNeXt-V2](projects/ConvNeXt-V2), [DiffusionDet](projects/DiffusionDet) 和 [EfficientDet](projects/EfficientDet), [Detic](projects/Detic) 的推理
 - 重构了 [DETR](configs/detr) 系列并支持了 [Conditional-DETR](configs/conditional_detr), [DAB-DETR](configs/dab_detr) 和 [DINO](configs/dino)
 - 支持了 DetInferencer, Test Time Augmentation 以及从注册表(registry)自动导入模块
+- 支持了 RTMDet-Ins 的 ONNXRuntime 和 TensorRT [部署](configs/rtmdet/README.md#deployment-tutorial)
 
 ## 安装
 

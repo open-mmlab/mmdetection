@@ -114,6 +114,7 @@ We are excited to announce our latest work on real-time object recognition tasks
 - Support [ConvNeXt-V2](projects/ConvNeXt-V2), [DiffusionDet](projects/DiffusionDet), and inference of [EfficientDet](projects/EfficientDet) and [Detic](projects/Detic) in `Projects`
 - Refactor [DETR](configs/detr) series and support [Conditional-DETR](configs/conditional_detr), [DAB-DETR](configs/dab_detr), and [DINO](configs/dino)
 - Support DetInferencer, Test Time Augmentation, and auto import modules from registry
+- Support RTMDet-Ins ONNXRuntime and TensorRT [deployment](configs/rtmdet/README.md#deployment-tutorial)
 
 ## Installation
 
