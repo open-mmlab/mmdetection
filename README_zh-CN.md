@@ -106,7 +106,11 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 全新的 **v3.0.0rc6** 版本已经在 2023.2.24 发布：
 
-- TODO
+- 支持了 [Boxinst](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/boxinst), [Objects365 Dataset](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/objects365) 和 [Separated and Occluded COCO metric](https://github.com/open-mmlab/mmdetection/tree/3.x/docs/zh_cn/user_guides/useful_tools.md#coco-分离和遮挡实例分割性能评估)
+- 在 `Projects` 中支持了 [ConvNeXt-V2](https://github.com/open-mmlab/mmdetection/tree/3.x/projects/ConvNeXt-V2), [DiffusionDet](https://github.com/open-mmlab/mmdetection/tree/3.x/projects/DiffusionDet) 和 [EfficientDet](https://github.com/open-mmlab/mmdetection/tree/3.x/projects/EfficientDet), [Detic](https://github.com/open-mmlab/mmdetection/tree/3.x/projects/Detic) 的推理
+- 重构了 [DETR](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/detr) 系列并支持了 [Conditional-DETR](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/conditional_detr), [DAB-DETR](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/dab_detr) 和 [DINO](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/dino)
+- 支持了 DetInferencer, Test Time Augmentation 以及从注册表(registry)自动导入模块
+- 支持了 RTMDet-Ins 的 ONNXRuntime 和 TensorRT [部署](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet/README.md#deployment-tutorial)
 
 ## 安装
 
