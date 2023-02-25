@@ -1,4 +1,4 @@
-# 模型微调（待更新）
+# 模型微调
 
 在 COCO 数据集上预训练的检测器可以作为其他数据集（例如 CityScapes 和 KITTI 数据集）优质的预训练模型。
 本教程将指导用户如何把 [ModelZoo](../model_zoo.md) 中提供的模型用于其他数据集中并使得当前所训练的模型获得更好性能。
@@ -12,12 +12,13 @@
 
 ## 继承基础配置
 
-为了减轻编写整个配置的负担并减少漏洞的数量， MMDetection V2.0 支持从多个现有配置中继承配置信息。微调 MaskRCNN 模型的时候，新的配置信息需要使用从 `_base_/models/mask_rcnn_r50_fpn.py`中继承的配置信息来构建模型的基本结构。当使用 Cityscapes 数据集时，新的配置信息可以简便地从`_base_/datasets/cityscapes_instance.py`中继承。对于训练过程的运行设置部分，新配置需要从 `_base_/default_runtime.py`中继承。这些配置文件`configs`的目录下，用户可以选择全部内容的重新编写而不是使用继承方法。
+为了减轻编写整个配置的负担并减少漏洞的数量， MMDetection V3.0 支持从多个现有配置中继承配置信息。微调 MaskRCNN 模型的时候，新的配置信息需要使用从 `_base_/models/mask_rcnn_r50_fpn.py` 中继承的配置信息来构建模型的基本结构。当使用 Cityscapes 数据集时，新的配置信息可以简便地从`_base_/datasets/cityscapes_instance.py` 中继承。对于训练过程的运行设置部分，例如 `logger settings`，配置文件可以从 `_base_/default_runtime.py` 中继承。对于训练计划的配置则可以从`_base_/schedules/schedule_1x.py` 中继承。这些配置文件存放于 `configs` 目录下，用户可以选择全部内容的重新编写而不是使用继承方法。
 
 ```python
 _base_ = [
     '../_base_/models/mask_rcnn_r50_fpn.py',
-    '../_base_/datasets/cityscapes_instance.py', '../_base_/default_runtime.py'
+    '../_base_/datasets/cityscapes_instance.py', '../_base_/default_runtime.py',
+    '../_base_/schedules/schedule_1x.py'
 ]
 ```
 
@@ -27,7 +28,6 @@ _base_ = [
 
 ```python
 model = dict(
-    pretrained=None,
     roi_head=dict(
         bbox_head=dict(
             type='Shared2FCBBoxHead',
@@ -55,7 +55,7 @@ model = dict(
 
 ## 数据集的修改
 
-用户可能还需要准备数据集并编写有关数据集的配置。目前 MMDetection V2.0 的配置文件已经支持 VOC、WIDER FACE、COCO 和 Cityscapes Dataset 的数据集信息。
+用户可能还需要准备数据集并编写有关数据集的配置，可在 [Customize Datasets](../advanced_guides/customize_dataset.md) 中获取更多信息。目前 MMDetection V3.0 的配置文件已经支持 VOC、WIDERFACE、COCO、LIVS、OpenImages、DeepFashion、Objects365 和 Cityscapes Dataset 的数据集信息。
 
 ## 训练策略的修改
 
@@ -64,23 +64,32 @@ model = dict(
 ```python
 # 优化器
 # batch size 为 8 时的 lr 配置
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(grad_clip=None)
-# 学习策略
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=500,
-    warmup_ratio=0.001,
-    step=[7])
-# lr_config 中的 max_epochs 和 step 需要针对自定义数据集进行专门调整
-runner = dict(max_epochs=8)
-log_config = dict(interval=100)
+optim_wrapper = dict(optimizer=dict(lr=0.01))
+
+# 学习率
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=8,
+        by_epoch=True,
+        milestones=[7],
+        gamma=0.1)
+]
+
+# 设置 max epoch
+train_cfg = dict(max_epochs=8)
+
+# 设置 log config
+default_hooks = dict(logger=dict(interval=100)),
+
 ```
 
 ## 使用预训练模型
 
-如果要使用预训练模型时，可以在 `load_from` 中查阅新的配置信息，用户需要在训练开始之前下载好需要的模型权重，从而避免在训练过程中浪费了宝贵时间。
+如果要使用预训练模型，可以在 `load_from` 中查阅新的配置信息，用户需要在训练开始之前下载好需要的模型权重，从而避免在训练过程中浪费了宝贵时间。
 
 ```python
 load_from = 'https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco_bbox_mAP-0.408__segm_mAP-0.37_20200504_163245-42aa3d00.pth'  # noqa

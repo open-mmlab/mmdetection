@@ -68,12 +68,12 @@ class DiffusionDetCriterion(nn.Module):
         if self.deep_supervision:
             assert 'aux_outputs' in outputs
             for i, aux_outputs in enumerate(outputs['aux_outputs']):
-                batch_indices = self.assigner(outputs, batch_gt_instances,
+                batch_indices = self.assigner(aux_outputs, batch_gt_instances,
                                               batch_img_metas)
-                loss_cls = self.loss_classification(outputs,
+                loss_cls = self.loss_classification(aux_outputs,
                                                     batch_gt_instances,
                                                     batch_indices)
-                loss_bbox, loss_giou = self.loss_boxes(outputs,
+                loss_bbox, loss_giou = self.loss_boxes(aux_outputs,
                                                        batch_gt_instances,
                                                        batch_indices)
                 tmp_losses = dict(
@@ -101,8 +101,7 @@ class DiffusionDetCriterion(nn.Module):
         src_logits = src_logits.flatten(0, 1)
         target_classes = target_classes.flatten(0, 1)
         # comp focal loss.
-        num_instances = torch.cat(target_classes_list).shape[0] if \
-            len(target_classes_list) != 0 else 1
+        num_instances = max(torch.cat(target_classes_list).shape[0], 1)
         loss_cls = self.loss_cls(
             src_logits,
             target_classes,
@@ -114,7 +113,7 @@ class DiffusionDetCriterion(nn.Module):
         pred_boxes = outputs['pred_boxes']
 
         target_bboxes_norm_list = [
-            gt.norm_bboxes[J]
+            gt.norm_bboxes_cxcywh[J]
             for gt, (_, J) in zip(batch_gt_instances, indices)
         ]
         target_bboxes_list = [
@@ -137,8 +136,9 @@ class DiffusionDetCriterion(nn.Module):
         if len(pred_boxes_cat) > 0:
             num_instances = pred_boxes_cat.shape[0]
 
-            loss_bbox = self.loss_bbox(pred_boxes_norm_cat,
-                                       target_bboxes_norm_cat) / num_instances
+            loss_bbox = self.loss_bbox(
+                pred_boxes_norm_cat,
+                bbox_cxcywh_to_xyxy(target_bboxes_norm_cat)) / num_instances
             loss_giou = self.loss_giou(pred_boxes_cat,
                                        target_bboxes_cat) / num_instances
         else:
@@ -222,6 +222,12 @@ class DiffusionDetMatcher(nn.Module):
                                                         dtype=torch.long)
                 return valid_mask, matched_gt_inds
 
+            valid_mask, is_in_boxes_and_center = \
+                self.get_in_gt_and_in_center_info(
+                    bbox_xyxy_to_cxcywh(pred_bboxes),
+                    bbox_xyxy_to_cxcywh(gt_bboxes)
+                )
+
             cost_list = []
             for match_cost in self.match_costs:
                 cost = match_cost(
@@ -229,12 +235,6 @@ class DiffusionDetMatcher(nn.Module):
                     gt_instances=gt_instances,
                     img_meta=img_meta)
                 cost_list.append(cost)
-
-            valid_mask, is_in_boxes_and_center = \
-                self.get_in_gt_and_in_center_info(
-                    bbox_xyxy_to_cxcywh(pred_bboxes),
-                    bbox_xyxy_to_cxcywh(gt_bboxes)
-                )
 
             pairwise_ious = self.iou_calculator(pred_bboxes, gt_bboxes)
 
@@ -301,7 +301,7 @@ class DiffusionDetMatcher(nn.Module):
                            num_gt: int) -> Tuple[Tensor, Tensor]:
         """Use IoU and matching cost to calculate the dynamic top-k positive
         targets."""
-        matching_matrix = torch.zeros_like(cost, dtype=torch.uint8)
+        matching_matrix = torch.zeros_like(cost)
         # select candidate topk ious for dynamic-k calculation
         candidate_topk = min(self.candidate_topk, pairwise_ious.size(0))
         topk_ious, _ = torch.topk(pairwise_ious, candidate_topk, dim=0)
@@ -319,6 +319,21 @@ class DiffusionDetMatcher(nn.Module):
             _, cost_argmin = torch.min(cost[prior_match_gt_mask, :], dim=1)
             matching_matrix[prior_match_gt_mask, :] *= 0
             matching_matrix[prior_match_gt_mask, cost_argmin] = 1
+
+        while (matching_matrix.sum(0) == 0).any():
+            matched_query_id = matching_matrix.sum(1) > 0
+            cost[matched_query_id] += 100000.0
+            unmatch_id = torch.nonzero(
+                matching_matrix.sum(0) == 0, as_tuple=False).squeeze(1)
+            for gt_idx in unmatch_id:
+                pos_idx = torch.argmin(cost[:, gt_idx])
+                matching_matrix[:, gt_idx][pos_idx] = 1.0
+            if (matching_matrix.sum(1) > 1).sum() > 0:
+                _, cost_argmin = torch.min(cost[prior_match_gt_mask], dim=1)
+                matching_matrix[prior_match_gt_mask] *= 0
+                matching_matrix[prior_match_gt_mask, cost_argmin, ] = 1
+
+        assert not (matching_matrix.sum(0) == 0).any()
         # get foreground mask inside box and center prior
         fg_mask_inboxes = matching_matrix.sum(1) > 0
         matched_gt_inds = matching_matrix[fg_mask_inboxes, :].argmax(1)

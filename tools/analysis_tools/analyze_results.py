@@ -7,6 +7,7 @@ import mmcv
 import numpy as np
 from mmengine.config import Config, DictAction
 from mmengine.fileio import load
+from mmengine.registry import init_default_scope
 from mmengine.runner import Runner
 from mmengine.structures import InstanceData, PixelData
 from mmengine.utils import ProgressBar, check_file_exist, mkdir_or_exist
@@ -15,8 +16,7 @@ from mmdet.datasets import get_loading_pipeline
 from mmdet.evaluation import eval_map
 from mmdet.registry import DATASETS, RUNNERS
 from mmdet.structures import DetDataSample
-from mmdet.utils import (register_all_modules, replace_cfg_vals,
-                         update_data_root)
+from mmdet.utils import replace_cfg_vals, update_data_root
 from mmdet.visualization import DetLocalVisualizer
 
 
@@ -348,7 +348,6 @@ def parse_args():
 
 
 def main():
-    register_all_modules()
     args = parse_args()
 
     check_file_exist(args.prediction_path)
@@ -363,6 +362,8 @@ def main():
 
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
+    init_default_scope(cfg.get('default_scope', 'mmdet'))
+
     cfg.test_dataloader.dataset.test_mode = True
 
     cfg.test_dataloader.pop('batch_size', 0)

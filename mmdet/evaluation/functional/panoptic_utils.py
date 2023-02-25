@@ -65,7 +65,6 @@ def pq_compute_single_core(proc_id,
         idx += 1
         # The gt images can be on the local disk or `ceph`, so we use
         # backend here.
-        # img_bytes = backend.get(
         img_bytes = get(
             os.path.join(gt_folder, gt_ann['file_name']),
             backend_args=backend_args)

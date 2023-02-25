@@ -26,14 +26,14 @@ import torch
 from mmengine.config import Config
 from mmengine.fileio import dump
 from mmengine.logging import MMLogger
+from mmengine.registry import init_default_scope
 from mmengine.utils import ProgressBar
 from scipy.optimize import differential_evolution
 
 from mmdet.registry import DATASETS
 from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_overlaps,
                                    bbox_xyxy_to_cxcywh)
-from mmdet.utils import (register_all_modules, replace_cfg_vals,
-                         update_data_root)
+from mmdet.utils import replace_cfg_vals, update_data_root
 
 
 def parse_args():
@@ -329,7 +329,7 @@ def main():
     args = parse_args()
     cfg = args.config
     cfg = Config.fromfile(cfg)
-    register_all_modules()
+    init_default_scope(cfg.get('default_scope', 'mmdet'))
 
     # replace the ${key} with the value of cfg.key
     cfg = replace_cfg_vals(cfg)

@@ -223,7 +223,7 @@ class CrowdHumanMetric(BaseMetric):
             self.ann_file, backend_args=self.backend_args).strip().split('\n')
         gt_records = [json.loads(line) for line in gt_str]
 
-        pred_records = load(result_file)
+        pred_records = load(result_file, backend_args=self.backend_args)
         eval_samples = dict()
         for gt_record, pred_record in zip(gt_records, pred_records):
             assert gt_record['ID'] == pred_record['ID'], \

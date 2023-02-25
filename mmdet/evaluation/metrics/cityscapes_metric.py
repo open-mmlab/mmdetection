@@ -17,11 +17,10 @@ try:
     import cityscapesscripts
     from cityscapesscripts.helpers import labels as CSLabels
 
-    from ..functional import cityspaces_utils as CSEval
+    from ..functional import args, evaluateImgLists
 except ImportError:
     cityscapesscripts = None
     CSLabels = None
-    CSEval = None
 
 
 @METRICS.register_module()
@@ -153,20 +152,18 @@ class CityScapesMetric(BaseMetric):
 
         gts, preds = zip(*results)
         # set global states in cityscapes evaluation API
-        CSEval.args.cityscapesPath = osp.join(self.seg_prefix, '../..')
-        CSEval.args.predictionPath = self.seg_out_dir
-        CSEval.args.predictionWalk = None
-        CSEval.args.JSONOutput = False
-        CSEval.args.colorized = False
-        CSEval.args.gtInstancesFile = osp.join(self.seg_out_dir,
-                                               'gtInstances.json')
-        CSEval.args.backend_args = self.backend_args
+        args.cityscapesPath = osp.join(self.seg_prefix, '../..')
+        args.predictionPath = self.seg_out_dir
+        args.predictionWalk = None
+        args.JSONOutput = False
+        args.colorized = False
+        args.gtInstancesFile = osp.join(self.seg_out_dir, 'gtInstances.json')
+        args.backend_args = self.backend_args
 
         groundTruthImgList = [gt['file_name'] for gt in gts]
         predictionImgList = [pred['pred_txt'] for pred in preds]
-        CSEval_results = CSEval.evaluateImgLists(predictionImgList,
-                                                 groundTruthImgList,
-                                                 CSEval.args)['averages']
+        CSEval_results = evaluateImgLists(predictionImgList,
+                                          groundTruthImgList, args)['averages']
         eval_results = OrderedDict()
         eval_results['mAP'] = CSEval_results['allAp']
         eval_results['AP@50'] = CSEval_results['allAp50%']

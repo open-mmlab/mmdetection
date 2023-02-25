@@ -137,14 +137,14 @@ data_root = 'data/CrowdHuman/'
 # Method 1: simply set the data root and let the file I/O module
 # automatically Infer from prefix (not support LMDB and Memcache yet)
 
-# data_root = 's3://openmmlab/datasets/detection/coco/'
+# data_root = 's3://openmmlab/datasets/tracking/CrowdHuman/'
 
 # Method 2: Use backend_args, file_client_args in versions before 3.0.0rc6
 # backend_args = dict(
 #     backend='petrel',
 #     path_mapping=dict({
-#         './data/': 's3://openmmlab/datasets/detection/',
-#         'data/': 's3://openmmlab/datasets/detection/'
+#         './data/': 's3://openmmlab/datasets/tracking/',
+#         'data/': 's3://openmmlab/datasets/tracking/'
 #     }))
 backend_args = None
 
@@ -178,7 +178,7 @@ train_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         ann_file='annotation_train.odgt',
-        data_prefix=dict(img='Images/'),
+        data_prefix=dict(img='train/Images/'),
         filter_cfg=dict(filter_empty_gt=True, min_size=32),
         pipeline=train_pipeline,
         backend_args=backend_args))
@@ -192,7 +192,7 @@ val_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         ann_file='annotation_val.odgt',
-        data_prefix=dict(img='Images/'),
+        data_prefix=dict(img='val/Images/'),
         test_mode=True,
         pipeline=test_pipeline,
         backend_args=backend_args))
