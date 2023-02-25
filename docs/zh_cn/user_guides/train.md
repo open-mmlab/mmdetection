@@ -11,7 +11,7 @@ MMDetection 也为训练检测模型提供了开盖即食的工具。本节将�
 
 ### 学习率自动缩放
 
-**注意**：在配置文件中的学习率是在 8 块 GPU，每块 GPU 有 2 张图像（批大小为 8\*2=16）的情况下设置的。其已经设置在`config/_base_/default_runtime.py` 中的 `auto_scale_lr.base_batch_size`。当配置文件的批次大小为`16`时，学习率会基于该值进行自动缩放。同时，为了不影响其他基于 mmdet 的 codebase，启用自动缩放标志 `auto_scale_lr.enable` 默认设置为 `False`。
+**注意**：在配置文件中的学习率是在 8 块 GPU，每块 GPU 有 2 张图像（批大小为 8\*2=16）的情况下设置的。其已经设置在`config/_base_/schedules/schedule_xx.py` 中的 `auto_scale_lr.base_batch_size`。当配置文件的批次大小为`16`时，学习率会基于该值进行自动缩放。同时，为了不影响其他基于 mmdet 的 codebase，启用自动缩放标志 `auto_scale_lr.enable` 默认设置为 `False`。
 
 如果要启用此功能，需在命令添加参数 `--auto-scale-lr`。并且在启动命令之前，请检查下即将使用的配置文件的名称，因为配置名称指示默认的批处理大小。
 在默认情况下，批次大小是 `8 x 2 = 16`，例如：`faster_rcnn_r50_caffe_fpn_90k_coco.py` 或者 `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`；若不是默认批次，你可以在配置文件看到像 `_NxM_` 字样的，例如：`cornernet_hourglass104_mstest_32x3_210e_coco.py` 的批次大小是 `32 x 3 = 96`, 或者 `scnet_x101_64x4d_fpn_8x1_20e_coco.py` 的批次大小是 `8 x 1 = 8`。
@@ -387,16 +387,16 @@ if __name__ == '__main__':
 
 ## 准备配置文件
 
-第二步需要准备一个配置文件来成功加载数据集。假设我们想要用 balloon dataset 来训练配备了 FPN 的 Mask R-CNN ，如下是我们的配置文件。假设配置文件命名为 `mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py`，相应保存路径为 `configs/balloon/`，配置文件内容如下所示。
+第二步需要准备一个配置文件来成功加载数据集。假设我们想要用 balloon dataset 来训练 RTMDet ，如下是我们的配置文件。假设配置文件命名为 `rtmdet_l_8xb32-300e_balloon.py`，相应保存路径为 `configs/balloon/`，配置文件内容如下所示。
 
 ```python
 # 新配置继承了基本配置，并做了必要的修改
-_base_ = '../mask_rcnn/mask-rcnn_r50-caffe_fpn_ms-poly-1x_coco.py'
+_base_ = '../rtmdet/rtmdet_l_8xb32-300e_coco.py'
 
 # 我们还需要更改 head 中的 num_classes 以匹配数据集中的类别数
 model = dict(
-    roi_head=dict(
-        bbox_head=dict(num_classes=1), mask_head=dict(num_classes=1)))
+    bbox_head=dict(num_classes = 1)
+)
 
 # 修改数据集相关配置
 data_root = 'data/balloon/'
@@ -426,7 +426,7 @@ val_evaluator = dict(ann_file=data_root + 'val/annotation_coco.json')
 test_evaluator = val_evaluator
 
 # 使用预训练的 Mask R-CNN 模型权重来做初始化，可以提高模型性能
-load_from = 'https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco_bbox_mAP-0.408__segm_mAP-0.37_20200504_163245-42aa3d00.pth'
+load_from = 'https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_l_8xb32-300e_coco/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth'
 
 ```
 
@@ -435,17 +435,17 @@ load_from = 'https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn
 为了使用新的配置方法来对模型进行训练，你只需要运行如下命令。
 
 ```shell
-python tools/train.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py
+python tools/train.py configs/balloon/rtmdet_l_8xb32-300e_balloon.py
 ```
 
-参考[情况 1](./1_exist_data_model.md)来获取更多详细的使用方法。
+参考 [在标准数据集上训练预定义的模型](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/train.html#id1) 来获取更多详细的使用方法。
 
 ## 测试以及推理
 
 为了测试训练完毕的模型，你只需要运行如下命令。
 
 ```shell
-python tools/test.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py work_dirs/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon/epoch_12.pth
+python tools/test.py configs/balloon/rtmdet_l_8xb32-300e_balloon.py work_dirs/rtmdet_l_8xb32-300e_balloon/epoch_300.pth
 ```
 
-参考[情况 1](./1_exist_data_model.md)来获取更多详细的使用方法。
+参考 [测试现有模型](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/test.html) 来获取更多详细的使用方法。
