@@ -56,7 +56,7 @@ class TestOpenImagesMetric(unittest.TestCase):
         metric.dataset_meta = dataset.metainfo
         metric.process({}, [data_sample])
         results = metric.evaluate(size=len(dataset))
-        targets = {'openimages/mAP@0.5(%)': 100.0, 'openimages/mAP(%)': 100.0}
+        targets = {'openimages/AP50(%)': 100.0, 'openimages/mAP(%)': 100.0}
         self.assertDictEqual(results, targets)
 
         # test multi-threshold
@@ -65,8 +65,8 @@ class TestOpenImagesMetric(unittest.TestCase):
         metric.process({}, [data_sample])
         results = metric.evaluate(size=len(dataset))
         targets = {
-            'openimages/mAP@0.1(%)': 100.0,
-            'openimages/mAP@0.5(%)': 100.0,
+            'openimages/AP10(%)': 100.0,
+            'openimages/AP50(%)': 100.0,
             'openimages/mAP(%)': 100.0
         }
         self.assertDictEqual(results, targets)
