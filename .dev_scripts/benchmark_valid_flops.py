@@ -251,7 +251,7 @@ def main(args):
 
         logger.info(f'Processing: {model_name}')
 
-        http_prefix = 'https://download.openmmlab.com/mmclassification/'
+        http_prefix = 'https://download.openmmlab.com/mmdetection/'
         if args.checkpoint_root is not None:
             root = args.checkpoint_root
             if 's3://' in args.checkpoint_root:

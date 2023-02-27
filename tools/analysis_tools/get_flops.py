@@ -4,7 +4,6 @@ import tempfile
 from functools import partial
 from pathlib import Path
 
-import numpy as np
 import torch
 from mmengine.config import Config, DictAction
 from mmengine.logging import MMLogger
@@ -40,23 +39,17 @@ def parse_args():
         'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
         'Note that the quotation marks are necessary and that no white space '
         'is allowed.')
-    parser.add_argument(
-        '--size-divisor',
-        type=int,
-        default=32,
-        help='Pad the input image, the minimum size that is divisible '
-        'by size_divisor, -1 means do not pad the image.')
     args = parser.parse_args()
     return args
 
 
 def inference(args, logger):
     if str(torch.__version__) < '1.12':
-        logger.warning('In torch<1.12, torch.jit don\'t supprt'
-                       'some configs compute flops like configs/detectors'
-                       ',configs/yolact, if you want to count the'
-                       'flops mentioned above, you need update torch version. '
-                       'other configs can compute flops in torch<1.12')
+        logger.warning(
+            'Some config files, such as configs/yolact and configs/detectors,'
+            'may have compatibility issues with torch.jit when torch<1.12. '
+            'If you want to calculate flops for these models, '
+            'please make sure your pytorch version is >=1.12.')
 
     config_name = Path(args.config)
     if not config_name.exists():
@@ -87,37 +80,37 @@ def inference(args, logger):
         h, w = args.shape
     else:
         raise ValueError('invalid input shape')
-
-    divisor = args.size_divisor
-    if divisor > 0:
-        pad_h = int(np.ceil(h / divisor)) * divisor
-        pad_w = int(np.ceil(w / divisor)) * divisor
-
     result = {}
+
     # Supports two ways to calculate flops,
     # 1. randomly generate a picture
     # 2. load a picture from the dataset
-    # In two stage detectors, need batch_samples to compute flops
-    # Only support use the second way.
+    # In two stage detectors, _forward need batch_samples to get
+    # rpn_results_list, then use rpn_results_list to compute flops,
+    # so only support use the second way.
     try:
         model = MODELS.build(cfg.model)
-        result['ori_shape'] = (h, w)
-        result['pad_shape'] = (pad_h, pad_w)
-        input = torch.rand(1, 3, pad_h, pad_w)
         if torch.cuda.is_available():
             model.cuda()
-            input = input.cuda()
         model = revert_sync_batchnorm(model)
-        inputs = (input, )
+        data_batch = {'inputs': [torch.rand(3, h, w)], 'batch_samples': [None]}
+        data = model.data_preprocessor(data_batch)
+        result['ori_shape'] = (h, w)
+        result['pad_shape'] = data['inputs'].shape[-2:]
         model.eval()
         outputs = get_model_complexity_info(
-            model, None, inputs=inputs, show_table=False, show_arch=False)
+            model,
+            None,
+            inputs=data['inputs'],
+            show_table=False,
+            show_arch=False)
         flops = outputs['flops']
         params = outputs['params']
         result['compute_type'] = 'direct: randomly generate a picture'
 
     except TypeError:
-        logger.warning('Direct get flops failed, try to get flops with data')
+        logger.warning(
+            'Failed to directly get FLOPs, try to get flops with real data')
         data_loader = Runner.build_dataloader(cfg.val_dataloader)
         data_batch = next(iter(data_loader))
         model = MODELS.build(cfg.model)
@@ -127,10 +120,8 @@ def inference(args, logger):
         model.eval()
         _forward = model.forward
         data = model.data_preprocessor(data_batch)
-        ori_shape = data['data_samples'][0].ori_shape
-        pad_shape = data['data_samples'][0].pad_shape
-        result['ori_shape'] = ori_shape
-        result['pad_shape'] = pad_shape
+        result['ori_shape'] = data['data_samples'][0].ori_shape
+        result['pad_shape'] = data['data_samples'][0].pad_shape
 
         del data_loader
         model.forward = partial(_forward, data_samples=data['data_samples'])
@@ -163,8 +154,7 @@ def main():
     params = result['params']
     compute_type = result['compute_type']
 
-    if args.size_divisor > 0 and \
-            pad_shape != ori_shape:
+    if pad_shape != ori_shape:
         print(f'{split_line}\nUse size divisor set input shape '
               f'from {ori_shape} to {pad_shape}')
     print(f'{split_line}\nCompute type: {compute_type}\n'
