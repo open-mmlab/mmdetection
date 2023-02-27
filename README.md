@@ -90,7 +90,7 @@ Apart from MMDetection, we also released a library [mmcv](https://github.com/ope
 
 ### 💎 Stable version
 
-**2.28.2** was released in 24/2/2023:
+**2.28.2** was released in 27/2/2023:
 
 - Fixed some known documentation, configuration and linking error issues
 
@@ -118,7 +118,7 @@ We are excited to announce our latest work on real-time object recognition tasks
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
 
-A brand new version of **MMDetection v3.0.0rc6** was released in 24/2/2023:
+A brand new version of **MMDetection v3.0.0rc6** was released in 27/2/2023:
 
 - Support [Boxinst](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/boxinst), [Objects365 Dataset](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/objects365), and [Separated and Occluded COCO metric](https://github.com/open-mmlab/mmdetection/tree/3.x/docs/en/user_guides/useful_tools.md#coco-separated--occluded-mask-metric)
 - Support [ConvNeXt-V2](https://github.com/open-mmlab/mmdetection/tree/3.x/projects/ConvNeXt-V2), [DiffusionDet](https://github.com/open-mmlab/mmdetection/tree/3.x/projects/DiffusionDet), and inference of [EfficientDet](https://github.com/open-mmlab/mmdetection/tree/3.x/projects/EfficientDet) and [Detic](https://github.com/open-mmlab/mmdetection/tree/3.x/projects/Detic) in `Projects`
