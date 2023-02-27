@@ -43,6 +43,11 @@ def parse_args():
     parser.add_argument('--img', default='demo/demo.jpg', help='Image file')
     parser.add_argument('--models', nargs='+', help='models name to inference')
     parser.add_argument(
+        '--batch-size',
+        type=int,
+        default=1,
+        help='The batch size during the inference.')
+    parser.add_argument(
         '--flops', action='store_true', help='Get Flops and Params of models')
     parser.add_argument(
         '--flops-str',
