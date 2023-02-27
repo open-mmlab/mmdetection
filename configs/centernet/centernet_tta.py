@@ -31,6 +31,7 @@ tta_pipeline = [
                     test_pad_mode=['logical_or', 31],
                     test_pad_add_pix=1),
             ],
+            [dict(type='LoadAnnotations', with_bbox=True)],
             [
                 dict(
                     type='PackDetInputs',
