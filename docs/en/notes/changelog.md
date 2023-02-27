@@ -46,6 +46,7 @@
 - Deprecate `sklearn` (#9725)
 - Add RTMDet-Ins deployment guide (#9823)
 - Update RTMDet config and README (#9603)
+- Replace the models used in the tutorial document with RTMDet (#9843)
 - Adjust the minimum supported python version to 3.7 (#9602)
 - Support modifying palette through configuration (#9445)
 - Update README document in `Project` (#9599)
