@@ -202,6 +202,15 @@ class CocoMetric(COCODetection):
                     logger='current')
                 break
 
+            try:
+                log = metric_results.pop(f'{metric}_log')
+                print_log('\n' + log.getvalue(), logger='current')
+            except KeyError:
+                print_log(
+                    'The testing log of the whole dataset is empty.',
+                    logger='current')
+                break
+
             if metric == 'proposal':
                 table_title = '  Recall Results (%)'
                 if self.metric_items is None:
