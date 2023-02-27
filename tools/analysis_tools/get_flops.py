@@ -103,7 +103,7 @@ def inference(args, logger):
         model = MODELS.build(cfg.model)
         result['ori_shape'] = (h, w)
         result['pad_shape'] = (pad_h, pad_w)
-        input = torch.rand(1, 3, h, w)
+        input = torch.rand(1, 3, pad_h, pad_w)
         if torch.cuda.is_available():
             model.cuda()
             input = input.cuda()
