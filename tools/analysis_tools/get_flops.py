@@ -51,12 +51,12 @@ def parse_args():
 
 
 def inference(args, logger):
-    logger.warning(
-        'if you want test all configs flops, please make sure torch>=1.12')
-    # In torch<1.12, torch.jit don't support some configs compute flops
-    # like configs/detectors, configs/yolact, so if you want to count the
-    # flops mentioned above, you need update torch version. other configs
-    # can compute flops in torch<1.12
+    if str(torch.__version__) < '1.12':
+        logger.warning('In torch<1.12, torch.jit don\'t supprt'
+                       'some configs compute flops like configs/detectors'
+                       ',configs/yolact, if you want to count the'
+                       'flops mentioned above, you need update torch version. '
+                       'other configs can compute flops in torch<1.12')
 
     config_name = Path(args.config)
     if not config_name.exists():
@@ -87,6 +87,7 @@ def inference(args, logger):
         h, w = args.shape
     else:
         raise ValueError('invalid input shape')
+
     divisor = args.size_divisor
     if divisor > 0:
         pad_h = int(np.ceil(h / divisor)) * divisor
@@ -102,7 +103,7 @@ def inference(args, logger):
         model = MODELS.build(cfg.model)
         result['ori_shape'] = (h, w)
         result['pad_shape'] = (pad_h, pad_w)
-        input = torch.rand(1, 3, pad_h, pad_w)
+        input = torch.rand(1, 3, h, w)
         if torch.cuda.is_available():
             model.cuda()
             input = input.cuda()
@@ -113,7 +114,7 @@ def inference(args, logger):
             model, None, inputs=inputs, show_table=False, show_arch=False)
         flops = outputs['flops']
         params = outputs['params']
-        result['Get Types'] = 'direct: randomly generate a picture'
+        result['compute_type'] = 'direct: randomly generate a picture'
 
     except TypeError:
         logger.warning('Direct get flops failed, try to get flops with data')
@@ -141,7 +142,7 @@ def inference(args, logger):
             show_arch=False)
         flops = outputs['flops']
         params = outputs['params']
-        result['Get Types'] = 'dataloader: load a picture from the dataset'
+        result['compute_type'] = 'dataloader: load a picture from the dataset'
 
     flops = _format_size(flops)
     params = _format_size(params)
@@ -160,7 +161,7 @@ def main():
     pad_shape = result['pad_shape']
     flops = result['flops']
     params = result['params']
-    compute_type = result['Get Types']
+    compute_type = result['compute_type']
 
     if args.size_divisor > 0 and \
             pad_shape != ori_shape:
