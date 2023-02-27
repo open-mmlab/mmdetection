@@ -87,7 +87,7 @@ def inference(args, logger):
     # 2. load a picture from the dataset
     # In two stage detectors, _forward need batch_samples to get
     # rpn_results_list, then use rpn_results_list to compute flops,
-    # so only support use the second way.
+    # so only the second way is supported
     try:
         model = MODELS.build(cfg.model)
         if torch.cuda.is_available():
