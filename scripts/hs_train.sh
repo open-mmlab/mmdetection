@@ -42,7 +42,6 @@
 # #--------------------------------   SPARSE RCNN STUDENT   --------------------------------#
 
 # MODEL_NAME='sparse_rcnn_r101_fpn_300_proposals_crop_mstrain_480-800_3x'
-# MODEL_NAME='sparse_rcnn_r101_fpn_300_proposals_crop_mstrain_480-800_3x'
 # MODEL_NAME='sparse_rcnn_r50_fpn_mstrain_480-800_3x'
 MODEL_NAME='sparse_rcnn_r101_fpn_mstrain_480-800_3x_fskd'
 FOLDER_NAME='sparse_rcnn_kd'
@@ -54,7 +53,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch \
                                 --seed 0 \
                                 --work-dir result/coco/${MODEL_NAME} \
                                 --launcher pytorch
+                                --resume-from result/coco/${MODEL_NAME}/epoch_1.pth  \
 
 
-                                # --resume-from result/coco/${MODEL_NAME}/epoch_6.pth  \
 
