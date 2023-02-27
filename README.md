@@ -115,6 +115,7 @@ We are excited to announce our latest work on real-time object recognition tasks
 - Refactor [DETR](configs/detr) series and support [Conditional-DETR](configs/conditional_detr), [DAB-DETR](configs/dab_detr), and [DINO](configs/dino)
 - Support `DetInferencer` for inference, Test Time Augmentation, and automatically importing modules from registry
 - Support RTMDet-Ins ONNXRuntime and TensorRT [deployment](configs/rtmdet/README.md#deployment-tutorial)
+- Support [calculating FLOPs of detectors](docs/en/user_guides/useful_tools.md#Model-Complexity)
 
 ## Installation
 

@@ -9,6 +9,7 @@
 - Refactor [DETR](../../../configs/detr) series and support [Conditional-DETR](../../../configs/conditional_detr), [DAB-DETR](../../../configs/dab_detr), and [DINO](../../../configs/detr)
 - Support `DetInferencer` for inference, Test Time Augmentation, and automatically importing modules from registry
 - Support RTMDet-Ins ONNXRuntime and TensorRT [deployment](../../../configs/rtmdet/README.md#deployment-tutorial)
+- Support [calculating FLOPs of detectors](../../../tools/analysis_tools/get_flops.py)
 
 ### New Features
 
@@ -21,8 +22,9 @@
 - Support [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046) (#9710)
 - Support auto import modules from registry (#9143)
 - Refactor DETR series and support Conditional-DETR, DAB-DETR and DINO (#9646)
-- Support DetInferencer (#9561)
+- Support `DetInferencer` for inference (#9561)
 - Support Test Time Augmentation (#9452)
+- Support calculating FLOPs of detectors (#9777)
 
 ### Bug Fixes
 
