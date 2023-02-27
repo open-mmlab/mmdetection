@@ -13,7 +13,7 @@ class SparseRCNN_TS(TwoStageDetector):
     r"""Implementation of `Sparse R-CNN: End-to-End Object Detection with
     Learnable Proposals <https://arxiv.org/abs/2011.12450>`_"""
 
-    def __init__(self, teacher_cfg, distill_type, *args, **kwargs):
+    def __init__(self, teacher_cfg, *args, **kwargs):
         super(SparseRCNN_TS, self).__init__(*args, **kwargs)
         assert self.with_rpn, 'Sparse R-CNN and QueryInst ' \
             'do not support external proposals'
@@ -22,7 +22,6 @@ class SparseRCNN_TS(TwoStageDetector):
         teacher_cfg.model.roi_head.type = 'ContSparseRoIHead'
         self.teacher_cfg = teacher_cfg
 
-        self.distill_type = distill_type
 
     def update_teacher(self, state_dict):
         # Load Teacher Model
@@ -77,7 +76,7 @@ class SparseRCNN_TS(TwoStageDetector):
         proposal_boxes, proposal_features, imgs_whwh = \
             self.rpn_head.forward_train(x, img_metas)
         
-        roi_losses, gt_bboxes_feats, all_stage_feats, all_stage_gt_feats = self.roi_head.forward_train(
+        roi_losses, gt_bboxes_feats = self.roi_head.forward_train(
             x,
             proposal_boxes,
             proposal_features,
@@ -87,7 +86,7 @@ class SparseRCNN_TS(TwoStageDetector):
             gt_bboxes_ignore=gt_bboxes_ignore,
             gt_masks=gt_masks,
             imgs_whwh=imgs_whwh)
-        return roi_losses, gt_bboxes_feats, all_stage_feats, all_stage_gt_feats
+        return roi_losses, gt_bboxes_feats
 
     def simple_test(self, img, img_metas, rescale=False):
         """Test function without test time augmentation.
@@ -167,27 +166,17 @@ class SparseRCNN_TS(TwoStageDetector):
         """
         self.teacher.eval()
         with torch.no_grad():
-            _, gt_feats_ori, all_stage_feats_ori, all_stage_gt_feats_ori = self.teacher(**data[0])
+            _, gt_feats_ori = self.teacher(**data[0])
             
-        losses, gt_feats_aug, all_stage_feats_aug, all_stage_gt_feats_aug = self(**data[1])
+        losses, gt_feats_aug = self(**data[1])
 
-        if self.distill_type == 'all':
-            # Calc Consistency Loss
-            S = len(all_stage_gt_feats_ori)         # Stage length
-            B = all_stage_gt_feats_ori[0].size(0)   # Batch size
-            positive_loss = 0.0
-            for s in range(S):            
-                stage_gt_feats_ori = all_stage_gt_feats_ori[s].view(B, -1)
-                stage_gt_feats_aug = all_stage_gt_feats_aug[s].view(B, -1)
-                positive_loss += self.calc_consistency_loss(stage_gt_feats_ori, stage_gt_feats_aug)
-        elif self.distill_type == 'last':
-            # Calc Consistency Loss
-            B = gt_feats_ori.size(0)
-            gt_feats_ori = gt_feats_ori.view(B, -1)
-            gt_feats_aug = gt_feats_aug.view(B, -1)
-            positive_loss = self.calc_consistency_loss(gt_feats_ori, gt_feats_aug)
-        else:
-            raise('Select Proper Distill Types')            
+
+        # Calc Consistency Loss
+        B = gt_feats_ori.size(0)
+        gt_feats_ori = gt_feats_ori.view(B, -1)
+        gt_feats_aug = gt_feats_aug.view(B, -1)
+        positive_loss = self.calc_consistency_loss(gt_feats_ori, gt_feats_aug)
+          
         
         consistency_loss = positive_loss
     
@@ -249,7 +238,7 @@ class SparseRCNNCont(TwoStageDetector):
         x = self.extract_feat(img)
         proposal_boxes, proposal_features, imgs_whwh = \
             self.rpn_head.forward_train(x, img_metas)
-        roi_losses, gt_bboxes_feats, all_stage_feats, all_stage_gt_feats = self.roi_head.forward_train(
+        roi_losses, gt_bboxes_feats = self.roi_head.forward_train(
             x,
             proposal_boxes,
             proposal_features,
@@ -259,7 +248,7 @@ class SparseRCNNCont(TwoStageDetector):
             gt_bboxes_ignore=gt_bboxes_ignore,
             gt_masks=gt_masks,
             imgs_whwh=imgs_whwh)
-        return roi_losses, gt_bboxes_feats, all_stage_feats, all_stage_gt_feats
+        return roi_losses, gt_bboxes_feats
 
     def simple_test(self, img, img_metas, rescale=False):
         """Test function without test time augmentation.
