@@ -13,7 +13,7 @@ You could download the existing models in advance if the network connection is u
 
 ## Learning rate auto scaling
 
-**Important**: The default learning rate in config files is for 8 GPUs and 2 sample per GPU (batch size = 8 * 2 = 16). And it had been set to `auto_scale_lr.base_batch_size` in `config/_base_/default_runtime.py`. Learning rate will be automatically scaled base on this value when the batch size is `16`. Meanwhile, in order not to affect other codebase which based on mmdet, the flag `auto_scale_lr.enable` is set to `False` by default.
+**Important**: The default learning rate in config files is for 8 GPUs and 2 sample per GPU (batch size = 8 * 2 = 16). And it had been set to `auto_scale_lr.base_batch_size` in `config/_base_/schedules/schedule_1x.py`. Learning rate will be automatically scaled base on this value when the batch size is `16`. Meanwhile, in order not to affect other codebase which based on mmdet, the flag `auto_scale_lr.enable` is set to `False` by default.
 
 If you want to enable this feature, you need to add argument `--auto-scale-lr`. And you need to check the config name which you want to use before you process the command, because the config name indicates the default batch size.
 By default, it is `8 x 2 = 16 batch size`, like `faster_rcnn_r50_caffe_fpn_90k_coco.py` or `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`. In other cases, you will see the config file name have `_NxM_` in dictating, like `cornernet_hourglass104_mstest_32x3_210e_coco.py` which batch size is `32 x 3 = 96`, or `scnet_x101_64x4d_fpn_8x1_20e_coco.py` which batch size is `8 x 1 = 8`.
@@ -436,7 +436,7 @@ To train a model with the new config, you can simply run
 python tools/train.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py
 ```
 
-For more detailed usages, please refer to the [training guide](train.md).
+For more detailed usages, please refer to the [training guide](https://mmdetection.readthedocs.io/en/3.x/user_guides/train.html#train-predefined-models-on-standard-datasets).
 
 ## Test and inference
 
@@ -446,4 +446,4 @@ To test the trained model, you can simply run
 python tools/test.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py work_dirs/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon/epoch_12.pth
 ```
 
-For more detailed usages, please refer to the [testing guide](test.md).
+For more detailed usages, please refer to the [testing guide](https://mmdetection.readthedocs.io/en/3.x/user_guides/test.html).

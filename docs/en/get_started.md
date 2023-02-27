@@ -76,17 +76,17 @@ To verify whether MMDetection is installed correctly, we provide some sample cod
 **Step 1.** We need to download config and checkpoint files.
 
 ```shell
-mim download mmdet --config yolov3_mobilenetv2_8xb24-320-300e_coco --dest .
+mim download mmdet --config rtmdet_tiny_8xb32-300e_coco --dest .
 ```
 
-The downloading will take several seconds or more, depending on your network environment. When it is done, you will find two files `yolov3_mobilenetv2_8xb24-320-300e_coco.py` and `yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth` in your current folder.
+The downloading will take several seconds or more, depending on your network environment. When it is done, you will find two files `rtmdet_tiny_8xb32-300e_coco.py` and `rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth` in your current folder.
 
 **Step 2.** Verify the inference demo.
 
 Case a: If you install MMDetection from source, just run the following command.
 
 ```shell
-python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.py --weights yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu
+python demo/image_demo.py demo/demo.jpg rtmdet_tiny_8xb32-300e_coco.py --weights rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth --device cpu
 ```
 
 You will see a new image `demo.jpg` on your `./outputs/vis` folder, where bounding boxes are plotted on cars, benches, etc.
@@ -96,8 +96,8 @@ Case b: If you install MMDetection with MIM, open your python interpreter and co
 ```python
 from mmdet.apis import init_detector, inference_detector
 
-config_file = 'yolov3_mobilenetv2_8xb24-320-300e_coco.py'
-checkpoint_file = 'yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth'
+config_file = 'rtmdet_tiny_8xb32-300e_coco.py'
+checkpoint_file = 'rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth'
 model = init_detector(config_file, checkpoint_file, device='cpu')  # or device='cuda:0'
 inference_detector(model, 'demo/demo.jpg')
 ```

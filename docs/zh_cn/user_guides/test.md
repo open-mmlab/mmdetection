@@ -52,22 +52,22 @@ bash tools/dist_test.sh \
 
 假设你已经下载了 checkpoint 文件到 `checkpoints/` 文件下了。
 
-1. 测试 Faster R-CNN 并可视化其结果。按任意键继续下张图片的测试。配置文件和 checkpoint 文件 [在此](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn) 。
+1. 测试 RTMDet 并可视化其结果。按任意键继续下张图片的测试。配置文件和 checkpoint 文件 [在此](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet) 。
 
    ```shell
    python tools/test.py \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
-       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+       configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
+       checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
        --show
    ```
 
-2. 测试 Faster R-CNN，并为了之后的可视化保存绘制的图像。配置文件和 checkpoint 文件 [在此](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn) 。
+2. 测试 RTMDet，并为了之后的可视化保存绘制的图像。配置文件和 checkpoint 文件 [在此](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet) 。
 
    ```shell
    python tools/test.py \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
-       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
-       --show-dir faster_rcnn_r50_fpn_1x_results
+       configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
+       checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
+       --show-dir rtmdet_l_8xb32-300e_coco_results
    ```
 
 3. 在 Pascal VOC 数据集上测试 Faster R-CNN，不保存测试结果，测试 `mAP`。配置文件和 checkpoint 文件 [在此](https://github.com/open-mmlab/mmdetection/tree/master/configs/pascal_voc) 。
