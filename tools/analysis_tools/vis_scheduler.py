@@ -22,7 +22,7 @@ class SimpleModel(BaseModel):
     """simple model that do nothing in train_step."""
 
     def __init__(self):
-        super(SimpleModel, self).__init__()
+        super().__init__()
         self.data_preprocessor = nn.Identity()
         self.conv = nn.Conv2d(1, 1, 1)
 
