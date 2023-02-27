@@ -42,11 +42,6 @@ def parse_args():
         help='Checkpoint file root path. If set, load checkpoint before test.')
     parser.add_argument('--img', default='demo/demo.jpg', help='Image file')
     parser.add_argument('--models', nargs='+', help='models name to inference')
-
-    parser.add_argument(
-        '--inference-time',
-        action='store_true',
-        help='Test inference time by run 10 times for each model.')
     parser.add_argument(
         '--batch-size',
         type=int,
