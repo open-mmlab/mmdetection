@@ -9,7 +9,7 @@
 - Refactor [DETR](../../../configs/detr) series and support [Conditional-DETR](../../../configs/conditional_detr), [DAB-DETR](../../../configs/dab_detr), and [DINO](../../../configs/detr)
 - Support `DetInferencer` for inference, Test Time Augmentation, and automatically importing modules from registry
 - Support RTMDet-Ins ONNXRuntime and TensorRT [deployment](../../../configs/rtmdet/README.md#deployment-tutorial)
-- Support [calculating FLOPs of detectors](../../../tools/analysis_tools/get_flops.py)
+- Support [calculating FLOPs of detectors](../user_guides/useful_tools.md#Model-Complexity)
 
 ### New Features
 
