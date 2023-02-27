@@ -38,20 +38,10 @@ def parse_args():
         default=[1280, 800],
         help='input image size')
     parser.add_argument(
-        '--checkpoint-root',
+        '--checkpoint_root',
         help='Checkpoint file root path. If set, load checkpoint before test.')
     parser.add_argument('--img', default='demo/demo.jpg', help='Image file')
     parser.add_argument('--models', nargs='+', help='models name to inference')
-
-    parser.add_argument(
-        '--inference-time',
-        action='store_true',
-        help='Test inference time by run 10 times for each model.')
-    parser.add_argument(
-        '--batch-size',
-        type=int,
-        default=1,
-        help='The batch size during the inference.')
     parser.add_argument(
         '--flops', action='store_true', help='Get Flops and Params of models')
     parser.add_argument(
@@ -69,7 +59,7 @@ def parse_args():
         'Note that the quotation marks are necessary and that no white space '
         'is allowed.')
     parser.add_argument(
-        '--size-divisor',
+        '--size_divisor',
         type=int,
         default=32,
         help='Pad the input image, the minimum size that is divisible '
