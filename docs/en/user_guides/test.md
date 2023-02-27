@@ -59,9 +59,9 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
 
    ```shell
    python tools/test.py \
-        configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
-        checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
-        --show
+       configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
+       checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
+       --show
    ```
 
 2. Test RTMDet and save the painted images for future visualization.
@@ -69,9 +69,9 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
 
    ```shell
    python tools/test.py \
-        configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
-        checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
-        --show-dir faster_rcnn_r50_fpn_1x_results
+       configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
+       checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
+       --show-dir faster_rcnn_r50_fpn_1x_results
    ```
 
 3. Test Faster R-CNN on PASCAL VOC (without saving the test results).

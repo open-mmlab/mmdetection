@@ -56,18 +56,18 @@ bash tools/dist_test.sh \
 
    ```shell
    python tools/test.py \
-        configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
-        checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
-        --show
+       configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
+       checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
+       --show
    ```
 
 2. 测试 RTMDet，并为了之后的可视化保存绘制的图像。配置文件和 checkpoint 文件 [在此](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet) 。
 
    ```shell
    python tools/test.py \
-        configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
-        checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
-        --show-dir rtmdet_l_8xb32-300e_coco_results
+       configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
+       checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
+       --show-dir rtmdet_l_8xb32-300e_coco_results
    ```
 
 3. 在 Pascal VOC 数据集上测试 Faster R-CNN，不保存测试结果，测试 `mAP`。配置文件和 checkpoint 文件 [在此](https://github.com/open-mmlab/mmdetection/tree/master/configs/pascal_voc) 。
