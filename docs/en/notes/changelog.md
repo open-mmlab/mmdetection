@@ -105,6 +105,7 @@ Thanks @JosonChan1998, @RangeKing, @NoFish-528, @likyoo, @Xiangxu-0103, @137208,
 - Fix demo API in instance segmentation tutorial (#9226)
 - Fix `analyze_results` (#9380)
 - Fix the error that Readthedocs API cannot be displayed (#9510)
+- Fix the error when there are no prediction results and support visualize the groundtruth of TTA (#9840)
 
 ### Improvements
 
