@@ -22,7 +22,7 @@ except ImportError:
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Train a detector')
+    parser = argparse.ArgumentParser(description='Get a detector flops')
     parser.add_argument('config', help='train config file path')
     parser.add_argument(
         '--shape',
@@ -41,7 +41,7 @@ def parse_args():
         'Note that the quotation marks are necessary and that no white space '
         'is allowed.')
     parser.add_argument(
-        '--size_divisor',
+        '--size-divisor',
         type=int,
         default=32,
         help='Pad the input image, the minimum size that is divisible '
@@ -50,16 +50,30 @@ def parse_args():
     return args
 
 
-def inference(config_file, work_dir, args):
-    logger = MMLogger.get_instance(name='MMLogger')
-    logger.warning('if you want test flops, please make sure torch>=1.12')
-    cfg = Config.fromfile(config_file)
-    cfg.work_dir = work_dir
+def inference(args, logger):
+    logger.warning(
+        'if you want test all configs flops, please make sure torch>=1.12')
+    # In torch<1.12, torch.jit don't support some configs compute flops
+    # like configs/detectors, configs/yolact, so if you want to count the
+    # flops mentioned above, you need update torch version. other configs
+    # can compute flops in torch<1.12
+
+    config_name = Path(args.config)
+    if not config_name.exists():
+        logger.error(f'{config_name} not found.')
+
+    cfg = Config.fromfile(args.config)
+    cfg.work_dir = tempfile.TemporaryDirectory().name
     cfg.log_level = 'WARN'
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 
     init_default_scope(cfg.get('default_scope', 'mmdet'))
+
+    # TODO: The following usage is temporary and not safe
+    # use hard code to convert mmSyncBN to SyncBN. This is a known
+    # bug in mmengine, mmSyncBN requires a distributed environment，
+    # this question involves models like configs/strong_baselines
     if hasattr(cfg, 'head_norm_cfg'):
         cfg['head_norm_cfg'] = dict(type='SyncBN', requires_grad=True)
         cfg['model']['roi_head']['bbox_head']['norm_cfg'] = dict(
@@ -79,11 +93,16 @@ def inference(config_file, work_dir, args):
         pad_w = int(np.ceil(w / divisor)) * divisor
 
     result = {}
+    # Supports two ways to calculate flops,
+    # 1. randomly generate a picture
+    # 2. load a picture from the dataset
+    # In two stage detectors, need batch_samples to compute flops
+    # Only support use the second way.
     try:
         model = MODELS.build(cfg.model)
         result['ori_shape'] = (h, w)
         result['pad_shape'] = (pad_h, pad_w)
-        input = torch.rand(1, (3, pad_h, pad_w))
+        input = torch.rand(1, 3, pad_h, pad_w)
         if torch.cuda.is_available():
             model.cuda()
             input = input.cuda()
@@ -94,11 +113,9 @@ def inference(config_file, work_dir, args):
             model, None, inputs=inputs, show_table=False, show_arch=False)
         flops = outputs['flops']
         params = outputs['params']
-        activations = outputs['activations']
+        result['Get Types'] = 'direct: randomly generate a picture'
 
-        result['Get Types'] = 'direct'
-    except:  # noqa 772
-        logger = MMLogger.get_instance(name='MMLogger')
+    except TypeError:
         logger.warning('Direct get flops failed, try to get flops with data')
         data_loader = Runner.build_dataloader(cfg.val_dataloader)
         data_batch = next(iter(data_loader))
@@ -124,14 +141,10 @@ def inference(config_file, work_dir, args):
             show_arch=False)
         flops = outputs['flops']
         params = outputs['params']
-        activations = outputs['activations']
-
-        result['Get Types'] = 'dataloader'
+        result['Get Types'] = 'dataloader: load a picture from the dataset'
 
     flops = _format_size(flops)
     params = _format_size(params)
-    activations = _format_size(activations)
-
     result['flops'] = flops
     result['params'] = params
 
@@ -141,36 +154,24 @@ def inference(config_file, work_dir, args):
 def main():
     args = parse_args()
     logger = MMLogger.get_instance(name='MMLogger')
-    config = args.config
-    config_name = Path(config)
-    if not config_name.exists():
-        logger.error(f'{config_name} not found.')
-    tmpdir = tempfile.TemporaryDirectory()
-    try:
-        # build the model from a config file and a checkpoint file
-        result = inference(config, tmpdir.name, args)
-        result['valid'] = 'PASS'
-    except Exception:  # noqa 722
-        import traceback
-        logger.error(f'"{config}" :\n{traceback.format_exc()}')
-        result = {'valid': 'FAIL'}
-
+    result = inference(args, logger)
     split_line = '=' * 30
-
     ori_shape = result['ori_shape']
     pad_shape = result['pad_shape']
     flops = result['flops']
     params = result['params']
+    compute_type = result['Get Types']
 
     if args.size_divisor > 0 and \
             pad_shape != ori_shape:
         print(f'{split_line}\nUse size divisor set input shape '
-              f'from {ori_shape} to {pad_shape}\n')
-    print(f'{split_line}\nInput shape: {pad_shape}\n'
-          f'Flops: {flops}\nParams: {params}\n{split_line}')
+              f'from {ori_shape} to {pad_shape}')
+    print(f'{split_line}\nCompute type: {compute_type}\n'
+          f'Input shape: {pad_shape}\nFlops: {flops}\n'
+          f'Params: {params}\n{split_line}')
     print('!!!Please be cautious if you use the results in papers. '
-          'You may need to check if all ops are supported and verify that the '
-          'flops computation is correct.')
+          'You may need to check if all ops are supported and verify '
+          'that the flops computation is correct.')
 
 
 if __name__ == '__main__':
