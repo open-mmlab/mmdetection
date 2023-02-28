@@ -63,7 +63,7 @@ class OpenImagesDataset(BaseDetDataset):
 
         # OpenImagesMetric can get the relation matrix from the dataset meta
         relation_matrix = self._get_relation_matrix(self.hierarchy_file)
-        self._metainfo['RELATION_MATRIX'] = relation_matrix
+        self._metainfo['relation_matrix'] = relation_matrix
 
         data_list = []
         with self.file_client.get_local_path(self.ann_file) as local_path:
@@ -333,7 +333,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
 
         # OpenImagesMetric can get the relation matrix from the dataset meta
         relation_matrix = self._get_relation_matrix(self.hierarchy_file)
-        self._metainfo['RELATION_MATRIX'] = relation_matrix
+        self._metainfo['relation_matrix'] = relation_matrix
 
         data_list = []
         with self.file_client.get_local_path(self.ann_file) as local_path:
@@ -358,7 +358,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
                         ],
                         bbox_label=int(sp[0]) - 1,  # labels begin from 1
                         ignore_flag=0,
-                        is_group_ofs=True if int(sp[5]) == 1 else False))
+                        is_group_of=True if int(sp[5]) == 1 else False))
             i += img_gt_size
             data_list.append(
                 dict(

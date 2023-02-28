@@ -78,5 +78,5 @@ test_dataloader = val_dataloader
 
 # Pascal VOC2007 uses `11points` as default evaluate mode, while PASCAL
 # VOC2012 defaults to use 'area'.
-val_evaluator = dict(type='VOCMetric', metric='mAP', eval_mode='11points')
+val_evaluator = dict(type='VOCMetric', eval_mode='11points')
 test_evaluator = val_evaluator

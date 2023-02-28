@@ -25,10 +25,10 @@ class TestOpenImagesMetric(unittest.TestCase):
     def test_init(self):
         # test invalid iou_thrs
         with self.assertRaises(AssertionError):
-            OpenImagesMetric(iou_thrs={'a', 0.5}, ioa_thrs={'b', 0.5})
+            OpenImagesMetric(iou_thrs={'a', 0.5}, iof_thrs={'b', 0.5})
         # test ioa and iou_thrs length not equal
         with self.assertRaises(AssertionError):
-            OpenImagesMetric(iou_thrs=[0.5, 0.75], ioa_thrs=[0.5])
+            OpenImagesMetric(iou_thrs=[0.5, 0.75], iof_thrs=[0.5])
 
         metric = OpenImagesMetric(iou_thrs=0.6)
         self.assertEqual(metric.iou_thrs, [0.6])
@@ -56,17 +56,17 @@ class TestOpenImagesMetric(unittest.TestCase):
         metric.dataset_meta = dataset.metainfo
         metric.process({}, [data_sample])
         results = metric.evaluate(size=len(dataset))
-        targets = {'openimages/AP50': 1.0, 'openimages/mAP': 1.0}
+        targets = {'openimages/AP50(%)': 100.0, 'openimages/mAP(%)': 100.0}
         self.assertDictEqual(results, targets)
 
         # test multi-threshold
-        metric = OpenImagesMetric(iou_thrs=[0.1, 0.5], ioa_thrs=[0.1, 0.5])
+        metric = OpenImagesMetric(iou_thrs=[0.1, 0.5], iof_thrs=[0.1, 0.5])
         metric.dataset_meta = dataset.metainfo
         metric.process({}, [data_sample])
         results = metric.evaluate(size=len(dataset))
         targets = {
-            'openimages/AP10': 1.0,
-            'openimages/AP50': 1.0,
-            'openimages/mAP': 1.0
+            'openimages/AP10(%)': 100.0,
+            'openimages/AP50(%)': 100.0,
+            'openimages/mAP(%)': 100.0
         }
         self.assertDictEqual(results, targets)
