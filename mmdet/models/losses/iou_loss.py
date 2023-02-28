@@ -237,6 +237,88 @@ def ciou_loss(pred, target, eps=1e-7):
     return loss
 
 
+@weighted_loss
+def alphaiou_loss(pred, target, eps=1e-9, alpha=3, mode='iou'):
+    r"""`Implementation of paper  Alpha-IoU
+    <https://arxiv.org/abs/2110.13675>` _.
+
+    Code is modified from https://github.com/Jacobi93/Alpha-IoU.
+
+    Args:
+        pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+            shape (n, 4).
+        target (Tensor): Corredponding gt bboxes, shape (n, 4)
+        eps (float): Eps to avoid log(0).
+        alpha (int): adaptively reweighting the loss and gradient of IoU
+        mode (str): Options are "iou"(default), "giou", "diou" and "ciou"
+
+    Return:
+        Tensor: Loss tensor.
+    """
+    # iou mode
+    mode = mode.lower()
+    assert mode in ('iou', 'ciou', 'giou', 'diou')
+
+    b1_x1, b1_y1 = pred[:, 0], pred[:, 1]
+    b1_x2, b1_y2 = pred[:, 2], pred[:, 3]
+    b2_x1, b2_y1 = target[:, 0], target[:, 1]
+    b2_x2, b2_y2 = target[:, 2], target[:, 3]
+
+    # overlap
+    overlap = (torch.min(b1_x2, b2_x2) - torch.max(b1_x1, b2_x1)).clamp(0) *\
+              (torch.min(b1_y2, b2_y2) - torch.max(b1_y1, b2_y1)).clamp(0)
+
+    # union
+    w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1
+    w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1
+    union = w1 * h1 + w2 * h2 - overlap + eps
+
+    # change conventional iou to alpha pow
+    ious = torch.pow(overlap / union + eps, alpha)
+
+    # calculate alpha-iou according mode
+    if mode == 'iou':
+        loss = 1 - ious
+        return loss
+
+    # enclose area
+    enclose_x1y1 = torch.min(pred[:, :2], target[:, :2])
+    enclose_x2y2 = torch.max(pred[:, 2:], target[:, 2:])
+    enclose_wh = (enclose_x2y2 - enclose_x1y1).clamp(min=0)
+
+    cw = enclose_wh[:, 0]
+    ch = enclose_wh[:, 1]
+
+    if mode == 'giou':
+        c_area = torch.max(cw * ch + eps, union)
+        gious = ious - torch.pow((c_area - union) / c_area + eps, alpha)
+        loss = 1 - gious
+        return loss
+
+    c2 = (cw**2 + ch**2)**alpha + eps
+
+    left = ((b2_x1 + b2_x2) - (b1_x1 + b1_x2))**2 / 4
+    right = ((b2_y1 + b2_y2) - (b1_y1 + b1_y2))**2 / 4
+    rho2 = (left + right)**alpha
+
+    # DIoU
+    if mode == 'diou':
+        dious = ious - rho2 / c2
+        loss = 1 - dious
+        return loss
+    else:
+        factor = 4 / math.pi**2
+        v = factor * torch.pow(torch.atan(w2 / h2) - torch.atan(w1 / h1), 2)
+
+        with torch.no_grad():
+            alpha_ciou = v / ((1 + eps) - overlap / union + v)
+
+        # CIoU
+        cious = ious - (rho2 / c2 + torch.pow(alpha_ciou * v + eps, alpha))
+        loss = 1 - cious
+        return loss
+
+
 @LOSSES.register_module()
 class IoULoss(nn.Module):
     """IoULoss.
@@ -470,5 +552,68 @@ class CIoULoss(nn.Module):
             eps=self.eps,
             reduction=reduction,
             avg_factor=avg_factor,
+            **kwargs)
+        return loss
+
+
+@LOSSES.register_module()
+class AlphaIoULoss(nn.Module):
+    """AlphaIoULoss.
+
+    Computing the AlphaIoU loss between a set of predicted bboxes
+    and target bboxes.
+
+    Args:
+        eps (float): Eps to avoid log(0). We test serval exps and
+                    1e-9 performs better.
+        reduction (str): Options are "none", "mean" and "sum".
+        loss_weight (float): Weight of loss.
+        mode (str): the calculation method of IoU,
+                    options are "iou" (default), "giou", "diou" and "ciou".
+        alpha (int): adaptively reweighting the loss and gradient of IoU
+    """
+
+    def __init__(self,
+                 eps=1e-9,
+                 reduction='mean',
+                 loss_weight=1.0,
+                 mode='iou',
+                 alpha=3):
+        super(AlphaIoULoss, self).__init__()
+        self.eps = eps
+        self.reduction = reduction
+        self.loss_weight = loss_weight
+        self.mode = mode
+        self.alpha = alpha
+
+    def forward(self,
+                pred,
+                target,
+                weight=None,
+                avg_factor=None,
+                reduction_override=None,
+                **kwargs):
+        if weight is not None and not torch.any(weight > 0):
+            if pred.dim() == weight.dim() + 1:
+                weight = weight.unsqueeze(1)
+            return (pred * weight).sum()  # 0
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
+        if weight is not None and weight.dim() > 1:
+            # TODO: remove this in the future
+            # reduce the weight of shape (n, 4) to (n,) to match the
+            # giou_loss of shape (n,)
+            assert weight.shape == pred.shape
+            weight = weight.mean(-1)
+        loss = self.loss_weight * alphaiou_loss(
+            pred,
+            target,
+            weight,
+            alpha=self.alpha,
+            eps=self.eps,
+            reduction=reduction,
+            avg_factor=avg_factor,
+            mode=self.mode,
             **kwargs)
         return loss
