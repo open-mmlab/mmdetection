@@ -19,7 +19,7 @@ from mmdet.models import build_detector
 from mmdet.utils import (build_ddp, build_dp, compat_cfg, get_device,
                          replace_cfg_vals, rfnext_init_model,
                          setup_multi_processes, update_data_root)
-
+import msdet
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -216,6 +216,12 @@ def main():
     # build the dataloader
     dataset = build_dataset(cfg.data.test)
     data_loader = build_dataloader(dataset, **test_loader_cfg)
+
+    # Load Teacher Configure
+    if cfg.get('teacher_config_path') is not None:
+        assert cfg.get('teacher_weight_path') is not None
+        cfg.model.teacher_cfg = Config.fromfile(cfg.teacher_config_path)
+        
 
     # build the model and load checkpoint
     cfg.model.train_cfg = None
