@@ -20,6 +20,8 @@ class InvertedResidual(BaseModule):
         stride (int): The stride of the depthwise convolution. Default: 1.
         se_cfg (dict): Config dict for se layer. Default: None, which means no
             se layer.
+        return_list(bool): Return forward output as a list including feature
+            from the expanded layer. Default: False.
         with_expand_conv (bool): Use expand conv or not. If set False,
             mid_channels must be the same with in_channels.
             Default: True.
@@ -47,6 +49,7 @@ class InvertedResidual(BaseModule):
                  stride=1,
                  se_cfg=None,
                  with_expand_conv=True,
+                 return_list=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  act_cfg=dict(type='ReLU'),
@@ -62,6 +65,7 @@ class InvertedResidual(BaseModule):
             drop_path_rate) if drop_path_rate > 0 else nn.Identity()
         self.with_se = se_cfg is not None
         self.with_expand_conv = with_expand_conv
+        self.return_list = return_list
 
         if self.with_se:
             assert isinstance(se_cfg, dict)
@@ -109,6 +113,7 @@ class InvertedResidual(BaseModule):
 
             if self.with_expand_conv:
                 out = self.expand_conv(out)
+                expanded_out = out
 
             out = self.depthwise_conv(out)
 
@@ -119,6 +124,9 @@ class InvertedResidual(BaseModule):
 
             if self.with_res_shortcut:
                 return x + self.drop_path(out)
+
+            if self.return_list:
+                return [expanded_out, out]
             else:
                 return out
 
