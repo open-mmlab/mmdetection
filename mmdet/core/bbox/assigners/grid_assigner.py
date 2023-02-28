@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
+import torch.nn.functional as F
 
 from ..builder import BBOX_ASSIGNERS
 from ..iou_calculators import build_iou_calculator
@@ -26,6 +27,8 @@ class GridAssigner(BaseAssigner):
             pos_iou_thr due to the 4th step (assign max IoU sample to each gt).
         gt_max_assign_all (bool): Whether to assign all bboxes with the same
             highest overlap with some gt to that gt.
+        static (bool): Whether to statically assign a corresponding gt bbox
+            or background to each bbox.
     """
 
     def __init__(self,
@@ -33,12 +36,117 @@ class GridAssigner(BaseAssigner):
                  neg_iou_thr,
                  min_pos_iou=.0,
                  gt_max_assign_all=True,
-                 iou_calculator=dict(type='BboxOverlaps2D')):
+                 iou_calculator=dict(type='BboxOverlaps2D'),
+                 static=False):
         self.pos_iou_thr = pos_iou_thr
         self.neg_iou_thr = neg_iou_thr
+        if isinstance(neg_iou_thr, float):
+            self.neg_iou_thr = (-1e-6, neg_iou_thr)
         self.min_pos_iou = min_pos_iou
         self.gt_max_assign_all = gt_max_assign_all
         self.iou_calculator = build_iou_calculator(iou_calculator)
+        self.static = static
+
+    def assign_statically(self,
+                          bboxes,
+                          box_responsible_flags,
+                          gt_bboxes,
+                          gt_labels=None):
+        """Assign gt to bboxes statically. The process is same as self.assign
+        but all the calculations are static.
+
+        Args:
+            bboxes (Tensor): Bounding boxes to be assigned, shape(n, 4).
+            box_responsible_flags (Tensor): flag to indicate whether box is
+                responsible for prediction, shape(n, )
+            gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
+            gt_labels (Tensor, optional): Label of gt_bboxes, shape (k, ).
+
+        Returns:
+            :obj:`AssignResult`: The assign result.
+        """
+        num_bboxes = bboxes.size(0)
+        valid_gt_flags = gt_bboxes.abs().sum(-1) > 0
+        num_gts = valid_gt_flags.sum()
+
+        # compute iou between all gt and bboxes
+        overlaps = self.iou_calculator(gt_bboxes, bboxes)
+        # Overlap less than 0 or greater than 1 makes no sense physically
+        overlaps = torch.clip(overlaps, 0.0, 1.0)
+        max_overlaps, argmax_overlaps = overlaps.max(dim=0)
+
+        # 1. assign -1 by default
+        assigned_gt_inds = torch.ones((num_bboxes,), dtype=torch.long)*-1
+
+        # 2. assign negative: below
+        # for each anchor, which gt best overlaps with it
+        # for each anchor, the max iou of all gts
+        # shape of max_overlaps == argmax_overlaps == num_bboxes
+        non_overlapped_flags = (max_overlaps >
+                                self.neg_iou_thr[0]) & (max_overlaps <=
+                                                        self.neg_iou_thr[1])
+        overlapped_flags = 1 - non_overlapped_flags.float()
+        assigned_gt_inds = assigned_gt_inds*overlapped_flags
+
+        # 3. assign positive: falls into responsible cell and above
+        # positive IOU threshold, the order matters.
+        # the prior condition of comparison is to filter out all
+        # unrelated anchors, i.e. not box_responsible_flags
+        overlaps = overlaps * box_responsible_flags + \
+            (box_responsible_flags - 1.0)
+
+        # calculate max_overlaps again, but this time we only consider IOUs
+        # for anchors responsible for prediction
+        max_overlaps, argmax_overlaps = overlaps.max(dim=0)
+
+        # for each gt, which anchor best overlaps with it
+        # for each gt, the max iou of all proposals
+        # shape of gt_max_overlaps == gt_argmax_overlaps == num_gts
+        gt_max_overlaps, gt_argmax_overlaps = overlaps.max(dim=1)
+        pos_inds = (max_overlaps >
+                    self.pos_iou_thr) & box_responsible_flags.type(torch.bool)
+        pos_inds = pos_inds.float()
+        assigned_gt_inds = assigned_gt_inds * (1-pos_inds) + \
+            (argmax_overlaps + pos_inds) * pos_inds
+
+        # 4. assign positive to max overlapped anchors within responsible cell
+        if self.gt_max_assign_all:
+            keep_by_min_pos_iou = (gt_max_overlaps >
+                                   self.min_pos_iou).unsqueeze(-1)
+            # keep all the predicted boxes with max IOU
+            max_iou_inds = (overlaps == gt_max_overlaps.unsqueeze(-1)) & \
+                box_responsible_flags.type(torch.bool)
+            max_iou_inds = keep_by_min_pos_iou & max_iou_inds
+            class_num_list = torch.range(1, max_iou_inds.shape[0])
+            positive_inds = max_iou_inds * class_num_list.unsqueeze(-1)
+            # use the last gt box if more than one gt boxes have max IOU value
+            positive_inds = torch.max(positive_inds, 0).values
+        else:
+            positive_flags = F.one_hot(gt_argmax_overlaps,
+                                       num_classes=bboxes.shape[0])
+            # remove padded boxes
+            positive_flags = positive_flags * valid_gt_flags.unsqueeze(-1)
+            class_num_list = torch.range(1, positive_flags.shape[0])
+            # positive_flags is generated by one_hot, so every line
+            # will have only one int(1) and positive_inds will have
+            # only one idx on every line
+            positive_inds = positive_flags * class_num_list.unsqueeze(-1)
+            if (positive_inds > 0).sum(1).max() > 1:
+                raise RuntimeError('every line should have one idx at most')
+            positive_inds = positive_inds.max(0).values
+        positive_inds_mask = (positive_inds > 0.0).float()
+        assigned_gt_inds = assigned_gt_inds * (1 - positive_inds_mask)
+        assigned_gt_inds = positive_inds + assigned_gt_inds
+
+        # assign labels of positive anchors
+        if gt_labels is not None:
+            raise NotImplementedError(
+                'gt_lables assignment is not implemented statically')
+        else:
+            assigned_labels = None
+
+        return AssignResult(
+            num_gts, assigned_gt_inds, max_overlaps, labels=assigned_labels)
 
     def assign(self, bboxes, box_responsible_flags, gt_bboxes, gt_labels=None):
         """Assign gt to bboxes. The process is very much like the max iou
@@ -69,6 +177,11 @@ class GridAssigner(BaseAssigner):
         Returns:
             :obj:`AssignResult`: The assign result.
         """
+
+        if self.static:
+            return self.assign_statically(
+                bboxes, box_responsible_flags, gt_bboxes, gt_labels)
+
         num_gts, num_bboxes = gt_bboxes.size(0), bboxes.size(0)
 
         # compute iou between all gt and bboxes
