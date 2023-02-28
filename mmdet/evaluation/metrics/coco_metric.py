@@ -1,11 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import itertools
-import os.path as osp
 import warnings
 from typing import List, Optional, Sequence, Union
 
 import numpy as np
-from mmengine.logging import print_log
+from mmengine.logging import MMLogger, print_log
 from mmeval import COCODetection
 from terminaltables import AsciiTable
 from torch import Tensor
@@ -84,6 +83,7 @@ class CocoMetric(COCODetection):
                 'DeprecationWarning: The `collect_device` parameter of '
                 '`CocoMetric` is deprecated, use `dist_backend` instead.')
 
+        logger = MMLogger.get_current_instance()
         super().__init__(
             ann_file=ann_file,
             metric=metric,
@@ -96,6 +96,7 @@ class CocoMetric(COCODetection):
             backend_args=backend_args,
             gt_mask_area=gt_mask_area,
             dist_backend=dist_backend,
+            logger=logger,
             **kwargs)
 
         self.prefix = prefix or self.default_prefix
@@ -185,30 +186,11 @@ class CocoMetric(COCODetection):
         self.reset()
 
         if self.format_only:
-            print_log(
-                'Results are saved in '
-                f'{osp.dirname(self.outfile_prefix)}',
-                logger='current')
             return metric_results
 
         for metric in self.metrics:
-            print_log(f'Evaluating {metric}...', logger='current')
-
-            try:
-                result = metric_results.pop(f'{metric}_result')
-            except KeyError:
-                print_log(
-                    'The testing results of the whole dataset is empty.',
-                    logger='current')
-                break
-
-            try:
-                log = metric_results.pop(f'{metric}_log')
-                print_log('\n' + log.getvalue(), logger='current')
-            except KeyError:
-                print_log(
-                    'The testing log of the whole dataset is empty.',
-                    logger='current')
+            result = metric_results.pop(f'{metric}_result', None)
+            if result is None:
                 break
 
             if metric == 'proposal':
