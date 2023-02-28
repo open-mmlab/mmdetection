@@ -269,6 +269,23 @@ class MyDataset(CustomDataset):
         return self.data_infos[idx]['ann']
 
 ```
+然后在 `mmdet/datasets__init__.py` 中引入MyDataset
+
+```python
+from .my_datasets import MyDataset
+__all__ = [
+    # 省略一部分
+    'OpenImagesDataset', 'OpenImagesChallengeDataset',
+    # 这里加类名
+    'MyDataset'
+]
+
+```
+重新编译源码
+```shell
+pip install -r requirements/build.txt
+pip install -v -e .  # or "python setup.py develop"
+```
 
 配置文件中，可以使用 `MyDataset` 进行如下修改
 
