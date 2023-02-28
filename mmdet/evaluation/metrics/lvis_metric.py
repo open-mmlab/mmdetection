@@ -4,7 +4,7 @@ import os.path as osp
 import warnings
 from typing import List, Optional, Sequence, Union
 
-from mmengine.logging import print_log
+from mmengine.logging import MMLogger, print_log
 from mmeval import LVISDetection
 from terminaltables import AsciiTable
 from torch import Tensor
@@ -18,9 +18,9 @@ class LVISMetric(LVISDetection):
     """LVIS evaluation metric.
 
     Args:
-        ann_file (str, optional): Path to the coco format annotation file.
+        ann_file (str, optional): Path to the COCO LVIS format annotation file.
             If not specified, ground truth annotations from the dataset will
-            be converted to coco format. Defaults to None.
+            be converted to COCO LVIS format. Defaults to None.
         metric (str | List[str]): Metrics to be evaluated. Valid metrics
             include 'bbox', 'segm', 'proposal', and 'proposal_fast'.
             Defaults to 'bbox'.
@@ -72,7 +72,8 @@ class LVISMetric(LVISDetection):
         if collect_device is not None:
             warnings.warn(
                 'DeprecationWarning: The `collect_device` parameter of '
-                '`CocoMetric` is deprecated, use `dist_backend` instead.')
+                '`LVISMetric` is deprecated, use `dist_backend` instead.')
+        logger = MMLogger.get_current_instance()
 
         super().__init__(
             ann_file=ann_file,
@@ -85,6 +86,7 @@ class LVISMetric(LVISDetection):
             outfile_prefix=outfile_prefix,
             backend_args=backend_args,
             dist_backend=dist_backend,
+            logger=logger,
             **kwargs)
         self.prefix = prefix or self.default_prefix
 
