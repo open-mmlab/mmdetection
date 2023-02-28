@@ -111,6 +111,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 - 重构了 [DETR](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/detr) 系列并支持了 [Conditional-DETR](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/conditional_detr), [DAB-DETR](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/dab_detr) 和 [DINO](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/dino)
 - 支持了 DetInferencer, Test Time Augmentation 以及从注册表 (registry) 自动导入模块
 - 支持了 RTMDet-Ins 的 ONNXRuntime 和 TensorRT [部署](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet/README.md#deployment-tutorial)
+- 支持了检测器[计算 FLOPS](https://github.com/open-mmlab/mmdetection/tree/3.x/docs/zh_cn/user_guides/useful_tools.md#模型复杂度)
 
 ## 安装
 
