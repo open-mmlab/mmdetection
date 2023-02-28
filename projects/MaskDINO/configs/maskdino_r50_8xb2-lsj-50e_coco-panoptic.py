@@ -46,6 +46,7 @@ model = dict(
         type='MaskDINOHead',
         # from head
         num_classes=num_things_classes + num_stuff_classes,
+        num_things_classes=num_things_classes,
         loss_weight=1,  # TODO: ???
         ignore_value=255,  # TODO ???
         encoder=dict(
@@ -69,7 +70,7 @@ model = dict(
             hidden_dim=256,
             num_queries=300,
             nheads=8,
-            dim_feedforward=256,
+            dim_feedforward=2048,
             dec_layers=9,
             mask_dim=256,
             enforce_input_project=False,
@@ -78,8 +79,8 @@ model = dict(
             noise_scale=0.4,
             dn_num=20,
             initialize_box_type='no',
-            initial_pred='True',
-            learn_tgt='False',
+            initial_pred=True,
+            learn_tgt=False,
             total_num_feature_levels=4,
             dropout=0.0,
             activation='relu',
@@ -135,7 +136,7 @@ model = dict(
         panoptic_on=True,
         # For now, the dataset does not support
         # evaluating semantic segmentation metric.
-        semantic_on=True,  # TODO: Why False in Mask2Former-cocopan
+        semantic_on=False,  # TODO: Why False in Mask2Former-cocopan
         instance_on=True,
         # # max_per_image is for instance segmentation.
         # max_per_image=100,  # TODO: This arg is not in MaskDINO repo
