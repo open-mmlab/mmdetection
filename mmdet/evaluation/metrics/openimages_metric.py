@@ -55,8 +55,6 @@ class OpenImagesMetric(OIDMeanAP):
             Defaults to 4.
         drop_class_ap (bool): Whether to drop the class without ground truth
             when calculating the average precision for each class.
-        classwise (bool): Whether to return the computed results of each
-            class. Defaults to True.
         prefix (str, optional): The prefix that will be added in the metric
             names to disambiguate homonymous metrics of different evaluators.
             If prefix is not provided in the argument, self.default_prefix
@@ -81,7 +79,6 @@ class OpenImagesMetric(OIDMeanAP):
                  use_legacy_coordinate: bool = False,
                  nproc: int = 4,
                  drop_class_ap: bool = True,
-                 classwise: bool = True,
                  prefix: Optional[str] = None,
                  dist_backend: str = 'torch_cuda',
                  **kwargs) -> None:
@@ -99,9 +96,6 @@ class OpenImagesMetric(OIDMeanAP):
                 'DeprecationWarning: The `ioa_thrs` parameter of '
                 '`OpenImagesMetric` is deprecated, use `iof_thrs` instead!')
 
-        assert classwise, \
-            '`OpenImagesMetric` should force set `classwise=True`'
-
         super().__init__(
             iou_thrs=iou_thrs,
             iof_thrs=iof_thrs,
@@ -114,7 +108,7 @@ class OpenImagesMetric(OIDMeanAP):
             eval_mode=eval_mode,
             use_legacy_coordinate=use_legacy_coordinate,
             nproc=nproc,
-            classwise=classwise,
+            classwise=True,  # should force set `classwise=True`
             drop_class_ap=drop_class_ap,
             dist_backend=dist_backend,
             **kwargs)

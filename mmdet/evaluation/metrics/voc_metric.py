@@ -45,8 +45,6 @@ class VOCMetric(VOCMeanAP):
             Defaults to 4.
         drop_class_ap (bool): Whether to drop the class without ground truth
             when calculating the average precision for each class.
-        classwise (bool): Whether to return the computed results of each
-            class. Defaults to True.
         prefix (str, optional): The prefix that will be added in the metric
             names to disambiguate homonymous metrics of different evaluators.
             If prefix is not provided in the argument, self.default_prefix
@@ -66,10 +64,14 @@ class VOCMetric(VOCMeanAP):
                  use_legacy_coordinate: bool = True,
                  nproc: int = 4,
                  drop_class_ap: bool = True,
-                 classwise: bool = True,
                  prefix: Optional[str] = None,
                  dist_backend: str = 'torch_cuda',
                  **kwargs) -> None:
+
+        metric = kwargs.pop('metric', None)
+        if metric is not None:
+            warnings.warn('DeprecationWarning: The `metric` parameter of '
+                          '`VOCMetric` is deprecated, only mAP is supported!')
 
         collect_device = kwargs.pop('collect_device', None)
         if collect_device is not None:
@@ -78,8 +80,6 @@ class VOCMetric(VOCMeanAP):
                 '`ProposalRecallMetric` is deprecated, '
                 'use `dist_backend` instead.')
 
-        assert classwise, '`VOCMetric` should force set `classwise=True`'
-
         super().__init__(
             iou_thrs=iou_thrs,
             scale_ranges=scale_ranges,
@@ -87,7 +87,7 @@ class VOCMetric(VOCMeanAP):
             eval_mode=eval_mode,
             use_legacy_coordinate=use_legacy_coordinate,
             nproc=nproc,
-            classwise=classwise,
+            classwise=True,  # should force set `classwise=True`
             drop_class_ap=drop_class_ap,
             dist_backend=dist_backend,
             **kwargs)
