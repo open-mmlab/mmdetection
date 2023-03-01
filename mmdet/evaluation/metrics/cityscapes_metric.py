@@ -65,7 +65,8 @@ class CityScapesMetric(CityScapesDetection):
         if collect_device is not None:
             warnings.warn(
                 'DeprecationWarning: The `collect_device` parameter of '
-                '`CocoMetric` is deprecated, use `dist_backend` instead.')
+                '`CityScapesMetric` is deprecated, use `dist_backend` '
+                'instead.')
 
         logger = MMLogger.get_current_instance()
 
