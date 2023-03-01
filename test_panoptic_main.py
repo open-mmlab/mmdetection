@@ -12,8 +12,7 @@ from mmdet.evaluation import INSTANCE_OFFSET
 from mmdet.evaluation.metrics.coco_panoptic_metric_mmeval import CocoPanopticMetricMMEval
 from mmdet.apis import inference_detector, init_detector
 from PIL import Image
-import sys
-sys.path.append('/home/PJLAB/liangyiwen/Even/code/mmdetection')
+
 
 
 try:
@@ -257,10 +256,10 @@ def test_format_only(data_samples, dataset_meta):
 
 
 def test_with_dataset_meta():
-    config_name = 'D:\\1课程资料\大四上\\实习\\mmlab比赛\\even_mmdetection\\mmdetection\\configs\\panoptic_fpn\\panoptic-fpn_r50_fpn_1x_coco.py'
-    checkpoint = 'D:\\1课程资料\\大四上\\实习\\mmlab比赛\\even_mmdetection\\mmdetection\\checkpoints\\panoptic_fpn_r50_fpn_1x_coco_20210821_101153-9668fd13.pth'
-    gt_json_path = 'D:\\1课程资料\\大四上\\实习\\mmlab比赛\\mmeval_ezp\\mmeval_exp\\ground_truth_panoptic.json'
-    gt_seg_dir = 'D:\\1课程资料\\大四上\\实习\\mmlab比赛\\mmeval_ezp\\mmeval_exp'
+    config_name = 'D:\\mmdetection\\configs\\panoptic_fpn\\panoptic-fpn_r50_fpn_1x_coco.py'
+    checkpoint = 'D:\\mmdetection\\checkpoints\\panoptic_fpn_r50_fpn_1x_coco_20210821_101153-9668fd13.pth'
+    gt_json_path = 'D:\\mmeval_ezp\\mmeval_exp\\ground_truth_panoptic.json'
+    gt_seg_dir = 'D:\\mmeval_ezp\\mmeval_exp'
     metric = CocoPanopticMetricMMEval(
         ann_file=gt_json_path,
         seg_prefix=gt_seg_dir,
@@ -274,7 +273,7 @@ def test_with_dataset_meta():
     dataset_meta = model.dataset_meta
     metric.dataset_meta = dataset_meta
     imgs = []
-    imgs = ['D:\\1课程资料\\大四上\\实习\\mmlab比赛\\mmeval_ezp\\mmeval_exp\\000000581781.png']
+    imgs = ['D:\\mmeval_ezp\\mmeval_exp\\000000581781.png']
     # for img_name in os.listdir(img_path):
     #     _img_path = osp.join(img_path, img_name)
     #     imgs.append(_img_path)
@@ -303,7 +302,7 @@ def test_with_dataset_meta():
 
 if __name__ == '__main__':
     _create_panoptic_gt_annotations(
-        gt_json_path, gt_seg_dir)   # 把json文件写入一个temp路径里面, 写入fake_image图片
+        gt_json_path, gt_seg_dir)  
     dataset_meta = {
         'classes': ('person', 'cat', 'dog', 'wall'),
         'thing_classes': ('person', 'cat', 'dog'),

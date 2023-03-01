@@ -1,7 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 
-import sys
-sys.path.append('/home/PJLAB/liangyiwen/Even/code/mmeval_exp/mmeval')
 from mmeval.metrics.coco_panoptic import COCOPanopticMetric
 import datetime
 import itertools
