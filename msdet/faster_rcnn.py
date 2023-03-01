@@ -18,7 +18,8 @@ class FasterRCNN_TS(TwoStageDetector):
                  train_cfg,
                  test_cfg,
                  teacher_cfg,
-                 distill_param,
+                 distill_param=0.,
+                 distill_param_kd=0.,
                  neck=None,
                  pretrained=None,
                  init_cfg=None):
@@ -38,6 +39,7 @@ class FasterRCNN_TS(TwoStageDetector):
         self.teacher_cfg = teacher_cfg
         
         self.distill_param = distill_param
+        self.distill_param_kd = distill_param_kd
         
         # # Distillation Types
         # self.distill_type = distill_type
@@ -118,12 +120,12 @@ class FasterRCNN_TS(TwoStageDetector):
         else:
             proposal_list = proposals
 
-        roi_losses, gt_bboxes_feats = self.roi_head.forward_train(x, img_metas, proposal_list,
+        roi_losses, gt_bboxes_feats, gt_cls_score = self.roi_head.forward_train(x, img_metas, proposal_list,
                                                  gt_bboxes, gt_labels,
                                                  gt_bboxes_ignore, gt_masks,
                                                  **kwargs)
         losses.update(roi_losses)
-        return losses, gt_bboxes_feats
+        return losses, gt_bboxes_feats, gt_cls_score
     
     
     def train_step(self, data, optimizer):
@@ -155,15 +157,14 @@ class FasterRCNN_TS(TwoStageDetector):
         """
         self.teacher.eval()
         with torch.no_grad():
-            _, gt_feats_ori = self.teacher(**data[0])
+            _, gt_feats_ori, gt_cls_ori = self.teacher(**data[0])
             
-        losses, gt_feats_aug = self(**data[1])
+        losses, gt_feats_aug, gt_cls_aug = self(**data[1])
 
         # Calc Consistency Loss
         B = gt_feats_ori.size(0)
         gt_feats_ori = gt_feats_ori.view(B, -1)
         gt_feats_aug = gt_feats_aug.view(B, -1)
-        positive_loss = self.calc_consistency_loss(gt_feats_ori, gt_feats_aug)
         
         # if self.distill_type == 'both':
         #     label_list = torch.cat(data[0]['gt_labels'])
@@ -186,9 +187,16 @@ class FasterRCNN_TS(TwoStageDetector):
         # else:
         #     raise('Select Proper Distill Types')            
         
-        consistency_loss = positive_loss
-    
-        losses.update({'consistency_loss': consistency_loss * self.distill_param})
+        consistency_loss = 0.
+        if self.distill_param > 0:
+            positive_loss = self.calc_consistency_loss(gt_feats_ori, gt_feats_aug)
+            consistency_loss += positive_loss * self.distill_param
+        
+        if self.distill_param_kd > 0:
+            kd_loss = self.calc_kd_loss(gt_cls_ori, gt_cls_aug)
+            consistency_loss += kd_loss * self.distill_param_kd
+            
+        losses.update({'consistency_loss': consistency_loss})
         
         loss, log_vars = self._parse_losses(losses)
 
@@ -199,6 +207,11 @@ class FasterRCNN_TS(TwoStageDetector):
     
     def calc_consistency_loss(self, feat_ori, feat_aug):
         return torch.mean(1.0 - F.cosine_similarity(feat_ori, feat_aug))
+    
+    def calc_kd_loss(self, cls_ori, cls_aug, T=4):
+        p = F.log_softmax(cls_aug/T, dim=1)
+        q = F.softmax(cls_ori/T, dim=1)
+        return F.kl_div(p, q, size_average=False) * (T**2) / cls_aug.size(0)
 
     def calc_negative_loss(self, feat_ori, feat_aug): 
         return torch.mean(F.cosine_similarity(feat_ori, feat_aug))
@@ -280,12 +293,12 @@ class FasterRCNNCont(TwoStageDetector):
         else:
             proposal_list = proposals
 
-        roi_losses, gt_bboxes_feats = self.roi_head.forward_train(x, img_metas, proposal_list,
+        roi_losses, gt_bboxes_feats, gt_cls_score = self.roi_head.forward_train(x, img_metas, proposal_list,
                                                  gt_bboxes, gt_labels,
                                                  gt_bboxes_ignore, gt_masks,
                                                  **kwargs)
         losses.update(roi_losses)
-        return losses, gt_bboxes_feats
+        return losses, gt_bboxes_feats, gt_cls_score
 
 
 

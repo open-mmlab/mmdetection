@@ -115,8 +115,9 @@ class ContRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         
         if self.with_shared_head:
             gt_bboxes_feats = self.shared_head(gt_bboxes_feats)
-        
-        
+
+        gt_bbox_results = self._bbox_forward(x, gt_rois)
+
         # bbox head forward and loss
         if self.with_bbox:
             bbox_results = self._bbox_forward_train(x, sampling_results,
@@ -131,7 +132,7 @@ class ContRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                                                     gt_masks, img_metas)
             losses.update(mask_results['loss_mask'])
 
-        return losses, gt_bboxes_feats
+        return losses, gt_bboxes_feats, gt_bbox_results['cls_score']
 
     
     def _bbox_forward(self, x, rois):
