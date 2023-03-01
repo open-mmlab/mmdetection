@@ -11,7 +11,7 @@ MMDetection 也为训练检测模型提供了开盖即食的工具。本节将�
 
 ### 学习率自动缩放
 
-**注意**：在配置文件中的学习率是在 8 块 GPU，每块 GPU 有 2 张图像（批大小为 8\*2=16）的情况下设置的。其已经设置在`config/_base_/default_runtime.py` 中的 `auto_scale_lr.base_batch_size`。当配置文件的批次大小为`16`时，学习率会基于该值进行自动缩放。同时，为了不影响其他基于 mmdet 的 codebase，启用自动缩放标志 `auto_scale_lr.enable` 默认设置为 `False`。
+**注意**：在配置文件中的学习率是在 8 块 GPU，每块 GPU 有 2 张图像（批大小为 8\*2=16）的情况下设置的。其已经设置在`config/_base_/schedules/schedule_1x.py` 中的 `auto_scale_lr.base_batch_size`。当配置文件的批次大小为`16`时，学习率会基于该值进行自动缩放。同时，为了不影响其他基于 mmdet 的 codebase，启用自动缩放标志 `auto_scale_lr.enable` 默认设置为 `False`。
 
 如果要启用此功能，需在命令添加参数 `--auto-scale-lr`。并且在启动命令之前，请检查下即将使用的配置文件的名称，因为配置名称指示默认的批处理大小。
 在默认情况下，批次大小是 `8 x 2 = 16`，例如：`faster_rcnn_r50_caffe_fpn_90k_coco.py` 或者 `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`；若不是默认批次，你可以在配置文件看到像 `_NxM_` 字样的，例如：`cornernet_hourglass104_mstest_32x3_210e_coco.py` 的批次大小是 `32 x 3 = 96`, 或者 `scnet_x101_64x4d_fpn_8x1_20e_coco.py` 的批次大小是 `8 x 1 = 8`。
@@ -438,7 +438,7 @@ load_from = 'https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn
 python tools/train.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py
 ```
 
-参考[情况 1](./1_exist_data_model.md)来获取更多详细的使用方法。
+参考 [在标准数据集上训练预定义的模型](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/train.html#id1) 来获取更多详细的使用方法。
 
 ## 测试以及推理
 
@@ -448,4 +448,4 @@ python tools/train.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon
 python tools/test.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py work_dirs/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon/epoch_12.pth
 ```
 
-参考[情况 1](./1_exist_data_model.md)来获取更多详细的使用方法。
+参考 [测试现有模型](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/test.html) 来获取更多详细的使用方法。

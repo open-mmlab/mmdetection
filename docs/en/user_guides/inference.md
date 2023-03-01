@@ -3,9 +3,9 @@
 MMDetection provides hundreds of pre-trained detection models in [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html).
 This note will show how to inference, which means using trained models to detect objects on images.
 
-In MMDetection, a model is defined by a [configuration file](config.md) and existing model parameters are saved in a checkpoint file.
+In MMDetection, a model is defined by a [configuration file](https://mmdetection.readthedocs.io/en/3.x/user_guides/config.html) and existing model parameters are saved in a checkpoint file.
 
-To start with, we recommend [Faster RCNN](../../../configs/faster_rcnn) with this [configuration file](../../../configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py) and this [checkpoint file](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth). It is recommended to download the checkpoint file to `checkpoints` directory.
+To start with, we recommend [RTMDet](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet) with this [configuration file](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/rtmdet/rtmdet_l_8xb32-300e_coco.py) and this [checkpoint file](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_l_8xb32-300e_coco/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth). It is recommended to download the checkpoint file to `checkpoints` directory.
 
 ## High-level APIs for inference
 
@@ -21,8 +21,8 @@ from mmdet.apis import init_detector, inference_detector
 
 
 # Specify the path to model config and checkpoint file
-config_file = 'configs/faster_rcnn/faster-rcnn_r50-fpn_1x_coco.py'
-checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
+config_file = 'configs/rtmdet/rtmdet_l_8xb32-300e_coco.py'
+checkpoint_file = 'checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth'
 
 # Build the model from a config file and a checkpoint file
 model = init_detector(config_file, checkpoint_file, device='cuda:0')
@@ -32,8 +32,8 @@ visualizer = VISUALIZERS.build(model.cfg.visualizer)
 # The dataset_meta is loaded from the checkpoint and
 # then pass to the model in init_detector
 visualizer.dataset_meta = model.dataset_meta
-# Ttest a single image and show the results
 
+# Test a single image and show the results
 img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
 result = inference_detector(model, img)
 
@@ -63,7 +63,7 @@ visualizer = VISUALIZERS.build(model.cfg.visualizer)
 # then pass to the model in init_detector
 visualizer.dataset_meta = model.dataset_meta
 
-# The interval of show (s), 0 is block
+# The interval of show (ms), 0 is block
 wait_time = 1
 
 video_reader = mmcv.VideoReader('video.mp4')
@@ -84,14 +84,14 @@ for frame in track_iter_progress(video_reader):
 cv2.destroyAllWindows()
 ```
 
-A notebook demo can be found in [demo/inference_demo.ipynb](../../../demo/inference_demo.ipynb).
+A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/3.x/demo/inference_demo.ipynb).
 
 Note:  `inference_detector` only supports single-image inference for now.
 
 ## Demos
 
 We also provide three demo scripts, implemented with high-level APIs and supporting functionality codes.
-Source codes are available [here](../../../demo).
+Source codes are available [here](https://github.com/open-mmlab/mmdetection/blob/3.x/demo).
 
 ### Image demo
 
@@ -110,8 +110,8 @@ Examples:
 
 ```shell
 python demo/image_demo.py demo/demo.jpg \
-    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
-    --weights checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
+    --weights checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
     --device cpu
 ```
 
@@ -132,8 +132,8 @@ Examples:
 
 ```shell
 python demo/webcam_demo.py \
-    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
+    configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
+    checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth
 ```
 
 ### Video demo
@@ -156,8 +156,8 @@ Examples:
 
 ```shell
 python demo/video_demo.py demo/demo.mp4 \
-    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
+    checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
     --out result.mp4
 ```
 
@@ -182,7 +182,7 @@ Examples:
 
 ```shell
 python demo/video_gpuaccel_demo.py demo/demo.mp4 \
-    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
+    checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
     --nvdecode --out result.mp4
 ```
