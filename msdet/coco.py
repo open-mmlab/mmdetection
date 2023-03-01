@@ -40,13 +40,37 @@ class CocoContDataset(CocoDataset):
             self.pre_train_pipeline = Compose(pre_pipeline)
         
         if not self.test_mode:
-            pipeline_multiscale = []
-            for pipe in pipeline:
-                if pipe['type'] == 'Resize':
-                    pipe.update({'type': 'Resize_Student', 'multiscale_mode': multiscale_mode_student, 'ratio_hr_lr': ratio_hr_lr_student, 'ratio_range': (min_lr_student, 1.0)})
-                pipeline_multiscale.append(pipe)
-                
-            self.pipeline_multiscale = Compose(pipeline_multiscale)
+            pipeline_teacher = []
+            pipeline_student = []
+            for pipe_teacher in pipeline:
+                if pipe_teacher['type'] == 'Resize':
+                    # Check Single or Multi-scale
+                    if type(pipe_teacher['img_scale']) == tuple:
+                        single = True
+                    else:
+                        if len(pipe_teacher['img_scale']) == 1:
+                            single = True
+                        else:
+                            single = False
+                            
+                    if single:
+                        # single-scale -> resizing with ratio (r)
+                        pipe_student = deepcopy(pipe_teacher)
+                        pipe_student.update({'type': 'Resize_Student', 'multiscale_mode': multiscale_mode_student, 'ratio_hr_lr': ratio_hr_lr_student, 'ratio_range': (min_lr_student, 1.0)})
+                    else:
+                        # multi-scale -> no resizing for student input
+                        pipe_student = deepcopy(pipe_teacher)
+                        pipe_teacher = dict(type='Resize', img_scale=(1333, 800), keep_ratio=True)
+                        
+                    pipeline_teacher.append(pipe_teacher)
+                    pipeline_student.append(pipe_student)
+                                    
+                else:
+                    pipeline_teacher.append(pipe_teacher)
+                    pipeline_student.append(pipe_teacher)
+
+            self.pipeline = Compose(pipeline_teacher)
+            self.pipeline_student = Compose(pipeline_student)
 
 
     def prepare_train_img(self, idx):
@@ -72,7 +96,7 @@ class CocoContDataset(CocoDataset):
             self.pre_train_pipeline(results)
             
         results_original, results_augment = deepcopy(results), deepcopy(results)
-        return self.pipeline(results_original), self.pipeline_multiscale(results_augment)
+        return self.pipeline(results_original), self.pipeline_student(results_augment)
      
         
     def __getitem__(self, idx):
