@@ -4,7 +4,6 @@ import os.path as osp
 import warnings
 from typing import Optional, Sequence
 
-import mmcv
 import numpy as np
 from mmengine.logging import MMLogger, print_log
 from mmeval import CityScapesDetection
@@ -13,9 +12,9 @@ from terminaltables import AsciiTable
 from mmdet.registry import METRICS
 
 try:
-    import cityscapesscripts.helpers.labels as CSLabels
+    import cityscapesscripts
 except ImportError:
-    CSLabels = None
+    cityscapesscripts = None
 
 
 @METRICS.register_module()
@@ -58,8 +57,8 @@ class CityScapesMetric(CityScapesDetection):
                  dist_backend: str = 'torch_cuda',
                  **kwargs) -> None:
 
-        if CSLabels is None:
-            raise RuntimeError('Please run "pip install cityscapesscripts" to '
+        if cityscapesscripts is None:
+            raise RuntimeError('Please run `pip install cityscapesscripts` to '
                                'install cityscapesscripts first.')
 
         collect_device = kwargs.pop('collect_device', None)
@@ -82,7 +81,6 @@ class CityScapesMetric(CityScapesDetection):
             **kwargs)
 
         self.prefix = prefix or self.default_prefix
-        self.classes = None
 
     # TODO: data_batch is no longer needed, consider adjusting the
     #  parameter position
@@ -96,8 +94,6 @@ class CityScapesMetric(CityScapesDetection):
             data_samples (Sequence[dict]): A batch of data samples that
                 contain annotations and predictions.
         """
-        if self.classes is None:
-            self._get_classes()
         predictions, groundtruths = [], []
 
         for data_sample in data_samples:
@@ -106,9 +102,6 @@ class CityScapesMetric(CityScapesDetection):
             pred_instances = data_sample['pred_instances']
             filename = data_sample['img_path']
             basename = osp.splitext(osp.basename(filename))[0]
-            pred_txt = osp.join(self.outfile_prefix, basename + '_pred.txt')
-            pred['pred_txt'] = pred_txt
-
             labels = pred_instances['labels'].cpu().numpy()
             masks = pred_instances['masks'].cpu().numpy().astype(np.uint8)
             if 'mask_scores' in pred_instances:
@@ -117,17 +110,10 @@ class CityScapesMetric(CityScapesDetection):
             else:
                 mask_scores = pred_instances['scores'].cpu().numpy()
 
-            with open(pred_txt, 'w') as f:
-                for i, (label, mask, mask_score) in enumerate(
-                        zip(labels, masks, mask_scores)):
-                    class_name = self.classes[label]
-                    class_id = CSLabels.name2label[class_name].id
-                    png_filename = osp.join(
-                        self.outfile_prefix,
-                        basename + f'_{i}_{class_name}.png')
-                    mmcv.imwrite(mask, png_filename)
-                    f.write(f'{osp.basename(png_filename)} '
-                            f'{class_id} {mask_score}\n')
+            pred['labels'] = labels
+            pred['masks'] = masks
+            pred['mask_scores'] = mask_scores
+            pred['basename'] = basename
             predictions.append(pred)
 
             # parse gt
@@ -172,16 +158,3 @@ class CityScapesMetric(CityScapesDetection):
             for k, v in metric_results.items()
         }
         return evaluate_results
-
-    def _get_classes(self):
-
-        if self.dataset_meta and 'classes' in self.dataset_meta:
-            self.classes = self.dataset_meta['classes']
-        elif self.dataset_meta and 'CLASSES' in self.dataset_meta:
-            self.classes = self.dataset_meta['CLASSES']
-            warnings.warn(
-                'DeprecationWarning: The `CLASSES` in `dataset_meta` is '
-                'deprecated, use `classes` instead!')
-        else:
-            raise RuntimeError('Could not find `classes` in dataset_meta: '
-                               f'{self.dataset_meta}')
