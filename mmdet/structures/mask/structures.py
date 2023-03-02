@@ -757,6 +757,10 @@ class PolygonMasks(BaseInstanceMasks):
             # reference: https://github.com/facebookresearch/fvcore/blob/main/fvcore/transforms/transform.py  # noqa
             crop_box = geometry.box(x1, y1, x2, y2).buffer(0.0)
             cropped_masks = []
+            # suppress shapely warnings util it incorporates GEOS>=3.11.2
+            # reference: https://github.com/shapely/shapely/issues/1345
+            initial_settings = np.seterr()
+            np.seterr(invalid='ignore')
             for poly_per_obj in self.masks:
                 cropped_poly_per_obj = []
                 for p in poly_per_obj:
@@ -785,10 +789,11 @@ class PolygonMasks(BaseInstanceMasks):
                         coords[:, 0] -= x1
                         coords[:, 1] -= y1
                         cropped_poly_per_obj.append(coords.reshape(-1))
-
+                # a dummy polygon to avoid misalignment between masks and boxes
                 if len(cropped_poly_per_obj) == 0:
                     cropped_poly_per_obj = [np.array([0, 0, 0, 0, 0, 0])]
                 cropped_masks.append(cropped_poly_per_obj)
+            np.seterr(**initial_settings)
             cropped_masks = PolygonMasks(cropped_masks, h, w)
         return cropped_masks
 
