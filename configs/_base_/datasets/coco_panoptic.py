@@ -58,9 +58,10 @@ test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CocoPanopticMetric',
+    direct_compute=True,
+    outfile_prefix='./work_dirs/panoptic',
     ann_file=data_root + 'annotations/panoptic_val2017.json',
     seg_prefix=data_root + 'annotations/panoptic_val2017/',
-    file_client_args=file_client_args,
 )
 test_evaluator = val_evaluator
 
