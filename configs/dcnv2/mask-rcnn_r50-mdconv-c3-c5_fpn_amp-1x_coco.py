@@ -4,4 +4,4 @@ model = dict(
         dcn=dict(type='DCNv2', deform_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)))
 
-fp16 = dict(loss_scale=512.)
+_base_.optim_wrapper.type = 'AmpOptimWrapper'
