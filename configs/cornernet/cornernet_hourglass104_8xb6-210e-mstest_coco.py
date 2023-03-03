@@ -141,7 +141,9 @@ auto_scale_lr = dict(base_batch_size=48)
 
 tta_model = dict(
     type='DetTTAModel',
-    tta_cfg=dict(nms=dict(type='soft_nms', iou_threshold=0.5, method='gaussian'), max_per_img=100))
+    tta_cfg=dict(
+        nms=dict(type='soft_nms', iou_threshold=0.5, method='gaussian'),
+        max_per_img=100))
 
 tta_pipeline = [
     dict(

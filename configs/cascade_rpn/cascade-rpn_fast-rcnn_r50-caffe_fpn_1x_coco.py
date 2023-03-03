@@ -14,8 +14,8 @@ model = dict(
             sampler=dict(num=256))),
     test_cfg=dict(rcnn=dict(score_thr=1e-3)))
 
-_base_.train_dataloader.dataset.proposal_file = 'proposals/crpn_r50_caffe_fpn_1x_train2017.pkl'
-_base_.val_dataloader.dataset.proposal_file = 'proposals/crpn_r50_caffe_fpn_1x_val2017.pkl'
+_base_.train_dataloader.dataset.proposal_file = 'proposals/crpn_r50_caffe_fpn_1x_train2017.pkl'  # noqa
+_base_.val_dataloader.dataset.proposal_file = 'proposals/crpn_r50_caffe_fpn_1x_val2017.pkl'  # noqa
 test_dataloader = _base_.val_dataloader
 
 optim_wrapper = dict(clip_grad=dict(max_norm=35, norm_type=2))

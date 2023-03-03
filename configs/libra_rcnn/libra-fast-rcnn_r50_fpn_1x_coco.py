@@ -38,13 +38,9 @@ model = dict(
                     floor_thr=-1,
                     floor_fraction=0,
                     num_bins=3)))))
-# dataset settings
-dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
-data = dict(
-    train=dict(proposal_file=data_root +
-               'libra_proposals/rpn_r50_fpn_1x_train2017.pkl'),
-    val=dict(proposal_file=data_root +
-             'libra_proposals/rpn_r50_fpn_1x_val2017.pkl'),
-    test=dict(proposal_file=data_root +
-              'libra_proposals/rpn_r50_fpn_1x_val2017.pkl'))
+
+train_dataloader = dict(
+    dataset=dict(proposal_file='libra_proposals/rpn_r50_fpn_1x_train2017.pkl'))
+val_dataloader = dict(
+    dataset=dict(proposal_file='libra_proposals/rpn_r50_fpn_1x_val2017.pkl'))
+test_dataloader = val_dataloader
