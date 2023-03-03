@@ -16,7 +16,55 @@ except ImportError:
 
 @METRICS.register_module()
 class CocoPanopticMetric(CocoPanoptic):
+    """A wrapper of :class:`mmeval.CocoPanoptic`.
 
+    This wrapper implements the `process` method that parses predictions and
+    labels from inputs. This enables ``mmengine.Evaluator`` to handle the data
+    flow of different tasks through a unified interface.
+
+    In addition, this wrapper also implements the ``evaluate`` method that
+    parses metric results and print pretty table of metrics per class.
+
+    Args:
+        ann_file (str, optional): Path to the coco format annotation file.
+            If not specified, ground truth annotations from the dataset will
+            be converted to coco format. Defaults to None.
+        seg_prefix (str, optional): Path to the directory which contains the
+            coco panoptic segmentation mask. It should be specified when
+            evaluate. Defaults to None.
+        classwise (bool): Whether to return the computed  results of each
+            class. Defaults to False.
+        format_only (bool): Format the output results without perform
+            evaluation. It is useful when you want to format the result
+            to a specific format and submit it to the test server.
+            Defaults to False.
+        outfile_prefix (str, optional): The prefix of json files. It includes
+            the file path and the prefix of filename, e.g., "a/b/prefix".
+            If not specified, a temp file will be created.
+            It should be specified when format_only is True. Defaults to None.
+        keep_results (bool): Whether to keep the results. When ``format_only``
+            is True, ``keep_results`` must be True. If False, the result files
+            will remove after compute the metric. Defaults to False.
+        direct_compute (bool): Whether to compute metric on each inference
+            iteration. Defaults to True.
+        nproc (int): Number of processes for panoptic quality computing. It
+            will be used when `direct_compute` is False. Defaults to 32.
+            When ``nproc`` exceeds the number of cpu cores, the number of
+            cpu cores is used.
+        prefix (str, optional): The prefix that will be added in the metric
+            names to disambiguate homonymous metrics of different evaluators.
+            If prefix is not provided in the argument, self.default_prefix
+            will be used instead. Defaults to None.
+        logger (Logger, optional): logger used to record messages. When set to
+            ``None``, the default logger will be used.
+            Defaults to None.
+        backend_args (dict, optional): Arguments to instantiate the
+            preifx of uri corresponding backend. Defaults to None.
+        dist_backend (str | None): The name of the distributed communication
+            backend. Refer to :class:`mmeval.BaseMetric`.
+            Defaults to 'torch_cuda'.
+        **kwargs: Keyword parameters passed to :class:`mmeval.BaseMetric`.
+    """
     default_prefix: Optional[str] = 'coco_panoptic'
 
     def __init__(self,
@@ -100,9 +148,11 @@ class CocoPanopticMetric(CocoPanoptic):
             gt['height'] = data_sample['ori_shape'][0]
             if self._coco_api is None:
                 # get segments_info from dataset
-                # TODO: Need check
+                if 'segments_info' not in data_sample:
+                    raise KeyError(
+                        '`segments_info` is not in data_samples, please add '
+                        '`segments_info` in PackDetInputs.meta_keys')
                 gt['segments_info'] = data_sample['segments_info']
-                gt['seg_map_path'] = data_sample['seg_map_path']
             groundtruths.append(gt)
 
         self.add(predictions, groundtruths)
