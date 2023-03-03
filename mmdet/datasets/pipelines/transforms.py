@@ -7,6 +7,7 @@ import warnings
 import cv2
 import mmcv
 import numpy as np
+from mmcv.image.resize import interp_codes
 from numpy import random
 
 from mmdet.core import BitmapMasks, PolygonMasks, find_inside_bboxes
@@ -2966,3 +2967,244 @@ class CopyPaste:
         repr_str += f'mask_occluded_thr={self.mask_occluded_thr}, '
         repr_str += f'selected={self.selected}, '
         return repr_str
+
+
+@PIPELINES.register_module
+class Rescale(object):
+    """Rescale images & bbox & mask.
+
+    This transform resizes the input image to a new size similar to Reisze.
+    Unlike Resize you provide scale factors and interpolation method.
+    Bboxes and masks are resized accordingly.
+
+    Args:
+        scale_factor ((float, float) or float): scale factors for resizing.
+        interpolation: one of 'bilinear', 'bicubic', 'nearest', 'lancsoz'
+    """
+
+    def __init__(self, scale_factor, interpolation='bilinear'):
+        if isinstance(scale_factor, list) or isinstance(scale_factor, tuple):
+            self.fx, self.fy = scale_factor
+        else:
+            self.fx = self.fy = scale_factor
+        self.interpolation = interpolation
+
+    def __call__(self, results):
+        scale_factor = self._rescale_img(results, self.fx, self.fy)
+        self._rescale_masks(results)
+        self._rescale_bboxes(results, scale_factor)
+        results['img_shape'] = results['img'].shape
+        results['pad_shape'] = results['img'].shape
+        results['scale_factor'] = scale_factor
+        return results
+
+    def _rescale_img(self, results, fx, fy):
+        img = cv2.resize(
+            results['img'],
+            dsize=(0, 0),
+            fx=fx,
+            fy=fy,
+            interpolation=interp_codes[self.interpolation])
+        fx = img.shape[0] / results['img'].shape[0]
+        fy = img.shape[1] / results['img'].shape[1]
+        results['img'] = img
+        return np.array([fx, fy] * 2, dtype=np.float32)
+
+    def _rescale_masks(self, results):
+        new_shape = results['img'].shape[:2]
+        for key in results.get('mask_fields', []):
+            results[key] = cv2.resize(
+                results[key], dsize=new_shape, interpolation=cv2.INTER_NEAREST)
+
+    def _rescale_bboxes(self, results, scale_factor):
+        for key in results.get('bbox_fields', []):
+            results[key] = results[key] * scale_factor
+
+    def __repr__(self):
+        return '{}(scale_factor=[{}, {}], interpolation={})'.format(
+            self.__class__.__name__, self.fx, self.fy, self.interpolation)
+
+
+@PIPELINES.register_module
+class RandomRescale(Rescale):
+    """Rescale images & bbox & mask with random scale factor.
+
+    This transform randomly rescales input image to a new size.
+    Unlike Resize you provide the list of scale factors, interpolation method
+    and wether to keep aspect ratio. Bboxes and masks are resized accordingly.
+
+    Args:
+        scale_factors list(float): list of scale factors for resizing.
+        keep_ratio (bool): Whether to keep the aspect ratio when resizing the
+            image.
+        interpolation: one of 'bilinear', 'cubic', 'nearest' or 'lancsoz'
+    """
+
+    def __init__(self,
+                 scale_factors,
+                 keep_ratio=True,
+                 interpolation='bilinear'):
+        self.scale_factors = scale_factors
+        self.keep_ratio = keep_ratio
+        self.interpolation = interpolation
+
+    def __call__(self, results):
+        if self.keep_ratio:
+            fx = fy = np.random.choice(self.scale_factors)
+        else:
+            fx = np.random.choice(self.scale_factors)
+            fy = np.random.choice(self.scale_factors)
+        scale_factor = self._rescale_img(results, fx, fy)
+        self._rescale_masks(results)
+        self._rescale_bboxes(results, scale_factor)
+        results['img_shape'] = results['img'].shape
+        results['pad_shape'] = results['img'].shape
+        results['scale_factor'] = scale_factor
+        return results
+
+    def __repr__(self):
+        repr = '{}(scale_factors={}, keep_ratio={}, interpolation={})'.format(
+            self.__class__.__name__, self.scale_factors, self.keep_ratio,
+            self.interpolation)
+        return repr
+
+
+@PIPELINES.register_module
+class AutoContrast(object):
+    """ Autocontrast image by subtracting specified image percentile and dividing
+    by the specified percentile of the intensity distribution according to the
+    formula img = (img-pbkg(img))/(pmax(img)-pbkg(img))
+    """
+
+    def __init__(self, pbkg=.01, pmax=.99):
+        self.pbkg = pbkg
+        self.pmax = pmax
+
+    def __call__(self, results):
+        img = results['img']
+        bkg, max_val = np.quantile(
+            img, (self.pbkg, self.pmax), axis=(0, 1)).astype(np.float32)
+        img = np.clip((img - bkg) / (max_val - bkg), 0, 1)
+        results['img'] = img
+        results['img_norm_cfg'] = dict(mean=bkg, std=max_val, to_rgb=False)
+        return results
+
+    def __repr__(self):
+        return '{}(pbkg={}, pmax={})'.format(self.__class__.__name__,
+                                             self.pbkg, self.pmax)
+
+
+@PIPELINES.register_module
+class RandomGamma(object):
+    """ Apply Gamma correction to specific channels, with gamma randomly
+    selelcted from the list of possible values.
+    """
+
+    def __init__(self, gammas, channels=None):
+        self.gammas = gammas
+        self.channels = channels if channels is None else \
+            np.squeeze(np.array(channels))
+
+    def _apply_gamma(self, img, gamma):
+        if img.dtype == np.uint8:
+            lut = ((np.arange(0, 256 / 255, 1 / 255)**gamma) * 255).astype(
+                np.uint8)
+            img = cv2.LUT(img, lut)
+        else:
+            min_val = img.min(axis=(0, 1))
+            max_val = img.max(axis=(0, 1)) - min_val
+            img = (cv2.pow((img - min_val) / max_val, gamma) * max_val +
+                   min_val).astype(img.dtype)
+        return img
+
+    def __call__(self, results):
+        gamma = np.random.choice(self.gammas)
+        img = results['img']
+        if self.channels is None:
+            img = self._apply_gamma(img, gamma)
+        else:
+            img[...,
+                self.channels] = self._apply_gamma(img[..., self.channels],
+                                                   gamma)
+        results['img'] = img
+        return results
+
+    def __repr__(self):
+        return '{}(gammas={}, channels={})'.format(self.__class__.__name__,
+                                                   self.gammas, self.channels)
+
+
+@PIPELINES.register_module
+class RandomBlur(object):
+    """ Randomly Blur or Deblur specific channels of the image.
+    Takes sigmas from the list. Negative sigmas correspond to unsharp mask,
+    i.e. sharpen image. If positive sigma is selected k is ignored.
+    """
+
+    def __init__(self, sigmas, k=.6, channels=None):
+        self.sigmas = sigmas
+        self.k = k
+        self.channels = channels if channels is None else \
+            np.squeeze(np.array(channels))
+
+    def _apply_blur(self, img, sigma):
+        if sigma > 0:
+            img = cv2.GaussianBlur(img, (0, 0), sigma)
+        elif sigma < 0:
+            img = ((img - cv2.GaussianBlur(img, (0, 0), -sigma) * self.k) /
+                   (1 - self.k)).astype(img.dtype)
+        return img
+
+    def __call__(self, results):
+        sigma = np.random.choice(self.sigmas)
+        img = results['img']
+        if self.channels is None:
+            img = self._apply_blur(img, sigma)
+        else:
+            img[..., self.channels] = self._apply_blur(img[..., self.channels],
+                                                       sigma)
+        results['img'] = img
+        return results
+
+    def __repr__(self):
+        return '{}(sigmas={}), k={}, channels={}'.format(
+            self.__class__.__name__, self.sigmas, self.k, self.channels)
+
+
+@PIPELINES.register_module
+class RandomChannelPermutation(object):
+    """ Randomly flip channels
+    """
+
+    def __init__(self, channels):
+        assert len(
+            channels) > 1, 'there should be at least 2 channels to permute'
+        self.channels = np.array(channels)
+
+    def __call__(self, results):
+        new_channels = np.random.permutation(self.channels)
+        img = results['img']
+        img[..., self.channels] = img[..., new_channels]
+        results['img'] = img
+        return results
+
+    def __repr__(self):
+        return '{}(channels={})'.format(self.__class__.__name__, self.channels)
+
+
+@PIPELINES.register_module
+class ConvertToMultiChannel(object):
+    """ Convert single channel image to multichannel by
+    replicating the image.
+    """
+
+    def __init__(self, channels):
+        self.channels = channels
+
+    def __call__(self, results):
+        img = results['img']
+        results['img'] = np.dstack([img] * self.channels)
+        return results
+
+    def __repr__(self):
+        return '{}(channels={})'.format(self.__class__.__name__, self.channels)
