@@ -23,7 +23,3 @@ model = dict(
     neck=dict(
         type='ChannelMapper',
         in_channels=[80, 160, 320]))
-
-train_dataloader = dict(
-    batch_size=1,
-    num_workers=2)
