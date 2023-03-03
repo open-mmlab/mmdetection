@@ -3,7 +3,7 @@ import pytest
 import torch
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.necks import (FPG, FPN, FPN_CARAFE, NASFCOS_FPN, NASFPN,
+from mmdet.models.necks import (FPG, FPN, FPN_CARAFE, NASFCOS_FPN, NASFPN, SSH,
                                 YOLOXPAFPN, ChannelMapper, DilatedEncoder,
                                 DyHead, SSDNeck, YOLOV3Neck)
 
@@ -629,3 +629,23 @@ def test_nasfcos_fpn():
             start_level=1,
             end_level=2,
             num_outs=3)
+
+
+def test_ssh_neck():
+    """Tests ssh."""
+    s = 64
+    in_channels = [8, 16, 32, 64]
+    feat_sizes = [s // 2**i for i in range(4)]  # [64, 32, 16, 8]
+    out_channels = [16, 32, 64, 128]
+    ssh_model = SSH(
+        num_scales=4, in_channels=in_channels, out_channels=out_channels)
+
+    feats = [
+        torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i])
+        for i in range(len(in_channels))
+    ]
+    outs = ssh_model(feats)
+    assert len(outs) == len(feats)
+    for i in range(len(outs)):
+        assert outs[i].shape == \
+            (1, out_channels[i], feat_sizes[i], feat_sizes[i])

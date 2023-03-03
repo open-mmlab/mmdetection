@@ -59,7 +59,7 @@ jobs:
             python -m pip install torch==<< parameters.torch >>+cpu torchvision==<< parameters.torchvision >>+cpu -f https://download.pytorch.org/whl/torch_stable.html
       - when:
           condition:
-            equal: [ "3.9.0", << parameters.python >> ]
+            equal: ["3.9.0", << parameters.python >>]
           steps:
             - run: pip install "protobuf <= 3.20.1" && sudo apt-get update && sudo apt-get -y install libprotobuf-dev protobuf-compiler cmake
       - run:
@@ -69,7 +69,7 @@ jobs:
           command: |
             python -m pip install git+ssh://git@github.com/open-mmlab/mmengine.git@main
             pip install -U openmim
-            mim install 'mmcv >= 2.0.0rc0'
+            mim install 'mmcv >= 2.0.0rc4'
             pip install -r requirements/tests.txt -r requirements/optional.txt
             pip install --force-reinstall pycocotools
             pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
@@ -117,7 +117,7 @@ jobs:
           command: |
             docker exec mmdetection pip install -e /mmengine
             docker exec mmdetection pip install -U openmim
-            docker exec mmdetection mim install 'mmcv >= 2.0.0rc0'
+            docker exec mmdetection mim install 'mmcv >= 2.0.0rc4'
             docker exec mmdetection pip install -r requirements/tests.txt -r requirements/optional.txt
             docker exec mmdetection pip install pycocotools
             docker exec mmdetection pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
@@ -144,8 +144,7 @@ workflows:
                 - dev-3.x
   pr_stage_test:
     when:
-      not:
-        << pipeline.parameters.lint_only >>
+      not: << pipeline.parameters.lint_only >>
     jobs:
       - lint:
           name: lint
@@ -157,13 +156,13 @@ workflows:
           name: minimum_version_cpu
           torch: 1.6.0
           torchvision: 0.7.0
-          python: 3.6.9  # The lowest python 3.6.x version available on CircleCI images
+          python: 3.7.4 # The lowest python 3.7.x version available on CircleCI images
           requires:
             - lint
       - build_cpu:
           name: maximum_version_cpu
-          torch: 1.12.1
-          torchvision: 0.13.1
+          torch: 1.13.0
+          torchvision: 0.14.0
           python: 3.9.0
           requires:
             - minimum_version_cpu
@@ -181,8 +180,7 @@ workflows:
             - hold
   merge_stage_test:
     when:
-      not:
-        << pipeline.parameters.lint_only >>
+      not: << pipeline.parameters.lint_only >>
     jobs:
       - build_cuda:
           name: minimum_version_gpu

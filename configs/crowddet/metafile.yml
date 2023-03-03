@@ -1,0 +1,47 @@
+Collections:
+  - Name: CrowdDet
+    Metadata:
+      Training Data: CrowdHuman
+      Training Techniques:
+        - SGD
+        - EMD Loss
+      Training Resources: 8x A100 GPUs
+      Architecture:
+        - FPN
+        - RPN
+        - ResNet
+        - RoIPool
+    Paper:
+      URL: https://arxiv.org/abs/2003.09163
+      Title: 'Detection in Crowded Scenes: One Proposal, Multiple Predictions'
+    README: configs/crowddet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v3.0.0rc3/mmdet/models/detectors/crowddet.py
+      Version: v3.0.0rc3
+
+Models:
+  - Name: crowddet-rcnn_refine_r50_fpn_8xb2-30e_crowdhuman
+    In Collection: CrowdDet
+    Config: configs/crowddet/crowddet-rcnn_refine_r50_fpn_8xb2-30e_crowdhuman.py
+    Metadata:
+      Training Memory (GB): 4.8
+      Epochs: 30
+    Results:
+      - Task: Object Detection
+        Dataset: CrowdHuman
+        Metrics:
+          box AP: 90.32
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/crowddet/crowddet-rcnn_refine_r50_fpn_8xb2-30e_crowdhuman/crowddet-rcnn_refine_r50_fpn_8xb2-30e_crowdhuman_20221024_215917-45602806.pth
+
+  - Name: crowddet-rcnn_r50_fpn_8xb2-30e_crowdhuman
+    In Collection: CrowdDet
+    Config: configs/crowddet/crowddet-rcnn_r50_fpn_8xb2-30e_crowdhuman.py
+    Metadata:
+      Training Memory (GB): 4.4
+      Epochs: 30
+    Results:
+      - Task: Object Detection
+        Dataset: CrowdHuman
+        Metrics:
+          box AP: 90.0
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/crowddet/crowddet-rcnn_r50_fpn_8xb2-30e_crowdhuman/crowddet-rcnn_r50_fpn_8xb2-30e_crowdhuman_20221023_174954-dc319c2d.pth

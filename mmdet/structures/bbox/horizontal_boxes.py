@@ -227,6 +227,8 @@ class HorizontalBoxes(BaseBoxes):
         Returns:
             Tensor: Horizontal box tensor with shape of (..., 4).
         """
+        if corners.numel() == 0:
+            return corners.new_zeros((0, 4))
         min_xy = corners.min(dim=-2)[0]
         max_xy = corners.max(dim=-2)[0]
         return torch.cat([min_xy, max_xy], dim=-1)

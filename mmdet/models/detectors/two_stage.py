@@ -119,6 +119,9 @@ class TwoStageDetector(BaseDetector):
 
         Args:
             batch_inputs (Tensor): Inputs with shape (N, C, H, W).
+            batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
+                the meta information of each image and corresponding
+                annotations.
 
         Returns:
             tuple: A tuple of features from ``rpn_head`` and ``roi_head``
@@ -135,8 +138,8 @@ class TwoStageDetector(BaseDetector):
             rpn_results_list = [
                 data_sample.proposals for data_sample in batch_data_samples
             ]
-
-        roi_outs = self.roi_head.forward(x, rpn_results_list)
+        roi_outs = self.roi_head.forward(x, rpn_results_list,
+                                         batch_data_samples)
         results = results + (roi_outs, )
         return results
 
@@ -177,7 +180,6 @@ class TwoStageDetector(BaseDetector):
                     rpn_losses[f'rpn_{key}'] = rpn_losses.pop(key)
             losses.update(rpn_losses)
         else:
-            # TODO: Not support currently, should have a check at Fast R-CNN
             assert batch_data_samples[0].get('proposals', None) is not None
             # use pre-defined proposals in InstanceData for the second stage
             # to extract ROI features.

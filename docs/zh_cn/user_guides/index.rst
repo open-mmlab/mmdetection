@@ -30,5 +30,4 @@ MMDetection 在 `Model Zoo <https://mmdetection.readthedocs.io/en/latest/model_z
    useful_hooks.md
    visualization.md
    robustness_benchmarking.md
-   pytorch2onnx.md
-   onnx2tensorrt.md
+   deploy.md

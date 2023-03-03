@@ -28,13 +28,13 @@ class TestNumClassCheckHook(TestCase):
         self.runner = runner
 
         # Setup dataset
-        metainfo = dict(CLASSES=None)
+        metainfo = dict(classes=None)
         self.none_classmeta_dataset = BaseDataset(
             metainfo=metainfo, lazy_init=True)
-        metainfo = dict(CLASSES='class_name')
+        metainfo = dict(classes='class_name')
         self.str_classmeta_dataset = BaseDataset(
             metainfo=metainfo, lazy_init=True)
-        metainfo = dict(CLASSES=('bus', 'car'))
+        metainfo = dict(classes=('bus', 'car'))
         self.normal_classmeta_dataset = BaseDataset(
             metainfo=metainfo, lazy_init=True)
 
@@ -66,11 +66,11 @@ class TestNumClassCheckHook(TestCase):
     def test_before_train_epch(self):
         runner = deepcopy(self.runner)
 
-        # Test when dataset.metainfo['CLASSES'] is None
+        # Test when dataset.metainfo['classes'] is None
         runner.train_dataloader.dataset = self.none_classmeta_dataset
         self.hook.before_train_epoch(runner)
         runner.logger.warning.assert_called_once()
-        # Test when dataset.metainfo['CLASSES'] is a str
+        # Test when dataset.metainfo['classes'] is a str
         runner.train_dataloader.dataset = self.str_classmeta_dataset
         with self.assertRaises(AssertionError):
             self.hook.before_train_epoch(runner)
@@ -87,11 +87,11 @@ class TestNumClassCheckHook(TestCase):
     def test_before_val_epoch(self):
         runner = deepcopy(self.runner)
 
-        # Test when dataset.metainfo['CLASSES'] is None
+        # Test when dataset.metainfo['classes'] is None
         runner.val_dataloader.dataset = self.none_classmeta_dataset
         self.hook.before_val_epoch(runner)
         runner.logger.warning.assert_called_once()
-        # Test when dataset.metainfo['CLASSES'] is a str
+        # Test when dataset.metainfo['classes'] is a str
         runner.val_dataloader.dataset = self.str_classmeta_dataset
         with self.assertRaises(AssertionError):
             self.hook.before_val_epoch(runner)

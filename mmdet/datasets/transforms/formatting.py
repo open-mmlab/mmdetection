@@ -21,10 +21,10 @@ class PackDetInputs(BaseTransform):
 
         - ``img_path``: path to the image file
 
-        - ``ori_shape``: original shape of the image as a tuple (h, w, c)
+        - ``ori_shape``: original shape of the image as a tuple (h, w)
 
         - ``img_shape``: shape of the image input to the network as a tuple \
-            (h, w, c).  Note that images may be zero padded on the \
+            (h, w).  Note that images may be zero padded on the \
             bottom/right if the batch tensor is larger than this shape.
 
         - ``scale_factor``: a float indicating the preprocessing scale
@@ -68,8 +68,20 @@ class PackDetInputs(BaseTransform):
             img = results['img']
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
-            img = np.ascontiguousarray(img.transpose(2, 0, 1))
-            packed_results['inputs'] = to_tensor(img)
+            # To improve the computational speed by by 3-5 times, apply:
+            # If image is not contiguous, use
+            # `numpy.transpose()` followed by `numpy.ascontiguousarray()`
+            # If image is already contiguous, use
+            # `torch.permute()` followed by `torch.contiguous()`
+            # Refer to https://github.com/open-mmlab/mmdetection/pull/9533
+            # for more details
+            if not img.flags.c_contiguous:
+                img = np.ascontiguousarray(img.transpose(2, 0, 1))
+                img = to_tensor(img)
+            else:
+                img = to_tensor(img).permute(2, 0, 1).contiguous()
+
+            packed_results['inputs'] = img
 
         if 'gt_ignore_flags' in results:
             valid_idx = np.where(results['gt_ignore_flags'] == 0)[0]
@@ -103,7 +115,10 @@ class PackDetInputs(BaseTransform):
         data_sample.ignored_instances = ignore_instance_data
 
         if 'proposals' in results:
-            data_sample.proposals = InstanceData(bboxes=results['proposals'])
+            proposals = InstanceData(
+                bboxes=to_tensor(results['proposals']),
+                scores=to_tensor(results['proposals_scores']))
+            data_sample.proposals = proposals
 
         if 'gt_seg_map' in results:
             gt_sem_seg_data = dict(
@@ -180,13 +195,14 @@ class ImageToTensor:
 
         Returns:
             dict: The result dict contains the image converted
-                to :obj:`torch.Tensor` and transposed to (C, H, W) order.
+                to :obj:`torch.Tensor` and permuted to (C, H, W) order.
         """
         for key in self.keys:
             img = results[key]
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
-            results[key] = (to_tensor(img.transpose(2, 0, 1))).contiguous()
+            results[key] = to_tensor(img).permute(2, 0, 1).contiguous()
+
         return results
 
     def __repr__(self):

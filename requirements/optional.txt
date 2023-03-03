@@ -1,4 +1,3 @@
 cityscapesscripts
 imagecorruptions
-scipy
-sklearn
+scikit-learn

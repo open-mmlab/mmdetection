@@ -13,8 +13,8 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.models.utils.misc import floordiv
+from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, InstanceList, MultiConfig, OptConfigType
-from ..builder import HEADS
 from ..layers import mask_matrix_nms
 from ..utils import center_of_mass, generate_coordinate, multi_apply
 from .solo_head import SOLOHead
@@ -165,7 +165,7 @@ class MaskFeatModule(BaseModule):
         return feature_pred
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class SOLOV2Head(SOLOHead):
     """SOLOv2 mask head used in `SOLOv2: Dynamic and Fast Instance
     Segmentation. <https://arxiv.org/pdf/2003.10152>`_
@@ -586,7 +586,7 @@ class SOLOV2Head(SOLOHead):
         if num_pos > 0:
             loss_mask = torch.cat(loss_mask).sum() / num_pos
         else:
-            loss_mask = mask_feats.new_zeros(1).mean()
+            loss_mask = mask_feats.sum() * 0
 
         # cate
         flatten_labels = [

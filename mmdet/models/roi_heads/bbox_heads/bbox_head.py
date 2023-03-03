@@ -87,8 +87,9 @@ class BBoxHead(BaseModule):
             out_dim_reg = box_dim if reg_class_agnostic else \
                 box_dim * num_classes
             reg_predictor_cfg_ = self.reg_predictor_cfg.copy()
-            reg_predictor_cfg_.update(
-                in_features=in_channels, out_features=out_dim_reg)
+            if isinstance(reg_predictor_cfg_, (dict, ConfigDict)):
+                reg_predictor_cfg_.update(
+                    in_features=in_channels, out_features=out_dim_reg)
             self.fc_reg = MODELS.build(reg_predictor_cfg_)
         self.debug_imgs = None
         if init_cfg is None:
@@ -514,7 +515,9 @@ class BBoxHead(BaseModule):
                                    task_type='bbox',
                                    instance_results=[results],
                                    box_type=self.predict_box_type,
-                                   use_box_type=False)[0]
+                                   use_box_type=False,
+                                   num_classes=self.num_classes,
+                                   score_per_cls=rcnn_test_cfg is None)[0]
 
         # some loss (Seesaw loss..) may have custom activation
         if self.custom_cls_channels:
@@ -638,9 +641,15 @@ class BBoxHead(BaseModule):
             cls_scores = self.loss_cls.get_activation(cls_scores)
         if cls_scores.numel() == 0:
             return None
-
-        labels = torch.where(labels == self.num_classes,
-                             cls_scores[:, :-1].argmax(1), labels)
+        if cls_scores.shape[-1] == self.num_classes + 1:
+            # remove background class
+            cls_scores = cls_scores[:, :-1]
+        elif cls_scores.shape[-1] != self.num_classes:
+            raise ValueError('The last dim of `cls_scores` should equal to '
+                             '`num_classes` or `num_classes + 1`,'
+                             f'but got {cls_scores.shape[-1]}.')
+        labels = torch.where(labels == self.num_classes, cls_scores.argmax(1),
+                             labels)
 
         img_ids = rois[:, 0].long().unique(sorted=True)
         assert img_ids.numel() <= len(batch_img_metas)

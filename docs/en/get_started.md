@@ -4,7 +4,7 @@
 
 In this section, we demonstrate how to prepare an environment with PyTorch.
 
-MMDetection works on Linux, Windows, and macOS. It requires Python 3.6+, CUDA 9.2+, and PyTorch 1.6+.
+MMDetection works on Linux, Windows, and macOS. It requires Python 3.7+, CUDA 9.2+, and PyTorch 1.6+.
 
 ```{note}
 If you are experienced with PyTorch and have already installed it, just skip this part and jump to the [next section](#installation). Otherwise, you can follow these steps for the preparation.
@@ -76,30 +76,28 @@ To verify whether MMDetection is installed correctly, we provide some sample cod
 **Step 1.** We need to download config and checkpoint files.
 
 ```shell
-mim download mmdet --config yolov3_mobilenetv2_8xb24-320-300e_coco --dest .
+mim download mmdet --config rtmdet_tiny_8xb32-300e_coco --dest .
 ```
 
-The downloading will take several seconds or more, depending on your network environment. When it is done, you will find two files `yolov3_mobilenetv2_8xb24-320-300e_coco.py` and `yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth` in your current folder.
+The downloading will take several seconds or more, depending on your network environment. When it is done, you will find two files `rtmdet_tiny_8xb32-300e_coco.py` and `rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth` in your current folder.
 
 **Step 2.** Verify the inference demo.
 
-Option (a). If you install MMDetection from source, just run the following command.
+Case a: If you install MMDetection from source, just run the following command.
 
 ```shell
-python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
+python demo/image_demo.py demo/demo.jpg rtmdet_tiny_8xb32-300e_coco.py --weights rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth --device cpu
 ```
 
-You will see a new image `result.jpg` on your current folder, where bounding boxes are plotted on cars, benches, etc.
+You will see a new image `demo.jpg` on your `./outputs/vis` folder, where bounding boxes are plotted on cars, benches, etc.
 
-Option (b). If you install MMDetection with MIM, open your python interpreter and copy&paste the following codes.
+Case b: If you install MMDetection with MIM, open your python interpreter and copy&paste the following codes.
 
 ```python
 from mmdet.apis import init_detector, inference_detector
-from mmdet.utils import register_all_modules
 
-register_all_modules()
-config_file = 'yolov3_mobilenetv2_8xb24-320-300e_coco.py'
-checkpoint_file = 'yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth'
+config_file = 'rtmdet_tiny_8xb32-300e_coco.py'
+checkpoint_file = 'rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth'
 model = init_detector(config_file, checkpoint_file, device='cpu')  # or device='cuda:0'
 inference_detector(model, 'demo/demo.jpg')
 ```
@@ -174,7 +172,7 @@ The following table lists affected algorithms.
 
 #### Install on Google Colab
 
-[Google Colab](https://research.google.com/) usually has PyTorch installed,
+[Google Colab](https://colab.research.google.com/) usually has PyTorch installed,
 thus we only need to install MMEngine, MMCV, and MMDetection with the following commands.
 
 **Step 1.** Install [MMEngine](https://github.com/open-mmlab/mmengine) and [MMCV](https://github.com/open-mmlab/mmcv) using [MIM](https://github.com/open-mmlab/mim).
@@ -182,7 +180,7 @@ thus we only need to install MMEngine, MMCV, and MMDetection with the following 
 ```shell
 !pip3 install openmim
 !mim install mmengine
-!mim install mmcv>=2.0.0rc1,<2.1.0
+!mim install "mmcv>=2.0.0rc1,<2.1.0"
 ```
 
 **Step 2.** Install MMDetection from the source.
@@ -226,7 +224,7 @@ docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetect
 If you have some issues during the installation, please first view the [FAQ](notes/faq.md) page.
 You may [open an issue](https://github.com/open-mmlab/mmdetection/issues/new/choose) on GitHub if no solution is found.
 
-### Use Multiple Versions of MMDetection in Develoement
+### Use Multiple Versions of MMDetection in Development
 
 Training and testing scripts have already been modified in `PYTHONPATH` in order to make sure the scripts are using their own versions of MMDetection.
 

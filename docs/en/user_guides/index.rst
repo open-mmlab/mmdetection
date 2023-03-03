@@ -31,5 +31,4 @@ Useful Tools
    useful_hooks.md
    visualization.md
    robustness_benchmarking.md
-   pytorch2onnx.md
-   onnx2tensorrt.md
+   deploy.md

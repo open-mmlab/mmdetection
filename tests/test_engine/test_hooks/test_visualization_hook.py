@@ -28,7 +28,7 @@ def _rand_bboxes(num_boxes, h, w):
 class TestVisualizationHook(TestCase):
 
     def setUp(self) -> None:
-        DetLocalVisualizer.get_instance('visualizer')
+        DetLocalVisualizer.get_instance('current_visualizer')
 
         pred_instances = InstanceData()
         pred_instances.bboxes = _rand_bboxes(5, 10, 12)
