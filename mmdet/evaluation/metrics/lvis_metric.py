@@ -120,10 +120,7 @@ class LVISMetric(LVISDetection):
                 pred['mask_scores'] = \
                     pred_instances['mask_scores'].cpu().numpy()
             predictions.append(pred)
-            # LVIS only supports loading annotation from JSON
-            ann = dict()  # create dummy ann
-            groundtruths.append(ann)
-        self.add(predictions, groundtruths)
+        self.add(predictions)
 
     def evaluate(self, *args, **kwargs) -> dict:
         """Returns metric results and print pretty table of metrics per class.
