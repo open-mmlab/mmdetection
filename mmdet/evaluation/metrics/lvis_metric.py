@@ -136,7 +136,9 @@ class LVISMetric(LVISDetection):
                 logger='current')
             return metric_results
         for metric in self.metrics:
-            result = metric_results.pop(f'{metric}_result')
+            result = metric_results.pop(f'{metric}_result', None)
+            if result is None:  # empty results
+                break
             if metric == 'proposal':
                 table_title = '  Recall Results (%)'
                 if self.metric_items is None:
