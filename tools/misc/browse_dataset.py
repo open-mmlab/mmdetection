@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import os
-from collections import Sequence
+from collections.abc import Sequence
 from pathlib import Path
 
 import mmcv
