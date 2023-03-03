@@ -7,6 +7,7 @@ from mmcv.runner import get_dist_info
 from torch.utils.data.sampler import Sampler
 
 from mmdet.core.utils import sync_random_seed
+from mmdet.utils import get_device
 
 
 class InfiniteGroupBatchSampler(Sampler):
@@ -56,7 +57,8 @@ class InfiniteGroupBatchSampler(Sampler):
         # in the same order based on the same seed. Then different ranks
         # could use different indices to select non-overlapped data from the
         # same data list.
-        self.seed = sync_random_seed(seed)
+        device = get_device()
+        self.seed = sync_random_seed(seed, device)
         self.shuffle = shuffle
 
         assert hasattr(self.dataset, 'flag')
@@ -147,7 +149,8 @@ class InfiniteBatchSampler(Sampler):
         # in the same order based on the same seed. Then different ranks
         # could use different indices to select non-overlapped data from the
         # same data list.
-        self.seed = sync_random_seed(seed)
+        device = get_device()
+        self.seed = sync_random_seed(seed, device)
         self.shuffle = shuffle
         self.size = len(dataset)
         self.indices = self._indices_of_rank()
