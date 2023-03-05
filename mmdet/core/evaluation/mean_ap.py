@@ -532,7 +532,8 @@ def eval_map(det_results,
              tpfp_fn=None,
              nproc=4,
              use_legacy_coordinate=False,
-             use_group_of=False):
+             use_group_of=False,
+             mode='area'):
     """Evaluate mAP of a dataset.
 
     Args:
@@ -572,6 +573,9 @@ def eval_map(det_results,
             Default: False.
         use_group_of (bool): Whether to use group of when calculate TP and FP,
             which only used in OpenImages evaluation. Default: False.
+        mode (str): 'area' or '11points', 'area' means calculating the area
+            under precision-recall curve, '11points' means calculating the
+            average precision of recalls at [0, 0.1, ..., 1]. Default: 'area'.
 
     Returns:
         tuple: (mAP, [dict, dict, ...])
@@ -677,7 +681,6 @@ def eval_map(det_results,
             recalls = recalls[0, :]
             precisions = precisions[0, :]
             num_gts = num_gts.item()
-        mode = 'area' if dataset != 'voc07' else '11points'
         ap = average_precision(recalls, precisions, mode)
         eval_results.append({
             'num_gts': num_gts,

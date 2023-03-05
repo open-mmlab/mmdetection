@@ -69,10 +69,7 @@ class VOCDataset(XMLDataset):
         iou_thrs = [iou_thr] if isinstance(iou_thr, float) else iou_thr
         if metric == 'mAP':
             assert isinstance(iou_thrs, list)
-            if self.year == 2007:
-                ds_name = 'voc07'
-            else:
-                ds_name = self.CLASSES
+            ds_name = self.CLASSES
             mean_aps = []
             for iou_thr in iou_thrs:
                 print_log(f'\n{"-" * 15}iou_thr: {iou_thr}{"-" * 15}')
@@ -88,7 +85,8 @@ class VOCDataset(XMLDataset):
                     iou_thr=iou_thr,
                     dataset=ds_name,
                     logger=logger,
-                    use_legacy_coordinate=True)
+                    use_legacy_coordinate=True,
+                    mode='11points' if self.year == 2007 else 'area')
                 mean_aps.append(mean_ap)
                 eval_results[f'AP{int(iou_thr * 100):02d}'] = round(mean_ap, 3)
             eval_results['mAP'] = sum(mean_aps) / len(mean_aps)
