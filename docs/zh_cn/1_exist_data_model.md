@@ -366,7 +366,7 @@ bash tools/dist_test.sh \
        8 \
        --out results.pkl \
        --eval bbox segm \
-       --options "classwise=True"
+       --eval-options "classwise=True"
    ```
 
 6. 在 COCO test-dev 数据集上，使用 8 块 GPU 测试 Mask R-CNN，并生成 JSON 文件提交到官方评测服务器。配置文件和 checkpoint 文件 [在此](https://github.com/open-mmlab/mmdetection/tree/master/configs/mask_rcnn) 。
@@ -377,7 +377,7 @@ bash tools/dist_test.sh \
        checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
        8 \
        --format-only \
-       --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+       --eval-options "jsonfile_prefix=./mask_rcnn_test-dev_results"
    ```
 
 这行命令生成两个 JSON 文件 `mask_rcnn_test-dev_results.bbox.json` 和 `mask_rcnn_test-dev_results.segm.json`。
@@ -390,7 +390,7 @@ bash tools/dist_test.sh \
        checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
        8 \
        --format-only \
-       --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
+       --eval-options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
    ```
 
 生成的 png 和 txt 文件在 `./mask_rcnn_cityscapes_test_results` 文件夹下。
