@@ -17,6 +17,9 @@ param_scheduler = [
         milestones=[16, 20],
         gamma=0.1)
 ]
+
+optim_wrapper = dict(clip_grad=dict(max_norm=35, norm_type=2))
+
 train_cfg = dict(
     type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
 default_hooks = dict(logger=dict(interval=1))

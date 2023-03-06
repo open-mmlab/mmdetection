@@ -149,7 +149,7 @@ tta_pipeline = [
     dict(
         type='LoadImageFromFile',
         to_float32=True,
-        file_client_args=dict(backend='disk')),
+        file_client_args=_base_.file_client_args),
     dict(
         type='TestTimeAug',
         transforms=[
