@@ -29,7 +29,7 @@ Models:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          AR1000: 58.7
+          AR@1000: 58.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_r50_caffe_fpn_1x_coco/rpn_r50_caffe_fpn_1x_coco_20200531-5b903a37.pth
 
   - Name: rpn_r50_fpn_1x_coco
@@ -43,8 +43,20 @@ Models:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          AR1000: 58.2
+          AR@1000: 58.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_r50_fpn_1x_coco/rpn_r50_fpn_1x_coco_20200218-5525fa2e.pth
+
+  - Name: rpn_r50_fpn_2x_coco
+    In Collection: RPN
+    Config: rpn_r50_fpn_2x_coco.py
+    Metadata:
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          AR@1000: 58.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_r50_fpn_2x_coco/rpn_r50_fpn_2x_coco_20200131-0728c9b3.pth
 
   - Name: rpn_r101-caffe_fpn_1x_coco
     In Collection: RPN
@@ -57,7 +69,7 @@ Models:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          AR1000: 60.0
+          AR@1000: 60.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_r101_caffe_fpn_1x_coco/rpn_r101_caffe_fpn_1x_coco_20200531-0629a2e2.pth
 
   - Name: rpn_x101-32x4d_fpn_1x_coco
@@ -71,7 +83,7 @@ Models:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          AR1000: 60.6
+          AR@1000: 60.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_x101_32x4d_fpn_1x_coco/rpn_x101_32x4d_fpn_1x_coco_20200219-b02646c6.pth
 
   - Name: rpn_x101-32x4d_fpn_2x_coco
@@ -84,7 +96,7 @@ Models:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          AR1000: 61.1
+          AR@1000: 61.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_x101_32x4d_fpn_2x_coco/rpn_x101_32x4d_fpn_2x_coco_20200208-d22bd0bb.pth
 
   - Name: rpn_x101-64x4d_fpn_1x_coco
@@ -98,7 +110,7 @@ Models:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          AR1000: 61.0
+          AR@1000: 61.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_x101_64x4d_fpn_1x_coco/rpn_x101_64x4d_fpn_1x_coco_20200208-cde6f7dd.pth
 
   - Name: rpn_x101-64x4d_fpn_2x_coco
@@ -111,5 +123,5 @@ Models:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          AR1000: 61.5
+          AR@1000: 61.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_x101_64x4d_fpn_2x_coco/rpn_x101_64x4d_fpn_2x_coco_20200208-c65f524f.pth
