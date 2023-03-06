@@ -23,7 +23,6 @@ Models:
     In Collection: BoxInst
     Config: configs/boxinst/boxinst_r50_fpn_ms-90k_coco.py
     Metadata:
-      Training Memory (GB): 4.4
       Iterations: 90000
     Results:
       - Task: Object Detection
@@ -34,4 +33,20 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 30.8
-    Weights:
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/boxinst/boxinst_r50_fpn_ms-90k_coco/boxinst_r50_fpn_ms-90k_coco_20221228_163052-6add751a.pth
+
+  - Name: boxinst_r101_fpn_ms-90k_coco
+    In Collection: BoxInst
+    Config: configs/boxinst/boxinst_r101_fpn_ms-90k_coco.py
+    Metadata:
+      Iterations: 90000
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.8
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 32.7
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/boxinst/boxinst_r101_fpn_ms-90k_coco/boxinst_r101_fpn_ms-90k_coco_20221229_145106-facf375b.pth
