@@ -377,7 +377,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
        8 \
        --out results.pkl \
        --eval bbox segm \
-       --options "classwise=True"
+       --eval-options "classwise=True"
    ```
 
 6. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate JSON files for submitting to the official evaluation server.
@@ -389,7 +389,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
        checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
        8 \
        --format-only \
-       --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+       --eval-options "jsonfile_prefix=./mask_rcnn_test-dev_results"
    ```
 
    This command generates two JSON files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
@@ -403,7 +403,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
        checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
        8 \
        --format-only \
-       --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
+       --eval-options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
    ```
 
    The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
