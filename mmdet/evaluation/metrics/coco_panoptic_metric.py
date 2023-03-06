@@ -42,15 +42,9 @@ class CocoPanopticMetric(CocoPanoptic):
             the file path and the prefix of filename, e.g., "a/b/prefix".
             If not specified, a temp file will be created.
             It should be specified when format_only is True. Defaults to None.
-        keep_results (bool): Whether to keep the results. When ``format_only``
-            is True, ``keep_results`` must be True. If False, the result files
-            will remove after compute the metric. Defaults to False.
-        direct_compute (bool): Whether to compute metric on each inference
-            iteration. Defaults to True.
-        nproc (int): Number of processes for panoptic quality computing. It
-            will be used when `direct_compute` is False. Defaults to 32.
-            When ``nproc`` exceeds the number of cpu cores, the number of
-            cpu cores is used.
+        nproc (int): Number of processes for panoptic quality computing.
+            Defaults to 32. When ``nproc`` exceeds the number of cpu cores,
+            the number of cpu cores is used.
         prefix (str, optional): The prefix that will be added in the metric
             names to disambiguate homonymous metrics of different evaluators.
             If prefix is not provided in the argument, self.default_prefix
@@ -73,9 +67,7 @@ class CocoPanopticMetric(CocoPanoptic):
                  classwise: bool = False,
                  format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
-                 keep_results: bool = False,
                  nproc: int = 32,
-                 direct_compute: bool = True,
                  backend_args: Optional[dict] = None,
                  prefix: Optional[str] = None,
                  dist_backend: str = 'torch_cuda',
@@ -102,9 +94,7 @@ class CocoPanopticMetric(CocoPanoptic):
             classwise=classwise,
             format_only=format_only,
             outfile_prefix=outfile_prefix,
-            keep_results=keep_results,
             nproc=nproc,
-            direct_compute=direct_compute,
             backend_args=backend_args,
             logger=logger,
             dist_backend=dist_backend,
