@@ -13,7 +13,7 @@ from torch.utils.data import Dataset
 
 from mmdet.registry import DATASETS
 from mmdet.structures import DetDataSample, TrackDataSample
-from mmdet.testing import VideoDataFeeder
+from mmdet.testing import VideoDataSampleFeeder
 from mmdet.utils import register_all_modules
 
 register_all_modules()
@@ -171,7 +171,7 @@ class TestVideoValLoop(TestCase):
         video_length = 3
         model = ToyModel1().to(device)
 
-        model.val_step = VideoDataFeeder(video_length)
+        model.val_step = VideoDataSampleFeeder(video_length)
         evaluator = Mock()
         evaluator.evaluate = Mock(return_value=dict(acc=0.5))
         evaluator.__class__ = Evaluator
@@ -250,7 +250,7 @@ class TestVideoTestLoop(TestCase):
     def test_run_iter_img(self):
         video_length = 3
         model = ToyModel()
-        model.test_step = VideoDataFeeder(video_length)
+        model.test_step = VideoDataSampleFeeder(video_length)
         evaluator = Mock()
         evaluator.evaluate = Mock(return_value=dict(acc=0.5))
         evaluator.__class__ = Evaluator

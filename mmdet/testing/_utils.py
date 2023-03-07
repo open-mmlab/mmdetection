@@ -431,7 +431,7 @@ def replace_to_ceph(cfg):
     _process_evaluator(cfg.test_evaluator, cfg.filename)
 
 
-class VideoDataFeeder(object):
+class VideoDataSampleFeeder(object):
 
     def __init__(self, video_length):
         video_inputs = []
