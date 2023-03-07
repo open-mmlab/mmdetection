@@ -47,7 +47,8 @@ class VideoValLoop(ValLoop):
     """Loop for validation of video model.
 
     The difference between this loop and ``ValLoop`` is that this loop does not
-    pass the predictions into the evaluator util the whole video is processed.
+    pass the results from ``predict`` in model into the evaluator util the
+    whole video is processed.
     """
 
     @torch.no_grad()
@@ -96,8 +97,9 @@ class VideoValLoop(ValLoop):
 class VideoTestLoop(TestLoop):
     """Loop for test of video model.
 
-    The difference between this loop and ``ValLoop`` is that this loop does not
-    pass the predictions into the evaluator util the whole video is processed.
+    The difference between this loop and ``TestLoop`` is that this loop does
+    not pass the results from ``predict`` in model into the evaluator util the
+    whole video is processed.
     """
 
     @torch.no_grad()
