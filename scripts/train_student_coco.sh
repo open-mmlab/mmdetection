@@ -60,7 +60,7 @@ do
 done
 
 
-for MODEL_NAME in faster_rcnn_r50_fpn_3x_mstrain_fskd
+for MODEL_NAME in faster_rcnn_r101_fpn_3x_mstrain_fskd faster_rcnn_x101_32x4d_fpn_3x_mstrain_fskd
 do
     CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch \
                                         --nproc_per_node=4 \
