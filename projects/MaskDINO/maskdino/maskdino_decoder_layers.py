@@ -736,7 +736,7 @@ class DeformableTransformerDecoderLayer(nn.Module):
         #                        memory_key_padding_mask).transpose(0, 1)
         tgt = self.cross_attn(
             query=tgt, query_pos=tgt_query_pos, value=memory,
-            key_padding_mask=memory_key_padding_mask, reference_points=tgt_reference_points,
+            key_padding_mask=memory_key_padding_mask, reference_points=tgt_reference_points.transpose(0, 1).contiguous(),
             spatial_shapes=memory_spatial_shapes, level_start_index=memory_level_start_index)
         # tgt = tgt + self.dropout1(tgt2)
         tgt = self.norm1(tgt)
