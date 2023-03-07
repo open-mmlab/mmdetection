@@ -59,4 +59,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 57.2
-    Weights:
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/dino/dino-5scale_swin-l_8xb2-12e_coco/dino-5scale_swin-l_8xb2-12e_coco_20230228_072924-a654145f.pth
