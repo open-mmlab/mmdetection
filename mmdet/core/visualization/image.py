@@ -219,7 +219,9 @@ def imshow_det_bboxes(img,
                       win_name='',
                       show=True,
                       wait_time=0,
-                      out_file=None):
+                      out_file=None,
+                      show_box_only=False,
+                      show_mask_only=False):
     """Draw bboxes and class labels (with scores) on an image.
 
     Args:
@@ -297,7 +299,7 @@ def imshow_det_bboxes(img,
     text_colors = [text_palette[label] for label in labels]
 
     num_bboxes = 0
-    if bboxes is not None:
+    if bboxes is not None and not show_mask_only:
         num_bboxes = bboxes.shape[0]
         bbox_palette = palette_val(get_palette(bbox_color, max_label + 1))
         colors = [bbox_palette[label] for label in labels[:num_bboxes]]
@@ -319,7 +321,7 @@ def imshow_det_bboxes(img,
             scales=scales,
             horizontal_alignment=horizontal_alignment)
 
-    if segms is not None:
+    if segms is not None and not show_box_only:
         mask_palette = get_palette(mask_color, max_label + 1)
         colors = [mask_palette[label] for label in labels]
         colors = np.array(colors, dtype=np.uint8)
