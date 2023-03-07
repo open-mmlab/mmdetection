@@ -104,6 +104,16 @@ def parse_args():
         default='none',
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument(
+        '--show-box-only',
+        action='store_true',
+        help='paint only bounding boxes on the images to be saved. This is '
+        'only effective with --show-dir.')
+    parser.add_argument(
+        '--show-mask-only',
+        action='store_true',
+        help='paint only segmentation masks on the images to be saved. This '
+        'is only effective with --show-dir.')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -239,8 +249,11 @@ def main():
 
     if not distributed:
         model = build_dp(model, cfg.device, device_ids=cfg.gpu_ids)
+        assert not (args.show_box_only and args.show_mask_only), \
+            '"--show-box-only" and "--show-mask-only" cannot be both specified'
         outputs = single_gpu_test(model, data_loader, args.show, args.show_dir,
-                                  args.show_score_thr)
+                                  args.show_score_thr, args.show_box_only,
+                                  args.show_mask_only)
     else:
         model = build_ddp(
             model,
