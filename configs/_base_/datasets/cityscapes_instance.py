@@ -67,10 +67,7 @@ val_evaluator = [
     dict(
         type='CityScapesMetric',
         seg_prefix=data_root + 'gtFine/val',
-        keep_results=False,
-        keep_gt_json=False,
-        classwise=True,
-        outfile_prefix='./work_dirs/cityscapes_metric/instance')
+        classwise=True)
 ]
 
 test_evaluator = val_evaluator

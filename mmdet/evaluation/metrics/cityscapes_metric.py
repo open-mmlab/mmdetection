@@ -1,13 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import itertools
 import os.path as osp
 import warnings
 from typing import Optional, Sequence
 
 import numpy as np
-from mmengine.logging import MMLogger, print_log
+from mmengine.logging import MMLogger
 from mmeval import CityScapesDetection
-from terminaltables import AsciiTable
 
 from mmdet.registry import METRICS
 
@@ -32,8 +30,6 @@ class CityScapesMetric(CityScapesDetection):
             evaluation. It is useful when you want to format the result
             to a specific format and submit it to the test server.
             Defaults to False.
-        keep_results (bool): Whether to keep the results. When ``format_only``
-            is True, ``keep_results`` must be True. Defaults to False.
         classwise (bool): Whether to return the computed  results of each
             class. Defaults to True.
         collect_device (str): Device name used for collecting results from
@@ -50,9 +46,7 @@ class CityScapesMetric(CityScapesDetection):
                  outfile_prefix: Optional[str] = None,
                  seg_prefix: Optional[str] = None,
                  format_only: bool = False,
-                 keep_results: bool = False,
                  classwise: bool = True,
-                 keep_gt_json: bool = False,
                  prefix: Optional[str] = None,
                  dist_backend: str = 'torch_cuda',
                  **kwargs) -> None:
@@ -74,9 +68,7 @@ class CityScapesMetric(CityScapesDetection):
             outfile_prefix=outfile_prefix,
             seg_prefix=seg_prefix,
             format_only=format_only,
-            keep_results=keep_results,
             classwise=classwise,
-            keep_gt_json=keep_gt_json,
             logger=logger,
             dist_backend=dist_backend,
             **kwargs)
@@ -138,22 +130,6 @@ class CityScapesMetric(CityScapesDetection):
         if self.format_only:
             return metric_results
 
-        result = metric_results.pop('results_list', None)
-        if result is None:
-            return metric_results
-
-        header = ['class', 'AP(%)', 'AP50(%)']
-        table_title = ' Cityscapes Results'
-
-        results_flatten = list(itertools.chain(*result))
-
-        results_2d = itertools.zip_longest(
-            *[results_flatten[i::3] for i in range(3)])
-        table_data = [header]
-        table_data += [result for result in results_2d]
-        table = AsciiTable(table_data, title=table_title)
-        table.inner_footing_row_border = True
-        print_log('\n' + table.table, logger='current')
         evaluate_results = {
             f'{self.prefix}/{k}(%)': round(float(v) * 100, 4)
             for k, v in metric_results.items()
