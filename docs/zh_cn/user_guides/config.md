@@ -1,6 +1,6 @@
 # 学习配置文件
 
-MMDetection 和其他 OpenMMLab 仓库使用 [MMEngine 的配置文件系统](https://mmengine.readthedocs.io/zh_cn/latest/tutorials/config.md)。 配置文件使用了模块化和继承设计，以便于进行各类实验。
+MMDetection 和其他 OpenMMLab 仓库使用 [MMEngine 的配置文件系统](https://mmengine.readthedocs.io/zh_CN/latest/advanced_tutorials/config.html)。 配置文件使用了模块化和继承设计，以便于进行各类实验。
 
 ## 配置文件的内容
 
@@ -14,118 +14,118 @@ MMDetection 采用模块化设计，所有功能的模块都可以通过配置�
 model = dict(
     type='MaskRCNN',  # 检测器名
     data_preprocessor=dict(  # 数据预处理器的配置，通常包括图像归一化和 padding
-        type='DetDataPreprocessor',  # 数据预处理器的类型，参考 https://mmdetection.readthedocs.io/en/dev-3.x/api.html#module-mmdet.models.data_preprocessors
+        type='DetDataPreprocessor',  # 数据预处理器的类型，参考 https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.data_preprocessors.DetDataPreprocessor
         mean=[123.675, 116.28, 103.53],  # 用于预训练骨干网络的图像归一化通道均值，按 R、G、B 排序
         std=[58.395, 57.12, 57.375],  # 用于预训练骨干网络的图像归一化通道标准差，按 R、G、B 排序
         bgr_to_rgb=True,  # 是否将图片通道从 BGR 转为 RGB
         pad_mask=True,  # 是否填充实例分割掩码
         pad_size_divisor=32),  # padding 后的图像的大小应该可以被 ``pad_size_divisor`` 整除
     backbone=dict(  # 主干网络的配置文件
-        type='ResNet',  # 主干网络的类别，可用选项请参考 https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/backbones/resnet.py#L308
-        depth=50,  # 主干网络的深度，对于 ResNet 和 ResNext 通常设置为 50 或 101。
-        num_stages=4,  # 主干网络状态(stages)的数目，这些状态产生的特征图作为后续的 head 的输入。
-        out_indices=(0, 1, 2, 3),  # 每个状态产生的特征图输出的索引。
+        type='ResNet',  # 主干网络的类别，可用选项请参考 https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.backbones.ResNet
+        depth=50,  # 主干网络的深度，对于 ResNet 和 ResNext 通常设置为 50 或 101
+        num_stages=4,  # 主干网络状态(stages)的数目，这些状态产生的特征图作为后续的 head 的输入
+        out_indices=(0, 1, 2, 3),  # 每个状态产生的特征图输出的索引
         frozen_stages=1,  # 第一个状态的权重被冻结
-        norm_cfg=dict(  # 归一化层(norm layer)的配置项。
-            type='BN',  # 归一化层的类别，通常是 BN 或 GN。
-            requires_grad=True),  # 是否训练归一化里的 gamma 和 beta。
-        norm_eval=True,  # 是否冻结 BN 里的统计项。
-        style='pytorch',  # 主干网络的风格，'pytorch' 意思是步长为2的层为 3x3 卷积， 'caffe' 意思是步长为2的层为 1x1 卷积。
+        norm_cfg=dict(  # 归一化层(norm layer)的配置项
+            type='BN',  # 归一化层的类别，通常是 BN 或 GN
+            requires_grad=True),  # 是否训练归一化里的 gamma 和 beta
+        norm_eval=True,  # 是否冻结 BN 里的统计项
+        style='pytorch',  # 主干网络的风格，'pytorch' 意思是步长为2的层为 3x3 卷积， 'caffe' 意思是步长为2的层为 1x1 卷积
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),  # 加载通过 ImageNet 预训练的模型
     neck=dict(
-        type='FPN',  # 检测器的 neck 是 FPN，我们同样支持 'NASFPN', 'PAFPN' 等，更多细节可以参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/necks/fpn.py。
+        type='FPN',  # 检测器的 neck 是 FPN，我们同样支持 'NASFPN', 'PAFPN' 等，更多细节可以参考 https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.necks.FPN
         in_channels=[256, 512, 1024, 2048],  # 输入通道数，这与主干网络的输出通道一致
         out_channels=256,  # 金字塔特征图每一层的输出通道
         num_outs=5),  # 输出的范围(scales)
     rpn_head=dict(
-        type='RPNHead',  # rpn_head 的类型是 'RPNHead', 我们也支持 'GARPNHead' 等，更多细节可以参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/dense_heads/rpn_head.py。
-        in_channels=256,  # 每个输入特征图的输入通道，这与 neck 的输出通道一致。
-        feat_channels=256,  # head 卷积层的特征通道。
-        anchor_generator=dict(  # 锚点(Anchor)生成器的配置。
-            type='AnchorGenerator',  # 大多数方法使用 AnchorGenerator 作为锚点生成器, SSD 检测器使用 `SSDAnchorGenerator`。更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/task_modules/prior_generators/anchor_generator.py。
+        type='RPNHead',  # rpn_head 的类型是 'RPNHead', 我们也支持 'GARPNHead' 等，更多细节可以参考 https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.dense_heads.RPNHead
+        in_channels=256,  # 每个输入特征图的输入通道，这与 neck 的输出通道一致
+        feat_channels=256,  # head 卷积层的特征通道
+        anchor_generator=dict(  # 锚点(Anchor)生成器的配置
+            type='AnchorGenerator',  # 大多数方法使用 AnchorGenerator 作为锚点生成器, SSD 检测器使用 `SSDAnchorGenerator`。更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/prior_generators/anchor_generator.py#L18
             scales=[8],  # 锚点的基本比例，特征图某一位置的锚点面积为 scale * base_sizes
-            ratios=[0.5, 1.0, 2.0],  # 高度和宽度之间的比率。
-            strides=[4, 8, 16, 32, 64]),  # 锚生成器的步幅。这与 FPN 特征步幅一致。 如果未设置 base_sizes，则当前步幅值将被视为 base_sizes。
-        bbox_coder=dict(  # 在训练和测试期间对框进行编码和解码。
-            type='DeltaXYWHBBoxCoder',  # 框编码器的类别，'DeltaXYWHBBoxCoder' 是最常用的，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/task_modules/coders/delta_xywh_bbox_coder.py。
+            ratios=[0.5, 1.0, 2.0],  # 高度和宽度之间的比率
+            strides=[4, 8, 16, 32, 64]),  # 锚生成器的步幅。这与 FPN 特征步幅一致。 如果未设置 base_sizes，则当前步幅值将被视为 base_sizes
+        bbox_coder=dict(  # 在训练和测试期间对框进行编码和解码
+            type='DeltaXYWHBBoxCoder',  # 框编码器的类别，'DeltaXYWHBBoxCoder' 是最常用的，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/coders/delta_xywh_bbox_coder.py#L13
             target_means=[0.0, 0.0, 0.0, 0.0],  # 用于编码和解码框的目标均值
             target_stds=[1.0, 1.0, 1.0, 1.0]),  # 用于编码和解码框的标准差
         loss_cls=dict(  # 分类分支的损失函数配置
-            type='CrossEntropyLoss',  # 分类分支的损失类型，我们也支持 FocalLoss 等。
-            use_sigmoid=True,  # RPN 通常进行二分类，所以通常使用 sigmoid 函数。
-            los_weight=1.0),  # 分类分支的损失权重。
-        loss_bbox=dict(  # 回归分支的损失函数配置。
-            type='L1Loss',  # 损失类型，我们还支持许多 IoU Losses 和 Smooth L1-loss 等，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/losses/smooth_l1_loss.py#L56。
-            loss_weight=1.0)),  # 回归分支的损失权重。
-    roi_head=dict(  # RoIHead 封装了两步(two-stage)/级联(cascade)检测器的第二步。
-        type='StandardRoIHead',  # RoI head 的类型，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/roi_heads/standard_roi_head.py#L10。
-        bbox_roi_extractor=dict(  # 用于 bbox 回归的 RoI 特征提取器。
-            type='SingleRoIExtractor',  # RoI 特征提取器的类型，大多数方法使用 SingleRoIExtractor，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/roi_heads/roi_extractors/single_level.py#L10。
+            type='CrossEntropyLoss',  # 分类分支的损失类型，我们也支持 FocalLoss 等，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/losses/cross_entropy_loss.py#L201
+            use_sigmoid=True,  # RPN 通常进行二分类，所以通常使用 sigmoid 函数
+            los_weight=1.0),  # 分类分支的损失权重
+        loss_bbox=dict(  # 回归分支的损失函数配置
+            type='L1Loss',  # 损失类型，我们还支持许多 IoU Losses 和 Smooth L1-loss 等，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/losses/smooth_l1_loss.py#L56
+            loss_weight=1.0)),  # 回归分支的损失权重
+    roi_head=dict(  # RoIHead 封装了两步(two-stage)/级联(cascade)检测器的第二步
+        type='StandardRoIHead',  # RoI head 的类型，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/roi_heads/standard_roi_head.py#L17
+        bbox_roi_extractor=dict(  # 用于 bbox 回归的 RoI 特征提取器
+            type='SingleRoIExtractor',  # RoI 特征提取器的类型，大多数方法使用 SingleRoIExtractor，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/roi_heads/roi_extractors/single_level_roi_extractor.py#L13
             roi_layer=dict(  # RoI 层的配置
-                type='RoIAlign',  # RoI 层的类别, 也支持 DeformRoIPoolingPack 和 ModulatedDeformRoIPoolingPack，更多细节请参考 https://mmcv.readthedocs.io/en/latest/api.html#mmcv.ops.RoIAlign。
-                output_size=7,  # 特征图的输出大小。
-                sampling_ratio=0),  # 提取 RoI 特征时的采样率。0 表示自适应比率。
-            out_channels=256,  # 提取特征的输出通道。
-            featmap_strides=[4, 8, 16, 32]),  # 多尺度特征图的步幅，应该与主干的架构保持一致。
-        bbox_head=dict(  # RoIHead 中 box head 的配置。
-            type='Shared2FCBBoxHead',  # bbox head 的类别，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/roi_heads/bbox_heads/convfc_bbox_head.py#L177。
-            in_channels=256,  # bbox head 的输入通道。 这与 roi_extractor 中的 out_channels 一致。
-            fc_out_channels=1024,  # FC 层的输出特征通道。
-            roi_feat_size=7,  # 候选区域(Region of Interest)特征的大小。
-            num_classes=80,  # 分类的类别数量。
-            bbox_coder=dict(  # 第二阶段使用的框编码器。
-                type='DeltaXYWHBBoxCoder',  # 框编码器的类别，大多数情况使用 'DeltaXYWHBBoxCoder'。
+                type='RoIAlign',  # RoI 层的类别, 也支持 DeformRoIPoolingPack 和 ModulatedDeformRoIPoolingPack，更多细节请参考 https://mmcv.readthedocs.io/en/latest/api.html#mmcv.ops.RoIAlign
+                output_size=7,  # 特征图的输出大小
+                sampling_ratio=0),  # 提取 RoI 特征时的采样率。0 表示自适应比率
+            out_channels=256,  # 提取特征的输出通道
+            featmap_strides=[4, 8, 16, 32]),  # 多尺度特征图的步幅，应该与主干的架构保持一致
+        bbox_head=dict(  # RoIHead 中 box head 的配置
+            type='Shared2FCBBoxHead',  # bbox head 的类别，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/roi_heads/bbox_heads/convfc_bbox_head.py#L220
+            in_channels=256,  # bbox head 的输入通道。 这与 roi_extractor 中的 out_channels 一致
+            fc_out_channels=1024,  # FC 层的输出特征通道
+            roi_feat_size=7,  # 候选区域(Region of Interest)特征的大小
+            num_classes=80,  # 分类的类别数量
+            bbox_coder=dict(  # 第二阶段使用的框编码器
+                type='DeltaXYWHBBoxCoder',  # 框编码器的类别，大多数情况使用 'DeltaXYWHBBoxCoder'
                 target_means=[0.0, 0.0, 0.0, 0.0],  # 用于编码和解码框的均值
                 target_stds=[0.1, 0.1, 0.2, 0.2]),  # 编码和解码的标准差。因为框更准确，所以值更小，常规设置时 [0.1, 0.1, 0.2, 0.2]。
-            reg_class_agnostic=False,  # 回归是否与类别无关。
-            loss_cls=dict(  # 分类分支的损失函数配置
-                type='CrossEntropyLoss',  # 分类分支的损失类型，我们也支持 FocalLoss 等。
-                use_sigmoid=False,  # 是否使用 sigmoid。
-                loss_weight=1.0),  # 分类分支的损失权重。
-            loss_bbox=dict(  # 回归分支的损失函数配置。
-                type='L1Loss',  # 损失类型，我们还支持许多 IoU Losses 和 Smooth L1-loss 等。
-                loss_weight=1.0)),  # 回归分支的损失权重。
-        mask_roi_extractor=dict(  # 用于 mask 生成的 RoI 特征提取器。
-            type='SingleRoIExtractor',  # RoI 特征提取器的类型，大多数方法使用 SingleRoIExtractor。
+            reg_class_agnostic=False,  # 回归是否与类别无关
+            loss_cls=dict(  # 分类分支的损失函数配
+                type='CrossEntropyLoss',  # 分类分支的损失类型，我们也支持 FocalLoss 等
+                use_sigmoid=False,  # 是否使用 sigmoid
+                loss_weight=1.0),  # 分类分支的损失权重
+            loss_bbox=dict(  # 回归分支的损失函数配置
+                type='L1Loss',  # 损失类型，我们还支持许多 IoU Losses 和 Smooth L1-loss 等
+                loss_weight=1.0)),  # 回归分支的损失权重
+        mask_roi_extractor=dict(  # 用于 mask 生成的 RoI 特征提取器
+            type='SingleRoIExtractor',  # RoI 特征提取器的类型，大多数方法使用 SingleRoIExtractor
             roi_layer=dict(  # 提取实例分割特征的 RoI 层配置
-                type='RoIAlign',  # RoI 层的类型，也支持 DeformRoIPoolingPack 和 ModulatedDeformRoIPoolingPack。
-                output_size=14,  # 特征图的输出大小。
-                sampling_ratio=0),  # 提取 RoI 特征时的采样率。
-            out_channels=256,  # 提取特征的输出通道。
-            featmap_strides=[4, 8, 16, 32]),  # 多尺度特征图的步幅。
+                type='RoIAlign',  # RoI 层的类型，也支持 DeformRoIPoolingPack 和 ModulatedDeformRoIPoolingPack
+                output_size=14,  # 特征图的输出大小
+                sampling_ratio=0),  # 提取 RoI 特征时的采样率
+            out_channels=256,  # 提取特征的输出通道
+            featmap_strides=[4, 8, 16, 32]),  # 多尺度特征图的步幅
         mask_head=dict(  # mask 预测 head 模型
-            type='FCNMaskHead',  # mask head 的类型，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/roi_heads/mask_heads/fcn_mask_head.py。
+            type='FCNMaskHead',  # mask head 的类型，更多细节请参考 https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.roi_heads.FCNMaskHead
             num_convs=4,  # mask head 中的卷积层数
-            in_channels=256,  # 输入通道，应与 mask roi extractor 的输出通道一致。
-            conv_out_channels=256,  # 卷积层的输出通道。
-            num_classes=80,  # 要分割的类别数。
-            loss_mask=dict(  # mask 分支的损失函数配置。
-                type='CrossEntropyLoss',  # 用于分割的损失类型。
-                use_mask=True,  # 是否只在正确的类中训练 mask。
-                loss_weight=1.0))),  # mask 分支的损失权重.
+            in_channels=256,  # 输入通道，应与 mask roi extractor 的输出通道一致
+            conv_out_channels=256,  # 卷积层的输出通道
+            num_classes=80,  # 要分割的类别数
+            loss_mask=dict(  # mask 分支的损失函数配置
+                type='CrossEntropyLoss',  # 用于分割的损失类型
+                use_mask=True,  # 是否只在正确的类中训练 mask
+                loss_weight=1.0))),  # mask 分支的损失权重
     train_cfg = dict(  # rpn 和 rcnn 训练超参数的配置
         rpn=dict(  # rpn 的训练配置
             assigner=dict(  # 分配器(assigner)的配置
-                type='MaxIoUAssigner',  # 分配器的类型，MaxIoUAssigner 用于许多常见的检测器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/task_modules/assigners/max_iou_assigner.py。
-                pos_iou_thr=0.7,  # IoU >= 0.7(阈值) 被视为正样本。
-                neg_iou_thr=0.3,  # IoU < 0.3(阈值) 被视为负样本。
-                min_pos_iou=0.3,  # 将框作为正样本的最小 IoU 阈值。
-                match_low_quality=True,  # 是否匹配低质量的框(更多细节见 API 文档).
-                ignore_iof_thr=-1),  # 忽略 bbox 的 IoF 阈值。
+                type='MaxIoUAssigner',  # 分配器的类型，MaxIoUAssigner 用于许多常见的检测器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/assigners/max_iou_assigner.py#L14
+                pos_iou_thr=0.7,  # IoU >= 0.7(阈值) 被视为正样本
+                neg_iou_thr=0.3,  # IoU < 0.3(阈值) 被视为负样本
+                min_pos_iou=0.3,  # 将框作为正样本的最小 IoU 阈值
+                match_low_quality=True,  # 是否匹配低质量的框(更多细节见 API 文档)
+                ignore_iof_thr=-1),  # 忽略 bbox 的 IoF 阈值
             sampler=dict(  # 正/负采样器(sampler)的配置
-                type='RandomSampler',  # 采样器类型，还支持 PseudoSampler 和其他采样器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/task_modules/samplers/random_sampler.py。
+                type='RandomSampler',  # 采样器类型，还支持 PseudoSampler 和其他采样器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/samplers/random_sampler.py#L14
                 num=256,  # 样本数量。
-                pos_fraction=0.5,  # 正样本占总样本的比例。
-                neg_pos_ub=-1,  # 基于正样本数量的负样本上限。
-                add_gt_as_proposals=False),  # 采样后是否添加 GT 作为 proposal。
-            allowed_border=-1,  # 填充有效锚点后允许的边框。
-            pos_weight=-1,  # 训练期间正样本的权重。
+                pos_fraction=0.5,  # 正样本占总样本的比例
+                neg_pos_ub=-1,  # 基于正样本数量的负样本上限
+                add_gt_as_proposals=False),  # 采样后是否添加 GT 作为 proposal
+            allowed_border=-1,  # 填充有效锚点后允许的边框
+            pos_weight=-1,  # 训练期间正样本的权重
             debug=False),  # 是否设置调试(debug)模式
         rpn_proposal=dict(  # 在训练期间生成 proposals 的配置
-            nms_across_levels=False,  # 是否对跨层的 box 做 NMS。仅适用于 `GARPNHead` ，naive rpn 不支持 nms cross levels。
+            nms_across_levels=False,  # 是否对跨层的 box 做 NMS。仅适用于 `GARPNHead` ，naive rpn 不支持 nms cross levels
             nms_pre=2000,  # NMS 前的 box 数
-            nms_post=1000,  # NMS 要保留的 box 的数量，只在 GARPNHHead 中起作用。
-            max_per_img=1000,  # NMS 后要保留的 box 数量。
+            nms_post=1000,  # NMS 要保留的 box 的数量，只在 GARPNHHead 中起作用
+            max_per_img=1000,  # NMS 后要保留的 box 数量
             nms=dict( # NMS 的配置
                 type='nms',  # NMS 的类别
                 iou_threshold=0.7 # NMS 的阈值
@@ -133,27 +133,27 @@ model = dict(
             min_bbox_size=0),  # 允许的最小 box 尺寸
         rcnn=dict(  # roi head 的配置。
             assigner=dict(  # 第二阶段分配器的配置，这与 rpn 中的不同
-                type='MaxIoUAssigner',  # 分配器的类型，MaxIoUAssigner 目前用于所有 roi_heads。更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/task_modules/assigners/max_iou_assigner.py。
-                pos_iou_thr=0.5,  # IoU >= 0.5(阈值)被认为是正样本。
-                neg_iou_thr=0.5,  # IoU < 0.5(阈值)被认为是负样本。
+                type='MaxIoUAssigner',  # 分配器的类型，MaxIoUAssigner 目前用于所有 roi_heads。更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/assigners/max_iou_assigner.py#L14
+                pos_iou_thr=0.5,  # IoU >= 0.5(阈值)被认为是正样本
+                neg_iou_thr=0.5,  # IoU < 0.5(阈值)被认为是负样本
                 min_pos_iou=0.5,  # 将 box 作为正样本的最小 IoU 阈值
-                match_low_quality=False,  # 是否匹配低质量下的 box(有关更多详细信息，请参阅 API 文档)。
+                match_low_quality=False,  # 是否匹配低质量下的 box(有关更多详细信息，请参阅 API 文档)
                 ignore_iof_thr=-1),  # 忽略 bbox 的 IoF 阈值
             sampler=dict(
-                type='RandomSampler',  # 采样器的类型，还支持 PseudoSampler 和其他采样器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/task_modules/samplers/random_sampler.py。
+                type='RandomSampler',  # 采样器的类型，还支持 PseudoSampler 和其他采样器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/samplers/random_sampler.py#L14
                 num=512,  # 样本数量
-                pos_fraction=0.25,  # 正样本占总样本的比例。
-                neg_pos_ub=-1,  # 基于正样本数量的负样本上限。
+                pos_fraction=0.25,  # 正样本占总样本的比例
+                neg_pos_ub=-1,  # 基于正样本数量的负样本上限
                 add_gt_as_proposals=True
-            ),  # 采样后是否添加 GT 作为 proposal。
+            ),  # 采样后是否添加 GT 作为 proposal
             mask_size=28,  # mask 的大小
-            pos_weight=-1,  # 训练期间正样本的权重。
-            debug=False)),  # 是否设置调试模式。
+            pos_weight=-1,  # 训练期间正样本的权重
+            debug=False)),  # 是否设置调试模式
     test_cfg = dict(  # 用于测试 rpn 和 rcnn 超参数的配置
         rpn=dict(  # 测试阶段生成 proposals 的配置
-            nms_across_levels=False,  # 是否对跨层的 box 做 NMS。仅适用于 `GARPNHead`，naive rpn 不支持做 NMS cross levels。
+            nms_across_levels=False,  # 是否对跨层的 box 做 NMS。仅适用于 `GARPNHead`，naive rpn 不支持做 NMS cross levels
             nms_pre=1000,  # NMS 前的 box 数
-            nms_post=1000,  # NMS 要保留的 box 的数量，只在 `GARPNHHead` 中起作用。
+            nms_post=1000,  # NMS 要保留的 box 的数量，只在 `GARPNHHead` 中起作用
             max_per_img=1000,  # NMS 后要保留的 box 数量
             nms=dict( # NMS 的配置
                 type='nms',  # NMS 的类型
@@ -171,7 +171,7 @@ model = dict(
 
 ### 数据集和评测器配置
 
-在使用[执行器](https://mmengine.readthedocs.io/en/latest/tutorials/runner.html) 进行训练、测试、验证时，我们需要配置 [Dataloader](https://pytorch.org/docs/stable/data.html?highlight=data%20loader#torch.utils.data.DataLoader)。构建数据 dataloader 需要设置数据集（dataset）和数据处理流程（data pipeline）。 由于这部分的配置较为复杂，我们使用中间变量来简化 dataloader 配置的编写。
+在使用[执行器](https://mmengine.readthedocs.io/zh_CN/latest/tutorials/runner.html) 进行训练、测试、验证时，我们需要配置 [Dataloader](https://mmengine.readthedocs.io/zh_CN/latest/tutorials/dataset.html)。构建数据 dataloader 需要设置数据集（dataset）和数据处理流程（data pipeline）。 由于这部分的配置较为复杂，我们使用中间变量来简化 dataloader 配置的编写。
 
 ```python
 dataset_type = 'CocoDataset'  # 数据集类型，这将被用来定义数据集。
@@ -208,7 +208,7 @@ train_dataloader = dict(  # 训练 dataloader 配置
     num_workers=2,  # 单个 GPU 分配的数据加载线程数
     persistent_workers=True,  # 如果设置为 True，dataloader 在迭代完一轮之后不会关闭数据读取的子进程，可以加速训练
     sampler=dict(  # 训练数据的采样器
-        type='DefaultSampler',  # 默认的采样器，同时支持分布式和非分布式训练。请参考 https://github.com/open-mmlab/mmengine/blob/main/mmengine/dataset/sampler.py
+        type='DefaultSampler',  # 默认的采样器，同时支持分布式和非分布式训练。请参考 https://mmengine.readthedocs.io/zh_CN/latest/api/generated/mmengine.dataset.DefaultSampler.html#mmengine.dataset.DefaultSampler
         shuffle=True),  # 随机打乱每个轮次训练数据的顺序
     batch_sampler=dict(type='AspectRatioBatchSampler'),  # 批数据采样器，用于确保每一批次内的数据拥有相似的长宽比，可用于节省显存
     dataset=dict(  # 训练数据集的配置
@@ -236,7 +236,7 @@ val_dataloader = dict(  # 验证 dataloader 配置
 test_dataloader = val_dataloader  # 测试 dataloader 配置
 ```
 
-[评测器](https://mmengine.readthedocs.io/en/latest/tutorials/metric_and_evaluator.html) 用于计算训练模型在验证和测试数据集上的指标。评测器的配置由一个或一组评价指标（Metric）配置组成：
+[评测器](https://mmengine.readthedocs.io/zh_CN/latest/tutorials/evaluation.html) 用于计算训练模型在验证和测试数据集上的指标。评测器的配置由一个或一组评价指标（Metric）配置组成：
 
 ```python
 val_evaluator = dict(  # 验证过程使用的评测器
@@ -289,7 +289,7 @@ test_cfg = dict(type='TestLoop')  # 测试循环的类型
 
 ### 优化相关配置
 
-`optim_wrapper` 是配置优化相关设置的字段。优化器封装（OptimWrapper）不仅提供了优化器的功能，还支持梯度裁剪、混合精度训练等功能。更多内容请看[优化器封装教程](https://mmengine.readthedocs.io/en/latest/tutorials/optimizer.html).
+`optim_wrapper` 是配置优化相关设置的字段。优化器封装（OptimWrapper）不仅提供了优化器的功能，还支持梯度裁剪、混合精度训练等功能。更多内容请看[优化器封装教程](https://mmengine.readthedocs.io/zh_CN/latest/tutorials/optim_wrapper.html) 。
 
 ```python
 optim_wrapper = dict(  # 优化器封装的配置
@@ -303,7 +303,7 @@ optim_wrapper = dict(  # 优化器封装的配置
     )
 ```
 
-`param_scheduler` 字段用于配置参数调度器（Parameter Scheduler）来调整优化器的超参数（例如学习率和动量）。 用户可以组合多个调度器来创建所需的参数调整策略。 在[参数调度器教程](https://mmengine.readthedocs.io/en/latest/tutorials/param_scheduler.html) 和[参数调度器 API 文档](TODO) 中查找更多信息
+`param_scheduler` 字段用于配置参数调度器（Parameter Scheduler）来调整优化器的超参数（例如学习率和动量）。 用户可以组合多个调度器来创建所需的参数调整策略。 在 [参数调度器教程](https://mmengine.readthedocs.io/zh_CN/latest/tutorials/param_scheduler.html) 和 [参数调度器 API 文档](https://mmengine.readthedocs.io/zh_CN/latest/api/generated/mmengine.optim._ParamScheduler.html#mmengine.optim._ParamScheduler) 中查找更多信息。
 
 ```python
 param_scheduler = [
@@ -327,7 +327,7 @@ param_scheduler = [
 
 用户可以在训练、验证和测试循环上添加钩子，以便在运行期间插入一些操作。配置中有两种不同的钩子字段，一种是 `default_hooks`，另一种是 `custom_hooks`。
 
-`default_hooks` 是一个字典，用于配置运行时必须使用的钩子。这些钩子具有默认优先级，如果未设置，runner 将使用默认值。如果要禁用默认钩子，用户可以将其配置设置为 `None`。
+`default_hooks` 是一个字典，用于配置运行时必须使用的钩子。这些钩子具有默认优先级，如果未设置，runner 将使用默认值。如果要禁用默认钩子，用户可以将其配置设置为 `None`。更多内容请看 [钩子教程](https://mmengine.readthedocs.io/zh_CN/latest/tutorials/hook.html) 。
 
 ```python
 default_hooks = dict(
@@ -348,7 +348,7 @@ custom_hooks = []
 ### 运行相关配置
 
 ```python
-default_scope = 'mmdet'  # 默认的注册器域名，默认从此注册器域中寻找模块。请参考 https://mmengine.readthedocs.io/en/latest/tutorials/registry.html
+default_scope = 'mmdet'  # 默认的注册器域名，默认从此注册器域中寻找模块。请参考 https://mmengine.readthedocs.io/zh_CN/latest/advanced_tutorials/registry.html
 
 env_cfg = dict(
     cudnn_benchmark=False,  # 是否启用 cudnn benchmark
@@ -358,7 +358,7 @@ env_cfg = dict(
     dist_cfg=dict(backend='nccl'),  # 分布式相关设置
 )
 
-vis_backends = [dict(type='LocalVisBackend')]  # 可视化后端，请参考 TODO: visualization documents
+vis_backends = [dict(type='LocalVisBackend')]  # 可视化后端，请参考 https://mmengine.readthedocs.io/zh_CN/latest/advanced_tutorials/visualization.html
 visualizer = dict(
     type='DetLocalVisualizer', vis_backends=vis_backends, name='visualizer')
 log_processor = dict(
@@ -419,7 +419,7 @@ log_processor = dict(by_epoch=False)
 
 如果你在构建一个与任何现有方法不共享结构的全新方法，那么可以在 `configs` 文件夹下创建一个新的例如 `xxx_rcnn` 文件夹。
 
-更多细节请参考 [MMEngine 配置文件教程](https://mmengine.readthedocs.io/en/latest/tutorials/config.html)。
+更多细节请参考 [MMEngine 配置文件教程](https://mmengine.readthedocs.io/zh_CN/latest/advanced_tutorials/config.html) 。
 
 通过设置 `_base_` 字段，我们可以设置当前配置文件继承自哪些文件。
 
@@ -443,7 +443,7 @@ _base_ = [
 
 ### 忽略基础配置文件里的部分内容
 
-有时，您也许会设置 `_delete_=True` 去忽略基础配置文件里的一些域内容。 您也许可以参照 [MMEngine 配置文件教程](https://mmengine.readthedocs.io/en/latest/tutorials/config.html) 来获得一些简单的指导。
+有时，您也许会设置 `_delete_=True` 去忽略基础配置文件里的一些域内容。 您也许可以参照 [MMEngine 配置文件教程](https://mmengine.readthedocs.io/zh_CN/latest/advanced_tutorials/config.html) 来获得一些简单的指导。
 
 在 MMDetection 里，例如为了改变  Mask R-CNN 的主干网络的某些内容：
 

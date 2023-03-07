@@ -1,12 +1,12 @@
 # 使用已有模型在标准数据集上进行推理
 
-MMDetection 提供了许多预训练好的检测模型，可以在 [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html) 查看具体有哪些模型.
+MMDetection 提供了许多预训练好的检测模型，可以在 [Model Zoo](https://mmdetection.readthedocs.io/zh_CN/latest/model_zoo.html) 查看具体有哪些模型。
 
 推理具体指使用训练好的模型来检测图像上的目标，本文将会展示具体步骤。
 
-在 MMDetection 中，一个模型被定义为一个[配置文件](config.md)和对应被存储在 checkpoint 文件内的模型参数的集合。
+在 MMDetection 中，一个模型被定义为一个[配置文件](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/config.html) 和对应被存储在 checkpoint 文件内的模型参数的集合。
 
-首先，我们建议从 [Faster RCNN](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn) 开始，其 [配置](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py) 文件和 [checkpoint](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth) 文件在此。
+首先，我们建议从 [RTMDet](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet) 开始，其 [配置](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/rtmdet/rtmdet_l_8xb32-300e_coco.py) 文件和 [checkpoint](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_l_8xb32-300e_coco/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth) 文件在此。
 我们建议将 checkpoint 文件下载到 `checkpoints` 文件夹内。
 
 ## 推理的高层编程接口
@@ -23,8 +23,8 @@ from mmdet.apis import init_detector, inference_detector
 
 
 # 指定模型的配置文件和 checkpoint 文件路径
-config_file = 'configs/faster_rcnn/faster-rcnn_r50-fpn_1x_coco.py'
-checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
+config_file = 'configs/rtmdet/rtmdet_l_8xb32-300e_coco.py'
+checkpoint_file = 'checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth'
 
 # 根据配置文件和 checkpoint 文件构建模型
 model = init_detector(config_file, checkpoint_file, device='cuda:0')
@@ -89,7 +89,7 @@ Jupyter notebook 上的演示样例在 [demo/inference_demo.ipynb](https://githu
 
 ## 演示样例
 
-我们还提供了三个演示脚本，它们是使用高层编程接口实现的。 [源码在此](https://github.com/open-mmlab/mmdetection/blob/3.x/demo) 。
+我们还提供了三个演示脚本，它们是使用高层编程接口实现的。[源码在此](https://github.com/open-mmlab/mmdetection/blob/3.x/demo) 。
 
 ### 图片样例
 
@@ -108,8 +108,8 @@ python demo/image_demo.py \
 
 ```shell
 python demo/image_demo.py demo/demo.jpg \
-    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
-    --weights checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
+    --weights checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
     --device cpu
 ```
 
@@ -130,8 +130,8 @@ python demo/webcam_demo.py \
 
 ```shell
 python demo/webcam_demo.py \
-    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
+    configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
+    checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth
 ```
 
 ### 视频样例
@@ -154,8 +154,8 @@ python demo/video_demo.py \
 
 ```shell
 python demo/video_demo.py demo/demo.mp4 \
-    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
+    checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
     --out result.mp4
 ```
 
@@ -181,7 +181,7 @@ python demo/video_gpuaccel_demo.py \
 
 ```shell
 python demo/video_gpuaccel_demo.py demo/demo.mp4 \
-    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
+    checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
     --nvdecode --out result.mp4
 ```
