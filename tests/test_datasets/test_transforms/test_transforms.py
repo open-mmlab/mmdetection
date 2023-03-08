@@ -618,7 +618,7 @@ class TestRandomCrop(unittest.TestCase):
         self.assertTrue(12 <= h <= 24)
 
         # test with gt_bboxes, gt_bboxes_labels, gt_ignore_flags,
-        # gt_masks, gt_seg_map
+        # gt_masks, gt_seg_map, gt_instances_ids
         img = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
         gt_bboxes = np.array([[0, 0, 7, 7], [2, 3, 9, 9]], dtype=np.float32)
         gt_bboxes_labels = np.array([0, 1], dtype=np.int64)
@@ -628,13 +628,15 @@ class TestRandomCrop(unittest.TestCase):
         gt_masks_[1, 2:7, 3:8] = 1
         gt_masks = BitmapMasks(gt_masks_.copy(), height=10, width=10)
         gt_seg_map = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
+        gt_instances_ids = np.array([0, 1], dtype=np.int64)
         src_results = {
             'img': img,
             'gt_bboxes': gt_bboxes,
             'gt_bboxes_labels': gt_bboxes_labels,
             'gt_ignore_flags': gt_ignore_flags,
             'gt_masks': gt_masks,
-            'gt_seg_map': gt_seg_map
+            'gt_seg_map': gt_seg_map,
+            'gt_instances_ids': gt_instances_ids
         }
         transform = RandomCrop(
             crop_size=(7, 5),
@@ -649,6 +651,7 @@ class TestRandomCrop(unittest.TestCase):
         self.assertEqual(results['gt_bboxes_labels'].shape[0], 2)
         self.assertEqual(results['gt_ignore_flags'].shape[0], 2)
         self.assertTupleEqual(results['gt_seg_map'].shape[:2], (5, 7))
+        self.assertEqual(results['gt_instances_ids'].shape[0], 2)
 
         # test geometric transformation with homography matrix
         bboxes = copy.deepcopy(src_results['gt_bboxes'])
@@ -713,13 +716,15 @@ class TestRandomCrop(unittest.TestCase):
         gt_masks_[1, 2:7, 3:8] = 1
         gt_masks = BitmapMasks(gt_masks_.copy(), height=10, width=10)
         gt_seg_map = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
+        gt_instances_ids = np.array([0, 1], dtype=np.int64)
         src_results = {
             'img': img,
             'gt_bboxes': HorizontalBoxes(gt_bboxes),
             'gt_bboxes_labels': gt_bboxes_labels,
             'gt_ignore_flags': gt_ignore_flags,
             'gt_masks': gt_masks,
-            'gt_seg_map': gt_seg_map
+            'gt_seg_map': gt_seg_map,
+            'gt_instances_ids': gt_instances_ids
         }
         transform = RandomCrop(
             crop_size=(7, 5),
@@ -734,6 +739,7 @@ class TestRandomCrop(unittest.TestCase):
         self.assertEqual(results['gt_bboxes_labels'].shape[0], 2)
         self.assertEqual(results['gt_ignore_flags'].shape[0], 2)
         self.assertTupleEqual(results['gt_seg_map'].shape[:2], (5, 7))
+        self.assertEqual(results['gt_instances_ids'].shape[0], 2)
 
         # test geometric transformation with homography matrix
         bboxes = copy.deepcopy(src_results['gt_bboxes'].numpy())

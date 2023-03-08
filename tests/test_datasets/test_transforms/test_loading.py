@@ -504,7 +504,7 @@ class TestLoadTrackAnnotations(unittest.TestCase):
             with_keypoints=False,
         )
         results = transform(copy.deepcopy(self.results))
-        assert 'gt_instances_id' in results
+        assert 'gt_instances_ids' in results
         assert (results['gt_instances_ids'] == np.array([100, 102])).all()
         assert results['gt_instances_ids'].dtype == np.int32
 
