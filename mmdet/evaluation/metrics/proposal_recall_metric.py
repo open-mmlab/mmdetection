@@ -3,9 +3,8 @@ import copy
 import warnings
 from typing import Optional, Sequence, Union
 
-from mmengine.logging import print_log
+from mmengine.logging import MMLogger
 from mmeval.metrics import ProposalRecall
-from terminaltables import AsciiTable
 
 from mmdet.registry import METRICS
 
@@ -57,12 +56,15 @@ class ProposalRecallMetric(ProposalRecall):
                 '`ProposalRecallMetric` is deprecated, '
                 'use `dist_backend` instead.')
 
+        logger = MMLogger.get_current_instance()
+
         super().__init__(
             iou_thrs=iou_thrs,
             proposal_nums=proposal_nums,
             use_legacy_coordinate=use_legacy_coordinate,
             nproc=nproc,
             dist_backend=dist_backend,
+            logger=logger,
             **kwargs)
 
         self.prefix = prefix or self.default_prefix
@@ -101,20 +103,6 @@ class ProposalRecallMetric(ProposalRecall):
         """
         metric_results = self.compute(*args, **kwargs)
         self.reset()
-
-        tabel_title = ' Recall Results (%)'
-        result = metric_results.pop('proposal_result')
-        headers = [''] + [
-            f'AR_{iou_thr * 100:.0f}' for iou_thr in self.iou_thrs
-        ] + ['AR']
-        table_data = [headers]
-        for i in range(len(self.proposal_nums)):
-            row = [f'{self.proposal_nums[i]}'] + \
-                  [f'{round(100 * val, 2)}' for val in result[i].tolist()]
-            table_data.append(row)
-
-        table = AsciiTable(table_data, title=tabel_title)
-        print_log('\n' + table.table, logger='current')
 
         evaluate_results = {
             f'{self.prefix}/{k}(%)': round(float(v) * 100, 4)

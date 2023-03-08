@@ -1,12 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import itertools
 import warnings
 from typing import List, Optional, Sequence, Union
 
 import numpy as np
-from mmengine.logging import MMLogger, print_log
+from mmengine.logging import MMLogger
 from mmeval import COCODetection
-from terminaltables import AsciiTable
 from torch import Tensor
 
 from mmdet.registry import METRICS
@@ -188,63 +186,6 @@ class CocoMetric(COCODetection):
         if self.format_only:
             return metric_results
 
-        for metric in self.metrics:
-            result = metric_results.pop(f'{metric}_result', None)
-            if result is None:
-                break
-
-            if metric == 'proposal':
-                table_title = '  Recall Results (%)'
-                if self.metric_items is None:
-                    assert len(result) == 6
-                    headers = [
-                        f'AR@{self.proposal_nums[0]}',
-                        f'AR@{self.proposal_nums[1]}',
-                        f'AR@{self.proposal_nums[2]}',
-                        f'AR_s@{self.proposal_nums[2]}',
-                        f'AR_m@{self.proposal_nums[2]}',
-                        f'AR_l@{self.proposal_nums[2]}'
-                    ]
-                else:
-                    assert len(result) == len(self.metric_items)
-                    headers = self.metric_items
-            else:
-                table_title = f' {metric} Results (%)'
-                if self.metric_items is None:
-                    assert len(result) == 6
-                    headers = [
-                        f'{metric}_mAP', f'{metric}_mAP_50',
-                        f'{metric}_mAP_75', f'{metric}_mAP_s',
-                        f'{metric}_mAP_m', f'{metric}_mAP_l'
-                    ]
-                else:
-                    assert len(result) == len(self.metric_items)
-                    headers = [
-                        f'{metric}_{item}' for item in self.metric_items
-                    ]
-            table_data = [headers, result]
-            table = AsciiTable(table_data, title=table_title)
-            print_log('\n' + table.table, logger='current')
-
-            if self.classwise and \
-                    f'{metric}_classwise_result' in metric_results:
-                print_log(
-                    f'Evaluating {metric} metric of each category...',
-                    logger='current')
-                classwise_table_title = f' {metric} Classwise Results (%)'
-                classwise_result = metric_results.pop(
-                    f'{metric}_classwise_result')
-
-                num_columns = min(6, len(classwise_result) * 2)
-                results_flatten = list(itertools.chain(*classwise_result))
-                headers = ['category', f'{metric}_AP'] * (num_columns // 2)
-                results_2d = itertools.zip_longest(*[
-                    results_flatten[i::num_columns] for i in range(num_columns)
-                ])
-                table_data = [headers]
-                table_data += [result for result in results_2d]
-                table = AsciiTable(table_data, title=classwise_table_title)
-                print_log('\n' + table.table, logger='current')
         evaluate_results = {
             f'{self.prefix}/{k}(%)': round(float(v) * 100, 4)
             for k, v in metric_results.items()
