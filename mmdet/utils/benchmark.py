@@ -160,7 +160,6 @@ class InferenceBenchmark(BaseBenchmark):
         print_log('before build: ', self.logger)
         print_process_memory(self._process, self.logger)
 
-        self.cfg.model.pretrained = None
         self.model = self._init_model(checkpoint, is_fuse_conv_bn)
 
         # Because multiple processes will occupy additional CPU resources,
@@ -213,7 +212,7 @@ class InferenceBenchmark(BaseBenchmark):
             start_time = time.perf_counter()
 
             with torch.no_grad():
-                self.model(data, return_loss=False)
+                self.model.test_step(data)
 
             torch.cuda.synchronize()
             elapsed = time.perf_counter() - start_time

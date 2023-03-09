@@ -41,6 +41,20 @@ English | [简体中文](README_zh-CN.md)
 
 </div>
 
+<div align="center">
+  <a href="https://openmmlab.medium.com/" style="text-decoration:none;">
+    <img src="https://user-images.githubusercontent.com/25839884/218352562-cdded397-b0f3-4ca1-b8dd-a60df8dca75b.png" width="3%" alt="" /></a>
+  <img src="https://user-images.githubusercontent.com/25839884/218346358-56cc8e2f-a2b8-487f-9088-32480cceabcf.png" width="3%" alt="" />
+  <a href="https://discord.gg/raweFPmdzG" style="text-decoration:none;">
+    <img src="https://user-images.githubusercontent.com/25839884/218347213-c080267f-cbb6-443e-8532-8e1ed9a58ea9.png" width="3%" alt="" /></a>
+  <img src="https://user-images.githubusercontent.com/25839884/218346358-56cc8e2f-a2b8-487f-9088-32480cceabcf.png" width="3%" alt="" />
+  <a href="https://twitter.com/OpenMMLab" style="text-decoration:none;">
+    <img src="https://user-images.githubusercontent.com/25839884/218346637-d30c8a0f-3eba-4699-8131-512fb06d46db.png" width="3%" alt="" /></a>
+  <img src="https://user-images.githubusercontent.com/25839884/218346358-56cc8e2f-a2b8-487f-9088-32480cceabcf.png" width="3%" alt="" />
+  <a href="https://www.youtube.com/openmmlab" style="text-decoration:none;">
+    <img src="https://user-images.githubusercontent.com/25839884/218346691-ceb2116a-465a-40af-8424-9f30d2348ca9.png" width="3%" alt="" /></a>
+</div>
+
 ## Introduction
 
 MMDetection is an open source object detection toolbox based on PyTorch. It is
@@ -94,10 +108,14 @@ We are excited to announce our latest work on real-time object recognition tasks
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
 
-**v3.0.0rc5** was released in 26/12/2022:
+**v3.0.0rc6** was released in 24/2/2023:
 
-- Support [RTMDet](https://arxiv.org/abs/2212.07784) instance segmentation models. The technical report of RTMDet is on [arxiv](https://arxiv.org/abs/2212.07784)
-- Support SSHContextModule in paper [SSH: Single Stage Headless Face Detector](https://arxiv.org/abs/1708.03979)
+- Support [Boxinst](configs/boxinst), [Objects365 Dataset](configs/objects365), and [Separated and Occluded COCO metric](docs/en/user_guides/useful_tools.md#coco-separated--occluded-mask-metric)
+- Support [ConvNeXt-V2](projects/ConvNeXt-V2), [DiffusionDet](projects/DiffusionDet), and inference of [EfficientDet](projects/EfficientDet) and [Detic](projects/Detic) in `Projects`
+- Refactor [DETR](configs/detr) series and support [Conditional-DETR](configs/conditional_detr), [DAB-DETR](configs/dab_detr), and [DINO](configs/dino)
+- Support `DetInferencer` for inference, Test Time Augmentation, and automatically importing modules from registry
+- Support RTMDet-Ins ONNXRuntime and TensorRT [deployment](configs/rtmdet/README.md#deployment-tutorial)
+- Support [calculating FLOPs of detectors](docs/en/user_guides/useful_tools.md#Model-Complexity)
 
 ## Installation
 
@@ -206,6 +224,12 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
             <li><a href="configs/ddod">DDOD (ACM MM'2021)</a></li>
             <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
+            <li><a href="configs/conditional_detr">Conditional DETR (ICCV'2021)</a></li>
+            <li><a href="configs/dab_detr">DAB-DETR (ICLR'2022)</a></li>
+            <li><a href="configs/dino">DINO (ICLR'2023)</a></li>
+            <li><a href="projects/DiffusionDet">DiffusionDet (ArXiv'2023)</a></li>
+            <li><a href="projects/EfficientDet">EfficientDet (CVPR'2020)</a></li>
+            <li><a href="projects/Detic">Detic (ECCV'2022)</a></li>
       </ul>
       </td>
       <td>
@@ -223,9 +247,10 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/scnet">SCNet (AAAI'2021)</a></li>
           <li><a href="configs/queryinst">QueryInst (ICCV'2021)</a></li>
           <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
-          <li><a href="configs/condinst">CondInst (ECCV 2020)</a></li>
-          <li><a href="projects/SparseInst">SparseInst (CVPR 2022)</a></li>
+          <li><a href="configs/condinst">CondInst (ECCV'2020)</a></li>
+          <li><a href="projects/SparseInst">SparseInst (CVPR'2022)</a></li>
           <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
+          <li><a href="configs/boxinst">BoxInst (CVPR'2021)</a></li>
         </ul>
       </td>
       <td>
@@ -305,6 +330,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <li><a href="configs/resnet_strikes_back">ResNet strikes back (ArXiv'2021)</a></li>
         <li><a href="configs/efficientnet">EfficientNet (ArXiv'2021)</a></li>
         <li><a href="configs/convnext">ConvNeXt (CVPR'2022)</a></li>
+        <li><a href="projects/ConvNeXt-V2">ConvNeXtv2 (ArXiv'2023)</a></li>
       </ul>
       </td>
       <td>

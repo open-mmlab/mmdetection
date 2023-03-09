@@ -1,5 +1,88 @@
 # Changelog of v3.x
 
+## v3.0.0rc6 (24/2/2023)
+
+### Highlights
+
+- Support [Boxinst](../../../configs/boxinst), [Objects365 Dataset](../../../configs/objects365), and [Separated and Occluded COCO metric](../user_guides/useful_tools.md#COCO-Separated-&-Occluded-Mask-Metric)
+- Support [ConvNeXt-V2](../../../projects/ConvNeXt-V2), [DiffusionDet](../../../projects/DiffusionDet), and inference of [EfficientDet](../../../projects/EfficientDet) and [Detic](../../../projects/Detic) in `Projects`
+- Refactor [DETR](../../../configs/detr) series and support [Conditional-DETR](../../../configs/conditional_detr), [DAB-DETR](../../../configs/dab_detr), and [DINO](../../../configs/detr)
+- Support `DetInferencer` for inference, Test Time Augmentation, and automatically importing modules from registry
+- Support RTMDet-Ins ONNXRuntime and TensorRT [deployment](../../../configs/rtmdet/README.md#deployment-tutorial)
+- Support [calculating FLOPs of detectors](../user_guides/useful_tools.md#Model-Complexity)
+
+### New Features
+
+- Support [Boxinst](https://arxiv.org/abs/2012.02310) (#9525)
+- Support [Objects365 Dataset](https://openaccess.thecvf.com/content_ICCV_2019/papers/Shao_Objects365_A_Large-Scale_High-Quality_Dataset_for_Object_Detection_ICCV_2019_paper.pdf) (#9600)
+- Support [ConvNeXt-V2](http://arxiv.org/abs/2301.00808) in `Projects` (#9619)
+- Support [DiffusionDet](https://arxiv.org/abs/2211.09788) in `Projects` (#9639, #9768)
+- Support [Detic](http://arxiv.org/abs/2201.02605) inference in `Projects` (#9645)
+- Support [EfficientDet](https://arxiv.org/abs/1911.09070) inference in `Projects` (#9645)
+- Support [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046) (#9710)
+- Support auto import modules from registry (#9143)
+- Refactor DETR series and support Conditional-DETR, DAB-DETR and DINO (#9646)
+- Support `DetInferencer` for inference (#9561)
+- Support Test Time Augmentation (#9452)
+- Support calculating FLOPs of detectors (#9777)
+
+### Bug Fixes
+
+- Fix deprecating old type alias due to new version of numpy (#9625, #9537)
+- Fix VOC metrics (#9784)
+- Fix the wrong link of RTMDet-x log (#9549)
+- Fix RTMDet link in README (#9575)
+- Fix MMDet get flops error (#9589)
+- Fix `use_depthwise` in RTMDet (#9624)
+- Fix `albumentations` augmentation post process with masks (#9551)
+- Fix DETR series Unit Test (#9647)
+- Fix `LoadPanopticAnnotations` bug (#9703)
+- Fix `isort` CI (#9680)
+- Fix amp pooling overflow (#9670)
+- Fix docstring about noise in DINO (#9747)
+- Fix potential bug in `MultiImageMixDataset` (#9764)
+
+### Improvements
+
+- Replace NumPy transpose with PyTorch permute to speed-up (#9762)
+- Deprecate `sklearn` (#9725)
+- Add RTMDet-Ins deployment guide (#9823)
+- Update RTMDet config and README (#9603)
+- Replace the models used in the tutorial document with RTMDet (#9843)
+- Adjust the minimum supported python version to 3.7 (#9602)
+- Support modifying palette through configuration (#9445)
+- Update README document in `Project` (#9599)
+- Replace `github` with `gitee` in `.pre-commit-config-zh-cn.yaml` file (#9586)
+- Use official `isort` in `.pre-commit-config.yaml` file (#9701)
+- Change MMCV minimum version to `2.0.0rc4` for `dev-3.x` (#9695)
+- Add Chinese version of single_stage_as_rpn.md and test_results_submission.md (#9434)
+- Add OpenDataLab download link (#9605, #9738)
+- Add type hints of several layers (#9346)
+- Add typehint for `DarknetBottleneck` (#9591)
+- Add dockerfile (#9659)
+- Add twitter, discord, medium, and youtube link (#9775)
+- Prepare for merging refactor-detr (#9656)
+- Add metafile to ConditionalDETR, DABDETR and DINO (#9715)
+- Support to modify `non_blocking` parameters (#9723)
+- Comment repeater visualizer register (#9740)
+- Update user guide: `finetune.md` and `inference.md` (#9578)
+
+### New Contributors
+
+- @NoFish-528 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9346>
+- @137208 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9434>
+- @lyviva made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9625>
+- @zwhus made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9589>
+- @zylo117 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9670>
+- @chg0901 made their first contribution in <https://github.com/open-mmlab/mmdetection/pull/9740>
+- @DanShouzhu made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9578
+
+### Contributors
+
+A total of 27 developers contributed to this release.
+
+Thanks @JosonChan1998, @RangeKing, @NoFish-528, @likyoo, @Xiangxu-0103, @137208, @PeterH0323, @tianleiSHI, @wufan-tb, @lyviva, @zwhus, @jshilong, @Li-Qingyun, @sanbuphy, @zylo117, @triple-Mu, @KeiChiTse, @LYMDLUT, @nijkah, @chg0901, @DanShouzhu, @zytx121, @vansin, @BIGWangYuDong, @hhaAndroid, @RangiLyu, @ZwwWayne
+
 ## v3.0.0rc5 (26/12/2022)
 
 ### Highlights
@@ -25,6 +108,7 @@
 - Fix demo API in instance segmentation tutorial (#9226)
 - Fix `analyze_results` (#9380)
 - Fix the error that Readthedocs API cannot be displayed (#9510)
+- Fix the error when there are no prediction results and support visualize the groundtruth of TTA (#9840)
 
 ### Improvements
 

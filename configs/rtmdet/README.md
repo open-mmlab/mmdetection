@@ -1,5 +1,7 @@
 # RTMDet: An Empirical Study of Designing Real-Time Object Detectors
 
+> [RTMDet: An Empirical Study of Designing Real-Time Object Detectors](https://arxiv.org/abs/2212.07784)
+
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/real-time-instance-segmentation-on-mscoco)](https://paperswithcode.com/sota/real-time-instance-segmentation-on-mscoco?p=rtmdet-an-empirical-study-of-designing-real)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/object-detection-in-aerial-images-on-dota-1)](https://paperswithcode.com/sota/object-detection-in-aerial-images-on-dota-1?p=rtmdet-an-empirical-study-of-designing-real)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/object-detection-in-aerial-images-on-hrsc2016)](https://paperswithcode.com/sota/object-detection-in-aerial-images-on-hrsc2016?p=rtmdet-an-empirical-study-of-designing-real)
@@ -18,18 +20,19 @@ In this paper, we aim to design an efficient real-time object detector that exce
 
 ### Object Detection
 
-|    Model    | size | box AP | Params(M) | FLOPS(G) | TRT-FP16-Latency(ms) |                   Config                   |                                                                                                                                                Download                                                                                                                                                |
-| :---------: | :--: | :----: | :-------: | :------: | :------------------: | :----------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| RTMDet-tiny | 640  |  41.1  |    4.8    |   8.1    |         0.98         | [config](./rtmdet_tiny_8xb32-300e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_tiny_8xb32-300e_coco/rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_tiny_8xb32-300e_coco/rtmdet_tiny_8xb32-300e_coco_20220902_112414.log.json) |
-|  RTMDet-s   | 640  |  44.6  |   8.89    |   14.8   |         1.22         |  [config](./rtmdet_s_8xb32-300e_coco.py)   |       [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_s_8xb32-300e_coco/rtmdet_s_8xb32-300e_coco_20220905_161602-387a891e.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_s_8xb32-300e_coco/rtmdet_s_8xb32-300e_coco_20220905_161602.log.json)       |
-|  RTMDet-m   | 640  |  49.4  |   24.71   |  39.27   |         1.62         |  [config](./rtmdet_m_8xb32-300e_coco.py)   |       [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_m_8xb32-300e_coco/rtmdet_m_8xb32-300e_coco_20220719_112220-229f527c.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_m_8xb32-300e_coco/rtmdet_m_8xb32-300e_coco_20220719_112220.log.json)       |
-|  RTMDet-l   | 640  |  51.5  |   52.3    |  80.23   |         2.44         |  [config](./rtmdet_l_8xb32-300e_coco.py)   |       [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_l_8xb32-300e_coco/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_l_8xb32-300e_coco/rtmdet_l_8xb32-300e_coco_20220719_112030.log.json)       |
-|  RTMDet-x   | 640  |  52.8  |   94.86   |  141.67  |         3.10         |  [config](./rtmdet_x_8xb32-300e_coco.py)   |       [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_x_8xb32-300e_coco/rtmdet_x_8xb32-300e_coco_20220715_230555-cc79b9ae.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_x_8xb32-300e_coco/rtmdet_x_8xb32-300e_coco_20220715_230555.log.json)       |
+|    Model    | size | box AP | Params(M) | FLOPS(G) | TRT-FP16-Latency(ms)<br>RTX3090 | TRT-FP16-Latency(ms)<br>T4 |                   Config                   |                                                                                                                                                Download                                                                                                                                                |
+| :---------: | :--: | :----: | :-------: | :------: | :-----------------------------: | :------------------------: | :----------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| RTMDet-tiny | 640  |  41.1  |    4.8    |   8.1    |              0.98               |            2.34            | [config](./rtmdet_tiny_8xb32-300e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_tiny_8xb32-300e_coco/rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_tiny_8xb32-300e_coco/rtmdet_tiny_8xb32-300e_coco_20220902_112414.log.json) |
+|  RTMDet-s   | 640  |  44.6  |   8.89    |   14.8   |              1.22               |            2.96            |  [config](./rtmdet_s_8xb32-300e_coco.py)   |       [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_s_8xb32-300e_coco/rtmdet_s_8xb32-300e_coco_20220905_161602-387a891e.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_s_8xb32-300e_coco/rtmdet_s_8xb32-300e_coco_20220905_161602.log.json)       |
+|  RTMDet-m   | 640  |  49.4  |   24.71   |  39.27   |              1.62               |            6.41            |  [config](./rtmdet_m_8xb32-300e_coco.py)   |       [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_m_8xb32-300e_coco/rtmdet_m_8xb32-300e_coco_20220719_112220-229f527c.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_m_8xb32-300e_coco/rtmdet_m_8xb32-300e_coco_20220719_112220.log.json)       |
+|  RTMDet-l   | 640  |  51.5  |   52.3    |  80.23   |              2.44               |           10.32            |  [config](./rtmdet_l_8xb32-300e_coco.py)   |       [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_l_8xb32-300e_coco/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_l_8xb32-300e_coco/rtmdet_l_8xb32-300e_coco_20220719_112030.log.json)       |
+|  RTMDet-x   | 640  |  52.8  |   94.86   |  141.67  |              3.10               |           18.80            |  [config](./rtmdet_x_8xb32-300e_coco.py)   |       [model](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_x_8xb32-300e_coco/rtmdet_x_8xb32-300e_coco_20220715_230555-cc79b9ae.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_x_8xb32-300e_coco/rtmdet_x_8xb32-300e_coco_20220715_230555.log.json)       |
 
 **Note**:
 
-1. The inference speed of RTMDet is measured on an NVIDIA 3090 GPU with TensorRT 8.4.3, cuDNN 8.2.0, FP16, batch size=1, and without NMS.
-2. For a fair comparison, the config of bbox postprocessing is changed to be consistent with YOLOv5/6/7 after [PR#9494](https://github.com/open-mmlab/mmdetection/pull/9494), bringing about 0.1~0.3% AP improvement.
+1. We implement a fast training version of RTMDet in [MMYOLO](https://github.com/open-mmlab/mmyolo). Its training speed is **2.6 times faster** and memory requirement is lower! Try it [here](https://github.com/open-mmlab/mmyolo/tree/main/configs/rtmdet)!
+2. The inference speed of RTMDet is measured with TensorRT 8.4.3, cuDNN 8.2.0, FP16, batch size=1, and without NMS.
+3. For a fair comparison, the config of bbox postprocessing is changed to be consistent with YOLOv5/6/7 after [PR#9494](https://github.com/open-mmlab/mmdetection/pull/9494), bringing about 0.1~0.3% AP improvement.
 
 ### Instance Segmentation
 
@@ -172,7 +175,7 @@ from mmdeploy.apis import inference_model
 
 result = inference_model(
   model_cfg='${PATH_TO_MMDET}/configs/rtmdet/rtmdet_s_8xb32-300e_coco.py',
-  deploy_cfg='${PATH_TO_MMDEPLOY}/configs/rtmdet/rtmdet_s_8xb32-300e_coco.py',
+  deploy_cfg='${PATH_TO_MMDEPLOY}/configs/mmdet/detection/detection_tensorrt_static-640x640.py',
   backend_files=['work_dirs/rtmdet/end2end.engine'],
   img='demo/resources/det.jpg',
   device='cuda:0')
@@ -319,4 +322,59 @@ target_link_libraries(${name} PRIVATE mmdeploy ${OpenCV_LIBS})
 
 ### Deploy RTMDet Instance Segmentation Model
 
-Coming soon!
+We support RTMDet-Ins ONNXRuntime and TensorRT deployment after [MMDeploy v1.0.0rc2](https://github.com/open-mmlab/mmdeploy/tree/v1.0.0rc2). And its deployment process is almost consistent with the detection model.
+
+#### Step1. Install MMDeploy >= v1.0.0rc2
+
+Please refer to the [MMDeploy-1.x installation guide](https://mmdeploy.readthedocs.io/en/1.x/get_started.html#installation) to install the latest version.
+Please remember to replace the pre-built package with the latest version.
+The v1.0.0rc2 package can be downloaded from [v1.0.0rc2 release page](https://github.com/open-mmlab/mmdeploy/releases/tag/v1.0.0rc2).
+
+Step2. Convert Model
+
+This step has no difference with the previous tutorial. The only thing you need to change is switching to the RTMDet-Ins deploy config:
+
+- If you want to use ONNXRuntime, please use [`configs/mmdet/instance-seg/instance-seg_rtmdet-ins_onnxruntime_static-640x640.py`](https://github.com/open-mmlab/mmdeploy/blob/dev-1.x/configs/mmdet/instance-seg/instance-seg_rtmdet-ins_onnxruntime_static-640x640.py) as the deployment config.
+- If you want to use TensorRT, please use [`configs/mmdet/instance-seg/instance-seg_rtmdet-ins_tensorrt_static-640x640.py`](https://github.com/open-mmlab/mmdeploy/blob/dev-1.x/configs/mmdet/instance-seg/instance-seg_rtmdet-ins_tensorrt_static-640x640.py).
+
+Here we take converting RTMDet-Ins-s to TensorRT as an example:
+
+```shell
+# go to the mmdeploy folder
+cd ${PATH_TO_MMDEPLOY}
+
+# download RTMDet-s checkpoint
+wget -P checkpoint https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet-ins_s_8xb32-300e_coco/rtmdet-ins_s_8xb32-300e_coco_20221121_212604-fdc5d7ec.pth
+
+# run the command to start model conversion
+python tools/deploy.py \
+  configs/mmdet/instance-seg/instance-seg_rtmdet-ins_tensorrt_static-640x640.py \
+  ${PATH_TO_MMDET}/configs/rtmdet/rtmdet-ins_s_8xb32-300e_coco.py \
+  checkpoint/rtmdet-ins_s_8xb32-300e_coco/rtmdet-ins_s_8xb32-300e_coco_20221121_212604-fdc5d7ec.pth \
+  demo/resources/det.jpg \
+  --work-dir ./work_dirs/rtmdet-ins \
+  --device cuda:0 \
+  --show
+```
+
+If the script runs successfully, you will see the following files:
+
+```
+|----work_dirs
+     |----rtmdet-ins
+          |----end2end.onnx  # ONNX model
+          |----end2end.engine  # TensorRT engine file
+```
+
+After this, you can check the inference results with MMDeploy Model Converter API:
+
+```python
+from mmdeploy.apis import inference_model
+
+result = inference_model(
+  model_cfg='${PATH_TO_MMDET}/configs/rtmdet/rtmdet-ins_s_8xb32-300e_coco.py',
+  deploy_cfg='${PATH_TO_MMDEPLOY}/configs/mmdet/instance-seg/instance-seg_rtmdet-ins_tensorrt_static-640x640.py',
+  backend_files=['work_dirs/rtmdet-ins/end2end.engine'],
+  img='demo/resources/det.jpg',
+  device='cuda:0')
+```
