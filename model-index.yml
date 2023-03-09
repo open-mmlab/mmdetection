@@ -8,13 +8,16 @@ Import:
   - configs/centripetalnet/metafile.yml
   - configs/cornernet/metafile.yml
   - configs/condinst/metafile.yml
+  - configs/conditional_detr/metafile.yml
   - configs/convnext/metafile.yml
+  - configs/dab_detr/metafile.yml
   - configs/dcn/metafile.yml
   - configs/dcnv2/metafile.yml
   - configs/ddod/metafile.yml
   - configs/deformable_detr/metafile.yml
   - configs/detectors/metafile.yml
   - configs/detr/metafile.yml
+  - configs/dino/metafile.yml
   - configs/double_heads/metafile.yml
   - configs/dyhead/metafile.yml
   - configs/dynamic_rcnn/metafile.yml
