@@ -22,6 +22,10 @@ In contrast to other feature pyramid network, such as FPN, FPN + PAN, NAS-FPN, B
 
 ## Usage
 
+## Official TensorFlow Model
+
+This project also support [official tensorflow model](https://github.com/google/automl), it uses 90 categories and yxyx encoding in training. If you want to use the original model weight to get official results, please refer to the following steps.
+
 ### Model conversion
 
 Firstly, download EfficientDet [weights](https://github.com/google/automl/tree/master/efficientdet) and unzip,  please use the following command
@@ -42,6 +46,18 @@ Lastly, convert weights from tensorflow to pytorch, please use the following com
 python projects/EfficientDet/convert_tf_to_pt.py --backbone {BACKBONE_NAME} --tensorflow_weight {TENSORFLOW_WEIGHT_PATH} --out_weight {OUT_PATH}
 ```
 
+### Testing commands
+
+In MMDetection's root directory, run the following command to test the model:
+
+```bash
+python tools/test.py projects/EfficientDet/configs/tensorflow/efficientdet_effb0_bifpn_8xb16-crop512-300e_coco_tf.py ${CHECKPOINT_PATH}
+```
+
+## Reproduce Model
+
+For convenience, we recommend the current implementation version, it uses 80 categories and xyxy encoding in training. On this basis, a higher result was finally achieved.
+
 ### Training commands
 
 In MMDetection's root directory, run the following command to train the model:
@@ -58,18 +74,17 @@ In MMDetection's root directory, run the following command to test the model:
 python tools/test.py projects/EfficientDet/configs/efficientdet_effb3_bifpn_8xb16-crop896-300e_coco.py ${CHECKPOINT_PATH}
 ```
 
-**Note**:
-
-- This project also support [official tensorflow model](https://github.com/google/automl), it uses 90 categories and yxyx encoding in training. If you want to test using the original model, you can refer to Model conversion.
-- We recommend the current implementation version, it uses 80 categories and xyxy encoding in training.
-
 ## Results
 
 Based on mmdetection, this project aligns the accuracy of the [official model](https://github.com/google/automl).
 
-|                                                Method                                                |    Backbone     | Pretrained Model |  Training set  |   Test set   | Epoch | Val Box AP | Official AP | Download |
-| :--------------------------------------------------------------------------------------------------: | :-------------: | :--------------: | :------------: | :----------: | :---: | :--------: | :---------: | :------: |
-| [efficientdet-d3](projects/EfficientDet/configs/efficientdet_effb3_bifpn_8xb16-crop896-300e_coco.py) | efficientnet-b3 |     ImageNet     | COCO2017 Train | COCO2017 Val |  300  |    47.2    |    46.8     | model()  |
+|                                                        Method                                                        |    Backbone     | Pretrained Model |  Training set  |   Test set   | Epoch | Val Box AP | Official AP | Download |
+| :------------------------------------------------------------------------------------------------------------------: | :-------------: | :--------------: | :------------: | :----------: | :---: | :--------: | :---------: | :------: |
+| [efficientdet-d0\*](projects/EfficientDet/configs/tensorflow/efficientdet_effb0_bifpn_8xb16-crop512-300e_coco_tf.py) | efficientnet-b0 |     ImageNet     | COCO2017 Train | COCO2017 Val |  300  |    34.4    |    34.3     |          |
+|         [efficientdet-d3](projects/EfficientDet/configs/efficientdet_effb3_bifpn_8xb16-crop896-300e_coco.py)         | efficientnet-b3 |     ImageNet     | COCO2017 Train | COCO2017 Val |  300  |    47.2    |    46.8     | model()  |
+
+**Note**:
+\*means use [official tensorflow model](https://github.com/google/automl) weights to test.
 
 ## Citation
 
