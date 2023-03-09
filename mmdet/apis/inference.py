@@ -1,5 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
+import logging
+import os
+import tempfile
 import warnings
 from pathlib import Path
 from typing import Optional, Sequence, Union
@@ -10,6 +13,8 @@ import torch.nn as nn
 from mmcv.ops import RoIPool
 from mmcv.transforms import Compose
 from mmengine.config import Config
+from mmengine.dataset import default_collate
+from mmengine.logging import MMLogger
 from mmengine.model.utils import revert_sync_batchnorm
 from mmengine.registry import init_default_scope
 from mmengine.runner import load_checkpoint
@@ -231,3 +236,122 @@ async def async_inference_detector(model, imgs):
     torch.set_grad_enabled(False)
     results = await model.aforward_test(data, rescale=True)
     return results
+
+
+def inference_mot(model: nn.Module, img: np.ndarray, frame_id: int,
+                  video_len: int) -> SampleList:
+    """Inference image(s) with the mot model.
+
+    Args:
+        model (nn.Module): The loaded mot model.
+        img (np.ndarray): Loaded image.
+        frame_id (int): frame id.
+        video_len (int): demo video length
+    Returns:
+        SampleList: The tracking data samples.
+    """
+    cfg = model.cfg
+    data = dict(
+        img=[img.astype(np.float32)],
+        frame_id=[frame_id],
+        ori_shape=[img.shape[:2]],
+        img_id=[frame_id + 1],
+        ori_video_length=[video_len])
+    # remove the "LoadImageFromFile" and "LoadTrackAnnotations" in pipeline
+    transform_broadcaster = cfg.test_dataloader.dataset.pipeline[0].copy()
+    transform_broadcaster['transforms'] = transform_broadcaster['transforms'][
+        -1:]
+    pack_track_inputs = cfg.test_dataloader.dataset.pipeline[-1].copy()
+    test_pipeline = Compose([transform_broadcaster, pack_track_inputs])
+    data = test_pipeline(data)
+
+    if not next(model.parameters()).is_cuda:
+        for m in model.modules():
+            assert not isinstance(
+                m, RoIPool
+            ), 'CPU inference with RoIPool is not supported currently.'
+
+    # forward the model
+    with torch.no_grad():
+        data = default_collate([data])
+        result = model.test_step(data)[0]
+    return result
+
+
+def init_track_model(config: Union[str, Config],
+                     checkpoint: Optional[str] = None,
+                     device: str = 'cuda:0',
+                     cfg_options: Optional[dict] = None,
+                     verbose_init_params: bool = False) -> nn.Module:
+    """Initialize a model from config file.
+
+    Args:
+        config (str or :obj:`mmengine.Config`): Config file path or the config
+            object.
+        checkpoint (Optional[str], optional): Checkpoint path. Defaults to
+            None.
+        device (str, optional): The device that the model inferences on.
+            Defaults to `cuda:0`.
+        cfg_options (Optional[dict], optional): Options to override some
+            settings in the used config. Defaults to None.
+        verbose_init_params (bool, optional): Whether to print the information
+            of initialized parameters to the console. Defaults to False.
+
+    Returns:
+        nn.Module: The constructed model.
+    """
+    if isinstance(config, str):
+        config = Config.fromfile(config)
+    elif not isinstance(config, Config):
+        raise TypeError('config must be a filename or Config object, '
+                        f'but got {type(config)}')
+    if cfg_options is not None:
+        config.merge_from_dict(cfg_options)
+
+    sampler = config.test_dataloader.sampler.type
+    assert sampler == 'ImgQuotaSampler',  \
+        f'demo only support ImgQuotaSampler, but get {sampler}'
+    model = MODELS.build(config.model)
+
+    if not verbose_init_params:
+        # Creating a temporary file to record the information of initialized
+        # parameters. If not, the information of initialized parameters will be
+        # printed to the console because of the call of
+        # `mmcv.runner.BaseModule.init_weights`.
+        tmp_file = tempfile.NamedTemporaryFile(delete=False)
+        file_handler = logging.FileHandler(tmp_file.name, mode='w')
+        logger = MMLogger.get_current_instance()
+        logger.addHandler(file_handler)
+        # We need call `init_weights()` to load pretained weights in MOT
+        # task.
+        model.init_weights()
+        file_handler.close()
+        logger.removeHandler(file_handler)
+        tmp_file.close()
+        os.remove(tmp_file.name)
+    else:
+        # We need call `init_weights()` to load pretained weights in MOT task.
+        model.init_weights()
+
+    if checkpoint is not None:
+        checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
+        # Weights converted from elsewhere may not have meta fields.
+        checkpoint_meta = checkpoint.get('meta', {})
+        # save the dataset_meta in the model for convenience
+        if 'dataset_meta' in checkpoint_meta:
+            # mmtrack 1.x
+            model.dataset_meta = checkpoint_meta['dataset_meta']
+
+    # Some methods don't load checkpoints or checkpoints don't contain
+    # 'dataset_meta'
+    # VIS need dataset_meta, MOT don't need dataset_meta
+    if not hasattr(model, 'dataset_meta'):
+        warnings.simplefilter('once')
+        warnings.warn('dataset_meta or class names are missed, '
+                      'use None by default.')
+        model.dataset_meta = {'classes': None}
+
+    model.cfg = config  # save the config in the model for convenience
+    model.to(device)
+    model.eval()
+    return model
