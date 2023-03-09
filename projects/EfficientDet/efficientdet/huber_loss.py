@@ -11,7 +11,7 @@ from mmdet.registry import MODELS
 
 @weighted_loss
 def huber_loss(pred: Tensor, target: Tensor, beta: float = 1.0) -> Tensor:
-    """Smooth L1 loss.
+    """Huber loss.
 
     Args:
         pred (Tensor): The prediction.
@@ -35,7 +35,7 @@ def huber_loss(pred: Tensor, target: Tensor, beta: float = 1.0) -> Tensor:
 
 @MODELS.register_module()
 class HuberLoss(nn.Module):
-    """Smooth L1 loss.
+    """Huber loss.
 
     Args:
         beta (float, optional): The threshold in the piecewise function.

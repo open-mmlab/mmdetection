@@ -22,9 +22,29 @@ In contrast to other feature pyramid network, such as FPN, FPN + PAN, NAS-FPN, B
 
 ## Usage
 
-### Training command
+### Model conversion
 
-In MMDetection's root directory, run the following command for single-gpu training:
+Firstly, download EfficientDet [weights](https://github.com/google/automl/tree/master/efficientdet) and unzip,  please use the following command
+
+```bash
+tar -xzvf {EFFICIENTDET_WEIGHT}
+```
+
+Then, install tensorflow, please use the following command
+
+```bash
+pip install tensorflow-gpu==2.6.0
+```
+
+Lastly, convert weights from tensorflow to pytorch, please use the following command
+
+```bash
+python projects/EfficientDet/convert_tf_to_pt.py --backbone {BACKBONE_NAME} --tensorflow_weight {TENSORFLOW_WEIGHT_PATH} --out_weight {OUT_PATH}
+```
+
+### Training commands
+
+In MMDetection's root directory, run the following command to train the model:
 
 ```bash
 python tools/train.py projects/EfficientDet/configs/efficientdet_effb3_bifpn_8xb16-crop896-300e_coco.py
@@ -38,13 +58,18 @@ In MMDetection's root directory, run the following command to test the model:
 python tools/test.py projects/EfficientDet/configs/efficientdet_effb3_bifpn_8xb16-crop896-300e_coco.py ${CHECKPOINT_PATH}
 ```
 
+**Note**:
+
+- This project also support [official tensorflow model](https://github.com/google/automl), it uses 90 categories and yxyx encoding in training. If you want to test using the original model, you can refer to Model conversion.
+- We recommend the current implementation version, it uses 80 categories and xyxy encoding in training.
+
 ## Results
 
 Based on mmdetection, this project aligns the accuracy of the [official model](https://github.com/google/automl).
 
-|                                      Method                                      |    Backbone     | Pretrained Model |  Training set  |   Test set   | Epoch | Val Box AP | Official AP | Download |
-| :------------------------------------------------------------------------------: | :-------------: | :--------------: | :------------: | :----------: | :---: | :--------: | :---------: | :------: |
-| [efficientdet-d3](./configs/efficientdet_effb3_bifpn_8xb16-crop896-300e_coco.py) | efficientnet-b3 |     ImageNet     | COCO2017 Train | COCO2017 Val |  300  |    47.2    |    46.8     | model()  |
+|                                                Method                                                |    Backbone     | Pretrained Model |  Training set  |   Test set   | Epoch | Val Box AP | Official AP | Download |
+| :--------------------------------------------------------------------------------------------------: | :-------------: | :--------------: | :------------: | :----------: | :---: | :--------: | :---------: | :------: |
+| [efficientdet-d3](projects/EfficientDet/configs/efficientdet_effb3_bifpn_8xb16-crop896-300e_coco.py) | efficientnet-b3 |     ImageNet     | COCO2017 Train | COCO2017 Val |  300  |    47.2    |    46.8     | model()  |
 
 ## Citation
 

@@ -17,18 +17,18 @@ from .utils import DepthWiseConvBlock
 
 
 @MODELS.register_module()
-class EfficientDetSepBNHead_Huber(AnchorHead):
+class EfficientDetSepBNHead(AnchorHead):
     """EfficientDetHead with separate BN.
 
-    num_classes (int): Number of categories excluding the background
-    category. in_channels (int): Number of channels in the input feature map.
-    feat_channels (int): Number of hidden channels. stacked_convs (int): Number
-    of repetitions of conv norm_cfg (dict): Config dict for normalization
-    layer. anchor_generator (dict): Config dict for anchor generator bbox_coder
-    (dict): Config of bounding box coder. loss_cls (dict): Config of
-    classification loss. loss_bbox (dict): Config of localization loss.
-    train_cfg (dict): Training config of anchor head. test_cfg (dict): Testing
-    config of anchor head. init_cfg (dict or list[dict], optional):
+    num_classes (int): Number of categories num_ins (int):  Number of the input
+    feature map. in_channels (int): Number of channels in the input feature
+    map. feat_channels (int): Number of hidden channels. stacked_convs (int):
+    Number of repetitions of conv norm_cfg (dict): Config dict for
+    normalization layer. anchor_generator (dict): Config dict for anchor
+    generator bbox_coder (dict): Config of bounding box coder. loss_cls (dict):
+    Config of classification loss. loss_bbox (dict): Config of localization
+    loss. train_cfg (dict): Training config of anchor head. test_cfg (dict):
+    Testing config of anchor head. init_cfg (dict or list[dict], optional):
     Initialization config dict.
     """
 

@@ -10,8 +10,8 @@ image_size = 896
 batch_augments = [
     dict(type='BatchFixedSizePad', size=(image_size, image_size))
 ]
-dataset_type = 'CocoDataset'
-evalute_type = 'CocoMetric'
+dataset_type = 'Coco90Dataset'
+evalute_type = 'Coco90Metric'
 norm_cfg = dict(type='SyncBN', requires_grad=True, eps=1e-3, momentum=0.01)
 checkpoint = 'https://download.openmmlab.com/mmclassification/v0/efficientnet/efficientnet-b3_3rdparty_8xb32-aa-advprop_in1k_20220119-53b41118.pth'  # noqa
 model = dict(
@@ -43,7 +43,7 @@ model = dict(
         norm_cfg=norm_cfg),
     bbox_head=dict(
         type='EfficientDetSepBNHead',
-        num_classes=80,
+        num_classes=90,
         num_ins=5,
         in_channels=160,
         feat_channels=160,

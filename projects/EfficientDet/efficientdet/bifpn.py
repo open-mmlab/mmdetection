@@ -11,22 +11,15 @@ from .utils import DepthWiseConvBlock, DownChannelBlock, MaxPool2dSamePadding
 
 
 class BiFPNStage(nn.Module):
-    '''
+    """
         in_channels: List[int], input dim for P3, P4, P5
         out_channels: int, output dim for P2 - P7
-        num_outs: int, BiFPN need feature maps num
-        conv_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
-            convolution layer. Defaults to Conv2dAdaptivePadding.
-        norm_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
-            normalization layer. Defaults to None.
-        act_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
-            activation layer in ConvModule. Defaults to None.
-        upsample_cfg (:obj:`ConfigDict` or dict, optional): Config dict
-            for interpolate layer. Defaults to dict(mode='nearest').
-        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
-            dict]): Initialization config dict.
-
-    '''
+        first_time: int, whether is the first bifpnstage
+        conv_bn_act_pattern: bool, whether use conv_bn_act_pattern
+        norm_cfg: (:obj:`ConfigDict` or dict, optional): Config dict for
+            normalization layer.
+        epsilon: float, hyperparameter in fusion features
+    """
 
     def __init__(self,
                  in_channels: List[int],
@@ -269,6 +262,18 @@ class BiFPNStage(nn.Module):
 
 @MODELS.register_module()
 class BiFPN(BaseModule):
+    """
+        num_stages: int, bifpn number of repeats
+        in_channels: List[int], input dim for P3, P4, P5
+        out_channels: int, output dim for P2 - P7
+        start_level: int, Index of input features in backbone
+        epsilon: float, hyperparameter in fusion features
+        apply_bn_for_resampling: bool, whether use bn after resampling
+        conv_bn_act_pattern: bool, whether use conv_bn_act_pattern
+        norm_cfg: (:obj:`ConfigDict` or dict, optional): Config dict for
+            normalization layer.
+        init_cfg: MultiConfig: init method
+    """
 
     def __init__(self,
                  num_stages: int,

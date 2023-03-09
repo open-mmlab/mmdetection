@@ -10,8 +10,8 @@ image_size = 512
 batch_augments = [
     dict(type='BatchFixedSizePad', size=(image_size, image_size))
 ]
-dataset_type = 'Coco90Dataset'
-evalute_type = 'Coco90Metric'
+dataset_type = 'CocoDataset'
+evalute_type = 'CocoMetric'
 norm_cfg = dict(type='SyncBN', requires_grad=True, eps=1e-3, momentum=0.01)
 checkpoint = 'https://download.openmmlab.com/mmclassification/v0/efficientnet/efficientnet-b0_3rdparty_8xb32-aa-advprop_in1k_20220119-26434485.pth'  # noqa
 model = dict(
@@ -42,8 +42,8 @@ model = dict(
         start_level=0,
         norm_cfg=norm_cfg),
     bbox_head=dict(
-        type='EfficientDetSepBNHead_Huber',
-        num_classes=90,
+        type='EfficientDetSepBNHead',
+        num_classes=80,
         num_ins=5,
         in_channels=64,
         feat_channels=64,
@@ -121,12 +121,12 @@ test_pipeline = [
 
 train_dataloader = dict(
     batch_size=16,
-    num_workers=16,
+    num_workers=8,
     dataset=dict(type=dataset_type, pipeline=train_pipeline))
 val_dataloader = dict(dataset=dict(type=dataset_type, pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
-val_evaluator = dict(type='Coco90Metric')
+val_evaluator = dict(type=evalute_type)
 test_evaluator = val_evaluator
 
 optim_wrapper = dict(
@@ -171,5 +171,5 @@ env_cfg = dict(cudnn_benchmark=True)
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
-# base_batch_size = (8 GPUs) x (32 samples per GPU)
+# base_batch_size = (8 GPUs) x (16 samples per GPU)
 auto_scale_lr = dict(base_batch_size=128)
