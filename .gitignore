@@ -121,6 +121,3 @@ work_dirs/
 *.pth
 *.py~
 *.sh~
- projects
- vitdet
- dev_bifpn
