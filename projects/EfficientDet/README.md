@@ -24,7 +24,7 @@ In contrast to other feature pyramid network, such as FPN, FPN + PAN, NAS-FPN, B
 
 ## Official TensorFlow Model
 
-This project also support [official tensorflow model](https://github.com/google/automl), it uses 90 categories and yxyx encoding in training. If you want to use the original model weight to get official results, please refer to the following steps.
+This project also supports [official tensorflow model](https://github.com/google/automl), it uses 90 categories and yxyx box encoding in training. If you want to use the original model weight to get official results, please refer to the following steps.
 
 ### Model conversion
 
