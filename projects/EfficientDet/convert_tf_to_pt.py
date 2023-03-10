@@ -164,8 +164,8 @@ def convert_key(model_name, bifpn_repeats, weights):
         elif seg[0] == 'resample_p6':
             prefix = 'neck.bifpn.0.p5_to_p6.0'
             mapping = {
-                'conv2d/kernel': 'down_conv.conv.weight',
-                'conv2d/bias': 'down_conv.conv.bias',
+                'conv2d/kernel': 'down_conv.weight',
+                'conv2d/bias': 'down_conv.bias',
                 'bn/beta': 'bn.bias',
                 'bn/gamma': 'bn.weight',
                 'bn/moving_mean': 'bn.running_mean',
@@ -180,11 +180,11 @@ def convert_key(model_name, bifpn_repeats, weights):
             if fnode_id == 0:
                 mapping = {
                     'op_after_combine5/conv/depthwise_kernel':
-                    'conv6_up.depthwise_conv.conv.weight',
+                    'conv6_up.depthwise_conv.weight',
                     'op_after_combine5/conv/pointwise_kernel':
-                    'conv6_up.pointwise_conv.conv.weight',
+                    'conv6_up.pointwise_conv.weight',
                     'op_after_combine5/conv/bias':
-                    'conv6_up.pointwise_conv.conv.bias',
+                    'conv6_up.pointwise_conv.bias',
                     'op_after_combine5/bn/beta':
                     'conv6_up.bn.bias',
                     'op_after_combine5/bn/gamma':
@@ -208,11 +208,11 @@ def convert_key(model_name, bifpn_repeats, weights):
             elif fnode_id == 1:
                 base_mapping = {
                     'op_after_combine6/conv/depthwise_kernel':
-                    'conv5_up.depthwise_conv.conv.weight',
+                    'conv5_up.depthwise_conv.weight',
                     'op_after_combine6/conv/pointwise_kernel':
-                    'conv5_up.pointwise_conv.conv.weight',
+                    'conv5_up.pointwise_conv.weight',
                     'op_after_combine6/conv/bias':
-                    'conv5_up.pointwise_conv.conv.bias',
+                    'conv5_up.pointwise_conv.bias',
                     'op_after_combine6/bn/beta':
                     'conv5_up.bn.bias',
                     'op_after_combine6/bn/gamma':
@@ -225,9 +225,9 @@ def convert_key(model_name, bifpn_repeats, weights):
                 if fpn_idx == 0:
                     mapping = {
                         'resample_0_2_6/conv2d/kernel':
-                        'p5_down_channel.down_conv.conv.weight',
+                        'p5_down_channel.down_conv.weight',
                         'resample_0_2_6/conv2d/bias':
-                        'p5_down_channel.down_conv.conv.bias',
+                        'p5_down_channel.down_conv.bias',
                         'resample_0_2_6/bn/beta':
                         'p5_down_channel.bn.bias',
                         'resample_0_2_6/bn/gamma':
@@ -252,11 +252,11 @@ def convert_key(model_name, bifpn_repeats, weights):
             elif fnode_id == 2:
                 base_mapping = {
                     'op_after_combine7/conv/depthwise_kernel':
-                    'conv4_up.depthwise_conv.conv.weight',
+                    'conv4_up.depthwise_conv.weight',
                     'op_after_combine7/conv/pointwise_kernel':
-                    'conv4_up.pointwise_conv.conv.weight',
+                    'conv4_up.pointwise_conv.weight',
                     'op_after_combine7/conv/bias':
-                    'conv4_up.pointwise_conv.conv.bias',
+                    'conv4_up.pointwise_conv.bias',
                     'op_after_combine7/bn/beta':
                     'conv4_up.bn.bias',
                     'op_after_combine7/bn/gamma':
@@ -269,9 +269,9 @@ def convert_key(model_name, bifpn_repeats, weights):
                 if fpn_idx == 0:
                     mapping = {
                         'resample_0_1_7/conv2d/kernel':
-                        'p4_down_channel.down_conv.conv.weight',
+                        'p4_down_channel.down_conv.weight',
                         'resample_0_1_7/conv2d/bias':
-                        'p4_down_channel.down_conv.conv.bias',
+                        'p4_down_channel.down_conv.bias',
                         'resample_0_1_7/bn/beta':
                         'p4_down_channel.bn.bias',
                         'resample_0_1_7/bn/gamma':
@@ -297,11 +297,11 @@ def convert_key(model_name, bifpn_repeats, weights):
 
                 base_mapping = {
                     'op_after_combine8/conv/depthwise_kernel':
-                    'conv3_up.depthwise_conv.conv.weight',
+                    'conv3_up.depthwise_conv.weight',
                     'op_after_combine8/conv/pointwise_kernel':
-                    'conv3_up.pointwise_conv.conv.weight',
+                    'conv3_up.pointwise_conv.weight',
                     'op_after_combine8/conv/bias':
-                    'conv3_up.pointwise_conv.conv.bias',
+                    'conv3_up.pointwise_conv.bias',
                     'op_after_combine8/bn/beta':
                     'conv3_up.bn.bias',
                     'op_after_combine8/bn/gamma':
@@ -314,9 +314,9 @@ def convert_key(model_name, bifpn_repeats, weights):
                 if fpn_idx == 0:
                     mapping = {
                         'resample_0_0_8/conv2d/kernel':
-                        'p3_down_channel.down_conv.conv.weight',
+                        'p3_down_channel.down_conv.weight',
                         'resample_0_0_8/conv2d/bias':
-                        'p3_down_channel.down_conv.conv.bias',
+                        'p3_down_channel.down_conv.bias',
                         'resample_0_0_8/bn/beta':
                         'p3_down_channel.bn.bias',
                         'resample_0_0_8/bn/gamma':
@@ -341,11 +341,11 @@ def convert_key(model_name, bifpn_repeats, weights):
             elif fnode_id == 4:
                 base_mapping = {
                     'op_after_combine9/conv/depthwise_kernel':
-                    'conv4_down.depthwise_conv.conv.weight',
+                    'conv4_down.depthwise_conv.weight',
                     'op_after_combine9/conv/pointwise_kernel':
-                    'conv4_down.pointwise_conv.conv.weight',
+                    'conv4_down.pointwise_conv.weight',
                     'op_after_combine9/conv/bias':
-                    'conv4_down.pointwise_conv.conv.bias',
+                    'conv4_down.pointwise_conv.bias',
                     'op_after_combine9/bn/beta':
                     'conv4_down.bn.bias',
                     'op_after_combine9/bn/gamma':
@@ -358,9 +358,9 @@ def convert_key(model_name, bifpn_repeats, weights):
                 if fpn_idx == 0:
                     mapping = {
                         'resample_0_1_9/conv2d/kernel':
-                        'p4_level_connection.down_conv.conv.weight',
+                        'p4_level_connection.down_conv.weight',
                         'resample_0_1_9/conv2d/bias':
-                        'p4_level_connection.down_conv.conv.bias',
+                        'p4_level_connection.down_conv.bias',
                         'resample_0_1_9/bn/beta':
                         'p4_level_connection.bn.bias',
                         'resample_0_1_9/bn/gamma':
@@ -387,11 +387,11 @@ def convert_key(model_name, bifpn_repeats, weights):
             elif fnode_id == 5:
                 base_mapping = {
                     'op_after_combine10/conv/depthwise_kernel':
-                    'conv5_down.depthwise_conv.conv.weight',
+                    'conv5_down.depthwise_conv.weight',
                     'op_after_combine10/conv/pointwise_kernel':
-                    'conv5_down.pointwise_conv.conv.weight',
+                    'conv5_down.pointwise_conv.weight',
                     'op_after_combine10/conv/bias':
-                    'conv5_down.pointwise_conv.conv.bias',
+                    'conv5_down.pointwise_conv.bias',
                     'op_after_combine10/bn/beta':
                     'conv5_down.bn.bias',
                     'op_after_combine10/bn/gamma':
@@ -404,9 +404,9 @@ def convert_key(model_name, bifpn_repeats, weights):
                 if fpn_idx == 0:
                     mapping = {
                         'resample_0_2_10/conv2d/kernel':
-                        'p5_level_connection.down_conv.conv.weight',
+                        'p5_level_connection.down_conv.weight',
                         'resample_0_2_10/conv2d/bias':
-                        'p5_level_connection.down_conv.conv.bias',
+                        'p5_level_connection.down_conv.bias',
                         'resample_0_2_10/bn/beta':
                         'p5_level_connection.bn.bias',
                         'resample_0_2_10/bn/gamma':
@@ -433,11 +433,11 @@ def convert_key(model_name, bifpn_repeats, weights):
             elif fnode_id == 6:
                 base_mapping = {
                     'op_after_combine11/conv/depthwise_kernel':
-                    'conv6_down.depthwise_conv.conv.weight',
+                    'conv6_down.depthwise_conv.weight',
                     'op_after_combine11/conv/pointwise_kernel':
-                    'conv6_down.pointwise_conv.conv.weight',
+                    'conv6_down.pointwise_conv.weight',
                     'op_after_combine11/conv/bias':
-                    'conv6_down.pointwise_conv.conv.bias',
+                    'conv6_down.pointwise_conv.bias',
                     'op_after_combine11/bn/beta':
                     'conv6_down.bn.bias',
                     'op_after_combine11/bn/gamma':
@@ -463,11 +463,11 @@ def convert_key(model_name, bifpn_repeats, weights):
             elif fnode_id == 7:
                 base_mapping = {
                     'op_after_combine12/conv/depthwise_kernel':
-                    'conv7_down.depthwise_conv.conv.weight',
+                    'conv7_down.depthwise_conv.weight',
                     'op_after_combine12/conv/pointwise_kernel':
-                    'conv7_down.pointwise_conv.conv.weight',
+                    'conv7_down.pointwise_conv.weight',
                     'op_after_combine12/conv/bias':
-                    'conv7_down.pointwise_conv.conv.bias',
+                    'conv7_down.pointwise_conv.bias',
                     'op_after_combine12/bn/beta':
                     'conv7_down.bn.bias',
                     'op_after_combine12/bn/gamma':
@@ -492,9 +492,9 @@ def convert_key(model_name, bifpn_repeats, weights):
             if 'box-predict' in seg[1]:
                 prefix = '.'.join(['bbox_head', 'reg_header'])
                 base_mapping = {
-                    'depthwise_kernel': 'depthwise_conv.conv.weight',
-                    'pointwise_kernel': 'pointwise_conv.conv.weight',
-                    'bias': 'pointwise_conv.conv.bias'
+                    'depthwise_kernel': 'depthwise_conv.weight',
+                    'pointwise_kernel': 'pointwise_conv.weight',
+                    'bias': 'pointwise_conv.bias'
                 }
                 suffix = base_mapping['/'.join(seg[2:])]
                 if 'depthwise_conv' in suffix:
@@ -522,9 +522,9 @@ def convert_key(model_name, bifpn_repeats, weights):
                     ['bbox_head', 'reg_conv_list',
                      str(bbox_conv_idx)])
                 base_mapping = {
-                    'depthwise_kernel': 'depthwise_conv.conv.weight',
-                    'pointwise_kernel': 'pointwise_conv.conv.weight',
-                    'bias': 'pointwise_conv.conv.bias'
+                    'depthwise_kernel': 'depthwise_conv.weight',
+                    'pointwise_kernel': 'pointwise_conv.weight',
+                    'bias': 'pointwise_conv.bias'
                 }
                 suffix = base_mapping['/'.join(seg[2:])]
                 if 'depthwise_conv' in suffix:
@@ -534,9 +534,9 @@ def convert_key(model_name, bifpn_repeats, weights):
             if 'class-predict' in seg[1]:
                 prefix = '.'.join(['bbox_head', 'cls_header'])
                 base_mapping = {
-                    'depthwise_kernel': 'depthwise_conv.conv.weight',
-                    'pointwise_kernel': 'pointwise_conv.conv.weight',
-                    'bias': 'pointwise_conv.conv.bias'
+                    'depthwise_kernel': 'depthwise_conv.weight',
+                    'pointwise_kernel': 'pointwise_conv.weight',
+                    'bias': 'pointwise_conv.bias'
                 }
                 suffix = base_mapping['/'.join(seg[2:])]
                 if 'depthwise_conv' in suffix:
@@ -564,9 +564,9 @@ def convert_key(model_name, bifpn_repeats, weights):
                     ['bbox_head', 'cls_conv_list',
                      str(cls_conv_idx)])
                 base_mapping = {
-                    'depthwise_kernel': 'depthwise_conv.conv.weight',
-                    'pointwise_kernel': 'pointwise_conv.conv.weight',
-                    'bias': 'pointwise_conv.conv.bias'
+                    'depthwise_kernel': 'depthwise_conv.weight',
+                    'pointwise_kernel': 'pointwise_conv.weight',
+                    'bias': 'pointwise_conv.bias'
                 }
                 suffix = base_mapping['/'.join(seg[2:])]
                 if 'depthwise_conv' in suffix:
@@ -616,7 +616,6 @@ def main():
         n: torch.as_tensor(tf2pth(reader.get_tensor(n)))
         for (n, _) in reader.get_variable_to_shape_map().items()
     }
-    print(weights.keys())
     bifpn_repeats = repeat_map[int(model_name[14])]
     out = convert_key(model_name, bifpn_repeats, weights)
     result = {'state_dict': out}
