@@ -73,9 +73,9 @@ do
 done
 
 
-for MODEL_NAME in faster_rcnn_x101_64x4d_fpn_3x_mstrain_fskd
+for MODEL_NAME in faster_rcnn_r50_fpn_1x_mstrain_fskd_single faster_rcnn_r50_fpn_1x_mstrain_fskd
 do
-    CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch \
+    CUDA_VISIBLE_DEVICES=1,5,6,7 python -m torch.distributed.launch \
                                         --nproc_per_node=4 \
                                         --master_port=899 \
                                         train.py \
@@ -84,3 +84,5 @@ do
                                         --work-dir result/coco/$MODEL_NAME \
                                         --launcher pytorch
 done
+
+
