@@ -196,6 +196,18 @@ We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/
 docker build -t mmdetection docker/
 ```
 
+It should be noted that more recent GPU versions such as 3070, with Ampere architecture may require CUDA 11 as the minimum.
+In this case, you can pass the corresponding versions into the docker build:
+
+```
+docker build -t mmdetection -f docker/Dockerfile \
+--build-arg PYTORCH=1.9.0  \
+--build-arg CUDA=11.1  \
+--build-arg CUDNN=8 \
+--build-arg MMCV_VERSION=1.7.0 \
+--build-arg MMCV_URL="https://download.openmmlab.com/mmcv/dist/cu111/torch1.9/index.html" .
+```
+
 Run it with
 
 ```shell

@@ -227,6 +227,17 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 docker build -t mmdetection docker/
 ```
 
+应该注意的是，较新的 GPU 版本（例如 3070）具有 Ampere 架构，可能至少需要 CUDA 11。 在这种情况下，您可以将相应的版本传递到 docker build 中：
+
+```
+docker build -t mmdetection -f docker/Dockerfile \
+--build-arg PYTORCH=1.9.0  \
+--build-arg CUDA=11.1  \
+--build-arg CUDNN=8 \
+--build-arg MMCV_VERSION=1.7.0 \
+--build-arg MMCV_URL="https://download.openmmlab.com/mmcv/dist/cu111/torch1.9/index.html" .
+```
+
 运行命令：
 
 ```shell
