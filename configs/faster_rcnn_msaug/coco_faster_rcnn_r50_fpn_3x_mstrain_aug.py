@@ -1,19 +1,14 @@
-_base_ = ['../faster_rcnn/coco_faster_rcnn_r101_fpn_3x_mstrain.py']
+_base_ = ['../faster_rcnn/coco_faster_rcnn_r50_fpn_3x_mstrain.py']
 
 
 # model
-model = dict(type='FasterRCNN_TS',
+model = dict(type='FasterRCNN_AUG',
              distill_param=1.0,
+             logit_param=0.0,
              roi_head=dict(
                  type='ContRoIHead'
                 ),
             )
-
-
-# Distillation Params
-teacher_config_path = 'result/coco/faster_rcnn_r101_fpn_3x_mstrain/coco_faster_rcnn_r101_fpn_3x_mstrain.py'
-teacher_weight_path = 'result/coco/faster_rcnn_r101_fpn_3x_mstrain/epoch_12.pth'
-backbone_pretrain = False
 
 
 # Dataset
@@ -28,7 +23,10 @@ pre_train_pipeline = [
 ]
 
 train_pipeline = [
-    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
+    dict(type='Resize',
+        img_scale=[(1333, 640), (1333, 800)],
+        multiscale_mode='range',
+        keep_ratio=True),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
@@ -38,13 +36,13 @@ train_pipeline = [
 
 # Use RepeatDataset to speed up training
 data = dict(
-    samples_per_gpu=4,
-    workers_per_gpu=4,
+    samples_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(
         type='RepeatDataset',
         times=3,
         dataset=dict(
-            type="CocoContDataset",
+            type="CocoAugDataset",
             pipeline=train_pipeline,
             pre_pipeline=pre_train_pipeline,
             multiscale_mode_student='range', # range
