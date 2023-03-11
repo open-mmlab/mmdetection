@@ -22,7 +22,7 @@ class CocoAugDataset(CocoDataset):
                  filter_empty_gt=True,
                  file_client_args=dict(backend='disk')):
 
-        super(CocoContDataset, self).__init__(ann_file,
+        super(CocoAugDataset, self).__init__(ann_file,
                  pipeline,
                  classes,
                  data_root,

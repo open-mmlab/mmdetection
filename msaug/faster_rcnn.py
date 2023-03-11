@@ -129,8 +129,22 @@ class FasterRCNN_AUG(TwoStageDetector):
                   averaging the logs.
         """
         losses_large, gt_feats_large = self(**data[0])
+        gt_feats_large = torch.tensor(gt_feats_large) # set tensor w/o gradient for teacher GT features
+        
         losses_small, gt_feats_small = self(**data[1])
-        losses = ''
+        losses = {'loss_rpn_cls': [], 'loss_rpn_bbox': [], 'loss_cls': None, 'loss_bbox': None, 'acc': []}
+        for l_r, l_s in zip(losses_large['loss_rpn_cls'], losses_small['loss_rpn_cls']):
+            losses['loss_rpn_cls'].append((l_r + l_s)/2)
+        
+        for l_r, l_s in zip(losses_large['loss_rpn_bbox'], losses_small['loss_rpn_bbox']):
+            losses['loss_rpn_bbox'].append((l_r + l_s)/2)
+        
+        for l_r, l_s in zip(losses_large['acc'], losses_small['acc']):
+            losses['acc'].append((l_r + l_s)/2)
+        
+        losses['loss_cls'] = (losses_large['loss_cls'] + losses_small['loss_cls'])/2
+        losses['loss_bbox'] = (losses_large['loss_bbox'] + losses_small['loss_bbox'])/2
+
 
         # Calc Consistency Loss
         B = gt_feats_large.size(0)
