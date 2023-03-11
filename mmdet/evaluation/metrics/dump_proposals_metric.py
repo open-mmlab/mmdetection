@@ -22,6 +22,8 @@ class DumpProposals(BaseMetric):
         proposals_file (str): Proposals file path. Defaults to 'proposals.pkl'.
         num_max_proposals (int, optional): Maximum number of proposals to dump.
             If not specified, all proposals will be dumped.
+        file_client_args (dict, optional): Arguments to instantiate the
+            corresponding backend in mmdet <= 3.0.0rc6. Defaults to None.
         backend_args (dict, optional): Arguments to instantiate the
             corresponding backend. Defaults to None.
         collect_device (str): Device name used for collecting results from
@@ -39,6 +41,7 @@ class DumpProposals(BaseMetric):
                  output_dir: str = '',
                  proposals_file: str = 'proposals.pkl',
                  num_max_proposals: Optional[int] = None,
+                 file_client_args: dict = None,
                  backend_args: dict = None,
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None) -> None:
@@ -46,6 +49,12 @@ class DumpProposals(BaseMetric):
         self.num_max_proposals = num_max_proposals
         # TODO: update after mmengine finish refactor fileio.
         self.backend_args = backend_args
+        if file_client_args is not None:
+            raise RuntimeError(
+                'The `file_client_args` is deprecated, '
+                'please use `backend_args` instead, please refer to'
+                'https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/_base_/datasets/coco_detection.py'  # noqa: E501
+            )
         self.output_dir = output_dir
         assert proposals_file.endswith(('.pkl', '.pickle')), \
             'The output file must be a pkl file.'

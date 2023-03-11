@@ -88,8 +88,10 @@ class LoadMultiChannelImageFromFiles(BaseTransform):
             argument for :func:``mmcv.imfrombytes``.
             See :func:``mmcv.imfrombytes`` for details.
             Defaults to 'cv2'.
+        file_client_args (dict): Arguments to instantiate the
+            corresponding backend in mmdet <= 3.0.0rc6. Defaults to None.
         backend_args (dict, optional): Arguments to instantiate the
-            corresponding backend. Defaults to None.
+            corresponding backend in mmdet >= 3.0.0rc7. Defaults to None.
     """
 
     def __init__(
@@ -97,12 +99,19 @@ class LoadMultiChannelImageFromFiles(BaseTransform):
         to_float32: bool = False,
         color_type: str = 'unchanged',
         imdecode_backend: str = 'cv2',
+        file_client_args: dict = None,
         backend_args: dict = None,
     ) -> None:
         self.to_float32 = to_float32
         self.color_type = color_type
         self.imdecode_backend = imdecode_backend
         self.backend_args = backend_args
+        if file_client_args is not None:
+            raise RuntimeError(
+                'The `file_client_args` is deprecated, '
+                'please use `backend_args` instead, please refer to'
+                'https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/_base_/datasets/coco_detection.py'  # noqa: E501
+            )
 
     def transform(self, results: dict) -> dict:
         """Transform functions to load multiple images and get images meta
@@ -499,7 +508,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
             See :fun:``mmcv.imfrombytes`` for details.
             Defaults to 'cv2'.
         backend_args (dict, optional): Arguments to instantiate the
-            corresponding backend. Defaults to None.
+            corresponding backend in mmdet >= 3.0.0rc7. Defaults to None.
     """
 
     def __init__(self,

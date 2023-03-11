@@ -176,7 +176,7 @@ model = dict(
 ```python
 dataset_type = 'CocoDataset'  # Dataset type, this will be used to define the dataset
 data_root = 'data/coco/'  # Root path of data
-backend_args = None # 文件读取后端的配置，默认从prefix推理得到后端
+backend_args = None # Arguments to instantiate the corresponding file backend
 
 train_pipeline = [  # Training data processing pipeline
     dict(type='LoadImageFromFile', backend_args=backend_args),  # First pipeline to load images from file path

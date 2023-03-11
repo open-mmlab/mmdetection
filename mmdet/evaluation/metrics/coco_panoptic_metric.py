@@ -56,6 +56,8 @@ class CocoPanopticMetric(BaseMetric):
         nproc (int): Number of processes for panoptic quality computing.
             Defaults to 32. When ``nproc`` exceeds the number of cpu cores,
             the number of cpu cores is used.
+        file_client_args (dict, optional): Arguments to instantiate the
+            corresponding backend in mmdet <= 3.0.0rc6. Defaults to None.
         backend_args (dict, optional): Arguments to instantiate the
             corresponding backend. Defaults to None.
         collect_device (str): Device name used for collecting results from
@@ -75,6 +77,7 @@ class CocoPanopticMetric(BaseMetric):
                  format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
                  nproc: int = 32,
+                 file_client_args: dict = None,
                  backend_args: dict = None,
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None) -> None:
@@ -108,6 +111,12 @@ class CocoPanopticMetric(BaseMetric):
         self.cat2label = None
 
         self.backend_args = backend_args
+        if file_client_args is not None:
+            raise RuntimeError(
+                'The `file_client_args` is deprecated, '
+                'please use `backend_args` instead, please refer to'
+                'https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/_base_/datasets/coco_detection.py'  # noqa: E501
+            )
 
         if ann_file:
             with get_local_path(

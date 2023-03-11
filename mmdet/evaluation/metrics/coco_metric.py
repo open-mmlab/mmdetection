@@ -50,6 +50,8 @@ class CocoMetric(BaseMetric):
         outfile_prefix (str, optional): The prefix of json files. It includes
             the file path and the prefix of filename, e.g., "a/b/prefix".
             If not specified, a temp file will be created. Defaults to None.
+        file_client_args (dict, optional): Arguments to instantiate the
+            corresponding backend in mmdet <= 3.0.0rc6. Defaults to None.
         backend_args (dict, optional): Arguments to instantiate the
             corresponding backend. Defaults to None.
         collect_device (str): Device name used for collecting results from
@@ -73,6 +75,7 @@ class CocoMetric(BaseMetric):
                  metric_items: Optional[Sequence[str]] = None,
                  format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
+                 file_client_args: dict = None,
                  backend_args: dict = None,
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None,
@@ -108,6 +111,12 @@ class CocoMetric(BaseMetric):
         self.outfile_prefix = outfile_prefix
 
         self.backend_args = backend_args
+        if file_client_args is not None:
+            raise RuntimeError(
+                'The `file_client_args` is deprecated, '
+                'please use `backend_args` instead, please refer to'
+                'https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/_base_/datasets/coco_detection.py'  # noqa: E501
+            )
 
         # if ann_file is not specified,
         # initialize coco api with the converted dataset

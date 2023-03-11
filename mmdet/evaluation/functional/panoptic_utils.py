@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 
 # Copyright (c) 2018, Alexander Kirillov
-# This file supports `Backend` for `panopticapi`,
+# This file supports `backend_args` for `panopticapi`,
 # the source code is copied from `panopticapi`,
 # only the way to load the gt images is modified.
 import multiprocessing

@@ -15,6 +15,8 @@ class BaseDetDataset(BaseDataset):
 
     Args:
         proposal_file (str, optional): Proposals file path. Defaults to None.
+        file_client_args (dict): Arguments to instantiate the
+            corresponding backend in mmdet <= 3.0.0rc6. Defaults to None.
         backend_args (dict, optional): Arguments to instantiate the
             corresponding backend. Defaults to None.
     """
@@ -23,11 +25,18 @@ class BaseDetDataset(BaseDataset):
                  *args,
                  seg_map_suffix: str = '.png',
                  proposal_file: Optional[str] = None,
+                 file_client_args: dict = None,
                  backend_args: dict = None,
                  **kwargs) -> None:
         self.seg_map_suffix = seg_map_suffix
         self.proposal_file = proposal_file
         self.backend_args = backend_args
+        if file_client_args is not None:
+            raise RuntimeError(
+                'The `file_client_args` is deprecated, '
+                'please use `backend_args` instead, please refer to'
+                'https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/_base_/datasets/coco_detection.py'  # noqa: E501
+            )
         super().__init__(*args, **kwargs)
 
     def full_init(self) -> None:
