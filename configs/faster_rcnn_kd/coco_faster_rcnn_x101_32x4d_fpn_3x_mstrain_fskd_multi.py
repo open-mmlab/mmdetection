@@ -1,4 +1,4 @@
-_base_ = ['../faster_rcnn/coco_faster_rcnn_r101_fpn_3x_mstrain.py']
+_base_ = ['../faster_rcnn/coco_faster_rcnn_x101_32x4d_fpn_3x_mstrain.py']
 
 
 # model
@@ -11,8 +11,8 @@ model = dict(type='FasterRCNN_TS',
 
 
 # Distillation Params
-teacher_config_path = 'result/coco/faster_rcnn_r101_fpn_3x_mstrain/coco_faster_rcnn_r101_fpn_3x_mstrain.py'
-teacher_weight_path = 'result/coco/faster_rcnn_r101_fpn_3x_mstrain/epoch_12.pth'
+teacher_config_path = 'result/coco/faster_rcnn_x101_32x4d_fpn_3x_mstrain/coco_faster_rcnn_x101_32x4d_fpn_3x_mstrain.py'
+teacher_weight_path = 'result/coco/faster_rcnn_x101_32x4d_fpn_3x_mstrain/epoch_12.pth'
 backbone_pretrain = False
 
 
@@ -28,7 +28,10 @@ pre_train_pipeline = [
 ]
 
 train_pipeline = [
-    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
+    dict(type='Resize',
+        img_scale=[(1333, 640), (1333, 800)],
+        multiscale_mode='range',
+        keep_ratio=True),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),

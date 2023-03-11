@@ -28,12 +28,7 @@ pre_train_pipeline = [
 ]
 
 train_pipeline = [
-    dict(
-        type='Resize',
-        img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
-                   (1333, 768), (1333, 800)],
-        multiscale_mode='value',
-        keep_ratio=True),
+    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
