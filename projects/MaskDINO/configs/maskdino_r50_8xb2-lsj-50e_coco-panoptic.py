@@ -44,11 +44,8 @@ model = dict(
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     panoptic_head=dict(
         type='MaskDINOHead',
-        # from head
-        num_classes=num_things_classes + num_stuff_classes,
+        num_stuff_classes=num_stuff_classes,
         num_things_classes=num_things_classes,
-        loss_weight=1,  # TODO: ???
-        ignore_value=255,  # TODO ???
         encoder=dict(
             in_channels=[256, 512, 1024, 2048],
             in_strides=[4, 8, 16, 32],
@@ -90,26 +87,13 @@ model = dict(
             return_intermediate_dec=True,
             query_dim=4,
             dec_layer_share=False,
-            semantic_ce_loss=False),
-        # from detector
-        # sem_seg_head
-        # criterion
-        num_queries=300,
-        object_mask_threshold=0.25,
-        overlap_threshold=0.8,
-        # metadata
-        size_divisibility=32,
-        sem_seg_postprocess_before_inference=True,
-        # pixel_mean
-        # pixel_std
-
-        # # from Mask2Former
-        # in_channels=[256, 512, 1024, 2048],  # pass to pixel_decoder inside
-        # strides=[4, 8, 16, 32],
-        # feat_channels=256,
-        # out_channels=256,
-
-    ),
+            semantic_ce_loss=False)),
+    panoptic_fusion_head=dict(
+        type='MaskDINOFusionHead',
+        num_things_classes=num_things_classes,
+        num_stuff_classes=num_stuff_classes,
+        loss_panoptic=None,  # MaskDINOFusionHead has no training loss
+        init_cfg=None),  # MaskDINOFusionHead has no module
     train_cfg=dict(  # corresponds to SetCriterion
         num_classes=num_things_classes + num_stuff_classes,
         matcher=dict(
@@ -130,33 +114,26 @@ model = dict(
         importance_sample_ratio=0.75,
         semantic_ce_loss=False,
         panoptic_on=False,  # TODO: Why?
-        deep_supervision=True
-    ),
+        deep_supervision=True),
     test_cfg=dict(
         panoptic_on=True,
-        # For now, the dataset does not support
-        # evaluating semantic segmentation metric.
-        semantic_on=False,  # TODO: Why False in Mask2Former-cocopan
         instance_on=True,
-        # # max_per_image is for instance segmentation.
-        # max_per_image=100,  # TODO: This arg is not in MaskDINO repo
-        # iou_thr=0.8,  # TODO: This arg is not in MaskDINO repo
-        # # In Mask2Former's panoptic postprocessing,
-        # # it will filter mask area where score is less than 0.5 .
-        # filter_low_score=True,  # TODO: This arg is not in MaskDINO repo
-        test_topk_per_image=100,  # maybe max_per_image
-        data_loader='coco_panoptic_lsj',  # d2 dataset mapper name
-        pano_temp=0.06,
-        focus_on_box=False,
-        transform_eval=True,
-        semantic_ce_loss=False
-    ),
+        semantic_on=False,  # Not implemented yet
+        panoptic_postprocess_cfg=dict(
+            object_mask_thr=0.25,  # 0.8 for MaskFormer
+            iou_thr=0.8,
+            filter_low_score=True,  # it will filter mask area where score is less than 0.5.
+            panoptic_temperature=0.06,
+            transform_eval=True),
+        instance_postprocess_cfg=dict(
+            max_per_image=100,
+            focus_on_box=False)),
     init_cfg=None)
 
 # dataset settings
 data_root = 'data/coco/'
 train_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True),
+    dict(type='LoadImageFromFile', to_float32=True, imdecode_backend='pillow'),
     dict(
         type='LoadPanopticAnnotations',
         with_bbox=True,
@@ -178,17 +155,32 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 
+file_client_args = dict(backend='disk')
+test_pipeline = [
+    dict(type='LoadImageFromFile', file_client_args=file_client_args, imdecode_backend='pillow'),
+    dict(type='Resize', scale=(1333, 800), keep_ratio=True, backend='pillow'),
+    dict(type='LoadPanopticAnnotations', file_client_args=file_client_args),
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
+]
+
 train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
+val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+test_dataloader = val_dataloader
 
 val_evaluator = [
     dict(
         type='CocoPanopticMetric',
-        ann_file=data_root + 'annotations/panoptic_val2017.json',
+        # ann_file=data_root + 'annotations/panoptic_val2017.json',
+        ann_file=data_root + 'annotations/panoptic_val2017_onesample_139.json',
         seg_prefix=data_root + 'annotations/panoptic_val2017/',
     ),
     dict(
         type='CocoMetric',
-        ann_file=data_root + 'annotations/instances_val2017.json',
+        # ann_file=data_root + 'annotations/instances_val2017.json',
+        ann_file=data_root + 'annotations/instances_val2017_onesample_139.json',
         metric=['bbox', 'segm'],
     )
 ]

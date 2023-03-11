@@ -13,6 +13,7 @@ from mmdet.structures.bbox import bbox_cxcywh_to_xyxy
 from mmdet.structures.mask import mask2bbox
 from mmdet.utils import OptConfigType, OptMultiConfig
 from mmdet.models.seg_heads.panoptic_fusion_heads import MaskFormerFusionHead
+from mmdet.utils.memory import AvoidCUDAOOM
 
 
 @MODELS.register_module()
@@ -24,7 +25,7 @@ class MaskDINOFusionHead(MaskFormerFusionHead):
                  num_things_classes: int = 80,
                  num_stuff_classes: int = 53,
                  test_cfg: OptConfigType = None,
-                 loss_panoptic: OptConfigType = None,
+                 loss_panoptic: OptConfigType = None,  # TODO: not used ?
                  init_cfg: OptMultiConfig = None,
                  **kwargs):
         super().__init__(
@@ -76,29 +77,27 @@ class MaskDINOFusionHead(MaskFormerFusionHead):
 
             result = dict()
             if panoptic_on:
-                pan_results = self.panoptic_postprocess(
+                result['pan_results'] = self.panoptic_postprocess(
                     mask_cls_result, mask_pred_result)
-                result['pan_results'] = pan_results
 
             if instance_on:
-                mask_box_results: Tensor = bbox_cxcywh_to_xyxy(mask_box_results)
+                mask_box_results = bbox_cxcywh_to_xyxy(mask_box_results)
                 height_factor = batch_input_height / img_height * ori_height
                 width_factor = batch_input_width / img_width * ori_width
                 mask_box_results[:, 0::2] = mask_box_results[:, 0::2] * width_factor
                 mask_box_results[:, 1::2] = mask_box_results[:, 1::2] * height_factor
-                ins_results = self.instance_postprocess(
-                    mask_cls_result, mask_pred_result, mask_box_results)
-                result['ins_results'] = ins_results
+                result['ins_results'] = self.instance_postprocess(
+                    mask_cls_result, mask_pred_result, mask_box_result)
 
             if semantic_on:
-                sem_results = self.semantic_postprocess(
+                result['sem_results'] = self.semantic_postprocess(
                     mask_cls_result, mask_pred_result)
-                result['sem_results'] = sem_results
 
             results.append(result)
 
         return results
 
+    @AvoidCUDAOOM.retry_if_cuda_oom  # TODO: why MaskFormerFusionHead not use?
     def panoptic_postprocess(self, mask_cls: Tensor,
                              mask_pred: Tensor) -> PixelData:
         """Panoptic segmengation inference.
@@ -116,11 +115,12 @@ class MaskDINOFusionHead(MaskFormerFusionHead):
                 (h, w), each element in Tensor means: \
                 ``segment_id = _cls + instance_id * INSTANCE_OFFSET``.
         """
-        object_mask_thr = self.test_cfg.get('object_mask_thr', 0.8)
-        iou_thr = self.test_cfg.get('iou_thr', 0.8)
-        filter_low_score = self.test_cfg.get('filter_low_score', False)
-        panoptic_temperature = self.test_cfg.get('panoptic_temperature', 0.06)  # TODO: difference
-        transform_eval = self.test_cfg.get('transform_eval', True)  # TODO: difference
+        test_cfg = self.test_cfg.panoptic_postprocess_cfg
+        object_mask_thr = test_cfg.get('object_mask_thr', 0.25)  # 0.8 for mask2former
+        iou_thr = test_cfg.get('iou_thr', 0.8)
+        filter_low_score = test_cfg.get('filter_low_score', False)
+        panoptic_temperature = test_cfg.get('panoptic_temperature', 0.06)  # TODO: difference
+        transform_eval = test_cfg.get('transform_eval', True)  # TODO: difference
 
         # As we use focal loss in training, evaluate with sigmoid. As sigmoid is mainly for detection and not sharp
         # enough for semantic and panoptic segmentation, we additionally use use softmax with a temperature to
@@ -174,6 +174,7 @@ class MaskDINOFusionHead(MaskFormerFusionHead):
 
         return PixelData(sem_seg=panoptic_seg[None])
 
+    @AvoidCUDAOOM.retry_if_cuda_oom
     def instance_postprocess(self, mask_cls: Tensor,
                              mask_pred: Tensor, mask_box: Optional[Tensor]) -> InstanceData:
         """Instance segmengation postprocess.
@@ -205,11 +206,9 @@ class MaskDINOFusionHead(MaskFormerFusionHead):
         num_queries = mask_cls.shape[0]
         # shape (num_queries, num_class)
         scores = mask_cls.sigmoid()  # TODO: modify MaskFormerFusionHead to add an arg use_sigmoid  # TODO: difference
+        scores_per_image, top_indices = scores.flatten(0, 1).topk(max_per_image, sorted=False)  # TODO：why ？
         # shape (num_queries * num_class)
-        labels = torch.arange(self.num_classes, device=mask_cls.device).\
-            unsqueeze(0).repeat(num_queries, 1).flatten(0, 1)  # TODO：why ？
-        scores_per_image, top_indices = scores.flatten(0, 1).topk(
-            max_per_image, sorted=False)  # TODO：why ？
+        labels = torch.arange(self.num_classes, device=mask_cls.device).unsqueeze(0).repeat(num_queries, 1).flatten(0, 1)  # TODO：why ？
         labels_per_image = labels[top_indices]
 
         query_indices = top_indices // self.num_classes  # TODO：why ？
