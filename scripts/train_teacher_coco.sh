@@ -52,17 +52,6 @@ done
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 # ## FCOS settings
 # MODEL_NAME=fcos_r50_fpn_gn-head_1x
 # CUDA_VISIBLE_DEVICES=4,5,6,7 python -m torch.distributed.launch \
