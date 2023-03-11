@@ -3,7 +3,7 @@
 
 for MODEL_NAME in faster_rcnn_r50_fpn_3x_mstrain_fskd faster_rcnn_r50_fpn_1x_mstrain_fskd faster_rcnn_r50_fpn_2x_mstrain_fskd
 do
-    CUDA_VISIBLE_DEVICES=1,5,6,7 python -m torch.distributed.launch \
+    CUDA_VISIBLE_DEVICES=4,5,6,7 python -m torch.distributed.launch \
                                         --nproc_per_node=4 \
                                         --master_port=899 \
                                         train.py \
