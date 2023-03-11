@@ -1,7 +1,8 @@
 import os
 
 
-models = os.listdir('/ailab_mat/checkpoints/sung/msdet/coco_student')
+models = os.listdir('/ailab_mat/checkpoints/sung/msdet/coco_teacher')
+# models = os.listdir('/ailab_mat/checkpoints/sung/msdet/coco_student')
 MODEL_NAME = []
 FOLDER_NAME = []
 EPOCH_NUMBER = []
