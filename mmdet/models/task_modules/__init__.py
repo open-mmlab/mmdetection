@@ -8,6 +8,7 @@ from .builder import (ANCHOR_GENERATORS, BBOX_ASSIGNERS, BBOX_CODERS,
 from .coders import *  # noqa: F401,F403
 from .prior_generators import *  # noqa: F401,F403
 from .samplers import *  # noqa: F401,F403
+from .tracking import *  # noqa: F401,F403
 
 __all__ = [
     'ANCHOR_GENERATORS', 'PRIOR_GENERATORS', 'BBOX_ASSIGNERS', 'BBOX_SAMPLERS',

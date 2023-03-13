@@ -8,7 +8,7 @@ from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DiceLoss,
                                  DistributionFocalLoss, FocalLoss,
                                  GaussianFocalLoss,
                                  KnowledgeDistillationKLDivLoss, L1Loss,
-                                 MSELoss, QualityFocalLoss, SeesawLoss,
+                                 L2Loss, MSELoss, QualityFocalLoss, SeesawLoss,
                                  SmoothL1Loss, VarifocalLoss)
 from mmdet.models.losses.ghm_loss import GHMC, GHMR
 from mmdet.models.losses.iou_loss import (BoundedIoULoss, CIoULoss, DIoULoss,
@@ -69,7 +69,7 @@ def test_QualityFocalLoss_Loss(loss_class, activated):
 
 @pytest.mark.parametrize('loss_class', [
     IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss, EIoULoss, MSELoss,
-    L1Loss, SmoothL1Loss, BalancedL1Loss
+    L1Loss, SmoothL1Loss, BalancedL1Loss, L2Loss
 ])
 @pytest.mark.parametrize('input_shape', [(10, 4), (0, 4)])
 def test_regression_losses(loss_class, input_shape):
