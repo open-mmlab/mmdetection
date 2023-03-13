@@ -1,4 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .loops import TeacherStudentValLoop, VideoTestLoop, VideoValLoop
+from .loops import TeacherStudentValLoop
 
-__all__ = ['TeacherStudentValLoop', 'VideoTestLoop', 'VideoValLoop']
+__all__ = ['TeacherStudentValLoop']

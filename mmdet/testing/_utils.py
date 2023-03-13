@@ -429,24 +429,3 @@ def replace_to_ceph(cfg):
     _process_pipeline(cfg.test_dataloader.dataset, cfg.filename)
     _process_evaluator(cfg.val_evaluator, cfg.filename)
     _process_evaluator(cfg.test_evaluator, cfg.filename)
-
-
-class VideoDataSampleFeeder(object):
-
-    def __init__(self, video_length):
-        video_inputs = []
-        for i in range(video_length):
-            track_data_sample = TrackDataSample(
-                metainfo=dict(ori_video_length=video_length, video_length=1))
-            video_data_samples = [DetDataSample(metainfo=dict(frame_id=i))]
-            track_data_sample.video_data_samples = video_data_samples
-            video_inputs.append([track_data_sample])
-        self.video_inputs = video_inputs
-        self.video_inputs_iter = iter(self.video_inputs)
-
-    def __call__(self, *args, **kwargs):
-        try:
-            return next(self.video_inputs_iter)
-        except StopIteration:
-            self.video_inputs_iter = iter(self.video_inputs)
-            return next(self.video_inputs_iter)
