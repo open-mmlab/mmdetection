@@ -1,20 +1,18 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from numbers import Number
 from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from mmengine.model import BaseDataPreprocessor
 
 from mmdet.registry import MODELS
 from mmdet.structures import TrackDataSample
 from mmdet.structures.mask import BitmapMasks
+from .data_preprocessor import DetDataPreprocessor
 
 
 @MODELS.register_module()
-class TrackDataPreprocessor(BaseDataPreprocessor):
+class TrackDataPreprocessor(DetDataPreprocessor):
     """Image pre-processor for tracking tasks.
 
     Accepts the data sampled by the dataloader, and preprocesses it into the
@@ -51,47 +49,18 @@ class TrackDataPreprocessor(BaseDataPreprocessor):
     """
 
     def __init__(self,
-                 mean: Sequence[Number] = None,
-                 std: Sequence[Number] = None,
-                 pad_size_divisor: int = 1,
-                 pad_value: Union[float, int] = 0,
-                 pad_mask: bool = False,
-                 mask_pad_value: int = 0,
-                 bgr_to_rgb: bool = False,
-                 rgb_to_bgr: bool = False,
-                 batch_augments: Optional[List[dict]] = None):
-        super().__init__()
-        assert not (bgr_to_rgb and rgb_to_bgr), (
-            '`bgr2rgb` and `rgb2bgr` cannot be set to True at the same time')
-        assert (mean is None) == (std is None), (
-            'mean and std should be both None or tuple')
+                 mean: Optional[Sequence[Union[float, int]]] = None,
+                 std: Optional[Sequence[Union[float, int]]] = None,
+                 **kwargs):
+        super().__init__(mean=mean, std=std, **kwargs)
         if mean is not None:
-            assert len(mean) == 3 or len(mean) == 1, (
-                'The length of mean should be 1 or 3 to be compatible with '
-                f'RGB or gray image, but got {len(mean)}')
-            assert len(std) == 3 or len(std) == 1, (  # type: ignore
-                'The length of std should be 1 or 3 to be compatible with RGB '  # type: ignore # noqa: E501
-                f'or gray image, but got {len(std)}')
-
-            # Enable the normalization in preprocessing.
-            self._enable_normalize = True
+            # overwrite the ``register_bufffer`` in ``ImgDataPreprocessor``
+            # since the shape of ``mean`` and ``std`` in tracking tasks must be
+            # (T, C, H, W), which T is the temporal length of the video.
             self.register_buffer('mean',
                                  torch.tensor(mean).view(1, -1, 1, 1), False)
             self.register_buffer('std',
                                  torch.tensor(std).view(1, -1, 1, 1), False)
-        else:
-            self._enable_normalize = False
-
-        self.channel_conversion = rgb_to_bgr or bgr_to_rgb
-        self.pad_size_divisor = pad_size_divisor
-        self.pad_value = pad_value
-        self.pad_mask = pad_mask
-        self.mask_pad_value = mask_pad_value
-        if batch_augments is not None:
-            self.batch_augments = nn.ModuleList(
-                [MODELS.build(aug) for aug in batch_augments])
-        else:
-            self.batch_augments = None
 
     def forward(self, data: dict, training: bool = False) -> Dict:
         """Perform normalization、padding and bgr2rgb conversion based on
@@ -112,7 +81,7 @@ class TrackDataPreprocessor(BaseDataPreprocessor):
         # TODO: whether normalize should be after stack_batch
         # The shape of imgs[0] is (T, C, H, W).
         channel = imgs[0].size(1)
-        if self.channel_conversion and channel == 3:
+        if self._channel_conversion and channel == 3:
             imgs = [_img[:, [2, 1, 0], ...] for _img in imgs]
         # change to `float`
         imgs = [_img.float() for _img in imgs]
@@ -193,6 +162,12 @@ class TrackDataPreprocessor(BaseDataPreprocessor):
                     batch_input_shape = det_data_sample.batch_input_shape
                     det_data_sample.gt_instances.masks = masks.pad(
                         batch_input_shape, pad_val=self.mask_pad_value)
+
+    def pad_gt_sem_seg(self,
+                       batch_data_samples: Sequence[TrackDataSample]) -> None:
+        """Pad gt_sem_seg to shape of batch_input_shape."""
+        raise NotImplementedError(
+            'semantic segmentation is not supported yet in tracking tasks')
 
 
 def stack_batch(tensors: List[torch.Tensor],

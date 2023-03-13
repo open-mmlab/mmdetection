@@ -67,8 +67,8 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             Defaults to False.
         rgb_to_bgr (bool): whether to convert image from RGB to RGB.
             Defaults to False.
-        boxtype2tensor (bool): Whether to keep the ``BaseBoxes`` type of
-            bboxes data or not. Defaults to True.
+        boxtype2tensor (bool): Whether to convert the ``BaseBoxes`` type of
+            bboxes data to ``Tensor`` type. Defaults to True.
         non_blocking (bool): Whether block current process
             when transferring data to device. Defaults to False.
         batch_augments (list[dict], optional): Batch-level augmentations
@@ -119,7 +119,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             dict: Data in the same format as the model input.
         """
         batch_pad_shape = self._get_pad_shape(data)
-        data = super().forward(data=data, training=training)
+        data = self.cast_data(data)
         inputs, data_samples = data['inputs'], data['data_samples']
 
         if data_samples is not None:
