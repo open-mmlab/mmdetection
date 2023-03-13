@@ -4,7 +4,6 @@ from .colorspace import (AutoContrast, Brightness, Color, ColorTransform,
                          Contrast, Equalize, Invert, Posterize, Sharpness,
                          Solarize, SolarizeAdd)
 from .formatting import ImageToTensor, PackDetInputs, ToTensor, Transpose
-from .frame_sampling import UniformSample
 from .geometric import (GeomTransform, Rotate, ShearX, ShearY, TranslateX,
                         TranslateY)
 from .instaboost import InstaBoost
@@ -33,6 +32,5 @@ __all__ = [
     'RandAugment', 'Sharpness', 'Solarize', 'SolarizeAdd', 'Posterize',
     'AutoContrast', 'Invert', 'MultiBranch', 'RandomErasing',
     'LoadEmptyAnnotations', 'RandomOrder', 'CachedMosaic', 'CachedMixUp',
-    'FixShapeResize', 'ProposalBroadcaster', 'InferencerLoader',
-    'UniformSample'
+    'FixShapeResize', 'ProposalBroadcaster', 'InferencerLoader'
 ]

@@ -9,14 +9,14 @@ from .det_data_sample import DetDataSample
 
 
 class TrackDataSample(BaseDataElement):
-    """A data structure interface of video task in MMDetection. It is used as
-    interfaces between different components.
+    """A data structure interface of tracking task in MMDetection. It is used
+    as interfaces between different components.
 
     This data structure can be viewd as a wrapper of multiple DetDataSample to
     some extent. Specifically, it only contains a property:
     ``video_data_samples`` which is a list of DetDataSample, each of which
     corresponds to a single frame. If you want to get the property of a single
-    frame, you must first get the corresponding ``DetDataSample`` by indeing
+    frame, you must first get the corresponding ``DetDataSample`` by indexing
     and then get the property of the frame, such as ``gt_instances``,
     ``pred_instances`` and so on. As for metainfo, it differs from
     ``DetDataSample`` in that each value corresponds to the metainfo key is a
@@ -251,7 +251,8 @@ class TrackDataSample(BaseDataElement):
                 new_data.set_data({f'{k}': data_list})
         return new_data
 
-    def clone(self):
+    # Tensor-like methods
+    def clone(self) -> 'BaseDataElement':
         """Deep copy the current data element.
 
         Returns:

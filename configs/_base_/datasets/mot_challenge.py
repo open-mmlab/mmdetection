@@ -1,6 +1,7 @@
 # dataset settings
 dataset_type = 'MOTChallengeDataset'
 data_root = 'data/MOT17/'
+resized_shape = (1088, 1088)
 
 # data pipeline
 train_pipeline = [
@@ -17,7 +18,7 @@ train_pipeline = [
             dict(type='LoadTrackAnnotations', with_instance_id=True),
             dict(
                 type='RandomResize',
-                scale=(1088, 1088),
+                scale=resized_shape,
                 ratio_range=(0.8, 1.2),
                 keep_ratio=True,
                 clip_object_border=False),
@@ -25,11 +26,12 @@ train_pipeline = [
         ]),
     dict(
         type='TransformBroadcaster',
+        # different coppped positions for different frames
         share_random_params=False,
         transforms=[
             dict(
                 type='RandomCrop',
-                crop_size=(1088, 1088),
+                crop_size=resized_shape,
                 bbox_clip_border=False)
         ]),
     dict(
@@ -47,7 +49,7 @@ test_pipeline = [
         transforms=[
             dict(type='LoadImageFromFile'),
             dict(type='LoadTrackAnnotations', with_instance_id=True),
-            dict(type='Resize', scale=(1088, 1088), keep_ratio=True)
+            dict(type='Resize', scale=resized_shape, keep_ratio=True)
         ]),
     dict(type='PackTrackInputs')
 ]
@@ -57,7 +59,9 @@ train_dataloader = dict(
     batch_size=2,
     num_workers=2,
     persistent_workers=True,
-    # batch_sampler=dict(type='AspectRatioBatchSampler'), # used in image dataset: like LVIS # noqa: E501
+    # MOTChallengeDataset is a video-based dataset, so we don't need
+    # "AspectRatioBatchSampler"
+    # batch_sampler=dict(type='AspectRatioBatchSampler'),
     sampler=dict(type='ImgQuotaSampler'),  # image-based sampling
     dataset=dict(
         type=dataset_type,

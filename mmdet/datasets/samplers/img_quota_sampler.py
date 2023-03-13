@@ -1,11 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
 import random
-from typing import Iterator, Sized
+from typing import Iterator, Optional, Sized
 
 import numpy as np
 from mmengine.dataset import ClassBalancedDataset, ConcatDataset
-from mmengine.dist import get_dist_info
+from mmengine.dist import get_dist_info, sync_random_seed
 from torch.utils.data import Sampler
 
 from mmdet.registry import DATA_SAMPLERS
@@ -24,17 +24,23 @@ class ImgQuotaSampler(Sampler):
             group. Default: 0.
     """
 
-    def __init__(self, dataset: Sized, seed: int = 0) -> None:
+    def __init__(
+        self,
+        dataset: Sized,
+        seed: Optional[int] = None,
+    ) -> None:
         rank, world_size = get_dist_info()
         self.rank = rank
         self.world_size = world_size
         self.epoch = 0
-        self.seed = seed if seed is not None else 0
+        if seed is None:
+            self.seed = sync_random_seed()
+        else:
+            self.seed = seed
 
         self.dataset = dataset
         self.indices = []
         # Hard code here to handle different dataset wrapper
-        # TODO: refactor this part
         if isinstance(self.dataset, ConcatDataset):
             cat_datasets = self.dataset.datasets
             assert isinstance(
@@ -64,8 +70,10 @@ class ImgQuotaSampler(Sampler):
                     ori_dataset.get_len_per_video(index))])
         else:
             assert isinstance(
-                self.dataset,
-                BaseVideoDataset), f'{type(self.dataset)} is not supported'
+                self.dataset, BaseVideoDataset
+            ), 'ImgQuotaSampler is only supported in BaseVideoDataset or '
+            'dataset wrapper: ClassBalancedDataset and ConcatDataset, but '
+            f'got {type(self.dataset)} '
             self.test_mode = self.dataset.test_mode
             num_videos = len(self.dataset)
 

@@ -4,8 +4,8 @@ import os.path as osp
 from collections import defaultdict
 from typing import Any, List, Tuple
 
+import mmengine.fileio as fileio
 from mmengine.dataset import BaseDataset
-from mmengine.fileio import FileClient
 from mmengine.logging import print_log
 
 from mmdet.datasets.api_wrappers import COCO
@@ -30,8 +30,7 @@ class BaseVideoDataset(BaseDataset):
             tuple(list[dict], list): A list of annotation and a list of
             valid data indices.
         """
-        file_client = FileClient.infer_client(uri=self.ann_file)
-        with file_client.get_local_path(self.ann_file) as local_path:
+        with fileio.get_local_path(self.ann_file) as local_path:
             self.coco = COCO(local_path)
         # The order of returned `cat_ids` will not
         # change with the order of the classes
@@ -44,6 +43,8 @@ class BaseVideoDataset(BaseDataset):
 
         img_ids = self.coco.get_img_ids()
         total_ann_ids = []
+        # if ``video_id`` is not in the annotation file, we will assign a big
+        # unique video_id for this video.
         single_video_id = 100000
         videos = {}
         for img_id in img_ids:
@@ -140,8 +141,7 @@ class BaseVideoDataset(BaseDataset):
                 # image dataset usually has no `instance_id`.
                 # Therefore, we set it to `i`.
                 instance['instance_id'] = i
-            if len(instance) > 0:
-                instances.append(instance)
+            instances.append(instance)
         data_info['instances'] = instances
         return data_info
 
