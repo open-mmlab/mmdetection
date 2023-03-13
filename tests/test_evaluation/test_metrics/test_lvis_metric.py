@@ -137,15 +137,15 @@ class TestLVISMetric(unittest.TestCase):
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = lvis_metric.evaluate(size=1)
         target = {
-            'lvis/bbox_AP': 1.0,
-            'lvis/bbox_AP50': 1.0,
-            'lvis/bbox_AP75': 1.0,
-            'lvis/bbox_APs': 1.0,
-            'lvis/bbox_APm': 1.0,
-            'lvis/bbox_APl': 1.0,
-            'lvis/bbox_APr': -1.0,
-            'lvis/bbox_APc': 1.0,
-            'lvis/bbox_APf': 1.0
+            'lvis/bbox_AP(%)': 100.0,
+            'lvis/bbox_AP50(%)': 100.0,
+            'lvis/bbox_AP75(%)': 100.0,
+            'lvis/bbox_APs(%)': 100.0,
+            'lvis/bbox_APm(%)': 100.0,
+            'lvis/bbox_APl(%)': 100.0,
+            'lvis/bbox_APr(%)': -100.0,
+            'lvis/bbox_APc(%)': 100.0,
+            'lvis/bbox_APf(%)': 100.0
         }
         self.assertDictEqual(eval_results, target)
         self.assertTrue(
@@ -164,24 +164,24 @@ class TestLVISMetric(unittest.TestCase):
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = lvis_metric.evaluate(size=1)
         target = {
-            'lvis/bbox_AP': 1.0,
-            'lvis/bbox_AP50': 1.0,
-            'lvis/bbox_AP75': 1.0,
-            'lvis/bbox_APs': 1.0,
-            'lvis/bbox_APm': 1.0,
-            'lvis/bbox_APl': 1.0,
-            'lvis/bbox_APr': -1.0,
-            'lvis/bbox_APc': 1.0,
-            'lvis/bbox_APf': 1.0,
-            'lvis/segm_AP': 1.0,
-            'lvis/segm_AP50': 1.0,
-            'lvis/segm_AP75': 1.0,
-            'lvis/segm_APs': 1.0,
-            'lvis/segm_APm': 1.0,
-            'lvis/segm_APl': 1.0,
-            'lvis/segm_APr': -1.0,
-            'lvis/segm_APc': 1.0,
-            'lvis/segm_APf': 1.0
+            'lvis/bbox_AP(%)': 100.0,
+            'lvis/bbox_AP50(%)': 100.0,
+            'lvis/bbox_AP75(%)': 100.0,
+            'lvis/bbox_APs(%)': 100.0,
+            'lvis/bbox_APm(%)': 100.0,
+            'lvis/bbox_APl(%)': 100.0,
+            'lvis/bbox_APr(%)': -100.0,
+            'lvis/bbox_APc(%)': 100.0,
+            'lvis/bbox_APf(%)': 100.0,
+            'lvis/segm_AP(%)': 100.0,
+            'lvis/segm_AP50(%)': 100.0,
+            'lvis/segm_AP75(%)': 100.0,
+            'lvis/segm_APs(%)': 100.0,
+            'lvis/segm_APm(%)': 100.0,
+            'lvis/segm_APl(%)': 100.0,
+            'lvis/segm_APr(%)': -100.0,
+            'lvis/segm_APc(%)': 100.0,
+            'lvis/segm_APf(%)': 100.0
         }
         self.assertDictEqual(eval_results, target)
         self.assertTrue(
@@ -207,7 +207,7 @@ class TestLVISMetric(unittest.TestCase):
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = lvis_metric.evaluate(size=1)
         target = {
-            'lvis/bbox_APm': 1.0,
+            'lvis/bbox_APm(%)': 100.0,
         }
         self.assertDictEqual(eval_results, target)
 
@@ -228,17 +228,17 @@ class TestLVISMetric(unittest.TestCase):
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = lvis_metric.evaluate(size=1)
         target = {
-            'lvis/bbox_AP': 1.0,
-            'lvis/bbox_AP50': 1.0,
-            'lvis/bbox_AP75': 1.0,
-            'lvis/bbox_APs': 1.0,
-            'lvis/bbox_APm': 1.0,
-            'lvis/bbox_APl': 1.0,
-            'lvis/bbox_APr': -1.0,
-            'lvis/bbox_APc': 1.0,
-            'lvis/bbox_APf': 1.0,
-            'lvis/aerosol_can_precision': 1.0,
-            'lvis/air_conditioner_precision': 1.0,
+            'lvis/bbox_AP(%)': 100.0,
+            'lvis/bbox_AP50(%)': 100.0,
+            'lvis/bbox_AP75(%)': 100.0,
+            'lvis/bbox_APs(%)': 100.0,
+            'lvis/bbox_APm(%)': 100.0,
+            'lvis/bbox_APl(%)': 100.0,
+            'lvis/bbox_APr(%)': -100.0,
+            'lvis/bbox_APc(%)': 100.0,
+            'lvis/bbox_APf(%)': 100.0,
+            'lvis/bbox_aerosol_can_precision(%)': 100.0,
+            'lvis/bbox_air_conditioner_precision(%)': 100.0,
         }
         self.assertDictEqual(eval_results, target)
 
@@ -253,40 +253,7 @@ class TestLVISMetric(unittest.TestCase):
             ann_file=fake_json_file, metric='bbox', iou_thrs=[0.3, 0.6])
         lvis_metric.dataset_meta = dict(
             classes=['aerosol_can', 'air_conditioner'])
-        self.assertEqual(lvis_metric.iou_thrs, [0.3, 0.6])
-
-    @unittest.skipIf(lvis is None, 'lvis is not installed.')
-    def test_fast_eval_recall(self):
-        # create dummy data
-        fake_json_file = osp.join(self.tmp_dir.name, 'fake_data.json')
-        self._create_dummy_lvis_json(fake_json_file)
-        dummy_pred = self._create_dummy_results()
-
-        # test default proposal nums
-        lvis_metric = LVISMetric(
-            ann_file=fake_json_file, metric='proposal_fast')
-        lvis_metric.dataset_meta = dict(
-            classes=['aerosol_can', 'air_conditioner'])
-        lvis_metric.process(
-            {},
-            [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
-        eval_results = lvis_metric.evaluate(size=1)
-        target = {'lvis/AR@100': 1.0, 'lvis/AR@300': 1.0, 'lvis/AR@1000': 1.0}
-        self.assertDictEqual(eval_results, target)
-
-        # test manually set proposal nums
-        lvis_metric = LVISMetric(
-            ann_file=fake_json_file,
-            metric='proposal_fast',
-            proposal_nums=(2, 4))
-        lvis_metric.dataset_meta = dict(
-            classes=['aerosol_can', 'air_conditioner'])
-        lvis_metric.process(
-            {},
-            [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
-        eval_results = lvis_metric.evaluate(size=1)
-        target = {'lvis/AR@2': 0.5, 'lvis/AR@4': 1.0}
-        self.assertDictEqual(eval_results, target)
+        self.assertListEqual(list(lvis_metric.iou_thrs), [0.3, 0.6])
 
     @unittest.skipIf(lvis is None, 'lvis is not installed.')
     def test_evaluate_proposal(self):
@@ -303,10 +270,10 @@ class TestLVISMetric(unittest.TestCase):
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = lvis_metric.evaluate(size=1)
         target = {
-            'lvis/AR@300': 1.0,
-            'lvis/ARs@300': 1.0,
-            'lvis/ARm@300': 1.0,
-            'lvis/ARl@300': 1.0
+            'lvis/AR@300(%)': 100.0,
+            'lvis/ARs@300(%)': 100.0,
+            'lvis/ARm@300(%)': 100.0,
+            'lvis/ARl@300(%)': 100.0
         }
         self.assertDictEqual(eval_results, target)
 
