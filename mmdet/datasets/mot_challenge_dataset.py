@@ -27,7 +27,9 @@ class MOTChallengeDataset(BaseVideoDataset):
         super().__init__(*args, **kwargs)
 
     def parse_data_info(self, raw_data_info: dict) -> Union[dict, List[dict]]:
-        """Parse raw annotation to target format.
+        """Parse raw annotation to target format. The difference between this
+        function and the one in ``BaseVideoDataset`` is that the parsing here
+        adds ``visibility`` and ``mot_conf``.
 
         Args:
             raw_data_info (dict): Raw data information load from ``ann_file``
@@ -79,5 +81,8 @@ class MOTChallengeDataset(BaseVideoDataset):
             instance['visibility'] = ann['visibility']
             if len(instance) > 0:
                 instances.append(instance)
+        if not self.test_mode:
+            assert len(instances) > 0, f'No valid instances found in ' \
+                f'image {data_info["img_path"]}!'
         data_info['instances'] = instances
         return data_info
