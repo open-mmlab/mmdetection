@@ -142,6 +142,10 @@ class BaseVideoDataset(BaseDataset):
                 # Therefore, we set it to `i`.
                 instance['instance_id'] = i
             instances.append(instance)
+        if not self.test_mode:
+            assert len(instances) > 0, f'No valid instances found in ' \
+                f'image {img_info["file_name"]} of video ' \
+                f'{img_info["video_id"]}!'
         data_info['instances'] = instances
         return data_info
 

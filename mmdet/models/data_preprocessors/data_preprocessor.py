@@ -119,7 +119,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             dict: Data in the same format as the model input.
         """
         batch_pad_shape = self._get_pad_shape(data)
-        data = self.cast_data(data)
+        data = super().forward(data=data, training=training)
         inputs, data_samples = data['inputs'], data['data_samples']
 
         if data_samples is not None:

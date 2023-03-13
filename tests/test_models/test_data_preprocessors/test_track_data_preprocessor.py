@@ -88,7 +88,7 @@ class TestTrackDataPreprocessor(TestCase):
             for x in track_data_sample.video_data_samples:
                 pad_sum_per_sample.append(x.gt_instances.masks.masks.sum())
             mask_pad_sums.append(pad_sum_per_sample)
-        out_data = processor(data)
+        out_data = processor(data, training=True)
         inputs, data_samples = out_data['inputs'], out_data['data_samples']
         for track_data_sample, expected_shape, mask_pad_sum in zip(
                 data_samples, [(10, 24), (10, 24)], mask_pad_sums):

@@ -75,7 +75,7 @@ class TrackDataPreprocessor(DetDataPreprocessor):
             same format as the model input.
         """
         batch_pad_shape = self._get_pad_shape(data)
-        data = super().forward(data=data, training=training)
+        data = self.cast_data(data)
         imgs, data_samples = data['inputs'], data['data_samples']
 
         # TODO: whether normalize should be after stack_batch
@@ -103,7 +103,7 @@ class TrackDataPreprocessor(DetDataPreprocessor):
                         'batch_input_shape': batch_input_shape,
                         'pad_shape': pad_shapes[i]
                     })
-            if self.pad_mask:
+            if self.pad_mask and training:
                 self.pad_gt_masks(data_samples)
 
         if training and self.batch_augments is not None:
@@ -170,6 +170,7 @@ class TrackDataPreprocessor(DetDataPreprocessor):
             'semantic segmentation is not supported yet in tracking tasks')
 
 
+# TODO: support `stack_batch` for batch sequence images in MMEngine.
 def stack_batch(tensors: List[torch.Tensor],
                 pad_size_divisor: int = 0,
                 pad_value: Union[int, float] = 0) -> torch.Tensor:
