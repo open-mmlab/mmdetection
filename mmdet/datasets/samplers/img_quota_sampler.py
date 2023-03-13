@@ -21,7 +21,7 @@ class ImgQuotaSampler(Sampler):
         dataset (Sized): Dataset used for sampling.
         seed (int, optional): random seed used to shuffle the sampler. This
             number should be identical across all processes in the distributed
-            group. Default: 0.
+            group. Defaults to None.
     """
 
     def __init__(
