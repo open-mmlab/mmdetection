@@ -70,16 +70,16 @@ def tpfp_imagenet(det_bboxes,
         det_bbox (ndarray): Detected bboxes of this image, of shape (m, 5).
         gt_bboxes (ndarray): GT bboxes of this image, of shape (n, 4).
         gt_bboxes_ignore (ndarray): Ignored gt bboxes of this image,
-            of shape (k, 4). Default: None
+            of shape (k, 4). Defaults to None
         default_iou_thr (float): IoU threshold to be considered as matched for
             medium and large bboxes (small ones have special rules).
-            Default: 0.5.
+            Defaults to 0.5.
         area_ranges (list[tuple] | None): Range of bbox areas to be evaluated,
-            in the format [(min1, max1), (min2, max2), ...]. Default: None.
+            in the format [(min1, max1), (min2, max2), ...]. Defaults to None.
         use_legacy_coordinate (bool): Whether to use coordinate system in
             mmdet v1.x. which means width, height should be
             calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
-            Default: False.
+            Defaults to False.
 
     Returns:
         tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
@@ -179,16 +179,16 @@ def tpfp_default(det_bboxes,
         det_bbox (ndarray): Detected bboxes of this image, of shape (m, 5).
         gt_bboxes (ndarray): GT bboxes of this image, of shape (n, 4).
         gt_bboxes_ignore (ndarray): Ignored gt bboxes of this image,
-            of shape (k, 4). Default: None
+            of shape (k, 4). Defaults to None
         iou_thr (float): IoU threshold to be considered as matched.
-            Default: 0.5.
+            Defaults to 0.5.
         area_ranges (list[tuple] | None): Range of bbox areas to be
             evaluated, in the format [(min1, max1), (min2, max2), ...].
-            Default: None.
+            Defaults to None.
         use_legacy_coordinate (bool): Whether to use coordinate system in
             mmdet v1.x. which means width, height should be
             calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
-            Default: False.
+            Defaults to False.
 
     Returns:
         tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
@@ -285,22 +285,22 @@ def tpfp_openimages(det_bboxes,
         det_bbox (ndarray): Detected bboxes of this image, of shape (m, 5).
         gt_bboxes (ndarray): GT bboxes of this image, of shape (n, 4).
         gt_bboxes_ignore (ndarray): Ignored gt bboxes of this image,
-            of shape (k, 4). Default: None
+            of shape (k, 4). Defaults to None
         iou_thr (float): IoU threshold to be considered as matched.
-            Default: 0.5.
+            Defaults to 0.5.
         area_ranges (list[tuple] | None): Range of bbox areas to be
             evaluated, in the format [(min1, max1), (min2, max2), ...].
-            Default: None.
+            Defaults to None.
         use_legacy_coordinate (bool): Whether to use coordinate system in
             mmdet v1.x. which means width, height should be
             calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
-            Default: False.
+            Defaults to False.
         gt_bboxes_group_of (ndarray): GT group_of of this image, of shape
-            (k, 1). Default: None
+            (k, 1). Defaults to None
         use_group_of (bool): Whether to use group of when calculate TP and FP,
-            which only used in OpenImages evaluation. Default: True.
+            which only used in OpenImages evaluation. Defaults to True.
         ioa_thr (float | None): IoA threshold to be considered as matched,
-            which only used in OpenImages evaluation. Default: 0.5.
+            which only used in OpenImages evaluation. Defaults to 0.5.
 
     Returns:
         tuple[np.ndarray]: Returns a tuple (tp, fp, det_bboxes), where
@@ -532,7 +532,8 @@ def eval_map(det_results,
              tpfp_fn=None,
              nproc=4,
              use_legacy_coordinate=False,
-             use_group_of=False):
+             use_group_of=False,
+             mode='area'):
     """Evaluate mAP of a dataset.
 
     Args:
@@ -549,29 +550,34 @@ def eval_map(det_results,
         scale_ranges (list[tuple] | None): Range of scales to be evaluated,
             in the format [(min1, max1), (min2, max2), ...]. A range of
             (32, 64) means the area range between (32**2, 64**2).
-            Default: None.
+            Defaults to None.
         iou_thr (float): IoU threshold to be considered as matched.
-            Default: 0.5.
+            Defaults to 0.5.
         ioa_thr (float | None): IoA threshold to be considered as matched,
-            which only used in OpenImages evaluation. Default: None.
+            which only used in OpenImages evaluation. Defaults to None.
         dataset (list[str] | str | None): Dataset name or dataset classes,
             there are minor differences in metrics for different datasets, e.g.
-            "voc07", "imagenet_det", etc. Default: None.
+            "voc07", "imagenet_det", etc. Defaults to None.
         logger (logging.Logger | str | None): The way to print the mAP
-            summary. See `mmcv.utils.print_log()` for details. Default: None.
+            summary. See `mmcv.utils.print_log()` for details.
+            Defaults to None.
         tpfp_fn (callable | None): The function used to determine true/
             false positives. If None, :func:`tpfp_default` is used as default
             unless dataset is 'det' or 'vid' (:func:`tpfp_imagenet` in this
             case). If it is given as a function, then this function is used
             to evaluate tp & fp. Default None.
         nproc (int): Processes used for computing TP and FP.
-            Default: 4.
+            Defaults to 4.
         use_legacy_coordinate (bool): Whether to use coordinate system in
             mmdet v1.x. which means width, height should be
             calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
-            Default: False.
+            Defaults to False.
         use_group_of (bool): Whether to use group of when calculate TP and FP,
-            which only used in OpenImages evaluation. Default: False.
+            which only used in OpenImages evaluation. Defaults to False.
+        mode (str): 'area' or '11points', 'area' means calculating the area
+            under precision-recall curve, '11points' means calculating the
+            average precision of recalls at [0, 0.1, ..., 1].
+            Defaults to 'area'.
 
     Returns:
         tuple: (mAP, [dict, dict, ...])
@@ -677,7 +683,6 @@ def eval_map(det_results,
             recalls = recalls[0, :]
             precisions = precisions[0, :]
             num_gts = num_gts.item()
-        mode = 'area' if dataset != 'voc07' else '11points'
         ap = average_precision(recalls, precisions, mode)
         eval_results.append({
             'num_gts': num_gts,
@@ -730,7 +735,8 @@ def print_map_summary(mean_ap,
         dataset (list[str] | str | None): Dataset name or dataset classes.
         scale_ranges (list[tuple] | None): Range of scales to be evaluated.
         logger (logging.Logger | str | None): The way to print the mAP
-            summary. See `mmcv.utils.print_log()` for details. Default: None.
+            summary. See `mmcv.utils.print_log()` for details.
+            Defaults to None.
     """
 
     if logger == 'silent':
