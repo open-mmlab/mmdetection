@@ -879,7 +879,8 @@ class InferencerLoader(BaseTransform):
 @TRANSFORMS.register_module()
 class LoadTrackAnnotations(LoadAnnotations):
     """Load and process the ``instances`` and ``seg_map`` annotation provided
-    by dataset. The annotation format is as the following:
+    by dataset. It must load ``instances_ids`` which is only used in the
+    tracking tasks. The annotation format is as the following:
 
     .. code-block:: python
         {
@@ -946,15 +947,10 @@ class LoadTrackAnnotations(LoadAnnotations):
     - gt_masks (BitmapMasks | PolygonMasks)
     - gt_seg_map (np.uint8)
     - gt_ignore_flags (np.bool)
-
-    Args:
-        with_instance_id (bool): Whether to parse and load the instance id
-            annotation. Defaults to False.
     """
 
-    def __init__(self, with_instance_id: bool = True, **kwargs) -> None:
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.with_instance_id = with_instance_id
 
     def _load_bboxes(self, results: dict) -> None:
         """Private function to load bounding box annotations.
@@ -987,7 +983,7 @@ class LoadTrackAnnotations(LoadAnnotations):
             gt_bboxes, dtype=np.float32).reshape(-1, 4)
         results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=np.bool)
 
-    def _load_instances_id(self, results: dict) -> None:
+    def _load_instances_ids(self, results: dict) -> None:
         """Private function to load instances id annotations.
 
         Args:
@@ -1013,8 +1009,7 @@ class LoadTrackAnnotations(LoadAnnotations):
             and semantic segmentation and keypoints annotations.
         """
         results = super().transform(results)
-        if self.with_instance_id:
-            self._load_instances_id(results)
+        self._load_instances_ids(results)
         return results
 
     def __repr__(self) -> str:
