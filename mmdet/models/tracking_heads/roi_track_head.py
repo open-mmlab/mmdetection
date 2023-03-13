@@ -20,11 +20,18 @@ class RoITrackHead(BaseModule, metaclass=ABCMeta):
     R-CNN.
 
     Args:
-        roi_extractor (dict): Configuration of roi extractor. Defaults to None.
-        embed_head (dict): Configuration of embed head. Defaults to None.
-        train_cfg (dict): Configuration when training. Defaults to None.
-        test_cfg (dict): Configuration when testing. Defaults to None.
-        init_cfg (dict): Configuration of initialization. Defaults to None.
+        roi_extractor (dict, optional): Configuration of roi extractor.
+            Defaults to None.
+        embed_head (dict, optional): Configuration of embed head. Defaults to
+            None.
+        regress_head (dict, optional): Configuration of regression head.
+            Defaults to None.
+        train_cfg (dict, optional): Configuration when training. Defaults to
+            None.
+        test_cfg (dict, optional): Configuration when testing. Defaults to
+            None.
+        init_cfg (dict, optional): Configuration of initialization. Defaults
+            to None.
     """
 
     def __init__(self,
@@ -34,7 +41,6 @@ class RoITrackHead(BaseModule, metaclass=ABCMeta):
                  train_cfg: Optional[dict] = None,
                  test_cfg: Optional[dict] = None,
                  init_cfg: Optional[dict] = None,
-                 *args,
                  **kwargs):
         super().__init__(init_cfg=init_cfg)
         self.train_cfg = train_cfg
@@ -49,7 +55,14 @@ class RoITrackHead(BaseModule, metaclass=ABCMeta):
         self.init_assigner_sampler()
 
     def init_embed_head(self, roi_extractor, embed_head) -> None:
-        """Initialize ``embed_head``"""
+        """Initialize ``embed_head``
+
+        Args:
+            roi_extractor (dict, optional): Configuration of roi extractor.
+                Defaults to None.
+            embed_head (dict, optional): Configuration of embed head. Defaults
+                to None.
+        """
         self.roi_extractor = MODELS.build(roi_extractor)
         self.embed_head = MODELS.build(embed_head)
 
@@ -106,13 +119,16 @@ class RoITrackHead(BaseModule, metaclass=ABCMeta):
         assert len(rpn_results_list) == len(data_samples)
         batch_gt_instances = []
         batch_gt_instances_ignore = []
-        for data_sample in data_samples:
+        for track_data_sample in data_samples:
+            data_sample = track_data_sample.get_key_frames()[0]
             batch_gt_instances.append(data_sample.gt_instances)
+            batch_gt_instances_ignore.append(data_sample.ignored_instances)
             if 'ignored_instances' in data_sample:
                 batch_gt_instances_ignore.append(data_sample.ignored_instances)
             else:
                 batch_gt_instances_ignore.append(None)
 
+        losses = dict()
         if self.with_track:
             num_imgs = len(data_samples)
             if batch_gt_instances_ignore is None:
@@ -131,9 +147,6 @@ class RoITrackHead(BaseModule, metaclass=ABCMeta):
                     feats=[lvl_feat[i][None] for lvl_feat in key_feats])
                 sampling_results.append(sampling_result)
 
-        losses = dict()
-
-        if self.with_track:
             track_results = self.track_loss(key_feats, ref_feats,
                                             sampling_results, data_samples)
             losses.update(track_results['loss_track'])
@@ -160,13 +173,16 @@ class RoITrackHead(BaseModule, metaclass=ABCMeta):
         bboxes = [res.bboxes for res in sampling_results]
         bbox_feats, num_bbox_per_img = self.extract_roi_feats(
             key_feats, bboxes)
-        # batch_size is 1
-        ref_gt_bboxes = [data_samples[0].ref_gt_instances.bboxes]
+        # batch_size is 1 and the number of frames is 1
+        ref_data_sample = data_samples[0].get_ref_frames()[0]
+        key_data_sample = data_samples[0].get_key_frames()[0]
+
+        ref_gt_bboxes = [ref_data_sample.gt_instances.bboxes]
         ref_bbox_feats, num_bbox_per_ref_img = self.extract_roi_feats(
             ref_feats, ref_gt_bboxes)
 
-        gt_instance_ids = [data_samples[0].gt_instances.instances_id]
-        ref_gt_instance_ids = [data_samples[0].ref_gt_instances.instances_id]
+        gt_instance_ids = [key_data_sample.gt_instances.instances_ids]
+        ref_gt_instance_ids = [ref_data_sample.gt_instances.instances_ids]
 
         loss_track = self.embed_head.loss(bbox_feats, ref_bbox_feats,
                                           num_bbox_per_img,

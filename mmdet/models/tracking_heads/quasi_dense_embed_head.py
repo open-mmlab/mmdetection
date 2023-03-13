@@ -23,6 +23,8 @@ class QuasiDenseEmbedHead(RoIEmbedHead):
             MultiPosCrossEntropyLoss.
         loss_track_aux (dict): The auxiliary loss function for tracking.
             Defaults to L2Loss.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict]): Initialization config dict.
     """
 
     def __init__(self,
@@ -62,7 +64,14 @@ class QuasiDenseEmbedHead(RoIEmbedHead):
             self.loss_track_aux = None
 
     def forward(self, x: Tensor) -> Tensor:
-        """Forward the input `x`."""
+        """Forward function.
+
+        Args:
+            x (Tensor): The input features from ROI head.
+
+        Returns:
+            Tensor: The embedding feature map.
+        """
 
         if self.num_convs > 0:
             for conv in self.convs:

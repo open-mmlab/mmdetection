@@ -31,9 +31,17 @@ class L2Loss(BaseModule):
     """L2 loss.
 
     Args:
+        neg_pos_ub (int, optional): The upper bound of negative to positive
+            samples in hard mining. Defaults to -1.
+        pos_margin (float, optional): The similarity margin for positive
+            samples in hard mining. Defaults to -1.
+        neg_margin (float, optional): The similarity margin for negative
+            samples in hard mining. Defaults to -1.
+        hard_mining (bool, optional): Whether to use hard mining. Defaults to
+            False.
         reduction (str, optional): The method to reduce the loss.
-            Options are "none", "mean" and "sum".
-        loss_weight (float, optional): The weight of loss.
+            Options are "none", "mean" and "sum". Defaults to "mean".
+        loss_weight (float, optional): The weight of loss. Defaults to 1.0.
     """
 
     def __init__(self,
@@ -81,7 +89,19 @@ class L2Loss(BaseModule):
 
     def update_weight(self, pred: Tensor, target: Tensor, weight: Tensor,
                       avg_factor: float) -> Tuple[Tensor, Tensor, float]:
-        """Update the weight according to targets."""
+        """Update the weight according to targets.
+
+        Args:
+            pred (torch.Tensor): The prediction.
+            target (torch.Tensor): The learning target of the prediction.
+            weight (torch.Tensor): The weight of loss for each prediction.
+            avg_factor (float): Average factor that is used to average the
+                loss.
+
+        Returns:
+            tuple[torch.Tensor]: The updated prediction, weight and average
+            factor.
+        """
         if weight is None:
             weight = target.new_ones(target.size())
 
@@ -127,6 +147,11 @@ class L2Loss(BaseModule):
 
         It seems that Pytorch's implementation is slower than numpy so we use
         numpy to randperm the indices.
+
+        Args:
+            gallery (list | np.ndarray | torch.Tensor): The gallery from
+                which to sample.
+            num (int): The number of elements to sample.
         """
         assert len(gallery) >= num
         if isinstance(gallery, list):

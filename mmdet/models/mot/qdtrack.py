@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 import torch
 from torch import Tensor
@@ -61,19 +61,16 @@ class QDTrack(BaseMOTModel):
         Args:
             inputs (Tensor): of shape (N, T, C, H, W) encoding
                 input images. The N denotes batch size.
-                The T denotes the number of key frames
-                and reference frames.
+                The T denotes the number of frames in a video.
             data_samples (list[:obj:`TrackDataSample`]): The batch
                 data samples. It usually includes information such
-                as `gt_instance`.
+                as `video_data_samples`.
             rescale (bool, Optional): If False, then returned bboxes and masks
                 will fit the scale of img, otherwise, returned bboxes and masks
                 will fit the scale of original image shape. Defaults to True.
 
         Returns:
-            TrackSampleList: List[TrackDataSample]
-            Tracking results of the input videos.
-            Each DetDataSample usually contains ``pred_track_instances``.
+            TrackSampleList: Tracking results of the inputs.
         """
         assert inputs.dim() == 5, 'The img must be 5D Tensor (N, T, C, H, W).'
         assert inputs.size(0) == 1, \
@@ -108,9 +105,22 @@ class QDTrack(BaseMOTModel):
 
         return [track_data_sample]
 
-    def loss(self, inputs: Dict[str, Tensor], data_samples: TrackSampleList,
+    def loss(self, inputs: Tensor, data_samples: TrackSampleList,
              **kwargs) -> Union[dict, tuple]:
-        """Calculate losses from a batch of inputs and data samples."""
+        """Calculate losses from a batch of inputs and data samples.
+
+        Args:
+            inputs (Dict[str, Tensor]): of shape (N, T, C, H, W) encoding
+                input images. Typically these should be mean centered and std
+                scaled. The N denotes batch size. The T denotes the number of
+                frames.
+            data_samples (list[:obj:`TrackDataSample`]): The batch
+                data samples. It usually includes information such
+                as `video_data_samples`.
+
+        Returns:
+            dict: A dictionary of loss components.
+        """
         # modify the inputs shape to fit mmdet
         assert inputs.dim() == 5, 'The img must be 5D Tensor (N, T, C, H, W).'
         assert inputs.size(1) == 2, \
@@ -141,7 +151,7 @@ class QDTrack(BaseMOTModel):
         ref_x = self.detector.extract_feat(ref_imgs)
 
         losses = dict()
-        # RPN forward and loss
+        # RPN head forward and loss
         assert self.detector.with_rpn, \
             'QDTrack only support detector with RPN.'
 
@@ -152,6 +162,9 @@ class QDTrack(BaseMOTModel):
                              key_data_samples,
                              proposal_cfg=proposal_cfg,
                              **kwargs)
+        ref_rpn_results_list = self.detector.rpn_head.predict(
+            ref_x, ref_data_samples, **kwargs)
+
         # avoid get same name with roi_head loss
         keys = rpn_losses.keys()
         for key in keys:
@@ -159,12 +172,12 @@ class QDTrack(BaseMOTModel):
                 rpn_losses[f'rpn_{key}'] = rpn_losses.pop(key)
         losses.update(rpn_losses)
 
+        # roi_head loss
         losses_detect = self.detector.roi_head.loss(x, rpn_results_list,
                                                     key_data_samples, **kwargs)
         losses.update(losses_detect)
 
-        ref_rpn_results_list = self.detector.rpn_head.predict(
-            ref_x, ref_data_samples, **kwargs)
+        # tracking head loss
         losses_track = self.track_head.loss(x, ref_x, rpn_results_list,
                                             ref_rpn_results_list, data_samples,
                                             **kwargs)

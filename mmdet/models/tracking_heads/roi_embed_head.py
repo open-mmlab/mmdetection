@@ -84,9 +84,16 @@ class RoIEmbedHead(BaseModule):
     def _add_conv_fc_branch(
             self, num_branch_convs: int, num_branch_fcs: int,
             in_channels: int) -> Tuple[nn.ModuleList, nn.ModuleList, int]:
-        """Add shared or separable branch.
+        """Add shared or separable branch. convs -> avg pool (optional) -> fcs.
 
-        convs -> avg pool (optional) -> fcs
+        Args:
+            num_branch_convs (int): The number of convoluational layers.
+            num_branch_fcs (int): The number of fully connection layers.
+            in_channels (int): The input channel of roi features.
+
+        Returns:
+            Tuple[nn.ModuleList, nn.ModuleList, int]: The convs, fcs and the
+                last layer dimension.
         """
         last_layer_dim = in_channels
         # add branch specific conv layers
@@ -197,7 +204,7 @@ class RoIEmbedHead(BaseModule):
 
         Returns:
             Tuple[list[Tensor]]: Ground truth for proposals in a batch.
-            Containing the following list of Tensors:
+            Containing the following tuple of Tensors:
 
                 - track_id_targets (list[Tensor]): The instance ids of
                   Gt_labels for all proposals in a batch, each tensor in list

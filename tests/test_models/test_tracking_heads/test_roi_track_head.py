@@ -6,7 +6,7 @@ from mmengine.config import Config
 from mmengine.structures import InstanceData
 
 from mmdet.registry import MODELS
-from mmdet.testing import demo_track_inputs, random_boxes
+from mmdet.testing import demo_tracking_inputs, random_boxes
 from mmdet.utils import register_all_modules
 
 
@@ -21,13 +21,12 @@ def _fake_proposals(img_metas, proposal_len):
     return results
 
 
-class TestQuasiDenseTrackHead(TestCase):
+class TestRoITrackHead(TestCase):
 
     def setUp(self):
         register_all_modules(init_default_scope=True)
         cfg = Config(
             dict(
-                type='QuasiDenseTrackHead',
                 roi_extractor=dict(
                     type='SingleRoIExtractor',
                     roi_layer=dict(
@@ -35,44 +34,34 @@ class TestQuasiDenseTrackHead(TestCase):
                     out_channels=256,
                     featmap_strides=[4, 8, 16, 32]),
                 embed_head=dict(
-                    type='QuasiDenseEmbedHead',
-                    num_convs=4,
-                    num_fcs=1,
-                    embed_channels=256,
-                    norm_cfg=dict(type='GN', num_groups=32),
-                    loss_track=dict(
-                        type='MultiPosCrossEntropyLoss', loss_weight=0.25),
-                    loss_track_aux=dict(
-                        type='L2Loss',
-                        neg_pos_ub=3,
-                        pos_margin=0,
-                        neg_margin=0.1,
-                        hard_mining=True,
-                        loss_weight=1.0)),
-                loss_bbox=dict(type='L1Loss', loss_weight=1.0),
+                    type='RoIEmbedHead',
+                    num_fcs=2,
+                    roi_feat_size=7,
+                    in_channels=256,
+                    fc_out_channels=1024),
                 train_cfg=dict(
                     assigner=dict(
                         type='MaxIoUAssigner',
-                        pos_iou_thr=0.7,
+                        pos_iou_thr=0.5,
                         neg_iou_thr=0.5,
                         min_pos_iou=0.5,
-                        match_low_quality=False,
+                        match_low_quality=True,
                         ignore_iof_thr=-1),
                     sampler=dict(
-                        type='CombinedSampler',
-                        num=256,
-                        pos_fraction=0.5,
-                        neg_pos_ub=3,
-                        add_gt_as_proposals=True,
-                        pos_sampler=dict(type='InstanceBalancedPosSampler'),
-                        neg_sampler=dict(type='RandomSampler')))))
+                        type='RandomSampler',
+                        num=128,
+                        pos_fraction=0.25,
+                        neg_pos_ub=-1,
+                        add_gt_as_proposals=True),
+                    pos_weight=-1,
+                )))
         self.track_head = MODELS.build(cfg)
 
-    def test_quasi_dense_track_head_loss(self):
-        packed_inputs = demo_track_inputs(
+    def test_roi_track_head_loss(self):
+        packed_inputs = demo_tracking_inputs(
             batch_size=1,
-            num_frames=2,
             key_frame_inds=0,
+            num_frames=2,
             image_shapes=[(3, 256, 256)])
         img_metas = [{
             'img_shape': (256, 256, 3),
@@ -90,9 +79,8 @@ class TestQuasiDenseTrackHead(TestCase):
                                           proposal_list,
                                           [packed_inputs['data_samples'][0]])
         assert loss_track['loss_track'] >= 0, 'track loss should be zero'
-        assert loss_track['loss_track_aux'] > 0, 'aux loss should be non-zero'
 
-    def test_quasi_dense_track_head_predict(self):
+    def test_roi_track_head_predict(self):
         feats = []
         for i in range(len(self.track_head.roi_extractor.featmap_strides)):
             feats.append(
