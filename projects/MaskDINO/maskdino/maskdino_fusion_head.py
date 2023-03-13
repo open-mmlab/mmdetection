@@ -43,7 +43,7 @@ class MaskDINOFusionHead(MaskFormerFusionHead):
                 batch_data_samples: SampleList,
                 rescale: bool = False,
                 **kwargs) -> List[dict]:
-        """Test segment without test-time aumengtation.
+        """ segment without test-time aumengtation.
         """
         batch_img_metas = [
             data_sample.metainfo for data_sample in batch_data_samples
@@ -81,11 +81,11 @@ class MaskDINOFusionHead(MaskFormerFusionHead):
                     mask_cls_result, mask_pred_result)
 
             if instance_on:
-                mask_box_results = bbox_cxcywh_to_xyxy(mask_box_results)
+                mask_box_result = bbox_cxcywh_to_xyxy(mask_box_result)
                 height_factor = batch_input_height / img_height * ori_height
                 width_factor = batch_input_width / img_width * ori_width
-                mask_box_results[:, 0::2] = mask_box_results[:, 0::2] * width_factor
-                mask_box_results[:, 1::2] = mask_box_results[:, 1::2] * height_factor
+                mask_box_result[:, 0::2] = mask_box_result[:, 0::2] * width_factor
+                mask_box_result[:, 1::2] = mask_box_result[:, 1::2] * height_factor
                 result['ins_results'] = self.instance_postprocess(
                     mask_cls_result, mask_pred_result, mask_box_result)
 

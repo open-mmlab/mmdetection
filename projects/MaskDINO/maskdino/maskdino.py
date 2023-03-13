@@ -36,7 +36,8 @@ class MaskDINO(MaskFormer):
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> SampleList:
 
-        import torch; batch_inputs = torch.load('/home/lqy/batch_inputs.pth')
+        if False:  # hardcoded for aligning inference of one sample  # TODO: delete before merging
+            import torch; batch_inputs = torch.load('/home/lqy/batch_inputs.pth')
 
         feats = self.extract_feat(batch_inputs)
         mask_cls_results, mask_pred_results, mask_box_results = self.panoptic_head.predict(

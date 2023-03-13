@@ -173,14 +173,14 @@ test_dataloader = val_dataloader
 val_evaluator = [
     dict(
         type='CocoPanopticMetric',
-        # ann_file=data_root + 'annotations/panoptic_val2017.json',
-        ann_file=data_root + 'annotations/panoptic_val2017_onesample_139.json',
+        ann_file=data_root + 'annotations/panoptic_val2017.json',
+        # ann_file=data_root + 'annotations/panoptic_val2017_onesample_139.json',  # TODO: delete before merging
         seg_prefix=data_root + 'annotations/panoptic_val2017/',
     ),
     dict(
         type='CocoMetric',
-        # ann_file=data_root + 'annotations/instances_val2017.json',
-        ann_file=data_root + 'annotations/instances_val2017_onesample_139.json',
+        ann_file=data_root + 'annotations/instances_val2017.json',
+        # ann_file=data_root + 'annotations/instances_val2017_onesample_139.json',  # TODO: delete before merging
         metric=['bbox', 'segm'],
     )
 ]
