@@ -1,12 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import itertools
-import os.path as osp
 import warnings
 from typing import List, Optional, Sequence, Union
 
-from mmengine.logging import MMLogger, print_log
+from mmengine.logging import MMLogger
 from mmeval import LVISDetection
-from terminaltables import AsciiTable
 from torch import Tensor
 
 from mmdet.registry import METRICS
@@ -102,7 +99,7 @@ class LVISMetric(LVISDetection):
             data_samples (Sequence[dict]): A batch of data samples that
                 contain annotations and predictions.
         """
-        predictions, groundtruths = [], []
+        predictions = []
         for data_sample in data_samples:
             pred = dict()
             pred_instances = data_sample['pred_instances']
@@ -130,65 +127,8 @@ class LVISMetric(LVISDetection):
         metric_results = self.compute(*args, **kwargs)
         self.reset()
         if self.format_only:
-            print_log(
-                'Results are saved in '
-                f'{osp.dirname(self.outfile_prefix)}',
-                logger='current')
             return metric_results
-        for metric in self.metrics:
-            result = metric_results.pop(f'{metric}_result', None)
-            if result is None:  # empty results
-                break
-            if metric == 'proposal':
-                table_title = '  Recall Results (%)'
-                if self.metric_items is None:
-                    assert len(result) == 4
-                    headers = [
-                        f'AR@{self.proposal_nums}',
-                        f'AR_s@{self.proposal_nums}',
-                        f'AR_m@{self.proposal_nums}',
-                        f'AR_l@{self.proposal_nums}'
-                    ]
-                else:
-                    assert len(result) == len(self.metric_items)
-                    headers = self.metric_items
-            else:
-                table_title = f' {metric} Results (%)'
-                if self.metric_items is None:
-                    assert len(result) == 9
-                    headers = [
-                        f'{metric}_AP', f'{metric}_AP50', f'{metric}_AP75',
-                        f'{metric}_APs', f'{metric}_APm', f'{metric}_APl',
-                        f'{metric}_APr', f'{metric}_APc', f'{metric}_APf'
-                    ]
-                else:
-                    assert len(result) == len(self.metric_items)
-                    headers = [
-                        f'{metric}_{item}' for item in self.metric_items
-                    ]
-            table_data = [headers, result]
-            table = AsciiTable(table_data, title=table_title)
-            print_log('\n' + table.table, logger='current')
 
-            if self.classwise and \
-                    f'{metric}_classwise_result' in metric_results:
-                print_log(
-                    f'Evaluating {metric} metric of each category...',
-                    logger='current')
-                classwise_table_title = f' {metric} Classwise Results (%)'
-                classwise_result = metric_results.pop(
-                    f'{metric}_classwise_result')
-
-                num_columns = min(6, len(classwise_result) * 2)
-                results_flatten = list(itertools.chain(*classwise_result))
-                headers = ['category', f'{metric}_AP'] * (num_columns // 2)
-                results_2d = itertools.zip_longest(*[
-                    results_flatten[i::num_columns] for i in range(num_columns)
-                ])
-                table_data = [headers]
-                table_data += [result for result in results_2d]
-                table = AsciiTable(table_data, title=classwise_table_title)
-                print_log('\n' + table.table, logger='current')
         evaluate_results = {
             f'{self.prefix}/{k}(%)': round(float(v) * 100, 4)
             for k, v in metric_results.items()
