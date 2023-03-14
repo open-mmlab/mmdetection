@@ -69,7 +69,7 @@ jobs:
           command: |
             python -m pip install git+ssh://git@github.com/open-mmlab/mmengine.git@main
             pip install -U openmim
-            mim install 'mmcv >= 2.0.0rc0'
+            mim install 'mmcv >= 2.0.0rc4'
             pip install -r requirements/tests.txt -r requirements/optional.txt
             pip install --force-reinstall pycocotools
             pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
@@ -117,7 +117,7 @@ jobs:
           command: |
             docker exec mmdetection pip install -e /mmengine
             docker exec mmdetection pip install -U openmim
-            docker exec mmdetection mim install 'mmcv >= 2.0.0rc0'
+            docker exec mmdetection mim install 'mmcv >= 2.0.0rc4'
             docker exec mmdetection pip install -r requirements/tests.txt -r requirements/optional.txt
             docker exec mmdetection pip install pycocotools
             docker exec mmdetection pip install albumentations>=0.3.2 --no-binary imgaug,albumentations

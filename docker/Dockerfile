@@ -29,7 +29,7 @@ RUN apt-get update \
 
 # Install MMEngine and MMCV
 RUN pip install openmim && \
-    mim install "mmengine==0.3.0" "mmcv>=2.0.0rc1"
+    mim install "mmengine>=0.6.0" "mmcv>=2.0.0rc4"
 
 # Install MMDetection
 RUN conda clean --all \

@@ -1574,16 +1574,15 @@ class Albu(BaseTransform):
                     results['masks'] = np.array(
                         [results['masks'][i] for i in results['idx_mapper']])
                     results['masks'] = ori_masks.__class__(
-                        results['masks'], results['image'].shape[0],
-                        results['image'].shape[1])
+                        results['masks'], ori_masks.height, ori_masks.width)
 
                 if (not len(results['idx_mapper'])
                         and self.skip_img_without_anno):
                     return None
             elif 'masks' in results:
-                results['masks'] = ori_masks.__class__(
-                    results['masks'], results['image'].shape[0],
-                    results['image'].shape[1])
+                results['masks'] = ori_masks.__class__(results['masks'],
+                                                       ori_masks.height,
+                                                       ori_masks.width)
 
         return results
 
