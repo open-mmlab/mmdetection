@@ -126,6 +126,9 @@ class TrackDataPreprocessor(DetDataPreprocessor):
                         data_samples, aug_det_samples):
                     track_data_sample.video_data_samples = [det_sample]
 
+        # Note: inputs may contain large number of frames, so we must make
+        # sure that the mmeory is contiguous for stable forward.
+        inputs = inputs.contiguous()
         return dict(inputs=inputs, data_samples=data_samples)
 
     def _get_pad_shape(self, data: dict) -> Dict[str, List]:
