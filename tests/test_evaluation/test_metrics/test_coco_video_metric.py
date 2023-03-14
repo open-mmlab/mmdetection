@@ -132,11 +132,12 @@ class TestCocoVideoMetric(TestCase):
         img_data_sample.set_metainfo(dict(img_id=0, ori_shape=(640, 640)))
         track_data_sample = TrackDataSample()
         track_data_sample.video_data_samples = [img_data_sample]
+        track_data_sample.set_metainfo(dict(ori_video_length=1))
         predictions = []
         if isinstance(track_data_sample, BaseDataElement):
             predictions.append(track_data_sample.to_dict())
         coco_metric.process(dict(inputs=None, data_samples=None), predictions)
-        eval_results = coco_metric.evaluate(size=1)
+        eval_results = coco_metric.evaluate()
         target = {
             'coco/bbox_mAP': 1.0,
             'coco/bbox_mAP_50': 1.0,
@@ -157,7 +158,7 @@ class TestCocoVideoMetric(TestCase):
             outfile_prefix=f'{self.tmp_dir.name}/test')
         coco_metric.dataset_meta = dict(classes=['car', 'bicycle'])
         coco_metric.process(dict(inputs=None, data_samples=None), predictions)
-        eval_results = coco_metric.evaluate(size=1)
+        eval_results = coco_metric.evaluate()
         target = {
             'coco/bbox_mAP': 1.0,
             'coco/bbox_mAP_50': 1.0,
@@ -186,14 +187,14 @@ class TestCocoVideoMetric(TestCase):
             coco_metric.dataset_meta = dict(classes=['car', 'bicycle'])
             coco_metric.process(
                 dict(inputs=None, data_samples=None), predictions)
-            coco_metric.evaluate(size=1)
+            coco_metric.evaluate()
 
         # test custom metric_items
         coco_metric = CocoVideoMetric(
             ann_file=fake_json_file, metric_items=['mAP_m'])
         coco_metric.dataset_meta = dict(classes=['car', 'bicycle'])
         coco_metric.process(dict(inputs=None, data_samples=None), predictions)
-        eval_results = coco_metric.evaluate(size=1)
+        eval_results = coco_metric.evaluate()
         target = {
             'coco/bbox_mAP_m': 1.0,
         }
@@ -215,11 +216,12 @@ class TestCocoVideoMetric(TestCase):
         img_data_sample.set_metainfo(dict(img_id=0, ori_shape=(640, 640)))
         track_data_sample = TrackDataSample()
         track_data_sample.video_data_samples = [img_data_sample]
+        track_data_sample.set_metainfo(dict(ori_video_length=1))
         predictions = []
         if isinstance(track_data_sample, BaseDataElement):
             predictions.append(track_data_sample.to_dict())
         coco_metric.process(dict(inputs=None, data_samples=None), predictions)
-        eval_results = coco_metric.evaluate(size=1)
+        eval_results = coco_metric.evaluate()
         target = {
             'coco/bbox_mAP': 1.0,
             'coco/bbox_mAP_50': 1.0,
@@ -259,11 +261,12 @@ class TestCocoVideoMetric(TestCase):
         img_data_sample.set_metainfo(dict(img_id=0, ori_shape=(640, 640)))
         track_data_sample = TrackDataSample()
         track_data_sample.video_data_samples = [img_data_sample]
+        track_data_sample.set_metainfo(dict(ori_video_length=1))
         predictions = []
         if isinstance(track_data_sample, BaseDataElement):
             predictions.append(track_data_sample.to_dict())
         coco_metric.process(dict(inputs=None, data_samples=None), predictions)
-        eval_results = coco_metric.evaluate(size=1)
+        eval_results = coco_metric.evaluate()
         target = {'coco/AR@100': 1.0, 'coco/AR@300': 1.0, 'coco/AR@1000': 1.0}
         self.assertDictEqual(eval_results, target)
 
@@ -274,7 +277,7 @@ class TestCocoVideoMetric(TestCase):
             proposal_nums=(2, 4))
         coco_metric.dataset_meta = dict(classes=['car', 'bicycle'])
         coco_metric.process(dict(inputs=None, data_samples=None), predictions)
-        eval_results = coco_metric.evaluate(size=1)
+        eval_results = coco_metric.evaluate()
         target = {'coco/AR@2': 0.5, 'coco/AR@4': 1.0}
         self.assertDictEqual(eval_results, target)
 
@@ -293,11 +296,12 @@ class TestCocoVideoMetric(TestCase):
         img_data_sample.set_metainfo(dict(img_id=0, ori_shape=(640, 640)))
         track_data_sample = TrackDataSample()
         track_data_sample.video_data_samples = [img_data_sample]
+        track_data_sample.set_metainfo(dict(ori_video_length=1))
         predictions = []
         if isinstance(track_data_sample, BaseDataElement):
             predictions.append(track_data_sample.to_dict())
         coco_metric.process(dict(inputs=None, data_samples=None), predictions)
-        eval_results = coco_metric.evaluate(size=1)
+        eval_results = coco_metric.evaluate()
         print(eval_results)
         target = {
             'coco/AR@100': 1,
@@ -330,12 +334,13 @@ class TestCocoVideoMetric(TestCase):
         img_data_sample.set_metainfo(dict(img_id=0, ori_shape=(640, 640)))
         track_data_sample = TrackDataSample()
         track_data_sample.video_data_samples = [img_data_sample]
+        track_data_sample.set_metainfo(dict(ori_video_length=1))
         predictions = []
         if isinstance(track_data_sample, BaseDataElement):
             predictions.append(track_data_sample.to_dict())
         coco_metric.process(dict(inputs=None, data_samples=None), predictions)
         # coco api Index error will be caught
-        coco_metric.evaluate(size=1)
+        coco_metric.evaluate()
 
     def test_evaluate_without_json(self):
         dummy_pred = self._create_dummy_results()
@@ -378,11 +383,12 @@ class TestCocoVideoMetric(TestCase):
         img_data_sample.set_metainfo(dict(img_id=0, ori_shape=(640, 640)))
         track_data_sample = TrackDataSample()
         track_data_sample.video_data_samples = [img_data_sample]
+        track_data_sample.set_metainfo(dict(ori_video_length=1))
         predictions = []
         if isinstance(track_data_sample, BaseDataElement):
             predictions.append(track_data_sample.to_dict())
         coco_metric.process(dict(inputs=None, data_samples=None), predictions)
-        eval_results = coco_metric.evaluate(size=1)
+        eval_results = coco_metric.evaluate()
         print(eval_results)
         target = {
             'coco/bbox_mAP': 1.0,

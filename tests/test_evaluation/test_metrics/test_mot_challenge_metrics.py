@@ -73,7 +73,7 @@ class TestMOTChallengeMetric(TestCase):
         track_data_sample.video_data_samples = [
             img_data_sample, img_data_sample_2
         ]
-
+        track_data_sample.set_metainfo(dict(ori_video_length=2))
         # [TrackDataSample]
         predictions = []
         if isinstance(track_data_sample, BaseDataElement):

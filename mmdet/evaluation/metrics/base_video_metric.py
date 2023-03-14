@@ -4,7 +4,7 @@ import pickle
 import shutil
 import tempfile
 import warnings
-from typing import Optional
+from typing import Optional, Sequence
 
 import torch
 from mmengine.dist import (barrier, broadcast, broadcast_object_list,
@@ -29,7 +29,28 @@ class BaseVideoMetric(BaseMetric):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-    def evaluate(self, size: int) -> dict:
+    def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
+        """Process one batch of data samples and predictions.
+
+        The processed results should be stored in ``self.results``, which will
+        be used to compute the metrics when all batches have been processed.
+
+        Args:
+            data_batch (dict): A batch of data from the dataloader.
+            data_samples (Sequence[dict]): A batch of data samples that
+                contain annotations and predictions.
+        """
+        for track_data_sample in data_samples:
+            video_data_samples = track_data_sample['video_data_samples']
+            ori_video_len = track_data_sample['ori_video_length']
+            if ori_video_len == len(video_data_samples):
+                # video process
+                self.process_video(video_data_samples)
+            else:
+                # image process
+                self.process_image(video_data_samples, ori_video_len)
+
+    def evaluate(self, size: int = 1) -> dict:
         """Evaluate the model performance of the whole dataset after processing
         all batches.
 
