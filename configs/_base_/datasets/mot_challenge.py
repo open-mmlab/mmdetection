@@ -62,7 +62,7 @@ train_dataloader = dict(
     # MOTChallengeDataset is a video-based dataset, so we don't need
     # "AspectRatioBatchSampler"
     # batch_sampler=dict(type='AspectRatioBatchSampler'),
-    sampler=dict(type='ImgQuotaSampler'),  # image-based sampling
+    sampler=dict(type='TrackImgSampler'),  # image-based sampling
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
@@ -76,7 +76,7 @@ val_dataloader = dict(
     num_workers=2,
     persistent_workers=True,
     drop_last=False,
-    sampler=dict(type='ImgQuotaSampler'),  # image-based sampling
+    sampler=dict(type='TrackImgSampler'),  # image-based sampling
     dataset=dict(
         type=dataset_type,
         data_root=data_root,

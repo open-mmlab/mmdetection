@@ -13,9 +13,20 @@ from ..base_video_dataset import BaseVideoDataset
 
 
 @DATA_SAMPLERS.register_module()
-class ImgQuotaSampler(Sampler):
-    """Sampler that gets fixed number of samples per epoch. It could be used in
-    both distributed and non-distributed environment.
+class TrackImgSampler(Sampler):
+    """Sampler that providing image-level sampling outputs for video datasets
+    in tracking tasks. It could be both used in both distributed and
+    non-distributed environment.
+    If using the default sampler in pytorch, the subsequent data receiver will
+    get one video, which is not desired in some cases:
+    (Take a non-distributed environment as an example)
+    1. In test mode, we want only one image is fed into the data pipeline. This
+    is in consideration of memory usage since feeding the whole video commonly
+    requires a large amount of memory (>=20G on MOTChallenge17 dataset), which
+    is not available in some machines.
+    2. In training mode, we may want to make sure all the images in one video
+    are randomly sampled once in one epoch and this can not be guaranteed in
+    the default sampler in pytorch.
 
     Args:
         dataset (Sized): Dataset used for sampling.
@@ -71,7 +82,7 @@ class ImgQuotaSampler(Sampler):
         else:
             assert isinstance(
                 self.dataset, BaseVideoDataset
-            ), 'ImgQuotaSampler is only supported in BaseVideoDataset or '
+            ), 'TrackImgSampler is only supported in BaseVideoDataset or '
             'dataset wrapper: ClassBalancedDataset and ConcatDataset, but '
             f'got {type(self.dataset)} '
             self.test_mode = self.dataset.test_mode

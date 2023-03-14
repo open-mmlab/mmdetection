@@ -12,8 +12,8 @@ from .mot_challenge_dataset import MOTChallengeDataset
 from .objects365 import Objects365V1Dataset, Objects365V2Dataset
 from .openimages import OpenImagesChallengeDataset, OpenImagesDataset
 from .samplers import (AspectRatioBatchSampler, ClassAwareSampler,
-                       GroupMultiSourceSampler, ImgQuotaSampler,
-                       MultiSourceSampler)
+                       GroupMultiSourceSampler, MultiSourceSampler,
+                       TrackImgSampler)
 from .utils import get_loading_pipeline
 from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
@@ -27,5 +27,5 @@ __all__ = [
     'AspectRatioBatchSampler', 'ClassAwareSampler', 'MultiSourceSampler',
     'GroupMultiSourceSampler', 'BaseDetDataset', 'CrowdHumanDataset',
     'Objects365V1Dataset', 'Objects365V2Dataset', 'BaseVideoDataset',
-    'MOTChallengeDataset', 'ImgQuotaSampler'
+    'MOTChallengeDataset', 'TrackImgSampler'
 ]

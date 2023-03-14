@@ -5,10 +5,10 @@ from unittest import TestCase
 
 from mmengine.dataset import ClassBalancedDataset, ConcatDataset
 
-from mmdet.datasets import ImgQuotaSampler, MOTChallengeDataset
+from mmdet.datasets import MOTChallengeDataset, TrackImgSampler
 
 
-class TestImgQuotaSampler(TestCase):
+class TestTrackImgSampler(TestCase):
 
     def test_iter_base_video_dataset(self):
         # train mode
@@ -19,7 +19,7 @@ class TestImgQuotaSampler(TestCase):
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
             test_mode=False,
             pipeline=[])
-        video_sampler = ImgQuotaSampler(dataset)
+        video_sampler = TrackImgSampler(dataset)
         assert len(video_sampler) == 5
         iterator = iter(video_sampler)
         assert isinstance(iterator, Iterable)
@@ -40,7 +40,7 @@ class TestImgQuotaSampler(TestCase):
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
             test_mode=True,
             pipeline=[])
-        video_sampler = ImgQuotaSampler(dataset)
+        video_sampler = TrackImgSampler(dataset)
         assert len(video_sampler) == 5
         assert len(video_sampler.indices) == 1
 
@@ -54,7 +54,7 @@ class TestImgQuotaSampler(TestCase):
             pipeline=[])
 
         dataset = ConcatDataset([single_dataset, deepcopy(single_dataset)])
-        video_sampler = ImgQuotaSampler(dataset)
+        video_sampler = TrackImgSampler(dataset)
         assert len(video_sampler) == 10
         iterator = iter(video_sampler)
         assert isinstance(iterator, Iterable)
@@ -78,7 +78,7 @@ class TestImgQuotaSampler(TestCase):
             pipeline=[])
 
         dataset = ClassBalancedDataset(single_dataset, oversample_thr=0.6)
-        video_sampler = ImgQuotaSampler(dataset)
+        video_sampler = TrackImgSampler(dataset)
         assert len(video_sampler) == 8
         iterator = iter(video_sampler)
         assert isinstance(iterator, Iterable)
