@@ -753,6 +753,7 @@ class PolygonMasks(BaseInstanceMasks):
         if len(self.masks) == 0:
             cropped_masks = PolygonMasks([], h, w)
         else:
+            cropped_masks = []
             for poly_per_obj in self.masks:
                 cropped_poly_per_obj = []
                 for p in poly_per_obj:
