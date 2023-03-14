@@ -89,8 +89,6 @@ class DetVisualizationHook(Hook):
         if self.draw is False:
             return
 
-        # TODO: video level track visualization
-        # now only support frame level visualization
         if self.file_client is None:
             self.file_client = FileClient(**self.file_client_args)
 
