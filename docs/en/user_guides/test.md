@@ -219,7 +219,7 @@ tta_model = dict(
 
 tta_pipeline = [
     dict(type='LoadImageFromFile',
-        file_client_args=dict(backend='disk')),
+        backend_args=None),
     dict(
         type='TestTimeAug',
         transforms=[[
@@ -274,7 +274,7 @@ tta_model = dict(
 img_scales = [(1333, 800), (666, 400), (2000, 1200)]
 tta_pipeline = [
     dict(type='LoadImageFromFile',
-        file_client_args=dict(backend='disk')),
+         backend_args=None),
     dict(
         type='TestTimeAug',
         transforms=[[
