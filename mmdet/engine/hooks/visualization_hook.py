@@ -192,7 +192,7 @@ class TrackVisualizationHook(Hook):
 
     def __init__(self,
                  draw: bool = False,
-                 interval: int = 1,
+                 interval: int = 30,
                  score_thr: float = 0.3,
                  show: bool = False,
                  wait_time: float = 0.,
