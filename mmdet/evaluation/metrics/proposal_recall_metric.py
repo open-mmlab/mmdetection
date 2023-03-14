@@ -82,16 +82,17 @@ class ProposalRecallMetric(ProposalRecall):
         """
         predictions, groundtruths = [], []
         for data_sample in data_samples:
-            gt = copy.deepcopy(data_sample)
-            gt_instances = gt['gt_instances']
+            cp_data_sample = copy.deepcopy(data_sample)
+            gt_instances = cp_data_sample['gt_instances']
             ann = dict(
                 labels=gt_instances['labels'].cpu().numpy(),
                 bboxes=gt_instances['bboxes'].cpu().numpy())
             groundtruths.append(ann)
 
-            pred = data_sample['pred_instances']
-            pred['bboxes'] = pred['bboxes'].cpu().numpy()
-            pred['scores'] = pred['scores'].cpu().numpy()
+            pred_instances = cp_data_sample['pred_instances']
+            pred = dict(
+                bboxes=pred_instances['bboxes'].cpu().numpy(),
+                scores=pred_instances['scores'].cpu().numpy())
             predictions.append(pred)
 
         self.add(predictions, groundtruths)
