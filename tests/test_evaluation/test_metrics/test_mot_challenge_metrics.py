@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import os
+import tempfile
 from unittest import TestCase
 
 import torch
@@ -17,6 +18,9 @@ class TestMOTChallengeMetric(TestCase):
             MOTChallengeMetric(metric='unknown')
         with self.assertRaises(AssertionError):
             MOTChallengeMetric(benchmark='MOT21')
+
+    def __del__(self):
+        self.tmp_dir.cleanup()
 
     @staticmethod
     def _get_predictions_demo():
@@ -80,10 +84,12 @@ class TestMOTChallengeMetric(TestCase):
             predictions.append(track_data_sample.to_dict())
         return predictions
 
-    def _test_evaluate(self, format_only):
+    def _test_evaluate(self, format_only, outfile_predix=None):
         """Test using the metric in the same way as Evaluator."""
         metric = MOTChallengeMetric(
-            metric=['HOTA', 'CLEAR', 'Identity'], format_only=format_only)
+            metric=['HOTA', 'CLEAR', 'Identity'],
+            format_only=format_only,
+            outfile_prefix=outfile_predix)
         metric.dataset_meta = {'classes': ('pedestrian', )}
         data_batch = dict(input=None, data_samples=None)
         predictions = self._get_predictions_demo()
@@ -103,5 +109,7 @@ class TestMOTChallengeMetric(TestCase):
             assert eval_results[key] - target[key] < 1e-3
 
     def test_evaluate_format_only(self):
-        eval_results = self._test_evaluate(True)
+        self.tmp_dir = tempfile.TemporaryDirectory()
+        eval_results = self._test_evaluate(
+            True, outfile_predix=self.tmp_dir.name)
         assert eval_results == dict()
