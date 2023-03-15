@@ -68,6 +68,7 @@ jobs:
           # force reinstall pycocotools to ensure pycocotools being built under the currenct numpy
           command: |
             python -m pip install git+ssh://git@github.com/open-mmlab/mmengine.git@main
+            python -m pip install git+ssh://git@github.com/open-mmlab/mmeval.git@main
             pip install -U openmim
             mim install 'mmcv >= 2.0.0rc4'
             pip install -r requirements/tests.txt -r requirements/optional.txt
@@ -106,16 +107,18 @@ jobs:
           name: Clone Repos
           command: |
             git clone -b main --depth 1 ssh://git@github.com/open-mmlab/mmengine.git /home/circleci/mmengine
+            git clone -b main --depth 1 ssh://git@github.com/open-mmlab/mmeval.git /home/circleci/mmeval
       - run:
           name: Build Docker image
           command: |
             docker build .circleci/docker -t mmdetection:gpu --build-arg PYTORCH=<< parameters.torch >> --build-arg CUDA=<< parameters.cuda >> --build-arg CUDNN=<< parameters.cudnn >>
-            docker run --gpus all -t -d -v /home/circleci/project:/mmdetection -v /home/circleci/mmengine:/mmengine -w /mmdetection --name mmdetection mmdetection:gpu
+            docker run --gpus all -t -d -v /home/circleci/project:/mmdetection -v /home/circleci/mmengine:/mmengine -v /home/circleci/mmeval:/mmeval -w /mmdetection --name mmdetection mmdetection:gpu
             docker exec mmdetection apt-get install -y git
       - run:
           name: Install mmdet dependencies
           command: |
             docker exec mmdetection pip install -e /mmengine
+            docker exec mmdetection pip install -e /mmeval
             docker exec mmdetection pip install -U openmim
             docker exec mmdetection mim install 'mmcv >= 2.0.0rc4'
             docker exec mmdetection pip install -r requirements/tests.txt -r requirements/optional.txt

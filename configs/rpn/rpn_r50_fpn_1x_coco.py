@@ -3,7 +3,13 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-val_evaluator = dict(metric='proposal_fast')
+val_evaluator = dict(
+    _delete_=True,
+    type='ProposalRecallMetric',
+    proposal_nums=(1, 10, 100, 1000),
+    prefix='coco',
+    use_legacy_coordinate=False,  # VOCDataset should set True, else False
+)
 test_evaluator = val_evaluator
 
 # inference on val dataset and dump the proposals with evaluate metric
@@ -14,11 +20,9 @@ test_evaluator = val_evaluator
 #         output_dir=data_root + 'proposals/',
 #         proposals_file='rpn_r50_fpn_1x_val2017.pkl'),
 #     dict(
-#         type='CocoMetric',
-#         ann_file=data_root + 'annotations/instances_val2017.json',
-#         metric='proposal_fast',
-#         file_client_args={{_base_.file_client_args}},
-#         format_only=False)
+#         type='ProposalRecallMetric',
+#         proposal_nums=(1, 10, 100, 1000),
+#         use_legacy_coordinate=False,
 # ]
 
 # inference on training dataset and dump the proposals without evaluate metric

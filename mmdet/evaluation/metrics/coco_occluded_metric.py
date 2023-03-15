@@ -1,24 +1,20 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+from typing import List, Optional, Sequence, Union
 
-import os.path as osp
-from typing import Dict, List, Optional, Union
-
-import mmengine
-import numpy as np
-from mmengine.fileio import load
-from mmengine.logging import print_log
-from pycocotools import mask as coco_mask
-from terminaltables import AsciiTable
+from mmengine.logging import MMLogger
+from mmeval import CocoOccludedSeparated
 
 from mmdet.registry import METRICS
-from .coco_metric import CocoMetric
+from .coco_metric import parse_coco_groundtruth, parse_coco_prediction
 
 
 @METRICS.register_module()
-class CocoOccludedSeparatedMetric(CocoMetric):
-    """Metric of separated and occluded masks which presented in paper `A Tri-
-    Layer Plugin to Improve Occluded Detection.
+class CocoOccludedSeparatedMetric(CocoOccludedSeparated):
+    """A wrapper of :class:`mmeval.CocoOccludedSeparated`.
 
+    Metric of separated and occluded masks which presented in paper `A Tri-
+    Layer Plugin to Improve Occluded Detection.
     <https://arxiv.org/abs/2210.10046>`_.
 
     Separated COCO and Occluded COCO are automatically generated subsets of
@@ -44,168 +40,140 @@ class CocoOccludedSeparatedMetric(CocoMetric):
     }
 
     Args:
+        ann_file (str, optional): Path to the coco format annotation file.
+            If not specified, ground truth annotations from the dataset will
+            be converted to coco format. Defaults to None.
+        metric (str | List[str]): Metrics to be evaluated. Valid metrics
+            include 'bbox', 'segm', and 'proposal'.
+            Defaults to ['bbox', 'segm'].
+        iou_thrs (float | List[float], optional): IoU threshold to compute AP
+            and AR. If not specified, IoUs from 0.5 to 0.95 will be used.
+            Defaults to None.
+        classwise (bool):Whether to return the computed
+            results of each class. Defaults to False.
+        proposal_nums (Sequence[int]): Numbers of proposals to be evaluated.
+            Defaults to (1, 10, 100).
+            Note: it defaults to (100, 300, 1000) in MMDet 2.x.
+        metric_items (List[str], optional): Metric result names to be
+            recorded in the evaluation result. Defaults to None.
+        format_only (bool): Format the output results without perform
+            evaluation. It is useful when you want to format the result
+            to a specific format and submit it to the test server.
+            Defaults to False.
+        outfile_prefix (str, optional): The prefix of json files. It includes
+            the file path and the prefix of filename, e.g., "a/b/prefix".
+            If not specified, a temp file will be created. Defaults to None.
+        backend_args (dict, optional): Arguments to instantiate the
+            preifx of uri corresponding backend. Defaults to None.
+        gt_mask_area (bool): Whether calculate GT mask area when not loading
+            ann_file. If True, the GT instance area will be the mask area,
+            else the bounding box area. It will not be used when loading
+            ann_file. Defaults to True.
+        prefix (str, optional): The prefix that will be added in the metric
+            names to disambiguate homonymous metrics of different evaluators.
+            If prefix is not provided in the argument, self.default_prefix
+            will be used instead. Defaults to None.
+        dist_backend (str | None): The name of the distributed communication
+            backend. Refer to :class:`mmeval.BaseMetric`.
+            Defaults to 'torch_cuda'.
         occluded_ann (str): Path to the occluded coco annotation file.
         separated_ann (str): Path to the separated coco annotation file.
         score_thr (float): Score threshold of the detection masks.
             Defaults to 0.3.
         iou_thr (float): IoU threshold for the recall calculation.
             Defaults to 0.75.
-        metric (str | List[str]): Metrics to be evaluated. Valid metrics
-            include 'bbox', 'segm', 'proposal', and 'proposal_fast'.
-            Defaults to 'bbox'.
+        **kwargs: Keyword parameters passed to :class:`CocoOccludedSeparated`.
     """
     default_prefix: Optional[str] = 'coco'
 
     def __init__(
             self,
-            *args,
+            ann_file: Optional[str] = None,
+            metric: Union[str, List[str]] = ['bbox', 'segm'],
+            iou_thrs: Optional[Union[float, Sequence[float]]] = None,
+            classwise: bool = False,
+            proposal_nums: Sequence[int] = (1, 10, 100),
+            metric_items: Optional[Sequence[str]] = None,
+            format_only: bool = False,
+            outfile_prefix: Optional[str] = None,
+            backend_args: Optional[dict] = None,
+            gt_mask_area: bool = True,
             occluded_ann:
         str = 'https://www.robots.ox.ac.uk/~vgg/research/tpod/datasets/occluded_coco.pkl',  # noqa
             separated_ann:
         str = 'https://www.robots.ox.ac.uk/~vgg/research/tpod/datasets/separated_coco.pkl',  # noqa
             score_thr: float = 0.3,
             iou_thr: float = 0.75,
-            metric: Union[str, List[str]] = ['bbox', 'segm'],
+            prefix: Optional[str] = None,
+            dist_backend: str = 'torch_cuda',
             **kwargs) -> None:
-        super().__init__(*args, metric=metric, **kwargs)
-        # load from local file
-        if osp.isfile(occluded_ann) and not osp.isabs(occluded_ann):
-            occluded_ann = osp.join(self.data_root, occluded_ann)
-        if osp.isfile(separated_ann) and not osp.isabs(separated_ann):
-            separated_ann = osp.join(self.data_root, separated_ann)
-        self.occluded_ann = load(occluded_ann)
-        self.separated_ann = load(separated_ann)
-        self.score_thr = score_thr
-        self.iou_thr = iou_thr
 
-    def compute_metrics(self, results: list) -> Dict[str, float]:
-        """Compute the metrics from processed results.
+        collect_device = kwargs.pop('collect_device', None)
+        if collect_device is not None:
+            warnings.warn(
+                'DeprecationWarning: The `collect_device` parameter of '
+                '`CocoOccludedSeparatedMetric` is deprecated, '
+                'use `dist_backend` instead.')
 
-        Args:
-            results (list): The processed results of each batch.
+        logger = MMLogger.get_current_instance()
+        super().__init__(
+            ann_file=ann_file,
+            metric=metric,
+            iou_thrs=iou_thrs,
+            classwise=classwise,
+            proposal_nums=proposal_nums,
+            metric_items=metric_items,
+            format_only=format_only,
+            outfile_prefix=outfile_prefix,
+            backend_args=backend_args,
+            gt_mask_area=gt_mask_area,
+            occluded_ann=occluded_ann,
+            separated_ann=separated_ann,
+            score_thr=score_thr,
+            iou_thr=iou_thr,
+            dist_backend=dist_backend,
+            logger=logger,
+            **kwargs)
 
-        Returns:
-            Dict[str, float]: The computed metrics. The keys are the names of
-            the metrics, and the values are corresponding results.
-        """
-        coco_metric_res = super().compute_metrics(results)
-        eval_res = self.evaluate_occluded_separated(results)
-        coco_metric_res.update(eval_res)
-        return coco_metric_res
+        self.prefix = prefix or self.default_prefix
 
-    def evaluate_occluded_separated(self, results: List[tuple]) -> dict:
-        """Compute the recall of occluded and separated masks.
-
-        Args:
-            results (list[tuple]): Testing results of the dataset.
-
-        Returns:
-            dict[str, float]: The recall of occluded and separated masks.
-        """
-        dict_det = {}
-        print_log('processing detection results...')
-        prog_bar = mmengine.ProgressBar(len(results))
-        for i in range(len(results)):
-            gt, dt = results[i]
-            img_id = dt['img_id']
-            cur_img_name = self._coco_api.imgs[img_id]['file_name']
-            if cur_img_name not in dict_det.keys():
-                dict_det[cur_img_name] = []
-
-            for bbox, score, label, mask in zip(dt['bboxes'], dt['scores'],
-                                                dt['labels'], dt['masks']):
-                cur_binary_mask = coco_mask.decode(mask)
-                dict_det[cur_img_name].append([
-                    score, self.dataset_meta['classes'][label],
-                    cur_binary_mask, bbox
-                ])
-            dict_det[cur_img_name].sort(
-                key=lambda x: (-x[0], x[3][0], x[3][1])
-            )  # rank by confidence from high to low, avoid same confidence
-            prog_bar.update()
-        print_log('\ncomputing occluded mask recall...', logger='current')
-        occluded_correct_num, occluded_recall = self.compute_recall(
-            dict_det, gt_ann=self.occluded_ann, is_occ=True)
-        print_log(
-            f'\nCOCO occluded mask recall: {occluded_recall:.2f}%',
-            logger='current')
-        print_log(
-            f'COCO occluded mask success num: {occluded_correct_num}',
-            logger='current')
-        print_log('computing separated mask recall...', logger='current')
-        separated_correct_num, separated_recall = self.compute_recall(
-            dict_det, gt_ann=self.separated_ann, is_occ=False)
-        print_log(
-            f'\nCOCO separated mask recall: {separated_recall:.2f}%',
-            logger='current')
-        print_log(
-            f'COCO separated mask success num: {separated_correct_num}',
-            logger='current')
-        table_data = [
-            ['mask type', 'recall', 'num correct'],
-            ['occluded', f'{occluded_recall:.2f}%', occluded_correct_num],
-            ['separated', f'{separated_recall:.2f}%', separated_correct_num]
-        ]
-        table = AsciiTable(table_data)
-        print_log('\n' + table.table, logger='current')
-        return dict(
-            occluded_recall=occluded_recall, separated_recall=separated_recall)
-
-    def compute_recall(self,
-                       result_dict: dict,
-                       gt_ann: list,
-                       is_occ: bool = True) -> tuple:
-        """Compute the recall of occluded or separated masks.
+    # TODO: data_batch is no longer needed, consider adjusting the
+    #  parameter position
+    def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
+        """Process one batch of data samples and predictions. The processed
+        results should be stored in ``self.results``, which will be used to
+        compute the metrics when all batches have been processed.
 
         Args:
-            result_dict (dict): Processed mask results.
-            gt_ann (list): Occluded or separated coco annotations.
-            is_occ (bool): Whether the annotation is occluded mask.
-                Defaults to True.
-        Returns:
-            tuple: number of correct masks and the recall.
+            data_batch (dict): A batch of data from the dataloader.
+            data_samples (Sequence[dict]): A batch of data samples that
+                contain annotations and predictions.
         """
-        correct = 0
-        prog_bar = mmengine.ProgressBar(len(gt_ann))
-        for iter_i in range(len(gt_ann)):
-            cur_item = gt_ann[iter_i]
-            cur_img_name = cur_item[0]
-            cur_gt_bbox = cur_item[3]
-            if is_occ:
-                cur_gt_bbox = [
-                    cur_gt_bbox[0], cur_gt_bbox[1],
-                    cur_gt_bbox[0] + cur_gt_bbox[2],
-                    cur_gt_bbox[1] + cur_gt_bbox[3]
-                ]
-            cur_gt_class = cur_item[1]
-            cur_gt_mask = coco_mask.decode(cur_item[4])
+        predictions, groundtruths = [], []
+        for data_sample in data_samples:
+            # parse prediction
+            pred = parse_coco_prediction(data_sample)
+            predictions.append(pred)
 
-            assert cur_img_name in result_dict.keys()
-            cur_detections = result_dict[cur_img_name]
+            # parse groundtruth
+            if self._coco_api is None:
+                ann = parse_coco_groundtruth(data_sample)
+            else:
+                ann = dict()
+            groundtruths.append(ann)
 
-            correct_flag = False
-            for i in range(len(cur_detections)):
-                cur_det_confidence = cur_detections[i][0]
-                if cur_det_confidence < self.score_thr:
-                    break
-                cur_det_class = cur_detections[i][1]
-                if cur_det_class != cur_gt_class:
-                    continue
-                cur_det_mask = cur_detections[i][2]
-                cur_iou = self.mask_iou(cur_det_mask, cur_gt_mask)
-                if cur_iou >= self.iou_thr:
-                    correct_flag = True
-                    break
-            if correct_flag:
-                correct += 1
-            prog_bar.update()
-        recall = correct / len(gt_ann) * 100
-        return correct, recall
+        self.add(predictions, groundtruths)
 
-    def mask_iou(self, mask1: np.ndarray, mask2: np.ndarray) -> np.ndarray:
-        """Compute IoU between two masks."""
-        mask1_area = np.count_nonzero(mask1 == 1)
-        mask2_area = np.count_nonzero(mask2 == 1)
-        intersection = np.count_nonzero(np.logical_and(mask1 == 1, mask2 == 1))
-        iou = intersection / (mask1_area + mask2_area - intersection)
-        return iou
+    def evaluate(self, *args, **kwargs) -> dict:
+        """Returns metric results and print pretty table of metrics per class.
+
+        This method would be invoked by ``mmengine.Evaluator``.
+        """
+        metric_results = self.compute(*args, **kwargs)
+        self.reset()
+
+        evaluate_results = {
+            f'{self.prefix}/{k}(%)': round(float(v) * 100, 4)
+            for k, v in metric_results.items()
+        }
+        return evaluate_results
