@@ -4,7 +4,6 @@ import os.path as osp
 import shutil
 import tempfile
 from collections import defaultdict
-from glob import glob
 from typing import List, Optional, Union
 
 import numpy as np
@@ -49,6 +48,18 @@ class MOTChallengeMetric(BaseVideoMetric):
         benchmark (str): Benchmark to be evaluated. Defaults to 'MOT17'.
         format_only (bool): If True, only formatting the results to the
             official format and not performing evaluation. Defaults to False.
+        postprocess_tracklet_cfg (List[dict], optional): configs for tracklets
+            postprocessing methods. `InterpolateTracklets` is supported.
+            Defaults to []
+            - InterpolateTracklets:
+                - min_num_frames (int, optional): The minimum length of a
+                    track that will be interpolated. Defaults to 5.
+                - max_num_frames (int, optional): The maximum disconnected
+                    length in a track. Defaults to 20.
+                - use_gsi (bool, optional): Whether to use the GSI (Gaussian-
+                    smoothed interpolation) method. Defaults to False.
+                - smooth_tau (int, optional): smoothing parameter in GSI.
+                    Defaults to 10.
         collect_device (str): Device name used for collecting results from
             different ranks during distributed training. Must be 'cpu' or
             'gpu'. Defaults to 'cpu'.
@@ -84,6 +95,10 @@ class MOTChallengeMetric(BaseVideoMetric):
                 raise KeyError(f'metric {metric} is not supported.')
         self.metrics = metrics
         self.format_only = format_only
+        if self.format_only:
+            assert outfile_prefix is not None, 'outfile_prefix must be not'
+            'None when format_only is True, otherwise the result files will'
+            'be saved to a temp directory which will be cleaned up at the end.'
         self.postprocess_tracklet_cfg = postprocess_tracklet_cfg.copy()
         self.postprocess_tracklet_methods = [
             TASK_UTILS.build(cfg) for cfg in self.postprocess_tracklet_cfg
@@ -127,13 +142,9 @@ class MOTChallengeMetric(BaseVideoMetric):
         os.makedirs(output_dir, exist_ok=True)
         return output_dir
 
-    def process_image(self, data_samples, video_len):
+    def transform_gt_and_pred(self, img_data_sample, video, frame_id):
 
-        img_data_sample = data_samples[0].to_dict()
         video = img_data_sample['img_path'].split(os.sep)[-3]
-        frame_id = img_data_sample['frame_id']
-        if self.seq_info[video]['seq_length'] == -1:
-            self.seq_info[video]['seq_length'] = video_len
         # load gts
         if 'instances' in img_data_sample:
             gt_instances = img_data_sample['instances']
@@ -166,6 +177,16 @@ class MOTChallengeMetric(BaseVideoMetric):
             ]) for i in range(len(pred_instances['instances_id']))
         ]
         self.seq_info[video]['pred_tracks'].extend(pred_tracks)
+
+    def process_image(self, data_samples, video_len):
+
+        img_data_sample = data_samples[0].to_dict()
+        video = img_data_sample['img_path'].split(os.sep)[-3]
+        frame_id = img_data_sample['frame_id']
+        if self.seq_info[video]['seq_length'] == -1:
+            self.seq_info[video]['seq_length'] = video_len
+        self.transform_gt_and_pred(img_data_sample, video, frame_id)
+
         if frame_id == video_len - 1:
             # postprocessing
             if self.postprocess_tracklet_cfg:
@@ -187,41 +208,7 @@ class MOTChallengeMetric(BaseVideoMetric):
             video = img_data_sample['img_path'].split(os.sep)[-3]
             if self.seq_info[video]['seq_length'] == -1:
                 self.seq_info[video]['seq_length'] = video_len
-
-            # load gts
-            if 'instances' in img_data_sample:
-                gt_instances = img_data_sample['instances']
-                gt_tracks = [
-                    np.array([
-                        frame_id + 1, gt_instances[i]['instance_id'],
-                        gt_instances[i]['bbox'][0], gt_instances[i]['bbox'][1],
-                        gt_instances[i]['bbox'][2] -
-                        gt_instances[i]['bbox'][0],
-                        gt_instances[i]['bbox'][3] -
-                        gt_instances[i]['bbox'][1],
-                        gt_instances[i]['mot_conf'],
-                        gt_instances[i]['category_id'],
-                        gt_instances[i]['visibility']
-                    ]) for i in range(len(gt_instances))
-                ]
-                self.seq_info[video]['gt_tracks'].extend(gt_tracks)
-
-            # load predictions
-            assert 'pred_track_instances' in img_data_sample
-            pred_instances = img_data_sample['pred_track_instances']
-            pred_tracks = [
-                np.array([
-                    frame_id + 1, pred_instances['instances_id'][i].cpu(),
-                    pred_instances['bboxes'][i][0].cpu(),
-                    pred_instances['bboxes'][i][1].cpu(),
-                    (pred_instances['bboxes'][i][2] -
-                     pred_instances['bboxes'][i][0]).cpu(),
-                    (pred_instances['bboxes'][i][3] -
-                     pred_instances['bboxes'][i][1]).cpu(),
-                    pred_instances['scores'][i].cpu()
-                ]) for i in range(len(pred_instances['instances_id']))
-            ]
-            self.seq_info[video]['pred_tracks'].extend(pred_tracks)
+            self.transform_gt_and_pred(img_data_sample, video, frame_id)
 
         if self.postprocess_tracklet_cfg:
             info = self.seq_info[video]
@@ -328,9 +315,6 @@ class MOTChallengeMetric(BaseVideoMetric):
             eval_results['IDP'] = np.average(output_res['Identity']['IDP'])
             eval_results['IDR'] = np.average(output_res['Identity']['IDR'])
 
-        # clean all txt file
-        for txt_name in glob(osp.join(self.tmp_dir.name, '*.txt')):
-            os.remove(txt_name)
         return eval_results
 
     def evaluate(self, size: int = 1) -> dict:

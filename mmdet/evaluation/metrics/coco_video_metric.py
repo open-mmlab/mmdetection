@@ -7,7 +7,6 @@ from mmengine.fileio import get_local_path
 
 from mmdet.datasets.api_wrappers import COCO
 from mmdet.registry import METRICS
-from mmdet.structures import SampleList
 from mmdet.structures.mask import encode_mask_results
 from .base_video_metric import collect_tracking_results
 from .coco_metric import CocoMetric
@@ -46,49 +45,20 @@ class CocoVideoMetric(CocoMetric):
         for track_data_sample in data_samples:
             video_data_samples = track_data_sample['video_data_samples']
             ori_video_len = track_data_sample['ori_video_length']
-            if ori_video_len == len(video_data_samples):
+            video_len = len(video_data_samples)
+            if ori_video_len == video_len:
                 # video process
-                self.process_video(video_data_samples)
+                for frame_id in range(video_len):
+                    img_data_sample = video_data_samples[frame_id].to_dict()
+                    self.process_image(img_data_sample)
             else:
                 # image process
-                self.process_image(video_data_samples, ori_video_len)
+                img_data_sample = video_data_samples[0].to_dict()
+                self.process_image(img_data_sample)
 
-    def process_video(self, data_samples: SampleList):
-
-        video_len = len(data_samples)
-        for frame_id in range(video_len):
-            img_data_sample = data_samples[frame_id].to_dict()
-            result = dict()
-            pred = img_data_sample['pred_instances']
-            result['img_id'] = img_data_sample['img_id']
-            result['bboxes'] = pred['bboxes'].cpu().numpy()
-            result['scores'] = pred['scores'].cpu().numpy()
-            result['labels'] = pred['labels'].cpu().numpy()
-            # encode mask to RLE
-            if 'masks' in pred:
-                result['masks'] = encode_mask_results(
-                    pred['masks'].detach().cpu().numpy())
-            # some detectors use different scores for bbox and mask
-            if 'mask_scores' in pred:
-                result['mask_scores'] = pred['mask_scores'].cpu().numpy()
-
-            # parse gt
-            gt = dict()
-            gt['width'] = img_data_sample['ori_shape'][1]
-            gt['height'] = img_data_sample['ori_shape'][0]
-            gt['img_id'] = img_data_sample['img_id']
-            if self._coco_api is None:
-                assert 'instances' in img_data_sample, \
-                    'ground truth is required for evaluation when ' \
-                    '`ann_file` is not provided'
-                gt['anns'] = img_data_sample['instances']
-            # add converted result to the results list
-            self.results.append((gt, result))
-
-    def process_image(self, data_samples: SampleList, video_len: int = 1):
+    def process_image(self, img_data_sample: dict):
 
         result = dict()
-        img_data_sample = data_samples[0].to_dict()
         pred = img_data_sample['pred_instances']
         result['img_id'] = img_data_sample['img_id']
         result['bboxes'] = pred['bboxes'].cpu().numpy()
