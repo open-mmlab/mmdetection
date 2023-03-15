@@ -66,10 +66,8 @@ val_evaluator = [
         metric=['bbox', 'segm']),
     dict(
         type='CityScapesMetric',
-        ann_file=data_root +
-        'annotations/instancesonly_filtered_gtFine_val.json',
-        seg_prefix=data_root + '/gtFine/val',
-        outfile_prefix='./work_dirs/cityscapes_metric/instance')
+        seg_prefix=data_root + 'gtFine/val',
+        classwise=True)
 ]
 
 test_evaluator = val_evaluator
