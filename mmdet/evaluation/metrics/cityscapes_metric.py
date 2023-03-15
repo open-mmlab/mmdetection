@@ -30,7 +30,7 @@ class CityScapesMetric(CityScapesDetection):
             evaluation. It is useful when you want to format the result
             to a specific format and submit it to the test server.
             Defaults to False.
-        classwise (bool): Whether to return the computed  results of each
+        classwise (bool): Whether to return the computed results of each
             class. Defaults to True.
         collect_device (str): Device name used for collecting results from
             different ranks during distributed training. Must be 'cpu' or
