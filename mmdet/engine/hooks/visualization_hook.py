@@ -89,6 +89,8 @@ class DetVisualizationHook(Hook):
         if self.draw is False:
             return
 
+        # TODO: video level track visualization
+        # now only support frame level visualization
         if self.file_client is None:
             self.file_client = FileClient(**self.file_client_args)
 
@@ -177,7 +179,7 @@ class TrackVisualizationHook(Hook):
     Args:
         draw (bool): whether to draw prediction results. If it is False,
             it means that no drawing will be done. Defaults to False.
-        interval (int): The interval of visualization. Defaults to 30.
+        frame_interval (int): The interval of visualization. Defaults to 30.
         score_thr (float): The threshold to visualize the bboxes
             and masks. Defaults to 0.3.
         show (bool): Whether to display the drawn image. Default to False.
@@ -190,14 +192,14 @@ class TrackVisualizationHook(Hook):
 
     def __init__(self,
                  draw: bool = False,
-                 interval: int = 1,
+                 frame_interval: int = 30,
                  score_thr: float = 0.3,
                  show: bool = False,
                  wait_time: float = 0.,
                  test_out_dir: Optional[str] = None,
                  backend_args: dict = None):
         self._visualizer: Visualizer = Visualizer.get_current_instance()
-        self.interval = interval
+        self.frame_interval = frame_interval
         self.score_thr = score_thr
         self.show = show
         if self.show:
@@ -233,8 +235,10 @@ class TrackVisualizationHook(Hook):
         sampler = runner.val_dataloader.sampler
         if isinstance(sampler, ImgQuotaSampler):
             if self.every_n_inner_iters(batch_idx, self.interval):
+                total_curr_iter = runner.iter + batch_idx
                 track_data_sample = outputs[0]
-                self.visualize_single_image(track_data_sample[0], batch_idx)
+                self.visualize_single_image(track_data_sample[0],
+                                            total_curr_iter)
         else:
             # video visualization DefaultSampler
             if self.every_n_inner_iters(batch_idx, 1):
@@ -242,9 +246,12 @@ class TrackVisualizationHook(Hook):
                 video_length = len(track_data_sample)
 
                 for frame_id in range(video_length):
-                    img_data_sample = track_data_sample[frame_id]
-                    self.visualize_single_image(img_data_sample,
-                                                self.image_idx + frame_id)
+                    if frame_id % self.frame_interval == 0:
+                        total_curr_iter = runner.iter + self.image_idx + \
+                                            frame_id
+                        img_data_sample = track_data_sample[frame_id]
+                        self.visualize_single_image(img_data_sample,
+                                                    total_curr_iter)
                 self.image_idx = self.image_idx + video_length
 
     def after_test_iter(self, runner: Runner, batch_idx: int, data_batch: dict,
@@ -280,9 +287,10 @@ class TrackVisualizationHook(Hook):
                 video_length = len(track_data_sample)
 
                 for frame_id in range(video_length):
-                    img_data_sample = track_data_sample[frame_id]
-                    self.visualize_single_image(img_data_sample,
-                                                self.image_idx + frame_id)
+                    if frame_id % self.frame_interval == 0:
+                        img_data_sample = track_data_sample[frame_id]
+                        self.visualize_single_image(img_data_sample,
+                                                    self.image_idx + frame_id)
                 self.image_idx = self.image_idx + video_length
 
     def visualize_single_image(self, img_data_sample: DetDataSample,

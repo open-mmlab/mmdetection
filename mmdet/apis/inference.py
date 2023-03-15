@@ -305,9 +305,6 @@ def init_track_model(config: Union[str, Config],
     if cfg_options is not None:
         config.merge_from_dict(cfg_options)
 
-    sampler = config.test_dataloader.sampler.type
-    assert sampler == 'ImgQuotaSampler',  \
-        f'demo only support ImgQuotaSampler, but get {sampler}'
     model = MODELS.build(config.model)
 
     if checkpoint is not None:
