@@ -234,7 +234,7 @@ class TrackVisualizationHook(Hook):
 
         sampler = runner.val_dataloader.sampler
         if isinstance(sampler, ImgQuotaSampler):
-            if self.every_n_inner_iters(batch_idx, self.interval):
+            if self.every_n_inner_iters(batch_idx, self.frame_interval):
                 total_curr_iter = runner.iter + batch_idx
                 track_data_sample = outputs[0]
                 self.visualize_single_image(track_data_sample[0],
@@ -248,7 +248,7 @@ class TrackVisualizationHook(Hook):
                 for frame_id in range(video_length):
                     if frame_id % self.frame_interval == 0:
                         total_curr_iter = runner.iter + self.image_idx + \
-                                            frame_id
+                                          frame_id
                         img_data_sample = track_data_sample[frame_id]
                         self.visualize_single_image(img_data_sample,
                                                     total_curr_iter)
@@ -277,7 +277,7 @@ class TrackVisualizationHook(Hook):
 
         sampler = runner.test_dataloader.sampler
         if isinstance(sampler, ImgQuotaSampler):
-            if self.every_n_inner_iters(batch_idx, self.interval):
+            if self.every_n_inner_iters(batch_idx, self.frame_interval):
                 track_data_sample = outputs[0]
                 self.visualize_single_image(track_data_sample[0], batch_idx)
         else:
