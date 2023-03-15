@@ -12,6 +12,100 @@ from mmdet.structures.mask import (BitmapMasks, PolygonMasks,
                                    encode_mask_results)
 
 
+def parse_coco_groundtruth(data_sample: dict) -> dict:
+    """Parse coco groundtruth if :obj:`COCODetection._coco_api` is None.
+
+    Args:
+        data_sample (dict): Data samples that contain annotations
+            and predictions.
+
+    Returns:
+        dict: Represents a groundtruths for an image, with the following
+        keys:
+
+        - img_id (int): Image id.
+        - width (int): The width of the image.
+        - height (int): The height of the image.
+        - bboxes (numpy.ndarray): Shape (K, 4), the ground truth
+          bounding bboxes of this image, in 'xyxy' foramrt.
+        - labels (numpy.ndarray): Shape (K, ), the ground truth
+          labels of bounding boxes.
+        - masks (list[RLE], optional): The predicted masks.
+        - ignore_flags (numpy.ndarray, optional): Shape (K, ),
+          the ignore flags.
+    """
+    ann = dict()
+    ann['width'] = data_sample['ori_shape'][1]
+    ann['height'] = data_sample['ori_shape'][0]
+    ann['img_id'] = data_sample['img_id']
+
+    gt_instances = data_sample['gt_instances']
+    ignored_instances = data_sample['ignored_instances']
+
+    ann['bboxes'] = np.concatenate((gt_instances['bboxes'].cpu().numpy(),
+                                    ignored_instances['bboxes'].cpu().numpy()),
+                                   axis=0)
+    ann['labels'] = np.concatenate((gt_instances['labels'].cpu().numpy(),
+                                    ignored_instances['labels'].cpu().numpy()),
+                                   axis=0)
+    ann['ignore_flags'] = np.concatenate(
+        (np.zeros(len(gt_instances['labels'])),
+         np.ones(len(ignored_instances['labels']))),
+        axis=0)
+    assert len(ann['bboxes']) == len(ann['labels'])
+    if 'masks' in gt_instances:
+        assert isinstance(gt_instances['masks'],
+                          (PolygonMasks, BitmapMasks)) and \
+               isinstance(ignored_instances['masks'],
+                          (PolygonMasks, BitmapMasks))
+        ann['masks']: list = []
+        ann['masks'].extend(
+            encode_mask_results(gt_instances['masks'].to_ndarray()))
+        ann['masks'].extend(
+            encode_mask_results(ignored_instances['masks'].to_ndarray()))
+        assert len(ann['bboxes']) == len(ann['masks'])
+    return ann
+
+
+def parse_coco_prediction(data_sample: dict) -> dict:
+    """Parse coco prediction.
+
+    Args:
+        data_sample (dict): Data samples that contain annotations
+            and predictions.
+
+    Returns:
+        dict: Represents a detection result for an image, with the
+        following keys:
+
+        - img_id (int): Image id.
+        - bboxes (numpy.ndarray): Shape (N, 4), the predicted
+          bounding bboxes of this image, in 'xyxy' foramrt.
+        - scores (numpy.ndarray): Shape (N, ), the predicted scores
+          of bounding boxes.
+        - labels (numpy.ndarray): Shape (N, ), the predicted labels
+          of bounding boxes.
+        - masks (list[RLE], optional): The predicted masks.
+        - mask_scores (np.array, optional): Shape (N, ), the predicted
+          scores of masks.
+    """
+    pred = dict()
+    pred_instances = data_sample['pred_instances']
+    pred['img_id'] = data_sample['img_id']
+    pred['bboxes'] = pred_instances['bboxes'].cpu().numpy()
+    pred['scores'] = pred_instances['scores'].cpu().numpy()
+    pred['labels'] = pred_instances['labels'].cpu().numpy()
+    if 'masks' in pred_instances:
+        pred['masks'] = encode_mask_results(
+            pred_instances['masks'].detach().cpu().numpy()) if isinstance(
+                pred_instances['masks'], Tensor) else pred_instances['masks']
+    # some detectors use different scores for bbox and mask
+    if 'mask_scores' in pred_instances:
+        pred['mask_scores'] = \
+            pred_instances['mask_scores'].cpu().numpy()
+    return pred
+
+
 @METRICS.register_module()
 class CocoMetric(COCODetection):
     """A wrapper of :class:`mmeval.COCODetection`.
@@ -56,7 +150,7 @@ class CocoMetric(COCODetection):
         dist_backend (str | None): The name of the distributed communication
             backend. Refer to :class:`mmeval.BaseMetric`.
             Defaults to 'torch_cuda'.
-        **kwargs: Keyword parameters passed to :class:`BaseMetric`.
+        **kwargs: Keyword parameters passed to :class:`COCODetection`.
     """
     default_prefix: Optional[str] = 'coco'
 
@@ -113,67 +207,18 @@ class CocoMetric(COCODetection):
         """
         predictions, groundtruths = [], []
         for data_sample in data_samples:
-            pred = dict()
-            pred_instances = data_sample['pred_instances']
-            pred['img_id'] = data_sample['img_id']
-            pred['bboxes'] = pred_instances['bboxes'].cpu().numpy()
-            pred['scores'] = pred_instances['scores'].cpu().numpy()
-            pred['labels'] = pred_instances['labels'].cpu().numpy()
-            if 'masks' in pred_instances:
-                pred['masks'] = encode_mask_results(
-                    pred_instances['masks'].detach().cpu().numpy(
-                    )) if isinstance(pred_instances['masks'],
-                                     Tensor) else pred_instances['masks']
-            # some detectors use different scores for bbox and mask
-            if 'mask_scores' in pred_instances:
-                pred['mask_scores'] = \
-                    pred_instances['mask_scores'].cpu().numpy()
+            # parse prediction
+            pred = parse_coco_prediction(data_sample)
             predictions.append(pred)
 
-            # parse gt
+            # parse groundtruth
             if self._coco_api is None:
-                ann = self.add_gt(data_sample)
+                ann = parse_coco_groundtruth(data_sample)
             else:
                 ann = dict()
             groundtruths.append(ann)
 
         self.add(predictions, groundtruths)
-
-    @staticmethod
-    def add_gt(data_sample):
-        ann = dict()
-        ann['width'] = data_sample['ori_shape'][1]
-        ann['height'] = data_sample['ori_shape'][0]
-        ann['img_id'] = data_sample['img_id']
-
-        gt_instances = data_sample['gt_instances']
-        ignored_instances = data_sample['ignored_instances']
-
-        ann['bboxes'] = np.concatenate(
-            (gt_instances['bboxes'].cpu().numpy(),
-             ignored_instances['bboxes'].cpu().numpy()),
-            axis=0)
-        ann['labels'] = np.concatenate(
-            (gt_instances['labels'].cpu().numpy(),
-             ignored_instances['labels'].cpu().numpy()),
-            axis=0)
-        ann['ignore_flags'] = np.concatenate(
-            (np.zeros(len(gt_instances['labels'])),
-             np.ones(len(ignored_instances['labels']))),
-            axis=0)
-        assert len(ann['bboxes']) == len(ann['labels'])
-        if 'masks' in gt_instances:
-            assert isinstance(gt_instances['masks'],
-                              (PolygonMasks, BitmapMasks)) and \
-                   isinstance(ignored_instances['masks'],
-                              (PolygonMasks, BitmapMasks))
-            ann['masks']: list = []
-            ann['masks'].extend(
-                encode_mask_results(gt_instances['masks'].to_ndarray()))
-            ann['masks'].extend(
-                encode_mask_results(ignored_instances['masks'].to_ndarray()))
-            assert len(ann['bboxes']) == len(ann['masks'])
-        return ann
 
     def evaluate(self, *args, **kwargs) -> dict:
         """Returns metric results and print pretty table of metrics per class.

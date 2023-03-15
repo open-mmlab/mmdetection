@@ -38,7 +38,7 @@ def main():
     metric.dataset_meta = CocoDataset.METAINFO
     for datasample in results:
         metric.process(data_batch=None, data_samples=[datasample])
-    metric_res = metric.compute_metrics(metric.results)
+    metric_res = metric.evaluate()
     if args.out is not None:
         mmengine.dump(metric_res, args.out)
         print_log(f'Evaluation results have been saved to {args.out}.')
