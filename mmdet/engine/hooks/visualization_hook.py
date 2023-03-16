@@ -10,7 +10,7 @@ from mmengine.runner import Runner
 from mmengine.utils import mkdir_or_exist
 from mmengine.visualization import Visualizer
 
-from mmdet.datasets.samplers import ImgQuotaSampler
+from mmdet.datasets.samplers import TrackImgSampler
 from mmdet.registry import HOOKS
 from mmdet.structures import DetDataSample, TrackDataSample
 
@@ -233,7 +233,7 @@ class TrackVisualizationHook(Hook):
             'only batch_size=1 is supported while validating.'
 
         sampler = runner.val_dataloader.sampler
-        if isinstance(sampler, ImgQuotaSampler):
+        if isinstance(sampler, TrackImgSampler):
             if self.every_n_inner_iters(batch_idx, self.frame_interval):
                 total_curr_iter = runner.iter + batch_idx
                 track_data_sample = outputs[0]
@@ -276,7 +276,7 @@ class TrackVisualizationHook(Hook):
             mkdir_or_exist(self.test_out_dir)
 
         sampler = runner.test_dataloader.sampler
-        if isinstance(sampler, ImgQuotaSampler):
+        if isinstance(sampler, TrackImgSampler):
             if self.every_n_inner_iters(batch_idx, self.frame_interval):
                 track_data_sample = outputs[0]
                 self.visualize_single_image(track_data_sample[0], batch_idx)
