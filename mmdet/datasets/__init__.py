@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from .base_det_dataset import BaseDetDataset
+from .base_video_dataset import BaseVideoDataset
 from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
 from .coco_panoptic import CocoPanopticDataset
@@ -8,10 +9,12 @@ from .dataset_wrappers import MultiImageMixDataset
 from .deepfashion import DeepFashionDataset
 from .dsdl import DSDLDetDataset
 from .lvis import LVISDataset, LVISV1Dataset, LVISV05Dataset
+from .mot_challenge_dataset import MOTChallengeDataset
 from .objects365 import Objects365V1Dataset, Objects365V2Dataset
 from .openimages import OpenImagesChallengeDataset, OpenImagesDataset
 from .samplers import (AspectRatioBatchSampler, ClassAwareSampler,
-                       GroupMultiSourceSampler, MultiSourceSampler)
+                       GroupMultiSourceSampler, MultiSourceSampler,
+                       TrackImgSampler)
 from .utils import get_loading_pipeline
 from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
@@ -41,4 +44,7 @@ __all__ = [
     'Objects365V1Dataset',
     'Objects365V2Dataset',
     'DSDLDetDataset',
+    'BaseVideoDataset',
+    'MOTChallengeDataset',
+    'TrackImgSampler'
 ]
