@@ -44,7 +44,7 @@ It has the following arguments:
 - `line_width`: The linewidth of lines. Defaults to 3.
 - `alpha`: The transparency of bboxes or mask. Defaults to 0.8.
 
-Here is a visualization example of DFF:
+Here is a visualization example of YOLOX:
 
 ![test_img_29](https://user-images.githubusercontent.com/99722489/186062793-623f6b1e-163e-4e1a-aa79-efea2d97a16d.png)
 

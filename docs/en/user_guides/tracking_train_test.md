@@ -207,19 +207,16 @@ It supports both single-node and multi-node testing.
 The basic usage is as follows.
 
 ```shell script
-bash ./tools/slurm_test_tracking.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} ${GPUS}
+[GPUS=${GPUS}] bash ./tools/slurm_test_tracking.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} [optional arguments]
 ```
 
 An example of testing the MOT model QDTrack with Slurm:
 
 ```shell script
-PORT=29501 \
-GPUS_PER_NODE=8 \
-SRUN_ARGS="--quotatype=reserved" \
+GPUS=8
 bash ./tools/slurm_test_tracking.sh \
 mypartition \
 mottrack \
 configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py \
-8 \
 --checkpoint https://download.openmmlab.com/mmtracking/mot/qdtrack/mot_dataset/qdtrack_faster-rcnn_r50_fpn_4e_mot17_20220315_145635-76f295ef.pth
 ```

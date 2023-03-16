@@ -1,6 +1,6 @@
 # Inference
 
-We provide demo scripts to inference a given video or a folder that contains continuous images. The source codes are available [here](https://github.com/open-mmlab/mmtracking/tree/dev-1.x/demo/).
+We provide demo scripts to inference a given video or a folder that contains continuous images. The source codes are available [here](https://github.com/open-mmlab/mmdetection/tree/tracking/demo).
 
 Note that if you use a folder as the input, the image names there must be  **sortable** , which means we can re-order the images according to the numbers contained in the filenames. We now only support reading the images whose filenames end with `.jpg`, `.jpeg` and `.png`.
 
@@ -23,10 +23,9 @@ python demo/demo_mot.py \
 
 The `INPUT` and `OUTPUT` support both _mp4 video_ format and the _folder_ format.
 
-**Important:** For `DeepSORT`, `SORT`, `Tracktor`, `StrongSORT`, they need both the weight of the `reid` and the weight of the `detector`. Therefore, we can't use `--checkpoint` to specify it. We need to use
-`detector` and `--reid`. Other algorithms such as `ByteTrack`, `OCSORT` and `QDTrack` use `--checkpoint`.
+**Important:** For `DeepSORT`, `SORT`, `Tracktor`, `StrongSORT`, they need load the weight of the `reid` and the weight of the `detector` separately. Therefore, we use `--detector` and `--reid` to load weights. Other algorithms such as `ByteTrack`, `OCSORT` and `QDTrack` use `--checkpoint` to load weights.
 
-Optional arguments:
+Optional arguments:isis
 
 - `OUTPUT`: Output of the visualized demo. If not specified, the `--show` is obligate to show the video on the fly.
 - `CHECKPOINT_FILE`: The checkpoint is optional.

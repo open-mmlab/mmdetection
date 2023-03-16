@@ -1,6 +1,6 @@
 # Learn about Configs
 
-We use python files as our config system. You can find all the provided configs under $MMTracking/configs.
+We use python files as our config system. You can find all the provided configs under $MMDetection/configs.
 
 We incorporate modular and inheritance design into our config system,
 which is convenient to conduct various experiments.
@@ -22,7 +22,7 @@ A complete config usually contains the following primary fields:
 - `test_cfg`: the config of testing loop. For example, `type='VideoTestLoop'`.
 - `default_hooks`: the config of default hooks, which may include hooks for timer, logger, param_scheduler, checkpoint, sampler_seed, visualization, etc.
 - `vis_backends`: the config of visualization backends, which uses `type='LocalVisBackend'` as default.
-- `visualizer`: the config of visualizer. For example, `type='DetLocalVisualizer'` for VID task, and `type='TrackLocalVisualizer'` for MOT, VIS, SOT, VOS tasks.
+- `visualizer`: the config of visualizer.  `type='TrackLocalVisualizer'` for MOT tasks.
 - `param_scheduler`: the config of parameter scheduler, which usually sets the learning rate scheduler.
 - `optim_wrapper`: the config of optimizer wrapper, which contains optimization-related information, for example optimizer, gradient clipping, etc.
 - `load_from`: load models as a pre-trained model from a given path.
@@ -56,7 +56,7 @@ For more details, please refer to [MMEngine](https://github.com/open-mmlab/mmeng
 ## Config File Structure
 
 There are 3 basic component types under `config/_base_`, i.e., dataset, model and default_runtime.
-Many methods could be easily constructed with one of each like DFF, FGFA, SELSA, SORT, DeepSORT.
+Many methods could be easily constructed with one of each like SORT, DeepSORT.
 The configs that are composed by components from `_base_` are called *primitive*.
 
 For all configs under the same folder, it is recommended to have only **one** *primitive* config.
