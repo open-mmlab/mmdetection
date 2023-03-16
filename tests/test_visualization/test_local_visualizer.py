@@ -163,7 +163,6 @@ class TestTrackLocalVisualizer(TestCase):
         image_data_sample = DetDataSample()
         image_data_sample.gt_instances = gt_instances
         image_data_sample.pred_track_instances = pred_instances
-        image_data_sample.scale_factor = (1.0, 1.0)
 
         track_local_visualizer = TrackLocalVisualizer(alpha=0.2)
         track_local_visualizer.dataset_meta = dict(

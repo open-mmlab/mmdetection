@@ -255,8 +255,9 @@ def inference_mot(model: nn.Module, img: np.ndarray, frame_id: int,
         ori_video_length=[video_len])
     # remove the "LoadImageFromFile" and "LoadTrackAnnotations" in pipeline
     transform_broadcaster = cfg.test_dataloader.dataset.pipeline[0].copy()
-    transform_broadcaster['transforms'] = transform_broadcaster['transforms'][
-        -1:]
+    for transform in transform_broadcaster['transforms']:
+        if transform['type'] == 'Resize':
+            transform_broadcaster['transforms'] = transform
     pack_track_inputs = cfg.test_dataloader.dataset.pipeline[-1].copy()
     test_pipeline = Compose([transform_broadcaster, pack_track_inputs])
     data = test_pipeline(data)
