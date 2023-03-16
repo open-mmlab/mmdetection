@@ -610,7 +610,7 @@ checkpoint_config = dict(interval=1)
 
 ```python
 default_hooks = dict(
-    checkpoint=dict(type='CheckpointHook', interval=5))
+    checkpoint=dict(type='CheckpointHook', interval=1))
 ```
 
 </td>
