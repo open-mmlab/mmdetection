@@ -10,10 +10,11 @@ import numpy as np
 import pandas as pd
 from mmengine import Config
 from mmengine.logging import print_log
+from mmengine.registry import init_default_scope
 from torch.utils.data import Dataset
 
 from mmdet.registry import DATASETS
-from mmdet.utils import imshow_mot_errors, register_all_modules
+from mmdet.utils import imshow_mot_errors
 
 
 def parse_args():
@@ -100,7 +101,7 @@ def main():
 
     cfg = Config.fromfile(args.config)
 
-    register_all_modules(init_default_scope=True)
+    init_default_scope(cfg.get('default_scope', 'mmdet'))
     dataset = DATASETS.build(cfg.val_dataloader.dataset)
 
     # create index from frame_id to filename
