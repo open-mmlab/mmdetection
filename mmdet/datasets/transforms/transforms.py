@@ -623,6 +623,7 @@ class RandomCrop(BaseTransform):
     - gt_masks (optional)
     - gt_ignore_flags (optional)
     - gt_seg_map (optional)
+    - gt_instances_ids (options, only used in MOT/VIS)
 
     Added Keys:
 
@@ -753,6 +754,11 @@ class RandomCrop(BaseTransform):
                 if self.recompute_bbox:
                     results['gt_bboxes'] = results['gt_masks'].get_bboxes(
                         type(results['gt_bboxes']))
+
+            # We should remove the instance ids corresponding to invalid boxes.
+            if results.get('gt_instances_ids', None) is not None:
+                results['gt_instances_ids'] = \
+                    results['gt_instances_ids'][valid_inds]
 
         # crop semantic seg
         if results.get('gt_seg_map', None) is not None:
