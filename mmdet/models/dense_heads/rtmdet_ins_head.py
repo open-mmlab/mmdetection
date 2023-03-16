@@ -565,7 +565,7 @@ class RTMDetInsHead(RTMDetHead):
             mask_feat.unsqueeze(0)
 
         coord = self.prior_generator.single_level_grid_priors(
-            (h, w), level_idx=0).reshape(1, -1, 2)
+            (h, w), level_idx=0, device=mask_feat.device).reshape(1, -1, 2)
         num_inst = priors.shape[0]
         points = priors[:, :2].reshape(-1, 1, 2)
         strides = priors[:, 2:].reshape(-1, 1, 2)
