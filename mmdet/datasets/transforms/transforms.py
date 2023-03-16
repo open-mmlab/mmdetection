@@ -722,7 +722,7 @@ class RandomCrop(BaseTransform):
         img = img[crop_y1:crop_y2, crop_x1:crop_x2, ...]
         img_shape = img.shape
         results['img'] = img
-        results['img_shape'] = img_shape
+        results['img_shape'] = img_shape[:2]
 
         # crop bboxes accordingly and clip to the image boundary
         if results.get('gt_bboxes', None) is not None:
@@ -1510,7 +1510,7 @@ class Albu(BaseTransform):
             return None
         # back to the original format
         results = self.mapper(results, self.keymap_back)
-        results['img_shape'] = results['img'].shape
+        results['img_shape'] = results['img'].shape[:2]
         return results
 
     def _preprocess_results(self, results: dict) -> tuple:
@@ -1861,7 +1861,7 @@ class RandomCenterCropPad(BaseTransform):
 
                 if len(gt_bboxes) == 0:
                     results['img'] = cropped_img
-                    results['img_shape'] = cropped_img.shape
+                    results['img_shape'] = cropped_img.shape[:2]
                     return results
 
                 # if image do not have valid bbox, any crop patch is valid.
@@ -1870,7 +1870,7 @@ class RandomCenterCropPad(BaseTransform):
                     continue
 
                 results['img'] = cropped_img
-                results['img_shape'] = cropped_img.shape
+                results['img_shape'] = cropped_img.shape[:2]
 
                 x0, y0, x1, y1 = patch
 
@@ -1936,7 +1936,7 @@ class RandomCenterCropPad(BaseTransform):
         cropped_img, border, _ = self._crop_image_and_paste(
             img, [h // 2, w // 2], [target_h, target_w])
         results['img'] = cropped_img
-        results['img_shape'] = cropped_img.shape
+        results['img_shape'] = cropped_img.shape[:2]
         results['border'] = border
         return results
 
@@ -2240,7 +2240,7 @@ class Mosaic(BaseTransform):
         mosaic_ignore_flags = mosaic_ignore_flags[inside_inds]
 
         results['img'] = mosaic_img
-        results['img_shape'] = mosaic_img.shape
+        results['img_shape'] = mosaic_img.shape[:2]
         results['gt_bboxes'] = mosaic_bboxes
         results['gt_bboxes_labels'] = mosaic_bboxes_labels
         results['gt_ignore_flags'] = mosaic_ignore_flags
@@ -2522,7 +2522,7 @@ class MixUp(BaseTransform):
         mixup_gt_ignore_flags = mixup_gt_ignore_flags[inside_inds]
 
         results['img'] = mixup_img.astype(np.uint8)
-        results['img_shape'] = mixup_img.shape
+        results['img_shape'] = mixup_img.shape[:2]
         results['gt_bboxes'] = mixup_gt_bboxes
         results['gt_bboxes_labels'] = mixup_gt_bboxes_labels
         results['gt_ignore_flags'] = mixup_gt_ignore_flags
@@ -2645,7 +2645,7 @@ class RandomAffine(BaseTransform):
             dsize=(width, height),
             borderValue=self.border_val)
         results['img'] = img
-        results['img_shape'] = img.shape
+        results['img_shape'] = img.shape[:2]
 
         bboxes = results['gt_bboxes']
         num_bboxes = len(bboxes)
@@ -3334,7 +3334,7 @@ class CachedMosaic(Mosaic):
         mosaic_ignore_flags = mosaic_ignore_flags[inside_inds]
 
         results['img'] = mosaic_img
-        results['img_shape'] = mosaic_img.shape
+        results['img_shape'] = mosaic_img.shape[:2]
         results['gt_bboxes'] = mosaic_bboxes
         results['gt_bboxes_labels'] = mosaic_bboxes_labels
         results['gt_ignore_flags'] = mosaic_ignore_flags
@@ -3614,7 +3614,7 @@ class CachedMixUp(BaseTransform):
             mixup_gt_masks = mixup_gt_masks[inside_inds]
 
         results['img'] = mixup_img.astype(np.uint8)
-        results['img_shape'] = mixup_img.shape
+        results['img_shape'] = mixup_img.shape[:2]
         results['gt_bboxes'] = mixup_gt_bboxes
         results['gt_bboxes_labels'] = mixup_gt_bboxes_labels
         results['gt_ignore_flags'] = mixup_gt_ignore_flags
