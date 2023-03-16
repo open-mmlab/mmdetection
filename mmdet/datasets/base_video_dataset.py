@@ -252,6 +252,9 @@ class BaseVideoDataset(BaseDataset):
                                                ] * len(frames_idx_list)
             return self.pipeline(final_data_info)
         else:
+            # Specify `key_frame_id` for the frame sampling in the pipeline
+            if frame_idx is not None:
+                data_info['key_frame_id'] = frame_idx
             return self.pipeline(data_info)
 
     def get_cat_ids(self, index) -> List[int]:

@@ -127,7 +127,7 @@ class TrackDataPreprocessor(DetDataPreprocessor):
                     track_data_sample.video_data_samples = [det_sample]
 
         # Note: inputs may contain large number of frames, so we must make
-        # sure that the mmeory is contiguous for stable forward.
+        # sure that the mmeory is contiguous for stable forward
         inputs = inputs.contiguous()
         return dict(inputs=inputs, data_samples=data_samples)
 
