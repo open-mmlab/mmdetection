@@ -254,6 +254,8 @@ class YOLACTHead(AnchorHead):
                 bbox_targets_list,
                 bbox_weights_list,
                 num_total_samples=num_total_samples)
+            for i in range(len(losses_cls)):
+                losses_cls[i] = losses_cls[i].mean()
 
         return dict(
             loss_cls=losses_cls, loss_bbox=losses_bbox), sampling_results
