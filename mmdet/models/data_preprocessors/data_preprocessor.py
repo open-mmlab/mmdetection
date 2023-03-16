@@ -67,8 +67,8 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             Defaults to False.
         rgb_to_bgr (bool): whether to convert image from RGB to RGB.
             Defaults to False.
-        boxtype2tensor (bool): Whether to keep the ``BaseBoxes`` type of
-            bboxes data or not. Defaults to True.
+        boxtype2tensor (bool): Whether to convert the ``BaseBoxes`` type of
+            bboxes data to ``Tensor`` type. Defaults to True.
         non_blocking (bool): Whether block current process
             when transferring data to device. Defaults to False.
         batch_augments (list[dict], optional): Batch-level augmentations

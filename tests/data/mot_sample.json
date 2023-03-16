@@ -1,0 +1,281 @@
+{
+    "categories": [
+        {
+            "id": 1,
+            "name": "pedestrian"
+        },
+        {
+            "id": 2,
+            "name": "person_on_vehicle"
+        }
+    ],
+    "videos": [
+        {
+            "id": 1,
+            "name": "MOT17-09-DPM",
+            "fps": 30,
+            "width": 1920,
+            "height": 1080
+        },
+        {
+            "id": 2,
+            "name": "MOT17-10-DPM",
+            "fps": 30,
+            "width": 1920,
+            "height": 1080
+        }
+    ],
+    "annotations": [
+        {
+            "category_id": 1,
+            "bbox": [
+                260.0,
+                450.0,
+                102.0,
+                262.0
+            ],
+            "area": 26724.0,
+            "iscrowd": false,
+            "visibility": 1.0,
+            "mot_instance_id": 1,
+            "mot_conf": 1.0,
+            "id": 1,
+            "image_id": 1,
+            "instance_id": 0
+        },
+        {
+            "category_id": 1,
+            "bbox": [
+                1686.0,
+                387.0,
+                171.0,
+                345.0
+            ],
+            "area": 58995.0,
+            "iscrowd": false,
+            "visibility": 1.0,
+            "mot_instance_id": 19,
+            "mot_conf": 1.0,
+            "id": 2,
+            "image_id": 1,
+            "instance_id": 1
+        },
+        {
+            "category_id": 2,
+            "bbox": [
+                1886.0,
+                327.0,
+                156.0,
+                404.0
+            ],
+            "area": 63024.0,
+            "iscrowd": true,
+            "visibility": 0.22293,
+            "mot_instance_id": 20,
+            "mot_conf": 1.0,
+            "id": 3,
+            "image_id": 1,
+            "instance_id": 2
+        },
+        {
+            "category_id": 1,
+            "bbox": [
+                1253.0,
+                533.0,
+                63.0,
+                129.0
+            ],
+            "area": 8127.0,
+            "iscrowd": false,
+            "visibility": 1.0,
+            "mot_instance_id": 1,
+            "mot_conf": 1.0,
+            "id": 4,
+            "image_id": 2,
+            "instance_id": 0
+        },
+        {
+            "category_id": 1,
+            "bbox": [
+                1292.0,
+                459.0,
+                70.0,
+                202.0
+            ],
+            "area": 14140.0,
+            "iscrowd": false,
+            "visibility": 0.77624,
+            "mot_instance_id": 19,
+            "mot_conf": 1.0,
+            "id": 5,
+            "image_id": 2,
+            "instance_id": 1
+        },
+        {
+            "category_id": 1,
+            "bbox": [
+                -348.0,
+                235.0,
+                477.0,
+                695.0
+            ],
+            "area": 331515.0,
+            "iscrowd": false,
+            "visibility": 0.26987,
+            "mot_instance_id": 1,
+            "mot_conf": 1.0,
+            "id": 6,
+            "image_id": 3,
+            "instance_id": 0
+        },
+        {
+            "category_id": 1,
+            "bbox": [
+                262.0,
+                449.0,
+                102.0,
+                263.0
+            ],
+            "area": 26826.0,
+            "iscrowd": false,
+            "visibility": 1.0,
+            "mot_instance_id": 19,
+            "mot_conf": 1.0,
+            "id": 7,
+            "image_id": 3,
+            "instance_id": 1
+        },
+        {
+            "category_id": 2,
+            "bbox": [
+                1685.0,
+                386.0,
+                170.0,
+                347.0
+            ],
+            "area": 58990.0,
+            "iscrowd": false,
+            "visibility": 1.0,
+            "mot_instance_id": 20,
+            "mot_conf": 1.0,
+            "id": 8,
+            "image_id": 3,
+            "instance_id": 2
+        },
+        {
+            "category_id": 1,
+            "bbox": [
+                260.0,
+                450.0,
+                102.0,
+                262.0
+            ],
+            "area": 26724.0,
+            "iscrowd": false,
+            "visibility": 1.0,
+            "mot_instance_id": 24,
+            "mot_conf": 1.0,
+            "id": 9,
+            "image_id": 4,
+            "instance_id": 3
+        },
+        {
+            "category_id": 1,
+            "bbox": [
+                1686.0,
+                387.0,
+                171.0,
+                345.0
+            ],
+            "area": 58995.0,
+            "iscrowd": false,
+            "visibility": 1.0,
+            "mot_instance_id": 30,
+            "mot_conf": 1.0,
+            "id": 10,
+            "image_id": 4,
+            "instance_id": 4
+        },
+        {
+            "category_id": 1,
+            "bbox": [
+                1253.0,
+                533.0,
+                63.0,
+                129.0
+            ],
+            "area": 8127.0,
+            "iscrowd": false,
+            "visibility": 1.0,
+            "mot_instance_id": 24,
+            "mot_conf": 1.0,
+            "id": 11,
+            "image_id": 5,
+            "instance_id": 3
+        },
+        {
+            "category_id": 1,
+            "bbox": [
+                1292.0,
+                459.0,
+                70.0,
+                202.0
+            ],
+            "area": 14140.0,
+            "iscrowd": false,
+            "visibility": 0.77624,
+            "mot_instance_id": 30,
+            "mot_conf": 1.0,
+            "id": 12,
+            "image_id": 5,
+            "instance_id": 4
+        }
+    ],
+    "images": [
+        {
+            "id": 1,
+            "video_id": 1,
+            "file_name": "MOT17-09-DPM/img1/000001.jpg",
+            "height": 1080,
+            "width": 1920,
+            "frame_id": 0,
+            "mot_frame_id": 1
+        },
+        {
+            "id": 2,
+            "video_id": 1,
+            "file_name": "MOT17-09-DPM/img1/000002.jpg",
+            "height": 1080,
+            "width": 1920,
+            "frame_id": 1,
+            "mot_frame_id": 2
+        },
+        {
+            "id": 3,
+            "video_id": 1,
+            "file_name": "MOT17-09-DPM/img1/000003.jpg",
+            "height": 1080,
+            "width": 1920,
+            "frame_id": 2,
+            "mot_frame_id": 3
+        },
+        {
+            "id": 4,
+            "video_id": 2,
+            "file_name": "MOT17-10-DPM/img1/000001.jpg",
+            "height": 1080,
+            "width": 1920,
+            "frame_id": 0,
+            "mot_frame_id": 1
+        },
+        {
+            "id": 5,
+            "video_id": 2,
+            "file_name": "MOT17-10-DPM/img1/000002.jpg",
+            "height": 1080,
+            "width": 1920,
+            "frame_id": 1,
+            "mot_frame_id": 2
+        }
+    ]
+}
