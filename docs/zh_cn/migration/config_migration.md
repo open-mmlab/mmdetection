@@ -55,7 +55,7 @@ model = dict(
 
 ## 数据集和评测器配置
 
-数据集和评测部分的配置相比 2.x 版本有较大的变化。我们将从 Dataloader 和 Dataset， Data transform pipeline，以及评测器配置三个方面介绍如何将 2.x 版本的配置迁移到 3.x 版本。
+数据集和评测部分的配置相比 2.x 版本有较大的变化。我们将从 Dataloader 和 Dataset，Data transform pipeline，以及评测器配置三个方面介绍如何将 2.x 版本的配置迁移到 3.x 版本。
 
 ### Dataloader 和 Dataset 配置
 
