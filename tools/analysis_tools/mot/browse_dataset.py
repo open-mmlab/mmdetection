@@ -67,7 +67,6 @@ def main():
                 osp.basename(img_path),
                 img,
                 data_sample=img_data_sample,
-                rescale=False,
                 draw_pred=False,
                 show=args.show,
                 wait_time=args.show_interval,
