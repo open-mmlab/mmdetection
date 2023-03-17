@@ -17,9 +17,6 @@ class XMLDataset(BaseDetDataset):
     Args:
         img_subdir (str): Subdir where images are stored. Default: JPEGImages.
         ann_subdir (str): Subdir where annotations are. Default: Annotations.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmengine.fileio.FileClient` for details.
-            Defaults to ``dict(backend='disk')``.
     """
 
     def __init__(self,
@@ -107,6 +104,24 @@ class XMLDataset(BaseDetDataset):
         data_info['height'] = height
         data_info['width'] = width
 
+        data_info['instances'] = self._parse_instance_info(
+            raw_ann_info, minus_one=True)
+
+        return data_info
+
+    def _parse_instance_info(self,
+                             raw_ann_info: ET,
+                             minus_one: bool = False) -> List[dict]:
+        """parse instance information.
+
+        Args:
+            raw_ann_info (ElementTree): ElementTree object.
+            minus_one (bool): Whether to subtract 1 from the coordinates.
+                Defaults to False.
+
+        Returns:
+            List[dict]: List of instances.
+        """
         instances = []
         for obj in raw_ann_info.findall('object'):
             instance = {}
@@ -117,11 +132,16 @@ class XMLDataset(BaseDetDataset):
             difficult = 0 if difficult is None else int(difficult.text)
             bnd_box = obj.find('bndbox')
             bbox = [
-                int(float(bnd_box.find('xmin').text)) - 1,
-                int(float(bnd_box.find('ymin').text)) - 1,
-                int(float(bnd_box.find('xmax').text)) - 1,
-                int(float(bnd_box.find('ymax').text)) - 1
+                int(float(bnd_box.find('xmin').text)),
+                int(float(bnd_box.find('ymin').text)),
+                int(float(bnd_box.find('xmax').text)),
+                int(float(bnd_box.find('ymax').text))
             ]
+
+            # VOC needs to subtract 1 from the coordinates
+            if minus_one:
+                bbox = [x - 1 for x in bbox]
+
             ignore = False
             if self.bbox_min_size is not None:
                 assert not self.test_mode
@@ -136,8 +156,7 @@ class XMLDataset(BaseDetDataset):
             instance['bbox'] = bbox
             instance['bbox_label'] = self.cat2label[name]
             instances.append(instance)
-        data_info['instances'] = instances
-        return data_info
+        return instances
 
     def filter_data(self) -> List[dict]:
         """Filter annotations according to filter_cfg.
