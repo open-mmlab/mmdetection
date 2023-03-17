@@ -1484,7 +1484,13 @@ class Albu:
             else:
                 results['masks'] = [mask for mask in results['masks'].masks]
 
+        # Convert to RGB since Albumentations works with RGB images
+        results['image'] = cv2.cvtColor(results['image'], cv2.COLOR_BGR2RGB)
+
         results = self.aug(**results)
+
+        # Convert back to BGR
+        results['image'] = cv2.cvtColor(results['image'], cv2.COLOR_RGB2BGR)
 
         if 'bboxes' in results:
             if isinstance(results['bboxes'], list):
