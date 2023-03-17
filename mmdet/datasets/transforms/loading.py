@@ -8,7 +8,7 @@ import torch
 from mmcv.transforms import BaseTransform
 from mmcv.transforms import LoadAnnotations as MMCV_LoadAnnotations
 from mmcv.transforms import LoadImageFromFile
-from mmengine.fileio import FileClient
+from mmengine.fileio import get
 from mmengine.structures import BaseDataElement
 
 from mmdet.registry import TRANSFORMS
@@ -88,9 +88,10 @@ class LoadMultiChannelImageFromFiles(BaseTransform):
             argument for :func:``mmcv.imfrombytes``.
             See :func:``mmcv.imfrombytes`` for details.
             Defaults to 'cv2'.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmengine.fileio.FileClient` for details.
-            Defaults to ``dict(backend='disk')``.
+        file_client_args (dict): Arguments to instantiate the
+            corresponding backend in mmdet <= 3.0.0rc6. Defaults to None.
+        backend_args (dict, optional): Arguments to instantiate the
+            corresponding backend in mmdet >= 3.0.0rc7. Defaults to None.
     """
 
     def __init__(
@@ -98,13 +99,19 @@ class LoadMultiChannelImageFromFiles(BaseTransform):
         to_float32: bool = False,
         color_type: str = 'unchanged',
         imdecode_backend: str = 'cv2',
-        file_client_args: dict = dict(backend='disk')
+        file_client_args: dict = None,
+        backend_args: dict = None,
     ) -> None:
         self.to_float32 = to_float32
         self.color_type = color_type
         self.imdecode_backend = imdecode_backend
-        self.file_client_args = file_client_args.copy()
-        self.file_client = FileClient(**self.file_client_args)
+        self.backend_args = backend_args
+        if file_client_args is not None:
+            raise RuntimeError(
+                'The `file_client_args` is deprecated, '
+                'please use `backend_args` instead, please refer to'
+                'https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/_base_/datasets/coco_detection.py'  # noqa: E501
+            )
 
     def transform(self, results: dict) -> dict:
         """Transform functions to load multiple images and get images meta
@@ -120,7 +127,7 @@ class LoadMultiChannelImageFromFiles(BaseTransform):
         assert isinstance(results['img_path'], list)
         img = []
         for name in results['img_path']:
-            img_bytes = self.file_client.get(name)
+            img_bytes = get(name, backend_args=self.backend_args)
             img.append(
                 mmcv.imfrombytes(
                     img_bytes,
@@ -140,7 +147,7 @@ class LoadMultiChannelImageFromFiles(BaseTransform):
                     f'to_float32={self.to_float32}, '
                     f"color_type='{self.color_type}', "
                     f"imdecode_backend='{self.imdecode_backend}', "
-                    f'file_client_args={self.file_client_args})')
+                    f'backend_args={self.backend_args})')
         return repr_str
 
 
@@ -236,9 +243,8 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             argument for :func:``mmcv.imfrombytes``.
             See :fun:``mmcv.imfrombytes`` for details.
             Defaults to 'cv2'.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:``mmengine.fileio.FileClient`` for details.
-            Defaults to ``dict(backend='disk')``.
+        backend_args (dict, optional): Arguments to instantiate the
+            corresponding backend. Defaults to None.
     """
 
     def __init__(self,
@@ -404,7 +410,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         repr_str += f'with_seg={self.with_seg}, '
         repr_str += f'poly2mask={self.poly2mask}, '
         repr_str += f"imdecode_backend='{self.imdecode_backend}', "
-        repr_str += f'file_client_args={self.file_client_args})'
+        repr_str += f'backend_args={self.backend_args})'
         return repr_str
 
 
@@ -501,21 +507,18 @@ class LoadPanopticAnnotations(LoadAnnotations):
             argument for :func:``mmcv.imfrombytes``.
             See :fun:``mmcv.imfrombytes`` for details.
             Defaults to 'cv2'.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:``mmengine.fileio.FileClient`` for details.
-            Defaults to ``dict(backend='disk')``.
+        backend_args (dict, optional): Arguments to instantiate the
+            corresponding backend in mmdet >= 3.0.0rc7. Defaults to None.
     """
 
-    def __init__(
-        self,
-        with_bbox: bool = True,
-        with_label: bool = True,
-        with_mask: bool = True,
-        with_seg: bool = True,
-        box_type: str = 'hbox',
-        imdecode_backend: str = 'cv2',
-        file_client_args: dict = dict(backend='disk')
-    ) -> None:
+    def __init__(self,
+                 with_bbox: bool = True,
+                 with_label: bool = True,
+                 with_mask: bool = True,
+                 with_seg: bool = True,
+                 box_type: str = 'hbox',
+                 imdecode_backend: str = 'cv2',
+                 backend_args: dict = None) -> None:
         try:
             from panopticapi import utils
         except ImportError:
@@ -525,7 +528,6 @@ class LoadPanopticAnnotations(LoadAnnotations):
                 'panopticapi.git.')
         self.rgb2id = utils.rgb2id
 
-        self.file_client = FileClient(**file_client_args)
         super(LoadPanopticAnnotations, self).__init__(
             with_bbox=with_bbox,
             with_label=with_label,
@@ -534,7 +536,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
             with_keypoints=False,
             box_type=box_type,
             imdecode_backend=imdecode_backend,
-            file_client_args=file_client_args)
+            backend_args=backend_args)
 
     def _load_masks_and_semantic_segs(self, results: dict) -> None:
         """Private function to load mask and semantic segmentation annotations.
@@ -550,7 +552,8 @@ class LoadPanopticAnnotations(LoadAnnotations):
         if results.get('seg_map_path', None) is None:
             return
 
-        img_bytes = self.file_client.get(results['seg_map_path'])
+        img_bytes = get(
+            results['seg_map_path'], backend_args=self.backend_args)
         pan_png = mmcv.imfrombytes(
             img_bytes, flag='color', channel_order='rgb').squeeze()
         pan_png = self.rgb2id(pan_png)

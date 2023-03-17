@@ -2,9 +2,7 @@ _base_ = './fcos_r50-caffe_fpn_gn-head_1x_coco.py'
 
 # dataset settings
 train_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='RandomChoiceResize',

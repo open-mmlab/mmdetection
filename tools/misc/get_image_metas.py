@@ -14,7 +14,7 @@ from multiprocessing import Pool
 
 import mmcv
 from mmengine.config import Config
-from mmengine.fileio import FileClient, dump
+from mmengine.fileio import dump, get
 
 
 def parse_args():
@@ -69,12 +69,11 @@ def get_metas_from_txt_style_ann_file(ann_file):
 
 
 def get_image_metas(data_info, img_prefix):
-    file_client = FileClient(backend='disk')
     filename = data_info.get('filename', None)
     if filename is not None:
         if img_prefix is not None:
             filename = osp.join(img_prefix, filename)
-        img_bytes = file_client.get(filename)
+        img_bytes = get(filename)
         img = mmcv.imfrombytes(img_bytes, flag='color')
         shape = img.shape
         meta = dict(filename=filename, ori_shape=shape)

@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from .bbox_overlaps import bbox_overlaps
+from .cityscapes_utils import evaluateImgLists
 from .class_names import (cityscapes_classes, coco_classes,
                           coco_panoptic_classes, dataset_aliases, get_classes,
                           imagenet_det_classes, imagenet_vid_classes,
@@ -18,5 +19,6 @@ __all__ = [
     'print_recall_summary', 'plot_num_recall', 'plot_iou_recall',
     'oid_v6_classes', 'oid_challenge_classes', 'INSTANCE_OFFSET',
     'pq_compute_single_core', 'pq_compute_multi_core', 'bbox_overlaps',
-    'objects365v1_classes', 'objects365v2_classes', 'coco_panoptic_classes'
+    'objects365v1_classes', 'objects365v2_classes', 'coco_panoptic_classes',
+    'evaluateImgLists'
 ]

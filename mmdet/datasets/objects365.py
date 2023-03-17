@@ -3,6 +3,8 @@ import copy
 import os.path as osp
 from typing import List
 
+from mmengine.fileio import get_local_path
+
 from mmdet.registry import DATASETS
 from .api_wrappers import COCO
 from .coco import CocoDataset
@@ -102,7 +104,8 @@ class Objects365V1Dataset(CocoDataset):
         Returns:
             List[dict]: A list of annotation.
         """  # noqa: E501
-        with self.file_client.get_local_path(self.ann_file) as local_path:
+        with get_local_path(
+                self.ann_file, backend_args=self.backend_args) as local_path:
             self.coco = self.COCOAPI(local_path)
 
         # 'categories' list in objects365_train.json and objects365_val.json
@@ -234,7 +237,8 @@ class Objects365V2Dataset(CocoDataset):
         Returns:
             List[dict]: A list of annotation.
         """  # noqa: E501
-        with self.file_client.get_local_path(self.ann_file) as local_path:
+        with get_local_path(
+                self.ann_file, backend_args=self.backend_args) as local_path:
             self.coco = self.COCOAPI(local_path)
         # The order of returned `cat_ids` will not
         # change with the order of the `classes`
