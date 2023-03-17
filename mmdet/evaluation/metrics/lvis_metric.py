@@ -7,6 +7,7 @@ from collections import OrderedDict
 from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
+from mmengine.fileio import get_local_path
 from mmengine.logging import MMLogger
 from terminaltables import AsciiTable
 
@@ -62,6 +63,10 @@ class LVISMetric(CocoMetric):
             names to disambiguate homonymous metrics of different evaluators.
             If prefix is not provided in the argument, self.default_prefix
             will be used instead. Defaults to None.
+        file_client_args (dict, optional): Arguments to instantiate the
+            corresponding backend in mmdet <= 3.0.0rc6. Defaults to None.
+        backend_args (dict, optional): Arguments to instantiate the
+            corresponding backend. Defaults to None.
     """
 
     default_prefix: Optional[str] = 'lvis'
@@ -76,7 +81,9 @@ class LVISMetric(CocoMetric):
                  format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
                  collect_device: str = 'cpu',
-                 prefix: Optional[str] = None) -> None:
+                 prefix: Optional[str] = None,
+                 file_client_args: dict = None,
+                 backend_args: dict = None) -> None:
         if lvis is None:
             raise RuntimeError(
                 'Package lvis is not installed. Please run "pip install '
@@ -110,10 +117,22 @@ class LVISMetric(CocoMetric):
             'be saved to a temp directory which will be cleaned up at the end.'
 
         self.outfile_prefix = outfile_prefix
+        self.backend_args = backend_args
+        if file_client_args is not None:
+            raise RuntimeError(
+                'The `file_client_args` is deprecated, '
+                'please use `backend_args` instead, please refer to'
+                'https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/_base_/datasets/coco_detection.py'  # noqa: E501
+            )
 
         # if ann_file is not specified,
         # initialize lvis api with the converted dataset
-        self._lvis_api = LVIS(ann_file) if ann_file else None
+        if ann_file is not None:
+            with get_local_path(
+                    ann_file, backend_args=self.backend_args) as local_path:
+                self._lvis_api = LVIS(local_path)
+        else:
+            self._lvis_api = None
 
         # handle dataset lazy init
         self.cat_ids = None
