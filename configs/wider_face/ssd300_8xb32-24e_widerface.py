@@ -17,8 +17,8 @@ train_pipeline = [
         hue_delta=18),
     dict(
         type='Expand',
-        mean=[123.675, 116.28, 103.53],
-        to_rgb=True,
+        mean={{_base_.model.data_preprocessor.mean}},
+        to_rgb={{_base_.model.data_preprocessor.bgr_to_rgb}},
         ratio_range=(1, 4)),
     dict(
         type='MinIoURandomCrop',
@@ -44,20 +44,7 @@ test_pipeline = [
 dataset_type = 'WIDERFaceDataset'
 data_root = 'data/WIDERFace/'
 train_dataloader = dict(
-    batch_size=32,
-    num_workers=8,
-    dataset=dict(
-        _delete_=True,
-        type='RepeatDataset',
-        times=2,  # total epochs = 2 * 24
-        dataset=dict(
-            type=dataset_type,
-            data_root=data_root,
-            ann_file='train.txt',
-            data_prefix=dict(img='WIDER_train'),
-            filter_cfg=dict(
-                filter_empty_gt=True, bbox_min_size=17, min_size=32),
-            pipeline=train_pipeline)))
+    batch_size=32, num_workers=8, dataset=dict(pipeline=train_pipeline))
 
 val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
 test_dataloader = val_dataloader
@@ -77,9 +64,11 @@ param_scheduler = [
 ]
 
 # optimizer
-optim_wrapper = dict(optimizer=dict(lr=0.002, momentum=0.9, weight_decay=5e-4))
+optim_wrapper = dict(
+    optimizer=dict(lr=0.012, momentum=0.9, weight_decay=5e-4),
+    clip_grad=dict(max_norm=35, norm_type=2))
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
-# base_batch_size = (1 GPUs) x (32 samples per GPU)
-auto_scale_lr = dict(base_batch_size=32)
+# base_batch_size = (8 GPUs) x (32 samples per GPU)
+auto_scale_lr = dict(base_batch_size=256)
