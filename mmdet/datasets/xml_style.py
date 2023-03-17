@@ -119,7 +119,7 @@ class XMLDataset(BaseDetDataset):
         Args:
             raw_ann_info (ElementTree): ElementTree object.
             minus_one (bool): Whether to subtract 1 from the coordinates.
-                Defaults to False.
+                Defaults to True.
 
         Returns:
             List[dict]: List of instances.
