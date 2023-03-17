@@ -2,26 +2,26 @@
 import os
 import os.path as osp
 import shutil
+import tempfile
 from collections import OrderedDict
 from typing import Dict, Optional, Sequence
 
 import mmcv
 import numpy as np
-from mmengine.dist import is_main_process, master_only
+from mmengine.dist import is_main_process
 from mmengine.evaluator import BaseMetric
 from mmengine.logging import MMLogger
 
 from mmdet.registry import METRICS
 
 try:
-    import cityscapesscripts
-    from cityscapesscripts.evaluation import \
-        evalInstanceLevelSemanticLabeling as CSEval
-    from cityscapesscripts.helpers import labels as CSLabels
+    import cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling as CSEval  # noqa: E501
+    import cityscapesscripts.helpers.labels as CSLabels
+
+    from mmdet.evaluation.functional.cityscapes_utils import evaluateImgLists
+    HAS_CITYSCAPESAPI = True
 except ImportError:
-    cityscapesscripts = None
-    CSLabels = None
-    CSEval = None
+    HAS_CITYSCAPESAPI = False
 
 
 @METRICS.register_module()
@@ -40,8 +40,6 @@ class CityScapesMetric(BaseMetric):
             evaluation. It is useful when you want to format the result
             to a specific format and submit it to the test server.
             Defaults to False.
-        keep_results (bool): Whether to keep the results. When ``format_only``
-            is True, ``keep_results`` must be True. Defaults to False.
         collect_device (str): Device name used for collecting results from
             different ranks during distributed training. Must be 'cpu' or
             'gpu'. Defaults to 'cpu'.
@@ -49,6 +47,12 @@ class CityScapesMetric(BaseMetric):
             names to disambiguate homonymous metrics of different evaluators.
             If prefix is not provided in the argument, self.default_prefix
             will be used instead. Defaults to None.
+        dump_matches (bool): Whether dump matches.json file during evaluating.
+            Defaults to False.
+        file_client_args (dict, optional): Arguments to instantiate the
+            corresponding backend in mmdet <= 3.0.0rc6. Defaults to None.
+        backend_args (dict, optional): Arguments to instantiate the
+            corresponding backend. Defaults to None.
     """
     default_prefix: Optional[str] = 'cityscapes'
 
@@ -56,33 +60,59 @@ class CityScapesMetric(BaseMetric):
                  outfile_prefix: str,
                  seg_prefix: Optional[str] = None,
                  format_only: bool = False,
-                 keep_results: bool = False,
                  collect_device: str = 'cpu',
-                 prefix: Optional[str] = None) -> None:
-        if cityscapesscripts is None:
-            raise RuntimeError('Please run "pip install cityscapesscripts" to '
-                               'install cityscapesscripts first.')
+                 prefix: Optional[str] = None,
+                 dump_matches: bool = False,
+                 file_client_args: dict = None,
+                 backend_args: dict = None) -> None:
 
-        assert outfile_prefix, 'outfile_prefix must be not None.'
-
-        if format_only:
-            assert keep_results, 'keep_results must be True when '
-            'format_only is True'
-
+        if not HAS_CITYSCAPESAPI:
+            raise RuntimeError('Failed to import `cityscapesscripts`.'
+                               'Please try to install official '
+                               'cityscapesscripts by '
+                               '"pip install cityscapesscripts"')
         super().__init__(collect_device=collect_device, prefix=prefix)
+
+        self.tmp_dir = None
         self.format_only = format_only
-        self.keep_results = keep_results
-        self.seg_out_dir = osp.abspath(f'{outfile_prefix}.results')
+        if self.format_only:
+            assert outfile_prefix is not None, 'outfile_prefix must be not'
+            'None when format_only is True, otherwise the result files will'
+            'be saved to a temp directory which will be cleaned up at the end.'
+        else:
+            assert seg_prefix is not None, '`seg_prefix` is necessary when '
+            'computing the CityScapes metrics'
+
+        if outfile_prefix is None:
+            self.tmp_dir = tempfile.TemporaryDirectory()
+            self.outfile_prefix = osp.join(self.tmp_dir.name, 'results')
+        else:
+            # the directory to save predicted panoptic segmentation mask
+            self.outfile_prefix = osp.join(outfile_prefix, 'results')  # type: ignore # yapf: disable # noqa: E501
+
+        dir_name = osp.expanduser(self.outfile_prefix)
+
+        if osp.exists(dir_name) and is_main_process():
+            logger: MMLogger = MMLogger.get_current_instance()
+            logger.info('remove previous results.')
+            shutil.rmtree(dir_name)
+        os.makedirs(dir_name, exist_ok=True)
+
+        self.backend_args = backend_args
+        if file_client_args is not None:
+            raise RuntimeError(
+                'The `file_client_args` is deprecated, '
+                'please use `backend_args` instead, please refer to'
+                'https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/_base_/datasets/coco_detection.py'  # noqa: E501
+            )
+
         self.seg_prefix = seg_prefix
+        self.dump_matches = dump_matches
 
-        if is_main_process():
-            os.makedirs(self.seg_out_dir, exist_ok=True)
-
-    @master_only
     def __del__(self) -> None:
-        """Clean up."""
-        if not self.keep_results:
-            shutil.rmtree(self.seg_out_dir)
+        """Clean up the results if necessary."""
+        if self.tmp_dir is not None:
+            self.tmp_dir.cleanup()
 
     # TODO: data_batch is no longer needed, consider adjusting the
     #  parameter position
@@ -102,7 +132,7 @@ class CityScapesMetric(BaseMetric):
             pred = data_sample['pred_instances']
             filename = data_sample['img_path']
             basename = osp.splitext(osp.basename(filename))[0]
-            pred_txt = osp.join(self.seg_out_dir, basename + '_pred.txt')
+            pred_txt = osp.join(self.outfile_prefix, basename + '_pred.txt')
             result['pred_txt'] = pred_txt
             labels = pred['labels'].cpu().numpy()
             masks = pred['masks'].cpu().numpy().astype(np.uint8)
@@ -118,7 +148,8 @@ class CityScapesMetric(BaseMetric):
                     class_name = self.dataset_meta['classes'][label]
                     class_id = CSLabels.name2label[class_name].id
                     png_filename = osp.join(
-                        self.seg_out_dir, basename + f'_{i}_{class_name}.png')
+                        self.outfile_prefix,
+                        basename + f'_{i}_{class_name}.png')
                     mmcv.imwrite(mask, png_filename)
                     f.write(f'{osp.basename(png_filename)} '
                             f'{class_id} {mask_score}\n')
@@ -127,8 +158,7 @@ class CityScapesMetric(BaseMetric):
             gt = dict()
             img_path = filename.replace('leftImg8bit.png',
                                         'gtFine_instanceIds.png')
-            img_path = img_path.replace('leftImg8bit', 'gtFine')
-            gt['file_name'] = osp.join(self.seg_prefix, img_path)
+            gt['file_name'] = img_path.replace('leftImg8bit', 'gtFine')
 
             self.results.append((gt, result))
 
@@ -146,25 +176,28 @@ class CityScapesMetric(BaseMetric):
 
         if self.format_only:
             logger.info(
-                f'results are saved to {osp.dirname(self.seg_out_dir)}')
+                f'results are saved to {osp.dirname(self.outfile_prefix)}')
             return OrderedDict()
         logger.info('starts to compute metric')
 
         gts, preds = zip(*results)
         # set global states in cityscapes evaluation API
-        CSEval.args.cityscapesPath = osp.join(self.seg_prefix, '../..')
-        CSEval.args.predictionPath = self.seg_out_dir
-        CSEval.args.predictionWalk = None
+        gt_instances_file = osp.join(self.outfile_prefix, 'gtInstances.json')  # type: ignore # yapf: disable # noqa: E501
+        # split gt and prediction list
+        gts, preds = zip(*results)
         CSEval.args.JSONOutput = False
         CSEval.args.colorized = False
-        CSEval.args.gtInstancesFile = osp.join(self.seg_out_dir,
-                                               'gtInstances.json')
+        CSEval.args.gtInstancesFile = gt_instances_file
 
         groundTruthImgList = [gt['file_name'] for gt in gts]
         predictionImgList = [pred['pred_txt'] for pred in preds]
-        CSEval_results = CSEval.evaluateImgLists(predictionImgList,
-                                                 groundTruthImgList,
-                                                 CSEval.args)['averages']
+        CSEval_results = evaluateImgLists(
+            predictionImgList,
+            groundTruthImgList,
+            CSEval.args,
+            self.backend_args,
+            dump_matches=self.dump_matches)['averages']
+
         eval_results = OrderedDict()
         eval_results['mAP'] = CSEval_results['allAp']
         eval_results['AP@50'] = CSEval_results['allAp50%']

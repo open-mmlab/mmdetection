@@ -176,10 +176,10 @@ model = dict(
 ```python
 dataset_type = 'CocoDataset'  # Dataset type, this will be used to define the dataset
 data_root = 'data/coco/'  # Root path of data
-file_client_args = dict(backend='disk')  # file client arguments
+backend_args = None # Arguments to instantiate the corresponding file backend
 
 train_pipeline = [  # Training data processing pipeline
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),  # First pipeline to load images from file path
+    dict(type='LoadImageFromFile', backend_args=backend_args),  # First pipeline to load images from file path
     dict(
         type='LoadAnnotations',  # Second pipeline to load annotations for current image
         with_bbox=True,  # Whether to use bounding box, True for detection
@@ -196,7 +196,7 @@ train_pipeline = [  # Training data processing pipeline
     dict(type='PackDetInputs')  # Pipeline that formats the annotation data and decides which keys in the data should be packed into data_samples
 ]
 test_pipeline = [  # Testing data processing pipeline
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),  # First pipeline to load images from file path
+    dict(type='LoadImageFromFile', backend_args=backend_args),  # First pipeline to load images from file path
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),  # Pipeline that resizes the images
     dict(
         type='PackDetInputs',  # Pipeline that formats the annotation data and decides which keys in the data should be packed into data_samples
@@ -217,7 +217,8 @@ train_dataloader = dict(   # Train dataloader config
         ann_file='annotations/instances_train2017.json',  # Path of annotation file
         data_prefix=dict(img='train2017/'),  # Prefix of image path
         filter_cfg=dict(filter_empty_gt=True, min_size=32),  # Config of filtering images and annotations
-        pipeline=train_pipeline))
+        pipeline=train_pipeline,
+        backend_args=backend_args))
 val_dataloader = dict(  # Validation dataloader config
     batch_size=1,  # Batch size of a single GPU. If batch-size > 1, the extra padding area may influence the performance.
     num_workers=2,  # Worker to pre-fetch data for each single GPU
@@ -232,7 +233,8 @@ val_dataloader = dict(  # Validation dataloader config
         ann_file='annotations/instances_val2017.json',
         data_prefix=dict(img='val2017/'),
         test_mode=True,  # Turn on the test mode of the dataset to avoid filtering annotations or images
-        pipeline=test_pipeline))
+        pipeline=test_pipeline,
+        backend_args=backend_args))
 test_dataloader = val_dataloader  # Testing dataloader config
 ```
 
@@ -243,7 +245,8 @@ val_evaluator = dict(  # Validation evaluator config
     type='CocoMetric',  # The coco metric used to evaluate AR, AP, and mAP for detection and instance segmentation
     ann_file=data_root + 'annotations/instances_val2017.json',  # Annotation file path
     metric=['bbox', 'segm'],  # Metrics to be evaluated, `bbox` for detection and `segm` for instance segmentation
-    format_only=False)
+    format_only=False,
+    backend_args=backend_args)
 test_evaluator = val_evaluator  # Testing evaluator config
 ```
 
@@ -529,7 +532,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     dict(
         type='PackDetInputs',

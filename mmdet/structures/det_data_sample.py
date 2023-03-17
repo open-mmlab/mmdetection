@@ -30,8 +30,8 @@ class DetDataSample(BaseDataElement):
          >>> from mmdet.structures import DetDataSample
 
          >>> data_sample = DetDataSample()
-         >>> img_meta = dict(img_shape=(800, 1196, 3),
-         ...                 pad_shape=(800, 1216, 3))
+         >>> img_meta = dict(img_shape=(800, 1196),
+         ...                 pad_shape=(800, 1216))
          >>> gt_instances = InstanceData(metainfo=img_meta)
          >>> gt_instances.bboxes = torch.rand((5, 4))
          >>> gt_instances.labels = torch.rand((5,))
@@ -48,8 +48,8 @@ class DetDataSample(BaseDataElement):
             gt_instances: <InstanceData(
 
                     META INFORMATION
-                    pad_shape: (800, 1216, 3)
-                    img_shape: (800, 1196, 3)
+                    pad_shape: (800, 1216)
+                    img_shape: (800, 1196)
 
                     DATA FIELDS
                     labels: tensor([0.8533, 0.1550, 0.5433, 0.7294, 0.5098])

@@ -32,7 +32,7 @@
    custom_imports = dict(imports=['path.to.my_pipeline'], allow_failed_imports=False)
 
    train_pipeline = [
-       dict(type='LoadImageFromFile', file_client_args=file_client_args),
+       dict(type='LoadImageFromFile', backend_args=backend_args),
        dict(type='LoadAnnotations', with_bbox=True),
        dict(type='Resize', scale=(1333, 800), keep_ratio=True),
        dict(type='RandomFlip', prob=0.5),

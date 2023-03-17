@@ -2,24 +2,30 @@
 dataset_type = 'OpenImagesDataset'
 data_root = 'data/OpenImages/'
 
-# file_client_args = dict(
+# Example to use different file client
+# Method 1: simply set the data root and let the file I/O module
+# automatically infer from prefix (not support LMDB and Memcache yet)
+
+# data_root = 's3://openmmlab/datasets/detection/coco/'
+
+# Method 2: Use `backend_args`, `file_client_args` in versions before 3.0.0rc6
+# backend_args = dict(
 #     backend='petrel',
 #     path_mapping=dict({
 #         './data/': 's3://openmmlab/datasets/detection/',
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
-
-file_client_args = dict(backend='disk')
+backend_args = None
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', scale=(1024, 800), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='Resize', scale=(1024, 800), keep_ratio=True),
     # avoid bboxes being resized
     dict(type='LoadAnnotations', with_bbox=True),
@@ -44,7 +50,8 @@ train_dataloader = dict(
         label_file='annotations/class-descriptions-boxable.csv',
         hierarchy_file='annotations/bbox_labels_600_hierarchy.json',
         meta_file='annotations/train-image-metas.pkl',
-        pipeline=train_pipeline))
+        pipeline=train_pipeline,
+        backend_args=backend_args))
 val_dataloader = dict(
     batch_size=1,
     num_workers=0,
@@ -61,7 +68,8 @@ val_dataloader = dict(
         meta_file='annotations/validation-image-metas.pkl',
         image_level_ann_file='annotations/validation-'
         'annotations-human-imagelabels-boxable.csv',
-        pipeline=test_pipeline))
+        pipeline=test_pipeline,
+        backend_args=backend_args))
 test_dataloader = val_dataloader
 
 val_evaluator = dict(
