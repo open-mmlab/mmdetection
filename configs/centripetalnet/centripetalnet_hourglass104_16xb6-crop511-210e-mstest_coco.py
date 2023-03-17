@@ -45,7 +45,7 @@ model = dict(
 
 # data settings
 train_pipeline = [
-    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
+    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PhotoMetricDistortion',
@@ -74,7 +74,7 @@ test_pipeline = [
     dict(
         type='LoadImageFromFile',
         to_float32=True,
-        file_client_args=_base_.file_client_args),
+        backend_args=_base_.backend_args),
     # don't need Resize
     dict(
         type='RandomCenterCropPad',
@@ -146,7 +146,7 @@ tta_pipeline = [
     dict(
         type='LoadImageFromFile',
         to_float32=True,
-        file_client_args=_base_.file_client_args),
+        backend_args=_base_.backend_args),
     dict(
         type='TestTimeAug',
         transforms=[
