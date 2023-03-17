@@ -1,6 +1,6 @@
 # Visualization
 
-Before reading this tutorial, it is recommended to read MMEngine's [Visualization](https://github.com/open-mmlab/mmengine/blob/main/docs/en/tutorials/visualization.md) documentation to get a first glimpse of the `Visualizer` definition and usage.
+Before reading this tutorial, it is recommended to read MMEngine's [Visualization](https://github.com/open-mmlab/mmengine/blob/main/docs/en/advanced_tutorials/visualization.md) documentation to get a first glimpse of the `Visualizer` definition and usage.
 
 In brief, the [`Visualizer`](mmengine.visualization.Visualizer) is implemented in MMEngine to meet the daily visualization needs, and contains three main functions:
 
