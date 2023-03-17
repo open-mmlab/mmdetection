@@ -3,18 +3,24 @@ _base_ = [
     '../_base_/default_runtime.py'
 ]
 model = dict(bbox_head=dict(num_classes=1))
-# optimizer
-optimizer = dict(type='SGD', lr=0.012, momentum=0.9, weight_decay=5e-4)
-optimizer_config = dict()
-# learning policy
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=1000,
-    warmup_ratio=0.001,
-    step=[16, 20])
-# runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=24)
-log_config = dict(interval=1)
 
-# TODO add auto-scale-lr after a series of experiments
+max_epochs = 24
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
+        end=1000),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_epochs,
+        by_epoch=True,
+        milestones=[16, 20],
+        gamma=0.1)
+]
+
+optim_wrapper = dict(clip_grad=dict(max_norm=35, norm_type=2))
+
+train_cfg = dict(
+    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
+default_hooks = dict(logger=dict(interval=1))
+log_processor = dict(window_size=1)

@@ -45,7 +45,7 @@ model = dict(
 
 # data settings
 train_pipeline = [
-    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
+    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PhotoMetricDistortion',
@@ -71,12 +71,11 @@ train_pipeline = [
     dict(type='PackDetInputs'),
 ]
 
-# TODO: mstest is not currently implemented
 test_pipeline = [
     dict(
         type='LoadImageFromFile',
         to_float32=True,
-        backend_args={{_base_.backend_args}},
+        backend_args=_base_.backend_args,
     ),
     # don't need Resize
     dict(
@@ -138,3 +137,47 @@ test_cfg = dict(type='TestLoop')
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (6 samples per GPU)
 auto_scale_lr = dict(base_batch_size=48)
+
+tta_model = dict(
+    type='DetTTAModel',
+    tta_cfg=dict(
+        nms=dict(type='soft_nms', iou_threshold=0.5, method='gaussian'),
+        max_per_img=100))
+
+tta_pipeline = [
+    dict(
+        type='LoadImageFromFile',
+        to_float32=True,
+        backend_args=_base_.backend_args),
+    dict(
+        type='TestTimeAug',
+        transforms=[
+            [
+                # ``RandomFlip`` must be placed before ``RandomCenterCropPad``,
+                # otherwise bounding box coordinates after flipping cannot be
+                # recovered correctly.
+                dict(type='RandomFlip', prob=1.),
+                dict(type='RandomFlip', prob=0.)
+            ],
+            [
+                dict(
+                    type='RandomCenterCropPad',
+                    crop_size=None,
+                    ratios=None,
+                    border=None,
+                    test_mode=True,
+                    test_pad_mode=['logical_or', 127],
+                    mean=data_preprocessor['mean'],
+                    std=data_preprocessor['std'],
+                    # Image data is not converted to rgb.
+                    to_rgb=data_preprocessor['bgr_to_rgb'])
+            ],
+            [dict(type='LoadAnnotations', with_bbox=True)],
+            [
+                dict(
+                    type='PackDetInputs',
+                    meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                               'flip', 'flip_direction', 'border'))
+            ]
+        ])
+]
