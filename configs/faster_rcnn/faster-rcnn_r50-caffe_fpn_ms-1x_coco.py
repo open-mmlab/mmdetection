@@ -25,4 +25,7 @@ train_pipeline = [
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]
+# MMEngine support the following two ways, users can choose
+# according to convenience
+# train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
 _base_.train_dataloader.dataset.pipeline = train_pipeline
