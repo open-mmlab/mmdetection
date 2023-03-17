@@ -3,7 +3,7 @@ import os.path as osp
 import xml.etree.ElementTree as ET
 
 from mmengine.dist import is_main_process
-from mmengine.fileio import list_from_file
+from mmengine.fileio import get_local_path, list_from_file
 from mmengine.utils import ProgressBar
 
 from mmdet.registry import DATASETS
@@ -34,8 +34,7 @@ class WIDERFaceDataset(XMLDataset):
         }
 
         data_list = []
-        img_ids = list_from_file(
-            self.ann_file, file_client_args=self.file_client_args)
+        img_ids = list_from_file(self.ann_file, backend_args=self.backend_args)
 
         # loading process takes around 10 mins
         if is_main_process():
@@ -70,7 +69,8 @@ class WIDERFaceDataset(XMLDataset):
         data_info['xml_path'] = xml_path
 
         # deal with xml file
-        with self.file_client.get_local_path(xml_path) as local_path:
+        with get_local_path(
+                xml_path, backend_args=self.backend_args) as local_path:
             raw_ann_info = ET.parse(local_path)
         root = raw_ann_info.getroot()
         size = root.find('size')

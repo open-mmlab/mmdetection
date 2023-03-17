@@ -5,9 +5,7 @@ _base_ = [
 model = dict(bbox_head=dict(num_classes=1))
 
 train_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadImageFromFile', file_client_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PhotoMetricDistortion',
@@ -30,9 +28,7 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadImageFromFile', file_client_args={{_base_.backend_args}}),
     dict(type='Resize', scale=(300, 300), keep_ratio=False),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
@@ -54,13 +50,7 @@ param_scheduler = [
     dict(
         type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
         end=1000),
-    dict(
-        type='MultiStepLR',
-        begin=0,
-        end=24,
-        by_epoch=True,
-        milestones=[16, 20],
-        gamma=0.1)
+    dict(type='MultiStepLR', by_epoch=True, milestones=[16, 20], gamma=0.1)
 ]
 
 # optimizer
