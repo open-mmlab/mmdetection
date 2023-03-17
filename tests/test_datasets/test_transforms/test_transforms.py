@@ -416,6 +416,7 @@ class TestMinIoURandomCrop(unittest.TestCase):
                          results['gt_bboxes'].shape[0])
         self.assertEqual(results['gt_labels'].dtype, np.int64)
         self.assertEqual(results['gt_bboxes'].dtype, np.float32)
+        self.assertEqual(results['img_shape'], results['img'].shape[:2])
 
         patch = np.array(
             [0, 0, results['img_shape'][1], results['img_shape'][0]])
@@ -514,6 +515,7 @@ class TestExpand(unittest.TestCase):
     def test_transform(self):
         transform = Expand()
         results = transform.transform(copy.deepcopy(self.results))
+        self.assertEqual(results['img_shape'], results['img'].shape[:2])
         self.assertEqual(
             results['img_shape'],
             (results['gt_masks'].height, results['gt_masks'].width))
@@ -609,6 +611,7 @@ class TestRandomCrop(unittest.TestCase):
         h, w = results['img'].shape
         self.assertTrue(10 <= w <= 20)
         self.assertTrue(10 <= h <= 20)
+        self.assertEqual(results['img_shape'], results['img'].shape[:2])
         # test relative_range crop
         transform = RandomCrop(
             crop_size=(0.5, 0.5), crop_type='relative_range')
@@ -616,6 +619,7 @@ class TestRandomCrop(unittest.TestCase):
         h, w = results['img'].shape
         self.assertTrue(16 <= w <= 32)
         self.assertTrue(12 <= h <= 24)
+        self.assertEqual(results['img_shape'], results['img'].shape[:2])
 
         # test with gt_bboxes, gt_bboxes_labels, gt_ignore_flags,
         # gt_masks, gt_seg_map
@@ -649,6 +653,7 @@ class TestRandomCrop(unittest.TestCase):
         self.assertEqual(results['gt_bboxes_labels'].shape[0], 2)
         self.assertEqual(results['gt_ignore_flags'].shape[0], 2)
         self.assertTupleEqual(results['gt_seg_map'].shape[:2], (5, 7))
+        self.assertEqual(results['img_shape'], results['img'].shape[:2])
 
         # test geometric transformation with homography matrix
         bboxes = copy.deepcopy(src_results['gt_bboxes'])
@@ -918,6 +923,7 @@ class TestMosaic(unittest.TestCase):
         self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
         self.assertTrue(results['gt_bboxes'].dtype == np.float32)
         self.assertTrue(results['gt_ignore_flags'].dtype == bool)
+        self.assertEqual(results['img_shape'], results['img'].shape[:2])
 
     def test_transform_with_no_gt(self):
         self.results['gt_bboxes'] = np.empty((0, 4), dtype=np.float32)
@@ -1003,6 +1009,7 @@ class TestMixUp(unittest.TestCase):
         self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
         self.assertTrue(results['gt_bboxes'].dtype == np.float32)
         self.assertTrue(results['gt_ignore_flags'].dtype == bool)
+        self.assertEqual(results['img_shape'], results['img'].shape[:2])
 
     def test_transform_use_box_type(self):
         results = copy.deepcopy(self.results)
@@ -1074,6 +1081,7 @@ class TestRandomAffine(unittest.TestCase):
         self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
         self.assertTrue(results['gt_bboxes'].dtype == np.float32)
         self.assertTrue(results['gt_ignore_flags'].dtype == bool)
+        self.assertEqual(results['img_shape'], results['img'].shape[:2])
 
     def test_transform_use_box_type(self):
         results = copy.deepcopy(self.results)
@@ -1249,6 +1257,7 @@ class TestRandomCenterCropPad(unittest.TestCase):
         assert train_results['img_shape'][:2] == (h - 20, w - 20)
         assert train_results['gt_bboxes'].shape[0] == 4
         assert train_results['gt_bboxes'].dtype == np.float32
+        self.assertEqual(results['img_shape'], results['img'].shape[:2])
 
         crop_module = RandomCenterCropPad(
             crop_size=None,
@@ -1534,6 +1543,7 @@ class TestAlbu(unittest.TestCase):
         self.assertEqual(results['gt_bboxes'].dtype, np.float32)
         self.assertEqual(results['gt_ignore_flags'].dtype, bool)
         self.assertEqual(results['gt_bboxes_labels'].dtype, np.int64)
+        self.assertEqual(results['img_shape'], results['img'].shape[:2])
 
     @unittest.skipIf(albumentations is None, 'albumentations is not installed')
     def test_repr(self):
