@@ -8,18 +8,26 @@ import sys
 from pathlib import Path
 from typing import Optional, Union
 
-import cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling as CSEval  # noqa: E501
 import mmcv
 import numpy as np
-from cityscapesscripts.evaluation.instance import Instance
-from cityscapesscripts.helpers.csHelpers import id2label  # noqa: E501
-from cityscapesscripts.helpers.csHelpers import labels, writeDict2JSON
 from mmengine.fileio import get
+
+try:
+    import cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling as CSEval  # noqa: E501
+    from cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling import \
+        CArgs  # noqa: E501
+    from cityscapesscripts.evaluation.instance import Instance
+    from cityscapesscripts.helpers.csHelpers import (id2label, labels,
+                                                     writeDict2JSON)
+    HAS_CITYSCAPESAPI = True
+except ImportError:
+    CArgs = object
+    HAS_CITYSCAPESAPI = False
 
 
 def evaluateImgLists(prediction_list: list,
                      groundtruth_list: list,
-                     args: CSEval.CArgs,
+                     args: CArgs,
                      backend_args: Optional[dict] = None,
                      dump_matches: bool = False) -> dict:
     """A wrapper of obj:``cityscapesscripts.evaluation.
@@ -29,7 +37,7 @@ def evaluateImgLists(prediction_list: list,
     Args:
         prediction_list (list): A list of prediction txt file.
         groundtruth_list (list): A list of groundtruth image file.
-        args (CSEval.CArgs): A global object setting in
+        args (CArgs): A global object setting in
             obj:``cityscapesscripts.evaluation.
             evalInstanceLevelSemanticLabeling``
         backend_args (dict, optional): Arguments to instantiate the
@@ -38,6 +46,11 @@ def evaluateImgLists(prediction_list: list,
     Returns:
         dict: The computed metric.
     """
+    if not HAS_CITYSCAPESAPI:
+        raise RuntimeError('Failed to import `cityscapesscripts`.'
+                           'Please try to install official '
+                           'cityscapesscripts by '
+                           '"pip install cityscapesscripts"')
     # determine labels of interest
     CSEval.setInstanceLabels(args)
     # get dictionary of all ground truth instances
@@ -69,7 +82,7 @@ def evaluateImgLists(prediction_list: list,
 def matchGtWithPreds(prediction_list: list,
                      groundtruth_list: list,
                      gt_instances: dict,
-                     args: CSEval.CArgs,
+                     args: CArgs,
                      backend_args=None):
     """A wrapper of obj:``cityscapesscripts.evaluation.
 
@@ -79,7 +92,7 @@ def matchGtWithPreds(prediction_list: list,
         prediction_list (list): A list of prediction txt file.
         groundtruth_list (list): A list of groundtruth image file.
         gt_instances (dict): Groundtruth dict.
-        args (CSEval.CArgs): A global object setting in
+        args (CArgs): A global object setting in
             obj:``cityscapesscripts.evaluation.
             evalInstanceLevelSemanticLabeling``
         backend_args (dict, optional): Arguments to instantiate the
@@ -87,6 +100,11 @@ def matchGtWithPreds(prediction_list: list,
     Returns:
         dict: The processed prediction and groundtruth result.
     """
+    if not HAS_CITYSCAPESAPI:
+        raise RuntimeError('Failed to import `cityscapesscripts`.'
+                           'Please try to install official '
+                           'cityscapesscripts by '
+                           '"pip install cityscapesscripts"')
     matches: dict = dict()
     if not args.quiet:
         print(f'Matching {len(prediction_list)} pairs of images...')
@@ -154,7 +172,11 @@ def readPredInfo(prediction_file: str) -> dict:
     Returns:
         dict: The processed prediction results.
     """
-
+    if not HAS_CITYSCAPESAPI:
+        raise RuntimeError('Failed to import `cityscapesscripts`.'
+                           'Please try to install official '
+                           'cityscapesscripts by '
+                           '"pip install cityscapesscripts"')
     printError = CSEval.printError
 
     predInfo = {}
@@ -184,7 +206,7 @@ def readPredInfo(prediction_file: str) -> dict:
 
 
 def getGtInstances(groundtruth_list: list,
-                   args: CSEval.CArgs,
+                   args: CArgs,
                    backend_args: Optional[dict] = None) -> dict:
     """A wrapper of obj:``cityscapesscripts.evaluation.
 
@@ -192,7 +214,7 @@ def getGtInstances(groundtruth_list: list,
     groundtruth image from file backend.
     Args:
         groundtruth_list (list): A list of groundtruth image file.
-        args (CSEval.CArgs): A global object setting in
+        args (CArgs): A global object setting in
             obj:``cityscapesscripts.evaluation.
             evalInstanceLevelSemanticLabeling``
         backend_args (dict, optional): Arguments to instantiate the
@@ -200,6 +222,11 @@ def getGtInstances(groundtruth_list: list,
     Returns:
         dict: The computed metric.
     """
+    if not HAS_CITYSCAPESAPI:
+        raise RuntimeError('Failed to import `cityscapesscripts`.'
+                           'Please try to install official '
+                           'cityscapesscripts by '
+                           '"pip install cityscapesscripts"')
     # if there is a global statistics json, then load it
     if (os.path.isfile(args.gtInstancesFile)):
         if not args.quiet:
@@ -218,7 +245,7 @@ def getGtInstances(groundtruth_list: list,
 
 
 def instances2dict(image_list: list,
-                   args: CSEval.CArgs,
+                   args: CArgs,
                    backend_args: Optional[dict] = None) -> dict:
     """A wrapper of obj:``cityscapesscripts.evaluation.
 
@@ -226,7 +253,7 @@ def instances2dict(image_list: list,
     groundtruth image from file backend.
     Args:
         image_list (list): A list of image file.
-        args (CSEval.CArgs): A global object setting in
+        args (CArgs): A global object setting in
             obj:``cityscapesscripts.evaluation.
             evalInstanceLevelSemanticLabeling``
         backend_args (dict, optional): Arguments to instantiate the
@@ -234,6 +261,11 @@ def instances2dict(image_list: list,
     Returns:
         dict: The processed groundtruth results.
     """
+    if not HAS_CITYSCAPESAPI:
+        raise RuntimeError('Failed to import `cityscapesscripts`.'
+                           'Please try to install official '
+                           'cityscapesscripts by '
+                           '"pip install cityscapesscripts"')
     imgCount = 0
     instanceDict = {}
 
