@@ -16,6 +16,7 @@ done
 
 
 
+
 for D_PARAM in 0.0 1.0
 do
 CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch \

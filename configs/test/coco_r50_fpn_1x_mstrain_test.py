@@ -12,7 +12,7 @@ model = dict(type='FasterRCNN_TS_TEST',
 
 
 # Distillation Params
-teacher_config_path = 'result/coco/faster_rcnn_r50_fpn_1x_mstrain/coco_faster_rcnn_r101_fpn_1x_mstrain.py'
+teacher_config_path = 'result/coco/faster_rcnn_r50_fpn_1x_mstrain/coco_faster_rcnn_r50_fpn_1x_mstrain.py'
 teacher_weight_path = 'result/coco/faster_rcnn_r50_fpn_1x_mstrain/epoch_12.pth'
 backbone_pretrain = False
 

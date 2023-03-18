@@ -498,8 +498,8 @@ class FasterRCNN_TS_TEST(TwoStageDetector):
             ratio_ori_list.append((data[0]['img_metas'][ix]['img_shape'][1] / W_ori, data[0]['img_metas'][ix]['img_shape'][0] / H_ori))
             ratio_aug_list.append((data[1]['img_metas'][ix]['img_shape'][1] / W_aug, data[1]['img_metas'][ix]['img_shape'][0] / H_aug))
 
-        consistency_backbone_loss = 0.
         if self.distill_param_backbone > 0:
+            consistency_backbone_loss = 0.
             for backbone_ori_ix, backbone_aug_ix in zip(backbone_ori, backbone_aug):
                 loss_batch = 0.
                 for batch_index in range(backbone_aug_ix.size(0)):
@@ -523,7 +523,7 @@ class FasterRCNN_TS_TEST(TwoStageDetector):
                 consistency_backbone_loss += loss_batch
             
             consistency_backbone_loss = consistency_backbone_loss * self.distill_param_backbone / len(backbone_ori)
-        losses.update({'consistency_backbone_loss': consistency_backbone_loss})
+            losses.update({'consistency_backbone_loss': consistency_backbone_loss})
         
 
         # Calc Consistency Loss
@@ -531,12 +531,11 @@ class FasterRCNN_TS_TEST(TwoStageDetector):
         gt_feats_ori = gt_feats_ori.view(B, -1)
         gt_feats_aug = gt_feats_aug.view(B, -1)
         
-        consistency_rpn_loss = 0.
         if self.distill_param > 0:
+            consistency_rpn_loss = 0.
             positive_loss = self.calc_consistency_loss(gt_feats_ori, gt_feats_aug)
             consistency_rpn_loss += positive_loss * self.distill_param
-        
-        losses.update({'consistency_rpn_loss': consistency_rpn_loss})
+            losses.update({'consistency_rpn_loss': consistency_rpn_loss})
         
         loss, log_vars = self._parse_losses(losses)
 
