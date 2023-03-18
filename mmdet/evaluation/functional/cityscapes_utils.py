@@ -8,13 +8,20 @@ import sys
 from pathlib import Path
 from typing import Optional, Union
 
-import cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling as CSEval  # noqa: E501
 import mmcv
 import numpy as np
-from cityscapesscripts.evaluation.instance import Instance
-from cityscapesscripts.helpers.csHelpers import id2label  # noqa: E501
-from cityscapesscripts.helpers.csHelpers import labels, writeDict2JSON
 from mmengine.fileio import get
+
+try:
+    import cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling as CSEval  # noqa: E501
+    from cityscapesscripts.evaluation.instance import Instance
+    from cityscapesscripts.helpers.csHelpers import (id2label, labels,
+                                                     writeDict2JSON)
+except ImportError:
+    raise RuntimeError('Failed to import `cityscapesscripts`.'
+                       'Please try to install official '
+                       'cityscapesscripts by '
+                       '"pip install cityscapesscripts"')
 
 
 def evaluateImgLists(prediction_list: list,
