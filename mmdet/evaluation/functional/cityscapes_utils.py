@@ -17,11 +17,9 @@ try:
     from cityscapesscripts.evaluation.instance import Instance
     from cityscapesscripts.helpers.csHelpers import (id2label, labels,
                                                      writeDict2JSON)
+    HAS_CITYSCAPESAPI = True
 except ImportError:
-    raise RuntimeError('Failed to import `cityscapesscripts`.'
-                       'Please try to install official '
-                       'cityscapesscripts by '
-                       '"pip install cityscapesscripts"')
+    HAS_CITYSCAPESAPI = False
 
 
 def evaluateImgLists(prediction_list: list,
@@ -45,6 +43,11 @@ def evaluateImgLists(prediction_list: list,
     Returns:
         dict: The computed metric.
     """
+    if not HAS_CITYSCAPESAPI:
+        raise RuntimeError('Failed to import `cityscapesscripts`.'
+                           'Please try to install official '
+                           'cityscapesscripts by '
+                           '"pip install cityscapesscripts"')
     # determine labels of interest
     CSEval.setInstanceLabels(args)
     # get dictionary of all ground truth instances
@@ -94,6 +97,11 @@ def matchGtWithPreds(prediction_list: list,
     Returns:
         dict: The processed prediction and groundtruth result.
     """
+    if not HAS_CITYSCAPESAPI:
+        raise RuntimeError('Failed to import `cityscapesscripts`.'
+                           'Please try to install official '
+                           'cityscapesscripts by '
+                           '"pip install cityscapesscripts"')
     matches: dict = dict()
     if not args.quiet:
         print(f'Matching {len(prediction_list)} pairs of images...')
@@ -161,7 +169,11 @@ def readPredInfo(prediction_file: str) -> dict:
     Returns:
         dict: The processed prediction results.
     """
-
+    if not HAS_CITYSCAPESAPI:
+        raise RuntimeError('Failed to import `cityscapesscripts`.'
+                           'Please try to install official '
+                           'cityscapesscripts by '
+                           '"pip install cityscapesscripts"')
     printError = CSEval.printError
 
     predInfo = {}
@@ -207,6 +219,11 @@ def getGtInstances(groundtruth_list: list,
     Returns:
         dict: The computed metric.
     """
+    if not HAS_CITYSCAPESAPI:
+        raise RuntimeError('Failed to import `cityscapesscripts`.'
+                           'Please try to install official '
+                           'cityscapesscripts by '
+                           '"pip install cityscapesscripts"')
     # if there is a global statistics json, then load it
     if (os.path.isfile(args.gtInstancesFile)):
         if not args.quiet:
@@ -241,6 +258,11 @@ def instances2dict(image_list: list,
     Returns:
         dict: The processed groundtruth results.
     """
+    if not HAS_CITYSCAPESAPI:
+        raise RuntimeError('Failed to import `cityscapesscripts`.'
+                           'Please try to install official '
+                           'cityscapesscripts by '
+                           '"pip install cityscapesscripts"')
     imgCount = 0
     instanceDict = {}
 
