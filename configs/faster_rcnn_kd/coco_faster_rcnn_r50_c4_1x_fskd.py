@@ -7,6 +7,7 @@ _base_ = [
 # model
 model = dict(type='FasterRCNN_TS',
              distill_param=1.0,
+             distill_param_backbone=1.0,
              roi_head=dict(
                  type='ContRoIHead'
                 )
