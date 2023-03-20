@@ -435,7 +435,7 @@ class TrackLocalVisualizer(Visualizer):
                  vis_backends: Optional[Dict] = None,
                  save_dir: Optional[str] = None,
                  line_width: Union[int, float] = 3,
-                 alpha: float = 0.8):
+                 alpha: float = 0.8) -> None:
         super().__init__(name, image, vis_backends, save_dir)
         self.line_width = line_width
         self.alpha = alpha

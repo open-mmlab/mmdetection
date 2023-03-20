@@ -197,7 +197,7 @@ class TrackVisualizationHook(Hook):
                  show: bool = False,
                  wait_time: float = 0.,
                  test_out_dir: Optional[str] = None,
-                 backend_args: dict = None):
+                 backend_args: dict = None) -> None:
         self._visualizer: Visualizer = Visualizer.get_current_instance()
         self.frame_interval = frame_interval
         self.score_thr = score_thr
@@ -294,7 +294,7 @@ class TrackVisualizationHook(Hook):
                 self.image_idx = self.image_idx + video_length
 
     def visualize_single_image(self, img_data_sample: DetDataSample,
-                               step: int):
+                               step: int) -> None:
         """
         Args:
             img_data_sample (DetDataSample): single image output.
