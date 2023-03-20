@@ -113,13 +113,13 @@ class XMLDataset(BaseDetDataset):
 
     def _parse_instance_info(self,
                              raw_ann_info: ET,
-                             minus_one: bool = False) -> List[dict]:
+                             minus_one: bool = True) -> List[dict]:
         """parse instance information.
 
         Args:
             raw_ann_info (ElementTree): ElementTree object.
             minus_one (bool): Whether to subtract 1 from the coordinates.
-                Defaults to False.
+                Defaults to True.
 
         Returns:
             List[dict]: List of instances.

@@ -85,5 +85,6 @@ class WIDERFaceDataset(XMLDataset):
         data_info['width'] = width
 
         # Coordinates are in range [0, width - 1 or height - 1]
-        data_info['instances'] = self._parse_instance_info(raw_ann_info)
+        data_info['instances'] = self._parse_instance_info(
+            raw_ann_info, minus_one=False)
         return data_info
