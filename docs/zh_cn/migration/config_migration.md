@@ -242,7 +242,9 @@ test_pipeline = [
 <td>
 
 ```python
-dict(type='Resize', img_scale=(1333, 800), keep_ratio=True)
+dict(type='Resize',
+     img_scale=(1333, 800),
+     keep_ratio=True)
 ```
 
 </td>
@@ -250,7 +252,9 @@ dict(type='Resize', img_scale=(1333, 800), keep_ratio=True)
 <td>
 
 ```python
-dict(type='Resize', scale=(1333, 800), keep_ratio=True)
+dict(type='Resize',
+     scale=(1333, 800),
+     keep_ratio=True)
 ```
 
 </td>
@@ -262,7 +266,8 @@ dict(type='Resize', scale=(1333, 800), keep_ratio=True)
 ```python
 dict(
     type='Resize',
-    img_scale=[(1333, 640), (1333, 800)],
+    img_scale=[
+        (1333, 640), (1333, 800)],
     multiscale_mode='range',
     keep_ratio=True)
 ```
@@ -273,7 +278,8 @@ dict(
 ```python
 dict(
     type='RandomResize',
-    scale=[(1333, 640), (1333, 800)],
+    scale=[
+        (1333, 640), (1333, 800)],
     keep_ratio=True)
 ```
 
@@ -286,8 +292,10 @@ dict(
 ```python
 dict(
     type='Resize',
-    img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
-               (1333, 768), (1333, 800)],
+    img_scale=[
+        (1333, 640), (1333, 672),
+        (1333, 704), (1333, 736),
+        (1333, 768), (1333, 800)],
     multiscale_mode='value',
     keep_ratio=True)
 ```
@@ -298,8 +306,10 @@ dict(
 ```python
 dict(
     type='RandomChoiceResize',
-    scales=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
-            (1333, 768), (1333, 800)],
+    scales=[
+        (1333, 640), (1333, 672),
+        (1333, 704), (1333, 736),
+        (1333, 768), (1333, 800)],
     keep_ratio=True)
 ```
 
@@ -311,14 +321,16 @@ dict(
 <td>
 
 ```python
-dict(type='RandomFlip', flip_ratio=0.5)
+dict(type='RandomFlip',
+     flip_ratio=0.5)
 ```
 
 </td>
 <td>
 
 ```python
-dict(type='RandomFlip', prob=0.5)
+dict(type='RandomFlip',
+     prob=0.5)
 ```
 
 </td>
@@ -601,7 +613,8 @@ param_scheduler = [
 <td>
 
 ```python
-checkpoint_config = dict(interval=1)
+checkpoint_config = dict(
+    interval=1)
 ```
 
 </td>
@@ -610,7 +623,9 @@ checkpoint_config = dict(interval=1)
 
 ```python
 default_hooks = dict(
-    checkpoint=dict(type='CheckpointHook', interval=5))
+    checkpoint=dict(
+        type='CheckpointHook',
+        interval=5))
 ```
 
 </td>
@@ -621,7 +636,8 @@ default_hooks = dict(
 <td>
 
 ```python
-evaluation = dict(save_best='auto')
+evaluation = dict(
+    save_best='auto')
 ```
 
 </td>
@@ -629,7 +645,9 @@ evaluation = dict(save_best='auto')
 
 ```python
 default_hooks = dict(
-    checkpoint=dict(type='CheckpointHook', save_best='auto'))
+    checkpoint=dict(
+        type='CheckpointHook',
+        save_best='auto'))
 ```
 
 </td>
@@ -640,7 +658,8 @@ default_hooks = dict(
 <td>
 
 ```python
-checkpoint_config = dict(max_keep_ckpts=3)
+checkpoint_config = dict(
+    max_keep_ckpts=3)
 ```
 
 </td>
@@ -648,7 +667,9 @@ checkpoint_config = dict(max_keep_ckpts=3)
 
 ```python
 default_hooks = dict(
-    checkpoint=dict(type='CheckpointHook', max_keep_ckpts=3))
+    checkpoint=dict(
+        type='CheckpointHook',
+        max_keep_ckpts=3))
 ```
 
 </td>
@@ -675,7 +696,8 @@ default_hooks = dict(
 <td>
 
 ```python
-log_config = dict(interval=50)
+log_config = dict(
+    interval=50)
 ```
 
 </td>
@@ -683,9 +705,14 @@ log_config = dict(interval=50)
 <td>
 
 ```python
-default_hooks = dict(logger=dict(type='LoggerHook', interval=50))
+default_hooks = dict(
+    logger=dict(
+        type='LoggerHook',
+        interval=50))
 # 可选： 配置日志打印数值的平滑窗口大小
-log_processor = dict(type='LogProcessor', window_size=50)
+log_processor = dict(
+    type='LogProcessor',
+    window_size=50)
 ```
 
 </td>

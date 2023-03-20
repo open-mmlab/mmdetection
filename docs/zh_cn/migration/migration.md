@@ -4,6 +4,7 @@ MMDetection 3.x 版本是一个重大更新，包含了许多 API 和配置文�
 我们将迁移指南分为以下几个部分：
 
 - [配置文件迁移](./config_migration.md)
+- [API 和 Registry 迁移](./api_and_registry_migration.md)
 - [数据集迁移](./dataset_migration.md)
 - [模型迁移](./model_migration.md)
 - [常见问题](./migration_faq.md)
