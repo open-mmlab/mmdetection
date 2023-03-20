@@ -632,7 +632,7 @@ checkpoint_config = dict(
 default_hooks = dict(
     checkpoint=dict(
         type='CheckpointHook',
-        interval=5))
+        interval=1))
 ```
 
 </td>
