@@ -1,7 +1,10 @@
+lap
 matplotlib
+motmetrics
 numpy
 pycocotools
 scipy
+scipy<=1.7.3
 shapely
 six
 terminaltables
