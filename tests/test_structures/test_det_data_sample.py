@@ -60,6 +60,21 @@ class TestDetDataSample(TestCase):
         assert _equal(det_data_sample.pred_instances.masks,
                       pred_instances_data['masks'])
 
+        # test pred_track_instances
+        pred_track_instances_data = dict(
+            bboxes=torch.rand(2, 4),
+            labels=torch.rand(2),
+            masks=np.random.rand(2, 2, 2))
+        pred_instances = InstanceData(**pred_track_instances_data)
+        det_data_sample.pred_instances = pred_instances
+        assert 'pred_instances' in det_data_sample
+        assert _equal(det_data_sample.pred_instances.bboxes,
+                      pred_track_instances_data['bboxes'])
+        assert _equal(det_data_sample.pred_instances.labels,
+                      pred_track_instances_data['labels'])
+        assert _equal(det_data_sample.pred_instances.masks,
+                      pred_track_instances_data['masks'])
+
         # test proposals
         proposals_data = dict(bboxes=torch.rand(4, 4), labels=torch.rand(4))
         proposals = InstanceData(**proposals_data)
