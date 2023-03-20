@@ -18,7 +18,7 @@ try:
     import cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling as CSEval  # noqa: E501
     import cityscapesscripts.helpers.labels as CSLabels
 
-    from mmdet.evaluation.functional.cityscapes_utils import evaluateImgLists
+    from mmdet.evaluation.functional import evaluateImgLists
     HAS_CITYSCAPESAPI = True
 except ImportError:
     HAS_CITYSCAPESAPI = False

@@ -1,6 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-
-import os.path as osp
 from typing import Dict, List, Optional, Union
 
 import mmengine
@@ -68,11 +66,6 @@ class CocoOccludedSeparatedMetric(CocoMetric):
             metric: Union[str, List[str]] = ['bbox', 'segm'],
             **kwargs) -> None:
         super().__init__(*args, metric=metric, **kwargs)
-        # load from local file
-        if osp.isfile(occluded_ann) and not osp.isabs(occluded_ann):
-            occluded_ann = osp.join(self.data_root, occluded_ann)
-        if osp.isfile(separated_ann) and not osp.isabs(separated_ann):
-            separated_ann = osp.join(self.data_root, separated_ann)
         self.occluded_ann = load(occluded_ann)
         self.separated_ann = load(separated_ann)
         self.score_thr = score_thr
