@@ -10,14 +10,14 @@ This script can inference an input video / images with a multiple object trackin
 
 ```shell
 python demo/demo_mot.py \
+    ${INPUTS}
     ${CONFIG_FILE} \
-    --input ${INPUT} \
-    [--output ${OUTPUT}] \
     [--checkpoint ${CHECKPOINT_FILE}] \
     [--detector ${DETECTOR_FILE}] \
     [--reid ${REID_FILE}] \
     [--score-thr ${SCORE_THR}] \
     [--device ${DEVICE}] \
+    [--out ${OUTPUT}] \
     [--show]
 ```
 
@@ -25,14 +25,14 @@ The `INPUT` and `OUTPUT` support both _mp4 video_ format and the _folder_ format
 
 **Important:** For `DeepSORT`, `SORT`, `Tracktor`, `StrongSORT`, they need load the weight of the `reid` and the weight of the `detector` separately. Therefore, we use `--detector` and `--reid` to load weights. Other algorithms such as `ByteTrack`, `OCSORT` and `QDTrack` use `--checkpoint` to load weights.
 
-Optional arguments:isis
+Optional arguments:
 
-- `OUTPUT`: Output of the visualized demo. If not specified, the `--show` is obligate to show the video on the fly.
 - `CHECKPOINT_FILE`: The checkpoint is optional.
 - `DETECTOR_FILE`: The detector is optional.
 - `REID_FILE`: The reid is optional.
 - `SCORE_THR`: The threshold of score to filter bboxes.
 - `DEVICE`: The device for inference. Options are `cpu` or `cuda:0`, etc.
+- `OUTPUT`: Output of the visualized demo. If not specified, the `--show` is obligate to show the video on the fly.
 - `--show`: Whether show the video on the fly.
 
 **Examples of running mot model:**
@@ -40,16 +40,16 @@ Optional arguments:isis
 ```shell
 # Example 1: do not specify --checkpoint to use --detector
 python demo/demo_mot.py \
-    configs/sort/sort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py
+    demo/demo_mot.mp4 \
+    configs/sort/sort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py \
     --detector \
-    https://download.openmmlab.com/mmtracking/mot/faster_rcnn/faster-rcnn_r50_fpn_4e_mot17-half-64ee2ed4.pth
-    --input demo/demo.mp4
-    --output mot.mp4
+    https://download.openmmlab.com/mmtracking/mot/faster_rcnn/faster-rcnn_r50_fpn_4e_mot17-half-64ee2ed4.pth \
+    --out mot.mp4
 
 # Example 2: use --checkpoint
 python demo/demo_mot.py \
+    demo/demo_mot.mp4 \
     configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py \
-    --input demo/demo.mp4 \
     --checkpoint https://download.openmmlab.com/mmtracking/mot/qdtrack/mot_dataset/qdtrack_faster-rcnn_r50_fpn_4e_mot17_20220315_145635-76f295ef.pth \
-    --output mot.mp4
+    --out mot.mp4
 ```
