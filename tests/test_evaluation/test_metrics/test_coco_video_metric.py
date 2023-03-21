@@ -129,10 +129,10 @@ class TestCocoVideoMetric(TestCase):
         pred_det_instances = InstanceData(**dummy_pred)
         img_data_sample = DetDataSample()
         img_data_sample.pred_instances = pred_det_instances
-        img_data_sample.set_metainfo(dict(img_id=0, ori_shape=(640, 640)))
+        img_data_sample.set_metainfo(
+            dict(img_id=0, ori_shape=(640, 640), ori_video_length=1))
         track_data_sample = TrackDataSample()
         track_data_sample.video_data_samples = [img_data_sample]
-        track_data_sample.set_metainfo(dict(ori_video_length=1))
         predictions = []
         if isinstance(track_data_sample, BaseDataElement):
             predictions.append(track_data_sample.to_dict())
@@ -213,10 +213,10 @@ class TestCocoVideoMetric(TestCase):
         pred_det_instances = InstanceData(**dummy_pred)
         img_data_sample = DetDataSample()
         img_data_sample.pred_instances = pred_det_instances
-        img_data_sample.set_metainfo(dict(img_id=0, ori_shape=(640, 640)))
+        img_data_sample.set_metainfo(
+            dict(img_id=0, ori_shape=(640, 640), ori_video_length=1))
         track_data_sample = TrackDataSample()
         track_data_sample.video_data_samples = [img_data_sample]
-        track_data_sample.set_metainfo(dict(ori_video_length=1))
         predictions = []
         if isinstance(track_data_sample, BaseDataElement):
             predictions.append(track_data_sample.to_dict())
@@ -258,10 +258,10 @@ class TestCocoVideoMetric(TestCase):
         pred_det_instances = InstanceData(**dummy_pred)
         img_data_sample = DetDataSample()
         img_data_sample.pred_instances = pred_det_instances
-        img_data_sample.set_metainfo(dict(img_id=0, ori_shape=(640, 640)))
+        img_data_sample.set_metainfo(
+            dict(img_id=0, ori_shape=(640, 640), ori_video_length=1))
         track_data_sample = TrackDataSample()
         track_data_sample.video_data_samples = [img_data_sample]
-        track_data_sample.set_metainfo(dict(ori_video_length=1))
         predictions = []
         if isinstance(track_data_sample, BaseDataElement):
             predictions.append(track_data_sample.to_dict())
@@ -293,10 +293,10 @@ class TestCocoVideoMetric(TestCase):
         pred_det_instances = InstanceData(**dummy_pred)
         img_data_sample = DetDataSample()
         img_data_sample.pred_instances = pred_det_instances
-        img_data_sample.set_metainfo(dict(img_id=0, ori_shape=(640, 640)))
+        img_data_sample.set_metainfo(
+            dict(img_id=0, ori_shape=(640, 640), ori_video_length=1))
         track_data_sample = TrackDataSample()
         track_data_sample.video_data_samples = [img_data_sample]
-        track_data_sample.set_metainfo(dict(ori_video_length=1))
         predictions = []
         if isinstance(track_data_sample, BaseDataElement):
             predictions.append(track_data_sample.to_dict())
@@ -331,10 +331,10 @@ class TestCocoVideoMetric(TestCase):
         pred_det_instances = InstanceData(**empty_pred)
         img_data_sample = DetDataSample()
         img_data_sample.pred_instances = pred_det_instances
-        img_data_sample.set_metainfo(dict(img_id=0, ori_shape=(640, 640)))
+        img_data_sample.set_metainfo(
+            dict(img_id=0, ori_shape=(640, 640), ori_video_length=1))
         track_data_sample = TrackDataSample()
         track_data_sample.video_data_samples = [img_data_sample]
-        track_data_sample.set_metainfo(dict(ori_video_length=1))
         predictions = []
         if isinstance(track_data_sample, BaseDataElement):
             predictions.append(track_data_sample.to_dict())
@@ -380,10 +380,10 @@ class TestCocoVideoMetric(TestCase):
         img_data_sample = DetDataSample()
         img_data_sample.pred_instances = pred_det_instances
         img_data_sample.instances = instances
-        img_data_sample.set_metainfo(dict(img_id=0, ori_shape=(640, 640)))
+        img_data_sample.set_metainfo(
+            dict(img_id=0, ori_shape=(640, 640), ori_video_length=1))
         track_data_sample = TrackDataSample()
         track_data_sample.video_data_samples = [img_data_sample]
-        track_data_sample.set_metainfo(dict(ori_video_length=1))
         predictions = []
         if isinstance(track_data_sample, BaseDataElement):
             predictions.append(track_data_sample.to_dict())

@@ -59,6 +59,7 @@ class TestMOTChallengeMetric(TestCase):
         img_data_sample.set_metainfo(
             dict(
                 frame_id=0,
+                ori_video_length=2,
                 video_length=2,
                 img_id=1,
                 img_path=f'xxx{sep}MOT17-09-DPM{sep}img1{sep}000001.jpg',
@@ -69,6 +70,7 @@ class TestMOTChallengeMetric(TestCase):
         img_data_sample_2.set_metainfo(
             dict(
                 frame_id=1,
+                ori_video_length=2,
                 video_length=2,
                 img_id=2,
                 img_path=f'xxx{sep}MOT17-09-DPM{sep}img1{sep}000002.jpg',
@@ -77,7 +79,6 @@ class TestMOTChallengeMetric(TestCase):
         track_data_sample.video_data_samples = [
             img_data_sample, img_data_sample_2
         ]
-        track_data_sample.set_metainfo(dict(ori_video_length=2))
         # [TrackDataSample]
         predictions = []
         if isinstance(track_data_sample, BaseDataElement):
