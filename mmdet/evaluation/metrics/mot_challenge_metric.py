@@ -8,7 +8,11 @@ from typing import List, Optional, Union
 
 import numpy as np
 import torch
-import trackeval
+
+try:
+    import trackeval
+except ImportError:
+    trackeval = None
 from mmengine.dist import (all_gather_object, barrier, broadcast,
                            broadcast_object_list, get_dist_info,
                            is_main_process)
@@ -84,6 +88,10 @@ class MOTChallengeMetric(BaseVideoMetric):
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
+        if trackeval is None:
+            raise RuntimeError('trackeval is not installed,\
+                 please install it by: pip install \
+                git+https://github.com/JonathonLuiten/TrackEval.git')
         if isinstance(metric, list):
             metrics = metric
         elif isinstance(metric, str):
