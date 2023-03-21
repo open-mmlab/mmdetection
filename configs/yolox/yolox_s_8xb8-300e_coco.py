@@ -70,7 +70,7 @@ model = dict(
     test_cfg=dict(score_thr=0.01, nms=dict(type='nms', iou_threshold=0.65)))
 
 # dataset settings
-data_root = 'data/MOT17/'
+data_root = 'data/coco/'
 dataset_type = 'CocoDataset'
 
 # file_client_args = dict(
@@ -117,8 +117,8 @@ train_dataset = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='annotations/half-train_cocoformat.json',
-        data_prefix=dict(img='train'),
+        ann_file='annotations/instances_train2017.json',
+        data_prefix=dict(img='train2017/'),
         pipeline=[
             dict(type='LoadImageFromFile', file_client_args=file_client_args),
             dict(type='LoadAnnotations', with_bbox=True)
@@ -141,7 +141,7 @@ test_pipeline = [
 ]
 
 train_dataloader = dict(
-    batch_size=4,
+    batch_size=8,
     num_workers=4,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
@@ -155,21 +155,21 @@ val_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='annotations/half-val_cocoformat.json',
-        data_prefix=dict(img='train'),
+        ann_file='annotations/instances_val2017.json',
+        data_prefix=dict(img='val2017/'),
         test_mode=True,
         pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=data_root + 'annotations/half-val_cocoformat.json',
+    ann_file=data_root + 'annotations/instances_val2017.json',
     metric='bbox')
 test_evaluator = val_evaluator
 
 # training settings
-max_epochs = 15
-num_last_epochs = 14
+max_epochs = 300
+num_last_epochs = 15
 interval = 10
 
 train_cfg = dict(max_epochs=max_epochs, val_interval=interval)
@@ -186,20 +186,20 @@ optim_wrapper = dict(
 
 # learning rate
 param_scheduler = [
-    # dict(
-    #     # use quadratic formula to warm up 5 epochs
-    #     # and lr is updated by iteration
-    #     # TODO: fix default scope in get function
-    #     type='mmdet.QuadraticWarmupLR',
-    #     by_epoch=True,
-    #     begin=0,
-    #     end=5,
-    #     convert_to_iter_based=True),
+    dict(
+        # use quadratic formula to warm up 5 epochs
+        # and lr is updated by iteration
+        # TODO: fix default scope in get function
+        type='mmdet.QuadraticWarmupLR',
+        by_epoch=True,
+        begin=0,
+        end=5,
+        convert_to_iter_based=True),
     dict(
         # use cosine lr from 5 to 285 epoch
         type='CosineAnnealingLR',
         eta_min=base_lr * 0.05,
-        begin=0,
+        begin=5,
         T_max=max_epochs - num_last_epochs,
         end=max_epochs - num_last_epochs,
         by_epoch=True,
