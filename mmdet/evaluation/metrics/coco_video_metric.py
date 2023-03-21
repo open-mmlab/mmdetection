@@ -44,7 +44,7 @@ class CocoVideoMetric(CocoMetric):
         """
         for track_data_sample in data_samples:
             video_data_samples = track_data_sample['video_data_samples']
-            ori_video_len = track_data_sample['ori_video_length']
+            ori_video_len = video_data_samples[0].ori_video_length
             video_len = len(video_data_samples)
             if ori_video_len == video_len:
                 # video process
