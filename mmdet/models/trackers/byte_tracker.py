@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from mmengine.structures import InstanceData
 
-from mmdet.registry import MODELS
+from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures import DetDataSample
 from mmdet.structures.bbox import (bbox_cxcyah_to_xyxy, bbox_overlaps,
                                    bbox_xyxy_to_cxcyah)
@@ -18,6 +18,7 @@ class ByteTracker(BaseTracker):
     """Tracker for ByteTrack.
 
     Args:
+        motion (dict): Configuration of motion. Defaults to None.
         obj_score_thrs (dict): Detection score threshold for matching objects.
             - high (float): Threshold of the first matching. Defaults to 0.6.
             - low (float): Threshold of the second matching. Defaults to 0.1.
@@ -36,6 +37,7 @@ class ByteTracker(BaseTracker):
     """
 
     def __init__(self,
+                 motion: Optional[dict] = None,
                  obj_score_thrs: dict = dict(high=0.6, low=0.1),
                  init_track_thr: float = 0.7,
                  weight_iou_with_det_scores: bool = True,
@@ -43,6 +45,9 @@ class ByteTracker(BaseTracker):
                  num_tentatives: int = 3,
                  **kwargs):
         super().__init__(**kwargs)
+        if motion is not None:
+            self.motion = TASK_UTILS.build(motion)
+
         self.obj_score_thrs = obj_score_thrs
         self.init_track_thr = init_track_thr
 
