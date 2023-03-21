@@ -1,10 +1,9 @@
 lap
 matplotlib
 motmetrics
-numpy
+numpy==1.23.5
 pycocotools
 scipy
-scipy<=1.7.3
 shapely
 six
 terminaltables
