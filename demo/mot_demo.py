@@ -39,30 +39,30 @@ def parse_args():
 
 
 def main(args):
-    assert args.output or args.show
+    assert args.out or args.show
     # load images
-    if osp.isdir(args.input):
+    if osp.isdir(args.inputs):
         imgs = sorted(
             filter(lambda x: x.endswith(('.jpg', '.png', '.jpeg')),
-                   os.listdir(args.input)),
+                   os.listdir(args.inputs)),
             key=lambda x: int(x.split('.')[0]))
         in_video = False
     else:
-        imgs = mmcv.VideoReader(args.input)
+        imgs = mmcv.VideoReader(args.inputs)
         in_video = True
 
     # define output
     out_video = False
-    if args.output is not None:
-        if args.output.endswith('.mp4'):
+    if args.out is not None:
+        if args.out.endswith('.mp4'):
             out_video = True
             out_dir = tempfile.TemporaryDirectory()
             out_path = out_dir.name
-            _out = args.output.rsplit(os.sep, 1)
+            _out = args.out.rsplit(os.sep, 1)
             if len(_out) > 1:
                 os.makedirs(_out[0], exist_ok=True)
         else:
-            out_path = args.output
+            out_path = args.out
             os.makedirs(out_path, exist_ok=True)
 
     fps = args.fps
@@ -91,11 +91,11 @@ def main(args):
     # test and show/save the images
     for i, img in enumerate(imgs):
         if isinstance(img, str):
-            img_path = osp.join(args.input, img)
+            img_path = osp.join(args.inputs, img)
             img = mmcv.imread(img_path)
         # result [TrackDataSample]
         result = inference_mot(model, img, frame_id=i, video_len=len(imgs))
-        if args.output is not None:
+        if args.out is not None:
             if in_video or out_video:
                 out_file = osp.join(out_path, f'{i:06d}.jpg')
             else:
@@ -117,9 +117,9 @@ def main(args):
 
         prog_bar.update()
 
-    if args.output and out_video:
-        print(f'making the output video at {args.output} with a FPS of {fps}')
-        mmcv.frames2video(out_path, args.output, fps=fps, fourcc='mp4v')
+    if args.out and out_video:
+        print(f'making the output video at {args.out} with a FPS of {fps}')
+        mmcv.frames2video(out_path, args.out, fps=fps, fourcc='mp4v')
         out_dir.cleanup()
 
 
