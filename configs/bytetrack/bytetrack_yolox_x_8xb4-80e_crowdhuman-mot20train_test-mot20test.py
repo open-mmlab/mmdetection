@@ -10,6 +10,7 @@ img_scale = (896, 1600)
 model = dict(
     data_preprocessor=dict(
         type='TrackDataPreprocessor',
+        use_det_processor=True,
         pad_size_divisor=32,
         batch_augments=[
             dict(type='BatchSyncRandomResize', random_size_range=(640, 1152))
@@ -47,6 +48,7 @@ train_pipeline = [
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
     dict(type='PackDetInputs')
 ]
+
 test_pipeline = [
     dict(
         type='TransformBroadcaster',
@@ -105,7 +107,6 @@ train_dataloader = dict(
             ]),
         pipeline=train_pipeline))
 val_dataloader = dict(
-    _delete_=True,
     batch_size=1,
     num_workers=2,
     persistent_workers=True,
@@ -130,7 +131,6 @@ test_dataloader = dict(
         data_root='data/MOT20',
         ann_file='annotations/test_cocoformat.json',
         data_prefix=dict(img_path='test'),
-        ref_img_sampler=None,
         test_mode=True,
         pipeline=test_pipeline))
 

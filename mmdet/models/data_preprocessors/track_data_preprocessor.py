@@ -1,104 +1,75 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from numbers import Number
 from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from mmengine.model import BaseDataPreprocessor
 from mmengine.model.utils import stack_batch
 
 from mmdet.models.utils.misc import samplelist_boxtype2tensor
 from mmdet.registry import MODELS
-from mmdet.structures import DetDataSample, TrackDataSample
+from mmdet.structures import TrackDataSample
 from mmdet.structures.mask import BitmapMasks
+from .data_preprocessor import DetDataPreprocessor
 
 
 @MODELS.register_module()
-class TrackDataPreprocessor(BaseDataPreprocessor):
+class TrackDataPreprocessor(DetDataPreprocessor):
     """Image pre-processor for tracking tasks.
 
-    Accepts the data sampled by the dataloader, and preprocesses it into the
-    format of the model input. ``TrackDataPreprocessor`` provides the
-    tracking data pre-processing as follows:
+        Accepts the data sampled by the dataloader, and preprocesses
+        it into the format of the model input. ``TrackDataPreprocessor``
+        provides the tracking data pre-processing as follows:
 
-    - Collate and move data to the target device.
-    - Pad inputs to the maximum size of current batch with defined
-      ``pad_value``. The padding size can be divisible by a defined
-      ``pad_size_divisor``
-    - Stack inputs to inputs.
-    - Convert inputs from bgr to rgb if the shape of input is (1, 3, H, W).
-    - Normalize image with defined std and mean.
-    - Do batch augmentations during training.
-    - Record the information of ``batch_input_shape`` and ``pad_shape``.
+        - Collate and move data to the target device.
+        - Pad inputs to the maximum size of current batch with defined
+          ``pad_value``. The padding size can be divisible by a defined
+          ``pad_size_divisor``
+        - Stack inputs to inputs.
+        - Convert inputs from bgr to rgb if the shape of input is (1, 3, H, W).
+        - Normalize image with defined std and mean.
+        - Do batch augmentations during training.
+        - Record the information of ``batch_input_shape`` and ``pad_shape``.
 
-    Args:
-        mean (Sequence[Number], optional): The pixel mean of R, G, B channels.
-            Defaults to None.
-        std (Sequence[Number], optional): The pixel standard deviation of
-            R, G, B channels. Defaults to None.
-        pad_size_divisor (int): The size of padded image should be
-            divisible by ``pad_size_divisor``. Defaults to 1.
-        pad_value (Number): The padded pixel value. Defaults to 0.
-        pad_mask (bool): Whether to pad instance masks. Defaults to False.
-        mask_pad_value (int): The padded pixel value for instance masks.
-            Defaults to 0.
-        bgr_to_rgb (bool): whether to convert image from BGR to RGB.
-            Defaults to False.
-        rgb_to_bgr (bool): whether to convert image from RGB to RGB.
-            Defaults to False.
-        use_det_processor: (bool): whether to use DetDataPreprocessor
-            in trainging phrase. Defaults to False.
-        batch_augments (list[dict], optional): Batch-level augmentations
+        Args:
+            mean (Sequence[Number], optional): The pixel mean of R, G, B
+                channels. Defaults to None.
+            std (Sequence[Number], optional): The pixel standard deviation of
+                R, G, B channels. Defaults to None.
+            pad_size_divisor (int): The size of padded image should be
+                divisible by ``pad_size_divisor``. Defaults to 1.
+            pad_value (Number): The padded pixel value. Defaults to 0.
+            pad_mask (bool): Whether to pad instance masks. Defaults to False.
+            mask_pad_value (int): The padded pixel value for instance masks.
+                Defaults to 0.
+            bgr_to_rgb (bool): whether to convert image from BGR to RGB.
+                Defaults to False.
+            rgb_to_bgr (bool): whether to convert image from RGB to RGB.
+                Defaults to False.
+            use_det_processor: (bool): whether to use DetDataPreprocessor
+                in training phrase. This is mainly for some tracking models
+                fed into one image rather than a group of image in training.
+                Defaults to False.
+    .       boxtype2tensor (bool): Whether to convert the ``BaseBoxes`` type of
+                bboxes data to ``Tensor`` type. Defaults to True.
+            batch_augments (list[dict], optional): Batch-level augmentations
     """
 
     def __init__(self,
-                 mean: Sequence[Number] = None,
-                 std: Sequence[Number] = None,
-                 pad_size_divisor: int = 1,
-                 pad_value: Union[float, int] = 0,
-                 pad_mask: bool = False,
-                 mask_pad_value: int = 0,
-                 bgr_to_rgb: bool = False,
-                 rgb_to_bgr: bool = False,
+                 mean: Optional[Sequence[Union[float, int]]] = None,
+                 std: Optional[Sequence[Union[float, int]]] = None,
                  use_det_processor: bool = False,
-                 boxtype2tensor: bool = True,
-                 batch_augments: Optional[List[dict]] = None):
-        super().__init__()
-        assert not (bgr_to_rgb and rgb_to_bgr), (
-            '`bgr2rgb` and `rgb2bgr` cannot be set to True at the same time')
-        assert (mean is None) == (std is None), (
-            'mean and std should be both None or tuple')
+                 **kwargs):
+        super().__init__(mean=mean, std=std, **kwargs)
         if mean is not None:
-            assert len(mean) == 3 or len(mean) == 1, (
-                'The length of mean should be 1 or 3 to be compatible with '
-                f'RGB or gray image, but got {len(mean)}')
-            assert len(std) == 3 or len(std) == 1, (  # type: ignore
-                'The length of std should be 1 or 3 to be compatible with RGB '  # type: ignore # noqa: E501
-                f'or gray image, but got {len(std)}')
-
-            # Enable the normalization in preprocessing.
-            self._enable_normalize = True
+            # overwrite the ``register_bufffer`` in ``ImgDataPreprocessor``
+            # since the shape of ``mean`` and ``std`` in tracking tasks must be
+            # (T, C, H, W), which T is the temporal length of the video.
             self.register_buffer('mean',
                                  torch.tensor(mean).view(1, -1, 1, 1), False)
             self.register_buffer('std',
                                  torch.tensor(std).view(1, -1, 1, 1), False)
-        else:
-            self._enable_normalize = False
-
-        self.channel_conversion = rgb_to_bgr or bgr_to_rgb
-        self.pad_size_divisor = pad_size_divisor
-        self.pad_value = pad_value
-        self.pad_mask = pad_mask
-        self.mask_pad_value = mask_pad_value
-        self.boxtype2tensor = boxtype2tensor
         self.use_det_processor = use_det_processor
-        if batch_augments is not None:
-            self.batch_augments = nn.ModuleList(
-                [MODELS.build(aug) for aug in batch_augments])
-        else:
-            self.batch_augments = None
 
     def forward(self, data: dict, training: bool = False) -> Dict:
         """Perform normalization、padding and bgr2rgb conversion based on
@@ -113,17 +84,17 @@ class TrackDataPreprocessor(BaseDataPreprocessor):
             same format as the model input.
         """
         if self.use_det_processor and training:
-            batch_pad_shape = self._get_det_pad_shape(data)
-        else:
             batch_pad_shape = self._get_pad_shape(data)
+        else:
+            batch_pad_shape = self._get_track_pad_shape(data)
 
-        data = super().forward(data=data, training=training)
+        data = self.cast_data(data)
         imgs, data_samples = data['inputs'], data['data_samples']
 
         if self.use_det_processor and training:
             assert imgs[0].dim() == 3, \
                 'Only support the 3 dims when use detpreprocessor in training'
-            if self.channel_conversion:
+            if self._channel_conversion:
                 imgs = [_img[[2, 1, 0], ...] for _img in imgs]
             # Convert to `float`
             imgs = [_img.float() for _img in imgs]
@@ -135,7 +106,7 @@ class TrackDataPreprocessor(BaseDataPreprocessor):
                 'Only support the 4 dims when use trackprocessor in training'
             # The shape of imgs[0] is (T, C, H, W).
             channel = imgs[0].size(1)
-            if self.channel_conversion and channel == 3:
+            if self._channel_conversion and channel == 3:
                 imgs = [_img[:, [2, 1, 0], ...] for _img in imgs]
             # change to `float`
             imgs = [_img.float() for _img in imgs]
@@ -159,7 +130,7 @@ class TrackDataPreprocessor(BaseDataPreprocessor):
                 if self.boxtype2tensor:
                     samplelist_boxtype2tensor(data_samples)
                 if self.pad_mask:
-                    self.pad_det_gt_masks(data_samples)
+                    self.pad_gt_masks(data_samples)
             else:
                 for track_data_sample, pad_shapes in zip(
                         data_samples, batch_pad_shape):
@@ -169,8 +140,8 @@ class TrackDataPreprocessor(BaseDataPreprocessor):
                             'batch_input_shape': batch_input_shape,
                             'pad_shape': pad_shapes[i]
                         })
-                if self.pad_mask:
-                    self.pad_gt_masks(data_samples)
+                if self.pad_mask and training:
+                    self.pad_track_gt_masks(data_samples)
 
         if training and self.batch_augments is not None:
             for batch_aug in self.batch_augments:
@@ -198,22 +169,7 @@ class TrackDataPreprocessor(BaseDataPreprocessor):
 
         return dict(inputs=inputs, data_samples=data_samples)
 
-    def _get_det_pad_shape(self, data: dict) -> List[tuple]:
-        """Get the pad_shape of each image based on data and
-        pad_size_divisor."""
-        _batch_inputs = data['inputs']
-        # Process data with `pseudo_collate`.
-        batch_pad_shape = []
-        for ori_input in _batch_inputs:
-            pad_h = int(np.ceil(ori_input.shape[1] /
-                                self.pad_size_divisor)) * self.pad_size_divisor
-            pad_w = int(np.ceil(ori_input.shape[2] /
-                                self.pad_size_divisor)) * self.pad_size_divisor
-            batch_pad_shape.append((pad_h, pad_w))
-
-        return batch_pad_shape
-
-    def _get_pad_shape(self, data: dict) -> Dict[str, List]:
+    def _get_track_pad_shape(self, data: dict) -> Dict[str, List]:
         """Get the pad_shape of each image based on data and pad_size_divisor.
 
         Args:
@@ -235,7 +191,8 @@ class TrackDataPreprocessor(BaseDataPreprocessor):
             batch_pad_shape.append(pad_shapes)
         return batch_pad_shape
 
-    def pad_gt_masks(self, data_samples: Sequence[TrackDataSample]) -> None:
+    def pad_track_gt_masks(self,
+                           data_samples: Sequence[TrackDataSample]) -> None:
         """Pad gt_masks to shape of batch_input_shape."""
         if 'masks' in data_samples[0][0].get('gt_instances', None):
             for track_data_sample in data_samples:
@@ -248,16 +205,6 @@ class TrackDataPreprocessor(BaseDataPreprocessor):
                     det_data_sample.gt_instances.masks = masks.pad(
                         batch_input_shape, pad_val=self.mask_pad_value)
 
-    def pad_det_gt_masks(self,
-                         batch_data_samples: Sequence[DetDataSample]) -> None:
-        """Pad gt_masks to shape of batch_input_shape."""
-        if 'masks' in batch_data_samples[0].gt_instances:
-            for data_samples in batch_data_samples:
-                masks = data_samples.gt_instances.masks
-                data_samples.gt_instances.masks = masks.pad(
-                    data_samples.batch_input_shape,
-                    pad_val=self.mask_pad_value)
-
 
 def stack_track_batch(tensors: List[torch.Tensor],
                       pad_size_divisor: int = 0,
@@ -265,7 +212,9 @@ def stack_track_batch(tensors: List[torch.Tensor],
     """Stack multiple tensors to form a batch and pad the images to the max
     shape use the right bottom padding mode in these images. If
     ``pad_size_divisor > 0``, add padding to ensure the common height and width
-    is divisible by ``pad_size_divisor``.
+    is divisible by ``pad_size_divisor``. The difference between this function
+    and ``stack_batch`` in MMEngine is that this function can process batch
+    sequence images with shape (N, T, C, H, W).
 
     Args:
         tensors (List[Tensor]): The input multiple tensors. each is a

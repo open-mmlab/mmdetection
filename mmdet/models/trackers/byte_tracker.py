@@ -1,7 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import List, Optional, Tuple
 
-import lap
+try:
+    import lap
+except ImportError:
+    lap = None
 import numpy as np
 import torch
 from mmengine.structures import InstanceData
@@ -45,6 +48,10 @@ class ByteTracker(BaseTracker):
                  num_tentatives: int = 3,
                  **kwargs):
         super().__init__(**kwargs)
+
+        if lap is None:
+            raise RuntimeError('lap is not installed,\
+                 please install it by: pip install lap')
         if motion is not None:
             self.motion = TASK_UTILS.build(motion)
 
@@ -171,14 +178,8 @@ class ByteTracker(BaseTracker):
         """Tracking forward function.
 
         Args:
-            model (nn.Module): MOT model.
-            img (Tensor): of shape (T, C, H, W) encoding input image.
-                Typically these should be mean centered and std scaled.
-                The T denotes the number of key images and usually is 1 in
-                ByteTrack method.
-            feats (list[Tensor]): Multi level feature maps of `img`.
-            data_sample (:obj:`TrackDataSample`): The data sample.
-                It includes information such as `pred_det_instances`.
+            data_sample (:obj:`DetDataSample`): The data sample.
+                It includes information such as `pred_instances`.
 
         Returns:
             :obj:`InstanceData`: Tracking results of the input images.

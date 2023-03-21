@@ -40,7 +40,6 @@ model = dict(
         match_iou_thrs=dict(high=0.1, low=0.5, tentative=0.3),
         num_frames_retain=30))
 
-del _base_.train_pipeline
 train_pipeline = [
     dict(
         type='Mosaic',
@@ -69,7 +68,7 @@ train_pipeline = [
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
     dict(type='PackDetInputs')
 ]
-del _base_.test_pipeline
+
 test_pipeline = [
     dict(
         type='TransformBroadcaster',

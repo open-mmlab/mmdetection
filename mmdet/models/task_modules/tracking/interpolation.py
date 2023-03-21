@@ -1,7 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
-from sklearn.gaussian_process import GaussianProcessRegressor as GPR
-from sklearn.gaussian_process.kernels import RBF
+
+try:
+    from sklearn.gaussian_process import GaussianProcessRegressor as GPR
+    from sklearn.gaussian_process.kernels import RBF
+    HAS_SKIKIT_LEARN = True
+except ImportError:
+    HAS_SKIKIT_LEARN = False
 
 from mmdet.registry import TASK_UTILS
 
@@ -25,6 +30,9 @@ class InterpolateTracklets:
                  max_num_frames: int = 20,
                  use_gsi: bool = False,
                  smooth_tau: int = 10):
+        if not HAS_SKIKIT_LEARN:
+            raise RuntimeError('sscikit-learn is not installed,\
+                 please install it by: pip install scikit-learn')
         self.min_num_frames = min_num_frames
         self.max_num_frames = max_num_frames
         self.use_gsi = use_gsi

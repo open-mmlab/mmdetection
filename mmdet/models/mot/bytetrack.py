@@ -19,7 +19,6 @@ class ByteTrack(BaseMOTModel):
     Args:
         detector (dict): Configuration of detector. Defaults to None.
         tracker (dict): Configuration of tracker. Defaults to None.
-        motion (dict): Configuration of motion. Defaults to None.
         data_preprocessor (dict or ConfigDict, optional): The pre-process
            config of :class:`TrackDataPreprocessor`.  it usually includes,
             ``pad_size_divisor``, ``pad_value``, ``mean`` and ``std``.
@@ -58,23 +57,17 @@ class ByteTrack(BaseMOTModel):
 
     def predict(self, inputs: Dict[str, Tensor], data_samples: TrackSampleList,
                 **kwargs) -> TrackSampleList:
-        """Predict results from a batch of inputs and data samples with post-
-        processing.
+        """Predict results from a video and data samples with post-processing.
 
         Args:
-            inputs (Dict[str, Tensor]): of shape (N, T, C, H, W) encoding
-                input images. Typically these should be mean centered and std
-                scaled. The N denotes batch size.The T denotes the number of
-                key/reference frames.
-                - img (Tensor) : The key images.
-                - ref_img (Tensor): The reference images.
+            inputs (Tensor): of shape (N, T, C, H, W) encoding
+                input images. The N denotes batch size.
+                The T denotes the number of frames in a video.
             data_samples (list[:obj:`TrackDataSample`]): The batch
                 data samples. It usually includes information such
-                as `gt_instance`.
-
+                as `video_data_samples`.
         Returns:
-            TrackSampleList: Tracking results of the input images.
-            Each TrackDataSample usually contains ``pred_track_instances``.
+            TrackSampleList: Tracking results of the inputs.
         """
         assert inputs.dim() == 5, 'The img must be 5D Tensor (N, T, C, H, W).'
         assert inputs.size(0) == 1, \

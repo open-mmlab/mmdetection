@@ -2,8 +2,13 @@
 from typing import Tuple
 
 import numpy as np
-import scipy.linalg
 import torch
+
+try:
+    import scipy.linalg
+    HAS_SCIPY = True
+except ImportError:
+    HAS_SCIPY = False
 
 from mmdet.registry import TASK_UTILS
 
@@ -36,6 +41,9 @@ class KalmanFilter:
     }
 
     def __init__(self, center_only: bool = False, use_nsa: bool = False):
+        if not HAS_SCIPY:
+            raise RuntimeError('sscikit-learn is not installed,\
+                 please install it by: pip install scikit-learn')
         self.center_only = center_only
         if self.center_only:
             self.gating_threshold = self.chi2inv95[2]
