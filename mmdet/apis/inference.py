@@ -288,12 +288,14 @@ def init_track_model(config: Union[str, Config],
             object.
         checkpoint (Optional[str], optional): Checkpoint path. Defaults to
             None.
+        detector (Optional[str], optional): Detector Checkpoint path, use in
+            some tracking algorithms like sort.  Defaults to None.
+        reid (Optional[str], optional): Reid checkpoint path. use in
+            some tracking algorithms like sort. Defaults to None.
         device (str, optional): The device that the model inferences on.
             Defaults to `cuda:0`.
         cfg_options (Optional[dict], optional): Options to override some
             settings in the used config. Defaults to None.
-        verbose_init_params (bool, optional): Whether to print the information
-            of initialized parameters to the console. Defaults to False.
 
     Returns:
         nn.Module: The constructed model.

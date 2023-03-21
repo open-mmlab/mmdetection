@@ -6,28 +6,29 @@ from argparse import ArgumentParser
 
 import mmcv
 import mmengine
+from mmengine.registry import init_default_scope
 
 from mmdet.apis import inference_mot, init_track_model
 from mmdet.registry import VISUALIZERS
-from mmdet.utils import register_all_modules
 
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument('config', help='config file')
-    parser.add_argument('--input', help='input video file or folder')
     parser.add_argument(
-        '--output', help='output video file (mp4 format) or folder')
+        'inputs', type=str, help='Input image file or folder path.')
+    parser.add_argument('config', help='config file')
     parser.add_argument('--checkpoint', help='checkpoint file')
     parser.add_argument('--detector', help='det checkpoint file')
     parser.add_argument('--reid', help='reid checkpoint file')
+    parser.add_argument(
+        '--device', default='cuda:0', help='device used for inference')
     parser.add_argument(
         '--score-thr',
         type=float,
         default=0.0,
         help='The threshold of score to filter bboxes.')
     parser.add_argument(
-        '--device', default='cuda:0', help='device used for inference')
+        '--out', help='output video file (mp4 format) or folder')
     parser.add_argument(
         '--show',
         action='store_true',
@@ -72,7 +73,7 @@ def main(args):
             raise ValueError('Please set the FPS for the output video.')
         fps = int(fps)
 
-    register_all_modules(init_default_scope=True)
+    init_default_scope('mmdet')
 
     # build the model from a config file and a checkpoint file
     model = init_track_model(
