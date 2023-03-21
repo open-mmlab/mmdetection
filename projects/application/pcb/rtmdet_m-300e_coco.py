@@ -1,4 +1,4 @@
-_base_ = './rtmdet-ins_l_8xb32-300e_coco.py'
+_base_ = './rtmdet_l-300e_coco.py'
 
 model = dict(
     backbone=dict(deepen_factor=0.67, widen_factor=0.75),

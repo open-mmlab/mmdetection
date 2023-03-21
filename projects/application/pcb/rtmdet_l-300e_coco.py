@@ -3,7 +3,6 @@ _base_ = [
     './datasets.py', './rtmdet_tta.py'
 ]
 
-
 model = dict(
     type='RTMDet',
     data_preprocessor=dict(
