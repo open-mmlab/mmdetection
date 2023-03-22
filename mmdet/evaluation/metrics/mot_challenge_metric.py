@@ -91,7 +91,9 @@ class MOTChallengeMetric(BaseVideoMetric):
         if trackeval is None:
             raise RuntimeError('trackeval is not installed,\
                  please install it by: pip install \
-                git+https://github.com/JonathonLuiten/TrackEval.git')
+                 git+https://github.com/JonathonLuiten/TrackEval.git \
+                 trackeval need low version numpy, please install it \
+                 by: pip install -U numpy==1.23.5')
         if isinstance(metric, list):
             metrics = metric
         elif isinstance(metric, str):
