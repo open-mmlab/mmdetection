@@ -48,7 +48,6 @@ model = dict(
         type='TrackDataPreprocessor',
         mean=[103.530, 116.280, 123.675],
         std=[1.0, 1.0, 1.0],
-        # TODO: it is different from the master branch
         bgr_to_rgb=False,
         pad_size_divisor=32),
     detector=detector,
@@ -67,7 +66,7 @@ model = dict(
             norm_cfg=dict(type='GN', num_groups=32),
             loss_track=dict(type='MultiPosCrossEntropyLoss', loss_weight=0.25),
             loss_track_aux=dict(
-                type='L2Loss',
+                type='MarginL2Loss',
                 neg_pos_ub=3,
                 pos_margin=0,
                 neg_margin=0.1,
@@ -115,6 +114,6 @@ param_scheduler = [
 
 # runtime settings
 train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=4, val_interval=1)
-val_cfg = dict(type='VideoValLoop')
-test_cfg = dict(type='VideoTestLoop')
+val_cfg = dict(type='ValLoop')
+test_cfg = dict(type='TestLoop')
 del _base_.visualizer

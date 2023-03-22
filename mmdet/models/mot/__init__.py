@@ -2,4 +2,4 @@
 from .base import BaseMOTModel
 from .qdtrack import QDTrack
 
-__all__ = ['BaseMOTModel', 'DeepSORT', 'QDTrack']
+__all__ = ['BaseMOTModel', 'QDTrack']

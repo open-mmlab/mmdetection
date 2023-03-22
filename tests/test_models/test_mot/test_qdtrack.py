@@ -5,18 +5,18 @@ from unittest import TestCase
 
 import torch
 from mmengine.logging import MessageHub
+from mmengine.registry import init_default_scope
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_track_inputs, get_detector_cfg
-from mmdet.utils import register_all_modules
 
 
 class TestQDTrack(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        register_all_modules(init_default_scope=True)
+        init_default_scope('mmdet')
 
     @parameterized.expand([
         'qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_'
@@ -52,10 +52,10 @@ class TestQDTrack(TestCase):
 
             packed_inputs = demo_track_inputs(
                 batch_size=1,
-                num_key_frames=1,
-                num_ref_frames=1,
-                num_classes=1,
-                apply_sampling=True)
+                num_frames=2,
+                key_frames_inds=[0],
+                image_shapes=(3, 128, 128),
+                num_items=None)
             out_data = model.data_preprocessor(packed_inputs, True)
             inputs, data_samples = out_data['inputs'], out_data['data_samples']
             # Test forward
@@ -84,11 +84,7 @@ class TestQDTrack(TestCase):
                 model = model.cuda()
 
             packed_inputs = demo_track_inputs(
-                batch_size=1,
-                num_key_frames=1,
-                num_ref_frames=1,
-                num_classes=1,
-                apply_sampling=True)
+                batch_size=1, num_frames=1, image_shapes=(3, 128, 128))
             out_data = model.data_preprocessor(packed_inputs, False)
 
             # Test forward test

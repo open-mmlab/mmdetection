@@ -7,28 +7,12 @@ from mmengine.model import BaseModule
 from torch import Tensor
 
 from mmdet.registry import MODELS
-from .utils import weighted_loss
-
-
-@weighted_loss
-def l2_loss(pred: Tensor, target: Tensor) -> Tensor:
-    """L2 loss.
-
-    Args:
-        pred (torch.Tensor): The prediction.
-        target (torch.Tensor): The learning target of the prediction.
-
-    Returns:
-        torch.Tensor: Calculated loss
-    """
-    assert pred.size() == target.size()
-    loss = torch.abs(pred - target)**2
-    return loss
+from .mse_loss import mse_loss
 
 
 @MODELS.register_module()
-class L2Loss(BaseModule):
-    """L2 loss.
+class MarginL2Loss(BaseModule):
+    """L2 loss with margin.
 
     Args:
         neg_pos_ub (int, optional): The upper bound of negative to positive
@@ -51,7 +35,7 @@ class L2Loss(BaseModule):
                  hard_mining: bool = False,
                  reduction: str = 'mean',
                  loss_weight: float = 1.0):
-        super(L2Loss, self).__init__()
+        super(MarginL2Loss, self).__init__()
         self.neg_pos_ub = neg_pos_ub
         self.pos_margin = pos_margin
         self.neg_margin = neg_margin
@@ -83,7 +67,7 @@ class L2Loss(BaseModule):
             reduction_override if reduction_override else self.reduction)
         pred, weight, avg_factor = self.update_weight(pred, target, weight,
                                                       avg_factor)
-        loss_bbox = self.loss_weight * l2_loss(
+        loss_bbox = self.loss_weight * mse_loss(
             pred, target, weight, reduction=reduction, avg_factor=avg_factor)
         return loss_bbox
 
@@ -124,7 +108,7 @@ class L2Loss(BaseModule):
             neg_idx = torch.nonzero(target == 0, as_tuple=False)
 
             if self.hard_mining:
-                costs = l2_loss(
+                costs = mse_loss(
                     pred, target, reduction='none')[neg_idx[:, 0],
                                                     neg_idx[:, 1]].detach()
                 neg_idx = neg_idx[costs.topk(num_neg)[1], :]
