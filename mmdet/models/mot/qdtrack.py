@@ -86,7 +86,7 @@ class QDTrack(BaseMOTModel):
 
         for frame_id in range(video_len):
             img_data_sample = track_data_sample[frame_id]
-            single_img = inputs[:, frame_id]
+            single_img = inputs[:, frame_id].contiguous()
             x = self.detector.extract_feat(single_img)
             rpn_results_list = self.detector.rpn_head.predict(
                 x, [img_data_sample])
@@ -144,8 +144,8 @@ class QDTrack(BaseMOTModel):
         key_frame_inds = torch.tensor(key_frame_inds, dtype=torch.int64)
         ref_frame_inds = torch.tensor(ref_frame_inds, dtype=torch.int64)
         batch_inds = torch.arange(len(inputs))
-        key_imgs = inputs[batch_inds, key_frame_inds]
-        ref_imgs = inputs[batch_inds, ref_frame_inds]
+        key_imgs = inputs[batch_inds, key_frame_inds].contiguous()
+        ref_imgs = inputs[batch_inds, ref_frame_inds].contiguous()
 
         x = self.detector.extract_feat(key_imgs)
         ref_x = self.detector.extract_feat(ref_imgs)
