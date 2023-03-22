@@ -50,3 +50,5 @@ Here is a detailed step-by-step guide to learn more about MMDetection:
 
    - [Basic Concepts](https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/index.html#basic-concepts)
    - [Component Customization](https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/index.html#component-customization)
+
+4. For users of MMDetection 2.x version, we provide a guide to help you adapt to the new version. You can find it in the [migration guide](./migration/migration.md).
