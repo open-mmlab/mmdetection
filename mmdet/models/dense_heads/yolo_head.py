@@ -14,6 +14,7 @@ from mmcv.runner import force_fp32
 from mmdet.core import (build_assigner, build_bbox_coder,
                         build_prior_generator, build_sampler, images_to_levels,
                         multi_apply, multiclass_nms)
+from mmdet.core.utils import filter_scores_and_topk
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -286,15 +287,24 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 bboxes = bboxes[conf_inds, :]
                 scores = scores[conf_inds, :]
                 objectness = objectness[conf_inds]
-
-            det_bboxes, det_labels = multiclass_nms(
-                bboxes,
-                scores,
-                cfg.score_thr,
-                cfg.nms,
-                cfg.max_per_img,
-                score_factors=objectness)
-            det_results.append(tuple([det_bboxes, det_labels]))
+            if with_nms:
+                det_bboxes, det_labels = multiclass_nms(
+                    bboxes,
+                    scores,
+                    cfg.score_thr,
+                    cfg.nms,
+                    cfg.max_per_img,
+                    score_factors=objectness)
+                det_results.append(tuple([det_bboxes, det_labels]))
+            else:
+                results = filter_scores_and_topk(scores, cfg.score_thr,
+                                                 cfg.nms_pre)
+                scores, labels, keep_idxs, _ = results
+                det_results.append(
+                    tuple([
+                        bboxes[keep_idxs], scores * objectness[keep_idxs],
+                        labels
+                    ]))
         return det_results
 
     @force_fp32(apply_to=('pred_maps', ))
