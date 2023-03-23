@@ -1019,7 +1019,6 @@ class LoadTrackAnnotations(LoadAnnotations):
         repr_str = self.__class__.__name__
         repr_str += f'(with_bbox={self.with_bbox}, '
         repr_str += f'with_label={self.with_label}, '
-        repr_str += f'with_instance_id={self.with_instance_id}, '
         repr_str += f'with_mask={self.with_mask}, '
         repr_str += f'with_seg={self.with_seg}, '
         repr_str += f'poly2mask={self.poly2mask}, '
