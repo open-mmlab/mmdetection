@@ -26,9 +26,6 @@ class BaseVideoMetric(BaseMetric):
     details.
     """
 
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
-
     def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
         """Process one batch of data samples and predictions.
 

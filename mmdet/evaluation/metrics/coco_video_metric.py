@@ -37,11 +37,11 @@ class CocoVideoMetric(CocoMetric):
                 # video process
                 for frame_id in range(video_len):
                     img_data_sample = video_data_samples[frame_id].to_dict()
-                    super().process([img_data_sample])
+                    super().process(None, [img_data_sample])
             else:
                 # image process
                 img_data_sample = video_data_samples[0].to_dict()
-                super().process([img_data_sample])
+                super().process(None, [img_data_sample])
 
     def evaluate(self, size: int = 1) -> dict:
         """Evaluate the model performance of the whole dataset after processing
