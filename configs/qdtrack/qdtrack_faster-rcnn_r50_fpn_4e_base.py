@@ -2,13 +2,13 @@ _base_ = [
     '../_base_/models/faster-rcnn_r50_fpn.py', '../_base_/default_runtime.py'
 ]
 
-default_hooks = dict(
-    logger=dict(type='LoggerHook', interval=50),
-    visualization=dict(type='TrackVisualizationHook', draw=False))
+default_hooks = dict(logger=dict(type='LoggerHook', interval=50), )
+#     visualization=dict(type='TrackVisualizationHook', draw=False))
 
 vis_backends = [dict(type='LocalVisBackend')]
-visualizer = dict(
-    type='TrackLocalVisualizer', vis_backends=vis_backends, name='visualizer')
+# visualizer = dict(
+#     type='TrackLocalVisualizer', vis_backends=vis_backends,
+# name='visualizer')
 
 # custom hooks
 custom_hooks = [
@@ -116,4 +116,3 @@ param_scheduler = [
 train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=4, val_interval=1)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
-del _base_.visualizer

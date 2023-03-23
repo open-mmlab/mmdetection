@@ -6,7 +6,7 @@ resized_shape = (1088, 1088)
 # data pipeline
 train_pipeline = [
     dict(
-        type='UniformSample',
+        type='UniformRefFrameSample',
         num_ref_imgs=1,
         frame_range=10,
         filter_key_img=True),
@@ -15,7 +15,7 @@ train_pipeline = [
         share_random_params=True,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='LoadTrackAnnotations', with_instance_id=True),
+            dict(type='LoadTrackAnnotations'),
             dict(
                 type='RandomResize',
                 scale=resized_shape,
@@ -26,7 +26,7 @@ train_pipeline = [
         ]),
     dict(
         type='TransformBroadcaster',
-        # different coppped positions for different frames
+        # different cropped positions for different frames
         share_random_params=False,
         transforms=[
             dict(
@@ -48,7 +48,7 @@ test_pipeline = [
         type='TransformBroadcaster',
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='LoadTrackAnnotations', with_instance_id=True),
+            dict(type='LoadTrackAnnotations'),
             dict(type='Resize', scale=resized_shape, keep_ratio=True)
         ]),
     dict(type='PackTrackInputs')
