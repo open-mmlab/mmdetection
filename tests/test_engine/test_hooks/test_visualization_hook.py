@@ -8,9 +8,9 @@ from unittest.mock import Mock
 import torch
 from mmengine.structures import InstanceData
 
-from mmdet.engine.hooks import DetVisualizationHook
-from mmdet.structures import DetDataSample
-from mmdet.visualization import DetLocalVisualizer
+from mmdet.engine.hooks import DetVisualizationHook, TrackVisualizationHook
+from mmdet.structures import DetDataSample, TrackDataSample
+from mmdet.visualization import DetLocalVisualizer, TrackLocalVisualizer
 
 
 def _rand_bboxes(num_boxes, h, w):
@@ -66,5 +66,55 @@ class TestVisualizationHook(TestCase):
 
         hook = DetVisualizationHook(draw=True, test_out_dir=test_out_dir)
         hook.after_test_iter(runner, 1, {}, self.outputs)
+        self.assertTrue(osp.exists(f'{timestamp}/1/{test_out_dir}'))
+        shutil.rmtree(f'{timestamp}')
+
+
+class TestTrackVisualizationHook(TestCase):
+
+    def setUp(self) -> None:
+        TrackLocalVisualizer.get_instance('visualizer')
+        # pseudo data_batch
+        self.data_batch = dict(data_samples=None, inputs=None)
+
+        pred_instances_data = dict(
+            bboxes=torch.tensor([[100, 100, 200, 200], [150, 150, 400, 200]]),
+            instances_id=torch.tensor([1, 2]),
+            labels=torch.tensor([0, 1]),
+            scores=torch.tensor([0.955, 0.876]))
+        pred_instances = InstanceData(**pred_instances_data)
+        img_data_sample = DetDataSample()
+        img_data_sample.pred_track_instances = pred_instances
+        img_data_sample.gt_instances = pred_instances
+        img_data_sample.set_metainfo(
+            dict(
+                img_path=osp.join(
+                    osp.dirname(__file__), '../../data/color.jpg'),
+                scale_factor=(1.0, 1.0)))
+        track_data_sample = TrackDataSample()
+        track_data_sample.video_data_samples = [img_data_sample]
+        track_data_sample.set_metainfo(dict(ori_length=1))
+        self.outputs = [track_data_sample]
+
+    def test_after_val_iter_image(self):
+        runner = Mock()
+        runner.iter = 1
+        hook = TrackVisualizationHook(frame_interval=10, draw=True)
+        hook.after_val_iter(runner, 9, self.data_batch, self.outputs)
+
+    def test_after_test_iter(self):
+        runner = Mock()
+        runner.iter = 1
+        hook = TrackVisualizationHook(frame_interval=10, draw=True)
+        hook.after_val_iter(runner, 9, self.data_batch, self.outputs)
+
+        # test test_out_dir
+        timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+        test_out_dir = timestamp + '1'
+        runner.work_dir = timestamp
+        runner.timestamp = '1'
+        hook = TrackVisualizationHook(
+            frame_interval=10, draw=True, test_out_dir=test_out_dir)
+        hook.after_test_iter(runner, 9, self.data_batch, self.outputs)
         self.assertTrue(osp.exists(f'{timestamp}/1/{test_out_dir}'))
         shutil.rmtree(f'{timestamp}')
