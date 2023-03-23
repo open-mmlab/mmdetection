@@ -22,7 +22,6 @@ from mmdet.utils import (collect_env, get_device, get_root_logger,
                          replace_cfg_vals, rfnext_init_model,
                          setup_multi_processes, update_data_root)
 import msdet
-import msaug
 
 
 def parse_args():
