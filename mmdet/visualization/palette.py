@@ -87,7 +87,7 @@ def _get_adaptive_scales(areas: np.ndarray,
     Returns:
         ndarray: The adaotive scales with the shape of (n, ).
     """
-    scales = 0.5 + (areas - min_area) / (max_area - min_area)
+    scales = 0.5 + (areas - min_area) // (max_area - min_area)
     scales = np.clip(scales, 0.5, 1.0)
     return scales
 
