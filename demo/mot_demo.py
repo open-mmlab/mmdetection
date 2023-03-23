@@ -11,6 +11,8 @@ from mmengine.registry import init_default_scope
 from mmdet.apis import inference_mot, init_track_model
 from mmdet.registry import VISUALIZERS
 
+IMG_EXTENSIONS = ('.jpg', '.jpeg', '.png')
+
 
 def parse_args():
     parser = ArgumentParser()
@@ -43,7 +45,7 @@ def main(args):
     # load images
     if osp.isdir(args.inputs):
         imgs = sorted(
-            filter(lambda x: x.endswith(('.jpg', '.png', '.jpeg')),
+            filter(lambda x: x.endswith(IMG_EXTENSIONS),
                    os.listdir(args.inputs)),
             key=lambda x: int(x.split('.')[0]))
         in_video = False

@@ -16,6 +16,7 @@ from mmengine.registry import init_default_scope
 from mmengine.runner import load_checkpoint
 
 from mmdet.registry import DATASETS
+from mmdet.utils import ConfigType
 from ..evaluation import get_classes
 from ..registry import MODELS
 from ..structures import DetDataSample, SampleList
@@ -234,6 +235,27 @@ async def async_inference_detector(model, imgs):
     return results
 
 
+def build_test_pipeline(cfg: ConfigType) -> ConfigType:
+    """Build test_pipeline for mot/vis demo. In mot/vis infer, original
+    test_pipeline should remove the "LoadImageFromFile" and
+    "LoadTrackAnnotations".
+
+    Args:
+         cfg (ConfigDict): The loaded config.
+    Returns:
+         ConfigType: new test_pipeline
+    """
+    # remove the "LoadImageFromFile" and "LoadTrackAnnotations" in pipeline
+    transform_broadcaster = cfg.test_dataloader.dataset.pipeline[0].copy()
+    for transform in transform_broadcaster['transforms']:
+        if transform['type'] == 'Resize':
+            transform_broadcaster['transforms'] = transform
+    pack_track_inputs = cfg.test_dataloader.dataset.pipeline[-1].copy()
+    test_pipeline = Compose([transform_broadcaster, pack_track_inputs])
+
+    return test_pipeline
+
+
 def inference_mot(model: nn.Module, img: np.ndarray, frame_id: int,
                   video_len: int) -> SampleList:
     """Inference image(s) with the mot model.
@@ -253,13 +275,8 @@ def inference_mot(model: nn.Module, img: np.ndarray, frame_id: int,
         ori_shape=[img.shape[:2]],
         img_id=[frame_id + 1],
         ori_video_length=[video_len])
-    # remove the "LoadImageFromFile" and "LoadTrackAnnotations" in pipeline
-    transform_broadcaster = cfg.test_dataloader.dataset.pipeline[0].copy()
-    for transform in transform_broadcaster['transforms']:
-        if transform['type'] == 'Resize':
-            transform_broadcaster['transforms'] = transform
-    pack_track_inputs = cfg.test_dataloader.dataset.pipeline[-1].copy()
-    test_pipeline = Compose([transform_broadcaster, pack_track_inputs])
+
+    test_pipeline = build_test_pipeline(cfg)
     data = test_pipeline(data)
 
     if not next(model.parameters()).is_cuda:
@@ -332,7 +349,6 @@ def init_track_model(config: Union[str, Config],
     # 'dataset_meta'
     # VIS need dataset_meta, MOT don't need dataset_meta
     if not hasattr(model, 'dataset_meta'):
-        warnings.simplefilter('once')
         warnings.warn('dataset_meta or class names are missed, '
                       'use None by default.')
         model.dataset_meta = {'classes': None}
