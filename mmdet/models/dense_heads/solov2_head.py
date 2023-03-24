@@ -12,6 +12,7 @@ from mmcv.runner import BaseModule, auto_fp16, force_fp32
 from mmdet.core import InstanceData, mask_matrix_nms, multi_apply
 from mmdet.core.utils import center_of_mass, generate_coordinate
 from mmdet.models.builder import HEADS
+from mmdet.utils import get_device
 from mmdet.utils.misc import floordiv
 from .solo_head import SOLOHead
 
@@ -616,6 +617,10 @@ class SOLOV2Head(SOLOHead):
         for lvl in range(num_levels):
             cls_scores = mlvl_cls_scores[lvl]
             cls_scores = cls_scores.sigmoid()
+            if get_device() == 'npu':
+                # There is a precision problem with the max_pool2d operator
+                # on NPU, it will be fixed in the second quarter of 2023.
+                cls_scores = cls_scores.to(torch.float16)
             local_max = F.max_pool2d(cls_scores, 2, stride=1, padding=1)
             keep_mask = local_max[:, :, :-1, :-1] == cls_scores
             cls_scores = cls_scores * keep_mask
