@@ -54,7 +54,10 @@ class YOLOXModeSwitchHook(Hook):
                 train_loader._iterator = None
                 self._restart_dataloader = True
             runner.logger.info('Add additional L1 loss now!')
-            model.bbox_head.use_l1 = True
+            if hasattr(model, 'detector'):
+                model.detector.bbox_head.use_l1 = True
+            else:
+                model.bbox_head.use_l1 = True
             self._has_switched = True
         else:
             # Once the restart is complete, we need to restore
