@@ -15,7 +15,7 @@ train_pipeline = [
         share_random_params=True,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='LoadTrackAnnotations', with_instance_id=True),
+            dict(type='LoadTrackAnnotations'),
             dict(
                 type='RandomResize',
                 scale=resized_shape,
@@ -48,8 +48,8 @@ test_pipeline = [
         type='TransformBroadcaster',
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='LoadTrackAnnotations', with_instance_id=True),
-            dict(type='Resize', scale=resized_shape, keep_ratio=True)
+            dict(type='Resize', scale=resized_shape, keep_ratio=True),
+            dict(type='LoadTrackAnnotations')
         ]),
     dict(type='PackTrackInputs')
 ]

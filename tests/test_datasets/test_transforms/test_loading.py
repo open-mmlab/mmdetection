@@ -499,7 +499,6 @@ class TestLoadTrackAnnotations(unittest.TestCase):
         transform = LoadTrackAnnotations(
             with_bbox=False,
             with_label=True,
-            with_instance_id=True,
             with_seg=False,
             with_keypoints=False,
         )
@@ -510,13 +509,9 @@ class TestLoadTrackAnnotations(unittest.TestCase):
 
     def test_repr(self):
         transform = LoadTrackAnnotations(
-            with_bbox=True,
-            with_label=False,
-            with_instance_id=True,
-            with_seg=False,
-            with_mask=False)
+            with_bbox=True, with_label=False, with_seg=False, with_mask=False)
         assert repr(transform) == ('LoadTrackAnnotations(with_bbox=True, '
-                                   'with_label=False, with_instance_id=True, '
-                                   'with_mask=False, with_seg=False, '
-                                   "poly2mask=True, imdecode_backend='cv2', "
+                                   'with_label=False, with_mask=False,'
+                                   ' with_seg=False, poly2mask=True,'
+                                   " imdecode_backend='cv2', "
                                    'file_client_args=None)')
