@@ -5,7 +5,7 @@ _base_ = [
 
 dataset_type = 'MOTChallengeDataset'
 
-img_scale = (896, 1600)
+img_scale = (896, 1600)  # w, h
 
 model = dict(
     data_preprocessor=dict(
@@ -110,6 +110,7 @@ val_dataloader = dict(
     batch_size=1,
     num_workers=2,
     persistent_workers=True,
+    pin_memory=True,
     drop_last=False,
     # sampler=dict(type='DefaultSampler', shuffle=False, round_up=False),
     sampler=dict(type='TrackImgSampler'),

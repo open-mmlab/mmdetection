@@ -3,7 +3,7 @@ _base_ = ['../yolox/yolox_x_8xb8-300e_coco.py']
 dataset_type = 'MOTChallengeDataset'
 data_root = 'data/MOT17/'
 
-img_scale = (800, 1440)
+img_scale = (800, 1440)  # w, h
 batch_size = 4
 
 detector = _base_.model
@@ -88,6 +88,7 @@ train_dataloader = dict(
     batch_size=batch_size,
     num_workers=4,
     persistent_workers=True,
+    pin_memory=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=dict(
         type='MultiImageMixDataset',
@@ -135,6 +136,7 @@ val_dataloader = dict(
     batch_size=1,
     num_workers=2,
     persistent_workers=True,
+    pin_memory=True,
     drop_last=False,
     # sampler=dict(type='DefaultSampler', shuffle=False, round_up=False),
     sampler=dict(type='TrackImgSampler'),
@@ -160,7 +162,7 @@ resume_from = None
 interval = 5
 
 train_cfg = dict(
-    type='EpochBasedTrainLoop', max_epochs=total_epochs, val_interval=2)
+    type='EpochBasedTrainLoop', max_epochs=total_epochs, val_interval=interval)
 
 # learning policy
 param_scheduler = [

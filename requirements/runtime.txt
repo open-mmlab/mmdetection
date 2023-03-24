@@ -1,7 +1,7 @@
 lap
 matplotlib
 motmetrics
-numpy==1.23.5
+numpy
 pycocotools
 scipy
 shapely

@@ -27,7 +27,6 @@ class BaseTracker(metaclass=ABCMeta):
             assert isinstance(momentums, dict), 'momentums must be a dict'
         self.momentums = momentums
         self.num_frames_retain = num_frames_retain
-        self.fp16_enabled = False
 
         self.reset()
 
@@ -79,7 +78,7 @@ class BaseTracker(metaclass=ABCMeta):
         # cur_frame_id = int(kwargs['frame_ids'][0])
         for k, v in kwargs.items():
             if len(v) != num_objs:
-                raise ValueError()
+                raise ValueError('kwargs value must both equal')
 
         for obj in zip(*kwargs.values()):
             id = int(obj[id_indice])
