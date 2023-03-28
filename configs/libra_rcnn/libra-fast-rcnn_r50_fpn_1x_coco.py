@@ -38,13 +38,15 @@ model = dict(
                     floor_thr=-1,
                     floor_fraction=0,
                     num_bins=3)))))
-# dataset settings
-dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
-data = dict(
-    train=dict(proposal_file=data_root +
-               'libra_proposals/rpn_r50_fpn_1x_train2017.pkl'),
-    val=dict(proposal_file=data_root +
-             'libra_proposals/rpn_r50_fpn_1x_val2017.pkl'),
-    test=dict(proposal_file=data_root +
-              'libra_proposals/rpn_r50_fpn_1x_val2017.pkl'))
+
+# MMEngine support the following two ways, users can choose
+# according to convenience
+# _base_.train_dataloader.dataset.proposal_file = 'libra_proposals/rpn_r50_fpn_1x_train2017.pkl'  # noqa
+train_dataloader = dict(
+    dataset=dict(proposal_file='libra_proposals/rpn_r50_fpn_1x_train2017.pkl'))
+
+# _base_.val_dataloader.dataset.proposal_file = 'libra_proposals/rpn_r50_fpn_1x_val2017.pkl'  # noqa
+# test_dataloader = _base_.val_dataloader
+val_dataloader = dict(
+    dataset=dict(proposal_file='libra_proposals/rpn_r50_fpn_1x_val2017.pkl'))
+test_dataloader = val_dataloader

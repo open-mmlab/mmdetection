@@ -75,17 +75,17 @@ mim install "mmdet>=3.0.0rc0"
 **步骤 1.** 我们需要下载配置文件和模型权重文件。
 
 ```shell
-mim download mmdet --config yolov3_mobilenetv2_8xb24-320-300e_coco --dest .
+mim download mmdet --config rtmdet_tiny_8xb32-300e_coco --dest .
 ```
 
-下载将需要几秒钟或更长时间，这取决于你的网络环境。完成后，你会在当前文件夹中发现两个文件 `yolov3_mobilenetv2_8xb24-320-300e_coco.py` 和 `yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth`。
+下载将需要几秒钟或更长时间，这取决于你的网络环境。完成后，你会在当前文件夹中发现两个文件 `rtmdet_tiny_8xb32-300e_coco.py` 和 `rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth`。
 
 **步骤 2.** 推理验证。
 
 方案 a：如果你通过源码安装的 MMDetection，那么直接运行以下命令进行验证：
 
 ```shell
-python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.py --weights yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu
+python demo/image_demo.py demo/demo.jpg rtmdet_tiny_8xb32-300e_coco.py --weights rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth --device cpu
 ```
 
 你会在当前文件夹中的 `outputs/vis` 文件夹中看到一个新的图像 `demo.jpg`，图像中包含有网络预测的检测框。
@@ -95,8 +95,8 @@ python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.p
 ```python
 from mmdet.apis import init_detector, inference_detector
 
-config_file = 'yolov3_mobilenetv2_8xb24-320-300e_coco.py'
-checkpoint_file = 'yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth'
+config_file = 'rtmdet_tiny_8xb32-300e_coco.py'
+checkpoint_file = 'rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth'
 model = init_detector(config_file, checkpoint_file, device='cpu')  # or device='cuda:0'
 inference_detector(model, 'demo/demo.jpg')
 ```

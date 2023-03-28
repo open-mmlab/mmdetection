@@ -10,8 +10,8 @@
 
   | MMDetection 版本 |        MMCV 版本        |      MMEngine 版本       |
   | :--------------: | :---------------------: | :----------------------: |
-  |       3.x        | mmcv>=2.0.0rc4, \<2.1.0 | mmengine>=0.4.0, \<1.0.0 |
-  |     3.0.0rc6     | mmcv>=2.0.0rc4, \<2.1.0 | mmengine>=0.3.0, \<1.0.0 |
+  |       3.x        | mmcv>=2.0.0rc4, \<2.1.0 | mmengine>=0.6.0, \<1.0.0 |
+  |     3.0.0rc6     | mmcv>=2.0.0rc4, \<2.1.0 | mmengine>=0.6.0, \<1.0.0 |
   |     3.0.0rc5     | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.3.0, \<1.0.0 |
   |     3.0.0rc4     | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.3.0, \<1.0.0 |
   |     3.0.0rc3     | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.3.0, \<1.0.0 |
@@ -172,7 +172,7 @@ PYTHONPATH="$(dirname $0)/..":$PYTHONPATH
 
 - 训练中保存最好模型
 
-  可以通过配置 `evaluation = dict(save_best=‘auto’)`开启。在 auto 参数情况下会根据返回的验证结果中的第一个 key 作为选择最优模型的依据，你也可以直接设置评估结果中的 key 来手动设置，例如 `evaluation = dict(save_best=‘mAP’)`。
+  可以通过配置 `default_hooks = dict(checkpoint=dict(type='CheckpointHook', interval=1, save_best='auto')`开启。在 `auto` 参数情况下会根据返回的验证结果中的第一个 key 作为选择最优模型的依据，你也可以直接设置评估结果中的 key 来手动设置，例如 `save_best='coco/bbox_mAP'`。
 
 - 在 Resume 训练中使用 `ExpMomentumEMAHook`
 

@@ -168,7 +168,9 @@ class CocoPanopticDataset(CocoDataset):
                  pipeline: List[Union[dict, Callable]] = [],
                  test_mode: bool = False,
                  lazy_init: bool = False,
-                 max_refetch: int = 1000) -> None:
+                 max_refetch: int = 1000,
+                 backend_args: dict = None,
+                 **kwargs) -> None:
         super().__init__(
             ann_file=ann_file,
             metainfo=metainfo,
@@ -180,7 +182,9 @@ class CocoPanopticDataset(CocoDataset):
             pipeline=pipeline,
             test_mode=test_mode,
             lazy_init=lazy_init,
-            max_refetch=max_refetch)
+            max_refetch=max_refetch,
+            backend_args=backend_args,
+            **kwargs)
 
     def parse_data_info(self, raw_data_info: dict) -> dict:
         """Parse raw annotation to target format.

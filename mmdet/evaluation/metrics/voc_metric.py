@@ -150,6 +150,7 @@ class VOCMetric(BaseMetric):
                     iou_thr=iou_thr,
                     dataset=dataset_name,
                     logger=logger,
+                    eval_mode=self.eval_mode,
                     use_legacy_coordinate=True)
                 mean_aps.append(mean_ap)
                 eval_results[f'AP{int(iou_thr * 100):02d}'] = round(mean_ap, 3)

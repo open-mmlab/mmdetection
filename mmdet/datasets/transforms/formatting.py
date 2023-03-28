@@ -68,8 +68,20 @@ class PackDetInputs(BaseTransform):
             img = results['img']
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
-            img = np.ascontiguousarray(img.transpose(2, 0, 1))
-            packed_results['inputs'] = to_tensor(img)
+            # To improve the computational speed by by 3-5 times, apply:
+            # If image is not contiguous, use
+            # `numpy.transpose()` followed by `numpy.ascontiguousarray()`
+            # If image is already contiguous, use
+            # `torch.permute()` followed by `torch.contiguous()`
+            # Refer to https://github.com/open-mmlab/mmdetection/pull/9533
+            # for more details
+            if not img.flags.c_contiguous:
+                img = np.ascontiguousarray(img.transpose(2, 0, 1))
+                img = to_tensor(img)
+            else:
+                img = to_tensor(img).permute(2, 0, 1).contiguous()
+
+            packed_results['inputs'] = img
 
         if 'gt_ignore_flags' in results:
             valid_idx = np.where(results['gt_ignore_flags'] == 0)[0]
@@ -183,13 +195,14 @@ class ImageToTensor:
 
         Returns:
             dict: The result dict contains the image converted
-                to :obj:`torch.Tensor` and transposed to (C, H, W) order.
+                to :obj:`torch.Tensor` and permuted to (C, H, W) order.
         """
         for key in self.keys:
             img = results[key]
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
-            results[key] = (to_tensor(img.transpose(2, 0, 1))).contiguous()
+            results[key] = to_tensor(img).permute(2, 0, 1).contiguous()
+
         return results
 
     def __repr__(self):

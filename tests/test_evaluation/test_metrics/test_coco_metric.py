@@ -204,6 +204,8 @@ class TestCocoMetric(TestCase):
         # test single coco dataset evaluation
         coco_metric = CocoMetric(
             ann_file=fake_json_file, metric='bbox', classwise=True)
+        # coco_metric1 = CocoMetric(
+        #     ann_file=fake_json_file, metric='bbox', classwise=True)
         coco_metric.dataset_meta = dict(classes=['car', 'bicycle'])
         coco_metric.process(
             {},

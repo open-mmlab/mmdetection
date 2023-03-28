@@ -2,7 +2,10 @@
 import argparse
 import os
 import os.path as osp
+import warnings
+from copy import deepcopy
 
+from mmengine import ConfigDict
 from mmengine.config import Config, DictAction
 from mmengine.runner import Runner
 
@@ -48,6 +51,7 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
+    parser.add_argument('--tta', action='store_true')
     parser.add_argument('--local_rank', type=int, default=0)
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
@@ -77,6 +81,41 @@ def main():
 
     if args.show or args.show_dir:
         cfg = trigger_visualization_hook(cfg, args)
+
+    if args.tta:
+
+        if 'tta_model' not in cfg:
+            warnings.warn('Cannot find ``tta_model`` in config, '
+                          'we will set it as default.')
+            cfg.tta_model = dict(
+                type='DetTTAModel',
+                tta_cfg=dict(
+                    nms=dict(type='nms', iou_threshold=0.5), max_per_img=100))
+        if 'tta_pipeline' not in cfg:
+            warnings.warn('Cannot find ``tta_pipeline`` in config, '
+                          'we will set it as default.')
+            test_data_cfg = cfg.test_dataloader.dataset
+            while 'dataset' in test_data_cfg:
+                test_data_cfg = test_data_cfg['dataset']
+            cfg.tta_pipeline = deepcopy(test_data_cfg.pipeline)
+            flip_tta = dict(
+                type='TestTimeAug',
+                transforms=[
+                    [
+                        dict(type='RandomFlip', prob=1.),
+                        dict(type='RandomFlip', prob=0.)
+                    ],
+                    [
+                        dict(
+                            type='PackDetInputs',
+                            meta_keys=('img_id', 'img_path', 'ori_shape',
+                                       'img_shape', 'scale_factor', 'flip',
+                                       'flip_direction'))
+                    ],
+                ])
+            cfg.tta_pipeline[-1] = flip_tta
+        cfg.model = ConfigDict(**cfg.tta_model, module=cfg.model)
+        cfg.test_dataloader.dataset.pipeline = cfg.tta_pipeline
 
     # build the runner from config
     if 'runner_type' not in cfg:
