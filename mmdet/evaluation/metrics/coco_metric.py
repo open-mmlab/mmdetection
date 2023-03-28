@@ -542,7 +542,7 @@ class CocoMetric(BaseMetric):
                             else:
                                 ap = float('nan')
                             t.append(f'{round(ap, 3)}')
-                        
+
                         # indexes of area of small, median and large
                         for area in [1, 2, 3]:
                             precision = precisions[:, :, idx, area, -1]
@@ -553,12 +553,12 @@ class CocoMetric(BaseMetric):
                                 ap = float('nan')
                             t.append(f'{round(ap, 3)}')
                         results_per_category.append(tuple(t))
-                        
 
                     num_columns = len(results_per_category[0])
                     results_flatten = list(
                         itertools.chain(*results_per_category))
-                    headers = ['category', 'mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l']
+                    headers = ['category', 'mAP', 'mAP_50', 'mAP_75', \
+                               'mAP_s', 'mAP_m', 'mAP_l']
                     results_2d = itertools.zip_longest(*[
                         results_flatten[i::num_columns]
                         for i in range(num_columns)
@@ -567,7 +567,6 @@ class CocoMetric(BaseMetric):
                     table_data += [result for result in results_2d]
                     table = AsciiTable(table_data)
                     logger.info('\n' + table.table)
-
 
                 if metric_items is None:
                     metric_items = [
