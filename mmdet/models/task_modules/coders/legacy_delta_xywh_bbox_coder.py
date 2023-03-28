@@ -152,7 +152,7 @@ def legacy_delta2bbox(rois: Tensor,
                       means: Sequence[float] = (0., 0., 0., 0.),
                       stds: Sequence[float] = (1., 1., 1., 1.),
                       max_shape: Tuple[int, int] = None,
-                      wh_ratio_clip: float = 16 / 1000):
+                      wh_ratio_clip: float = 16 / 1000) -> Tensor:
     """Apply deltas to shift/scale base boxes in the MMDet V1.x manner.
 
     Typically the rois are anchor or proposed bounding boxes and the deltas are
