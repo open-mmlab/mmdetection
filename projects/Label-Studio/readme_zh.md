@@ -80,6 +80,8 @@ device=cpu \
 label-studio start
 ```
 
+## 半自动化标注流程
+
 ```shell
 airplane
 apple
