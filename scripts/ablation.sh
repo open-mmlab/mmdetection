@@ -1,5 +1,5 @@
 MODEL_NAME=faster_rcnn_r101_fpn_1x_mstrain_fskd
-for BACKBONE in 1.5 2.0
+for BACKBONE in 2.0
 do
     for RPN in 0.5 1.0 1.5 2.0
     do
@@ -24,7 +24,7 @@ done
 
 #!/usr/bin/env bash
 MODEL_NAME=faster_rcnn_r101_fpn_1x_mstrain_fskd
-for min_LR in 0.2 0.4 0.6 0.8
+for min_LR in 0.2
 do
 CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch \
                             --nproc_per_node=4 \
