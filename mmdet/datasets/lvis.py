@@ -633,6 +633,21 @@ class LVISV1Dataset(LVISDataset):
                 total_ann_ids
             ), f"Annotation ids in '{self.ann_file}' are not unique!"
 
-        del self.lvis
+        # del self.lvis
 
         return data_list
+
+    def get_cat_ids(self, idx):
+        """Get COCO category ids by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            list[int]: All categories in the image of specified index.
+        """
+
+        img_id = self.get_data_info(idx)['img_id']
+        ann_ids = self.lvis.get_ann_ids(img_ids=[img_id])
+        ann_info = self.lvis.load_anns(ann_ids)
+        return [ann['category_id'] for ann in ann_info]
