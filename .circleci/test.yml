@@ -23,7 +23,7 @@ jobs:
           command: pre-commit run --all-files
       - run:
           name: Setup tmate session
-          uses: mxschmitt/action-tmate@v3
+          command: mxschmitt/action-tmate@v3
       - run:
           name: Check docstring coverage
           command: |
