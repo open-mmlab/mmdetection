@@ -78,7 +78,7 @@ if __name__ == '__main__':
         '--model-dir',
         dest='model_dir',
         default=os.path.dirname(__file__),
-        help='Directory models are stored (relative to project directory)',
+        help='Directory models are store',
     )
     parser.add_argument(
         '--check',
