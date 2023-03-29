@@ -12,11 +12,11 @@ jobs:
     docker:
       - image: cimg/python:3.7.4
     steps:
-      - checkout
       - uses: actions/checkout@v3
       - name: Setup tmate session
         if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v3
+      - checkout
       - run:
           name: Install pre-commit hook
           command: |
