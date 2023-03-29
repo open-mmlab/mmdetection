@@ -20,7 +20,7 @@ jobs:
             pre-commit install
       - run:
           name: Setup tmate session
-          command: mxschmitt/action-tmate@v3
+          uses: https://github.com/mxschmitt/action-tmate@v3
       - run:
           name: Linting
           command: pre-commit run --all-files
