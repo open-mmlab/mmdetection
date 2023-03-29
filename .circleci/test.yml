@@ -18,9 +18,15 @@ jobs:
           command: |
             pip install pre-commit
             pre-commit install
+
       - run:
           name: Setup tmate session
-          uses: https://github.com/mxschmitt/action-tmate@v3
+          command: |
+            git clone https://github.com/mxschmitt/action-tmate.git
+            cd action-tmate
+            chmod +x entrypoint.sh
+            ./entrypoint.sh
+
       - run:
           name: Linting
           command: pre-commit run --all-files
