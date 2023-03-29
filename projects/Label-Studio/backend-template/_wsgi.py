@@ -4,7 +4,7 @@ import logging
 import logging.config
 import os
 
-from mmdetection import MMDetection
+from .mmdetection import MMDetection
 
 logging.config.dictConfig({
     'version': 1,
