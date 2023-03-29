@@ -13,13 +13,15 @@ jobs:
       - image: cimg/python:3.7.4
     steps:
       - checkout
+      - uses: actions/checkout@v3
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
       - run:
           name: Install pre-commit hook
           command: |
             pip install pre-commit
             pre-commit install
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
       - run:
           name: Linting
           command: pre-commit run --all-files
