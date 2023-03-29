@@ -4,8 +4,6 @@ import logging
 import logging.config
 import os
 
-from .mmdetection import MMDetection
-
 logging.config.dictConfig({
     'version': 1,
     'formatters': {
@@ -44,6 +42,8 @@ def get_kwargs_from_config(config_path=_DEFAULT_CONFIG_PATH):
 if __name__ == '__main__':
 
     from label_studio_ml.api import init_app
+
+    from .mmdetection import MMDetection
     parser = argparse.ArgumentParser(description='Label studio')
     parser.add_argument(
         '-p',
