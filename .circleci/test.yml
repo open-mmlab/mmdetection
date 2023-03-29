@@ -12,10 +12,6 @@ jobs:
     docker:
       - image: cimg/python:3.7.4
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup tmate session
-        if: ${{ failure() }}
-        uses: mxschmitt/action-tmate@v3
       - checkout
       - run:
           name: Install pre-commit hook
@@ -25,6 +21,11 @@ jobs:
       - run:
           name: Linting
           command: pre-commit run --all-files
+      - run:
+          name: Check docstring coverage
+          command: |
+            git diff
+
       - run:
           name: Check docstring coverage
           command: |
