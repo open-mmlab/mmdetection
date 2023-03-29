@@ -8,6 +8,29 @@ from label_studio_ml.api import init_app
 
 from mmdetection import MMDetection
 
+logging.config.dictConfig({
+    'version': 1,
+    'formatters': {
+        'standard': {
+            'format':
+            '[%(asctime)s] [%(levelname)s] [%(name)s::%(funcName)s::%(lineno)d] %(message)s'  # noqa E501
+        }
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'DEBUG',
+            'stream': 'ext://sys.stdout',
+            'formatter': 'standard'
+        }
+    },
+    'root': {
+        'level': 'ERROR',
+        'handlers': ['console'],
+        'propagate': True
+    }
+})
+
 _DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
 
 
