@@ -557,8 +557,10 @@ class CocoMetric(BaseMetric):
                     num_columns = len(results_per_category[0])
                     results_flatten = list(
                         itertools.chain(*results_per_category))
-                    headers = ['category', 'mAP', 'mAP_50', 'mAP_75',
-                               'mAP_s', 'mAP_m', 'mAP_l']
+                    headers = [
+                        'category', 'mAP', 'mAP_50', 'mAP_75', 'mAP_s',
+                        'mAP_m', 'mAP_l'
+                    ]
                     results_2d = itertools.zip_longest(*[
                         results_flatten[i::num_columns]
                         for i in range(num_columns)
