@@ -6,8 +6,8 @@ from typing import Dict, Optional
 from mmdet.core.visualization.image import imshow_det_bboxes
 
 try:
-    import neptune.new as neptune
-    from neptune.new.types import File
+    import neptune
+    from neptune.types import File
 except ImportError:
     raise ImportError('Neptune client library not installed.'
                       'Please refer to the installation guide:'
@@ -68,18 +68,24 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                  base_namespace: str = 'training',
                  log_model: bool = False,
                  log_checkpoint: bool = False,
-                 num_eval_predictions: int = 5,
+                 num_eval_predictions: int = 50,
                  **kwargs) -> None:
         super().__init__(interval=interval, **kwargs)
 
-        if init_kwargs:
-            api_token = init_kwargs.pop('api_token', None) or api_token
-            project = init_kwargs.pop('project', None) or project
+        init_kwargs = init_kwargs if isinstance(init_kwargs, dict) else {}
+
+        if 'api_token' in init_kwargs and api_token:
+            if init_kwargs['api_token'] != api_token:
+                raise ValueError('Two different api tokens were given!')
+            api_token = init_kwargs.pop(api_token)
+
+        if 'project' in init_kwargs and project:
+            if init_kwargs['project'] != project:
+                raise ValueError('Two different project names were given')
+            project = init_kwargs.pop('project')
 
         self._run = neptune.init_run(
-            api_token=api_token,
-            project=project,
-            **init_kwargs if init_kwargs else {})
+            api_token=api_token, project=project, **init_kwargs)
         self.base_namespace = base_namespace
         self.base_handler = self._run[base_namespace]
 
@@ -87,7 +93,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         self.log_checkpoint = log_checkpoint
 
         self.num_eval_predictions = num_eval_predictions
-        self.log_eval_predictions = (num_eval_predictions > 0)
+        self.log_eval_predictions: bool = (num_eval_predictions > 0)
 
         self.ckpt_hook: CheckpointHook | None = None
         self.ckpt_interval: int | None = None
@@ -129,8 +135,8 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         # Select the images to be logged.
         eval_image_indices = np.arange(len(self.val_dataset))
         # Set seed so that same validation set is logged each time.
-        np.random.seed(42)
-        np.random.shuffle(eval_image_indices)
+        rng = np.random.default_rng(42)
+        rng.shuffle(eval_image_indices)
         self.eval_image_indices = eval_image_indices[:self.
                                                      num_eval_predictions]
 
