@@ -19,11 +19,11 @@ jobs:
             pip install pre-commit
             pre-commit install
       - run:
-          name: Linting
-          command: pre-commit run --all-files
-      - run:
           name: Setup tmate session
           command: mxschmitt/action-tmate@v3
+      - run:
+          name: Linting
+          command: pre-commit run --all-files
       - run:
           name: Check docstring coverage
           command: |
