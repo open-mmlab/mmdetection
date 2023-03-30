@@ -37,7 +37,7 @@ mim install "mmcv>=2.0.0rc0"
 # 安装 mmcv 的过程中会自动安装 mmengine
 ```
 
-安装mmdetection
+安装 mmdetection
 
 ```shell
 git clone https://github.com/open-mmlab/mmdetection -b dev-3.x
