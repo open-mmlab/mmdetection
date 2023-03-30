@@ -10,7 +10,7 @@ In brief, the [`Visualizer`](mmengine.visualization.Visualizer) is implemented i
 
 Based on MMEngine's Visualizer, MMDet comes with a variety of pre-built visualization tools that can be used by the user by simply modifying the following configuration files.
 
-- The `tools/analysis_tools/browse_dataset.py` script provides a dataset visualization function that draws images and corresponding annotations after Data Transforms, as described in [`browse_dataset.py`](useful_tools.md).
+- The `tools/analysis_tools/browse_dataset.py` script provides a dataset visualization function that draws images and corresponding annotations after Data Transforms, as described in [`browse_dataset.py`](useful_tools.md#Visualization).
 - MMEngine implements `LoggerHook`, which uses `Visualizer` to write the learning rate, loss and evaluation results to the backend set by `Visualizer`. Therefore, by modifying the `Visualizer` backend in the configuration file, for example to ` TensorBoardVISBackend` or `WandbVISBackend`, you can implement logging to common training logging tools such as `TensorBoard` or `WandB`, thus making it easy for users to use these visualization tools to analyze and monitor the training process.
 - The `VisualizerHook` is implemented in MMDet, which uses the `Visualizer` to visualize or store the prediction results of the validation or prediction phase into the backend set by the `Visualizer`, so by modifying the `Visualizer` backend in the configuration file, for example, to ` TensorBoardVISBackend` or `WandbVISBackend`, you can implement storing the predicted images to `TensorBoard` or `Wandb`.
 
@@ -36,8 +36,9 @@ Based on the above example, we can see that the configuration of `Visualizer` co
 MMDet uses the local visualization backend [`LocalVisBackend`](mmengine.visualization.LocalVisBackend) by default, and the model loss, learning rate, model evaluation accuracy and visualization The information stored in `VisualizerHook` and `LoggerHook`, including loss, learning rate, evaluation accuracy will be saved to the `{work_dir}/{config_name}/{time}/{vis_data}` folder by default. In addition, MMDet also supports other common visualization backends, such as `TensorboardVisBackend` and `WandbVisBackend`, and you only need to change the `vis_backends` type in the configuration file to the corresponding visualization backend. For example, you can store data to `TensorBoard` and `Wandb` by simply inserting the following code block into the configuration file.
 
 ```Python
+# https://mmengine.readthedocs.io/en/latest/api/visualization.html
 _base_.visualizer.vis_backends = [
-    dict(type='LocalVisBackend'),
+    dict(type='LocalVisBackend'), #
     dict(type='TensorboardVisBackend'),
     dict(type='WandbVisBackend'),]
 ```
