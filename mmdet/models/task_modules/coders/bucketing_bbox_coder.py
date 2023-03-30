@@ -77,11 +77,11 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         return encoded_bboxes
 
     def decode(
-            self,
-            bboxes: Union[Tensor, BaseBoxes],
-            pred_bboxes: Tensor,
-            max_shape: Optional[Tuple[int]] = None
-    ) -> Union[Tensor, BaseBoxes]:
+        self,
+        bboxes: Union[Tensor, BaseBoxes],
+        pred_bboxes: Tensor,
+        max_shape: Optional[Tuple[int]] = None
+    ) -> Tuple[Union[Tensor, BaseBoxes], Tensor]:
         """Apply transformation `pred_bboxes` to `boxes`.
         Args:
             boxes (torch.Tensor or :obj:`BaseBoxes`): Basic boxes.

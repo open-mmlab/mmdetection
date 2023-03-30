@@ -36,7 +36,7 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
     def __init__(self,
                  target_means: Sequence[float] = (0., 0., 0., 0.),
                  target_stds: Sequence[float] = (1., 1., 1., 1.),
-                 clip_border: Optional[bool] = True,
+                 clip_border: bool = True,
                  add_ctr_clamp: bool = False,
                  ctr_clamp: int = 32,
                  **kwargs) -> None:
