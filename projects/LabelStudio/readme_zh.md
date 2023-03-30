@@ -29,7 +29,7 @@ pip install torch==1.10.1+cu113 torchvision==0.11.2+cu113 torchaudio==0.10.1 -f 
 pip install torch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1
 ```
 
-安装mmcv
+安装 mmcv
 
 ```shell
 pip install -U openmim
