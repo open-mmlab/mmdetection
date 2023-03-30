@@ -1,13 +1,15 @@
-# 背景
+# 使用 MMDetection 和 Label-Studio 进行半自动化目标检测标注
 
-标注数据是一项耗费精力和财力的任务。本文介绍了如何使用MMDetection中的RTMDet算法联合Label-Studio软件进行标注。具体来说，使用RTMDet预测图片生成标注，然后使用Label-Studio进行微调，社区用户可以参考此流程和方法，将其应用到其他领域。
+标注数据是一个费时费力的任务，本文介绍了如何使用 MMDetection 中的 RTMDet 算法联合 Label-Studio 软件进行半自动化标注。具体来说，使用 RTMDet 预测图片生成标注，然后使用 Label-Studio 进行微调标注，社区用户可以参考此流程和方法，将其应用到其他领域。
 
-- RTMDet：RTMDet是OpenMMLab自研的高精度单阶段的目标检测算法，开源于MMDetection目标检测工具箱中，其开源协议为 Apache 2.0，工业界的用户可以不受限的免费使用。
+- RTMDet：RTMDet 是 OpenMMLab 自研的高精度单阶段的目标检测算法，开源于 MMDetection 目标检测工具箱中，其开源协议为 Apache 2.0，工业界的用户可以不受限的免费使用。
 - Label Studio 是一款优秀的标注软件，覆盖图像分类、目标检测、分割等领域数据集标注的功能。
 
 本文使用将[喵喵](https://download.openmmlab.com/mmyolo/data/cat_dataset.zip)的图片，进行半自动化标注。
 
 ## 环境配置
+
+首先需要创建一个虚拟环境，然后安装 PyTorch 和 mmcv。在本文中，我们将指定 PyTorch 和 mmcv 的版本。接下来安装 MMDetection、Label-Studio 和 label-studio-ml-backend，具体步骤如下：
 
 创建虚拟环境：
 
@@ -32,10 +34,8 @@ pip install torch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1
 ```shell
 pip install -U openmim
 mim install "mmcv>=2.0.0rc0"
-# 安装mmcv的过程中会自动安装mmengine
+# 安装 mmcv 的过程中会自动安装 mmengine
 ```
-
-为了避免软件版本升级而导致本文档后续不可用，所以在本文中将指定版本。
 
 安装mmdetection
 
@@ -45,7 +45,7 @@ cd mmdetection
 pip install -v -e .
 ```
 
-安装Label-Studio和label-studio-ml-backend
+安装 Label-Studio 和 label-studio-ml-backend
 
 ```shell
 # 安装 label-studio 需要一段时间,如果找不到版本请使用官方源
@@ -64,7 +64,7 @@ wget https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_m_8xb32-300e_
 
 ## 启动服务
 
-启动RTMDet后端推理服务
+启动RTMDet后端推理服务：
 
 ```shell
 cd path/to/mmetection
@@ -74,14 +74,14 @@ config_file=configs/rtmdet/rtmdet_m_8xb32-300e_coco.py \
 checkpoint_file=./work_dirs/rtmdet_m_8xb32-300e_coco_20220719_112220-229f527c.pth \
 device=cpu \
 --port 8003
-# device=cpu 为使用CPU推理，如果使用GPU推理，将cpu替换为cuda:0
+# device=cpu 为使用 CPU 推理，如果使用 GPU 推理，将 cpu 替换为 cuda:0
 ```
 
 ![](https://cdn.vansin.top/picgo20230330131601.png)
 
 此时，RTMDet后端推理服务已经启动，后续在Labble-Studio Web系统中配置 http://localhost:8003 后端推理服务即可。
 
-现在启动 Label-Studio 网页服务
+现在启动 Label-Studio 网页服务：
 
 ```shell
 label-studio start
@@ -89,19 +89,15 @@ label-studio start
 
 ![](https://cdn.vansin.top/picgo20230330132913.png)
 
-Label-Studio Web服务启动后，打开浏览器访问 http://localhost:8080/ ，即可看到如下界面：
+打开浏览器访问 http://localhost:8080/，即可看到 Label-Studio 的界面。
 
 ![](https://cdn.vansin.top/picgo20230330133118.png)
 
-我们注册一个用户，然后就可以开始创建项目了。
-
-![](https://cdn.vansin.top/picgo20230330133226.png)
-
-我们创建一个RTMDet-Semiautomatic-Label项目。
+我们注册一个用户，然后创建一个RTMDet-Semiautomatic-Label项目。
 
 ![](https://cdn.vansin.top/picgo20230330133333.png)
 
-点击 Data Import，导入下面我们准备好的图片。
+我们通过下面的方式下载好示例的喵喵图片，点击 Data Import导入需要标注的猫图片。
 
 ```shell
 cd path/to/mmetection
@@ -116,7 +112,7 @@ wget https://download.openmmlab.com/mmyolo/data/cat_dataset.zip && unzip cat_dat
 
 ![](https://cdn.vansin.top/picgo20230330133807.png)
 
-选择Object Detection With Bounding Boxes
+然后选择 Object Detection With Bounding Boxes 模板
 
 ```shell
 airplane
@@ -201,10 +197,11 @@ wine_glass
 zebra
 ```
 
-然后将上述类别复制添加到Label-Studio，然后点击Save。
+然后将上述类别复制添加到 Label-Studio，然后点击 Save。
+
 ![](https://cdn.vansin.top/picgo20230330134027.png)
 
-然后在设置中点击 Add Model 添加RTMDet后端推理服务。
+然后在设置中点击 Add Model 添加 RTMDet 后端推理服务。
 
 ![](https://cdn.vansin.top/picgo20230330134320.png)
 
@@ -218,7 +215,7 @@ zebra
 
 ## 开始半自动化标注
 
-点击Label 开始标注
+点击 Label 开始标注
 
 ![](https://cdn.vansin.top/picgo20230330134804.png)
 
@@ -229,16 +226,12 @@ zebra
 现在我们手工删除多余框，并修改一下框的位置，然后点击 Submit，本张图片就标注完毕了，就出现下张需要修改框的图片。
 ![](https://cdn.vansin.top/picgo20230330135235.png)
 
-我们submit完毕所有图片后
-
-![](https://cdn.vansin.top/picgo20230330135553.png)
-
-我们submit完毕所有图片后，点击exprot导出COCO格式的数据集，就能把标注好的数据集的压缩包导出来了。
+我们 submit 完毕所有图片后，点击 exprot 导出 COCO 格式的数据集，就能把标注好的数据集的压缩包导出来了。
 
 ![](https://cdn.vansin.top/picgo20230330135921.png)
 
-用vscode打开解压后的文件夹，可以看到标注好的数据集，包含了图片和json格式的标注文件。
+用 vscode 打开解压后的文件夹，可以看到标注好的数据集，包含了图片和 json 格式的标注文件。
 
 ![](https://cdn.vansin.top/picgo20230330140321.png)
 
-到此半自动化标注就完成了，我们可以用这个数据集在MMDetection训练精度更高的模型了，训练出更好的模型，然后再用这个模型继续半自动化标注，这样就可以不断迭代，提高模型的精度。
+到此半自动化标注就完成了，我们可以用这个数据集在 MMDetection 训练精度更高的模型了，训练出更好的模型，然后再用这个模型继续半自动化标注，这样就可以不断迭代，提高模型的精度。
