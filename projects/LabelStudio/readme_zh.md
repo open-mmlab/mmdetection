@@ -18,7 +18,7 @@ conda create -n rtmdet python=3.9 -y
 conda activate rtmdet
 ```
 
-安装PyTorch
+安装 PyTorch
 
 ```shell
 # Linux and Windows CPU only
