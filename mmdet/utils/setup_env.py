@@ -12,7 +12,7 @@ from mmengine.logging import print_log
 from mmengine.utils import digit_version
 
 
-def setup_cache_size_limit_of_dynamo(cache_size_limit: int = 4):
+def setup_cache_size_limit_of_dynamo():
     """Setup cache size limit of dynamo.
 
     Note: Due to the dynamic shape of the loss calculation and
@@ -26,15 +26,15 @@ def setup_cache_size_limit_of_dynamo(cache_size_limit: int = 4):
 
     import torch
     if digit_version(torch.__version__) >= digit_version('2.0.0'):
-        import torch._dynamo
         if 'DYNAMO_CACHE_SIZE_LIMIT' in os.environ:
+            import torch._dynamo
             cache_size_limit = int(os.environ['DYNAMO_CACHE_SIZE_LIMIT'])
-        torch._dynamo.config.cache_size_limit = cache_size_limit
-        print_log(
-            f'torch._dynamo.config.cache_size_limit is force '
-            f'set to {cache_size_limit}.',
-            logger='current',
-            level=logging.WARNING)
+            torch._dynamo.config.cache_size_limit = cache_size_limit
+            print_log(
+                f'torch._dynamo.config.cache_size_limit is force '
+                f'set to {cache_size_limit}.',
+                logger='current',
+                level=logging.WARNING)
 
 
 def setup_multi_processes(cfg):
