@@ -22,7 +22,7 @@ python tools/train.py configs/rtmdet/rtmdet_s_8xb32-300e_coco.py  --cfg-options 
 需要特别注意的是，PyTorch 2.0 对于动态 shape 支持不是非常完善，目标检测算法中大部分不仅输入 shape 是动态的，而且 loss 计算和后处理过程中也是动态的，这会导致在开启 `torch.compile` 功能后训练速度会变慢。基于此，如果你想启动 `torch.compile` 功能，则应该遵循如下原则：
 
 1. 输入到网络的图片是固定 shape 的，而非多尺度的
-2. 设置 `torch._dynamo.config.cache_size_limit` 参数。`torch._dynamo.config.cache_size_limit` 参数表示子图或者函数的重编译次数，当某些子图或者函数重编译次数大于 `torch._dynamo.config.cache_size_limit` 时候就不会尝试重新编译。前面说过 loss 计算和后处理过程中也是动态的，这部分函数在每次迭代时候都需要重新编译，因此将 `torch._dynamo.config.cache_size_limit` 参数设置的小一些，可以有效的减少编译时间和提升训练速度
+2. 设置 `torch._dynamo.config.cache_size_limit` 参数。TorchDynamo 会将 Python 字节码转换并缓存，已编译的函数会被存入缓存中。当下一次检查发现需要重新编译时，该函数会被重新编译并缓存。但是如果重编译次数超过预设的最大值（64），则该函数将不再被缓存或重新编译。前面说过目标检测算法中的 loss 计算和后处理部分也是动态计算的，这些函数需要在每次迭代中重新编译。因此将 `torch._dynamo.config.cache_size_limit` 参数设置得更小一些可以有效减少编译时间
 
 在 MMDetection 中可以通过环境变量 `DYNAMO_CACHE_SIZE_LIMIT` 设置 `torch._dynamo.config.cache_size_limit` 参数，以 RTMDet 为例，命令如下所示：
 
