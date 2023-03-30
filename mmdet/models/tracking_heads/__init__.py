@@ -5,6 +5,6 @@ from .roi_embed_head import RoIEmbedHead
 from .roi_track_head import RoITrackHead
 
 __all__ = [
-    'QuasiDenseEmbedHead', 'QuasiDenseTrackHead', 'RoITrackHead',
-    'RoIEmbedHead'
+    'RoITrackHead', 'RoIEmbedHead', 'QuasiDenseEmbedHead',
+    'QuasiDenseTrackHead'
 ]

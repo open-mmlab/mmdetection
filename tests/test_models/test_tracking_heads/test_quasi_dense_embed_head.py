@@ -56,7 +56,7 @@ class TestQuasiDenseEmbedHead(TestCase):
                 loss_track=dict(
                     type='MultiPosCrossEntropyLoss', loss_weight=0.25),
                 loss_track_aux=dict(
-                    type='L2Loss',
+                    type='MarginL2Loss',
                     neg_pos_ub=3,
                     pos_margin=0,
                     neg_margin=0.1,
@@ -100,7 +100,7 @@ class TestQuasiDenseEmbedHead(TestCase):
                 loss_track=dict(
                     type='MultiPosCrossEntropyLoss', loss_weight=0.25),
                 loss_track_aux=dict(
-                    type='L2Loss',
+                    type='MarginL2Loss',
                     neg_pos_ub=3,
                     pos_margin=0,
                     neg_margin=0.1,

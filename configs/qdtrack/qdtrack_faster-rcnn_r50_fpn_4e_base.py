@@ -2,21 +2,6 @@ _base_ = [
     '../_base_/models/faster-rcnn_r50_fpn.py', '../_base_/default_runtime.py'
 ]
 
-default_hooks = dict(logger=dict(type='LoggerHook', interval=50), )
-#     visualization=dict(type='TrackVisualizationHook', draw=False))
-
-vis_backends = [dict(type='LocalVisBackend')]
-# visualizer = dict(
-#     type='TrackLocalVisualizer', vis_backends=vis_backends,
-# name='visualizer')
-
-# custom hooks
-custom_hooks = [
-    # Synchronize model buffers such as running_mean and running_var in BN
-    # at the end of each epoch
-    dict(type='SyncBuffersHook')
-]
-
 detector = _base_.model
 detector.pop('data_preprocessor')
 
@@ -116,3 +101,18 @@ param_scheduler = [
 train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=4, val_interval=4)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
+
+default_hooks = dict(
+    logger=dict(type='LoggerHook', interval=50),
+    visualization=dict(type='TrackVisualizationHook', draw=False))
+
+vis_backends = [dict(type='LocalVisBackend')]
+visualizer = dict(
+    type='TrackLocalVisualizer', vis_backends=vis_backends, name='visualizer')
+
+# custom hooks
+custom_hooks = [
+    # Synchronize model buffers such as running_mean and running_var in BN
+    # at the end of each epoch
+    dict(type='SyncBuffersHook')
+]

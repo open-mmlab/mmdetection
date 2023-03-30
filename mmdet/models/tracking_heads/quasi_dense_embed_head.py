@@ -22,7 +22,7 @@ class QuasiDenseEmbedHead(RoIEmbedHead):
         loss_track (dict): The loss function for tracking. Defaults to
             MultiPosCrossEntropyLoss.
         loss_track_aux (dict): The auxiliary loss function for tracking.
-            Defaults to L2Loss.
+            Defaults to MarginL2Loss.
         init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
             dict]): Initialization config dict.
     """
@@ -32,7 +32,7 @@ class QuasiDenseEmbedHead(RoIEmbedHead):
                  softmax_temp: int = -1,
                  loss_track: Optional[dict] = None,
                  loss_track_aux: dict = dict(
-                     type='L2Loss',
+                     type='MarginL2Loss',
                      sample_ratio=3,
                      margin=0.3,
                      loss_weight=1.0,
