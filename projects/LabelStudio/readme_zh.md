@@ -7,7 +7,7 @@
 
 本文使用将[喵喵](https://download.openmmlab.com/mmyolo/data/cat_dataset.zip)的图片，进行半自动化标注。
 
-# 环境配置
+## 环境配置
 
 创建虚拟环境：
 
@@ -48,7 +48,7 @@ pip install -v -e .
 安装Label-Studio和label-studio-ml-backend
 
 ```shell
-# 安装 label-studio 需要一段时间
+# 安装 label-studio 需要一段时间,如果找不到版本请使用官方源
 pip install label-studio==1.7.2
 pip install label-studio-ml==1.0.9
 ```
@@ -62,27 +62,46 @@ cd work_dirs
 wget https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_m_8xb32-300e_coco/rtmdet_m_8xb32-300e_coco_20220719_112220-229f527c.pth
 ```
 
+## 启动服务
+
 启动RTMDet后端推理服务
 
 ```shell
 cd path/to/mmetection
 
-label-studio-ml start projects/Label-Studio/backend-template --with \
+label-studio-ml start projects/LabelStudio/backend_template --with \
 config_file=configs/rtmdet/rtmdet_m_8xb32-300e_coco.py \
 checkpoint_file=./work_dirs/rtmdet_m_8xb32-300e_coco_20220719_112220-229f527c.pth \
 device=cpu \
-
 --port 8003
 # device=cpu 为使用CPU推理，如果使用GPU推理，将cpu替换为cuda:0
 ```
 
-启动Label-Studio 网页服务
+![](https://cdn.vansin.top/picgo20230330131601.png)
+
+此时，RTMDet后端推理服务已经启动，后续在Labble-Studio Web系统中配置 http://localhost:8003 后端推理服务即可。
+
+现在启动 Label-Studio 网页服务
 
 ```shell
 label-studio start
 ```
 
-准备图片
+![](https://cdn.vansin.top/picgo20230330132913.png)
+
+Label-Studio Web服务启动后，打开浏览器访问 http://localhost:8080/ ，即可看到如下界面：
+
+![](https://cdn.vansin.top/picgo20230330133118.png)
+
+我们注册一个用户，然后就可以开始创建项目了。
+
+![](https://cdn.vansin.top/picgo20230330133226.png)
+
+我们创建一个RTMDet-Semiautomatic-Label项目。
+
+![](https://cdn.vansin.top/picgo20230330133333.png)
+
+点击 Data Import，导入下面我们准备好的图片。
 
 ```shell
 cd path/to/mmetection
@@ -91,7 +110,13 @@ mkdir data && cd data
 wget https://download.openmmlab.com/mmyolo/data/cat_dataset.zip && unzip cat_dataset.zip
 ```
 
-## GUI界面
+![](https://cdn.vansin.top/picgo20230330133628.png)
+
+![](https://cdn.vansin.top/picgo20230330133715.png)
+
+![](https://cdn.vansin.top/picgo20230330133807.png)
+
+选择Object Detection With Bounding Boxes
 
 ```shell
 airplane
@@ -175,3 +200,45 @@ vase
 wine_glass
 zebra
 ```
+
+然后将上述类别复制添加到Label-Studio，然后点击Save。
+![](https://cdn.vansin.top/picgo20230330134027.png)
+
+然后在设置中点击 Add Model 添加RTMDet后端推理服务。
+
+![](https://cdn.vansin.top/picgo20230330134320.png)
+
+点击 Valid and Save，然后点击 Start Labeling。
+
+![](https://cdn.vansin.top/picgo20230330134424.png)
+
+看到如下 Connected 就说明后端推理服务添加成功。
+
+![](https://cdn.vansin.top/picgo20230330134554.png)
+
+## 开始半自动化标注
+
+点击Label 开始标注
+
+![](https://cdn.vansin.top/picgo20230330134804.png)
+
+我们可以看到 RTMDet 后端推理服务已经成功返回了预测结果，预测了两个喵喵喵的框。
+
+![](https://cdn.vansin.top/picgo20230330135117.png)
+
+现在我们手工删除多余框，并修改一下框的位置，然后点击 Submit，本张图片就标注完毕了，就出现下张需要修改框的图片。
+![](https://cdn.vansin.top/picgo20230330135235.png)
+
+我们submit完毕所有图片后
+
+![](https://cdn.vansin.top/picgo20230330135553.png)
+
+我们submit完毕所有图片后，点击exprot导出COCO格式的数据集，就能把标注好的数据集的压缩包导出来了。
+
+![](https://cdn.vansin.top/picgo20230330135921.png)
+
+用vscode打开解压后的文件夹，可以看到标注好的数据集，包含了图片和json格式的标注文件。
+
+![](https://cdn.vansin.top/picgo20230330140321.png)
+
+到此半自动化标注就完成了，我们可以用这个数据集在MMDetection训练精度更高的模型了，训练出更好的模型，然后再用这个模型继续半自动化标注，这样就可以不断迭代，提高模型的精度。
