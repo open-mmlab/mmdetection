@@ -8,7 +8,8 @@ from .memory import AvoidCUDAOOM, AvoidOOM
 from .misc import (find_latest_checkpoint, get_test_pipeline_cfg,
                    update_data_root)
 from .replace_cfg_vals import replace_cfg_vals
-from .setup_env import register_all_modules, setup_multi_processes
+from .setup_env import (register_all_modules, setup_cache_size_limit_of_dynamo,
+                        setup_multi_processes)
 from .split_batch import split_batch
 from .typing_utils import (ConfigType, InstanceList, MultiConfig,
                            OptConfigType, OptInstanceList, OptMultiConfig,
@@ -21,5 +22,6 @@ __all__ = [
     'AvoidCUDAOOM', 'all_reduce_dict', 'allreduce_grads', 'reduce_mean',
     'sync_random_seed', 'ConfigType', 'InstanceList', 'MultiConfig',
     'OptConfigType', 'OptInstanceList', 'OptMultiConfig', 'OptPixelList',
-    'PixelList', 'RangeType', 'get_test_pipeline_cfg'
+    'PixelList', 'RangeType', 'get_test_pipeline_cfg',
+    'setup_cache_size_limit_of_dynamo'
 ]
