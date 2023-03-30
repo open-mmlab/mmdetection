@@ -27,7 +27,7 @@ pip install torch==1.10.1+cu113 torchvision==0.11.2+cu113 torchaudio==0.10.1 -f 
 pip install torch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1
 ```
 
-安装mmc
+安装mmcv
 
 ```shell
 pip install -U openmim
@@ -66,10 +66,12 @@ wget https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_m_8xb32-300e_
 
 ```shell
 cd path/to/mmetection
+
 label-studio-ml start projects/Label-Studio/backend-template --with \
 config_file=configs/rtmdet/rtmdet_m_8xb32-300e_coco.py \
 checkpoint_file=./work_dirs/rtmdet_m_8xb32-300e_coco_20220719_112220-229f527c.pth \
 device=cpu \
+
 --port 8003
 # device=cpu 为使用CPU推理，如果使用GPU推理，将cpu替换为cuda:0
 ```
@@ -80,7 +82,16 @@ device=cpu \
 label-studio start
 ```
 
-## 半自动化标注流程
+准备图片
+
+```shell
+cd path/to/mmetection
+mkdir data && cd data
+
+wget https://download.openmmlab.com/mmyolo/data/cat_dataset.zip && unzip cat_dataset.zip
+```
+
+## GUI界面
 
 ```shell
 airplane

@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     from label_studio_ml.api import init_app
 
-    from .mmdetection import MMDetection
+    from mmdetection import MMDetection
     parser = argparse.ArgumentParser(description='Label studio')
     parser.add_argument(
         '-p',
