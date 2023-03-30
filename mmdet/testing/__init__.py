@@ -8,5 +8,5 @@ from ._utils import (demo_mm_inputs, demo_mm_proposals,
 __all__ = [
     'demo_mm_inputs', 'get_detector_cfg', 'get_roi_head_cfg',
     'demo_mm_proposals', 'demo_mm_sampling_results', 'replace_to_ceph',
-    'random_boxes', 'demo_track_inputs', 'VideoDataSampleFeeder'
+    'demo_track_inputs', 'VideoDataSampleFeeder', 'random_boxes'
 ]

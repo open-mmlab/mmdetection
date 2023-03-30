@@ -482,3 +482,17 @@ def bbox_xyxy_to_cxcyah(bboxes: torch.Tensor) -> torch.Tensor:
     h = bboxes[:, 3] - bboxes[:, 1]
     xyah = torch.stack([cx, cy, w / h, h], -1)
     return xyah
+
+
+def bbox_cxcyah_to_xyxy(bboxes: torch.Tensor) -> torch.Tensor:
+    """Convert bbox coordinates from (cx, cy, ratio, h) to (x1, y1, x2, y2).
+
+    Args:
+        bbox (Tensor): Shape (n, 4) for bboxes.
+    Returns:
+        Tensor: Converted bboxes.
+    """
+    cx, cy, ratio, h = bboxes.split((1, 1, 1, 1), dim=-1)
+    w = ratio * h
+    x1y1x2y2 = [cx - w / 2.0, cy - h / 2.0, cx + w / 2.0, cy + h / 2.0]
+    return torch.cat(x1y1x2y2, dim=-1)

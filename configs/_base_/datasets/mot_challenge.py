@@ -48,8 +48,8 @@ test_pipeline = [
         type='TransformBroadcaster',
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='LoadTrackAnnotations'),
-            dict(type='Resize', scale=resized_shape, keep_ratio=True)
+            dict(type='Resize', scale=resized_shape, keep_ratio=True),
+            dict(type='LoadTrackAnnotations')
         ]),
     dict(type='PackTrackInputs')
 ]
