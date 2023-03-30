@@ -68,7 +68,11 @@ class MarginL2Loss(BaseModule):
         pred, weight, avg_factor = self.update_weight(pred, target, weight,
                                                       avg_factor)
         loss_bbox = self.loss_weight * mse_loss(
-            pred, target, weight, reduction=reduction, avg_factor=avg_factor)
+            pred,
+            target.float(),
+            weight.float(),
+            reduction=reduction,
+            avg_factor=avg_factor)
         return loss_bbox
 
     def update_weight(self, pred: Tensor, target: Tensor, weight: Tensor,
@@ -109,8 +113,8 @@ class MarginL2Loss(BaseModule):
 
             if self.hard_mining:
                 costs = mse_loss(
-                    pred, target, reduction='none')[neg_idx[:, 0],
-                                                    neg_idx[:, 1]].detach()
+                    pred, target.float(),
+                    reduction='none')[neg_idx[:, 0], neg_idx[:, 1]].detach()
                 neg_idx = neg_idx[costs.topk(num_neg)[1], :]
             else:
                 neg_idx = self.random_choice(neg_idx, num_neg)

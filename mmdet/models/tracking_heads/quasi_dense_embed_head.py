@@ -193,8 +193,8 @@ class QuasiDenseEmbedHead(RoIEmbedHead):
                 all images in a batch after sampling.
             ref_sampling_results (List[obj:SamplingResults]): Assign results of
                 all reference images in a batch after sampling.
-            gt_match_indices_list (list(Tensor)): Mapping from gt_instances_id
-                to ref_gt_instances_id of the same tracklet in a pair of
+            gt_match_indices_list (list(Tensor)): Mapping from gt_instances_ids
+                to ref_gt_instances_ids of the same tracklet in a pair of
                 images.
 
         Returns:
@@ -227,9 +227,9 @@ class QuasiDenseEmbedHead(RoIEmbedHead):
                 all images in a batch after sampling.
             ref_sampling_results (List[obj:SamplingResults]): Assign results of
                 all reference images in a batch after sampling.
-            gt_match_indices_list (list(Tensor)): Mapping from gt_instances_id
-                to ref_gt_instances_id of the same tracklet in a pair of
-                images.
+            gt_match_indices_list (list(Tensor)): Mapping from instances_ids
+                from key image to reference image of the same tracklet in a
+                pair of images.
 
         Returns:
             Dict [str: Tensor]: Calculation results.
