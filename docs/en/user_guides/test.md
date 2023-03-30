@@ -79,7 +79,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
 
    ```shell
    python tools/test.py \
-       configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
+       configs/pascal_voc/faster-rcnn_r50_fpn_1x_voc0712.py \
        checkpoints/faster_rcnn_r50_fpn_1x_voc0712_20200624-c9895d40.pth
    ```
 
