@@ -37,6 +37,8 @@ export DYNAMO_CACHE_SIZE_LIMIT = 4
 ./tools/dist_train.sh configs/rtmdet/rtmdet_s_8xb32-300e_coco.py 8 --cfg-options compile=True
 ```
 
+关于 PyTorch 2.0 的 dynamo 常见问题，可以参考 [这里](https://pytorch.org/docs/stable/dynamo/faq.html)
+
 ## 安装
 
 - MMCV 与 MMDetection 的兼容问题: "ConvWS is already registered in conv layer"; "AssertionError: MMCV==xxx is used but incompatible. Please install mmcv>=xxx, \<=xxx."
