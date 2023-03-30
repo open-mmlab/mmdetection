@@ -199,8 +199,8 @@ Users can get the channels of the new backbone by Replacing the `ResNet(depth=18
 
 # Use Detectron2 Model in MMDetection
 
-Users can use Detectron2Wrapper to run Detectron2's model in MMDetection. We provide examples of [Faster R-CNN](../../../configs/misc/d2_faster-rcnn_r50-caffe_fpn_ms-90k_coco.py),
-[Mask R-CNN](../../../configs/misc/d2_mask-rcnn_r50-caffe_fpn_ms-90k_coco.py), and [RetinaNet](../../../configs/misc/d2_retinanet_r50-caffe_fpn_ms-90k_coco.py) in MMDetection.
+Users can use Detectron2Wrapper to run Detectron2's model in MMDetection. We provide examples of [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/misc/d2_faster-rcnn_r50-caffe_fpn_ms-90k_coco.py),
+[Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/misc/d2_mask-rcnn_r50-caffe_fpn_ms-90k_coco.py), and [RetinaNet](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/misc/d2_retinanet_r50-caffe_fpn_ms-90k_coco.py) in MMDetection.
 
 The algorithm components in config file should be the same as those of in Detectron2. During setup, we will first initialize the default settings, which can be found in [Detectron2](https://github.com/facebookresearch/detectron2/blob/main/detectron2/config/defaults.py).
 Then, the settings in config file will overwrite the default settings and the model will be built with these settings.

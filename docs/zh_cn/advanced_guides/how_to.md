@@ -199,8 +199,8 @@ for level_out in level_outputs:
 # MMDetection 中训练 Detectron2 的模型
 
 用户可以使用 `Detectron2Wrapper` 从而在 MMDetection 中使用 Detectron2 的模型。
-我们提供了 [Faster R-CNN](../../../configs/misc/d2_faster-rcnn_r50-caffe_fpn_ms-90k_coco.py),
-[Mask R-CNN](../../../configs/misc/d2_mask-rcnn_r50-caffe_fpn_ms-90k_coco.py) 和 [RetinaNet](../../../configs/misc/d2_retinanet_r50-caffe_fpn_ms-90k_coco.py) 的示例来在 MMDetection 中训练/测试 Detectron2 的模型。
+我们提供了 [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/misc/d2_faster-rcnn_r50-caffe_fpn_ms-90k_coco.py),
+[Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/misc/d2_mask-rcnn_r50-caffe_fpn_ms-90k_coco.py) 和 [RetinaNet](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/misc/d2_retinanet_r50-caffe_fpn_ms-90k_coco.py) 的示例来在 MMDetection 中训练/测试 Detectron2 的模型。
 
 使用过程中需要注意配置文件中算法组件要和 Detectron2 中的相同。模型初始化时，我们首先初始化 [Detectron2](https://github.com/facebookresearch/detectron2/blob/main/detectron2/config/defaults.py) 的默认设置，然后配置文件中的设置将覆盖默认设置，模型将基于更新过的设置来建立。
 输入数据首先转换成 Detectron2 的类型并输入进 Detectron2 的模型中。在推理阶段，Detectron2 的模型结果将会转换回 MMDetection 的类型。
