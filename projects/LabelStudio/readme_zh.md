@@ -3,9 +3,9 @@
 标注数据是一个费时费力的任务，本文介绍了如何使用 MMDetection 中的 RTMDet 算法联合 Label-Studio 软件进行半自动化标注。具体来说，使用 RTMDet 预测图片生成标注，然后使用 Label-Studio 进行微调标注，社区用户可以参考此流程和方法，将其应用到其他领域。
 
 - RTMDet：RTMDet 是 OpenMMLab 自研的高精度单阶段的目标检测算法，开源于 MMDetection 目标检测工具箱中，其开源协议为 Apache 2.0，工业界的用户可以不受限的免费使用。
-- Label Studio 是一款优秀的标注软件，覆盖图像分类、目标检测、分割等领域数据集标注的功能。
+- [Label Studio](https://github.com/heartexlabs/label-studio) 是一款优秀的标注软件，覆盖图像分类、目标检测、分割等领域数据集标注的功能。
 
-本文使用将[喵喵](https://download.openmmlab.com/mmyolo/data/cat_dataset.zip)的图片，进行半自动化标注。
+本文将使用[喵喵数据集](https://download.openmmlab.com/mmyolo/data/cat_dataset.zip)的图片，进行半自动化标注。
 
 ## 环境配置
 
@@ -29,7 +29,11 @@ pip install torch==1.10.1+cu113 torchvision==0.11.2+cu113 torchaudio==0.10.1 -f 
 pip install torch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1
 ```
 
-安装 MMCV
+# \<\<\<\<\<\<\< HEAD 安装 MMCV
+
+安装 mmcv
+
+> > > > > > > 83bd1c4232af83d3a82293462c73349a00cfe1cf
 
 ```shell
 pip install -U openmim
@@ -37,7 +41,11 @@ mim install "mmcv>=2.0.0rc0"
 # 安装 mmcv 的过程中会自动安装 mmengine
 ```
 
-安装 MMDetection
+# \<\<\<\<\<\<\< HEAD 安装 MMDetection
+
+安装 mmdetection
+
+> > > > > > > 83bd1c4232af83d3a82293462c73349a00cfe1cf
 
 ```shell
 git clone https://github.com/open-mmlab/mmdetection -b dev-3.x
@@ -64,7 +72,7 @@ wget https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_m_8xb32-300e_
 
 ## 启动服务
 
-启动RTMDet后端推理服务：
+启动 RTMDet 后端推理服务：
 
 ```shell
 cd path/to/mmetection
@@ -79,7 +87,7 @@ device=cpu \
 
 ![](https://cdn.vansin.top/picgo20230330131601.png)
 
-此时，RTMDet后端推理服务已经启动，后续在Labble-Studio Web系统中配置 http://localhost:8003 后端推理服务即可。
+此时，RTMDet 后端推理服务已经启动，后续在 Label-Studio Web 系统中配置 http://localhost:8003 后端推理服务即可。
 
 现在启动 Label-Studio 网页服务：
 
@@ -97,7 +105,7 @@ label-studio start
 
 ![](https://cdn.vansin.top/picgo20230330133333.png)
 
-我们通过下面的方式下载好示例的喵喵图片，点击 Data Import导入需要标注的猫图片。
+我们通过下面的方式下载好示例的喵喵图片，点击 Data Import 导入需要标注的猫图片。
 
 ```shell
 cd path/to/mmetection
