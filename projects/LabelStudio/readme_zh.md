@@ -64,7 +64,7 @@ wget https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_m_8xb32-300e_
 
 ## 启动服务
 
-启动RTMDet后端推理服务：
+启动 RTMDet 后端推理服务：
 
 ```shell
 cd path/to/mmetection
