@@ -2,12 +2,12 @@
 from unittest import TestCase
 
 import torch
+from mmengine import init_default_scope
 from mmengine.config import Config
 from mmengine.structures import InstanceData
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_track_inputs, random_boxes
-from mmdet.utils import register_all_modules
 
 
 def _fake_proposals(img_metas, proposal_len):
@@ -24,7 +24,7 @@ def _fake_proposals(img_metas, proposal_len):
 class TestQuasiDenseTrackHead(TestCase):
 
     def setUp(self):
-        register_all_modules(init_default_scope=True)
+        init_default_scope('mmdet')
         cfg = Config(
             dict(
                 type='QuasiDenseTrackHead',
@@ -43,7 +43,7 @@ class TestQuasiDenseTrackHead(TestCase):
                     loss_track=dict(
                         type='MultiPosCrossEntropyLoss', loss_weight=0.25),
                     loss_track_aux=dict(
-                        type='L2Loss',
+                        type='MarginL2Loss',
                         neg_pos_ub=3,
                         pos_margin=0,
                         neg_margin=0.1,
