@@ -86,7 +86,7 @@ def inference(args, logger):
     _forward = model.forward
 
     for idx, data_batch in enumerate(data_loader):
-        if idx == args.num_images: 
+        if idx == args.num_images:
             break
         data = model.data_preprocessor(data_batch)
         result['ori_shape'] = data['data_samples'][0].ori_shape
