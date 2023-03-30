@@ -97,7 +97,7 @@ label-studio start
 
 ![](https://cdn.vansin.top/picgo20230330133333.png)
 
-我们通过下面的方式下载好示例的喵喵图片，点击 Data Import导入需要标注的猫图片。
+我们通过下面的方式下载好示例的喵喵图片，点击 Data Import 导入需要标注的猫图片。
 
 ```shell
 cd path/to/mmetection
