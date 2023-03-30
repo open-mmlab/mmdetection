@@ -79,7 +79,7 @@ device=cpu \
 
 ![](https://cdn.vansin.top/picgo20230330131601.png)
 
-此时，RTMDet后端推理服务已经启动，后续在Labble-Studio Web系统中配置 http://localhost:8003 后端推理服务即可。
+此时，RTMDet 后端推理服务已经启动，后续在 Label-Studio Web 系统中配置 http://localhost:8003 后端推理服务即可。
 
 现在启动 Label-Studio 网页服务：
 
