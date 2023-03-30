@@ -93,7 +93,7 @@ label-studio start
 
 ![](https://cdn.vansin.top/picgo20230330133118.png)
 
-我们注册一个用户，然后创建一个RTMDet-Semiautomatic-Label项目。
+我们注册一个用户，然后创建一个 RTMDet-Semiautomatic-Label 项目。
 
 ![](https://cdn.vansin.top/picgo20230330133333.png)
 
