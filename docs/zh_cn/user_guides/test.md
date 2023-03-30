@@ -244,7 +244,7 @@ bash tools/dist_test.sh \
     [--tta]
 ```
 
-你也可以自己修改TTA配置，例如添加缩放增强：
+你也可以自己修改 TTA 配置，例如添加缩放增强：
 
 ```shell
 tta_model = dict(
