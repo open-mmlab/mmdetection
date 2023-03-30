@@ -110,9 +110,9 @@ wget https://download.openmmlab.com/mmyolo/data/cat_dataset.zip && unzip cat_dat
 
 ![](https://cdn.vansin.top/picgo20230330133715.png)
 
-![](https://cdn.vansin.top/picgo20230330133807.png)
-
 然后选择 Object Detection With Bounding Boxes 模板
+
+![](https://cdn.vansin.top/picgo20230330133807.png)
 
 ```shell
 airplane
@@ -205,7 +205,7 @@ zebra
 
 ![](https://cdn.vansin.top/picgo20230330134320.png)
 
-点击 Valid and Save，然后点击 Start Labeling。
+点击 Validate and Save，然后点击 Start Labeling。
 
 ![](https://cdn.vansin.top/picgo20230330134424.png)
 
