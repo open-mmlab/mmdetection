@@ -4,7 +4,7 @@ Annotation data is a time-consuming and laborious task. This article introduces 
 
 - RTMDet: RTMDet is a high-precision single-stage object detection algorithm developed by OpenMMLab, open-sourced in the MMDetection object detection toolbox. Its open-source license is Apache 2.0, and it can be used freely without restrictions by industrial users.
 
-- Label Studio is an excellent annotation software covering the functionality of dataset annotation in areas such as image classification, object detection, and segmentation.
+- [Label Studio](https://github.com/heartexlabs/label-studio) is an excellent annotation software covering the functionality of dataset annotation in areas such as image classification, object detection, and segmentation.
 
 In this article, we will use [cat](https://download.openmmlab.com/mmyolo/data/cat_dataset.zip) images for semi-automatic annotation.
 
