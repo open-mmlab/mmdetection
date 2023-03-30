@@ -4,8 +4,8 @@ import tempfile
 from functools import partial
 from pathlib import Path
 
-import torch
 import numpy as np
+import torch
 from mmengine.config import Config, DictAction
 from mmengine.logging import MMLogger
 from mmengine.model import revert_sync_batchnorm
@@ -24,7 +24,11 @@ except ImportError:
 def parse_args():
     parser = argparse.ArgumentParser(description='Get a detector flops')
     parser.add_argument('config', help='train config file path')
-    parser.add_argument('--num-images', type=int, default=100, help='num images of calculate model flops')
+    parser.add_argument(
+        '--num-images',
+        type=int,
+        default=100,
+        help='num images of calculate model flops')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
@@ -70,7 +74,7 @@ def inference(args, logger):
             type='SyncBN', requires_grad=True)
         cfg['model']['roi_head']['mask_head']['norm_cfg'] = dict(
             type='SyncBN', requires_grad=True)
-        
+
     result = {}
     avg_flops = []
     data_loader = Runner.build_dataloader(cfg.val_dataloader)
@@ -80,9 +84,10 @@ def inference(args, logger):
     model = revert_sync_batchnorm(model)
     model.eval()
     _forward = model.forward
-    
+
     for idx, data_batch in enumerate(data_loader):
-        if idx == args.num_images: break
+        if idx == args.num_images:
+            break
         data = model.data_preprocessor(data_batch)
         result['ori_shape'] = data['data_samples'][0].ori_shape
         result['pad_shape'] = data['data_samples'][0].pad_shape
