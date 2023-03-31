@@ -3,16 +3,6 @@ from __future__ import annotations
 import os.path as osp
 from typing import Dict, Optional
 
-from mmdet.core.visualization.image import imshow_det_bboxes
-
-try:
-    import neptune
-    from neptune.types import File
-except ImportError:
-    raise ImportError('Neptune client library not installed.'
-                      'Please refer to the installation guide:'
-                      'https://docs.neptune.ai/setup/installation/')
-
 import mmcv
 import mmcv.runner.hooks as mmvch
 import numpy as np
@@ -23,6 +13,7 @@ from mmcv.runner.hooks.checkpoint import CheckpointHook
 
 from mmdet import version
 from mmdet.core import DistEvalHook, EvalHook
+from mmdet.core.visualization.image import imshow_det_bboxes
 
 
 @HOOKS.register_module()
@@ -92,6 +83,17 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                  **kwargs) -> None:
         super().__init__(interval=interval, **kwargs)
 
+        try:
+            import neptune
+            import neptune.types as types
+        except ImportError:
+            raise ImportError('Neptune client library not installed.'
+                              'Please refer to the installation guide:'
+                              'https://docs.neptune.ai/setup/installation/')
+
+        self.neptune = neptune
+        self.types = types
+
         init_kwargs = init_kwargs if isinstance(init_kwargs, dict) else {}
 
         if 'api_token' in init_kwargs and api_token:
@@ -123,6 +125,8 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
 
         self.val_dataset = None
 
+        self.eval_image_indices = None
+
     def _log_integration_version(self) -> None:
         self._run[self.INTEGRATION_VERSION_KEY] = version.__version__
 
@@ -153,12 +157,13 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
             return
 
         # Select the images to be logged.
-        eval_image_indices = np.arange(len(self.val_dataset))
-        # Set seed so that same validation set is logged each time.
-        rng = np.random.default_rng(42)
-        rng.shuffle(eval_image_indices)
-        self.eval_image_indices = eval_image_indices[:self.
-                                                     num_eval_predictions]
+        if not self.eval_image_indices:
+            eval_image_indices = np.arange(len(self.val_dataset))
+            # Set seed so that same validation set is logged each time.
+            rng = np.random.default_rng(42)
+            rng.shuffle(eval_image_indices)
+            self.eval_image_indices = eval_image_indices[:self.
+                                                         num_eval_predictions]
 
         CLASSES = self.val_dataset.CLASSES
 
@@ -185,8 +190,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                 image, bboxes, labels, class_names=CLASSES, show=False)
             im = im / im.max()
 
-            # TODO Add masks
-            self._run[image_name].upload(File.as_image(im))
+            self._run[image_name].upload(self.types.File.as_image(im))
 
     @master_only
     def before_run(self, runner) -> None:
@@ -263,7 +267,7 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
             return
 
         if final:
-            file_name = 'latest'
+            file_name = 'final'
         else:
             file_name = f'{mode}_{getattr(runner, mode) + 1}'
 
@@ -277,7 +281,8 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
                 f'Checkpoint {file_path} not found - skipping.')
             return
         with open(file_path, 'rb') as fp:
-            self._run[neptune_checkpoint_path] = File.from_stream(fp)
+            self._run[neptune_checkpoint_path] = self.types.File.from_stream(
+                fp)
 
     @master_only
     def after_train_iter(self, runner) -> None:
