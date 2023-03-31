@@ -29,11 +29,7 @@ pip install torch==1.10.1+cu113 torchvision==0.11.2+cu113 torchaudio==0.10.1 -f 
 pip install torch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1
 ```
 
-# \<\<\<\<\<\<\< HEAD 安装 MMCV
-
-安装 mmcv
-
-> > > > > > > 83bd1c4232af83d3a82293462c73349a00cfe1cf
+安装 MMCV
 
 ```shell
 pip install -U openmim
@@ -41,11 +37,7 @@ mim install "mmcv>=2.0.0rc0"
 # 安装 mmcv 的过程中会自动安装 mmengine
 ```
 
-# \<\<\<\<\<\<\< HEAD 安装 MMDetection
-
-安装 mmdetection
-
-> > > > > > > 83bd1c4232af83d3a82293462c73349a00cfe1cf
+安装 MMDetection
 
 ```shell
 git clone https://github.com/open-mmlab/mmdetection -b dev-3.x
