@@ -496,6 +496,42 @@ def test_albu_transform():
     assert results['img'].dtype == np.float32
 
 
+def test_albu_channel_order():
+    results = dict(
+        img_prefix=osp.join(osp.dirname(__file__), '../../../data'),
+        img_info=dict(filename='color.jpg'))
+
+    # Define simple pipeline
+    load = dict(type='LoadImageFromFile')
+    load = build_from_cfg(load, PIPELINES)
+
+    # Transform is modifying B channel
+    albu_transform = dict(
+        type='Albu',
+        transforms=[
+            dict(
+                type='RGBShift',
+                r_shift_limit=0,
+                g_shift_limit=0,
+                b_shift_limit=200,
+                p=1)
+        ])
+    albu_transform = build_from_cfg(albu_transform, PIPELINES)
+
+    # Execute transforms
+    results_load = load(results)
+    results_albu = albu_transform(results_load)
+
+    # assert only Green and Red channel are not modified
+    np.testing.assert_array_equal(results_albu['img'][..., 1:],
+                                  results_load['img'][..., 1:])
+
+    # assert Blue channel is modified
+    with pytest.raises(AssertionError):
+        np.testing.assert_array_equal(results_albu['img'][..., 0],
+                                      results_load['img'][..., 0])
+
+
 def test_random_center_crop_pad():
     # test assertion for invalid crop_size while test_mode=False
     with pytest.raises(AssertionError):
