@@ -2,6 +2,42 @@
 
 我们在这里列出了使用时的一些常见问题及其相应的解决方案。 如果您发现有一些问题被遗漏，请随时提 PR 丰富这个列表。 如果您无法在此获得帮助，请使用 [issue模板](https://github.com/open-mmlab/mmdetection/blob/master/.github/ISSUE_TEMPLATE/error-report.md/)创建问题，但是请在模板中填写所有必填信息，这有助于我们更快定位问题。
 
+## PyTorch 2.0 支持
+
+MMDetection 目前绝大部分算法已经支持了 PyTorch 2.0 及其 `torch.compile` 功能, 用户只需要安装 MMDetection 3.0.0rc7 及其以上版本即可。如果你在使用中发现有不支持的算法，欢迎给我们反馈。我们也非常欢迎社区贡献者来 benchmark 对比 `torch.compile` 功能所带来的速度提升。
+
+如果你想启动 `torch.compile` 功能，只需要在 `train.py` 或者 `test.py` 后面加上 `--cfg-options compile=True`。 以 RTMDet 为例，你可以使用以下命令启动 `torch.compile` 功能：
+
+```shell
+# 单卡
+python tools/train.py configs/rtmdet/rtmdet_s_8xb32-300e_coco.py  --cfg-options compile=True
+
+# 单机 8 卡
+./tools/dist_train.sh configs/rtmdet/rtmdet_s_8xb32-300e_coco.py 8 --cfg-options compile=True
+
+# 单机 8 卡 + AMP 混合精度训练
+./tools/dist_train.sh configs/rtmdet/rtmdet_s_8xb32-300e_coco.py 8 --cfg-options compile=True --amp
+```
+
+需要特别注意的是，PyTorch 2.0 对于动态 shape 支持不是非常完善，目标检测算法中大部分不仅输入 shape 是动态的，而且 loss 计算和后处理过程中也是动态的，这会导致在开启 `torch.compile` 功能后训练速度会变慢。基于此，如果你想启动 `torch.compile` 功能，则应该遵循如下原则：
+
+1. 输入到网络的图片是固定 shape 的，而非多尺度的
+2. 设置 `torch._dynamo.config.cache_size_limit` 参数。TorchDynamo 会将 Python 字节码转换并缓存，已编译的函数会被存入缓存中。当下一次检查发现需要重新编译时，该函数会被重新编译并缓存。但是如果重编译次数超过预设的最大值（64），则该函数将不再被缓存或重新编译。前面说过目标检测算法中的 loss 计算和后处理部分也是动态计算的，这些函数需要在每次迭代中重新编译。因此将 `torch._dynamo.config.cache_size_limit` 参数设置得更小一些可以有效减少编译时间
+
+在 MMDetection 中可以通过环境变量 `DYNAMO_CACHE_SIZE_LIMIT` 设置 `torch._dynamo.config.cache_size_limit` 参数，以 RTMDet 为例，命令如下所示：
+
+```shell
+# 单卡
+export DYNAMO_CACHE_SIZE_LIMIT = 4
+python tools/train.py configs/rtmdet/rtmdet_s_8xb32-300e_coco.py  --cfg-options compile=True
+
+# 单机 8 卡
+export DYNAMO_CACHE_SIZE_LIMIT = 4
+./tools/dist_train.sh configs/rtmdet/rtmdet_s_8xb32-300e_coco.py 8 --cfg-options compile=True
+```
+
+关于 PyTorch 2.0 的 dynamo 常见问题，可以参考 [这里](https://pytorch.org/docs/stable/dynamo/faq.html)
+
 ## 安装
 
 - MMCV 与 MMDetection 的兼容问题: "ConvWS is already registered in conv layer"; "AssertionError: MMCV==xxx is used but incompatible. Please install mmcv>=xxx, \<=xxx."
