@@ -1,0 +1,33 @@
+#!/bin/bash
+#SBATCH --partition mm_det
+#SBATCH --job-name vitdet
+#SBATCH --ntasks 1
+#SBATCH --cpus-per-task 1
+#SBATCH --ntasks-per-node 1
+#SBATCH --quotatype spot
+#SBATCH --gres gpu:1
+#SBATCH --output /mnt/petrelfs/zhangwenhua/.log/phoenix-slurm-%j.out
+# args: --kill-on-bad-exit
+# args: --partition
+# args: mm_det
+# args: --job-name=vitdet
+# args: --ntasks=1
+# args: --cpus-per-task=1
+# args: --ntasks-per-node=1
+# args: --quotatype=spot
+# args: --gres=gpu:1
+# args: python
+# args: -u
+# args: tools/train.py
+# args: projects/ViTDet/configs/vitdet_mask-rcnn_vit-b-mae_lsj-100e.py
+# args: --work-dir
+# args: test_fp16
+# args: --launcher=slurm
+argv=()
+while read -r line; do
+    if [[ $line == "# args: "* ]]; then
+        argv[${#argv[*]}]="${line:8}"
+    fi
+done < $0
+
+srun "${argv[@]}"
