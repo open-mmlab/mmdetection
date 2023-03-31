@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from __future__ import annotations
+
 import os.path as osp
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import mmcv
 import mmcv.runner.hooks as mmvch
@@ -21,8 +21,8 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
     """Logs training or evaluation metadata to neptune.ai.
 
     Args:
-        init_kwargs (dict): A dictionary passed to the `neptune.init_run()` function
-            to initialize and configure a Neptune run.
+        init_kwargs (dict): A dictionary passed to the `neptune.init_run()`
+            function to initialize and configure a Neptune run.
             Refer to https://docs.neptune.ai/api/neptune/#init_run
             for possible key-value pairs.
         api_token (str): Neptune API token.
@@ -117,11 +117,11 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         self.num_eval_predictions = num_eval_predictions
         self.log_eval_predictions: bool = (num_eval_predictions > 0)
 
-        self.ckpt_hook: CheckpointHook | None = None
-        self.ckpt_interval: int | None = None
+        self.ckpt_hook: Union[CheckpointHook, None] = None
+        self.ckpt_interval: Union[int, None] = None
 
-        self.eval_hook: EvalHook | None = None
-        self.eval_interval: int | None = None
+        self.eval_hook: Union[EvalHook, None] = None
+        self.eval_interval: Union[int, None] = None
 
         self.val_dataset = None
 
