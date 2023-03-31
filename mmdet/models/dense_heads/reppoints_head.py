@@ -324,7 +324,7 @@ class RepPointsHead(AnchorFreeHead):
         valid_flag_list = []
         for img_id, img_meta in enumerate(img_metas):
             multi_level_flags = self.prior_generator.valid_flags(
-                featmap_sizes, img_meta['pad_shape'])
+                featmap_sizes, img_meta['pad_shape'], device=device)
             valid_flag_list.append(multi_level_flags)
 
         return points_list, valid_flag_list
