@@ -62,14 +62,13 @@ MMSegmentation 封装了 `BaseModel` 并实现了 [BaseSegmentor](https://github
 - data_sample (list\[[SegDataSample](https://github.com/open-mmlab/mmsegmentation/blob/1.x/mmseg/structures/seg_data_sample.py)\]) - 语义数据样本。通常包括诸如`metainfo`和`gt_sem_seg`之类的信息。默认为None。
 - mode (str) - 返回什么类型的值。默认为“tensor”。
 
-
 返回：
 
-  - 如果 `mode == "loss"`，返回一个用于反向传播和日志记录的损失张量字典 `dict`。
-  - 如果 `mode == "predict"`，返回 `SegDataSample` 的 `list`，推理结果将逐渐添加到传递给前向方法的 `data_sample` 参数中，每个 `SegDataSample` 包含以下键：
-    - pred_sem_seg (`PixelData`): 语义分割的预测。
-    - seg_logits (`PixelData`): 正规化之前的语义分割的预测对应的语义分割的"logits"。
-  - 如果 `mode == "tensor"`，返回一个用于自定义使用的`tensor`、`tuple of tensor`或张量字典(`dict` of `tensor`)。
+- 如果 `mode == "loss"`，返回一个用于反向传播和日志记录的损失张量字典 `dict`。
+- 如果 `mode == "predict"`，返回 `SegDataSample` 的 `list`，推理结果将逐渐添加到传递给前向方法的 `data_sample` 参数中，每个 `SegDataSample` 包含以下键：
+  - pred_sem_seg (`PixelData`): 语义分割的预测。
+  - seg_logits (`PixelData`): 正规化之前的语义分割的预测对应的语义分割的"logits"。
+- 如果 `mode == "tensor"`，返回一个用于自定义使用的`tensor`、`tuple of tensor`或张量字典(`dict` of `tensor`)。
 
 ### 预测模式
 
