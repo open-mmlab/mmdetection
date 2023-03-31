@@ -89,7 +89,7 @@ label-studio start
 
 ![](https://cdn.vansin.top/picgo20230330132913.png)
 
-打开浏览器访问 http://localhost:8080/，即可看到 Label-Studio 的界面。
+打开浏览器访问 [http://localhost:8080/](http://localhost:8080/) 即可看到 Label-Studio 的界面。
 
 ![](https://cdn.vansin.top/picgo20230330133118.png)
 
