@@ -519,6 +519,7 @@ class CocoMetric(BaseMetric):
 
                     results_per_category = []
                     for idx, cat_id in enumerate(self.cat_ids):
+                        t = []
                         # area range index 0: all area ranges
                         # max dets index -1: typically 100 per image
                         nm = self._coco_api.loadCats(cat_id)[0]
@@ -528,14 +529,38 @@ class CocoMetric(BaseMetric):
                             ap = np.mean(precision)
                         else:
                             ap = float('nan')
-                        results_per_category.append(
-                            (f'{nm["name"]}', f'{round(ap, 3)}'))
+                        t.append(f'{nm["name"]}')
+                        t.append(f'{round(ap, 3)}')
                         eval_results[f'{nm["name"]}_precision'] = round(ap, 3)
 
-                    num_columns = min(6, len(results_per_category) * 2)
+                        # indexes of IoU  @50 and @75
+                        for iou in [0, 5]:
+                            precision = precisions[iou, :, idx, 0, -1]
+                            precision = precision[precision > -1]
+                            if precision.size:
+                                ap = np.mean(precision)
+                            else:
+                                ap = float('nan')
+                            t.append(f'{round(ap, 3)}')
+
+                        # indexes of area of small, median and large
+                        for area in [1, 2, 3]:
+                            precision = precisions[:, :, idx, area, -1]
+                            precision = precision[precision > -1]
+                            if precision.size:
+                                ap = np.mean(precision)
+                            else:
+                                ap = float('nan')
+                            t.append(f'{round(ap, 3)}')
+                        results_per_category.append(tuple(t))
+
+                    num_columns = len(results_per_category[0])
                     results_flatten = list(
                         itertools.chain(*results_per_category))
-                    headers = ['category', 'AP'] * (num_columns // 2)
+                    headers = [
+                        'category', 'mAP', 'mAP_50', 'mAP_75', 'mAP_s',
+                        'mAP_m', 'mAP_l'
+                    ]
                     results_2d = itertools.zip_longest(*[
                         results_flatten[i::num_columns]
                         for i in range(num_columns)
