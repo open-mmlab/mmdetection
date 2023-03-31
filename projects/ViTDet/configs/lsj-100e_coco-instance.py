@@ -7,18 +7,12 @@ dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 image_size = (1024, 1024)
 
-file_client_args = dict(backend='disk')
-# comment out the code below to use different file client
-# file_client_args = dict(
-#     backend='petrel',
-#     path_mapping=dict({
-#         './data/': 's3://openmmlab/datasets/detection/',
-#         'data/': 's3://openmmlab/datasets/detection/'
-#     }))
+backend_args = None
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+    dict(type='RandomFlip', prob=0.5),
     dict(
         type='RandomResize',
         scale=image_size,
@@ -30,14 +24,13 @@ train_pipeline = [
         crop_size=image_size,
         recompute_bbox=True,
         allow_negative_crop=True),
-    dict(type='RandomFlip', prob=0.5),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(type='Pad', size=image_size, pad_val=dict(img=(114, 114, 114))),
     dict(type='PackDetInputs')
 ]
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='Resize', scale=image_size, keep_ratio=True),
     dict(type='Pad', size=image_size, pad_val=dict(img=(114, 114, 114))),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),

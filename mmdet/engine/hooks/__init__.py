@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from .checkloss_hook import CheckInvalidLossHook
+from .fp16_compression import Fp16Compresssion
 from .mean_teacher_hook import MeanTeacherHook
 from .memory_profiler_hook import MemoryProfilerHook
 from .num_class_check_hook import NumClassCheckHook
@@ -14,5 +15,5 @@ __all__ = [
     'YOLOXModeSwitchHook', 'SyncNormHook', 'CheckInvalidLossHook',
     'SetEpochInfoHook', 'MemoryProfilerHook', 'DetVisualizationHook',
     'NumClassCheckHook', 'MeanTeacherHook', 'trigger_visualization_hook',
-    'PipelineSwitchHook'
+    'PipelineSwitchHook', 'Fp16Compresssion'
 ]

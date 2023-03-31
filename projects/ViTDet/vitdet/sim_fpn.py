@@ -12,7 +12,7 @@ from mmdet.utils import MultiConfig, OptConfigType
 
 
 @MODELS.register_module()
-class SimFPN(BaseModule):
+class SimpleFPN(BaseModule):
     """Simple Feature Pyramid Network for ViTDet."""
 
     def __init__(self,

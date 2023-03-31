@@ -26,13 +26,11 @@ python tools/train.py projects/ViTDet/configs/vitdet_mask-rcnn_vit-b-mae_lsj-100
 
 Based on mmdetection, this project aligns the test accuracy of the [ViTDet](https://github.com/facebookresearch/detectron2/tree/main/projects/ViTDet).
 <br>
-If you want to reproduce the test results, you need to convert model weights first, then run the test command.
-<br>
 The training accuracy will also be aligned with the official in the future
 
 |                           Method                           | Backbone | Pretrained Model |  Training set  |   Test set   | Epoch | Val Box AP | Val Mask  AP | Official Box AP | Official Mask AP | Download |
 | :--------------------------------------------------------: | :------: | :--------------: | :------------: | :----------: | :---: | :--------: | :----------: | :-------------: | :--------------: | :------: |
-| [ViTDet](./configs/vitdet_mask-rcnn_vit-b-mae_lsj-100e.py) |  ViT-B   |       MAE        | COCO2017 Train | COCO2017 Val |  100  |    51.4    |     45.8     |      51.6       |       45.9       | model()  |
+| [ViTDet](./configs/vitdet_mask-rcnn_vit-b-mae_lsj-100e.py) |  ViT-B   |       MAE        | COCO2017 Train | COCO2017 Val |  100  |    51.6    |     45.7     |      51.6       |       45.9       | model()  |
 
 ## Citation
 
