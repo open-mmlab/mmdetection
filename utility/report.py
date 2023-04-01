@@ -32,7 +32,7 @@ if __name__=="__main__":
     # Wrapup
     column = ['Name', 'Epoch', 'mAP', 'mAP@50', 'mAP@75', 'mAP_S', 'mAP-M', 'mAP-L']
     final_output = []
-    dir_list = ['./faster_rcnn_r101_fpn_1x_mstrain_fskd-backbone_2.0-rpn_1.0']
+    dir_list = glob('../result/test/coco/*')
     
     for dir in dir_list:
         # Single Dir Extraction
@@ -40,4 +40,4 @@ if __name__=="__main__":
         final_output.append(output)
     
     result = pd.DataFrame(final_output, columns=column)    
-    result.to_csv('imp.csv')
+    result.to_csv('hyperparameter_tuning.csv', index=False)
