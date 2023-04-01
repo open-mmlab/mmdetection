@@ -607,26 +607,20 @@ class FilterAnnotations:
             assert 'gt_masks' in results
             gt_masks = results['gt_masks']
             instance_num = len(gt_masks)
-
+        keep = np.ones(instance_num, dtype=bool)
         if instance_num == 0:
             return results
 
-        tests = []
         if self.by_box:
             w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
             h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
-            tests.append((w > self.min_gt_bbox_wh[0])
-                         & (h > self.min_gt_bbox_wh[1]))
+            keep = keep & ((w > self.min_gt_bbox_wh[0])
+                           & (h > self.min_gt_bbox_wh[1]))
         if self.by_mask:
             gt_masks = results['gt_masks']
-            tests.append(gt_masks.areas >= self.min_gt_mask_area)
-
-        keep = tests[0]
-        for t in tests[1:]:
-            keep = keep & t
+            keep = keep & (gt_masks.areas >= self.min_gt_mask_area)
 
         keep = keep.nonzero()[0]
-
         keys = ('gt_bboxes', 'gt_labels', 'gt_masks')
         for key in keys:
             if key in results:
@@ -642,4 +636,4 @@ class FilterAnnotations:
             f'min_gt_mask_area={self.min_gt_mask_area},' \
             f'by_box={self.by_box},' \
             f'by_mask={self.by_mask},' \
-            f'always_keep={self.always_keep})'
+            f'keep_empty={self.keep_empty})'
