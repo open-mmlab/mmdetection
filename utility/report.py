@@ -32,7 +32,7 @@ if __name__=="__main__":
     # Wrapup
     column = ['Name', 'Epoch', 'mAP', 'mAP@50', 'mAP@75', 'mAP_S', 'mAP-M', 'mAP-L']
     final_output = []
-    dir_list = glob('../result/test/coco/*')
+    dir_list = glob('/ailab_mat/checkpoints/sung/msdet/ablation/*')
     
     for dir in dir_list:
         # Single Dir Extraction
