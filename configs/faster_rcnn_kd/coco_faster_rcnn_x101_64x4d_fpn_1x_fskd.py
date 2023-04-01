@@ -2,8 +2,8 @@ _base_ = '../faster_rcnn/coco_faster_rcnn_x101_64x4d_fpn_1x.py'
 
 
 model = dict(type='FasterRCNN_TS',
-             distill_param=1.0,
-             distill_param_backbone=1.0,
+             distill_param=1.5,
+             distill_param_backbone=1.5,
              roi_head=dict(
                  type='ContRoIHead'
                 ),

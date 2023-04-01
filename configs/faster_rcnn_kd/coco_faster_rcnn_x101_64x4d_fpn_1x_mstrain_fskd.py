@@ -1,4 +1,4 @@
-_base_ = '../faster_rcnn/coco_faster_rcnn_x101_32x4d_fpn_3x.py'
+_base_ = '../faster_rcnn/coco_faster_rcnn_x101_64x4d_fpn_1x_mstrain.py'
 
 
 model = dict(type='FasterRCNN_TS',
@@ -11,8 +11,8 @@ model = dict(type='FasterRCNN_TS',
 
 
 # Distillation Params
-teacher_config_path = 'result/coco/faster_rcnn_x101_32x4d_fpn_3x/coco_faster_rcnn_x101_32x4d_fpn_3x.py'
-teacher_weight_path = 'result/coco/faster_rcnn_x101_32x4d_fpn_3x/epoch_36.pth'
+teacher_config_path = 'result/coco/faster_rcnn_x101_64x4d_fpn_1x_mstrain/coco_faster_rcnn_x101_64x4d_fpn_1x_mstrain.py'
+teacher_weight_path = 'result/coco/faster_rcnn_x101_64x4d_fpn_1x_mstrain/epoch_12.pth'
 backbone_pretrain = False
 
 
