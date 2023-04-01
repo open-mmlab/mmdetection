@@ -584,13 +584,6 @@ This tool accepts several optional arguments, including:
 - `--resume-from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
 - `--options 'Key=value'`: Overrides other settings in the used config.
 
-**Note**:
-
-Difference between `resume-from` and `load-from`:
-
-`resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
-`load-from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
-
 ### Training on CPU
 
 The process of training on the CPU is consistent with single GPU training. We just need to disable GPUs before the training process.
