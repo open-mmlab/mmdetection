@@ -1,0 +1,17 @@
+Collections:
+  - Name: DINO
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - AdamW
+        - Multi Scale Train
+        - Gradient Clip
+      Training Resources: 8x A100 GPUs  # To be updated
+      Architecture:  # To be updated
+        - ResNet
+        - Swin Transformer
+        - Transformer
+    Paper:
+      URL: https://arxiv.org/abs/2203.03605
+      Title: 'DINO: DETR with Improved DeNoising Anchor Boxes for End-to-End Object Detection'
+    README: configs/dino/README.md

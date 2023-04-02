@@ -8,6 +8,7 @@ from .cornernet import CornerNet
 from .ddod import DDOD
 from .deformable_detr import DeformableDETR
 from .detr import DETR
+from .dino import DINO
 from .fast_rcnn import FastRCNN
 from .faster_rcnn import FasterRCNN
 from .fcos import FCOS
@@ -54,5 +55,5 @@ __all__ = [
     'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet', 'SOLO',
     'SOLOv2', 'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
-    'MaskFormer', 'DDOD', 'Mask2Former'
+    'MaskFormer', 'DDOD', 'Mask2Former', 'DINO'
 ]
