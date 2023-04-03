@@ -28,7 +28,7 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
     def encode(self,
                points: Tensor,
                gt_bboxes: Union[Tensor, BaseBoxes],
-               max_dis: float = None,
+               max_dis: Optional[float] = None,
                eps: float = 0.1) -> Tensor:
         """Encode bounding box to distances.
 

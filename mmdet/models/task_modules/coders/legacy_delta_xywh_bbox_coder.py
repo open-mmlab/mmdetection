@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Union
 
 import numpy as np
 import torch
@@ -68,7 +68,8 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
         self,
         bboxes: Union[Tensor, BaseBoxes],
         pred_bboxes: Tensor,
-        max_shape: Optional[Tuple[int]] = None,
+        max_shape: Optional[Union[Sequence[int], Tensor,
+                                  Sequence[Sequence[int]]]] = None,
         wh_ratio_clip: Optional[float] = 16 / 1000
     ) -> Union[Tensor, BaseBoxes]:
         """Apply transformation `pred_bboxes` to `boxes`.
@@ -151,7 +152,9 @@ def legacy_delta2bbox(rois: Tensor,
                       deltas: Tensor,
                       means: Sequence[float] = (0., 0., 0., 0.),
                       stds: Sequence[float] = (1., 1., 1., 1.),
-                      max_shape: Tuple[int, int] = None,
+                      max_shape: Optional[
+                          Union[Sequence[int], Tensor,
+                                Sequence[Sequence[int]]]] = None,
                       wh_ratio_clip: float = 16 / 1000) -> Tensor:
     """Apply deltas to shift/scale base boxes in the MMDet V1.x manner.
 

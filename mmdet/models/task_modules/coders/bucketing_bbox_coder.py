@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -41,7 +41,7 @@ class BucketingBBoxCoder(BaseBBoxCoder):
                  offset_topk: int = 2,
                  offset_upperbound: float = 1.0,
                  cls_ignore_neighbor: bool = True,
-                 clip_border: Optional[bool] = True,
+                 clip_border: bool = True,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.num_buckets = num_buckets
@@ -285,8 +285,9 @@ def bucket2bbox(proposals: Tensor,
                 offset_preds: Tensor,
                 num_buckets: int,
                 scale_factor: float = 1.0,
-                max_shape: Tuple[int, int] = None,
-                clip_border: Optional[bool] = True) -> Tuple[Tensor]:
+                max_shape: Optional[Union[Sequence[int], Tensor,
+                                          Sequence[Sequence[int]]]] = None,
+                clip_border: bool = True) -> Tuple[Tensor]:
     """Apply bucketing estimation (cls preds) and fine regression (offset
     preds) to generate det bboxes.
 

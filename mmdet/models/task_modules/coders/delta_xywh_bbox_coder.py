@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
-from typing import Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Union
 
 import numpy as np
 import torch
@@ -183,9 +183,10 @@ def delta2bbox(rois: Tensor,
                deltas: Tensor,
                means: Sequence[float] = (0., 0., 0., 0.),
                stds: Sequence[float] = (1., 1., 1., 1.),
-               max_shape: Tuple[int, int] = None,
+               max_shape: Optional[Union[Sequence[int], Tensor,
+                                         Sequence[Sequence[int]]]] = None,
                wh_ratio_clip: float = 16 / 1000,
-               clip_border: Optional[bool] = True,
+               clip_border: bool = True,
                add_ctr_clamp: bool = False,
                ctr_clamp: int = 32) -> Tensor:
     """Apply deltas to shift/scale base boxes.
