@@ -13,10 +13,8 @@ from label_studio_ml.utils import (DATA_UNDEFINED_NAME, get_image_size,
 from label_studio_tools.core.utils.io import get_data_dir
 
 from mmdet.apis import inference_detector, init_detector
-from mmdet.utils import register_all_modules
 
 logger = logging.getLogger(__name__)
-register_all_modules()
 
 
 class MMDetection(LabelStudioMLBase):
