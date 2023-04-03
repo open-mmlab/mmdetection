@@ -427,6 +427,8 @@ class CocoDataset(CustomDataset):
         if iou_thrs is None:
             iou_thrs = np.linspace(
                 .5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
+        else:
+            iou_thrs = np.array(iou_thrs)
         if metric_items is not None:
             if not isinstance(metric_items, list):
                 metric_items = [metric_items]
