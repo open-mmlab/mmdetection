@@ -237,3 +237,20 @@ Use VS Code to open the unzipped folder to see the labeled dataset, which includ
 ![](https://cdn.vansin.top/picgo20230330140321.png)
 
 At this point, the semi-automatic labeling is complete. We can use this dataset to train a more accurate model in MMDetection and then continue semi-automatic labeling on newly collected images with this model. This way, we can iteratively expand the high-quality dataset and improve the accuracy of the model.
+
+## Use MMYOLO as the Backend Inference Service
+
+If you want to use Label-Studio in MMYOLO, you can refer to replacing the config_file and checkpoint_file with the configuration file and weight file of MMYOLO when starting the backend inference service.
+
+```shell
+cd path/to/mmetection
+
+label-studio-ml start projects/LabelStudio/backend_template --with \
+config_file= path/to/mmyolo_config.py \
+checkpoint_file= path/to/mmyolo_weights.pth \
+device=cpu \
+--port 8003
+# device=cpu is for using CPU inference. If using GPU inference, replace cpu with cuda:0.
+```
+
+Rotation object detection and instance segmentation are still under development, please stay tuned.

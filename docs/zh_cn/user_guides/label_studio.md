@@ -236,3 +236,20 @@ zebra
 ![](https://cdn.vansin.top/picgo20230330140321.png)
 
 到此半自动化标注就完成了，我们可以用这个数据集在 MMDetection 训练精度更高的模型了，训练出更好的模型，然后再用这个模型继续半自动化标注新采集的图片，这样就可以不断迭代，扩充高质量数据集，提高模型的精度。
+
+## 使用 MMYOLO 作为后端推理服务
+
+如果想在 MMYOLO 中使用 Label-Studio，可以参考在启动后端推理服务时，将 config_file 和 checkpoint_file 替换为 MMYOLO 的配置文件和权重文件即可。
+
+```shell
+cd path/to/mmetection
+
+label-studio-ml start projects/LabelStudio/backend_template --with \
+config_file= path/to/mmyolo_config.py \
+checkpoint_file= path/to/mmyolo_weights.pth \
+device=cpu \
+--port 8003
+# device=cpu 为使用 CPU 推理，如果使用 GPU 推理，将 cpu 替换为 cuda:0
+```
+
+旋转目标检测和实例分割还在支持中，敬请期待。
