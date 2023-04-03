@@ -46,7 +46,7 @@ About the common questions about PyTorch 2.0's dynamo, you can refer to [here](h
 
   | MMDetection version |      MMCV version       |     MMEngine version     |
   | :-----------------: | :---------------------: | :----------------------: |
-  |         3.x         | mmcv>=2.0.0rc4, \<2.1.0 | mmengine>=0.6.0, \<1.0.0 |
+  |         3.x         | mmcv>=2.0.0rc4, \<2.1.0 | mmengine>=0.7.1, \<1.0.0 |
   |      3.0.0rc6       | mmcv>=2.0.0rc4, \<2.1.0 | mmengine>=0.6.0, \<1.0.0 |
   |      3.0.0rc5       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.3.0, \<1.0.0 |
   |      3.0.0rc4       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.3.0, \<1.0.0 |
