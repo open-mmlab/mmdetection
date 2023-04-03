@@ -6,7 +6,7 @@ from mmengine.config import Config
 from mmengine.structures import InstanceData
 
 from mmdet.registry import MODELS
-from mmdet.testing import demo_tracking_inputs, random_boxes
+from mmdet.testing import demo_track_inputs, random_boxes
 from mmdet.utils import register_all_modules
 
 
@@ -58,7 +58,7 @@ class TestRoITrackHead(TestCase):
         self.track_head = MODELS.build(cfg)
 
     def test_roi_track_head_loss(self):
-        packed_inputs = demo_tracking_inputs(
+        packed_inputs = demo_track_inputs(
             batch_size=1,
             key_frame_inds=0,
             num_frames=2,
