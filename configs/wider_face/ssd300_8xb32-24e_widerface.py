@@ -5,7 +5,7 @@ _base_ = [
 model = dict(bbox_head=dict(num_classes=1))
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args={{_base_.backend_args}}),
+    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PhotoMetricDistortion',
@@ -28,7 +28,7 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args={{_base_.backend_args}}),
+    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
     dict(type='Resize', scale=(300, 300), keep_ratio=False),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
