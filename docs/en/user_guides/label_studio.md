@@ -10,7 +10,7 @@ In this article, we will use [cat](https://download.openmmlab.com/mmyolo/data/ca
 
 ## Environment Configuration
 
-To begin with, you need to create a virtual environment and then install PyTorch and mmcv. In this article, we will specify the versions of PyTorch and mmcv. Next, you can install MMDetection, Label-Studio, and label-studio-ml-backend using the following steps:
+To begin with, you need to create a virtual environment and then install PyTorch and MMCV. In this article, we will specify the versions of PyTorch and MMCV. Next, you can install MMDetection, Label-Studio, and label-studio-ml-backend using the following steps:
 
 Create a virtual environment:
 
