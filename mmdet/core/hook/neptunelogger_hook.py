@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 
 import os.path as osp
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 
 import mmcv
 import mmcv.runner.hooks as mmvch
@@ -117,11 +117,11 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         self.num_eval_predictions = num_eval_predictions
         self.log_eval_predictions: bool = (num_eval_predictions > 0)
 
-        self.ckpt_hook: Union[CheckpointHook, None] = None
-        self.ckpt_interval: Union[int, None] = None
+        self.ckpt_hook: Optional[CheckpointHook] = None
+        self.ckpt_interval: Optional[int] = None
 
-        self.eval_hook: Union[EvalHook, None] = None
-        self.eval_interval: Union[int, None] = None
+        self.eval_hook: Optional[EvalHook] = None
+        self.eval_interval: Optional[int] = None
 
         self.val_dataset = None
 
@@ -159,7 +159,6 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
         # Select the images to be logged.
         if not self.eval_image_indices:
             eval_image_indices = np.arange(len(self.val_dataset))
-            # Set seed so that same validation set is logged each time.
             rng = np.random.default_rng(42)
             rng.shuffle(eval_image_indices)
             self.eval_image_indices = eval_image_indices[:self.
@@ -182,7 +181,6 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
             data_ann = self.val_dataset.get_ann_info(idx)
             bboxes = data_ann['bboxes']
             labels = data_ann['labels']
-            # masks = data_ann.get('masks', None)
 
             # Get dict of bounding boxes to be logged.
             assert len(bboxes) == len(labels)
@@ -332,5 +330,4 @@ class NeptuneHook(mmvch.logger.neptune.NeptuneLoggerHook):
             self._log_checkpoint(runner, final=True)
 
         runner.logger.info('Syncing with Neptune.ai')
-        self._run.sync()
         self._run.stop()
