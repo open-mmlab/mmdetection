@@ -37,6 +37,8 @@ class LAD(KnowledgeDistillationSingleStageDetector):
         if teacher_ckpt is not None:
             load_checkpoint(
                 self.teacher_model, teacher_ckpt, map_location='cpu')
+        self.teacher_model_list = nn.ModuleList()
+        self.teacher_model_list.append(self.teacher_model)
 
     @property
     def with_teacher_neck(self):
