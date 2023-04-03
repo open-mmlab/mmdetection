@@ -10,6 +10,5 @@ val_evaluator = [
 ]
 
 test_evaluator = val_evaluator
-# The wave of HOTA is about +-1. This performance using this seed is
-# relatively better (57.24).
+# The fluctuation of HOTA is about +-1.
 randomness = dict(seed=6)
