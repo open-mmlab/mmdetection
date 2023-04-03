@@ -220,13 +220,13 @@ Click on Label to start labeling.
 
 ![](https://cdn.vansin.top/picgo20230330134804.png)
 
-We can see that the RTMDet backend inference service has successfully returned the prediction results, with two boxes predicted for the cat images.
+We can see that the RTMDet backend inference service has successfully returned the predicted results and displayed them on the image. However, we noticed that the predicted bounding boxes for the cats are a bit too large and not very accurate.
 
-![](https://cdn.vansin.top/picgo20230330135117.png)
+![](https://cdn.vansin.top/picgo20230403104419.png)
 
-Now, we manually delete the unnecessary boxes, adjust the positions of the boxes, and then click Submit to complete the labeling of this image. The next image that needs box modification will then appear.
+We manually adjust the position of the cat bounding box, and then click Submit to complete the annotation of this image.
 
-![](https://cdn.vansin.top/picgo20230330135235.png)
+![](https://cdn.vansin.top/picgo/20230403105923.png)
 
 After submitting all images, click export to export the labeled dataset in COCO format.
 

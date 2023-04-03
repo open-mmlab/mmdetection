@@ -219,12 +219,13 @@ zebra
 
 ![](https://cdn.vansin.top/picgo20230330134804.png)
 
-我们可以看到 RTMDet 后端推理服务已经成功返回了预测结果，预测了两个喵喵喵的框。
+我们可以看到 RTMDet 后端推理服务已经成功返回了预测结果并显示在图片上，我们可以发现这个喵喵预测的框有点大。
 
-![](https://cdn.vansin.top/picgo20230330135117.png)
+![](https://cdn.vansin.top/picgo20230403104419.png)
 
-现在我们手工删除多余框，并修改一下框的位置，然后点击 Submit，本张图片就标注完毕了，就出现下张需要修改框的图片。
-![](https://cdn.vansin.top/picgo20230330135235.png)
+我们手工拖动框，修正一下框的位置，得到以下修正过后的标注，然后点击 Submit，本张图片就标注完毕了。
+
+![](https://cdn.vansin.top/picgo/20230403105923.png)
 
 我们 submit 完毕所有图片后，点击 exprot 导出 COCO 格式的数据集，就能把标注好的数据集的压缩包导出来了。
 
