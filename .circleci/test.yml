@@ -91,7 +91,7 @@ jobs:
         type: string
       cuda:
         type: enum
-        enum: ["10.1", "10.2", "11.1"]
+        enum: ["10.1", "10.2", "11.1", "11.7"]
       cudnn:
         type: integer
         default: 7
