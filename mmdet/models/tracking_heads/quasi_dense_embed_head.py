@@ -3,16 +3,18 @@ from typing import List, Optional, Tuple
 
 import torch
 import torch.nn as nn
+from mmcv.cnn import ConvModule
+from mmengine.model import BaseModule
 from torch import Tensor
+from torch.nn.modules.utils import _pair
 
 from mmdet.models.task_modules import SamplingResult
 from mmdet.registry import MODELS
 from ..task_modules.tracking import embed_similarity
-from .roi_embed_head import RoIEmbedHead
 
 
 @MODELS.register_module()
-class QuasiDenseEmbedHead(RoIEmbedHead):
+class QuasiDenseEmbedHead(BaseModule):
     """The quasi-dense roi embed head.
 
     Args:
@@ -28,6 +30,15 @@ class QuasiDenseEmbedHead(RoIEmbedHead):
     """
 
     def __init__(self,
+                 num_convs: int = 0,
+                 num_fcs: int = 0,
+                 roi_feat_size: int = 7,
+                 in_channels: int = 256,
+                 conv_out_channels: int = 256,
+                 with_avg_pool: bool = False,
+                 fc_out_channels: int = 1024,
+                 conv_cfg: Optional[dict] = None,
+                 norm_cfg: Optional[dict] = None,
                  embed_channels: int = 256,
                  softmax_temp: int = -1,
                  loss_track: Optional[dict] = None,
@@ -47,9 +58,25 @@ class QuasiDenseEmbedHead(RoIEmbedHead):
                          name='fc_embed',
                          mean=0,
                          std=0.01,
-                         bias=0)),
-                 **kwargs):
-        super(QuasiDenseEmbedHead, self).__init__(init_cfg=init_cfg, **kwargs)
+                         bias=0))):
+        super(QuasiDenseEmbedHead, self).__init__(init_cfg=init_cfg)
+        self.num_convs = num_convs
+        self.num_fcs = num_fcs
+        self.roi_feat_size = _pair(roi_feat_size)
+        self.roi_feat_area = self.roi_feat_size[0] * self.roi_feat_size[1]
+        self.in_channels = in_channels
+        self.conv_out_channels = conv_out_channels
+        self.with_avg_pool = with_avg_pool
+        self.fc_out_channels = fc_out_channels
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+
+        if self.with_avg_pool:
+            self.avg_pool = nn.AvgPool2d(self.roi_feat_size)
+        # add convs and fcs
+        self.convs, self.fcs, self.last_layer_dim = self._add_conv_fc_branch(
+            self.num_convs, self.num_fcs, self.in_channels)
+        self.relu = nn.ReLU(inplace=True)
 
         if loss_track is None:
             loss_track = dict(
@@ -62,6 +89,51 @@ class QuasiDenseEmbedHead(RoIEmbedHead):
             self.loss_track_aux = MODELS.build(loss_track_aux)
         else:
             self.loss_track_aux = None
+
+    def _add_conv_fc_branch(
+            self, num_branch_convs: int, num_branch_fcs: int,
+            in_channels: int) -> Tuple[nn.ModuleList, nn.ModuleList, int]:
+        """Add shared or separable branch. convs -> avg pool (optional) -> fcs.
+
+        Args:
+            num_branch_convs (int): The number of convoluational layers.
+            num_branch_fcs (int): The number of fully connection layers.
+            in_channels (int): The input channel of roi features.
+
+        Returns:
+            Tuple[nn.ModuleList, nn.ModuleList, int]: The convs, fcs and the
+                last layer dimension.
+        """
+        last_layer_dim = in_channels
+        # add branch specific conv layers
+        branch_convs = nn.ModuleList()
+        if num_branch_convs > 0:
+            for i in range(num_branch_convs):
+                conv_in_channels = (
+                    last_layer_dim if i == 0 else self.conv_out_channels)
+                branch_convs.append(
+                    ConvModule(
+                        conv_in_channels,
+                        self.conv_out_channels,
+                        3,
+                        padding=1,
+                        conv_cfg=self.conv_cfg,
+                        norm_cfg=self.norm_cfg))
+            last_layer_dim = self.conv_out_channels
+
+        # add branch specific fc layers
+        branch_fcs = nn.ModuleList()
+        if num_branch_fcs > 0:
+            if not self.with_avg_pool:
+                last_layer_dim *= self.roi_feat_area
+            for i in range(num_branch_fcs):
+                fc_in_channels = (
+                    last_layer_dim if i == 0 else self.fc_out_channels)
+                branch_fcs.append(
+                    nn.Linear(fc_in_channels, self.fc_out_channels))
+            last_layer_dim = self.fc_out_channels
+
+        return branch_convs, branch_fcs, last_layer_dim
 
     def forward(self, x: Tensor) -> Tensor:
         """Forward function.

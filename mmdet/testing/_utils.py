@@ -345,7 +345,7 @@ def demo_track_inputs(batch_size=1,
             instances_id = rng.randint(100, num_classes + 100, size=num_boxes)
             gt_instances.bboxes = torch.FloatTensor(bboxes)
             gt_instances.labels = torch.LongTensor(labels)
-            gt_instances.instances_id = torch.LongTensor(instances_id)
+            gt_instances.instances_ids = torch.LongTensor(instances_id)
 
             if with_mask:
                 masks = _rand_masks(rng, num_boxes, bboxes, w, h)

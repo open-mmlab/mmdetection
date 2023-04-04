@@ -72,7 +72,7 @@ class TestQuasiDenseTrackHead(TestCase):
         packed_inputs = demo_track_inputs(
             batch_size=1,
             num_frames=2,
-            key_frame_inds=0,
+            key_frames_inds=[0],
             image_shapes=[(3, 256, 256)])
         img_metas = [{
             'img_shape': (256, 256, 3),

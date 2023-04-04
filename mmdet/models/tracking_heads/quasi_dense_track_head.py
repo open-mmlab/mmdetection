@@ -1,21 +1,64 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List
+from typing import List, Optional
 
+from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.registry import MODELS
+from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures import TrackSampleList
 from mmdet.structures.bbox import bbox2roi
 from mmdet.utils import InstanceList
-from .roi_track_head import RoITrackHead
 
 
 @MODELS.register_module()
-class QuasiDenseTrackHead(RoITrackHead):
+class QuasiDenseTrackHead(BaseModule):
     """The quasi-dense track head."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self,
+                 roi_extractor: Optional[dict] = None,
+                 embed_head: Optional[dict] = None,
+                 regress_head: Optional[dict] = None,
+                 train_cfg: Optional[dict] = None,
+                 test_cfg: Optional[dict] = None,
+                 init_cfg: Optional[dict] = None,
+                 **kwargs):
+        super().__init__(init_cfg=init_cfg)
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
+
+        if embed_head is not None:
+            self.init_embed_head(roi_extractor, embed_head)
+
+        if regress_head is not None:
+            raise NotImplementedError('Regression head is not supported yet.')
+
+        self.init_assigner_sampler()
+
+    def init_embed_head(self, roi_extractor, embed_head) -> None:
+        """Initialize ``embed_head``
+
+        Args:
+            roi_extractor (dict, optional): Configuration of roi extractor.
+                Defaults to None.
+            embed_head (dict, optional): Configuration of embed head. Defaults
+                to None.
+        """
+        self.roi_extractor = MODELS.build(roi_extractor)
+        self.embed_head = MODELS.build(embed_head)
+
+    def init_assigner_sampler(self) -> None:
+        """Initialize assigner and sampler."""
+        self.bbox_assigner = None
+        self.bbox_sampler = None
+        if self.train_cfg:
+            self.bbox_assigner = TASK_UTILS.build(self.train_cfg.assigner)
+            self.bbox_sampler = TASK_UTILS.build(
+                self.train_cfg.sampler, default_args=dict(context=self))
+
+    @property
+    def with_track(self) -> bool:
+        """bool: whether the multi-object tracker has an embed head"""
+        return hasattr(self, 'embed_head') and self.embed_head is not None
 
     def extract_roi_feats(self, feats: List[Tensor],
                           bboxes: List[Tensor]) -> Tensor:
