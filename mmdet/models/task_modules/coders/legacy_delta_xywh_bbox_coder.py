@@ -1,9 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional, Sequence, Union
+
 import numpy as np
 import torch
+from torch import Tensor
 
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import HorizontalBoxes, get_box_tensor
+from mmdet.structures.bbox import BaseBoxes, HorizontalBoxes, get_box_tensor
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -32,14 +35,15 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
     """
 
     def __init__(self,
-                 target_means=(0., 0., 0., 0.),
-                 target_stds=(1., 1., 1., 1.),
-                 **kwargs):
+                 target_means: Sequence[float] = (0., 0., 0., 0.),
+                 target_stds: Sequence[float] = (1., 1., 1., 1.),
+                 **kwargs) -> None:
         super().__init__(**kwargs)
         self.means = target_means
         self.stds = target_stds
 
-    def encode(self, bboxes, gt_bboxes):
+    def encode(self, bboxes: Union[Tensor, BaseBoxes],
+               gt_bboxes: Union[Tensor, BaseBoxes]) -> Tensor:
         """Get box regression transformation deltas that can be used to
         transform the ``bboxes`` into the ``gt_bboxes``.
 
@@ -60,11 +64,14 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
                                            self.stds)
         return encoded_bboxes
 
-    def decode(self,
-               bboxes,
-               pred_bboxes,
-               max_shape=None,
-               wh_ratio_clip=16 / 1000):
+    def decode(
+        self,
+        bboxes: Union[Tensor, BaseBoxes],
+        pred_bboxes: Tensor,
+        max_shape: Optional[Union[Sequence[int], Tensor,
+                                  Sequence[Sequence[int]]]] = None,
+        wh_ratio_clip: Optional[float] = 16 / 1000
+    ) -> Union[Tensor, BaseBoxes]:
         """Apply transformation `pred_bboxes` to `boxes`.
 
         Args:
@@ -91,10 +98,12 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
         return decoded_bboxes
 
 
-def legacy_bbox2delta(proposals,
-                      gt,
-                      means=(0., 0., 0., 0.),
-                      stds=(1., 1., 1., 1.)):
+def legacy_bbox2delta(
+    proposals: Tensor,
+    gt: Tensor,
+    means: Sequence[float] = (0., 0., 0., 0.),
+    stds: Sequence[float] = (1., 1., 1., 1.)
+) -> Tensor:
     """Compute deltas of proposals w.r.t. gt in the MMDet V1.x manner.
 
     We usually compute the deltas of x, y, w, h of proposals w.r.t ground
@@ -139,12 +148,14 @@ def legacy_bbox2delta(proposals,
     return deltas
 
 
-def legacy_delta2bbox(rois,
-                      deltas,
-                      means=(0., 0., 0., 0.),
-                      stds=(1., 1., 1., 1.),
-                      max_shape=None,
-                      wh_ratio_clip=16 / 1000):
+def legacy_delta2bbox(rois: Tensor,
+                      deltas: Tensor,
+                      means: Sequence[float] = (0., 0., 0., 0.),
+                      stds: Sequence[float] = (1., 1., 1., 1.),
+                      max_shape: Optional[
+                          Union[Sequence[int], Tensor,
+                                Sequence[Sequence[int]]]] = None,
+                      wh_ratio_clip: float = 16 / 1000) -> Tensor:
     """Apply deltas to shift/scale base boxes in the MMDet V1.x manner.
 
     Typically the rois are anchor or proposed bounding boxes and the deltas are
