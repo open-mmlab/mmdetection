@@ -155,6 +155,13 @@ def main():
             'http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar',  # noqa
             'http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCdevkit_08-Jun-2007.tar',  # noqa
         ],
+        voc2012=[
+            'http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar',  # noqa
+        ],
+        balloon=[
+            # src link: https://github.com/matterport/Mask_RCNN/releases/download/v2.1/balloon_dataset.zip # noqa
+            'https://download.openmmlab.com/mmyolo/data/balloon_dataset.zip'
+        ],
         # Note: There is no download link for Objects365-V1 right now. If you
         # would like to download Objects365-V1, please visit
         # http://www.objects365.org/ to concat the author.
@@ -172,7 +179,7 @@ def main():
         ])
     url = data2url.get(args.dataset_name, None)
     if url is None:
-        print('Only support COCO, VOC, LVIS, and Objects365v2 now!')
+        print('Only support COCO, VOC, LVIS, balloon, and Objects365v2 now!')
         return
     if args.dataset_name == 'objects365v2':
         download_objects365v2(
