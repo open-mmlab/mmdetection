@@ -32,3 +32,4 @@ Useful Tools
    visualization.md
    robustness_benchmarking.md
    deploy.md
+   label_studio.md
