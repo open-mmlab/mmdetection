@@ -38,12 +38,13 @@
 - Refined data_prepare docs (#9935)
 - Added support for setting the cache_size_limit parameter of dynamo in PyTorch 2.0 (#10054)
 - Updated coco_metric.py (#10033)
+- Update type hint (#10040)
 
 ### Contributors
 
-A total of 17 developers contributed to this release.
+A total of 19 developers contributed to this release.
 
-Thanks @vansin, @RangeKing, @Ghlerrix, @okotaku, @JosonChan1998, @zgzhengSE, @bobo0810, @yechenzh, @Zheng-LinXiao, @LYMDLUT, @yarkable, @xiejiajiannb, @BIGWangYuDong, @RangiLy, @zwhus, @hhaAndroid, @ZwwWayne
+Thanks @IRONICBo, @vansin, @RangeKing, @Ghlerrix, @okotaku, @JosonChan1998, @zgzhengSE, @bobo0810, @yechenzh, @Zheng-LinXiao, @LYMDLUT, @yarkable, @xiejiajiannb, @chhluo, @BIGWangYuDong, @RangiLy, @zwhus, @hhaAndroid, @ZwwWayne
 
 ## v3.0.0rc6 (24/2/2023)
 

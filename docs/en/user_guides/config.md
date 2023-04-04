@@ -14,7 +14,7 @@ In MMDetection's config, we use `model` to set up detection algorithm components
 model = dict(
     type='MaskRCNN',  # The name of detector
     data_preprocessor=dict(  # The config of data preprocessor, usually includes image normalization and padding
-        type='DetDataPreprocessor',  # The type of the data preprocessor, refer to https://mmdetection.readthedocs.io/en/main/api.html#mmdet.models.data_preprocessors.DetDataPreprocessor
+        type='DetDataPreprocessor',  # The type of the data preprocessor, refer to https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.data_preprocessors.DetDataPreprocessor
         mean=[123.675, 116.28, 103.53],  # Mean values used to pre-training the pre-trained backbone models, ordered in R, G, B
         std=[58.395, 57.12, 57.375],  # Standard variance used to pre-training the pre-trained backbone models, ordered in R, G, B
         bgr_to_rgb=True,  # whether to convert image from BGR to RGB
