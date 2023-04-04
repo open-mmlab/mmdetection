@@ -1,73 +1,59 @@
 # dataset settings
 dataset_type = 'iSAIDDataset'
-data_root = 'data/iSAID'
-"""
-This crop_size setting is followed by the implementation of
-`PointFlow: Flowing Semantics Through Points for Aerial Image
-Segmentation <https://arxiv.org/pdf/2103.06564.pdf>`_.
-"""
-
-crop_size = (896, 896)
+data_root = 'data/iSAID/'
+backend_args = None
 
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations'),
-    dict(
-        type='RandomResize',
-        scale=(896, 896),
-        ratio_range=(0.5, 2.0),
-        keep_ratio=True),
-    dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
+    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+    dict(type='Resize', scale=(800, 800), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
-    dict(type='PhotoMetricDistortion'),
-    dict(type='PackSegInputs')
+    dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='Resize', scale=(896, 896), keep_ratio=True),
-    # add loading annotation after ``Resize`` because ground truth
-    # does not need to do resize data transform
-    dict(type='LoadAnnotations'),
-    dict(type='PackSegInputs')
-]
-img_ratios = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]
-tta_pipeline = [
-    dict(type='LoadImageFromFile', backend_args=None),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
+    dict(type='Resize', scale=(800, 800), keep_ratio=True),
+    # If you don't have a gt annotation, delete the pipeline
+    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
-        type='TestTimeAug',
-        transforms=[
-            [
-                dict(type='Resize', scale_factor=r, keep_ratio=True)
-                for r in img_ratios
-            ],
-            [
-                dict(type='RandomFlip', prob=0., direction='horizontal'),
-                dict(type='RandomFlip', prob=1., direction='horizontal')
-            ], [dict(type='LoadAnnotations')], [dict(type='PackSegInputs')]
-        ])
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
 ]
 train_dataloader = dict(
-    batch_size=4,
-    num_workers=4,
+    batch_size=1,
+    num_workers=2,
     persistent_workers=True,
-    sampler=dict(type='InfiniteSampler', shuffle=True),
+    sampler=dict(type='DefaultSampler', shuffle=True),
+    batch_sampler=dict(type='AspectRatioBatchSampler'),
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        data_prefix=dict(
-            img_path='img_dir/train', seg_map_path='ann_dir/train'),
-        pipeline=train_pipeline))
+        ann_file='train/instancesonly_filtered_train.json',
+        data_prefix=dict(img='train/images/'),
+        filter_cfg=dict(filter_empty_gt=True, min_size=32),
+        pipeline=train_pipeline,
+        backend_args=backend_args))
 val_dataloader = dict(
     batch_size=1,
-    num_workers=4,
+    num_workers=2,
     persistent_workers=True,
+    drop_last=False,
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        data_prefix=dict(img_path='img_dir/val', seg_map_path='ann_dir/val'),
-        pipeline=test_pipeline))
+        ann_file='val/instancesonly_filtered_val.json',
+        data_prefix=dict(img='val/images/'),
+        test_mode=True,
+        pipeline=test_pipeline,
+        backend_args=backend_args))
 test_dataloader = val_dataloader
 
-val_evaluator = dict(type='IoUMetric', iou_metrics=['mIoU'])
+val_evaluator = dict(
+    type='CocoMetric',
+    ann_file=data_root + 'val/instancesonly_filtered_val.json',
+    metric=['bbox', 'segm'],
+    format_only=False,
+    backend_args=backend_args)
 test_evaluator = val_evaluator

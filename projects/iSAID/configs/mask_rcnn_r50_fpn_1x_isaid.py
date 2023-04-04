@@ -1,5 +1,6 @@
 _base_ = [
-    '../_base_/models/mask_rcnn_r50_fpn.py',
-    '../_base_/datasets/isaid_instance.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+    '../../../configs/_base_/models/mask-rcnn_r50_fpn.py',
+    '../../../configs/_base_/datasets/isaid_instance.py',
+    '../../../configs/_base_/schedules/schedule_1x.py',
+    '../../../configs/_base_/default_runtime.py'
 ]
