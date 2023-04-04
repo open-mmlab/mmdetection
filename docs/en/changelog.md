@@ -1,5 +1,75 @@
 ## Changelog
 
+### v2.28.2 (24/2/2023)
+
+#### New Features and Improvements
+
+- Add Twitter, Discord, Medium and YouTube link (#9774)
+- Update `customize_runtime.md` (#9797)
+
+#### Bug Fixes
+
+- Fix `WIDERFace SSD` loss for Nan problem (#9734)
+- Fix missing API documentation in Readthedoc (#9729)
+- Fix the configuration file and log path of CenterNet (#9791)
+
+#### Contributors
+
+A total of 4 developers contributed to this release.
+Thanks @co63oc, @Ginray, @vansin, @RangiLyu
+
+### v2.28.1 (1/2/2023)
+
+#### Bug Fixes
+
+- Enable to set float mlp_ratio in SwinTransformer (#8670)
+- Fix import error that causes training failure (#9694)
+- Fix isort version in lint (#9685)
+- Fix init_cfg of YOLOF (#8243)
+
+#### Contributors
+
+A total of 4 developers contributed to this release.
+Thanks @triple-Mu, @i-aki-y, @twmht, @RangiLyu
+
+### v2.28.0 (28/1/2023)
+
+#### Highlights
+
+- Support Objects365 Dataset and Separated and Occluded COCO metric
+- Support acceleration of RetinaNet and SSD on Ascend
+- Deprecate the support of Python 3.6
+
+#### New Features and Improvements
+
+- Support Objects365 Dataset (#7525)
+- Support [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046) (#9574)
+- Support acceleration of RetinaNet and SSD on Ascend with documentation (#9648, #9614)
+- Added missing `-` to `--format-only` in documentation.
+
+#### Deprecations
+
+- Upgrade the minimum Python version to 3.7, the support of Python 3.6 is no longer guaranteed (#9604)
+
+#### Bug Fixes
+
+- Fix validation loss logging by (#9663)
+- Fix inconsistent float precision between mmdet and mmcv (#9570)
+- Fix argument name for fp32 in `DeformableDETRHead` (#9607)
+- Fix typo of all config file path in Metafile.yml (#9627)
+
+#### Contributors
+
+A total of 11 developers contributed to this release.
+Thanks @eantono, @akstt, @@lpizzinidev, @RangiLyu, @kbumsik, @tianleiSHI, @nijkah, @BIGWangYuDong, @wangjiangben-hw, @@jamiechoi1995, @ZwwWayne
+
+## New Contributors
+
+- @kbumsik made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9627
+- @akstt made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9614
+- @lpizzinidev made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9649
+- @eantono made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9663
+
 ### v2.27.0 (5/1/2023)
 
 #### Highlights

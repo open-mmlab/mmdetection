@@ -18,7 +18,7 @@ Collections:
 Models:
   - Name: rfnext_search_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k
     In Collection: RF-Next
-    Config: configs/rfnext/rfnext_search_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k.py
+    Config: configs/rfnext/rfnext_search_cascade_mask_rcnn_convnext-t_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco.py
     Metadata:
       Training Memory (GB): 11.9
       Epochs: 36
@@ -42,7 +42,7 @@ Models:
 
   - Name: rfnext_fixed_single_branch_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k
     In Collection: RF-Next
-    Config: configs/rfnext/rfnext_fixed_single_branch_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k.py
+    Config: configs/rfnext/rfnext_fixed_single_branch_cascade_mask_rcnn_convnext-t_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco.py
     Metadata:
       Training Memory (GB): 9.4
       Epochs: 36

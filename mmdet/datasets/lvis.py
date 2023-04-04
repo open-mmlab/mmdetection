@@ -408,7 +408,7 @@ class LVISV05Dataset(CocoDataset):
                 lvis_eval.summarize()
                 for k, v in lvis_eval.get_results().items():
                     if k.startswith('AR'):
-                        val = float('{:.3f}'.format(float(v)))
+                        val = float('{:.4f}'.format(float(v)))
                         eval_results[k] = val
             else:
                 lvis_eval.evaluate()
@@ -454,10 +454,10 @@ class LVISV05Dataset(CocoDataset):
                 for k, v in lvis_results.items():
                     if k.startswith('AP'):
                         key = '{}_{}'.format(metric, k)
-                        val = float('{:.3f}'.format(float(v)))
+                        val = float('{:.4f}'.format(float(v)))
                         eval_results[key] = val
                 ap_summary = ' '.join([
-                    '{}:{:.3f}'.format(k, float(v))
+                    '{}:{:.4f}'.format(k, float(v))
                     for k, v in lvis_results.items() if k.startswith('AP')
                 ])
                 eval_results['{}_mAP_copypaste'.format(metric)] = ap_summary
