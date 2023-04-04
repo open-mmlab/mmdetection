@@ -134,7 +134,7 @@ Slurm 是一个常见的计算集群调度系统。在 Slurm 管理的集群上�
 GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
 ```
 
-你可以查看 [源码](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) 来检查全部的参数和环境变量.
+你可以查看 [源码](https://github.com/open-mmlab/mmdetection/blob/main/tools/slurm_train.sh) 来检查全部的参数和环境变量.
 
 在使用 Slurm 时，端口需要以下方的某个方法之一来设置。
 
