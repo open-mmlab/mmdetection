@@ -438,7 +438,7 @@ load_from = 'https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn
 python tools/train.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py
 ```
 
-参考 [在标准数据集上训练预定义的模型](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/train.html#id1) 来获取更多详细的使用方法。
+参考 [在标准数据集上训练预定义的模型](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/train.html#id1) 来获取更多详细的使用方法。
 
 ## 测试以及推理
 
@@ -448,4 +448,4 @@ python tools/train.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon
 python tools/test.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py work_dirs/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon/epoch_12.pth
 ```
 
-参考 [测试现有模型](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/test.html) 来获取更多详细的使用方法。
+参考 [测试现有模型](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/test.html) 来获取更多详细的使用方法。

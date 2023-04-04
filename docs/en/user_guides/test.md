@@ -55,7 +55,7 @@ Optional arguments:
 Assuming that you have already downloaded the checkpoints to the directory `checkpoints/`.
 
 1. Test RTMDet and visualize the results. Press any key for the next image.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet).
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/main/configs/rtmdet).
 
    ```shell
    python tools/test.py \
@@ -65,7 +65,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
    ```
 
 2. Test RTMDet and save the painted images for future visualization.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet).
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/main/configs/rtmdet).
 
    ```shell
    python tools/test.py \

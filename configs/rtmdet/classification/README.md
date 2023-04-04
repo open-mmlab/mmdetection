@@ -43,7 +43,7 @@ bash ./tools/dist_train.sh \
     [optional arguments]
 ```
 
-More details can be found in [user guides](https://mmdetection.readthedocs.io/en/3.x/user_guides/train.html).
+More details can be found in [user guides](https://mmdetection.readthedocs.io/en/latest/user_guides/train.html).
 
 ## Results and Models
 

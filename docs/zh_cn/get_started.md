@@ -54,8 +54,7 @@ mim install "mmcv>=2.0.0rc1"
 方案 a：如果你开发并直接运行 mmdet，从源码安装它：
 
 ```shell
-git clone https://github.com/open-mmlab/mmdetection.git -b 3.x
-# "-b 3.x" 表示切换到 `3.x` 分支。
+git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 pip install -v -e .
 # "-v" 指详细说明，或更多的输出
@@ -65,7 +64,7 @@ pip install -v -e .
 方案 b：如果你将 mmdet 作为依赖或第三方 Python 包，使用 MIM 安装：
 
 ```shell
-mim install "mmdet>=3.0.0rc0"
+mim install mmdet
 ```
 
 ## 验证安装
@@ -183,7 +182,7 @@ MMDetection 可以在 CPU 环境中构建。在 CPU 模式下，可以进行模�
 **步骤 2.** 使用源码安装 MMDetection。
 
 ```shell
-!git clone https://github.com/open-mmlab/mmdetection.git -b 3.x
+!git clone https://github.com/open-mmlab/mmdetection.git
 %cd mmdetection
 !pip install -e .
 ```

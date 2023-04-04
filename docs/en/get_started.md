@@ -54,8 +54,7 @@ mim install "mmcv>=2.0.0rc1"
 Case a: If you develop and run mmdet directly, install it from source:
 
 ```shell
-git clone https://github.com/open-mmlab/mmdetection.git -b 3.x
-# "-b 3.x" means checkout to the `3.x` branch.
+git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 pip install -v -e .
 # "-v" means verbose, or more output
@@ -66,7 +65,7 @@ pip install -v -e .
 Case b: If you use mmdet as a dependency or third-party package, install it with MIM:
 
 ```shell
-mim install "mmdet>=3.0.0rc0"
+mim install mmdet
 ```
 
 ## Verify the installation
@@ -186,7 +185,7 @@ thus we only need to install MMEngine, MMCV, and MMDetection with the following 
 **Step 2.** Install MMDetection from the source.
 
 ```shell
-!git clone https://github.com/open-mmlab/mmdetection.git -b 3.x
+!git clone https://github.com/open-mmlab/mmdetection.git
 %cd mmdetection
 !pip install -e .
 ```

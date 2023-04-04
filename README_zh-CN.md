@@ -26,10 +26,10 @@
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 [![issue resolution](https://isitmaintained.com/badge/resolution/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 
-[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/3.x/) |
-[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/3.x/get_started.html) |
-[👀模型库](https://mmdetection.readthedocs.io/zh_CN/3.x/model_zoo.html) |
-[🆕更新日志](https://mmdetection.readthedocs.io/en/3.x/notes/changelog.html) |
+[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/latest/) |
+[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/latest/get_started.html) |
+[👀模型库](https://mmdetection.readthedocs.io/zh_CN/latest/model_zoo.html) |
+[🆕更新日志](https://mmdetection.readthedocs.io/en/latest/notes/changelog.html) |
 [🚀进行中的项目](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔报告问题](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -124,32 +124,32 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 安装
 
-请参考[快速入门文档](https://mmdetection.readthedocs.io/zh_CN/3.x/get_started.html)进行安装。
+请参考[快速入门文档](https://mmdetection.readthedocs.io/zh_CN/latest/get_started.html)进行安装。
 
 ## 教程
 
-请阅读[概述](https://mmdetection.readthedocs.io/zh_CN/3.x/get_started.html)对 MMDetection 进行初步的了解。
+请阅读[概述](https://mmdetection.readthedocs.io/zh_CN/latest/get_started.html)对 MMDetection 进行初步的了解。
 
-为了帮助用户更进一步了解 MMDetection，我们准备了用户指南和进阶指南，请阅读我们的[文档](https://mmdetection.readthedocs.io/zh_CN/3.x/)：
+为了帮助用户更进一步了解 MMDetection，我们准备了用户指南和进阶指南，请阅读我们的[文档](https://mmdetection.readthedocs.io/zh_CN/latest/)：
 
 - 用户指南
 
   <details>
 
-  - [训练 & 测试](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/index.html#train-test)
-    - [学习配置文件](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/config.html)
-    - [使用已有模型在标准数据集上进行推理](https://mmdetection.readthedocs.io/en/3.x/user_guides/inference.html)
-    - [数据集准备](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/dataset_prepare.html)
-    - [测试现有模型](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/test.html)
-    - [在标准数据集上训练预定义的模型](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/train.html)
-    - [在自定义数据集上进行训练](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/train.html#train-with-customized-datasets)
-    - [在标准数据集上训练自定义模型](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/new_model.html)
-    - [模型微调](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/finetune.html)
-    - [提交测试结果](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/test_results_submission.html)
-    - [权重初始化](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/init_cfg.html)
-    - [将单阶段检测器作为 RPN](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/single_stage_as_rpn.html)
-    - [半监督目标检测](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/semi_det.html)
-  - [实用工具](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/index.html#useful-tools)
+  - [训练 & 测试](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/index.html#train-test)
+    - [学习配置文件](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/config.html)
+    - [使用已有模型在标准数据集上进行推理](https://mmdetection.readthedocs.io/en/latest/user_guides/inference.html)
+    - [数据集准备](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/dataset_prepare.html)
+    - [测试现有模型](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/test.html)
+    - [在标准数据集上训练预定义的模型](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/train.html)
+    - [在自定义数据集上进行训练](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/train.html#train-with-customized-datasets)
+    - [在标准数据集上训练自定义模型](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/new_model.html)
+    - [模型微调](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/finetune.html)
+    - [提交测试结果](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/test_results_submission.html)
+    - [权重初始化](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/init_cfg.html)
+    - [将单阶段检测器作为 RPN](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/single_stage_as_rpn.html)
+    - [半监督目标检测](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/semi_det.html)
+  - [实用工具](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/index.html#useful-tools)
 
   </details>
 
@@ -157,9 +157,9 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
   <details>
 
-  - [基础概念](https://mmdetection.readthedocs.io/zh_CN/3.x/advanced_guides/index.html#basic-concepts)
-  - [组件定制](https://mmdetection.readthedocs.io/zh_CN/3.x/advanced_guides/index.html#component-customization)
-  - [How to](https://mmdetection.readthedocs.io/zh_CN/3.x/advanced_guides/index.html#how-to)
+  - [基础概念](https://mmdetection.readthedocs.io/zh_CN/latest/advanced_guides/index.html#basic-concepts)
+  - [组件定制](https://mmdetection.readthedocs.io/zh_CN/latest/advanced_guides/index.html#component-customization)
+  - [How to](https://mmdetection.readthedocs.io/zh_CN/latest/advanced_guides/index.html#how-to)
 
   </details>
 
@@ -167,7 +167,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 同时，我们还提供了 [MMDetection 中文解读文案汇总](docs/zh_cn/article.md)
 
-若需要将2.x版本的代码迁移至新版，请参考[迁移文档](https://mmdetection.readthedocs.io/en/3.x/migration.html)。
+若需要将2.x版本的代码迁移至新版，请参考[迁移文档](https://mmdetection.readthedocs.io/en/latest/migration.html)。
 
 ## 基准测试和模型库
 
