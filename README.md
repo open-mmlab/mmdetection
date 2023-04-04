@@ -114,14 +114,11 @@ We are excited to announce our latest work on real-time object recognition tasks
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
 
-**v3.0.0rc6** was released in 24/2/2023:
+**v3.0.0** was released in 6/4/2023:
 
-- Support [Boxinst](configs/boxinst), [Objects365 Dataset](configs/objects365), and [Separated and Occluded COCO metric](docs/en/user_guides/useful_tools.md#coco-separated--occluded-mask-metric)
-- Support [ConvNeXt-V2](projects/ConvNeXt-V2), [DiffusionDet](projects/DiffusionDet), and inference of [EfficientDet](projects/EfficientDet) and [Detic](projects/Detic) in `Projects`
-- Refactor [DETR](configs/detr) series and support [Conditional-DETR](configs/conditional_detr), [DAB-DETR](configs/dab_detr), and [DINO](configs/dino)
-- Support `DetInferencer` for inference, Test Time Augmentation, and automatically importing modules from registry
-- Support RTMDet-Ins ONNXRuntime and TensorRT [deployment](configs/rtmdet/README.md#deployment-tutorial)
-- Support [calculating FLOPs of detectors](docs/en/user_guides/useful_tools.md#Model-Complexity)
+- Release MMDetection 3.0.0 official version
+- Support Semi-automatic annotation Base [Label-Studio](projects/LabelStudio) (#10039)
+- Support [EfficientDet](projects/EfficientDet) in projects (#9810)
 
 ## Installation
 

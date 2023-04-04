@@ -113,14 +113,11 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
 
-**v3.0.0rc6** 版本已经在 2023.2.24 发布：
+**v3.0.0** 版本已经在 2023.4.6 发布：
 
-- 支持了 [Boxinst](configs/boxinst), [Objects365 Dataset](configs/objects365) 和 [Separated and Occluded COCO metric](docs/zh_cn/user_guides/useful_tools.md#coco-分离和遮挡实例分割性能评估)
-- 在 `Projects` 中支持了 [ConvNeXt-V2](projects/ConvNeXt-V2), [DiffusionDet](projects/DiffusionDet) 和 [EfficientDet](projects/EfficientDet), [Detic](projects/Detic) 的推理
-- 重构了 [DETR](configs/detr) 系列并支持了 [Conditional-DETR](configs/conditional_detr), [DAB-DETR](configs/dab_detr) 和 [DINO](configs/dino)
-- 支持了通过 `DetInferencer` 用于推理, Test Time Augmentation 以及从注册表(registry)自动导入模块
-- 支持了 RTMDet-Ins 的 ONNXRuntime 和 TensorRT [部署](configs/rtmdet/README.md#deployment-tutorial)
-- 支持了检测器[计算 FLOPS](docs/zh_cn/user_guides/useful_tools.md#模型复杂度)
+- 发布 MMDetection 3.0.0 正式版
+- 基于 [Label-Studio](projects/LabelStudio) 支持半自动标注流程
+- projects 中支持了 [EfficientDet](projects/EfficientDet)
 
 ## 安装
 
