@@ -83,6 +83,10 @@ def coco_classes():
     ]
 
 
+
+def HRSID_classes():
+    return ['ship']
+
 def cityscapes_classes():
     return [
         'person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
@@ -455,7 +459,8 @@ dataset_aliases = {
     'oid_challenge': ['oid_challenge', 'openimages_challenge'],
     'oid_v6': ['oid_v6', 'openimages_v6'],
     'objects365v1': ['objects365v1', 'obj365v1'],
-    'objects365v2': ['objects365v2', 'obj365v2']
+    'objects365v2': ['objects365v2', 'obj365v2'],
+    'HRSID': ['HRSID', 'Hrsid']
 }
 
 
