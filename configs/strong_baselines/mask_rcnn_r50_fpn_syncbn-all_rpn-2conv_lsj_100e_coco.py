@@ -20,3 +20,8 @@ model = dict(
             conv_out_channels=256,
             norm_cfg=head_norm_cfg),
         mask_head=dict(norm_cfg=head_norm_cfg)))
+
+# NOTE: `auto_scale_lr` is for automatically scaling LR,
+# USER SHOULD NOT CHANGE ITS VALUES.
+# base_batch_size = (64 GPUs) x (1 samples per GPU)
+auto_scale_lr = dict(base_batch_size=64)
