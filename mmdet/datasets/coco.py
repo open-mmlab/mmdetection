@@ -390,7 +390,7 @@ class CocoDataset(CustomDataset):
                           metrics,
                           logger=None,
                           classwise=False,
-                          proposal_nums=(100, 300, 1000),
+                          max_dets=(1, 10, 100),
                           iou_thrs=None,
                           metric_items=None):
         """Instance segmentation and object detection evaluation in COCO
@@ -406,9 +406,9 @@ class CocoDataset(CustomDataset):
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
             classwise (bool): Whether to evaluating the AP for each class.
-            proposal_nums (Sequence[int]): Proposal number used for evaluating
-                recalls, such as recall@100, recall@1000.
-                Default: (100, 300, 1000).
+            max_dets (Sequence[int]): max number of detection used for evaluating
+                recalls, such as recall@10, recall@100.
+                Default: (1, 10, 100).
             iou_thrs (Sequence[float], optional): IoU threshold used for
                 evaluating recalls/mAPs. If set to a list, the average of all
                 IoUs will also be computed. If not specified, [0.50, 0.55,
@@ -443,9 +443,9 @@ class CocoDataset(CustomDataset):
                     raise KeyError('proposal_fast is not supported for '
                                    'instance segmentation result.')
                 ar = self.fast_eval_recall(
-                    results, proposal_nums, iou_thrs, logger='silent')
+                    results, max_dets, iou_thrs, logger='silent')
                 log_msg = []
-                for i, num in enumerate(proposal_nums):
+                for i, num in enumerate(max_dets):
                     eval_results[f'AR@{num}'] = ar[i]
                     log_msg.append(f'\nAR@{num}\t{ar[i]:.4f}')
                 log_msg = ''.join(log_msg)
@@ -483,7 +483,7 @@ class CocoDataset(CustomDataset):
             cocoEval = COCOeval(coco_gt, coco_det, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
-            cocoEval.params.maxDets = list(proposal_nums)
+            cocoEval.params.maxDets = list(max_dets)
             cocoEval.params.iouThrs = iou_thrs
             # mapping of cocoEval.stats
             coco_metric_names = {
@@ -493,12 +493,12 @@ class CocoDataset(CustomDataset):
                 'mAP_s': 3,
                 'mAP_m': 4,
                 'mAP_l': 5,
-                'AR@100': 6,
-                'AR@300': 7,
-                'AR@1000': 8,
-                'AR_s@1000': 9,
-                'AR_m@1000': 10,
-                'AR_l@1000': 11
+                f'AR@{max_dets[0]}': 6,
+                f'AR@{max_dets[1]}': 7,
+                f'AR@{max_dets[2]}': 8,
+                f'AR_s@{max_dets[2]}': 9,
+                f'AR_m@{max_dets[2]}': 10,
+                f'AR_l@{max_dets[2]}': 11,
             }
             if metric_items is not None:
                 for metric_item in metric_items:
@@ -519,8 +519,12 @@ class CocoDataset(CustomDataset):
 
                 if metric_items is None:
                     metric_items = [
-                        'AR@100', 'AR@300', 'AR@1000', 'AR_s@1000',
-                        'AR_m@1000', 'AR_l@1000'
+                        f'AR@{max_dets[0]}',
+                        f'AR@{max_dets[1]}',
+                        f'AR@{max_dets[2]}',
+                        f'AR_s@{max_dets[2]}',
+                        f'AR_m@{max_dets[2]}',
+                        f'AR_l@{max_dets[2]}',
                     ]
 
                 for item in metric_items:
@@ -595,7 +599,7 @@ class CocoDataset(CustomDataset):
                  logger=None,
                  jsonfile_prefix=None,
                  classwise=False,
-                 proposal_nums=(100, 300, 1000),
+                 max_dets=(1, 10, 100),
                  iou_thrs=None,
                  metric_items=None):
         """Evaluation in COCO protocol.
@@ -610,9 +614,9 @@ class CocoDataset(CustomDataset):
                 the file path and the prefix of filename, e.g., "a/b/prefix".
                 If not specified, a temp file will be created. Default: None.
             classwise (bool): Whether to evaluating the AP for each class.
-            proposal_nums (Sequence[int]): Proposal number used for evaluating
-                recalls, such as recall@100, recall@1000.
-                Default: (100, 300, 1000).
+            max_dets (Sequence[int]): max number of detection used for evaluating
+                recalls, such as recall@10, recall@100.
+                Default: (1, 10, 100).
             iou_thrs (Sequence[float], optional): IoU threshold used for
                 evaluating recalls/mAPs. If set to a list, the average of all
                 IoUs will also be computed. If not specified, [0.50, 0.55,
@@ -641,7 +645,7 @@ class CocoDataset(CustomDataset):
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
         eval_results = self.evaluate_det_segm(results, result_files, coco_gt,
                                               metrics, logger, classwise,
-                                              proposal_nums, iou_thrs,
+                                              max_dets, iou_thrs,
                                               metric_items)
 
         if tmp_dir is not None:
