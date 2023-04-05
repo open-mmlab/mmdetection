@@ -30,6 +30,6 @@ log_config = dict(
         dict(type='TensorboardLoggerHook')
     ])
 
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0001)
 lr_config = dict(step=[16, 22])
 runner = dict(type='EpochBasedRunner', max_epochs=24)
