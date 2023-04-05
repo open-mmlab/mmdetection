@@ -933,3 +933,127 @@ def test_mask2former_forward(cfg_file):
                 assert isinstance(result[0], tuple)
 
         batch_results.append(result)
+
+
+@pytest.mark.parametrize('cfg_file', [
+    'knet/knet_s3_r50_fpn_1x_coco.py',
+    'knet/knet_s3_r50_fpn_1x_coco-panoptic.py'
+])
+def test_knet_forward(cfg_file):
+    model_cfg = _get_detector_cfg(cfg_file)
+    base_channels = 32
+    num_proposals = 10
+    conv_kernel_size = 1
+    num_things_classes = 8
+    num_stuff_classes = 5 if 'panoptic' in cfg_file else 0
+    model_cfg.backbone.depth = 18
+    model_cfg.backbone.init_cfg = None
+    model_cfg.backbone.base_channels = base_channels
+
+    model_cfg.neck.in_channels = [base_channels * 2**i for i in range(4)]
+    model_cfg.neck.out_channels = base_channels
+
+    model_cfg.rpn_head.in_channels = base_channels
+    model_cfg.rpn_head.out_channels = base_channels
+    model_cfg.rpn_head.num_proposals = num_proposals
+    model_cfg.rpn_head.num_things_classes = num_things_classes
+    model_cfg.rpn_head.num_stuff_classes = num_stuff_classes
+
+    model_cfg.rpn_head.localization_fpn_cfg.in_channels = base_channels
+    model_cfg.rpn_head.localization_fpn_cfg.feat_channels = base_channels
+    model_cfg.rpn_head.localization_fpn_cfg.out_channels = base_channels
+    model_cfg.rpn_head.localization_fpn_cfg. \
+        positional_encoding_cfg.num_feats = base_channels // 2
+
+    model_cfg.roi_head.proposal_feature_channel = base_channels
+    model_cfg.roi_head.num_proposals = num_proposals
+    model_cfg.roi_head.num_things_classes = num_things_classes
+    model_cfg.roi_head.num_stuff_classes = num_stuff_classes
+
+    for i in range(3):
+        model_cfg.roi_head.mask_head[i].in_channels = base_channels
+        model_cfg.roi_head.mask_head[i].out_channels = base_channels
+        model_cfg.roi_head.mask_head[i].num_things_classes = num_things_classes
+        model_cfg.roi_head.mask_head[i].num_stuff_classes = num_stuff_classes
+        model_cfg.roi_head.mask_head[
+            i].kernel_updator_cfg.in_channels = base_channels
+        model_cfg.roi_head.mask_head[
+            i].kernel_updator_cfg.feat_channels = base_channels
+        model_cfg.roi_head.mask_head[
+            i].kernel_updator_cfg.out_channels = base_channels
+        model_cfg.roi_head.mask_head[i].attn_cfg.embed_dims = base_channels * \
+            conv_kernel_size ** 2
+        model_cfg.roi_head.mask_head[i].ffn_cfg.embed_dims = base_channels
+        model_cfg.roi_head.mask_head[
+            i].ffn_cfg.feedforward_channels = base_channels * 8
+
+    model_cfg.panoptic_fusion_head.num_proposals = num_proposals
+    model_cfg.panoptic_fusion_head.num_things_classes = num_things_classes
+    model_cfg.panoptic_fusion_head.num_stuff_classes = num_stuff_classes
+
+    model_cfg.test_cfg.fusion.max_per_img = 1
+
+    from mmdet.core import BitmapMasks
+    from mmdet.models import build_detector
+    detector = build_detector(model_cfg)
+
+    def _forward_train():
+        losses = detector.forward(
+            img,
+            img_metas,
+            gt_bboxes=gt_bboxes,
+            gt_labels=gt_labels,
+            gt_masks=gt_masks,
+            gt_semantic_seg=gt_semantic_seg,
+            return_loss=True)
+        assert isinstance(losses, dict)
+        loss, _ = detector._parse_losses(losses)
+        assert float(loss.item()) > 0
+
+    # Test forward train
+    detector.train()
+    img_metas = [
+        {
+            'batch_input_shape': (128, 160),
+            'img_shape': (126, 160, 3),
+            'ori_shape': (63, 80, 3),
+            'pad_shape': (128, 160, 3)
+        },
+    ]
+    img = torch.rand((1, 3, 128, 160))
+    gt_bboxes = None
+    gt_labels = [
+        torch.tensor([5]).long(),
+    ]
+    thing_mask1 = np.zeros((1, 128, 160), dtype=np.int32)
+    thing_mask1[0, :50] = 1
+    gt_masks = [
+        BitmapMasks(thing_mask1, 128, 160),
+    ]
+    if num_stuff_classes > 0:
+        stuff_mask1 = torch.zeros((1, 128, 160)).long()
+        stuff_mask1[0, :50] = 10
+        stuff_mask1[0, 50:] = 11
+        gt_semantic_seg = [
+            stuff_mask1,
+        ]
+    else:
+        gt_semantic_seg = None
+    _forward_train()
+
+    # Test forward test
+    detector.eval()
+    with torch.no_grad():
+        img_list = [g[None, :] for g in img]
+        batch_results = []
+        for one_img, one_meta in zip(img_list, img_metas):
+            result = detector.forward([one_img], [[one_meta]],
+                                      rescale=True,
+                                      return_loss=False)
+
+            if num_stuff_classes > 0:
+                assert isinstance(result[0], dict)
+            else:
+                assert isinstance(result[0], tuple)
+
+        batch_results.append(result)

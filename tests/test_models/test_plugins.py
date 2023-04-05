@@ -165,3 +165,79 @@ def test_msdeformattn_pixel_decoder():
     multi_scale_features = multi_scale_features[::-1]
     for i in range(3):
         assert multi_scale_features[i].shape[-2:] == feats[i + 1].shape[-2:]
+
+
+def test_semantic_fpn():
+    # test invalid init
+    semantic_fpn_cfg = ConfigDict(
+        dict(
+            type='SemanticFPN', in_channels=2, feat_channels=2,
+            out_channels=2))
+    invalid_level_cfg_list = [
+        dict(
+            start_level=-1,
+            end_level=2,
+            output_level=0,
+            positional_encoding_level=0,
+        ),
+        dict(
+            start_level=0,
+            end_level=-1,
+            output_level=0,
+            positional_encoding_level=0,
+        ),
+        dict(
+            start_level=0,
+            end_level=3,
+            output_level=-1,
+            positional_encoding_level=1,
+        ),
+        dict(
+            start_level=0,
+            end_level=3,
+            output_level=4,
+            positional_encoding_level=1,
+        ),
+        dict(
+            start_level=0,
+            end_level=3,
+            output_level=1,
+            positional_encoding_level=-1,
+        ),
+        dict(
+            start_level=0,
+            end_level=3,
+            output_level=1,
+            positional_encoding_level=4,
+        ),
+    ]
+    for invalid_level_cfg in invalid_level_cfg_list:
+        semantic_fpn_cfg.update(invalid_level_cfg)
+        with pytest.raises(AssertionError):
+            build_plugin_layer(semantic_fpn_cfg)
+
+    # test forward with add_aux_conv=False
+    semantic_fpn_cfg = ConfigDict(
+        dict(
+            type='SemanticFPN',
+            in_channels=4,
+            feat_channels=4,
+            out_channels=4,
+            start_level=0,
+            end_level=2,
+            output_level=1,
+            positional_encoding_level=2,
+            positional_encoding_cfg=dict(
+                type='SinePositionalEncoding', num_feats=2, normalize=True),
+            add_aux_conv=False))
+    x = [torch.rand((1, 4, 2**(4 - i), 2**(4 - i))) for i in range(0, 3)]
+    semantic_fpn = build_plugin_layer(semantic_fpn_cfg)[1]
+    out = semantic_fpn(x)
+    assert out[0].shape == x[1].shape
+
+    # test forward with add_aux_conv=True
+    semantic_fpn_cfg.update(add_aux_conv=True)
+    semantic_fpn = build_plugin_layer(semantic_fpn_cfg)[1]
+    out = semantic_fpn(x)
+    assert len(
+        out) == 2 and out[0].shape == x[1].shape and out[1].shape == x[1].shape

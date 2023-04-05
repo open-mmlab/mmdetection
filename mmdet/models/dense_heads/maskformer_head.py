@@ -168,7 +168,7 @@ class MaskFormerHead(AnchorFreeHead):
         targets = multi_apply(preprocess_panoptic_gt, gt_labels_list,
                               gt_masks_list, gt_semantic_segs, num_things_list,
                               num_stuff_list, img_metas)
-        labels, masks = targets
+        labels, masks, _, _ = targets
         return labels, masks
 
     def get_targets(self, cls_scores_list, mask_preds_list, gt_labels_list,
