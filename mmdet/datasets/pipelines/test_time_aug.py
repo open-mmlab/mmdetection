@@ -43,6 +43,8 @@ class MultiScaleFlipAug:
         transforms (list[dict]): Transforms to apply in each augmentation.
         img_scale (tuple | list[tuple] | None): Images scales for resizing.
         scale_factor (float | list[float] | None): Scale factors for resizing.
+        obj_scale_range (tuple | list[tuple] | None): The object scale range in
+            each image scale.
         flip (bool): Whether apply flip augmentation. Default: False.
         flip_direction (str | list[str]): Flip augmentation directions,
             options are "horizontal", "vertical" and "diagonal". If
@@ -55,6 +57,7 @@ class MultiScaleFlipAug:
                  transforms,
                  img_scale=None,
                  scale_factor=None,
+                 obj_scale_range=None,
                  flip=False,
                  flip_direction='horizontal'):
         self.transforms = Compose(transforms)
@@ -69,6 +72,13 @@ class MultiScaleFlipAug:
             self.img_scale = scale_factor if isinstance(
                 scale_factor, list) else [scale_factor]
             self.scale_key = 'scale_factor'
+
+        if obj_scale_range is not None:
+            if isinstance(obj_scale_range, tuple):
+                obj_scale_range = [obj_scale_range]
+            assert len(obj_scale_range) == len(self.img_scale), \
+                '`obj_scale_range` should be as long as `img_scale`.'
+        self.obj_scale_range = obj_scale_range
 
         self.flip = flip
         self.flip_direction = flip_direction if isinstance(
@@ -98,10 +108,13 @@ class MultiScaleFlipAug:
         if self.flip:
             flip_args += [(True, direction)
                           for direction in self.flip_direction]
-        for scale in self.img_scale:
+        for i, scale in enumerate(self.img_scale):
+            obj_range = None if self.obj_scale_range is None else \
+                self.obj_scale_range[i]
             for flip, direction in flip_args:
                 _results = results.copy()
                 _results[self.scale_key] = scale
+                _results['obj_range'] = obj_range
                 _results['flip'] = flip
                 _results['flip_direction'] = direction
                 data = self.transforms(_results)
