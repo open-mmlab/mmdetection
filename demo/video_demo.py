@@ -19,8 +19,8 @@ def parse_args():
     parser.add_argument('--out', type=str, help='Output video file')
     parser.add_argument('--show', action='store_true', help='Show video')
     parser.add_argument(
-        '--wait-time',
-        type=float,
+        '--wait_time',
+        type=int,
         default=1,
         help='The interval of show (s), 0 is block')
     args = parser.parse_args()
