@@ -44,7 +44,7 @@ conda install pytorch torchvision cpuonly -c pytorch
 ```shell
 pip install -U openmim
 mim install mmengine
-mim install "mmcv>=2.0.0rc1"
+mim install "mmcv>=2.0.0"
 ```
 
 **注意：** 在 MMCV-v2.x 中，`mmcv-full` 改名为 `mmcv`，如果你想安装不包含 CUDA 算子精简版，可以通过 `mim install "mmcv-lite>=2.0.0rc1"` 来安装。
@@ -136,7 +136,7 @@ MMCV 包含 C++ 和 CUDA 扩展，因此其对 PyTorch 的依赖比较复杂。M
 例如，下述命令将会安装基于 PyTorch 1.12.x 和 CUDA 11.6 编译的 MMCV。
 
 ```shell
-pip install "mmcv>=2.0.0rc1" -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12.0/index.html
+pip install "mmcv>=2.0.0" -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12.0/index.html
 ```
 
 #### 在 CPU 环境中安装
@@ -176,7 +176,7 @@ MMDetection 可以在 CPU 环境中构建。在 CPU 模式下，可以进行模�
 ```shell
 !pip3 install openmim
 !mim install mmengine
-!mim install "mmcv>=2.0.0rc1,<2.1.0"
+!mim install "mmcv>=2.0.0,<2.1.0"
 ```
 
 **步骤 2.** 使用源码安装 MMDetection。
@@ -192,7 +192,7 @@ MMDetection 可以在 CPU 环境中构建。在 CPU 模式下，可以进行模�
 ```python
 import mmdet
 print(mmdet.__version__)
-# 预期输出：3.0.0rc0 或其他版本号
+# 预期输出：3.0.0 或其他版本号
 ```
 
 ```{note}
