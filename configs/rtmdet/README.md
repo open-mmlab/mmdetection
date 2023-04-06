@@ -115,9 +115,9 @@ Here is a basic example of deploy RTMDet with [MMDeploy-1.x](https://github.com/
 
 ### Step1. Install MMDeploy
 
-Before starting the deployment, please make sure you install MMDetection-3.x and MMDeploy-1.x correctly.
+Before starting the deployment, please make sure you install MMDetection and MMDeploy-1.x correctly.
 
-- Install MMDetection-3.x, please refer to the [MMDetection-3.x installation guide](https://mmdetection.readthedocs.io/en/3.x/get_started.html).
+- Install MMDetection, please refer to the [MMDetection installation guide](https://mmdetection.readthedocs.io/en/latest/get_started.html).
 - Install MMDeploy-1.x, please refer to the [MMDeploy-1.x installation guide](https://mmdeploy.readthedocs.io/en/1.x/get_started.html#installation).
 
 If you want to deploy RTMDet with ONNXRuntime, TensorRT, or other inference engine,
@@ -377,4 +377,77 @@ result = inference_model(
   backend_files=['work_dirs/rtmdet-ins/end2end.engine'],
   img='demo/resources/det.jpg',
   device='cuda:0')
+```
+
+### Model Config
+
+In MMDetection's config, we use `model` to set up detection algorithm components. In addition to neural network components such as `backbone`, `neck`, etc, it also requires `data_preprocessor`, `train_cfg`, and `test_cfg`. `data_preprocessor` is responsible for processing a batch of data output by dataloader. `train_cfg`, and `test_cfg` in the model config are for training and testing hyperparameters of the components.Taking RTMDet as an example, we will introduce each field in the config according to different function modules:
+
+```python
+model = dict(
+    type='RTMDet',  # The name of detector
+    data_preprocessor=dict(  # The config of data preprocessor, usually includes image normalization and padding
+        type='DetDataPreprocessor',  # The type of the data preprocessor. Refer to https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.data_preprocessors.DetDataPreprocessor
+        mean=[103.53, 116.28, 123.675],  # Mean values used to pre-training the pre-trained backbone models, ordered in R, G, B
+        std=[57.375, 57.12, 58.395],  # Standard variance used to pre-training the pre-trained backbone models, ordered in R, G, B
+        bgr_to_rgb=False,  # whether to convert image from BGR to RGB
+        batch_augments=None),  # Batch-level augmentations
+    backbone=dict(  # The config of backbone
+        type='CSPNeXt',  # The type of backbone network. Refer to https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.backbones.CSPNeXt
+        arch='P5',  # Architecture of CSPNeXt, from {P5, P6}. Defaults to P5
+        expand_ratio=0.5,  # Ratio to adjust the number of channels of the hidden layer. Defaults to 0.5
+        deepen_factor=1,  # Depth multiplier, multiply number of blocks in CSP layer by this amount. Defaults to 1.0
+        widen_factor=1,  # Width multiplier, multiply number of channels in each layer by this amount. Defaults to 1.0
+        channel_attention=True,  # Whether to add channel attention in each stage. Defaults to True
+        norm_cfg=dict(type='SyncBN'),  # Dictionary to construct and config norm layer. Defaults to dict(type=’BN’, requires_grad=True)
+        act_cfg=dict(type='SiLU', inplace=True)),  # Config dict for activation layer. Defaults to dict(type=’SiLU’)
+    neck=dict(
+        type='CSPNeXtPAFPN',  # The type of neck is CSPNeXtPAFPN. Refer to https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.necks.CSPNeXtPAFPN
+        in_channels=[256, 512, 1024],  # Number of input channels per scale
+        out_channels=256,  # Number of output channels (used at each scale)
+        num_csp_blocks=3,  # Number of bottlenecks in CSPLayer. Defaults to 3
+        expand_ratio=0.5,  # Ratio to adjust the number of channels of the hidden layer. Default: 0.5
+        norm_cfg=dict(type='SyncBN'),  # Config dict for normalization layer. Default: dict(type=’BN’)
+        act_cfg=dict(type='SiLU', inplace=True)),  # Config dict for activation layer. Default: dict(type=’Swish’)
+    bbox_head=dict(
+        type='RTMDetSepBNHead',  # The type of bbox_head is RTMDetSepBNHead. RTMDetHead with separated BN layers and shared conv layers. Refer to https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.dense_heads.RTMDetSepBNHead
+        num_classes=80,  # Number of categories excluding the background category
+        in_channels=256,  # Number of channels in the input feature map
+        stacked_convs=2,  # Whether to share conv layers between stages. Defaults to True
+        feat_channels=256,  # Feature channels of convolutional layers in the head
+        anchor_generator=dict(  # The config of anchor generator
+            type='MlvlPointGenerator',  # The methods use MlvlPointGenerator. Refer to https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/prior_generators/point_generator.py#L92
+            offset=0,  # The offset of points, the value is normalized with corresponding stride. Defaults to 0.5
+            strides=[8, 16, 32]),  # Strides of anchors in multiple feature levels in order (w, h)
+        bbox_coder=dict(type='DistancePointBBoxCoder'),  # Distance Point BBox coder.This coder encodes gt bboxes (x1, y1, x2, y2) into (top, bottom, left,right) and decode it back to the original. Refer to https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/coders/distance_point_bbox_coder.py#L9
+        loss_cls=dict(  # Config of loss function for the classification branch
+            type='QualityFocalLoss',  # Type of loss for classification branch. Refer to https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.losses.QualityFocalLoss
+            use_sigmoid=True,  # Whether sigmoid operation is conducted in QFL. Defaults to True
+            beta=2.0,  # The beta parameter for calculating the modulating factor. Defaults to 2.0
+            loss_weight=1.0),  #  Loss weight of current loss
+        loss_bbox=dict(  # Config of loss function for the regression branch
+            type='GIoULoss',  # Type of loss. Refer to https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.losses.GIoULoss
+            loss_weight=2.0),  # Loss weight of the regression branch
+        with_objectness=False,  # Whether to add an objectness branch. Defaults to True
+        exp_on_reg=True,  # Whether to use .exp() in regression
+        share_conv=True,  # Whether to share conv layers between stages. Defaults to True
+        pred_kernel_size=1,  # Kernel size of prediction layer. Defaults to 1
+        norm_cfg=dict(type='SyncBN'),  # Config dict for normalization layer. Defaults to dict(type='BN', momentum=0.03, eps=0.001)
+        act_cfg=dict(type='SiLU', inplace=True)),  # Config dict for activation layer. Defaults to dict(type='SiLU')
+    train_cfg=dict(  # Config of training hyperparameters for ATSS
+        assigner=dict(  # Config of assigner
+            type='DynamicSoftLabelAssigner',   # Type of assigner. DynamicSoftLabelAssigner computes matching between predictions and ground truth with dynamic soft label assignment. Refer to https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/assigners/dynamic_soft_label_assigner.py#L40
+            topk=13),  # Select top-k predictions to calculate dynamic k best matches for each gt. Defaults to 13
+        allowed_border=-1,  # The border allowed after padding for valid anchors
+        pos_weight=-1,  # The weight of positive samples during training
+        debug=False),  # Whether to set the debug mode
+    test_cfg=dict(  # Config for testing hyperparameters for ATSS
+        nms_pre=30000,  # The number of boxes before NMS
+        min_bbox_size=0,  # The allowed minimal box size
+        score_thr=0.001,  # Threshold to filter out boxes
+        nms=dict(  # Config of NMS in the second stage
+            type='nms',  # Type of NMS
+            iou_threshold=0.65),  # NMS threshold
+        max_per_img=300),  # Max number of detections of each image
+)
 ```

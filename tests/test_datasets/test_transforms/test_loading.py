@@ -122,7 +122,7 @@ class TestLoadAnnotations(unittest.TestCase):
                               'with_label=False, with_mask=False, '
                               'with_seg=False, poly2mask=True, '
                               "imdecode_backend='cv2', "
-                              'file_client_args=None)'))
+                              'backend_args=None)'))
 
 
 class TestFilterAnnotations(unittest.TestCase):
@@ -387,7 +387,7 @@ class TestLoadMultiChannelImageFromFiles(unittest.TestCase):
                               'to_float32=False, '
                               "color_type='unchanged', "
                               "imdecode_backend='cv2', "
-                              "file_client_args={'backend': 'disk'})"))
+                              'backend_args=None)'))
 
 
 class TestLoadProposals(unittest.TestCase):

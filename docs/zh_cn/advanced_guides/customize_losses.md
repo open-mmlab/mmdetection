@@ -39,7 +39,7 @@ train_cfg=dict(
 
 ## 微调损失
 
-微调一个损失主要与步骤 2，4，5 有关，大部分的修改可以在配置文件中指定。这里我们用 [Focal Loss (FL)](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/losses/focal_loss.py) 作为例子。
+微调一个损失主要与步骤 2，4，5 有关，大部分的修改可以在配置文件中指定。这里我们用 [Focal Loss (FL)](https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/losses/focal_loss.py) 作为例子。
 下面的代码分别是构建 FL 的方法和它的配置文件，他们是一一对应的。
 
 ```python
@@ -105,7 +105,7 @@ loss_cls=dict(
 
 ## 加权损失（步骤3）
 
-加权损失就是我们逐元素修改损失权重。更具体来说，我们给损失张量乘以一个与他有相同形状的权重张量。所以，损失中不同的元素可以被赋予不同的比例，所以这里叫做逐元素。损失的权重在不同模型中变化很大，而且与上下文相关，但是总的来说主要有两种损失权重：分类损失的 `label_weights` 和边界框的 `bbox_weights`。你可以在相应的头中的 `get_target` 方法中找到他们。这里我们使用 [ATSSHead](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/dense_heads/atss_head.py#L322) 作为一个例子。它继承了 [AnchorHead](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/dense_heads/anchor_head.py) ，但是我们重写它的
+加权损失就是我们逐元素修改损失权重。更具体来说，我们给损失张量乘以一个与他有相同形状的权重张量。所以，损失中不同的元素可以被赋予不同的比例，所以这里叫做逐元素。损失的权重在不同模型中变化很大，而且与上下文相关，但是总的来说主要有两种损失权重：分类损失的 `label_weights` 和边界框的 `bbox_weights`。你可以在相应的头中的 `get_target` 方法中找到他们。这里我们使用 [ATSSHead](https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/dense_heads/atss_head.py#L322) 作为一个例子。它继承了 [AnchorHead](https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/dense_heads/anchor_head.py) ，但是我们重写它的
 `get_targets` 方法来产生不同的 `label_weights` 和 `bbox_weights`。
 
 ```

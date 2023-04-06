@@ -1,20 +1,26 @@
 Import:
+  - configs/albu_example/metafile.yml
   - configs/atss/metafile.yml
   - configs/autoassign/metafile.yml
+  - configs/boxinst/metafile.yml
   - configs/carafe/metafile.yml
   - configs/cascade_rcnn/metafile.yml
   - configs/cascade_rpn/metafile.yml
   - configs/centernet/metafile.yml
   - configs/centripetalnet/metafile.yml
-  - configs/cornernet/metafile.yml
   - configs/condinst/metafile.yml
+  - configs/conditional_detr/metafile.yml
+  - configs/cornernet/metafile.yml
   - configs/convnext/metafile.yml
+  - configs/crowddet/metafile.yml
+  - configs/dab_detr/metafile.yml
   - configs/dcn/metafile.yml
   - configs/dcnv2/metafile.yml
   - configs/ddod/metafile.yml
   - configs/deformable_detr/metafile.yml
   - configs/detectors/metafile.yml
   - configs/detr/metafile.yml
+  - configs/dino/metafile.yml
   - configs/double_heads/metafile.yml
   - configs/dyhead/metafile.yml
   - configs/dynamic_rcnn/metafile.yml
@@ -40,6 +46,7 @@ Import:
   - configs/lad/metafile.yml
   - configs/ld/metafile.yml
   - configs/libra_rcnn/metafile.yml
+  - configs/lvis/metafile.yml
   - configs/mask2former/metafile.yml
   - configs/mask_rcnn/metafile.yml
   - configs/maskformer/metafile.yml
@@ -54,13 +61,13 @@ Import:
   - configs/pisa/metafile.yml
   - configs/point_rend/metafile.yml
   - configs/queryinst/metafile.yml
-  - configs/rtmdet/metafile.yml
   - configs/regnet/metafile.yml
   - configs/reppoints/metafile.yml
   - configs/res2net/metafile.yml
   - configs/resnest/metafile.yml
   - configs/resnet_strikes_back/metafile.yml
   - configs/retinanet/metafile.yml
+  - configs/rpn/metafile.yml
   - configs/rtmdet/metafile.yml
   - configs/sabl/metafile.yml
   - configs/scnet/metafile.yml
@@ -71,6 +78,7 @@ Import:
   - configs/solo/metafile.yml
   - configs/solov2/metafile.yml
   - configs/ssd/metafile.yml
+  - configs/strong_baselines/metafile.yml
   - configs/swin/metafile.yml
   - configs/tridentnet/metafile.yml
   - configs/tood/metafile.yml

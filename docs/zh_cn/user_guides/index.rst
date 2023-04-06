@@ -31,3 +31,4 @@ MMDetection 在 `Model Zoo <https://mmdetection.readthedocs.io/en/latest/model_z
    visualization.md
    robustness_benchmarking.md
    deploy.md
+   label_studio.md

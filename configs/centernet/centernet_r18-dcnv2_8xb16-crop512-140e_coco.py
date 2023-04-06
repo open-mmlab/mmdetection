@@ -39,9 +39,7 @@ model = dict(
     test_cfg=dict(topk=100, local_maximum_kernel=3, max_per_img=100))
 
 train_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PhotoMetricDistortion',
@@ -67,8 +65,8 @@ train_pipeline = [
 test_pipeline = [
     dict(
         type='LoadImageFromFile',
-        to_float32=True,
-        file_client_args={{_base_.file_client_args}}),
+        backend_args={{_base_.backend_args}},
+        to_float32=True),
     # don't need Resize
     dict(
         type='RandomCenterCropPad',
@@ -102,7 +100,9 @@ train_dataloader = dict(
             ann_file='annotations/instances_train2017.json',
             data_prefix=dict(img='train2017/'),
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
-            pipeline=train_pipeline)))
+            pipeline=train_pipeline,
+            backend_args={{_base_.backend_args}},
+        )))
 
 val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
 test_dataloader = val_dataloader

@@ -4,9 +4,9 @@ import tempfile
 import unittest
 
 import torch
-import torch.nn as nn
 from mmengine import Config, MMLogger
 from mmengine.dataset import Compose
+from mmengine.model import BaseModel
 from torch.utils.data import Dataset
 
 from mmdet.registry import DATASETS, MODELS
@@ -16,12 +16,12 @@ from mmdet.utils.benchmark import (DataLoaderBenchmark, DatasetBenchmark,
 
 
 @MODELS.register_module()
-class ToyDetector(nn.Module):
+class ToyDetector(BaseModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__()
 
-    def forward(self, data_batch, return_loss=False):
+    def forward(self, *args, **kwargs):
         pass
 
 

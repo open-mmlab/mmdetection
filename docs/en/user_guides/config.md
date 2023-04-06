@@ -14,14 +14,14 @@ In MMDetection's config, we use `model` to set up detection algorithm components
 model = dict(
     type='MaskRCNN',  # The name of detector
     data_preprocessor=dict(  # The config of data preprocessor, usually includes image normalization and padding
-        type='DetDataPreprocessor',  # The type of the data preprocessor, refer to https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.data_preprocessors.DetDataPreprocessor
+        type='DetDataPreprocessor',  # The type of the data preprocessor, refer to https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.data_preprocessors.DetDataPreprocessor
         mean=[123.675, 116.28, 103.53],  # Mean values used to pre-training the pre-trained backbone models, ordered in R, G, B
         std=[58.395, 57.12, 57.375],  # Standard variance used to pre-training the pre-trained backbone models, ordered in R, G, B
         bgr_to_rgb=True,  # whether to convert image from BGR to RGB
         pad_mask=True,  # whether to pad instance masks
         pad_size_divisor=32),  # The size of padded image should be divisible by ``pad_size_divisor``
     backbone=dict(  # The config of backbone
-        type='ResNet',  # The type of backbone network. Refer to https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.backbones.ResNet
+        type='ResNet',  # The type of backbone network. Refer to https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.backbones.ResNet
         depth=50,  # The depth of backbone, usually it is 50 or 101 for ResNet and ResNext backbones.
         num_stages=4,  # Number of stages of the backbone.
         out_indices=(0, 1, 2, 3),  # The index of output feature maps produced in each stage
@@ -33,34 +33,34 @@ model = dict(
         style='pytorch', # The style of backbone, 'pytorch' means that stride 2 layers are in 3x3 Conv, 'caffe' means stride 2 layers are in 1x1 Convs.
     	init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),  # The ImageNet pretrained backbone to be loaded
     neck=dict(
-        type='FPN',  # The neck of detector is FPN. We also support 'NASFPN', 'PAFPN', etc. Refer to https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.necks.FPN for more details.
+        type='FPN',  # The neck of detector is FPN. We also support 'NASFPN', 'PAFPN', etc. Refer to https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.necks.FPN for more details.
         in_channels=[256, 512, 1024, 2048],  # The input channels, this is consistent with the output channels of backbone
         out_channels=256,  # The output channels of each level of the pyramid feature map
         num_outs=5),  # The number of output scales
     rpn_head=dict(
-        type='RPNHead',  # The type of RPN head is 'RPNHead', we also support 'GARPNHead', etc. Refer to https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.dense_heads.RPNHead for more details.
+        type='RPNHead',  # The type of RPN head is 'RPNHead', we also support 'GARPNHead', etc. Refer to https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.dense_heads.RPNHead for more details.
         in_channels=256,  # The input channels of each input feature map, this is consistent with the output channels of neck
         feat_channels=256,  # Feature channels of convolutional layers in the head.
         anchor_generator=dict(  # The config of anchor generator
-            type='AnchorGenerator',  # Most of methods use AnchorGenerator, SSD Detectors uses `SSDAnchorGenerator`. Refer to https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/prior_generators/anchor_generator.py#L18 for more details
+            type='AnchorGenerator',  # Most of methods use AnchorGenerator, SSD Detectors uses `SSDAnchorGenerator`. Refer to https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/prior_generators/anchor_generator.py#L18 for more details
             scales=[8],  # Basic scale of the anchor, the area of the anchor in one position of a feature map will be scale * base_sizes
             ratios=[0.5, 1.0, 2.0],  # The ratio between height and width.
             strides=[4, 8, 16, 32, 64]),  # The strides of the anchor generator. This is consistent with the FPN feature strides. The strides will be taken as base_sizes if base_sizes is not set.
         bbox_coder=dict(  # Config of box coder to encode and decode the boxes during training and testing
-            type='DeltaXYWHBBoxCoder',  # Type of box coder. 'DeltaXYWHBBoxCoder' is applied for most of the methods. Refer to https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/coders/delta_xywh_bbox_coder.py#L13 for more details.
+            type='DeltaXYWHBBoxCoder',  # Type of box coder. 'DeltaXYWHBBoxCoder' is applied for most of the methods. Refer to https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/coders/delta_xywh_bbox_coder.py#L13 for more details.
             target_means=[0.0, 0.0, 0.0, 0.0],  # The target means used to encode and decode boxes
             target_stds=[1.0, 1.0, 1.0, 1.0]),  # The standard variance used to encode and decode boxes
         loss_cls=dict(  # Config of loss function for the classification branch
-            type='CrossEntropyLoss',  # Type of loss for classification branch, we also support FocalLoss etc. Refer to https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/losses/cross_entropy_loss.py#L201 for more details
+            type='CrossEntropyLoss',  # Type of loss for classification branch, we also support FocalLoss etc. Refer to https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/losses/cross_entropy_loss.py#L201 for more details
             use_sigmoid=True,  # RPN usually performs two-class classification, so it usually uses the sigmoid function.
             loss_weight=1.0),  # Loss weight of the classification branch.
         loss_bbox=dict(  # Config of loss function for the regression branch.
-            type='L1Loss',  # Type of loss, we also support many IoU Losses and smooth L1-loss, etc. Refer to https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/losses/smooth_l1_loss.py#L56 for implementation.
+            type='L1Loss',  # Type of loss, we also support many IoU Losses and smooth L1-loss, etc. Refer to https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/losses/smooth_l1_loss.py#L56 for implementation.
             loss_weight=1.0)),  # Loss weight of the regression branch.
     roi_head=dict(  # RoIHead encapsulates the second stage of two-stage/cascade detectors.
         type='StandardRoIHead',
         bbox_roi_extractor=dict(  # RoI feature extractor for bbox regression.
-            type='SingleRoIExtractor',  # Type of the RoI feature extractor, most of methods uses SingleRoIExtractor. Refer to https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/roi_heads/roi_extractors/single_level_roi_extractor.py#L13 for details.
+            type='SingleRoIExtractor',  # Type of the RoI feature extractor, most of methods uses SingleRoIExtractor. Refer to https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/roi_heads/roi_extractors/single_level_roi_extractor.py#L13 for details.
             roi_layer=dict(  # Config of RoI Layer
                 type='RoIAlign',  # Type of RoI Layer, DeformRoIPoolingPack and ModulatedDeformRoIPoolingPack are also supported. Refer to https://mmcv.readthedocs.io/en/latest/api.html#mmcv.ops.RoIAlign for details.
                 output_size=7,  # The output size of feature maps.
@@ -68,7 +68,7 @@ model = dict(
             out_channels=256,  # output channels of the extracted feature.
             featmap_strides=[4, 8, 16, 32]),  # Strides of multi-scale feature maps. It should be consistent with the architecture of the backbone.
         bbox_head=dict(  # Config of box head in the RoIHead.
-            type='Shared2FCBBoxHead',  # Type of the bbox head, Refer to https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/roi_heads/bbox_heads/convfc_bbox_head.py#L220 for implementation details.
+            type='Shared2FCBBoxHead',  # Type of the bbox head, Refer to https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/roi_heads/bbox_heads/convfc_bbox_head.py#L220 for implementation details.
             in_channels=256,  # Input channels for bbox head. This is consistent with the out_channels in roi_extractor
             fc_out_channels=1024,  # Output feature channels of FC layers.
             roi_feat_size=7,  # Size of RoI features
@@ -94,7 +94,7 @@ model = dict(
             out_channels=256,  # Output channels of the extracted feature.
             featmap_strides=[4, 8, 16, 32]),  # Strides of multi-scale feature maps.
         mask_head=dict(  # Mask prediction head
-            type='FCNMaskHead',  # Type of mask head, refer to https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.roi_heads.FCNMaskHead for implementation details.
+            type='FCNMaskHead',  # Type of mask head, refer to https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.roi_heads.FCNMaskHead for implementation details.
             num_convs=4,  # Number of convolutional layers in mask head.
             in_channels=256,  # Input channels, should be consistent with the output channels of mask roi extractor.
             conv_out_channels=256,  # Output channels of the convolutional layer.
@@ -106,14 +106,14 @@ model = dict(
     train_cfg = dict(  # Config of training hyperparameters for rpn and rcnn
         rpn=dict(  # Training config of rpn
             assigner=dict(  # Config of assigner
-                type='MaxIoUAssigner',  # Type of assigner, MaxIoUAssigner is used for many common detectors. Refer to https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/assigners/max_iou_assigner.py#L14 for more details.
+                type='MaxIoUAssigner',  # Type of assigner, MaxIoUAssigner is used for many common detectors. Refer to https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/assigners/max_iou_assigner.py#L14 for more details.
                 pos_iou_thr=0.7,  # IoU >= threshold 0.7 will be taken as positive samples
                 neg_iou_thr=0.3,  # IoU < threshold 0.3 will be taken as negative samples
                 min_pos_iou=0.3,  # The minimal IoU threshold to take boxes as positive samples
                 match_low_quality=True,  # Whether to match the boxes under low quality (see API doc for more details).
                 ignore_iof_thr=-1),  # IoF threshold for ignoring bboxes
             sampler=dict(  # Config of positive/negative sampler
-                type='RandomSampler',  # Type of sampler, PseudoSampler and other samplers are also supported. Refer to https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/samplers/random_sampler.py#L14 for implementation details.
+                type='RandomSampler',  # Type of sampler, PseudoSampler and other samplers are also supported. Refer to https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/samplers/random_sampler.py#L14 for implementation details.
                 num=256,  # Number of samples
                 pos_fraction=0.5,  # The ratio of positive samples in the total samples.
                 neg_pos_ub=-1,  # The upper bound of negative samples based on the number of positive samples.
@@ -133,14 +133,14 @@ model = dict(
             min_bbox_size=0),  # The allowed minimal box size
         rcnn=dict(  # The config for the roi heads.
             assigner=dict(  # Config of assigner for second stage, this is different for that in rpn
-                type='MaxIoUAssigner',  # Type of assigner, MaxIoUAssigner is used for all roi_heads for now. Refer to https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/assigners/max_iou_assigner.py#L14 for more details.
+                type='MaxIoUAssigner',  # Type of assigner, MaxIoUAssigner is used for all roi_heads for now. Refer to https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/assigners/max_iou_assigner.py#L14 for more details.
                 pos_iou_thr=0.5,  # IoU >= threshold 0.5 will be taken as positive samples
                 neg_iou_thr=0.5,  # IoU < threshold 0.5 will be taken as negative samples
                 min_pos_iou=0.5,  # The minimal IoU threshold to take boxes as positive samples
                 match_low_quality=False,  # Whether to match the boxes under low quality (see API doc for more details).
                 ignore_iof_thr=-1),  # IoF threshold for ignoring bboxes
             sampler=dict(
-                type='RandomSampler',  # Type of sampler, PseudoSampler and other samplers are also supported. Refer to https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/samplers/random_sampler.py#L14 for implementation details.
+                type='RandomSampler',  # Type of sampler, PseudoSampler and other samplers are also supported. Refer to https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/samplers/random_sampler.py#L14 for implementation details.
                 num=512,  # Number of samples
                 pos_fraction=0.25,  # The ratio of positive samples in the total samples.
                 neg_pos_ub=-1,  # The upper bound of negative samples based on the number of positive samples.
@@ -176,10 +176,10 @@ model = dict(
 ```python
 dataset_type = 'CocoDataset'  # Dataset type, this will be used to define the dataset
 data_root = 'data/coco/'  # Root path of data
-file_client_args = dict(backend='disk')  # file client arguments
+backend_args = None # Arguments to instantiate the corresponding file backend
 
 train_pipeline = [  # Training data processing pipeline
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),  # First pipeline to load images from file path
+    dict(type='LoadImageFromFile', backend_args=backend_args),  # First pipeline to load images from file path
     dict(
         type='LoadAnnotations',  # Second pipeline to load annotations for current image
         with_bbox=True,  # Whether to use bounding box, True for detection
@@ -196,7 +196,7 @@ train_pipeline = [  # Training data processing pipeline
     dict(type='PackDetInputs')  # Pipeline that formats the annotation data and decides which keys in the data should be packed into data_samples
 ]
 test_pipeline = [  # Testing data processing pipeline
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),  # First pipeline to load images from file path
+    dict(type='LoadImageFromFile', backend_args=backend_args),  # First pipeline to load images from file path
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),  # Pipeline that resizes the images
     dict(
         type='PackDetInputs',  # Pipeline that formats the annotation data and decides which keys in the data should be packed into data_samples
@@ -217,7 +217,8 @@ train_dataloader = dict(   # Train dataloader config
         ann_file='annotations/instances_train2017.json',  # Path of annotation file
         data_prefix=dict(img='train2017/'),  # Prefix of image path
         filter_cfg=dict(filter_empty_gt=True, min_size=32),  # Config of filtering images and annotations
-        pipeline=train_pipeline))
+        pipeline=train_pipeline,
+        backend_args=backend_args))
 val_dataloader = dict(  # Validation dataloader config
     batch_size=1,  # Batch size of a single GPU. If batch-size > 1, the extra padding area may influence the performance.
     num_workers=2,  # Worker to pre-fetch data for each single GPU
@@ -232,7 +233,8 @@ val_dataloader = dict(  # Validation dataloader config
         ann_file='annotations/instances_val2017.json',
         data_prefix=dict(img='val2017/'),
         test_mode=True,  # Turn on the test mode of the dataset to avoid filtering annotations or images
-        pipeline=test_pipeline))
+        pipeline=test_pipeline,
+        backend_args=backend_args))
 test_dataloader = val_dataloader  # Testing dataloader config
 ```
 
@@ -243,7 +245,8 @@ val_evaluator = dict(  # Validation evaluator config
     type='CocoMetric',  # The coco metric used to evaluate AR, AP, and mAP for detection and instance segmentation
     ann_file=data_root + 'annotations/instances_val2017.json',  # Annotation file path
     metric=['bbox', 'segm'],  # Metrics to be evaluated, `bbox` for detection and `segm` for instance segmentation
-    format_only=False)
+    format_only=False,
+    backend_args=backend_args)
 test_evaluator = val_evaluator  # Testing evaluator config
 ```
 
@@ -529,7 +532,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     dict(
         type='PackDetInputs',

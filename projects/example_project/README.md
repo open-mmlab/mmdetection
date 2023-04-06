@@ -1,6 +1,6 @@
 # Dummy ResNet Wrapper
 
-This is an example README for community `projects/`. We have provided detailed explanations for each field in the form of html comments, which are visible when you read the source of this README file. If you wish to submit your project to our main repository, then all the fields in this README are mandatory for others to understand what you have achieved in this implementation. For more details, read our [contribution guide](https://mmdetection.readthedocs.io/en/3.x/notes/contribution_guide.html) or approach us in [Discussions](https://github.com/open-mmlab/mmdetection/discussions).
+This is an example README for community `projects/`. We have provided detailed explanations for each field in the form of html comments, which are visible when you read the source of this README file. If you wish to submit your project to our main repository, then all the fields in this README are mandatory for others to understand what you have achieved in this implementation. For more details, read our [contribution guide](https://mmdetection.readthedocs.io/en/main/notes/contribution_guide.html) or approach us in [Discussions](https://github.com/open-mmlab/mmdetection/discussions).
 
 ## Description
 
@@ -38,7 +38,7 @@ python tools/test.py projects/example_project/configs/faster-rcnn_dummy-resnet_f
 
 ## Results
 
-<!-- List the results as usually done in other model's README. [Example](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/README.md#results-and-models)
+<!-- List the results as usually done in other model's README. [Example](https://github.com/open-mmlab/mmdetection/blob/main/configs/faster_rcnn/README.md#results-and-models)
 You should claim whether this is based on the pre-trained weights, which are converted from the official release; or it's a reproduced result obtained from retraining the model in this project. -->
 
 |                                Method                                 |  Backbone   | Pretrained Model |  Training set  |   Test set   | #epoch | box AP |         Download         |
@@ -107,10 +107,10 @@ A project does not necessarily have to be finished in a single PR, but it's esse
 
   - [ ] Metafile.yml
 
-    <!-- It will be parsed by MIM and Inferencer. [Example](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/metafile.yml) -->
+    <!-- It will be parsed by MIM and Inferencer. [Example](https://github.com/open-mmlab/mmdetection/blob/main/configs/faster_rcnn/metafile.yml) -->
 
 - [ ] Move your modules into the core package following the codebase's file hierarchy structure.
 
-  <!-- In particular, you may have to refactor this README into a standard one. [Example](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/README.md) -->
+  <!-- In particular, you may have to refactor this README into a standard one. [Example](https://github.com/open-mmlab/mmdetection/blob/main/configs/faster_rcnn/README.md) -->
 
 - [ ] Refactor your modules into the core package following the codebase's file hierarchy structure.
