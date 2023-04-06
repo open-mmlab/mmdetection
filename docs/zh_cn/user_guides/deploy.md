@@ -16,7 +16,7 @@
 
 ## 安装
 
-请参考[此处](https://mmdetection.readthedocs.io/en/3.x/get_started.html)安装 mmdet。然后，按照[说明](https://mmdeploy.readthedocs.io/zh_CN/1.x/get_started.html#mmdeploy)安装 mmdeploy。
+请参考[此处](https://mmdetection.readthedocs.io/en/latest/get_started.html)安装 mmdet。然后，按照[说明](https://mmdeploy.readthedocs.io/zh_CN/1.x/get_started.html#mmdeploy)安装 mmdeploy。
 
 ```{note}
 如果安装的是 mmdeploy 预编译包，那么也请通过 'git clone https://github.com/open-mmlab/mmdeploy.git --depth=1' 下载 mmdeploy 源码。因为它包含了部署时要用到的配置文件
@@ -24,7 +24,7 @@
 
 ## 模型转换
 
-假设在安装步骤中，mmdetection 和 mmdeploy 代码库在同级目录下，并且当前的工作目录为 mmdetection 的根目录，那么以 [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py) 模型为例，你可以从[此处](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth)下载对应的 checkpoint，并使用以下代码将之转换为 onnx 模型：
+假设在安装步骤中，mmdetection 和 mmdeploy 代码库在同级目录下，并且当前的工作目录为 mmdetection 的根目录，那么以 [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/main/configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py) 模型为例，你可以从[此处](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth)下载对应的 checkpoint，并使用以下代码将之转换为 onnx 模型：
 
 ```python
 from mmdeploy.apis import torch2onnx

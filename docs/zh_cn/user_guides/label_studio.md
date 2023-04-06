@@ -40,7 +40,7 @@ mim install "mmcv>=2.0.0rc0"
 安装 MMDetection
 
 ```shell
-git clone https://github.com/open-mmlab/mmdetection -b dev-3.x
+git clone https://github.com/open-mmlab/mmdetection
 cd mmdetection
 pip install -v -e .
 ```

@@ -15,7 +15,7 @@ This tutorial is organized as follows:
 
 ## Installation
 
-Please follow the [guide](https://mmdetection.readthedocs.io/en/3.x/get_started.html) to install mmdet. And then install mmdeploy from source by following [this](https://mmdeploy.readthedocs.io/en/1.x/get_started.html#installation) guide.
+Please follow the [guide](https://mmdetection.readthedocs.io/en/latest/get_started.html) to install mmdet. And then install mmdeploy from source by following [this](https://mmdeploy.readthedocs.io/en/1.x/get_started.html#installation) guide.
 
 ```{note}
 If you install mmdeploy prebuilt package, please also clone its repository by 'git clone https://github.com/open-mmlab/mmdeploy.git --depth=1' to get the deployment config files.
@@ -25,7 +25,7 @@ If you install mmdeploy prebuilt package, please also clone its repository by 'g
 
 Suppose mmdetection and mmdeploy repositories are in the same directory, and the working directory is the root path of mmdetection.
 
-Take [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py) model as an example. You can download its checkpoint from [here](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth), and then convert it to onnx model as follows:
+Take [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/main/configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py) model as an example. You can download its checkpoint from [here](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth), and then convert it to onnx model as follows:
 
 ```python
 from mmdeploy.apis import torch2onnx

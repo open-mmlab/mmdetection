@@ -6,7 +6,7 @@ import re
 
 import numpy as np
 
-url_prefix = 'https://github.com/open-mmlab/mmdetection/blob/3.x/configs'
+url_prefix = 'https://github.com/open-mmlab/mmdetection/blob/main/configs'
 
 files = sorted(glob.glob('../../configs/*/README.md'))
 

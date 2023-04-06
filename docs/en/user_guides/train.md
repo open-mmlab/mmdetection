@@ -436,7 +436,7 @@ To train a model with the new config, you can simply run
 python tools/train.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py
 ```
 
-For more detailed usages, please refer to the [training guide](https://mmdetection.readthedocs.io/en/3.x/user_guides/train.html#train-predefined-models-on-standard-datasets).
+For more detailed usages, please refer to the [training guide](https://mmdetection.readthedocs.io/en/latest/user_guides/train.html#train-predefined-models-on-standard-datasets).
 
 ## Test and inference
 
@@ -446,4 +446,4 @@ To test the trained model, you can simply run
 python tools/test.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py work_dirs/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon/epoch_12.pth
 ```
 
-For more detailed usages, please refer to the [testing guide](https://mmdetection.readthedocs.io/en/3.x/user_guides/test.html).
+For more detailed usages, please refer to the [testing guide](https://mmdetection.readthedocs.io/en/latest/user_guides/test.html).

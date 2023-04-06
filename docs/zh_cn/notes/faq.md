@@ -1,6 +1,6 @@
 # 常见问题解答
 
-我们在这里列出了使用时的一些常见问题及其相应的解决方案。 如果您发现有一些问题被遗漏，请随时提 PR 丰富这个列表。 如果您无法在此获得帮助，请使用 [issue模板](https://github.com/open-mmlab/mmdetection/blob/master/.github/ISSUE_TEMPLATE/error-report.md/)创建问题，但是请在模板中填写所有必填信息，这有助于我们更快定位问题。
+我们在这里列出了使用时的一些常见问题及其相应的解决方案。 如果您发现有一些问题被遗漏，请随时提 PR 丰富这个列表。 如果您无法在此获得帮助，请使用 [issue模板](https://github.com/open-mmlab/mmdetection/blob/main/.github/ISSUE_TEMPLATE/error-report.md/)创建问题，但是请在模板中填写所有必填信息，这有助于我们更快定位问题。
 
 ## PyTorch 2.0 支持
 
@@ -46,7 +46,8 @@ export DYNAMO_CACHE_SIZE_LIMIT = 4
 
   | MMDetection 版本 |        MMCV 版本        |      MMEngine 版本       |
   | :--------------: | :---------------------: | :----------------------: |
-  |       3.x        | mmcv>=2.0.0rc4, \<2.1.0 | mmengine>=0.6.0, \<1.0.0 |
+  |       main       | mmcv>=2.0.0rc4, \<2.1.0 | mmengine>=0.7.1, \<1.0.0 |
+  |       3.x        | mmcv>=2.0.0rc4, \<2.1.0 | mmengine>=0.7.1, \<1.0.0 |
   |     3.0.0rc6     | mmcv>=2.0.0rc4, \<2.1.0 | mmengine>=0.6.0, \<1.0.0 |
   |     3.0.0rc5     | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.3.0, \<1.0.0 |
   |     3.0.0rc4     | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.3.0, \<1.0.0 |

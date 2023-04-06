@@ -4,9 +4,9 @@ MMDetection 提供了许多预训练好的检测模型，可以在 [Model Zoo](h
 
 推理具体指使用训练好的模型来检测图像上的目标，本文将会展示具体步骤。
 
-在 MMDetection 中，一个模型被定义为一个[配置文件](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/config.html) 和对应被存储在 checkpoint 文件内的模型参数的集合。
+在 MMDetection 中，一个模型被定义为一个[配置文件](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/config.html) 和对应被存储在 checkpoint 文件内的模型参数的集合。
 
-首先，我们建议从 [RTMDet](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet) 开始，其 [配置](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/rtmdet/rtmdet_l_8xb32-300e_coco.py) 文件和 [checkpoint](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_l_8xb32-300e_coco/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth) 文件在此。
+首先，我们建议从 [RTMDet](https://github.com/open-mmlab/mmdetection/tree/main/configs/rtmdet) 开始，其 [配置](https://github.com/open-mmlab/mmdetection/blob/main/configs/rtmdet/rtmdet_l_8xb32-300e_coco.py) 文件和 [checkpoint](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_l_8xb32-300e_coco/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth) 文件在此。
 我们建议将 checkpoint 文件下载到 `checkpoints` 文件夹内。
 
 ## 推理的高层编程接口
@@ -83,13 +83,13 @@ for frame in track_iter_progress(video_reader):
 cv2.destroyAllWindows()
 ```
 
-Jupyter notebook 上的演示样例在 [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/3.x/demo/inference_demo.ipynb) 。
+Jupyter notebook 上的演示样例在 [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/main/demo/inference_demo.ipynb) 。
 
 注意: `inference_detector` 目前仅支持单张图片的推理。
 
 ## 演示样例
 
-我们还提供了三个演示脚本，它们是使用高层编程接口实现的。[源码在此](https://github.com/open-mmlab/mmdetection/blob/3.x/demo) 。
+我们还提供了三个演示脚本，它们是使用高层编程接口实现的。[源码在此](https://github.com/open-mmlab/mmdetection/blob/main/demo) 。
 
 ### 图片样例
 
