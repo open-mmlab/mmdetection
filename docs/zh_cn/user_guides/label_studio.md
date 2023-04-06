@@ -33,7 +33,7 @@ pip install torch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1
 
 ```shell
 pip install -U openmim
-mim install "mmcv>=2.0.0rc0"
+mim install "mmcv>=2.0.0"
 # 安装 mmcv 的过程中会自动安装 mmengine
 ```
 
