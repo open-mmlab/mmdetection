@@ -81,7 +81,7 @@ class TestYOLOXModeSwitchHook(TestCase):
         runner.epoch = 285
         runner.max_epochs = 300
 
-        # epoch + 1 >= max_epochs - num_last_epochs .
+        # epoch + 1 > max_epochs - num_last_epochs .
         hook = YOLOXModeSwitchHook(num_last_epochs=15)
         hook.before_train_epoch(runner)
         self.assertTrue(hook._restart_dataloader)
