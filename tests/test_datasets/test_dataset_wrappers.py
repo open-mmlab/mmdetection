@@ -5,8 +5,8 @@ from mmdet.datasets import CocoDataset, MultiImageMixDataset
 
 class TestDatasetWrapper(unittest.TestCase):
 
-    def test_skip_type_keys(self):
-        # test CocoDataset
+    def test_update_skip_type_keys(self):
+        # use cocodataset as a innter dataset
         metainfo = dict(classes=('bus', 'car'), task_name='new_task')
         dataset = CocoDataset(
             data_prefix=dict(img='imgs'),
