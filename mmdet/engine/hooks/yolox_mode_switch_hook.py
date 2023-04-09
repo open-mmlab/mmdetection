@@ -35,11 +35,15 @@ class YOLOXModeSwitchHook(Hook):
         """Close mosaic and mixup augmentation and switches to use L1 loss."""
         epoch = runner.epoch
         train_loader = runner.train_dataloader
+        dataset = train_loader.dataset
         model = runner.model
         # TODO: refactor after mmengine using model wrapper
         if is_model_wrapper(model):
             model = model.module
-        if (epoch + 1) == runner.max_epochs - self.num_last_epochs:
+        not_switched = not dataset.has_all_skip_type_keys(self.skip_type_keys)
+        epoch_to_be_switched = ((epoch + 1) >=
+                                runner.max_epochs - self.num_last_epochs)
+        if epoch_to_be_switched and not_switched:
             runner.logger.info('No mosaic and mixup aug now!')
             # The dataset pipeline cannot be updated when persistent_workers
             # is True, so we need to force the dataloader's multi-process

@@ -167,3 +167,13 @@ class MultiImageMixDataset:
             isinstance(skip_type_key, str) for skip_type_key in skip_type_keys
         ])
         self._skip_type_keys = skip_type_keys
+
+    def has_all_skip_type_keys(self, skip_type_keys):
+        """Check the skip_type_keys include the given all keys.
+
+        It is called by an external hook.
+        """
+
+        if self._skip_type_keys is None:
+            return False
+        return all(key in self._skip_type_keys for key in skip_type_keys)
