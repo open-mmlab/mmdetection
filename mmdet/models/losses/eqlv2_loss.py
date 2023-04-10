@@ -67,7 +67,8 @@ class EQLV2Loss(nn.Module):
         self.register_buffer('pos_grad', torch.zeros(self.num_classes))
         self.register_buffer('neg_grad', torch.zeros(self.num_classes))
         # At the beginning of training, we set a high value (eg. 100)
-        # for the initial gradient ratio so that the weight for pos gradients and neg gradients are 1.
+        # for the initial gradient ratio so that the weight for pos
+        # gradients and neg gradients are 1.
         self.register_buffer('pos_neg', torch.ones(self.num_classes) * 100)
 
         self.test_with_obj = test_with_obj
@@ -99,8 +100,9 @@ class EQLV2Loss(nn.Module):
                 Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
-            reduction_override (str, optional): The method used to reduce the loss into
-                a scalar. Defaults to 'mean'. Options are "none", "mean" and "sum".
+            reduction_override (str, optional): The method used to reduce the
+                loss into a scalar. Defaults to 'mean'. Options are "none",
+                "mean" and "sum".
 
         Returns:
             Tensor: Loss tensor.
