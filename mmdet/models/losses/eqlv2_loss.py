@@ -1,34 +1,35 @@
+# Copyright (c) OpenMMLab. All rights reserved.
+import logging
+from functools import partial
 from typing import Optional
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-
-import logging
-
-from torch import Tensor
-from functools import partial
-
 from mmengine.logging import print_log
+from torch import Tensor
+
 from mmdet.registry import MODELS
+
 
 @MODELS.register_module()
 class EQLV2Loss(nn.Module):
+
     def __init__(self,
-                 use_sigmoid: bool=True,
-                 reduction: str='mean',
-                 class_weight: Optional[Tensor]=None,
-                 loss_weight: float=1.0,
-                 num_classes: int=1203,
-                 mu: float=0.8,
-                 alpha: float=4.0,
-                 gamma: int=12,
-                 vis_grad: bool=False,
-                 test_with_obj: bool=True) -> None:
+                 use_sigmoid: bool = True,
+                 reduction: str = 'mean',
+                 class_weight: Optional[Tensor] = None,
+                 loss_weight: float = 1.0,
+                 num_classes: int = 1203,
+                 mu: float = 0.8,
+                 alpha: float = 4.0,
+                 gamma: int = 12,
+                 vis_grad: bool = False,
+                 test_with_obj: bool = True) -> None:
         """`Equalization Loss v2 <https://arxiv.org/abs/2012.08548>`_
 
         Args:
-            use_sigmoid (bool): EQLv2 uses the sigmoid function to transform 
+            use_sigmoid (bool): EQLv2 uses the sigmoid function to transform
                 the predicted logits to an estimated probability distribution.
             reduction (str, optional): The method used to reduce the loss into
                 a scalar. Defaults to 'mean'.
@@ -42,8 +43,8 @@ class EQLV2Loss(nn.Module):
                 EQLV2 Loss. Defaults to 4.0.
             gamma (int, optional): The gamma for calculating the modulating
                 factor. Defaults to 12.
-            vis_grad (bool, optional): Default to False. 
-            test_with_obj (bool, optional): Default to True. 
+            vis_grad (bool, optional): Default to False.
+            test_with_obj (bool, optional): Default to True.
 
         Returns:
             None.
@@ -73,18 +74,20 @@ class EQLV2Loss(nn.Module):
 
         def _func(x, gamma, mu):
             return 1 / (1 + torch.exp(-gamma * (x - mu)))
+
         self.map_func = partial(_func, gamma=self.gamma, mu=self.mu)
 
-        print_log(f"build EQL v2, gamma: {gamma}, mu: {mu}, alpha: {alpha}",
-                  logger='current',
-                  level=logging.DEBUG)
+        print_log(
+            f'build EQL v2, gamma: {gamma}, mu: {mu}, alpha: {alpha}',
+            logger='current',
+            level=logging.DEBUG)
 
     def forward(self,
                 pred: Tensor,
                 label: Tensor,
-                weight: Optional[Tensor]=None,
-                avg_factor: Optional[int]=None,
-                reduction_override: Optional[Tensor]=None) -> Tensor:
+                weight: Optional[Tensor] = None,
+                avg_factor: Optional[int] = None,
+                reduction_override: Optional[Tensor] = None) -> Tensor:
         """`Equalization Loss v2 <https://arxiv.org/abs/2012.08548>`_
 
         Args:
@@ -92,7 +95,7 @@ class EQLV2Loss(nn.Module):
                 number of classes.
             label (Tensor): The ground truth label of the predicted target with
                 shape (N, C), C is the number of classes.
-            weight (Tensor, optional): The weight of loss for each prediction. 
+            weight (Tensor, optional): The weight of loss for each prediction.
                 Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
@@ -117,7 +120,8 @@ class EQLV2Loss(nn.Module):
 
         weight = pos_w * target + neg_w * (1 - target)
 
-        cls_loss = F.binary_cross_entropy_with_logits(pred, target, reduction='none')
+        cls_loss = F.binary_cross_entropy_with_logits(
+            pred, target, reduction='none')
         cls_loss = torch.sum(cls_loss * weight) / self.n_i
 
         self.collect_grad(pred.detach(), target.detach(), weight.detach())
