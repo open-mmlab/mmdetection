@@ -58,7 +58,7 @@ def print_process_memory(p: psutil.Process,
         uss_mem += gb_round(child_mem_info.uss)
         if hasattr(child_mem_info, 'pss'):
             pss_mem += gb_round(child_mem_info.pss)
-            
+
     process_count = 1 + len(p.children())
 
     log_msg = f'(GB) mem_used: {mem_used:.2f} | uss: {uss_mem:.2f} | '
@@ -66,7 +66,6 @@ def print_process_memory(p: psutil.Process,
         log_msg += f'pss: {pss_mem:.2f} | '
     log_msg += f'total_proc: {process_count}'
     print_log(log_msg, logger)
-
 
 
 class BaseBenchmark:
