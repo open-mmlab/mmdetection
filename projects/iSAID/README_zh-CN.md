@@ -1,17 +1,17 @@
-# iSAID Dataset
+# iSAID数据集
 
 > **iSAID**: A Large-scale Dataset for Instance Segmentation in Aerial Images
 
-## Introduction
+## 数据集介绍
 
 Existing Earth Vision datasets are either suitable for semantic segmentation or object detection. iSAID is the first benchmark dataset for instance segmentation in aerial images. This large-scale and densely annotated dataset contains 655,451 object instances for 15 categories across 2,806 high-resolution images. The distinctive characteristics of iSAID are the following: (a) large number of images with high spatial resolution, (b) fifteen important and commonly occurring categories, (c) large number of instances per category, (d) large count of labelled instances per image, which might help in learning contextual information, (e) huge object scale variation, containing small, medium and large objects, often within the same image, (f) Imbalanced and uneven distribution of objects with varying orientation within images, depicting real-life aerial conditions, (g) several small size objects, with ambiguous appearance, can only be resolved with contextual reasoning, (h) precise instance-level annotations carried out by professional annotators, cross-checked and validated by expert annotators complying with well-defined guidelines.
 
 For more detail, please refer to our [paper](http://openaccess.thecvf.com/content_CVPRW_2019/papers/DOAI/Zamir_iSAID_A_Large-scale_Dataset_for_Instance_Segmentation_in_Aerial_Images_CVPRW_2019_paper.pdf) .
 
-## Prepare
+## 数据集准备
 
-iSAID download link：[Image](https://captain-whu.github.io/DOTA/dataset.html)、[Annotation](https://captain-whu.github.io/iSAID/dataset.html)
-Please follow the steps as described in the [official repository](https://github.com/CAPTAIN-WHU/iSAID_Devkit) to preprocess the data (`patch_width`=800,`patch_height`=800,`overlap_area`=200). The final folder format should be as follows.
+iSAID数据集下载链接：[图像数据](https://captain-whu.github.io/DOTA/dataset.html)、[标注数据](https://captain-whu.github.io/iSAID/dataset.html)
+请按照[官方仓库](https://github.com/CAPTAIN-WHU/iSAID_Devkit)中所述步骤进行数据预处理（`patch_width`=800,`patch_height`=800,`overlap_area`=200），最终得到的文件夹格式为
 
 ```
 iSAID_patches
@@ -42,21 +42,21 @@ iSAID_patches
         └── P0004_0_0_800_800.png
 ```
 
-After that, use the following command in the mmdetection directory to convert the json file format.
+之后，在mmdetection目录下使用以下命令转换json文件格式
 
 ```
 python projects/iSAID/isaid_json.py /path/to/iSAID
 ```
 
-## Usage
+## 使用方法
 
-### Train
+### 训练
 
 ```python
 python tools/train.py projects/iSAID/configs/mask_rcnn_r50_fpn_1x_isaid.py
 ```
 
-### Test
+### 测试
 
 ```python
 python tools/test.py projects/iSAID/configs/mask_rcnn_r50_fpn_1x_isaid.py ${CHECKPOINT_PATH}
