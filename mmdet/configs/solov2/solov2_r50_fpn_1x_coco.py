@@ -1,0 +1,77 @@
+if '_base_':
+    from .._base_.datasets.coco_instance import *
+    from .._base_.schedules.schedule_1x import *
+    from .._base_.default_runtime import *
+from mmdet.models.detectors.solov2 import SOLOv2
+from mmdet.models.data_preprocessors.data_preprocessor import DetDataPreprocessor
+from mmdet.models.backbones.resnet import ResNet
+from mmdet.models.necks.fpn import FPN
+from mmdet.models.dense_heads.solov2_head import SOLOV2Head
+from mmdet.models.losses.dice_loss import DiceLoss
+from mmdet.models.losses.focal_loss import FocalLoss
+
+# model settings
+model = dict(
+    type=SOLOv2,
+    data_preprocessor=dict(
+        type=DetDataPreprocessor,
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_mask=True,
+        pad_size_divisor=32),
+    backbone=dict(
+        type=ResNet,
+        depth=50,
+        num_stages=4,
+        out_indices=(0, 1, 2, 3),
+        frozen_stages=1,
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
+        style='pytorch'),
+    neck=dict(
+        type=FPN,
+        in_channels=[256, 512, 1024, 2048],
+        out_channels=256,
+        start_level=0,
+        num_outs=5),
+    mask_head=dict(
+        type=SOLOV2Head,
+        num_classes=80,
+        in_channels=256,
+        feat_channels=512,
+        stacked_convs=4,
+        strides=[8, 8, 16, 32, 32],
+        scale_ranges=((1, 96), (48, 192), (96, 384), (192, 768), (384, 2048)),
+        pos_scale=0.2,
+        num_grids=[40, 36, 24, 16, 12],
+        cls_down_index=0,
+        mask_feature_head=dict(
+            feat_channels=128,
+            start_level=0,
+            end_level=3,
+            out_channels=256,
+            mask_stride=4,
+            norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)),
+        loss_mask=dict(type=DiceLoss, use_sigmoid=True, loss_weight=3.0),
+        loss_cls=dict(
+            type=FocalLoss,
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0)),
+    # model training and testing settings
+    test_cfg=dict(
+        nms_pre=500,
+        score_thr=0.1,
+        mask_thr=0.5,
+        filter_thr=0.05,
+        kernel='gaussian',  # gaussian/linear
+        sigma=2.0,
+        max_per_img=100))
+
+# optimizer
+optim_wrapper.merge(
+    dict(optimizer=dict(lr=0.01), clip_grad=dict(max_norm=35, norm_type=2)))
+
+val_evaluator.merge(dict(metric='segm'))
+test_evaluator = val_evaluator

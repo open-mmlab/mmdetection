@@ -5,7 +5,6 @@ from typing import List, Optional, Tuple
 import torch
 import torch.nn as nn
 from mmcv import ops
-from mmengine.config.lazy import LazyAttr, LazyModule
 from mmengine.model import BaseModule
 from torch import Tensor
 
@@ -62,10 +61,8 @@ class BaseRoIExtractor(BaseModule, metaclass=ABCMeta):
         if isinstance(layer_type, str):
             assert hasattr(ops, layer_type)
             layer_cls = getattr(ops, layer_type)
-        elif isinstance(layer_type, LazyModule):
-            layer_cls = layer_type.build()
         else:
-            raise TypeError()
+            layer_cls = layer_type
         roi_layers = nn.ModuleList(
             [layer_cls(spatial_scale=1 / s, **cfg) for s in featmap_strides])
         return roi_layers
