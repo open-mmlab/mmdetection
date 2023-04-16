@@ -6,6 +6,7 @@ from typing import Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.distributed as dist
 from mmengine.logging import print_log
 from torch import Tensor
 
@@ -21,6 +22,7 @@ class EQLV2Loss(nn.Module):
                  class_weight: Optional[Tensor] = None,
                  loss_weight: float = 1.0,
                  num_classes: int = 1203,
+                 use_distributed: bool = False,
                  mu: float = 0.8,
                  alpha: float = 4.0,
                  gamma: int = 12,
@@ -38,6 +40,9 @@ class EQLV2Loss(nn.Module):
             loss_weight (float, optional): The weight of the total EQLv2 loss.
                 Defaults to 1.0.
             num_classes (int): 1203 for lvis v1.0, 1230 for lvis v0.5.
+            use_distributed (bool, float): EQLv2 will calculate the gradients
+                on all GPUs if there is any. Change to True if you are using
+                distributed training. Default to False.
             mu (float, optional): Defaults to 0.8
             alpha (float, optional): A balance factor for the negative part of
                 EQLV2 Loss. Defaults to 4.0.
@@ -62,6 +67,7 @@ class EQLV2Loss(nn.Module):
         self.mu = mu
         self.alpha = alpha
         self.gamma = gamma
+        self.use_distributed = use_distributed
 
         # initial variables
         self.register_buffer('pos_grad', torch.zeros(self.num_classes))
@@ -75,9 +81,7 @@ class EQLV2Loss(nn.Module):
 
         def _func(x, gamma, mu):
             return 1 / (1 + torch.exp(-gamma * (x - mu)))
-
         self.map_func = partial(_func, gamma=self.gamma, mu=self.mu)
-
         print_log(
             f'build EQL v2, gamma: {gamma}, mu: {mu}, alpha: {alpha}',
             logger='current',
@@ -122,8 +126,7 @@ class EQLV2Loss(nn.Module):
 
         weight = pos_w * target + neg_w * (1 - target)
 
-        cls_loss = F.binary_cross_entropy_with_logits(
-            pred, target, reduction='none')
+        cls_loss = F.binary_cross_entropy_with_logits(pred, target, reduction='none')
         cls_loss = torch.sum(cls_loss * weight) / self.n_i
 
         self.collect_grad(pred.detach(), target.detach(), weight.detach())
@@ -150,6 +153,10 @@ class EQLV2Loss(nn.Module):
         # do not collect grad for objectiveness branch [:-1]
         pos_grad = torch.sum(grad * target * weight, dim=0)[:-1]
         neg_grad = torch.sum(grad * (1 - target) * weight, dim=0)[:-1]
+
+        if self.use_distributed:
+            dist.all_reduce(pos_grad)
+            dist.all_reduce(neg_grad)
 
         self.pos_grad += pos_grad
         self.neg_grad += neg_grad
