@@ -6,7 +6,7 @@ resized_shape = (1088, 1088)
 # data pipeline
 train_pipeline = [
     dict(
-        type='UniformSample',
+        type='UniformRefFrameSample',
         num_ref_imgs=1,
         frame_range=10,
         filter_key_img=True),
@@ -26,7 +26,7 @@ train_pipeline = [
         ]),
     dict(
         type='TransformBroadcaster',
-        # different coppped positions for different frames
+        # different cropped positions for different frames
         share_random_params=False,
         transforms=[
             dict(

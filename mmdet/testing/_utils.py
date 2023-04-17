@@ -278,26 +278,24 @@ def demo_track_inputs(batch_size=1,
                       key_frames_inds=None,
                       image_shapes=(3, 128, 128),
                       num_items=None,
-                      num_classes=10,
+                      num_classes=1,
                       with_mask=False,
-                      apply_sampling=False,
                       with_semantic=False):
     """Create a superset of inputs needed to run test or train batches.
 
     Args:
         batch_size (int): batch size. Default to 2.
         frame_id (int): the frame id.
-        num_key_frames (int): the number of key frames.
-        num_ref_frames (int): the number of reference frames.
+        num_frames (int): The number of frames.
+        key_frames_inds (List): The indices of key frames.
         image_shapes (List[tuple], Optional): image shape.
             Default to (3, 128, 128)
         num_items (None | List[int]): specifies the number
             of boxes in each batch item. Default to None.
         num_classes (int): number of different labels a
-            box might have. Default to 10.
+            box might have. Default to 1.
         with_mask (bool): Whether to return mask annotation.
             Defaults to False.
-        apply_sampling (bool): whether to apply sampling.
         with_semantic (bool): whether to return semantic.
             Default to False.
     """
@@ -332,10 +330,7 @@ def demo_track_inputs(batch_size=1,
         video_data_samples = []
         for i in range(num_frames):
             data_sample = DetDataSample()
-            if apply_sampling:
-                img_meta['frame_id'] = 0
-            else:
-                img_meta['frame_id'] = i
+            img_meta['frame_id'] = i
             data_sample.set_metainfo(img_meta)
 
             # gt_instances
@@ -350,7 +345,7 @@ def demo_track_inputs(batch_size=1,
             instances_id = rng.randint(100, num_classes + 100, size=num_boxes)
             gt_instances.bboxes = torch.FloatTensor(bboxes)
             gt_instances.labels = torch.LongTensor(labels)
-            gt_instances.instances_id = torch.LongTensor(instances_id)
+            gt_instances.instances_ids = torch.LongTensor(instances_id)
 
             if with_mask:
                 masks = _rand_masks(rng, num_boxes, bboxes, w, h)
