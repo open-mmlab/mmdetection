@@ -5,18 +5,6 @@ from unittest.mock import Mock, patch
 from mmdet.engine.hooks import YOLOXModeSwitchHook
 
 
-class DatasetMock:
-
-    def __init__(self):
-        self._skip_type_keys = []
-
-    def update_skip_type_keys(self, keys):
-        self._skip_type_keys = keys
-
-    def has_all_skip_type_keys(self, keys):
-        return all(k in self._skip_type_keys for k in keys)
-
-
 class TestYOLOXModeSwitchHook(TestCase):
 
     @patch('mmdet.engine.hooks.yolox_mode_switch_hook.is_model_wrapper')
@@ -30,7 +18,6 @@ class TestYOLOXModeSwitchHook(TestCase):
         runner.train_dataloader = Mock()
         runner.train_dataloader.persistent_workers = True
         runner.train_dataloader._DataLoader__initialized = True
-        runner.train_dataloader.dataset = DatasetMock()
         runner.epoch = 284
         runner.max_epochs = 300
 
@@ -51,7 +38,6 @@ class TestYOLOXModeSwitchHook(TestCase):
         runner.train_dataloader = Mock()
         runner.train_dataloader.persistent_workers = False
         runner.train_dataloader._DataLoader__initialized = True
-        runner.train_dataloader.dataset = DatasetMock()
         runner.epoch = 284
         runner.max_epochs = 300
 
@@ -77,7 +63,6 @@ class TestYOLOXModeSwitchHook(TestCase):
         runner.train_dataloader = Mock()
         runner.train_dataloader.persistent_workers = True
         runner.train_dataloader._DataLoader__initialized = True
-        runner.train_dataloader.dataset = DatasetMock()
         runner.epoch = 285
         runner.max_epochs = 300
 
