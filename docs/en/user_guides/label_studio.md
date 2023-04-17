@@ -34,14 +34,14 @@ Install MMCV:
 
 ```shell
 pip install -U openmim
-mim install "mmcv>=2.0.0rc0"
+mim install "mmcv>=2.0.0"
 # Installing mmcv will automatically install mmengine
 ```
 
 Install MMDetection:
 
 ```shell
-git clone https://github.com/open-mmlab/mmdetection -b dev-3.x
+git clone https://github.com/open-mmlab/mmdetection
 cd mmdetection
 pip install -v -e .
 ```

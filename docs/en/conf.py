@@ -2,7 +2,7 @@
 #
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+# https://www.sphinx-doc.org/en/main/usage/configuration.html
 
 # -- Path setup --------------------------------------------------------------
 
@@ -67,7 +67,7 @@ source_suffix = {
     '.md': 'markdown',
 }
 
-# The master toctree document.
+# The main toctree document.
 master_doc = 'index'
 
 # List of patterns, relative to source directory, that match files and

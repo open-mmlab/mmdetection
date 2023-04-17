@@ -46,7 +46,7 @@ bash tools/dist_test.sh \
 
 假设你已经下载了 checkpoint 文件到 `checkpoints/` 文件下了。
 
-1. 测试 RTMDet 并可视化其结果。按任意键继续下张图片的测试。配置文件和 checkpoint 文件 [在此](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet) 。
+1. 测试 RTMDet 并可视化其结果。按任意键继续下张图片的测试。配置文件和 checkpoint 文件 [在此](https://github.com/open-mmlab/mmdetection/tree/main/configs/rtmdet) 。
 
    ```shell
    python tools/test.py \
@@ -55,7 +55,7 @@ bash tools/dist_test.sh \
        --show
    ```
 
-2. 测试 RTMDet，并为了之后的可视化保存绘制的图像。配置文件和 checkpoint 文件 [在此](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet) 。
+2. 测试 RTMDet，并为了之后的可视化保存绘制的图像。配置文件和 checkpoint 文件 [在此](https://github.com/open-mmlab/mmdetection/tree/main/configs/rtmdet) 。
 
    ```shell
    python tools/test.py \
@@ -117,7 +117,7 @@ bash tools/dist_test.sh \
 
 ### 不使用 Ground Truth 标注进行测试
 
-MMDetection 支持在不使用 ground-truth 标注的情况下对模型进行测试，这需要用到 `CocoDataset`。如果你的数据集格式不是 COCO 格式的，请将其转化成 COCO 格式。如果你的数据集格式是 VOC 或者 Cityscapes，你可以使用 [tools/dataset_converters](https://github.com/open-mmlab/mmdetection/tree/master/tools/dataset_converters) 内的脚本直接将其转化成 COCO 格式。如果是其他格式，可以使用 [images2coco 脚本](https://github.com/open-mmlab/mmdetection/tree/master/tools/dataset_converters/images2coco.py) 进行转换。
+MMDetection 支持在不使用 ground-truth 标注的情况下对模型进行测试，这需要用到 `CocoDataset`。如果你的数据集格式不是 COCO 格式的，请将其转化成 COCO 格式。如果你的数据集格式是 VOC 或者 Cityscapes，你可以使用 [tools/dataset_converters](https://github.com/open-mmlab/mmdetection/tree/main/tools/dataset_converters) 内的脚本直接将其转化成 COCO 格式。如果是其他格式，可以使用 [images2coco 脚本](https://github.com/open-mmlab/mmdetection/tree/master/tools/dataset_converters/images2coco.py) 进行转换。
 
 ```shell
 python tools/dataset_converters/images2coco.py \

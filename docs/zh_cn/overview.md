@@ -42,13 +42,13 @@ MMDetection 由 7 个主要部分组成，apis、structures、datasets、models�
 
 2. MMDetection 的基本使用方法请参考以下教程。
 
-   - [训练和测试](https://mmdetection.readthedocs.io/zh_CN/dev-3.x/user_guides/index.html#train-test)
+   - [训练和测试](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/index.html#train-test)
 
-   - [实用工具](https://mmdetection.readthedocs.io/zh_CN/dev-3.x/user_guides/index.html#useful-tools)
+   - [实用工具](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/index.html#useful-tools)
 
 3. 参考以下教程深入了解：
 
-   - [基础概念](https://mmdetection.readthedocs.io/zh_CN/dev-3.x/advanced_guides/index.html#basic-concepts)
-   - [组件定制](https://mmdetection.readthedocs.io/zh_CN/dev-3.x/advanced_guides/index.html#component-customization)
+   - [基础概念](https://mmdetection.readthedocs.io/zh_CN/latest/advanced_guides/index.html#basic-concepts)
+   - [组件定制](https://mmdetection.readthedocs.io/zh_CN/latest/advanced_guides/index.html#component-customization)
 
 4. 对于 MMDetection 2.x 版本的用户，我们提供了[迁移指南](./migration/migration.md)，帮助您完成新版本的适配。
