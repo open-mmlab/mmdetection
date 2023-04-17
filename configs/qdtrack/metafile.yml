@@ -25,6 +25,6 @@ Models:
         Dataset: MOT17
         Metrics:
           HOTA: 57.1
-          MOTA: 68.2
-          IDF1: 68.5
+          MOTA: 68.1
+          IDF1: 68.6
     Weights: https://download.openmmlab.com/mmtracking/mot/qdtrack/mot_dataset/qdtrack_faster-rcnn_r50_fpn_4e_mot17_20220315_145635-76f295ef.pth
