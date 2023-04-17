@@ -170,7 +170,7 @@ param_scheduler = [
         # use quadratic formula to warm up 5 epochs
         # and lr is updated by iteration
         # TODO: fix default scope in get function
-        type='mmdet.QuadraticWarmupLR',
+        type='QuadraticWarmupLR',
         by_epoch=True,
         begin=0,
         end=1,

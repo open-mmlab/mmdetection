@@ -5,7 +5,7 @@ from .colorspace import (AutoContrast, Brightness, Color, ColorTransform,
                          Solarize, SolarizeAdd)
 from .formatting import (ImageToTensor, PackDetInputs, PackTrackInputs,
                          ToTensor, Transpose)
-from .frame_sampling import UniformSample
+from .frame_sampling import BaseFrameSample, UniformRefFrameSample
 from .geometric import (GeomTransform, Rotate, ShearX, ShearY, TranslateX,
                         TranslateY)
 from .instaboost import InstaBoost
@@ -35,5 +35,6 @@ __all__ = [
     'AutoContrast', 'Invert', 'MultiBranch', 'RandomErasing',
     'LoadEmptyAnnotations', 'RandomOrder', 'CachedMosaic', 'CachedMixUp',
     'FixShapeResize', 'ProposalBroadcaster', 'InferencerLoader',
-    'LoadTrackAnnotations', 'UniformSample', 'PackTrackInputs'
+    'LoadTrackAnnotations', 'BaseFrameSample', 'UniformRefFrameSample',
+    'PackTrackInputs'
 ]
