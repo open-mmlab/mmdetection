@@ -27,7 +27,7 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
                 self_attn_mask: Tensor, reference_points: Tensor,
                 spatial_shapes: Tensor, level_start_index: Tensor,
                 valid_ratios: Tensor, reg_branches: nn.ModuleList,
-                **kwargs) -> Tensor:
+                **kwargs) -> Tuple[Tensor]:
         """Forward function of Transformer decoder.
 
         Args:
@@ -54,7 +54,7 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
                 regression results.
 
         Returns:
-            tuple[Tensor, Tensor]: Output queries and references of Transformer 
+            tuple[Tensor]: Output queries and references of Transformer 
                 decoder
           
             - query (Tensor): Output embeddings of the last decoder, has
