@@ -39,12 +39,12 @@ def get_kwargs_from_config(config_path=_DEFAULT_CONFIG_PATH):
     assert isinstance(config, dict)
     return config
 
+from label_studio_ml.api import init_app
+from projects.LabelStudio.sam.mmdetection import MMDetection
 
 if __name__ == '__main__':
 
-    from label_studio_ml.api import init_app
 
-    from projects.LabelStudio.backend_template.mmdetection import MMDetection
 
     parser = argparse.ArgumentParser(description='Label studio')
     parser.add_argument(
@@ -135,11 +135,11 @@ if __name__ == '__main__':
 
     app.run(host=args.host, port=args.port, debug=args.debug)
 
-else:
-    # for uWSGI use
-    app = init_app(
-        model_class=MMDetection,
-        model_dir=os.environ.get('MODEL_DIR', os.path.dirname(__file__)),
-        redis_queue=os.environ.get('RQ_QUEUE_NAME', 'default'),
-        redis_host=os.environ.get('REDIS_HOST', 'localhost'),
-        redis_port=os.environ.get('REDIS_PORT', 6379))
+# else:
+#     # for uWSGI use
+#     app = init_app(
+#         model_class=MMDetection,
+#         model_dir=os.environ.get('MODEL_DIR', os.path.dirname(__file__)),
+#         redis_queue=os.environ.get('RQ_QUEUE_NAME', 'default'),
+#         redis_host=os.environ.get('REDIS_HOST', 'localhost'),
+#         redis_port=os.environ.get('REDIS_PORT', 6379))

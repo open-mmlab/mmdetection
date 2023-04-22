@@ -6,6 +6,7 @@ import os
 from urllib.parse import urlparse
 import numpy as np
 from label_studio_converter import brush
+import torch
 
 import cv2
 
@@ -22,14 +23,13 @@ import random
 import string
 logger = logging.getLogger(__name__)
 
-def load_my_model():
+def load_my_model(device="cuda:0"):
         """
         Loads the Segment Anything model on initializing Label studio, so if you call it outside MyModel it doesn't load every time you try to make a prediction
         Returns the predictor object. For more, look at Facebook's SAM docs
         """
         # if you're not using CUDA, use "cpu" instead
-        device = "cuda"
-        device = "cpu"
+        device = "cuda:0"
 
         # Note: YOU MUST HAVE THE MODEL SAVED IN THE SAME DIRECTORY AS YOUR BACKEND
         sam = sam_model_registry["vit_h"](checkpoint="sam_vit_h_4b8939.pth")
@@ -40,8 +40,7 @@ def load_my_model():
         print("#######################################")
         return predictor
 
-PREDICTOR = load_my_model()
-
+PREDICTOR=load_my_model()
 
 
 class MMDetection(LabelStudioMLBase):
@@ -57,6 +56,8 @@ class MMDetection(LabelStudioMLBase):
                  **kwargs):
 
         super(MMDetection, self).__init__(**kwargs)
+        self.PREDICTOR = PREDICTOR
+
         config_file = config_file or os.environ['config_file']
         checkpoint_file = checkpoint_file or os.environ['checkpoint_file']
         self.config_file = config_file
@@ -135,7 +136,7 @@ class MMDetection(LabelStudioMLBase):
 
     def predict(self, tasks, **kwargs):
 
-        predictor = PREDICTOR
+        predictor = self.PREDICTOR
 
 
 
@@ -205,7 +206,7 @@ class MMDetection(LabelStudioMLBase):
 
                 masks, scores, logits = predictor.predict(
                     # point_coords=np.array([[int((x+xmax)/2), int((y+ymax)/2)]]),
-                    box=np.array(bbox[:4]),
+                    box=np.array([x.cpu() for x in bbox[:4]]),
                     point_labels=np.array([1]),
                     multimask_output=False,
                 )

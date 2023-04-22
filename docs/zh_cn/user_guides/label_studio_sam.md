@@ -14,8 +14,8 @@
 创建虚拟环境：
 
 ```shell
-conda create -n rtmdet python=3.9 -y
-conda activate rtmdet
+conda create -n rtmdet-sam python=3.9 -y
+conda activate rtmdet-sam
 ```
 
 安装 PyTorch
@@ -62,6 +62,15 @@ cd work_dirs
 wget https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_m_8xb32-300e_coco/rtmdet_m_8xb32-300e_coco_20220719_112220-229f527c.pth
 ```
 
+安装 SAM 并下载预训练模型
+
+```shell
+cd path/to/mmetection
+pip install opencv-python pycocotools matplotlib onnxruntime onnx
+pip install git+https://github.com/facebookresearch/segment-anything.git
+wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+```
+
 ## 启动服务
 
 启动 RTMDet 后端推理服务：
@@ -69,12 +78,12 @@ wget https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_m_8xb32-300e_
 ```shell
 cd path/to/mmetection
 
-label-studio-ml start projects/LabelStudio/backend_template --with \
+label-studio-ml start projects/LabelStudio/sam --with \
 config_file=configs/rtmdet/rtmdet_m_8xb32-300e_coco.py \
 checkpoint_file=./work_dirs/rtmdet_m_8xb32-300e_coco_20220719_112220-229f527c.pth \
-device=cpu \
+device=cuda:0 \
 --port 8003
-# device=cpu 为使用 CPU 推理，如果使用 GPU 推理，将 cpu 替换为 cuda:0
+# device=cuda:0 为使用 GPU 推理，如果使用 cpu 推理，将 cuda:0 替换为 cpu
 ```
 
 ![](https://cdn.vansin.top/picgo20230330131601.png)
@@ -115,86 +124,29 @@ wget https://download.openmmlab.com/mmyolo/data/cat_dataset.zip && unzip cat_dat
 ![](https://cdn.vansin.top/picgo20230330133807.png)
 
 ```shell
-airplane
-apple
-backpack
-banana
-baseball_bat
-baseball_glove
-bear
-bed
-bench
-bicycle
-bird
-boat
-book
-bottle
-bowl
-broccoli
-bus
-cake
-car
-carrot
-cat
-cell_phone
-chair
-clock
-couch
-cow
-cup
-dining_table
-dog
-donut
-elephant
-fire_hydrant
-fork
-frisbee
-giraffe
-hair_drier
-handbag
-horse
-hot_dog
-keyboard
-kite
-knife
-laptop
-microwave
-motorcycle
-mouse
-orange
-oven
-parking_meter
-person
-pizza
-potted_plant
-refrigerator
-remote
-sandwich
-scissors
-sheep
-sink
-skateboard
-skis
-snowboard
-spoon
-sports_ball
-stop_sign
-suitcase
-surfboard
-teddy_bear
-tennis_racket
-tie
-toaster
-toilet
-toothbrush
-traffic_light
-train
-truck
-tv
-umbrella
-vase
-wine_glass
-zebra
+<View>
+  <Image name="image" value="$image"/>
+  <RectangleLabels name="RectangleLabels" toName="image">
+    <Label value="Airplane" background="green"/>
+    <Label value="Car" background="blue"/>
+  <Label value="airplane" background="#FFA39E"/><Label value="apple" background="#D4380D"/><Label value="backpack" background="#FFC069"/><Label value="banana" background="#AD8B00"/><Label value="baseball_bat" background="#D3F261"/><Label value="baseball_glove" background="#389E0D"/><Label value="bear" background="#5CDBD3"/><Label value="bed" background="#096DD9"/><Label value="bench" background="#ADC6FF"/><Label value="bicycle" background="#9254DE"/><Label value="bird" background="#F759AB"/><Label value="boat" background="#FFA39E"/><Label value="book" background="#D4380D"/><Label value="bottle" background="#FFC069"/><Label value="bowl" background="#AD8B00"/><Label value="broccoli" background="#D3F261"/><Label value="bus" background="#389E0D"/><Label value="cake" background="#5CDBD3"/><Label value="car" background="#096DD9"/><Label value="carrot" background="#ADC6FF"/><Label value="cat" background="#9254DE"/><Label value="cell_phone" background="#F759AB"/><Label value="chair" background="#FFA39E"/><Label value="clock" background="#D4380D"/><Label value="couch" background="#FFC069"/><Label value="cow" background="#AD8B00"/><Label value="cup" background="#D3F261"/><Label value="dining_table" background="#389E0D"/><Label value="dog" background="#5CDBD3"/><Label value="donut" background="#096DD9"/><Label value="elephant" background="#ADC6FF"/><Label value="fire_hydrant" background="#9254DE"/><Label value="fork" background="#F759AB"/><Label value="frisbee" background="#FFA39E"/><Label value="giraffe" background="#D4380D"/><Label value="hair_drier" background="#FFC069"/><Label value="handbag" background="#AD8B00"/><Label value="horse" background="#D3F261"/><Label value="hot_dog" background="#389E0D"/><Label value="keyboard" background="#5CDBD3"/><Label value="kite" background="#096DD9"/><Label value="knife" background="#ADC6FF"/><Label value="laptop" background="#9254DE"/><Label value="microwave" background="#F759AB"/><Label value="motorcycle" background="#FFA39E"/><Label value="mouse" background="#D4380D"/><Label value="orange" background="#FFC069"/><Label value="oven" background="#AD8B00"/><Label value="parking_meter" background="#D3F261"/><Label value="person" background="#389E0D"/><Label value="pizza" background="#5CDBD3"/><Label value="potted_plant" background="#096DD9"/><Label value="refrigerator" background="#ADC6FF"/><Label value="remote" background="#9254DE"/><Label value="sandwich" background="#F759AB"/><Label value="scissors" background="#FFA39E"/><Label value="sheep" background="#D4380D"/><Label value="sink" background="#FFC069"/><Label value="skateboard" background="#AD8B00"/><Label value="skis" background="#D3F261"/><Label value="snowboard" background="#389E0D"/><Label value="spoon" background="#5CDBD3"/><Label value="sports_ball" background="#096DD9"/><Label value="stop_sign" background="#ADC6FF"/><Label value="suitcase" background="#9254DE"/><Label value="surfboard" background="#F759AB"/><Label value="teddy_bear" background="#FFA39E"/><Label value="tennis_racket" background="#D4380D"/><Label value="tie" background="#FFC069"/><Label value="toaster" background="#AD8B00"/><Label value="toilet" background="#D3F261"/><Label value="toothbrush" background="#389E0D"/><Label value="traffic_light" background="#5CDBD3"/><Label value="train" background="#096DD9"/><Label value="truck" background="#ADC6FF"/><Label value="tv" background="#9254DE"/><Label value="umbrella" background="#F759AB"/><Label value="vase" background="#FFA39E"/><Label value="wine_glass" background="#D4380D"/><Label value="zebra" background="#FFC069"/>
+  </RectangleLabels>
+  <BrushLabels name="BrushLabels" toName="image">
+      <Label value="airplane" background="#FFA39E"/><Label value="apple" background="#D4380D"/><Label value="backpack" background="#FFC069"/><Label value="banana" background="#AD8B00"/><Label value="baseball_bat" background="#D3F261"/><Label value="baseball_glove" background="#389E0D"/><Label value="bear" background="#5CDBD3"/><Label value="bed" background="#096DD9"/><Label value="bench" background="#ADC6FF"/><Label value="bicycle" background="#9254DE"/><Label value="bird" background="#F759AB"/><Label value="boat" background="#FFA39E"/><Label value="book" background="#D4380D"/><Label value="bottle" background="#FFC069"/><Label value="bowl" background="#AD8B00"/><Label value="broccoli" background="#D3F261"/><Label value="bus" background="#389E0D"/><Label value="cake" background="#5CDBD3"/><Label value="car" background="#096DD9"/><Label value="carrot" background="#ADC6FF"/><Label value="cat" background="#9254DE"/><Label value="cell_phone" background="#F759AB"/><Label value="chair" background="#FFA39E"/><Label value="clock" background="#D4380D"/><Label value="couch" background="#FFC069"/><Label value="cow" background="#AD8B00"/><Label value="cup" background="#D3F261"/><Label value="dining_table" background="#389E0D"/><Label value="dog" background="#5CDBD3"/><Label value="donut" background="#096DD9"/><Label value="elephant" background="#ADC6FF"/><Label value="fire_hydrant" background="#9254DE"/><Label value="fork" background="#F759AB"/><Label value="frisbee" background="#FFA39E"/><Label value="giraffe" background="#D4380D"/><Label value="hair_drier" background="#FFC069"/><Label value="handbag" background="#AD8B00"/><Label value="horse" background="#D3F261"/><Label value="hot_dog" background="#389E0D"/><Label value="keyboard" background="#5CDBD3"/><Label value="kite" background="#096DD9"/><Label value="knife" background="#ADC6FF"/><Label value="laptop" background="#9254DE"/><Label value="microwave" background="#F759AB"/><Label value="motorcycle" background="#FFA39E"/><Label value="mouse" background="#D4380D"/><Label value="orange" background="#FFC069"/><Label value="oven" background="#AD8B00"/><Label value="parking_meter" background="#D3F261"/><Label value="person" background="#389E0D"/><Label value="pizza" background="#5CDBD3"/><Label value="potted_plant" background="#096DD9"/><Label value="refrigerator" background="#ADC6FF"/><Label value="remote" background="#9254DE"/><Label value="sandwich" background="#F759AB"/><Label value="scissors" background="#FFA39E"/><Label value="sheep" background="#D4380D"/><Label value="sink" background="#FFC069"/><Label value="skateboard" background="#AD8B00"/><Label value="skis" background="#D3F261"/><Label value="snowboard" background="#389E0D"/><Label value="spoon" background="#5CDBD3"/><Label value="sports_ball" background="#096DD9"/><Label value="stop_sign" background="#ADC6FF"/><Label value="suitcase" background="#9254DE"/><Label value="surfboard" background="#F759AB"/><Label value="teddy_bear" background="#FFA39E"/><Label value="tennis_racket" background="#D4380D"/><Label value="tie" background="#FFC069"/><Label value="toaster" background="#AD8B00"/><Label value="toilet" background="#D3F261"/><Label value="toothbrush" background="#389E0D"/><Label value="traffic_light" background="#5CDBD3"/><Label value="train" background="#096DD9"/><Label value="truck" background="#ADC6FF"/><Label value="tv" background="#9254DE"/><Label value="umbrella" background="#F759AB"/><Label value="vase" background="#FFA39E"/><Label value="wine_glass" background="#D4380D"/><Label value="zebra" background="#FFC069"/>
+  </BrushLabels>
+   <PolygonLabels name="PolygonLabels" toName="image" value="Add Rectangle">
+        <Label value="airplane" background="#FFA39E"/><Label value="apple" background="#D4380D"/><Label value="backpack" background="#FFC069"/><Label value="banana" background="#AD8B00"/><Label value="baseball_bat" background="#D3F261"/><Label value="baseball_glove" background="#389E0D"/><Label value="bear" background="#5CDBD3"/><Label value="bed" background="#096DD9"/><Label value="bench" background="#ADC6FF"/><Label value="bicycle" background="#9254DE"/><Label value="bird" background="#F759AB"/><Label value="boat" background="#FFA39E"/><Label value="book" background="#D4380D"/><Label value="bottle" background="#FFC069"/><Label value="bowl" background="#AD8B00"/><Label value="broccoli" background="#D3F261"/><Label value="bus" background="#389E0D"/><Label value="cake" background="#5CDBD3"/><Label value="car" background="#096DD9"/><Label value="carrot" background="#ADC6FF"/><Label value="cat" background="#9254DE"/><Label value="cell_phone" background="#F759AB"/><Label value="chair" background="#FFA39E"/><Label value="clock" background="#D4380D"/><Label value="couch" background="#FFC069"/><Label value="cow" background="#AD8B00"/><Label value="cup" background="#D3F261"/><Label value="dining_table" background="#389E0D"/><Label value="dog" background="#5CDBD3"/><Label value="donut" background="#096DD9"/><Label value="elephant" background="#ADC6FF"/><Label value="fire_hydrant" background="#9254DE"/><Label value="fork" background="#F759AB"/><Label value="frisbee" background="#FFA39E"/><Label value="giraffe" background="#D4380D"/><Label value="hair_drier" background="#FFC069"/><Label value="handbag" background="#AD8B00"/><Label value="horse" background="#D3F261"/><Label value="hot_dog" background="#389E0D"/><Label value="keyboard" background="#5CDBD3"/><Label value="kite" background="#096DD9"/><Label value="knife" background="#ADC6FF"/><Label value="laptop" background="#9254DE"/><Label value="microwave" background="#F759AB"/><Label value="motorcycle" background="#FFA39E"/><Label value="mouse" background="#D4380D"/><Label value="orange" background="#FFC069"/><Label value="oven" background="#AD8B00"/><Label value="parking_meter" background="#D3F261"/><Label value="person" background="#389E0D"/><Label value="pizza" background="#5CDBD3"/><Label value="potted_plant" background="#096DD9"/><Label value="refrigerator" background="#ADC6FF"/><Label value="remote" background="#9254DE"/><Label value="sandwich" background="#F759AB"/><Label value="scissors" background="#FFA39E"/><Label value="sheep" background="#D4380D"/><Label value="sink" background="#FFC069"/><Label value="skateboard" background="#AD8B00"/><Label value="skis" background="#D3F261"/><Label value="snowboard" background="#389E0D"/><Label value="spoon" background="#5CDBD3"/><Label value="sports_ball" background="#096DD9"/><Label value="stop_sign" background="#ADC6FF"/><Label value="suitcase" background="#9254DE"/><Label value="surfboard" background="#F759AB"/><Label value="teddy_bear" background="#FFA39E"/><Label value="tennis_racket" background="#D4380D"/><Label value="tie" background="#FFC069"/><Label value="toaster" background="#AD8B00"/><Label value="toilet" background="#D3F261"/><Label value="toothbrush" background="#389E0D"/><Label value="traffic_light" background="#5CDBD3"/><Label value="train" background="#096DD9"/><Label value="truck" background="#ADC6FF"/><Label value="tv" background="#9254DE"/><Label value="umbrella" background="#F759AB"/><Label value="vase" background="#FFA39E"/><Label value="wine_glass" background="#D4380D"/><Label value="zebra" background="#FFC069"/>
+  </PolygonLabels>
+
+  <EllipseLabels name="EllipseLabels" toName="image" value="EllipseLabexls">
+        <Label value="airplane" background="#FFA39E"/><Label value="apple" background="#D4380D"/><Label value="backpack" background="#FFC069"/><Label value="banana" background="#AD8B00"/><Label value="baseball_bat" background="#D3F261"/><Label value="baseball_glove" background="#389E0D"/><Label value="bear" background="#5CDBD3"/><Label value="bed" background="#096DD9"/><Label value="bench" background="#ADC6FF"/><Label value="bicycle" background="#9254DE"/><Label value="bird" background="#F759AB"/><Label value="boat" background="#FFA39E"/><Label value="book" background="#D4380D"/><Label value="bottle" background="#FFC069"/><Label value="bowl" background="#AD8B00"/><Label value="broccoli" background="#D3F261"/><Label value="bus" background="#389E0D"/><Label value="cake" background="#5CDBD3"/><Label value="car" background="#096DD9"/><Label value="carrot" background="#ADC6FF"/><Label value="cat" background="#9254DE"/><Label value="cell_phone" background="#F759AB"/><Label value="chair" background="#FFA39E"/><Label value="clock" background="#D4380D"/><Label value="couch" background="#FFC069"/><Label value="cow" background="#AD8B00"/><Label value="cup" background="#D3F261"/><Label value="dining_table" background="#389E0D"/><Label value="dog" background="#5CDBD3"/><Label value="donut" background="#096DD9"/><Label value="elephant" background="#ADC6FF"/><Label value="fire_hydrant" background="#9254DE"/><Label value="fork" background="#F759AB"/><Label value="frisbee" background="#FFA39E"/><Label value="giraffe" background="#D4380D"/><Label value="hair_drier" background="#FFC069"/><Label value="handbag" background="#AD8B00"/><Label value="horse" background="#D3F261"/><Label value="hot_dog" background="#389E0D"/><Label value="keyboard" background="#5CDBD3"/><Label value="kite" background="#096DD9"/><Label value="knife" background="#ADC6FF"/><Label value="laptop" background="#9254DE"/><Label value="microwave" background="#F759AB"/><Label value="motorcycle" background="#FFA39E"/><Label value="mouse" background="#D4380D"/><Label value="orange" background="#FFC069"/><Label value="oven" background="#AD8B00"/><Label value="parking_meter" background="#D3F261"/><Label value="person" background="#389E0D"/><Label value="pizza" background="#5CDBD3"/><Label value="potted_plant" background="#096DD9"/><Label value="refrigerator" background="#ADC6FF"/><Label value="remote" background="#9254DE"/><Label value="sandwich" background="#F759AB"/><Label value="scissors" background="#FFA39E"/><Label value="sheep" background="#D4380D"/><Label value="sink" background="#FFC069"/><Label value="skateboard" background="#AD8B00"/><Label value="skis" background="#D3F261"/><Label value="snowboard" background="#389E0D"/><Label value="spoon" background="#5CDBD3"/><Label value="sports_ball" background="#096DD9"/><Label value="stop_sign" background="#ADC6FF"/><Label value="suitcase" background="#9254DE"/><Label value="surfboard" background="#F759AB"/><Label value="teddy_bear" background="#FFA39E"/><Label value="tennis_racket" background="#D4380D"/><Label value="tie" background="#FFC069"/><Label value="toaster" background="#AD8B00"/><Label value="toilet" background="#D3F261"/><Label value="toothbrush" background="#389E0D"/><Label value="traffic_light" background="#5CDBD3"/><Label value="train" background="#096DD9"/><Label value="truck" background="#ADC6FF"/><Label value="tv" background="#9254DE"/><Label value="umbrella" background="#F759AB"/><Label value="vase" background="#FFA39E"/><Label value="wine_glass" background="#D4380D"/><Label value="zebra" background="#FFC069"/>
+  </EllipseLabels>
+  
+   <KeyPointLabels name="KeyPointLabels" toName="image" value="EllipseLabexls">
+        <Label value="airplane" background="#FFA39E"/><Label value="apple" background="#D4380D"/><Label value="backpack" background="#FFC069"/><Label value="banana" background="#AD8B00"/><Label value="baseball_bat" background="#D3F261"/><Label value="baseball_glove" background="#389E0D"/><Label value="bear" background="#5CDBD3"/><Label value="bed" background="#096DD9"/><Label value="bench" background="#ADC6FF"/><Label value="bicycle" background="#9254DE"/><Label value="bird" background="#F759AB"/><Label value="boat" background="#FFA39E"/><Label value="book" background="#D4380D"/><Label value="bottle" background="#FFC069"/><Label value="bowl" background="#AD8B00"/><Label value="broccoli" background="#D3F261"/><Label value="bus" background="#389E0D"/><Label value="cake" background="#5CDBD3"/><Label value="car" background="#096DD9"/><Label value="carrot" background="#ADC6FF"/><Label value="cat" background="#9254DE"/><Label value="cell_phone" background="#F759AB"/><Label value="chair" background="#FFA39E"/><Label value="clock" background="#D4380D"/><Label value="couch" background="#FFC069"/><Label value="cow" background="#AD8B00"/><Label value="cup" background="#D3F261"/><Label value="dining_table" background="#389E0D"/><Label value="dog" background="#5CDBD3"/><Label value="donut" background="#096DD9"/><Label value="elephant" background="#ADC6FF"/><Label value="fire_hydrant" background="#9254DE"/><Label value="fork" background="#F759AB"/><Label value="frisbee" background="#FFA39E"/><Label value="giraffe" background="#D4380D"/><Label value="hair_drier" background="#FFC069"/><Label value="handbag" background="#AD8B00"/><Label value="horse" background="#D3F261"/><Label value="hot_dog" background="#389E0D"/><Label value="keyboard" background="#5CDBD3"/><Label value="kite" background="#096DD9"/><Label value="knife" background="#ADC6FF"/><Label value="laptop" background="#9254DE"/><Label value="microwave" background="#F759AB"/><Label value="motorcycle" background="#FFA39E"/><Label value="mouse" background="#D4380D"/><Label value="orange" background="#FFC069"/><Label value="oven" background="#AD8B00"/><Label value="parking_meter" background="#D3F261"/><Label value="person" background="#389E0D"/><Label value="pizza" background="#5CDBD3"/><Label value="potted_plant" background="#096DD9"/><Label value="refrigerator" background="#ADC6FF"/><Label value="remote" background="#9254DE"/><Label value="sandwich" background="#F759AB"/><Label value="scissors" background="#FFA39E"/><Label value="sheep" background="#D4380D"/><Label value="sink" background="#FFC069"/><Label value="skateboard" background="#AD8B00"/><Label value="skis" background="#D3F261"/><Label value="snowboard" background="#389E0D"/><Label value="spoon" background="#5CDBD3"/><Label value="sports_ball" background="#096DD9"/><Label value="stop_sign" background="#ADC6FF"/><Label value="suitcase" background="#9254DE"/><Label value="surfboard" background="#F759AB"/><Label value="teddy_bear" background="#FFA39E"/><Label value="tennis_racket" background="#D4380D"/><Label value="tie" background="#FFC069"/><Label value="toaster" background="#AD8B00"/><Label value="toilet" background="#D3F261"/><Label value="toothbrush" background="#389E0D"/><Label value="traffic_light" background="#5CDBD3"/><Label value="train" background="#096DD9"/><Label value="truck" background="#ADC6FF"/><Label value="tv" background="#9254DE"/><Label value="umbrella" background="#F759AB"/><Label value="vase" background="#FFA39E"/><Label value="wine_glass" background="#D4380D"/><Label value="zebra" background="#FFC069"/>
+  </KeyPointLabels>
+
+</View>
 ```
 
 然后将上述类别复制添加到 Label-Studio，然后点击 Save。
