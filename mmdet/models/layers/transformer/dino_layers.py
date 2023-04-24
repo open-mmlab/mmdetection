@@ -54,9 +54,9 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
                 regression results.
 
         Returns:
-            tuple[Tensor]: Output queries and references of Transformer 
+            tuple[Tensor]: Output queries and references of Transformer
                 decoder
-          
+
             - query (Tensor): Output embeddings of the last decoder, has
               shape (num_queries, bs, embed_dims) when `return_intermediate`
               is `False`. Otherwise, Intermediate output embeddings of all
@@ -66,9 +66,7 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
               layer, has shape (bs, num_queries, 4)  when `return_intermediate`
               is `False`. Otherwise, Intermediate references of all decoder
               layers, has shape (num_decoder_layers, bs, num_queries, 4). The
-              coordinates are arranged as (cx, cy, w, h)  
-            
-            
+              coordinates are arranged as (cx, cy, w, h)
         """
         intermediate = []
         intermediate_reference_points = [reference_points]
