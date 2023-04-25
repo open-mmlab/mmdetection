@@ -10,3 +10,4 @@ from .roi_heads import *  # noqa: F401,F403
 from .seg_heads import *  # noqa: F401,F403
 from .task_modules import *  # noqa: F401,F403
 from .test_time_augs import *  # noqa: F401,F403
+from .language_models import *  # noqa: F401,F403

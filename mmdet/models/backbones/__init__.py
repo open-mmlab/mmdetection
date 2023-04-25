@@ -17,6 +17,7 @@ from .resnext import ResNeXt
 from .ssd_vgg import SSDVGG
 from .swin import SwinTransformer
 from .trident_resnet import TridentResNet
+from .glip_swin import GSwinTransformer
 
 __all__ = [
     'RegNet', 'ResNet', 'ResNetV1d', 'ResNeXt', 'SSDVGG', 'HRNet',

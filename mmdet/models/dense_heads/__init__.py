@@ -49,6 +49,7 @@ from .yolact_head import YOLACTHead, YOLACTProtonet
 from .yolo_head import YOLOV3Head
 from .yolof_head import YOLOFHead
 from .yolox_head import YOLOXHead
+from .atss_vlfusion_head import ATSSVLFusionHead
 
 __all__ = [
     'AnchorFreeHead', 'AnchorHead', 'GuidedAnchorHead', 'FeatureAdaption',

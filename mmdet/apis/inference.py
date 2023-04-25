@@ -22,11 +22,11 @@ from ..utils import get_test_pipeline_cfg
 
 
 def init_detector(
-    config: Union[str, Path, Config],
-    checkpoint: Optional[str] = None,
-    palette: str = 'none',
-    device: str = 'cuda:0',
-    cfg_options: Optional[dict] = None,
+        config: Union[str, Path, Config],
+        checkpoint: Optional[str] = None,
+        palette: str = 'none',
+        device: str = 'cuda:0',
+        cfg_options: Optional[dict] = None,
 ) -> nn.Module:
     """Initialize a detector from config file.
 
@@ -115,9 +115,10 @@ ImagesType = Union[str, np.ndarray, Sequence[str], Sequence[np.ndarray]]
 
 
 def inference_detector(
-    model: nn.Module,
-    imgs: ImagesType,
-    test_pipeline: Optional[Compose] = None
+        model: nn.Module,
+        imgs: ImagesType,
+        test_pipeline: Optional[Compose] = None,
+        text_prompt: Optional[Union[str, Sequence[str]]] = None,
 ) -> Union[DetDataSample, SampleList]:
     """Inference image(s) with the detector.
 
@@ -139,6 +140,10 @@ def inference_detector(
         imgs = [imgs]
         is_batch = False
 
+    if text_prompt and isinstance(text_prompt, str):
+        text_prompt = [text_prompt]
+        assert len(text_prompt) == len(imgs)
+
     cfg = model.cfg
 
     if test_pipeline is None:
@@ -158,7 +163,7 @@ def inference_detector(
             ), 'CPU inference with RoIPool is not supported currently.'
 
     result_list = []
-    for img in imgs:
+    for i, img in enumerate(imgs):
         # prepare data
         if isinstance(img, np.ndarray):
             # TODO: remove img_id.
@@ -168,6 +173,9 @@ def inference_detector(
             data_ = dict(img_path=img, img_id=0)
         # build the data pipeline
         data_ = test_pipeline(data_)
+
+        if text_prompt:
+            data_['data_samples'].text_prompt = text_prompt[i]
 
         data_['inputs'] = [data_['inputs']]
         data_['data_samples'] = [data_['data_samples']]

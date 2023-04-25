@@ -55,6 +55,7 @@ from .yolact import YOLACT
 from .yolo import YOLOV3
 from .yolof import YOLOF
 from .yolox import YOLOX
+from .glip import GLIP
 
 __all__ = [
     'ATSS', 'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
