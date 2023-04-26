@@ -335,9 +335,10 @@ def imshow_det_bboxes(img,
             for mask in segms:
                 _, _, stats, centroids = cv2.connectedComponentsWithStats(
                     mask.astype(np.uint8), connectivity=8)
-                largest_id = np.argmax(stats[1:, -1]) + 1
-                positions.append(centroids[largest_id])
-                areas.append(stats[largest_id, -1])
+                if stats.shape[0] > 1:
+                    largest_id = np.argmax(stats[1:, -1]) + 1
+                    positions.append(centroids[largest_id])
+                    areas.append(stats[largest_id, -1])
             areas = np.stack(areas, axis=0)
             scales = _get_adaptive_scales(areas)
             draw_labels(
