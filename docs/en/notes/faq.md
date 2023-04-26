@@ -214,6 +214,12 @@ Compatible MMDetection, MMEngine, and MMCV versions are shown as below. Please c
   1. According to the definition of COCO dataset, the small and medium areas in an image are less than 1024 (32\*32), 9216 (96\*96), respectively.
   2. If the corresponding area has no object, the result of AP and AR will set to -1.
 
+### How do you run per class validation?
+
+```
+evaluation=dict(classwise=True, metric='bbox') 
+```
+
 ## Model
 
 - `style` in ResNet
