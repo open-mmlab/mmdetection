@@ -183,7 +183,7 @@ def convert_model_info_to_pwc(model_infos):
 def parse_args():
     parser = argparse.ArgumentParser(description='Gather benchmarked models')
     parser.add_argument(
-        '--root',
+        'root',
         type=str,
         default='work_dirs',
         help='root path of benchmarked models to be gathered')
