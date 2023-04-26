@@ -171,11 +171,12 @@ def inference_detector(
         else:
             # TODO: remove img_id.
             data_ = dict(img_path=img, img_id=0)
-        # build the data pipeline
-        data_ = test_pipeline(data_)
 
         if text_prompt:
-            data_['data_samples'].text_prompt = text_prompt[i]
+            data_['caption'] = text_prompt[i]
+
+        # build the data pipeline
+        data_ = test_pipeline(data_)
 
         data_['inputs'] = [data_['inputs']]
         data_['data_samples'] = [data_['data_samples']]

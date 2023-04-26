@@ -73,7 +73,7 @@ class BertModel(BaseModel):
                                                      padding='max_length' if self.pad_to_max else "longest",
                                                      return_special_tokens_mask=True,
                                                      return_tensors='pt',
-                                                     truncation=True).to(device)  # 想并行计算
+                                                     truncation=True).to(device)
 
         tokenizer_input = {"input_ids": tokenized.input_ids,
                            "attention_mask": tokenized.attention_mask}

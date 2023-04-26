@@ -382,27 +382,48 @@ class VLFusionModule(BaseModel):
         return logits, bbox_reg, centerness, dot_product_logits
 
 
-def convert_grounding_to_od_logits(logits, box_cls, positive_map, score_agg=None):
+def convert_grounding_to_od_logits(logits, box_cls, positive_maps, score_agg=None):
     # 这个 scores 维度是 (1,13600,80)，这个 80 是明显不合理的，这个地方应该是当前句子中 token 的个数
     # 假设当前句子一共 3 个命名实体，那么这个维度应该是 (1,13600,3)
     # 虽然结果一样，但是含义就不一样，当某一种图片的实体超过 80 那就会报错了
+    assert len(positive_maps) == logits.shape[0]
+
     scores = torch.zeros(logits.shape[0], logits.shape[1], box_cls.shape[2]).to(logits.device)  # (1,13600,80)
     # 256 -> 80, average for each class
-    if positive_map is not None:
-        # score aggregation method
-        if score_agg == "MEAN":  # ture
-            for label_j in positive_map:  # logits (1,13600,256) 取出对应 token 位置的预测值，然后求均值,将其转换为 80 类的预测值
-                scores[:, :, label_j - 1] = logits[:, :, torch.LongTensor(positive_map[label_j])].mean(-1)
-        elif score_agg == "MAX":
-            # torch.max() returns (values, indices)
-            for label_j in positive_map:
-                scores[:, :, label_j - 1] = logits[:, :, torch.LongTensor(positive_map[label_j])].max(-1)[
-                    0]
-        elif score_agg == "ONEHOT":
-            # one hot
-            scores = logits[:, :, :len(positive_map)]
+    if positive_maps is not None:
+        if all(x == positive_maps[0] for x in positive_maps):
+            # only need to compute once
+            positive_map = positive_maps[0]
+            # score aggregation method
+            if score_agg == "MEAN":  # ture
+                for label_j in positive_map:  # logits (1,13600,256) 取出对应 token 位置的预测值，然后求均值,将其转换为 80 类的预测值
+                    scores[:, :, label_j - 1] = logits[:, :, torch.LongTensor(positive_map[label_j])].mean(-1)
+            elif score_agg == "MAX":
+                # torch.max() returns (values, indices)
+                for label_j in positive_map:
+                    scores[:, :, label_j - 1] = logits[:, :, torch.LongTensor(positive_map[label_j])].max(-1)[
+                        0]
+            elif score_agg == "ONEHOT":
+                # one hot
+                scores = logits[:, :, :len(positive_map)]
+            else:
+                raise NotImplementedError
         else:
-            raise NotImplementedError
+            for i, positive_map in enumerate(positive_maps):
+                if score_agg == "MEAN":  # ture
+                    for label_j in positive_map:  # logits (1,13600,256) 取出对应 token 位置的预测值，然后求均值,将其转换为 80 类的预测值
+                        scores[i, :, label_j - 1] = logits[i, :, torch.LongTensor(positive_map[label_j])].mean(-1)
+                elif score_agg == "MAX":
+                    # torch.max() returns (values, indices)
+                    for label_j in positive_map:
+                        scores[i, :, label_j - 1] = logits[i, :, torch.LongTensor(positive_map[label_j])].max(-1)[
+                            0]
+                elif score_agg == "ONEHOT":
+                    # one hot
+                    raise NotImplementedError
+                else:
+                    raise NotImplementedError
+
     return scores
 
 
@@ -427,9 +448,9 @@ class ATSSPostProcessor(torch.nn.Module):
     def __init__(
             self,
             pre_nms_thresh=0.05,
-            pre_nms_top_n=3000,
+            pre_nms_top_n=1000,
             nms_thresh=0.6,
-            fpn_post_nms_top_n=1000,
+            fpn_post_nms_top_n=100,
             min_size=0,
             box_coder=None,
             score_agg='MEAN',
@@ -450,9 +471,7 @@ class ATSSPostProcessor(torch.nn.Module):
         num_images = len(bboxes)
         results = []
         for i in range(num_images):
-            det_samples = DetDataSample()
             pred_instance = InstanceData()
-            det_samples.pred_instances = pred_instance
             if bboxes[i].numel() == 0:
                 pred_instance.bboxes = bboxes[i]
                 pred_instance.scores = scores[i]
@@ -460,12 +479,10 @@ class ATSSPostProcessor(torch.nn.Module):
                 results.append(pred_instance)
             else:
                 det_bboxes, keep_idxs = batched_nms(bboxes[i], scores[i], labels[i], nms_cfg=self.cfg.nms)
-                scores = det_bboxes[:, -1]
-                label = labels[i][keep_idxs]
 
                 pred_instance.bboxes = det_bboxes[:, :4]
                 pred_instance.scores = det_bboxes[:, -1]
-                pred_instance.labels = label
+                pred_instance.labels = labels[i][keep_idxs]
 
                 # multiclass nms
                 # result = boxlist_ml_nms(boxlists[i], self.nms_thresh)
@@ -488,8 +505,7 @@ class ATSSPostProcessor(torch.nn.Module):
                     keep = cls_scores >= image_thresh.item()
                     keep = torch.nonzero(keep).squeeze(1)
                     pred_instance = pred_instance[keep]
-                    det_samples.pred_instance = pred_instance
-                results.append(det_samples)
+                results.append(pred_instance)
         return results
 
     def forward_for_single_feature_map(self,
@@ -498,7 +514,7 @@ class ATSSPostProcessor(torch.nn.Module):
                                        anchors,
                                        box_cls=None,
                                        dot_product_logits=None,
-                                       positive_map=None,
+                                       positive_maps=None,
                                        metainfo=None
                                        ):
 
@@ -517,7 +533,7 @@ class ATSSPostProcessor(torch.nn.Module):
 
         dot_product_logits = dot_product_logits.sigmoid()  # (1,136000,80)
         scores = convert_grounding_to_od_logits(logits=dot_product_logits, box_cls=box_cls,
-                                                positive_map=positive_map,
+                                                positive_maps=positive_maps,
                                                 score_agg=self.score_agg)
         box_cls = scores
 
@@ -584,7 +600,7 @@ class ATSSPostProcessor(torch.nn.Module):
                 anchors,
                 box_cls=None,
                 dot_product_logits=None,
-                positive_map=None,
+                positive_maps=None,
                 metainfo=None
                 ):
         sampled_boxes = []
@@ -592,7 +608,7 @@ class ATSSPostProcessor(torch.nn.Module):
             o = box_cls[idx]
             d = dot_product_logits[idx]
             sampled_boxes.append(
-                self.forward_for_single_feature_map(b, c, a, o, d, positive_map, metainfo)
+                self.forward_for_single_feature_map(b, c, a, o, d, positive_maps, metainfo)
             )
         boxlists = list(zip(*sampled_boxes))
 
@@ -626,10 +642,12 @@ class ATSSVLFusionHead(ATSSHead):
                 visual_feats: Tuple[Tensor],
                 language_feats: dict,
                 batch_data_samples,
-                positive_map: None,
                 rescale: bool = True):
         batch_img_metas = [
             data_samples.metainfo for data_samples in batch_data_samples
+        ]
+        batch_token_positive_maps = [
+            data_samples.token_positive_map for data_samples in batch_data_samples
         ]
 
         featmap_sizes = [visual_feats[i].shape[-2:] for i in range(len(visual_feats))]
@@ -643,7 +661,12 @@ class ATSSVLFusionHead(ATSSHead):
             visual_feats,
             language_feats
         )
-        results = self.postprocess(box_regression, centerness, mlvl_priors, box_cls, dot_product_logits, positive_map,
+        results = self.postprocess(box_regression,
+                                   centerness,
+                                   mlvl_priors,
+                                   box_cls,
+                                   dot_product_logits,
+                                   positive_maps=batch_token_positive_maps,
                                    metainfo=batch_img_metas)
 
         return results

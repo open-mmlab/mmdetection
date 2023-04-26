@@ -23,7 +23,7 @@ model = dict(
             octave_base_scale=8,
             scales_per_octave=1,
             strides=[8, 16, 32, 64, 128],
-            center_offset=0.5),  # follow DyHead official implementation
+            center_offset=0.5),
         bbox_coder=dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
@@ -50,8 +50,8 @@ test_pipeline = [
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor'))
+                   'scale_factor', 'caption'))
 ]
 
-val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+val_dataloader = dict(dataset=dict(pipeline=test_pipeline, return_caption=True))
 test_dataloader = val_dataloader
