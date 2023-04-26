@@ -14,7 +14,7 @@ from typing import Sequence
 
 
 class BertEncoder(nn.Module):
-    def __init__(self, name='bert-base-uncased', num_layers=12, use_checkpoint=False):
+    def __init__(self, name='bert-base-uncased', num_layers=1, use_checkpoint=False):
         super(BertEncoder, self).__init__()
         config = BertConfig.from_pretrained(name)
         config.gradient_checkpointing = use_checkpoint

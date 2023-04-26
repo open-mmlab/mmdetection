@@ -334,14 +334,21 @@ class VLFusionModule(BaseModel):
                        "lang": language_feats}
 
         dyhead_tower = self.dyhead_tower(feat_inputs)
-        embedding = dyhead_tower["lang"]["hidden"]
 
         dot_product_logits = []
+
+        USE_DOT_PRODUCT_TOKEN_LOSS = True
+        if USE_DOT_PRODUCT_TOKEN_LOSS:
+            embedding = language_feats['embedded']
+        else:
+            embedding = dyhead_tower["lang"]["hidden"]
+
         # norm
         embedding = F.normalize(embedding, p=2, dim=-1)  # text embeding (1,256,768)
 
         # 语言特征投影到视觉空间
         dot_product_proj_tokens = self.dot_product_projection_text(embedding / 2.0)  # (1,256,256)
+        # print(embedding.sum(), dot_product_proj_tokens.sum())
         dot_product_proj_tokens_bias = torch.matmul(embedding, self.bias_lang) + self.bias0  # (1, 256)
 
         for l, feature in enumerate(visual_feats):
@@ -365,6 +372,8 @@ class VLFusionModule(BaseModel):
             # dot_product_proj_tokens 融合后的文本特征 1,13600,256
             dot_product_logit = (torch.matmul(dot_product_proj_queries, dot_product_proj_tokens.transpose(-1,
                                                                                                           -2)) / self.log_scale.exp()) + bias
+            # print(x.sum(), dot_product_logit.sum(), dot_product_proj_queries.sum(), dot_product_proj_tokens.sum(),
+            #       self.log_scale)
 
             dot_product_logit = torch.clamp(dot_product_logit, max=50000)
             dot_product_logit = torch.clamp(dot_product_logit, min=-50000)
@@ -466,9 +475,12 @@ class ATSSPostProcessor(torch.nn.Module):
                     results.append(pred_instance)
                     continue
 
+                scale_factor = [1 / s for s in metainfo[i]['scale_factor']]
+                pred_instance.bboxes = scale_boxes(pred_instance.bboxes, scale_factor)
+
                 # Limit to max_per_image detections **over all classes**
                 if number_of_detections > self.fpn_post_nms_top_n > 0:
-                    cls_scores = scores
+                    cls_scores = pred_instance.scores
                     image_thresh, _ = torch.kthvalue(
                         cls_scores.cpu().float(),
                         number_of_detections - self.fpn_post_nms_top_n + 1
@@ -476,10 +488,7 @@ class ATSSPostProcessor(torch.nn.Module):
                     keep = cls_scores >= image_thresh.item()
                     keep = torch.nonzero(keep).squeeze(1)
                     pred_instance = pred_instance[keep]
-
-                    scale_factor = [1 / s for s in metainfo[i]['scale_factor']]
-                    pred_instance.bboxes = scale_boxes(pred_instance.bboxes, scale_factor)
-
+                    det_samples.pred_instance = pred_instance
                 results.append(det_samples)
         return results
 
@@ -544,12 +553,12 @@ class ATSSPostProcessor(torch.nn.Module):
             per_box_loc = per_candidate_nonzeros[:, 0]
             per_class = per_candidate_nonzeros[:, 1] + 1
 
+            # print(per_box_regression.sum(), anchors.sum())
             bboxes = self.box_coder.decode(
-                per_box_regression[per_box_loc, :].view(-1, 4),
                 anchors[per_box_loc, :].view(-1, 4),
+                per_box_regression[per_box_loc, :].view(-1, 4),
                 max_shape=img_shape
             )
-
             scores = torch.sqrt(per_box_cls)
 
             if self.min_size >= 0 and per_pre_nms_top_n > 0:

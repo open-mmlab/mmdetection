@@ -24,7 +24,7 @@ def parse_args():
     parser.add_argument(
         '--show', action='store_true', help='Show the detection results')
     parser.add_argument(
-        '--score-thr', type=float, default=0.3, help='Bbox score threshold')
+        '--score-thr', type=float, default=0.5, help='Bbox score threshold')
     args = parser.parse_args()
     return args
 

@@ -2,14 +2,13 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-
 model = dict(
     type='GLIP',
     data_preprocessor=dict(
         type='DetDataPreprocessor',
-        mean=[123.675, 116.28, 103.53],
-        std=[58.395, 57.12, 57.375],
-        bgr_to_rgb=True,
+        mean=[103.53, 116.28, 123.675],
+        std=[57.375, 57.12, 58.395],
+        bgr_to_rgb=False,
         pad_size_divisor=32),
     backbone=dict(type='GSwinTransformer'),
     neck=dict(type='GFPN'),
@@ -45,7 +44,7 @@ model = dict(
 )
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
+    dict(type='LoadImageFromFile', backend_args=_base_.backend_args, imdecode_backend='pillow'),
     dict(type='Resize', scale=(800, 1333), keep_ratio=True, backend='pillow'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(

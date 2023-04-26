@@ -21,6 +21,7 @@ from mmdet.registry import TRANSFORMS
 from mmdet.structures.bbox import HorizontalBoxes, autocast_box_type
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from mmdet.utils import log_img_scale
+from mmcv.image import imresize
 
 try:
     from imagecorruptions import corrupt
@@ -35,6 +36,96 @@ except ImportError:
     Compose = None
 
 Number = Union[int, float]
+
+
+def _scale_size(
+    size: Tuple[int, int],
+    scale: Union[float, int, tuple],
+) -> Tuple[int, int]:
+    """Rescale a size by a ratio.
+
+    Args:
+        size (tuple[int]): (w, h).
+        scale (float | tuple(float)): Scaling factor.
+
+    Returns:
+        tuple[int]: scaled size.
+    """
+    if isinstance(scale, (float, int)):
+        scale = (scale, scale)
+    w, h = size
+    # don’t need o.5 offset
+    return int(w * float(scale[0])), int(h * float(scale[1]))
+
+def rescale_size(old_size: tuple,
+                 scale: Union[float, int, tuple],
+                 return_scale: bool = False) -> tuple:
+    """Calculate the new size to be rescaled to.
+
+    Args:
+        old_size (tuple[int]): The old size (w, h) of image.
+        scale (float | tuple[int]): The scaling factor or maximum size.
+            If it is a float number, then the image will be rescaled by this
+            factor, else if it is a tuple of 2 integers, then the image will
+            be rescaled as large as possible within the scale.
+        return_scale (bool): Whether to return the scaling factor besides the
+            rescaled image size.
+
+    Returns:
+        tuple[int]: The new rescaled image size.
+    """
+    w, h = old_size
+    if isinstance(scale, (float, int)):
+        if scale <= 0:
+            raise ValueError(f'Invalid scale {scale}, must be positive.')
+        scale_factor = scale
+    elif isinstance(scale, tuple):
+        max_long_edge = max(scale)
+        max_short_edge = min(scale)
+        scale_factor = min(max_long_edge / max(h, w),
+                           max_short_edge / min(h, w))
+    else:
+        raise TypeError(
+            f'Scale must be a number or tuple of int, but got {type(scale)}')
+    # only change this
+    new_size = _scale_size((w, h), scale_factor)
+
+    if return_scale:
+        return new_size, scale_factor
+    else:
+        return new_size
+
+def imrescale(
+    img: np.ndarray,
+    scale: Union[float, Tuple[int, int]],
+    return_scale: bool = False,
+    interpolation: str = 'bilinear',
+    backend: Optional[str] = None
+) -> Union[np.ndarray, Tuple[np.ndarray, float]]:
+    """Resize image while keeping the aspect ratio.
+
+    Args:
+        img (ndarray): The input image.
+        scale (float | tuple[int]): The scaling factor or maximum size.
+            If it is a float number, then the image will be rescaled by this
+            factor, else if it is a tuple of 2 integers, then the image will
+            be rescaled as large as possible within the scale.
+        return_scale (bool): Whether to return the scaling factor besides the
+            rescaled image.
+        interpolation (str): Same as :func:`resize`.
+        backend (str | None): Same as :func:`resize`.
+
+    Returns:
+        ndarray: The rescaled image.
+    """
+    h, w = img.shape[:2]
+    new_size, scale_factor = rescale_size((w, h), scale, return_scale=True)
+    rescaled_img = imresize(
+        img, new_size, interpolation=interpolation, backend=backend)
+    if return_scale:
+        return rescaled_img, scale_factor
+    else:
+        return rescaled_img
 
 
 @TRANSFORMS.register_module()
@@ -157,6 +248,34 @@ class Resize(MMCV_Resize):
         self._resize_seg(results)
         self._record_homography_matrix(results)
         return results
+
+    def _resize_img(self, results):
+        """Resize images with ``results['scale']``."""
+        if results.get('img', None) is not None:
+            if self.keep_ratio:
+                img, scale_factor = imrescale(
+                    results['img'],
+                    results['scale'],
+                    interpolation=self.interpolation,
+                    return_scale=True,
+                    backend=self.backend)
+                # the w_scale and h_scale has minor difference
+                # a real fix should be done in the mmcv.imrescale in the future
+                new_h, new_w = img.shape[:2]
+                h, w = results['img'].shape[:2]
+                w_scale = new_w / w
+                h_scale = new_h / h
+            else:
+                img, w_scale, h_scale = mmcv.imresize(
+                    results['img'],
+                    results['scale'],
+                    interpolation=self.interpolation,
+                    return_scale=True,
+                    backend=self.backend)
+            results['img'] = img
+            results['img_shape'] = img.shape[:2]
+            results['scale_factor'] = (w_scale, h_scale)
+            results['keep_ratio'] = self.keep_ratio
 
     def __repr__(self) -> str:
         repr_str = self.__class__.__name__
