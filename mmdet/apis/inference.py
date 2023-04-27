@@ -333,6 +333,9 @@ def init_track_model(config: Union[str, Config],
         checkpoint_meta = checkpoint.get('meta', {})
         # save the dataset_meta in the model for convenience
         if 'dataset_meta' in checkpoint_meta:
+            if 'CLASSES' in checkpoint_meta['dataset_meta']:
+                value = checkpoint_meta['dataset_meta'].pop('CLASSES')
+                checkpoint_meta['dataset_meta']['classes'] = value
             model.dataset_meta = checkpoint_meta['dataset_meta']
 
     if detector is not None:

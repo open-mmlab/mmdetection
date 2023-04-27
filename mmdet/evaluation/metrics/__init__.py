@@ -12,10 +12,11 @@ from .lvis_metric import LVISMetric
 from .mot_challenge_metric import MOTChallengeMetric
 from .openimages_metric import OpenImagesMetric
 from .voc_metric import VOCMetric
+from .youtube_vis_metric import YouTubeVISMetric
 
 __all__ = [
     'CityScapesMetric', 'CocoMetric', 'CocoPanopticMetric', 'OpenImagesMetric',
     'VOCMetric', 'LVISMetric', 'CrowdHumanMetric', 'DumpProposals',
     'CocoOccludedSeparatedMetric', 'DumpDetResults', 'BaseVideoMetric',
-    'MOTChallengeMetric', 'CocoVideoMetric'
+    'MOTChallengeMetric', 'CocoVideoMetric', 'YouTubeVISMetric'
 ]

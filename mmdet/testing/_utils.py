@@ -284,8 +284,7 @@ def demo_track_inputs(batch_size=1,
     """Create a superset of inputs needed to run test or train batches.
 
     Args:
-        batch_size (int): batch size. Default to 2.
-        frame_id (int): the frame id.
+        batch_size (int): batch size. Default to 1.
         num_frames (int): The number of frames.
         key_frames_inds (List): The indices of key frames.
         image_shapes (List[tuple], Optional): image shape.
