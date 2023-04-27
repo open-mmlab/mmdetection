@@ -2,6 +2,7 @@
 from .gaussian_target import (gather_feat, gaussian_radius,
                               gen_gaussian_target, get_local_maximum,
                               get_topk_from_heatmap, transpose_and_gather_feat)
+from .image import imrenormalize
 from .make_divisible import make_divisible
 from .misc import (aligned_bilinear, center_of_mass, empty_instances,
                    filter_gt_instances, filter_scores_and_topk, flip_tensor,
@@ -26,5 +27,5 @@ __all__ = [
     'select_single_mlvl', 'unmap', 'images_to_levels',
     'samplelist_boxtype2tensor', 'filter_gt_instances', 'rename_loss_dict',
     'reweight_loss_dict', 'relative_coordinate_maps', 'aligned_bilinear',
-    'unfold_wo_center'
+    'unfold_wo_center', 'imrenormalize'
 ]
