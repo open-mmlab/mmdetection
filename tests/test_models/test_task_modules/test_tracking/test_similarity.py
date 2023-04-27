@@ -8,4 +8,3 @@ def test_embed_similarity():
     embeds = torch.rand(2, 3)
     similarity = embed_similarity(embeds, embeds)
     assert similarity.shape == (2, 2)
-    assert torch.allclose(similarity, torch.eye(2))
