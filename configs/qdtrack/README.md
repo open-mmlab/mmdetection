@@ -30,11 +30,8 @@ Due to the influence of parameters such as learning rate in default configuratio
 ```shell
 # Training QDTrack on mot17-half-train dataset with following command.
 # The number after config file represents the number of GPUs used. Here we use 8 GPUs.
-./tools/dist_train.sh \
-    configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py 8
+bash tools/dist_train.sh configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py 8
 ```
-
-If you want to know about more detailed usage of `train.py/dist_train.sh/slurm_train.sh`, please refer to this [document](../../../docs/en/user_guides/tracking_train_test.md).
 
 ### 2. Testing and evaluation
 
@@ -43,9 +40,7 @@ If you want to know about more detailed usage of `train.py/dist_train.sh/slurm_t
 ```shell
 # Example 1: Test on motXX-half-val set
 # The number after config file represents the number of GPUs used. Here we use 8 GPUs.
-./tools/dist_test.sh \
-    configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py 8 \
-    --checkpoint ${CHECKPOINT_PATH}
+bash tools/dist_test_tracking.sh configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py 8 --checkpoint ${CHECKPOINT_PATH}
 ```
 
 ### 3.Inference
@@ -53,14 +48,8 @@ If you want to know about more detailed usage of `train.py/dist_train.sh/slurm_t
 Use a single GPU to predict a video and save it as a video.
 
 ```shell
-python demo/demo_mot_vis.py \
-    configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py \
-    --checkpoint ${CHECKPOINT_PATH} \
-    --input demo/demo.mp4 \
-    --output mot.mp4
+python demo/mot_demo.py demo/demo_mot.mp4 configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py --checkpoint ${CHECKPOINT_PATH} --out mot.mp4
 ```
-
-If you want to know about more detailed usage of `demo_mot_vis.py`, please refer to this [document](../../../docs/en/user_guides/tracking_inference.md).
 
 ## Citation
 
