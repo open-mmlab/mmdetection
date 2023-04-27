@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from mmengine.utils import digit_version
 
 from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DiceLoss,
-                                 DistributionFocalLoss, FocalLoss,
+                                 DistributionFocalLoss, EQLV2Loss, FocalLoss,
                                  GaussianFocalLoss,
                                  KnowledgeDistillationKLDivLoss, L1Loss,
                                  MSELoss, QualityFocalLoss, SeesawLoss,
@@ -32,7 +32,7 @@ def test_iou_type_loss_zeros_weight(loss_class):
     EIoULoss, FocalLoss, DistributionFocalLoss, MSELoss, SeesawLoss,
     GaussianFocalLoss, GIoULoss, QualityFocalLoss, IoULoss, L1Loss,
     VarifocalLoss, GHMR, GHMC, SmoothL1Loss, KnowledgeDistillationKLDivLoss,
-    DiceLoss
+    DiceLoss, EQLV2Loss
 ])
 def test_loss_with_reduction_override(loss_class):
     pred = torch.rand((10, 4))
