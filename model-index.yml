@@ -74,6 +74,7 @@ Import:
   - configs/scratch/metafile.yml
   - configs/seesaw_loss/metafile.yml
   - configs/simple_copy_paste/metafile.yml
+  - configs/soft_teacher/metafile.yml
   - configs/sparse_rcnn/metafile.yml
   - configs/solo/metafile.yml
   - configs/solov2/metafile.yml
