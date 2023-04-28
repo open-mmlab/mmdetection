@@ -5,10 +5,11 @@ import unittest
 
 import numpy as np
 import torch
-from mmengine.structures import InstanceData, PixelData
+from mmengine.structures import InstanceData, LabelData, PixelData
 
-from mmdet.datasets.transforms import PackDetInputs, PackTrackInputs
-from mmdet.structures import DetDataSample
+from mmdet.datasets.transforms import (PackDetInputs, PackReIDInputs,
+                                       PackTrackInputs)
+from mmdet.structures import DetDataSample, ReIDDataSample
 from mmdet.structures.mask import BitmapMasks
 
 
@@ -169,10 +170,10 @@ class TestPackTrackInputs(unittest.TestCase):
 
         track_data_sample = track_results['data_samples']
         assert len(track_data_sample) == 3
-        assert 'key_frame_inds' in track_data_sample.metainfo and \
-            track_data_sample.key_frame_inds == [1]
-        assert 'ref_frame_inds' in track_data_sample.metainfo and \
-            track_data_sample.ref_frame_inds == [0, 2]
+        assert 'key_frames_inds' in track_data_sample.metainfo and \
+            track_data_sample.key_frames_inds == [1]
+        assert 'ref_frames_inds' in track_data_sample.metainfo and \
+            track_data_sample.ref_frames_inds == [0, 2]
         for i, data_sample in enumerate(track_data_sample):
             assert data_sample.gt_instances.bboxes.shape == (2, 4)
             assert len(data_sample.gt_instances.masks) == 2
@@ -204,3 +205,42 @@ class TestPackTrackInputs(unittest.TestCase):
                     self.gt_instances_ids[i][valid_mask]).all()
             for key in self.meta_keys:
                 assert data_sample.metainfo[key] == getattr(self, key)[i]
+
+
+class TestPackReIDInputs(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.results = dict(
+            img=np.random.randn(256, 128, 3),
+            gt_label=0,
+            img_path='',
+            ori_shape=(128, 128),
+            img_shape=(256, 128),
+            scale=(128, 256),
+            scale_factor=(1., 2.),
+            flip=False,
+            flip_direction=None)
+        cls.pack_reid_inputs = PackReIDInputs(
+            meta_keys=('flip', 'flip_direction'))
+
+    def test_transform(self):
+        results = self.pack_reid_inputs(self.results)
+        self.assertIn('inputs', results)
+        self.assertIsInstance(results['inputs'], torch.Tensor)
+        self.assertIn('data_samples', results)
+        data_sample = results['data_samples']
+        self.assertIsInstance(data_sample, ReIDDataSample)
+        self.assertIsInstance(data_sample.gt_label, LabelData)
+        self.assertEqual(data_sample.img_path, '')
+        self.assertEqual(data_sample.ori_shape, (128, 128))
+        self.assertEqual(data_sample.img_shape, (256, 128))
+        self.assertEqual(data_sample.scale, (128, 256))
+        self.assertEqual(data_sample.scale_factor, (1., 2.))
+        self.assertEqual(data_sample.flip, False)
+        self.assertIsNone(data_sample.flip_direction)
+
+    def test_repr(self):
+        self.assertEqual(
+            repr(self.pack_reid_inputs),
+            f'PackReIDInputs(meta_keys={self.pack_reid_inputs.meta_keys})')
