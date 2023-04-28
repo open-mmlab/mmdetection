@@ -3,5 +3,6 @@ from .base import BaseMOTModel
 from .bytetrack import ByteTrack
 from .deep_sort import DeepSORT
 from .qdtrack import QDTrack
+from .strongsort import StrongSORT
 
-__all__ = ['BaseMOTModel', 'ByteTrack', 'QDTrack', 'DeepSORT']
+__all__ = ['BaseMOTModel', 'ByteTrack', 'QDTrack', 'DeepSORT', 'StrongSORT']
