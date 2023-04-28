@@ -2,11 +2,14 @@
 import os.path as osp
 from typing import Union
 
+try:
+    import seaborn as sns
+except ImportError:
+    sns = None
 import cv2
 import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
-import seaborn as sns
 from matplotlib.patches import Rectangle
 from mmengine.utils import mkdir_or_exist
 
@@ -63,6 +66,8 @@ def _cv2_show_wrong_tracks(img: Union[str, np.ndarray],
     Returns:
         ndarray: Visualized image.
     """
+    if sns is None:
+        raise ImportError('please run pip install seaborn')
     assert bboxes.ndim == 2, \
         f' bboxes ndim should be 2, but its ndim is {bboxes.ndim}.'
     assert ids.ndim == 1, \
