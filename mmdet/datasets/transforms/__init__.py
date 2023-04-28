@@ -3,8 +3,8 @@ from .augment_wrappers import AutoAugment, RandAugment
 from .colorspace import (AutoContrast, Brightness, Color, ColorTransform,
                          Contrast, Equalize, Invert, Posterize, Sharpness,
                          Solarize, SolarizeAdd)
-from .formatting import (ImageToTensor, PackDetInputs, PackTrackInputs,
-                         ToTensor, Transpose)
+from .formatting import (ImageToTensor, PackDetInputs, PackReIDInputs,
+                         PackTrackInputs, ToTensor, Transpose)
 from .frame_sampling import BaseFrameSample, UniformRefFrameSample
 from .geometric import (GeomTransform, Rotate, ShearX, ShearY, TranslateX,
                         TranslateY)
@@ -36,5 +36,5 @@ __all__ = [
     'LoadEmptyAnnotations', 'RandomOrder', 'CachedMosaic', 'CachedMixUp',
     'FixShapeResize', 'ProposalBroadcaster', 'InferencerLoader',
     'LoadTrackAnnotations', 'BaseFrameSample', 'UniformRefFrameSample',
-    'PackTrackInputs'
+    'PackTrackInputs', 'PackReIDInputs'
 ]

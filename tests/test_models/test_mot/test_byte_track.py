@@ -5,18 +5,18 @@ from unittest import TestCase
 
 import torch
 from mmengine.logging import MessageHub
+from mmengine.registry import init_default_scope
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_track_inputs, get_detector_cfg
-from mmdet.utils import register_all_modules
 
 
 class TestByteTrack(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        register_all_modules(init_default_scope=True)
+        init_default_scope('mmdet')
 
     @parameterized.expand([
         'bytetrack/bytetrack_yolox_x_8xb4-80e_crowdhuman-mot17halftrain'
