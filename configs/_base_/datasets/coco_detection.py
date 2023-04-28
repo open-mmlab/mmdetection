@@ -9,12 +9,12 @@ data_root = 'data/coco/'
 # data_root = 's3://openmmlab/datasets/detection/coco/'
 
 # Method 2: Use `backend_args`, `file_client_args` in versions before 3.0.0rc6
-# backend_args = dict(
-#     backend='petrel',
-#     path_mapping=dict({
-#         './data/': 's3://openmmlab/datasets/detection/',
-#         'data/': 's3://openmmlab/datasets/detection/'
-#     }))
+backend_args = dict(
+    backend='petrel',
+    path_mapping=dict({
+        './data/': 's3://openmmlab/datasets/detection/',
+        'data/': 's3://openmmlab/datasets/detection/'
+    }))
 backend_args = None
 
 train_pipeline = [
@@ -43,7 +43,7 @@ train_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='annotations/instances_train2017.json',
+        ann_file='/home/username/annotations/instances_train2017.json',
         data_prefix=dict(img='train2017/'),
         filter_cfg=dict(filter_empty_gt=True, min_size=32),
         pipeline=train_pipeline,
