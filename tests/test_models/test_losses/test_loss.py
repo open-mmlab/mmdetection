@@ -32,7 +32,7 @@ def test_iou_type_loss_zeros_weight(loss_class):
     EIoULoss, FocalLoss, DistributionFocalLoss, MSELoss, SeesawLoss,
     GaussianFocalLoss, GIoULoss, QualityFocalLoss, IoULoss, L1Loss,
     VarifocalLoss, GHMR, GHMC, SmoothL1Loss, KnowledgeDistillationKLDivLoss,
-    DiceLoss, EQLV2Loss
+    DiceLoss
 ])
 def test_loss_with_reduction_override(loss_class):
     pred = torch.rand((10, 4))
@@ -289,3 +289,30 @@ def test_dice_loss(naive_dice):
     with pytest.raises(AssertionError):
         weight = torch.rand((8))
         loss_class(naive_dice=naive_dice)(pred, target, weight)
+
+
+@pytest.mark.parametrize('loss_class', [EQLV2Loss])
+def test_eqlv2_loss(loss_class, use_sigmoid, reduction):
+    # Test loss forward
+    pred = torch.rand((10, 4))
+    label = torch.rand((10, 4))
+    weight = None
+
+    # Test loss forward
+    loss = loss_class()(pred, label, weight)
+    assert isinstance(loss, torch.Tensor)
+
+    # Test loss forward with reduction_override
+    loss = loss_class()(pred, label, weight, reduction_override='mean')
+    assert isinstance(loss, torch.Tensor)
+
+    with pytest.raises(ValueError):
+        # loss can evaluate with avg_factor only if
+        # reduction is None, 'none' or 'mean'.
+        reduction_override = 'sum'
+        loss_class()(
+            pred,
+            label,
+            weight,
+            avg_factor=10,
+            reduction_override=reduction_override)

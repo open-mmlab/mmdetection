@@ -105,12 +105,12 @@ class EQLV2Loss(nn.Module):
                 Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
-            reduction_override (str, optional): The method used to reduce the
-                loss into a scalar. Defaults to 'mean'. Options are "none",
-                "mean" and "sum".
+            reduction_override (str, optional): The reduction method used to
+                override the original reduction method of the loss.
+                Options are "none", "mean" and "sum".
 
         Returns:
-            Tensor: Loss tensor.
+           Tensor: The calculated loss
         """
         self.n_i, self.n_c = pred.size()
         self.gt_classes = label
