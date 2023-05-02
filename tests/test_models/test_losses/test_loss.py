@@ -304,13 +304,18 @@ def test_eqlv2_loss(loss_class, use_sigmoid, reduction):
     cls_score = torch.randn(num_anchors, num_classes, *feat_size)
     bbox_pred = torch.randn(num_anchors, 4, *feat_size)
     gt_bboxes = torch.randn(num_anchors, 4)
-    gt_labels = torch.randint(0, num_classes, (num_anchors,))
+    gt_labels = torch.randint(0, num_classes, (num_anchors, ))
 
     # Instantiate EQLv2Loss
     loss = loss_class(use_sigmoid=use_sigmoid)
 
     # Compute loss
-    loss_out = loss(cls_score, bbox_pred, gt_bboxes, gt_labels, reduction_override=reduction)
+    loss_out = loss(
+        cls_score,
+        bbox_pred,
+        gt_bboxes,
+        gt_labels,
+        reduction_override=reduction)
 
     # Check output shape
     assert loss_out.shape == ()
