@@ -291,10 +291,10 @@ def test_dice_loss(naive_dice):
         loss_class(naive_dice=naive_dice)(pred, target, weight)
 
 
+@pytest.mark.parametrize('loss_class', [EQLV2Loss])
 @pytest.mark.parametrize('reduction', ['mean'])
 @pytest.mark.parametrize('input_shape', [(10, 4)])
-def test_eqlv2_loss(reduction, input_shape):
-    loss_class = EQLV2Loss()
+def test_eqlv2_loss(loss_class, reduction, input_shape):
     cls_score = torch.randn(input_shape)
     label = torch.randint(0, 2, (input_shape[0], ))
     weight = None
