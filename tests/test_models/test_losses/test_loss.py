@@ -295,7 +295,10 @@ def test_dice_loss(naive_dice):
 @pytest.mark.parametrize('reduction', ['mean'])
 def test_eqlv2_loss(loss_class, reduction):
     cls_score = torch.randn(1024, 1)
-    label = torch.randint(0, 2, (1024, 1, ))
+    label = torch.randint(0, 2, (
+        1024,
+        1,
+    ))
     weight = None
 
     loss = loss_class()(cls_score, label, weight)
