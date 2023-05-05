@@ -67,6 +67,7 @@ class EQLV2Loss(nn.Module):
         self.mu = mu
         self.alpha = alpha
         self.gamma = gamma
+        self.use_distributed = use_distributed
 
         # initial variables
         self.register_buffer('pos_grad', torch.zeros(self.num_classes))
@@ -89,7 +90,7 @@ class EQLV2Loss(nn.Module):
             level=logging.DEBUG)
 
     def forward(self,
-                pred: Tensor,
+                cls_score: Tensor,
                 label: Tensor,
                 weight: Optional[Tensor] = None,
                 avg_factor: Optional[int] = None,
@@ -97,7 +98,7 @@ class EQLV2Loss(nn.Module):
         """`Equalization Loss v2 <https://arxiv.org/abs/2012.08548>`_
 
         Args:
-            pred (Tensor): The prediction with shape (N, C), C is the
+            cls_score (Tensor): The prediction with shape (N, C), C is the
                 number of classes.
             label (Tensor): The ground truth label of the predicted target with
                 shape (N, C), C is the number of classes.
@@ -112,26 +113,26 @@ class EQLV2Loss(nn.Module):
         Returns:
            Tensor: The calculated loss
         """
-        self.n_i, self.n_c = pred.size()
+        self.n_i, self.n_c = cls_score.size()
         self.gt_classes = label
-        self.pred_class_logits = pred
+        self.pred_class_logits = cls_score
 
         def expand_label(pred, gt_classes):
             target = pred.new_zeros(self.n_i, self.n_c)
             target[torch.arange(self.n_i), gt_classes] = 1
             return target
 
-        target = expand_label(pred, label)
+        target = expand_label(cls_score, label)
 
-        pos_w, neg_w = self.get_weight(pred)
+        pos_w, neg_w = self.get_weight(cls_score)
 
         weight = pos_w * target + neg_w * (1 - target)
 
         cls_loss = F.binary_cross_entropy_with_logits(
-            pred, target, reduction='none')
+            cls_score, target, reduction='none')
         cls_loss = torch.sum(cls_loss * weight) / self.n_i
 
-        self.collect_grad(pred.detach(), target.detach(), weight.detach())
+        self.collect_grad(cls_score.detach(), target.detach(), weight.detach())
 
         return self.loss_weight * cls_loss
 

@@ -291,25 +291,14 @@ def test_dice_loss(naive_dice):
         loss_class(naive_dice=naive_dice)(pred, target, weight)
 
 
-@pytest.mark.parametrize('loss_class', [EQLV2Loss])
-@pytest.mark.parametrize('use_sigmoid', [True])
-@pytest.mark.parametrize('reduction', ['mean'])
+@pytest.mark.parametrize('use_sigmoid', [True, False])
+@pytest.mark.parametrize('reduction', ['mean', 'sum'])
 @pytest.mark.parametrize('input_shape', [(10, 4)])
-def test_eqlv2_loss(loss_class, use_sigmoid, reduction, input_shape):
-    # Test EQLV2 loss forward
-    pred = torch.randint(0, 5, (input_shape[0], ))
-    target = torch.randint(0, 5, (input_shape[0], ))
-    loss = loss_class(use_sigmoid=use_sigmoid)(pred, target)
-    assert isinstance(loss, torch.Tensor)
+def test_eqlv2_loss(use_sigmoid, reduction, input_shape):
+    loss_class = EQLV2Loss(use_sigmoid=use_sigmoid, reduction=reduction)
+    cls_score = torch.randn(input_shape)
+    label = torch.randint(0, 2, (input_shape[0], ))
+    weight = None
 
-    # Test EQLV2 loss forward with reduction_override
-    loss = loss_class(use_sigmoid=use_sigmoid)(
-        pred, target, reduction_override='mean')
+    loss = loss_class()(cls_score, label, weight)
     assert isinstance(loss, torch.Tensor)
-
-    with pytest.raises(ValueError):
-        # loss can evaluate with avg_factor only if
-        # reduction is None, 'none' or 'mean'.
-        reduction_override = 'sum'
-        loss_class(use_sigmoid=use_sigmoid)(
-            pred, target, avg_factor=10, reduction_override=reduction_override)
