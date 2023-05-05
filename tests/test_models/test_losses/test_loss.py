@@ -295,30 +295,21 @@ def test_dice_loss(naive_dice):
 @pytest.mark.parametrize('use_sigmoid', [True])
 @pytest.mark.parametrize('reduction', ['mean'])
 def test_eqlv2_loss(loss_class, use_sigmoid, reduction):
-    # Define input shapes
-    num_classes = 5
-    num_anchors = 10
-    feat_size = (32, 32)
+    # Test EQLV2 loss forward
+    pred = torch.rand((10, 4))
+    target = torch.rand((10, 4))
+    loss = loss_class(use_sigmoid=use_sigmoid)(pred, target)
+    assert isinstance(loss, torch.Tensor)
 
-    # Generate random inputs
-    cls_score = torch.randn(num_anchors, num_classes, *feat_size)
-    bbox_pred = torch.randn(num_anchors, 4, *feat_size)
-    gt_bboxes = torch.randn(num_anchors, 4)
-    gt_labels = torch.randint(0, num_classes, (num_anchors, ))
+    # Test EQLV2 loss forward with reduction_override
+    loss = loss_class(use_sigmoid=use_sigmoid)(
+        pred, target, reduction_override='mean')
+    assert isinstance(loss, torch.Tensor)
 
-    # Instantiate EQLv2Loss
-    loss = loss_class(use_sigmoid=use_sigmoid)
+    with pytest.raises(ValueError):
+        # loss can evaluate with avg_factor only if
+        # reduction is None, 'none' or 'mean'.
+        reduction_override = 'sum'
+        loss_class(use_sigmoid=use_sigmoid)(
+            pred, target, avg_factor=10, reduction_override=reduction_override)
 
-    # Compute loss
-    loss_out = loss(
-        cls_score,
-        bbox_pred,
-        gt_bboxes,
-        gt_labels,
-        reduction_override=reduction)
-
-    # Check output shape
-    assert loss_out.shape == ()
-
-    # Check output type
-    assert isinstance(loss_out, torch.Tensor)
