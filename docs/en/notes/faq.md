@@ -217,7 +217,7 @@ Compatible MMDetection, MMEngine, and MMCV versions are shown as below. Please c
 ### How do you run per class validation?
 
 ```
-evaluation=dict(classwise=True, metric='bbox') 
+val_evaluator=dict(classwise=True, metric='bbox') 
 ```
 
 ## Model
