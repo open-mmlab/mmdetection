@@ -312,4 +312,3 @@ def test_eqlv2_loss(loss_class, use_sigmoid, reduction):
         reduction_override = 'sum'
         loss_class(use_sigmoid=use_sigmoid)(
             pred, target, avg_factor=10, reduction_override=reduction_override)
-
