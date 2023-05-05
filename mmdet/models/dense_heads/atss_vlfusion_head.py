@@ -660,11 +660,7 @@ class VLFusionModule(BaseModel):
 
         dot_product_logits = []
 
-        USE_DOT_PRODUCT_TOKEN_LOSS = True
-        if USE_DOT_PRODUCT_TOKEN_LOSS:
-            embedding = language_feats['embedded']
-        else:
-            embedding = dyhead_tower["lang"]["hidden"]
+        embedding = dyhead_tower["lang"]["hidden"]
 
         # norm
         embedding = F.normalize(embedding, p=2, dim=-1)  # text embeding (1,256,768)
