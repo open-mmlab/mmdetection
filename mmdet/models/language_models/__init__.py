@@ -1,3 +1,3 @@
-from .bert import BertModel
+from .bert import BertModel, BertEncoderLayer
 
-__all__ = ['BertModel']
+__all__ = ['BertModel', 'BertEncoderLayer']
