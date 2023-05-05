@@ -296,8 +296,8 @@ def test_dice_loss(naive_dice):
 @pytest.mark.parametrize('reduction', ['mean'])
 def test_eqlv2_loss(loss_class, use_sigmoid, reduction):
     # Test EQLV2 loss forward
-    pred = torch.rand((10, 4))
-    target = torch.rand((10, 4))
+    pred = torch.randint((10, 4))
+    target = torch.randint((10, 4))
     loss = loss_class(use_sigmoid=use_sigmoid)(pred, target)
     assert isinstance(loss, torch.Tensor)
 
