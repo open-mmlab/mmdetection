@@ -295,7 +295,7 @@ def test_dice_loss(naive_dice):
 @pytest.mark.parametrize('reduction', ['mean', 'sum'])
 @pytest.mark.parametrize('input_shape', [(10, 4)])
 def test_eqlv2_loss(use_sigmoid, reduction, input_shape):
-    loss_class = EQLV2Loss(use_sigmoid=use_sigmoid, reduction=reduction)
+    loss_class = EQLV2Loss()(use_sigmoid=use_sigmoid)
     cls_score = torch.randn(input_shape)
     label = torch.randint(0, 2, (input_shape[0], ))
     weight = None
