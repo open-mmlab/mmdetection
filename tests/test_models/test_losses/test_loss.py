@@ -295,9 +295,21 @@ def test_dice_loss(naive_dice):
 @pytest.mark.parametrize('reduction', ['mean'])
 @pytest.mark.parametrize('input_shape', [(1, 1024)])
 def test_eqlv2_loss(loss_class, reduction, input_shape):
-    cls_score = torch.randn(input_shape)
-    label = torch.randint(0, 2, (input_shape[0], ))
-    weight = None
+    # cls_score = torch.randn(input_shape)
+    # label = torch.randint(0, 2, (input_shape[0], ))
+    # weight = None
 
+    # loss = loss_class()(cls_score, label, weight)
+    # assert isinstance(loss, torch.Tensor)
+
+    batch_size, num_classes = 2, 10
+    cls_score = torch.rand(batch_size, num_classes)
+    label = torch.randint(0, num_classes, (batch_size, ))
+    target = torch.zeros(batch_size, num_classes)
+    target[torch.arange(batch_size), label] = 1
+    # create a mock weight tensor of size (batch_size, num_classes)
+    weight = torch.rand(batch_size, num_classes)
+    # calculate the loss using the module's forward function
     loss = loss_class()(cls_score, label, weight)
-    assert isinstance(loss, torch.Tensor)
+    # assert that the calculated loss is a tensor
+    assert isinstance(loss, Tensor)
