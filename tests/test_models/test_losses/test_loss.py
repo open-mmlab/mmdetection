@@ -312,4 +312,4 @@ def test_eqlv2_loss(loss_class, reduction, input_shape):
     # calculate the loss using the module's forward function
     loss = loss_class()(cls_score, label, weight)
     # assert that the calculated loss is a tensor
-    assert isinstance(loss, Tensor)
+    assert isinstance(loss, torch.Tensor)
