@@ -10,6 +10,7 @@ from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 import nltk
 import re
 import torch
+import copy
 
 
 def find_noun_phrases(caption: str):
@@ -140,6 +141,7 @@ class GLIP(SingleStageDetector):
         self._text_prompts = None
         self._positive_maps = None
         self._language_dict_features = None
+        self._language_dict_features_deepcopy = None
         self._entities = None
 
     def get_tokens_positive(self, original_caption, custom_entities):
@@ -200,6 +202,9 @@ class GLIP(SingleStageDetector):
 
             self._positive_maps, text_prompts = zip(*_positive_maps_and_prompts)
             self._language_dict_features = self.language_model(text_prompts)
+            self._language_dict_features_deepcopy = copy.deepcopy(self._language_dict_features)
+        else:
+            self._language_dict_features = self._language_dict_features_deepcopy
 
         for i, data_samples in enumerate(batch_data_samples):
             data_samples.token_positive_map = self._positive_maps[i]
