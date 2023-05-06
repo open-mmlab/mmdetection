@@ -760,206 +760,6 @@ def convert_grounding_to_od_logits(logits, box_cls, positive_maps, score_agg=Non
     return scores
 
 
-def remove_small_boxes(boxlist, min_size):
-    """
-    Only keep boxes with both sides >= min_size
-
-    Arguments:
-        boxlist (Boxlist)
-        min_size (int)
-    """
-    # WORK AROUND: work around unbind using split + squeeze.
-    xywh_boxes = boxlist.convert("xywh").bbox
-    _, _, ws, hs = xywh_boxes.split(1, dim=1)
-    ws = ws.squeeze(1)
-    hs = hs.squeeze(1)
-    keep = ((ws >= min_size) & (hs >= min_size)).nonzero().squeeze(1)
-    return boxlist[keep]
-
-
-class ATSSPostProcessor(torch.nn.Module):
-    def __init__(
-            self,
-            pre_nms_thresh=0.05,
-            pre_nms_top_n=1000,
-            nms_thresh=0.6,
-            fpn_post_nms_top_n=100,
-            min_size=0,
-            box_coder=None,
-            score_agg='MEAN',
-            cfg=None
-    ):
-        super(ATSSPostProcessor, self).__init__()
-        self.pre_nms_thresh = pre_nms_thresh
-        self.pre_nms_top_n = pre_nms_top_n
-        self.nms_thresh = nms_thresh
-        self.fpn_post_nms_top_n = fpn_post_nms_top_n
-        self.min_size = min_size
-        self.box_coder = box_coder
-        self.score_agg = score_agg
-        self.cfg = cfg
-
-    def select_over_all_levels(self, bboxes, scores, labels, metainfo):
-
-        num_images = len(bboxes)
-        results = []
-        for i in range(num_images):
-            pred_instance = InstanceData()
-            if bboxes[i].numel() == 0:
-                pred_instance.bboxes = bboxes[i]
-                pred_instance.scores = scores[i]
-                pred_instance.labels = labels[i]
-                results.append(pred_instance)
-            else:
-                det_bboxes, keep_idxs = batched_nms(bboxes[i], scores[i], labels[i], nms_cfg=self.cfg.nms)
-
-                pred_instance.bboxes = det_bboxes[:, :4]
-                pred_instance.scores = det_bboxes[:, -1]
-                pred_instance.labels = labels[i][keep_idxs]
-
-
-                # multiclass nms
-                # result = boxlist_ml_nms(boxlists[i], self.nms_thresh)
-                number_of_detections = len(pred_instance)
-
-                if number_of_detections == 0:
-                    results.append(pred_instance)
-                    continue
-
-                scale_factor = [1 / s for s in metainfo[i]['scale_factor']]
-                pred_instance.bboxes = scale_boxes(pred_instance.bboxes, scale_factor)
-
-                # Limit to max_per_image detections **over all classes**
-                if number_of_detections > self.fpn_post_nms_top_n > 0:
-                    cls_scores = pred_instance.scores
-                    image_thresh, _ = torch.kthvalue(
-                        cls_scores.cpu().float(),
-                        number_of_detections - self.fpn_post_nms_top_n + 1
-                    )
-                    keep = cls_scores >= image_thresh.item()
-                    keep = torch.nonzero(keep).squeeze(1)
-                    pred_instance = pred_instance[keep]
-                print(pred_instance.labels)
-                results.append(pred_instance)
-        return results
-
-    def forward_for_single_feature_map(self,
-                                       box_regression,
-                                       centerness,
-                                       anchors,
-                                       box_cls=None,
-                                       dot_product_logits=None,
-                                       positive_maps=None,
-                                       metainfo=None
-                                       ):
-
-        N, _, H, W = box_regression.shape
-
-        A = box_regression.size(1) // 4
-
-        if box_cls is not None:
-            C = box_cls.size(1) // A
-
-        # put in the same format as anchors
-        if box_cls is not None:
-            # print('Classification.')
-            box_cls = permute_and_flatten(box_cls, N, A, C, H, W)
-            box_cls = box_cls.sigmoid()  # (1,13600,80)
-
-        dot_product_logits = dot_product_logits.sigmoid()  # (1,136000,80)
-        scores = convert_grounding_to_od_logits(logits=dot_product_logits, box_cls=box_cls,
-                                                positive_maps=positive_maps,
-                                                score_agg=self.score_agg)
-        box_cls = scores
-
-        box_regression = permute_and_flatten(box_regression, N, A, 4, H, W)
-        box_regression = box_regression.reshape(N, -1, 4)
-
-        candidate_inds = box_cls > self.pre_nms_thresh
-        pre_nms_top_n = candidate_inds.reshape(N, -1).sum(1)
-        pre_nms_top_n = pre_nms_top_n.clamp(max=self.pre_nms_top_n)
-
-        centerness = permute_and_flatten(centerness, N, A, 1, H, W)
-        centerness = centerness.reshape(N, -1).sigmoid()
-
-        # multiply the classification scores with centerness scores
-        box_cls = box_cls * centerness[:, :, None]
-
-        results = []
-
-        for per_box_cls, per_box_regression, per_pre_nms_top_n, per_candidate_inds, img_meta in zip(box_cls,
-                                                                                                    box_regression,
-                                                                                                    pre_nms_top_n,
-                                                                                                    candidate_inds,
-                                                                                                    metainfo):
-
-            img_shape = img_meta['img_shape']
-
-            per_box_cls = per_box_cls[per_candidate_inds]
-
-            per_box_cls, top_k_indices = per_box_cls.topk(per_pre_nms_top_n, sorted=False)
-            # (13600, 80)  -> (n, 2)
-            per_candidate_nonzeros = per_candidate_inds.nonzero()[top_k_indices, :]
-
-            per_box_loc = per_candidate_nonzeros[:, 0]
-            per_class = per_candidate_nonzeros[:, 1] + 1  # TODO 0 is background 需要修改 convert_grounding_to_od_logits
-
-            # print(per_box_regression.sum(), anchors.sum())
-            bboxes = self.box_coder.decode(
-                anchors[per_box_loc, :].view(-1, 4),
-                per_box_regression[per_box_loc, :].view(-1, 4),
-                max_shape=img_shape
-            )
-            scores = torch.sqrt(per_box_cls)
-
-            if self.min_size >= 0 and per_pre_nms_top_n > 0:
-                w = bboxes[:, 2] - bboxes[:, 0]
-                h = bboxes[:, 3] - bboxes[:, 1]
-                valid_mask = (w > self.min_size) & (h > self.min_size)
-                if not valid_mask.all():
-                    bboxes = bboxes[valid_mask]
-                    scores = scores[valid_mask]
-                    per_class = per_class[valid_mask]
-
-            # boxlist = BoxList(detections, anchors.size, mode="xyxy")
-            # boxlist.add_field("labels", per_class)
-            # boxlist.add_field("scores", torch.sqrt(per_box_cls))
-            # boxlist = boxlist.clip_to_image(remove_empty=False)
-            # boxlist = remove_small_boxes(boxlist, self.min_size)
-            results.append(dict(bboxes=bboxes, scores=scores, per_class=per_class))
-        return results
-
-    def forward(self,
-                box_regression,
-                centerness,
-                anchors,
-                box_cls=None,
-                dot_product_logits=None,
-                positive_maps=None,
-                metainfo=None
-                ):
-        sampled_boxes = []
-        for idx, (b, c, a) in enumerate(zip(box_regression, centerness, anchors)):
-            o = box_cls[idx]
-            d = dot_product_logits[idx]
-            sampled_boxes.append(
-                self.forward_for_single_feature_map(b, c, a, o, d, positive_maps, metainfo)
-            )
-        boxlists = list(zip(*sampled_boxes))
-
-        bboxes = []
-        scores = []
-        labels = []
-        for boxlist in boxlists:
-            bboxes.append(torch.cat([box['bboxes'] for box in boxlist]))
-            scores.append(torch.cat([box['scores'] for box in boxlist]))
-            labels.append(torch.cat([box['per_class'] for box in boxlist]))
-
-        # boxlists = [cat_boxlist(boxlist) for boxlist in boxlists]
-        boxlists = self.select_over_all_levels(bboxes, scores, labels, metainfo)
-        return boxlists
-
-
 @MODELS.register_module()
 class ATSSVLFusionHead(ATSSHead):
     def __init__(self, *args, early_fuse=False, **kwargs):
@@ -969,7 +769,6 @@ class ATSSVLFusionHead(ATSSHead):
                                    num_base_priors=self.num_base_priors,
                                    num_classes=self.num_classes,
                                    early_fuse=early_fuse)
-        self.postprocess = ATSSPostProcessor(box_coder=self.bbox_coder, cfg=self.test_cfg)
 
     def _init_layers(self) -> None:
         pass
@@ -986,11 +785,6 @@ class ATSSVLFusionHead(ATSSHead):
                 language_feats: dict,
                 batch_data_samples,
                 rescale: bool = True):
-        # use_old = False
-        # if use_old:
-        #     pred1 = self.predict1(visual_feats, language_feats, batch_data_samples, rescale)
-        #     # return pred1
-
         batch_img_metas = [
             data_samples.metainfo for data_samples in batch_data_samples
         ]
@@ -1132,38 +926,6 @@ class ATSSVLFusionHead(ATSSHead):
             rescale=rescale,
             with_nms=with_nms,
             img_meta=img_meta)
+        # important
         predictions.labels = predictions.labels + 1
         return predictions
-
-    def predict1(self,
-                 visual_feats: Tuple[Tensor],
-                 language_feats: dict,
-                 batch_data_samples,
-                 rescale: bool = True):
-        batch_img_metas = [
-            data_samples.metainfo for data_samples in batch_data_samples
-        ]
-        batch_token_positive_maps = [
-            data_samples.token_positive_map for data_samples in batch_data_samples
-        ]
-
-        featmap_sizes = [visual_feats[i].shape[-2:] for i in range(len(visual_feats))]
-
-        mlvl_priors = self.prior_generator.grid_priors(
-            featmap_sizes,
-            dtype=visual_feats[0].dtype,
-            device=visual_feats[0].device)
-
-        box_cls, box_regression, centerness, dot_product_logits = self.head(
-            visual_feats,
-            language_feats
-        )
-
-        results = self.postprocess(box_regression,
-                                   centerness,
-                                   mlvl_priors,
-                                   box_cls,
-                                   dot_product_logits,
-                                   positive_maps=batch_token_positive_maps,
-                                   metainfo=batch_img_metas)
-        return results
