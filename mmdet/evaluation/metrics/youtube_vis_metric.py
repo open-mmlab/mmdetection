@@ -421,4 +421,6 @@ class YouTubeVISMetric(BaseVideoMetric):
 
         # reset the results list
         self.results.clear()
+        # reset the vis_meta_info
+        self._vis_meta_info.clear()
         return metrics[0]
