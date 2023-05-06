@@ -70,23 +70,23 @@ dataset_version = data_root[-5:-1]  # 2019 or 2021
 # train_dataloader
 train_dataloader = dict(
     _delete_=True,
-    batch_size=1,
+    batch_size=4,
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='TrackImgSampler'),  # image-based sampling
+    batch_sampler=dict(type='TrackAspectRatioBatchSampler'),
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
         dataset_version=dataset_version,
         ann_file='annotations/youtube_vis_2019_train.json',
         data_prefix=dict(img_path='train/JPEGImages'),
-        # filter_cfg=dict(filter_empty_gt=True, min_size=32),
         pipeline=_base_.train_pipeline))
 
 # optimizer
 optim_wrapper = dict(
     type='OptimWrapper',
-    optimizer=dict(type='SGD', lr=0.00125, momentum=0.9, weight_decay=0.0001),
+    optimizer=dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.0001),
     clip_grad=dict(max_norm=35, norm_type=2))
 
 # learning policy
@@ -115,8 +115,7 @@ visualizer = dict(
     type='TrackLocalVisualizer', vis_backends=vis_backends, name='visualizer')
 
 # runtime settings
-train_cfg = dict(
-    type='EpochBasedTrainLoop', max_epochs=12, val_begin=6, interval=1)
+train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=12, val_begin=13)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 
@@ -127,3 +126,5 @@ val_evaluator = dict(
     outfile_prefix='./youtube_vis_results',
     format_only=True)
 test_evaluator = val_evaluator
+
+del detector
