@@ -20,8 +20,10 @@ from .utils import get_loading_pipeline
 from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
+from .youtube_vis_dataset import YouTubeVISDataset
 
 __all__ = [
+<<<<<<< HEAD
     'XMLDataset',
     'CocoDataset',
     'DeepFashionDataset',
@@ -49,4 +51,15 @@ __all__ = [
     'MOTChallengeDataset',
     'TrackImgSampler',
     'ReIDDataset'
+=======
+    'XMLDataset', 'CocoDataset', 'DeepFashionDataset', 'VOCDataset',
+    'CityscapesDataset', 'LVISDataset', 'LVISV05Dataset', 'LVISV1Dataset',
+    'WIDERFaceDataset', 'get_loading_pipeline', 'CocoPanopticDataset',
+    'MultiImageMixDataset', 'OpenImagesDataset', 'OpenImagesChallengeDataset',
+    'AspectRatioBatchSampler', 'ClassAwareSampler', 'MultiSourceSampler',
+    'GroupMultiSourceSampler', 'BaseDetDataset', 'CrowdHumanDataset',
+    'Objects365V1Dataset', 'Objects365V2Dataset', 'BaseVideoDataset',
+    'MOTChallengeDataset', 'TrackImgSampler', 'ReIDDataset',
+    'YouTubeVISDataset'
+>>>>>>> [Feature] support mask2former for vis (#10245)
 ]
