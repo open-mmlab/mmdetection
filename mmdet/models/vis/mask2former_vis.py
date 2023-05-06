@@ -98,8 +98,6 @@ class Mask2FormerVideo(BaseMOTModel):
             TrackSampleList: Tracking results of the inputs.
         """
         assert inputs.dim() == 5, 'The img must be 5D Tensor (N, T, C, H, W).'
-        assert inputs.size(0) == 1, \
-            'Mask2former inference only support 1 batch size per gpu for now.'
 
         assert len(data_samples) == 1, \
             'Mask2former only support 1 batch size per gpu for now.'

@@ -3,6 +3,7 @@ from typing import Sequence
 
 from torch.utils.data import BatchSampler, Sampler
 
+from mmdet.datasets.samplers.track_img_sampler import TrackImgSampler
 from mmdet.registry import DATA_SAMPLERS
 
 
@@ -83,8 +84,13 @@ class TrackAspectRatioBatchSampler(AspectRatioBatchSampler):
 
     def __iter__(self) -> Sequence[int]:
         for idx in self.sampler:
+            # hard code to solve TrackImgSampler
+            if isinstance(self.sampler, TrackImgSampler):
+                video_idx, _ = idx
+            else:
+                video_idx = idx
             # video_idx
-            data_info = self.sampler.dataset.get_data_info(idx)
+            data_info = self.sampler.dataset.get_data_info(video_idx)
             # data_info {video_id, images, video_length}
             img_data_info = data_info['images'][0]
             width, height = img_data_info['width'], img_data_info['height']
