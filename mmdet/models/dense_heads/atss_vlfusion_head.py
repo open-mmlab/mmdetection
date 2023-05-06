@@ -17,6 +17,14 @@ from mmdet.structures import DetDataSample
 
 from transformers import BertConfig
 import torch.utils.checkpoint as checkpoint
+from typing import List, Optional, Tuple
+from mmdet.utils import InstanceList, OptMultiConfig
+from mmengine.config import ConfigDict
+from ..utils import (filter_scores_and_topk, select_single_mlvl,
+                     unpack_gt_instances)
+import copy
+from mmdet.structures.bbox import (cat_boxes, get_box_tensor, get_box_wh,
+                                   scale_boxes)
 
 
 class Conv3x3Norm(torch.nn.Module):
@@ -344,17 +352,21 @@ class BiMultiHeadAttention(nn.Module):
             attn_weights = attn_weights - attn_weights.max()
 
         if self.clamp_min_for_underflow:
-            attn_weights = torch.clamp(attn_weights, min=-50000) # Do not increase -50000, data type half has quite limited range
+            attn_weights = torch.clamp(attn_weights,
+                                       min=-50000)  # Do not increase -50000, data type half has quite limited range
         if self.clamp_max_for_overflow:
-            attn_weights = torch.clamp(attn_weights, max=50000) # Do not increase 50000, data type half has quite limited range
+            attn_weights = torch.clamp(attn_weights,
+                                       max=50000)  # Do not increase 50000, data type half has quite limited range
 
         attn_weights_T = attn_weights.transpose(1, 2)
         attn_weights_l = (attn_weights_T - torch.max(attn_weights_T, dim=-1, keepdim=True)[
             0])
         if self.clamp_min_for_underflow:
-            attn_weights_l = torch.clamp(attn_weights_l, min=-50000) # Do not increase -50000, data type half has quite limited range
+            attn_weights_l = torch.clamp(attn_weights_l,
+                                         min=-50000)  # Do not increase -50000, data type half has quite limited range
         if self.clamp_max_for_overflow:
-            attn_weights_l = torch.clamp(attn_weights_l, max=50000) # Do not increase 50000, data type half has quite limited range
+            attn_weights_l = torch.clamp(attn_weights_l,
+                                         max=50000)  # Do not increase 50000, data type half has quite limited range
 
         attn_weights_l = attn_weights_l.softmax(dim=-1)
 
@@ -378,7 +390,6 @@ class BiMultiHeadAttention(nn.Module):
 
         attn_output_v = torch.bmm(attn_probs_v, value_l_states)
         attn_output_l = torch.bmm(attn_probs_l, value_v_states)
-
 
         if attn_output_v.size() != (bsz * self.num_heads, tgt_len, self.head_dim):
             raise ValueError(
@@ -456,8 +467,8 @@ class BiAttentionBlockForCheckpoint(nn.Module):
 
         lang_feat = [new_l, None, None, None, None]
 
-        return visu_feat[0], visu_feat[1], visu_feat[2], visu_feat[3], visu_feat[4], lang_feat[0], lang_feat[1], lang_feat[2], lang_feat[3], lang_feat[4]
-
+        return visu_feat[0], visu_feat[1], visu_feat[2], visu_feat[3], visu_feat[4], lang_feat[0], lang_feat[1], \
+            lang_feat[2], lang_feat[3], lang_feat[4]
 
     def single_attention_call(self, v, l, attention_mask_l=None, dummy_tensor=None):
         v = self.layer_norm_v(v)
@@ -467,6 +478,7 @@ class BiAttentionBlockForCheckpoint(nn.Module):
         v = v + self.drop_path(self.gamma_v * delta_v)
         l = l + self.drop_path(self.gamma_l * delta_l)
         return v, l
+
 
 class VLFuse(torch.nn.Module):
     """
@@ -480,21 +492,21 @@ class VLFuse(torch.nn.Module):
         # early fusion module
         # TODO: support use_checkpoint as cfg
         self.use_checkpoint = True
-        if self.use_checkpoint: #True
+        if self.use_checkpoint:  # True
             self.dummy_tensor = torch.ones(1, dtype=torch.float32, requires_grad=True)
 
         print("EARLY FUSION ON, USING {}".format("MHA-B"))
 
         # bi-direction (text->image, image->text)
         self.b_attn = BiAttentionBlockForCheckpoint(v_dim=self.joint_embedding_size,
-                    l_dim=self.lang_dim,
-                    embed_dim=self.embed_dim,
-                    num_heads=self.n_head,
-                    hidden_dim=self.i2t_hidden_dim,
-                    dropout=0.1,
-                    drop_path=.0,
-                    init_values=1.0 / 6.0
-                    )
+                                                    l_dim=self.lang_dim,
+                                                    embed_dim=self.embed_dim,
+                                                    num_heads=self.n_head,
+                                                    hidden_dim=self.i2t_hidden_dim,
+                                                    dropout=0.1,
+                                                    drop_path=.0,
+                                                    init_values=1.0 / 6.0
+                                                    )
 
     def init_configs(self):
         # common params
@@ -517,7 +529,6 @@ class VLFuse(torch.nn.Module):
 
         self.lang_dim = 768
 
-
     def forward(self, x):
         # import pdb; pdb.set_trace()
         visual_features = x["visual"]
@@ -531,13 +542,13 @@ class VLFuse(torch.nn.Module):
 
         if self.use_checkpoint:
             q0, q1, q2, q3, q4, l0, l1, l2, l3, l4 = checkpoint.checkpoint(self.b_attn,
-                visual_features[0], visual_features[1],
-                visual_features[2], visual_features[3],
-                visual_features[4],
-                language_dict_features['hidden'],
-                language_dict_features['masks'],
-                self.dummy_tensor
-            )
+                                                                           visual_features[0], visual_features[1],
+                                                                           visual_features[2], visual_features[3],
+                                                                           visual_features[4],
+                                                                           language_dict_features['hidden'],
+                                                                           language_dict_features['masks'],
+                                                                           self.dummy_tensor
+                                                                           )
         else:
             q0, q1, q2, q3, q4, l0, l1, l2, l3, l4 = self.b_attn(
                 visual_features[0], visual_features[1],
@@ -597,7 +608,7 @@ class VLFusionModule(BaseModel):
 
         bias_value = -math.log((1 - prior_prob) / prior_prob)
 
-        #TODO: put the name into kwargs or cfg
+        # TODO: put the name into kwargs or cfg
         lang_cfg = BertConfig.from_pretrained('bert-base-uncased')
 
         dyhead_tower = []
@@ -710,7 +721,7 @@ def convert_grounding_to_od_logits(logits, box_cls, positive_maps, score_agg=Non
     # 虽然结果一样，但是含义就不一样，当某一种图片的实体超过 80 那就会报错了
     assert len(positive_maps) == logits.shape[0]
 
-    scores = torch.zeros(logits.shape[0], logits.shape[1], box_cls.shape[2]).to(logits.device)  # (1,13600,80)
+    scores = torch.zeros(logits.shape[0], logits.shape[1], box_cls.shape[-1]).to(logits.device)  # (1,13600,80)
     # 256 -> 80, average for each class
     if positive_maps is not None:
         if all(x == positive_maps[0] for x in positive_maps):
@@ -806,6 +817,7 @@ class ATSSPostProcessor(torch.nn.Module):
                 pred_instance.scores = det_bboxes[:, -1]
                 pred_instance.labels = labels[i][keep_idxs]
 
+
                 # multiclass nms
                 # result = boxlist_ml_nms(boxlists[i], self.nms_thresh)
                 number_of_detections = len(pred_instance)
@@ -827,6 +839,7 @@ class ATSSPostProcessor(torch.nn.Module):
                     keep = cls_scores >= image_thresh.item()
                     keep = torch.nonzero(keep).squeeze(1)
                     pred_instance = pred_instance[keep]
+                print(pred_instance.labels)
                 results.append(pred_instance)
         return results
 
@@ -889,7 +902,7 @@ class ATSSPostProcessor(torch.nn.Module):
             per_candidate_nonzeros = per_candidate_inds.nonzero()[top_k_indices, :]
 
             per_box_loc = per_candidate_nonzeros[:, 0]
-            per_class = per_candidate_nonzeros[:, 1] + 1
+            per_class = per_candidate_nonzeros[:, 1] + 1  # TODO 0 is background 需要修改 convert_grounding_to_od_logits
 
             # print(per_box_regression.sum(), anchors.sum())
             bboxes = self.box_coder.decode(
@@ -961,11 +974,173 @@ class ATSSVLFusionHead(ATSSHead):
     def _init_layers(self) -> None:
         pass
 
+    def forward(self, visual_feats: Tuple[Tensor], language_feats: dict, ):
+        cls_scores, bbox_preds, centerness, dot_product_logits = self.head(
+            visual_feats,
+            language_feats
+        )
+        return cls_scores, bbox_preds, centerness, dot_product_logits
+
     def predict(self,
                 visual_feats: Tuple[Tensor],
                 language_feats: dict,
                 batch_data_samples,
                 rescale: bool = True):
+        # use_old = False
+        # if use_old:
+        #     pred1 = self.predict1(visual_feats, language_feats, batch_data_samples, rescale)
+        #     # return pred1
+
+        batch_img_metas = [
+            data_samples.metainfo for data_samples in batch_data_samples
+        ]
+        batch_token_positive_maps = [
+            data_samples.token_positive_map for data_samples in batch_data_samples
+        ]
+        outs = self(visual_feats, language_feats)
+
+        predictions = self.predict_by_feat(
+            *outs,
+            batch_img_metas=batch_img_metas,
+            batch_token_positive_maps=batch_token_positive_maps,
+            rescale=rescale)
+        return predictions
+
+    def predict_by_feat(self,
+                        cls_scores: List[Tensor],
+                        bbox_preds: List[Tensor],
+                        score_factors: List[Tensor],
+                        dot_product_logits: List[Tensor],
+                        batch_img_metas: Optional[List[dict]] = None,
+                        batch_token_positive_maps: Optional[List[dict]] = None,
+                        cfg: Optional[ConfigDict] = None,
+                        rescale: bool = False,
+                        with_nms: bool = True) -> InstanceList:
+        assert len(cls_scores) == len(bbox_preds) == len(score_factors)
+        num_levels = len(cls_scores)
+
+        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
+        mlvl_priors = self.prior_generator.grid_priors(
+            featmap_sizes,
+            dtype=cls_scores[0].dtype,
+            device=cls_scores[0].device)
+
+        result_list = []
+
+        for img_id in range(len(batch_img_metas)):
+            img_meta = batch_img_metas[img_id]
+            token_positive_map = batch_token_positive_maps[img_id]
+            # 实际上 cls_score_list 不需要
+            cls_score_list = select_single_mlvl(
+                cls_scores, img_id, detach=True)
+            bbox_pred_list = select_single_mlvl(
+                bbox_preds, img_id, detach=True)
+            score_factor_list = select_single_mlvl(
+                score_factors, img_id, detach=True)
+            dot_product_logit_list = select_single_mlvl(dot_product_logits, img_id, detach=True)
+
+            results = self._predict_by_feat_single(
+                cls_score_list=cls_score_list,
+                bbox_pred_list=bbox_pred_list,
+                score_factor_list=score_factor_list,
+                dot_product_logit_list=dot_product_logit_list,
+                mlvl_priors=mlvl_priors,
+                token_positive_map=token_positive_map,
+                img_meta=img_meta,
+                cfg=cfg,
+                rescale=rescale,
+                with_nms=with_nms)
+            result_list.append(results)
+        return result_list
+
+    def _predict_by_feat_single(self,
+                                cls_score_list: List[Tensor],
+                                bbox_pred_list: List[Tensor],
+                                score_factor_list: List[Tensor],
+                                dot_product_logit_list: List[Tensor],
+                                mlvl_priors: List[Tensor],
+                                token_positive_map: dict,
+                                img_meta: dict,
+                                cfg: ConfigDict,
+                                rescale: bool = False,
+                                with_nms: bool = True) -> InstanceData:
+
+        cfg = self.test_cfg if cfg is None else cfg
+        cfg = copy.deepcopy(cfg)
+        img_shape = img_meta['img_shape']
+        nms_pre = cfg.get('nms_pre', -1)
+
+        mlvl_bbox_preds = []
+        mlvl_valid_priors = []
+        mlvl_scores = []
+        mlvl_labels = []
+
+        for level_idx, (cls_score, bbox_pred, score_factor, dot_product_logit, priors) in \
+                enumerate(zip(cls_score_list, bbox_pred_list,
+                              score_factor_list, dot_product_logit_list, mlvl_priors)):
+            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            dim = self.bbox_coder.encode_size
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, dim)
+            score_factor = score_factor.permute(1, 2,
+                                                0).reshape(-1).sigmoid()
+            cls_score = cls_score.permute(1, 2,
+                                          0).reshape(-1, self.cls_out_channels)
+            if self.use_sigmoid_cls:
+                scores = cls_score.sigmoid()
+            else:
+                # remind that we set FG labels to [0, num_class-1]
+                # since mmdet v2.0
+                # BG cat_id: num_class
+                scores = cls_score.softmax(-1)[:, :-1]
+
+            dot_product_logit = dot_product_logit.sigmoid()
+            # TODO cls_score 不需要
+            scores = convert_grounding_to_od_logits(logits=dot_product_logit[None], box_cls=scores,
+                                                    positive_maps=[token_positive_map],
+                                                    score_agg="MEAN")[0]
+            score_thr = cfg.get('score_thr', 0)
+
+            results = filter_scores_and_topk(
+                scores, score_thr, nms_pre,
+                dict(bbox_pred=bbox_pred, priors=priors))
+
+            scores, labels, keep_idxs, filtered_results = results
+
+            bbox_pred = filtered_results['bbox_pred']
+            priors = filtered_results['priors']
+            score_factor = score_factor[keep_idxs]
+
+            scores = torch.sqrt(scores * score_factor)
+
+            mlvl_bbox_preds.append(bbox_pred)
+            mlvl_valid_priors.append(priors)
+            mlvl_scores.append(scores)
+            mlvl_labels.append(labels)
+
+        bbox_pred = torch.cat(mlvl_bbox_preds)
+        priors = cat_boxes(mlvl_valid_priors)
+        bboxes = self.bbox_coder.decode(priors, bbox_pred, max_shape=img_shape)
+
+        results = InstanceData()
+        results.bboxes = bboxes
+        results.scores = torch.cat(mlvl_scores)
+        results.labels = torch.cat(mlvl_labels)
+
+        predictions = self._bbox_post_process(
+            results=results,
+            cfg=cfg,
+            rescale=rescale,
+            with_nms=with_nms,
+            img_meta=img_meta)
+        predictions.labels = predictions.labels + 1
+        print(predictions.labels)
+        return predictions
+
+    def predict1(self,
+                 visual_feats: Tuple[Tensor],
+                 language_feats: dict,
+                 batch_data_samples,
+                 rescale: bool = True):
         batch_img_metas = [
             data_samples.metainfo for data_samples in batch_data_samples
         ]
@@ -984,6 +1159,7 @@ class ATSSVLFusionHead(ATSSHead):
             visual_feats,
             language_feats
         )
+
         results = self.postprocess(box_regression,
                                    centerness,
                                    mlvl_priors,
@@ -991,5 +1167,4 @@ class ATSSVLFusionHead(ATSSHead):
                                    dot_product_logits,
                                    positive_maps=batch_token_positive_maps,
                                    metainfo=batch_img_metas)
-
         return results
