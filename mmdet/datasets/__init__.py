@@ -15,11 +15,12 @@ from .openimages import OpenImagesChallengeDataset, OpenImagesDataset
 from .reid_dataset import ReIDDataset
 from .samplers import (AspectRatioBatchSampler, ClassAwareSampler,
                        GroupMultiSourceSampler, MultiSourceSampler,
-                       TrackImgSampler)
+                       TrackImgSampler, TrackAspectRatioBatchSampler)
 from .utils import get_loading_pipeline
 from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
+from .youtube_vis_dataset import YouTubeVISDataset
 
 __all__ = [
     'XMLDataset',
@@ -48,5 +49,7 @@ __all__ = [
     'BaseVideoDataset',
     'MOTChallengeDataset',
     'TrackImgSampler',
-    'ReIDDataset'
+    'ReIDDataset',
+    'YouTubeVISDataset',
+    'TrackAspectRatioBatchSampler'
 ]
