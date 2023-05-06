@@ -11,6 +11,7 @@ from .dump_proposals_metric import DumpProposals
 from .lvis_metric import LVISMetric
 from .mot_challenge_metric import MOTChallengeMetric
 from .openimages_metric import OpenImagesMetric
+from .reid_metric import ReIDMetrics
 from .voc_metric import VOCMetric
 from .youtube_vis_metric import YouTubeVISMetric
 
@@ -18,5 +19,5 @@ __all__ = [
     'CityScapesMetric', 'CocoMetric', 'CocoPanopticMetric', 'OpenImagesMetric',
     'VOCMetric', 'LVISMetric', 'CrowdHumanMetric', 'DumpProposals',
     'CocoOccludedSeparatedMetric', 'DumpDetResults', 'BaseVideoMetric',
-    'MOTChallengeMetric', 'CocoVideoMetric', 'YouTubeVISMetric'
+    'MOTChallengeMetric', 'CocoVideoMetric', 'ReIDMetrics', 'YouTubeVISMetric'
 ]

@@ -51,7 +51,7 @@ class TestByteTracker(TestCase):
                 img_data_sample.pred_instances = \
                     img_data_sample.gt_instances.clone()
                 # add fake scores
-                scores = torch.ones(5)
+                scores = torch.ones(len(img_data_sample.gt_instances.bboxes))
                 img_data_sample.pred_instances.scores = torch.FloatTensor(
                     scores)
 
