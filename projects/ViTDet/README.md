@@ -2,35 +2,50 @@
 
 ## Description
 
-This is an implementation of [ViTDet](https://github.com/facebookresearch/detectron2/tree/main/projects/ViTDet) based on [MMDetection](https://github.com/open-mmlab/mmdetection/tree/3.x), [MMClassification](https://github.com/open-mmlab/mmclassification/tree/1.x), [MMCV](https://github.com/open-mmlab/mmcv), and [MMEngine](https://github.com/open-mmlab/mmengine).
+This is an implementation of [ViTDet](https://github.com/facebookresearch/detectron2/tree/main/projects/ViTDet) based on [MMDetection](https://github.com/open-mmlab/mmdetection/tree/3.x), [MMCV](https://github.com/open-mmlab/mmcv), and [MMEngine](https://github.com/open-mmlab/mmengine).
 
 ## Usage
 
 ### Training commands
 
+Follow original [setting](https://github.com/facebookresearch/detectron2/tree/main/projects/ViTDet), this project is trained with total batch size of 64 (16 GPU with 4 images per GPU).
+
 In MMDetection's root directory, run the following command to train the model:
 
 ```bash
-python tools/train.py projects/ViTDet/configs/vitdet_mask-rcnn_vit-b-mae_lsj-100e.py
+[GPUS=${GPUS}] ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} ${WORK_DIR}
 ```
+
+Below is an example of using 16 GPUs to train VitDet on a Slurm partition named _dev_, and set the work-dir to some shared file systems.
+
+```shell
+GPUS=16 ./tools/slurm_train.sh dev vitdet_mask_b projects/ViTDet/configs/vitdet_mask-rcnn_vit-b-mae_lsj-100e.py /nfs/xxxx/vitdet_mask-rcnn_vit-b-mae_lsj-100e
+```
+
+If you want to know about how to scaling learning rate and more detailed usage of `train.py/dist_train.sh/slurm_train.sh`, please refer to this [document](../../docs/en/user_guides/train.md)
 
 ### Testing commands
 
 In MMDetection's root directory, run the following command to test the model:
 
 ```bash
-python tools/train.py projects/ViTDet/configs/vitdet_mask-rcnn_vit-b-mae_lsj-100e.py ${CHECKPOINT_PATH}
+python tools/test.py projects/ViTDet/configs/vitdet_mask-rcnn_vit-b-mae_lsj-100e.py ${CHECKPOINT_PATH}
 ```
+
+If you want to know about how to scaling learning rate and more detailed usage of `test.py/dist_test.sh/slurm_test.sh`, please refer to this [document](../../docs/en/user_guides/test.md)
 
 ## Results
 
-Based on mmdetection, this project aligns the test accuracy of the [ViTDet](https://github.com/facebookresearch/detectron2/tree/main/projects/ViTDet).
-<br>
-The training accuracy will also be aligned with the official in the future
+Based on mmdetection, this project almost aligns the test and train accuracy of the [ViTDet](https://github.com/facebookresearch/detectron2/tree/main/projects/ViTDet).
 
-|                           Method                           | Backbone | Pretrained Model |  Training set  |   Test set   | Epoch | Val Box AP | Val Mask  AP | Official Box AP | Official Mask AP | Download |
-| :--------------------------------------------------------: | :------: | :--------------: | :------------: | :----------: | :---: | :--------: | :----------: | :-------------: | :--------------: | :------: |
-| [ViTDet](./configs/vitdet_mask-rcnn_vit-b-mae_lsj-100e.py) |  ViT-B   |       MAE        | COCO2017 Train | COCO2017 Val |  100  |    51.6    |     45.7     |      51.6       |       45.9       | model()  |
+|                           Method                           | Backbone | Pretrained Model |  Training set  |   Test set   | Epoch | Val Box AP | Val Mask  AP |                                                                                                                                                               Download                                                                                                                                                                |
+| :--------------------------------------------------------: | :------: | :--------------: | :------------: | :----------: | :---: | :--------: | :----------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| [ViTDet](./configs/vitdet_mask-rcnn_vit-b-mae_lsj-100e.py) |  ViT-B   |       MAE        | COCO2017 Train | COCO2017 Val |  100  |    51.6    |     45.7     | [model](https://download.openmmlab.com/mmdetection/v3.0/vitdet/vitdet_mask-rcnn_vit-b-mae_lsj-100e/vitdet_mask-rcnn_vit-b-mae_lsj-100e_20230328_153519-e15fe294.pth) / [log](https://download.openmmlab.com/mmdetection/v3.0/vitdet/vitdet_mask-rcnn_vit-b-mae_lsj-100e/vitdet_mask-rcnn_vit-b-mae_lsj-100e_20230328_153519.log.json) |
+
+**Note**:
+
+1. The mask AP is lower than official [repo](https://github.com/facebookresearch/detectron2/tree/main/projects/ViTDet) slightly
+2. other model vision will release code and weights in the future
 
 ## Citation
 

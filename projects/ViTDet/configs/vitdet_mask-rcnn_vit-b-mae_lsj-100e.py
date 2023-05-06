@@ -57,4 +57,4 @@ model = dict(
             norm_cfg=norm_cfg),
         mask_head=dict(norm_cfg=norm_cfg)))
 
-custom_hooks = [dict(type='Fp16Compresssion')]
+custom_hooks = [dict(type='Fp16CompresssionHook')]
