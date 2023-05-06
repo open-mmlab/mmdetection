@@ -1,0 +1,91 @@
+Collections:
+  - Name: MaskTrack R-CNN
+    Metadata:
+      Training Techniques:
+        - SGD with Momentum
+      Training Resources: 8x TiTanXP GPUs
+      Architecture:
+        - ResNet
+    Paper:
+      URL: https://arxiv.org/pdf/1905.04804.pdf
+      Title: Video Instance Segmentation
+    README: configs/masktrack_rcnn/README.md
+
+Models:
+  - Name: masktrack-rcnn_mask-rcnn_r50_fpn_8xb1-12e_youtubevis2019
+    In Collection: MaskTrack R-CNN
+    Config: configs/masktrack_rcnn/masktrack-rcnn_mask-rcnn_r50_fpn_8xb1-12e_youtubevis2019.py
+    Metadata:
+      Training Data: YouTube-VIS 2019
+      Training Memory (GB): 1.16
+    Results:
+      - Task: Video Instance Segmentation
+        Dataset: YouTube-VIS 2019
+        Metrics:
+          AP: 30.2
+    Weights: https://download.openmmlab.com/mmtracking/vis/masktrack_rcnn/masktrack_rcnn_r50_fpn_12e_youtubevis2019/masktrack_rcnn_r50_fpn_12e_youtubevis2019_20211022_194830-6ca6b91e.pth
+
+  - Name: masktrack-rcnn_mask-rcnn_r101_fpn_8xb1-12e_youtubevis2019
+    In Collection: MaskTrack R-CNN
+    Config: configs/masktrack_rcnn/masktrack-rcnn_mask-rcnn_r101_fpn_8xb1-12e_youtubevis2019.py
+    Metadata:
+      Training Data: YouTube-VIS 2019
+      Training Memory (GB): 2.27
+    Results:
+      - Task: Video Instance Segmentation
+        Dataset: YouTube-VIS 2019
+        Metrics:
+          AP: 32.2
+    Weights: https://download.openmmlab.com/mmtracking/vis/masktrack_rcnn/masktrack_rcnn_r101_fpn_12e_youtubevis2019/masktrack_rcnn_r101_fpn_12e_youtubevis2019_20211023_150038-454dc48b.pth
+
+  - Name: masktrack-rcnn_mask-rcnn_x101_fpn_8xb1-12e_youtubevis2019
+    In Collection: MaskTrack R-CNN
+    Config: configs/masktrack_rcnn/masktrack-rcnn_mask-rcnn_x101_fpn_8xb1-12e_youtubevis2019.py
+    Metadata:
+      Training Data: YouTube-VIS 2019
+      Training Memory (GB): 3.69
+    Results:
+      - Task: Video Instance Segmentation
+        Dataset: YouTube-VIS 2019
+        Metrics:
+          AP: 34.7
+    Weights: https://download.openmmlab.com/mmtracking/vis/masktrack_rcnn/masktrack_rcnn_x101_fpn_12e_youtubevis2019/masktrack_rcnn_x101_fpn_12e_youtubevis2019_20211023_153205-fff7a102.pth
+
+  - Name: masktrack-rcnn_mask-rcnn_r50_fpn_8xb1-12e_youtubevis2021
+    In Collection: MaskTrack R-CNN
+    Config: configs/masktrack_rcnn/masktrack-rcnn_mask-rcnn_r50_fpn_8xb1-12e_youtubevis2021.py
+    Metadata:
+      Training Data: YouTube-VIS 2021
+      Training Memory (GB): 1.16
+    Results:
+      - Task: Video Instance Segmentation
+        Dataset: YouTube-VIS 2021
+        Metrics:
+          AP: 28.7
+    Weights: https://download.openmmlab.com/mmtracking/vis/masktrack_rcnn/masktrack_rcnn_r50_fpn_12e_youtubevis2021/masktrack_rcnn_r50_fpn_12e_youtubevis2021_20211026_044948-10da90d9.pth
+
+  - Name: masktrack-rcnn_mask-rcnn_r101_fpn_8xb1-12e_youtubevis2021
+    In Collection: MaskTrack R-CNN
+    Config: configs/masktrack_rcnn/masktrack-rcnn_mask-rcnn_r101_fpn_8xb1-12e_youtubevis2021.py
+    Metadata:
+      Training Data: YouTube-VIS 2021
+      Training Memory (GB): 2.27
+    Results:
+      - Task: Video Instance Segmentation
+        Dataset: YouTube-VIS 2021
+        Metrics:
+          AP: 31.3
+    Weights: https://download.openmmlab.com/mmtracking/vis/masktrack_rcnn/masktrack_rcnn_r101_fpn_12e_youtubevis2021/masktrack_rcnn_r101_fpn_12e_youtubevis2021_20211026_045509-3c49e4f3.pth
+
+  - Name: masktrack-rcnn_mask-rcnn_x101_fpn_8xb1-12e_youtubevis2021
+    In Collection: MaskTrack R-CNN
+    Config: configs/masktrack_rcnn/masktrack-rcnn_mask-rcnn_x101_fpn_8xb1-12e_youtubevis2021.py
+    Metadata:
+      Training Data: YouTube-VIS 2021
+      Training Memory (GB): 3.69
+    Results:
+      - Task: Video Instance Segmentation
+        Dataset: YouTube-VIS 2021
+        Metrics:
+          AP: 33.5
+    Weights: https://download.openmmlab.com/mmtracking/vis/masktrack_rcnn/masktrack_rcnn_x101_fpn_12e_youtubevis2021/masktrack_rcnn_x101_fpn_12e_youtubevis2021_20211026_095943-90831df4.pth

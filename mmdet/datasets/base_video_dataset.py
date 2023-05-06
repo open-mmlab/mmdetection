@@ -196,6 +196,7 @@ class BaseVideoDataset(BaseDataset):
                         num_imgs_after_filter += 1
                     else:
                         video_data_info['video_length'] -= 1
+                video_data_info['images'] = valid_imgs_data_info
             new_data_list.append(video_data_info)
 
         print_log(
