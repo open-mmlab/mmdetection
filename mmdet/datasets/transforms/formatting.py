@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 from mmcv.transforms import to_tensor
@@ -7,7 +7,7 @@ from mmcv.transforms.base import BaseTransform
 from mmengine.structures import InstanceData, PixelData
 
 from mmdet.registry import TRANSFORMS
-from mmdet.structures import DetDataSample, TrackDataSample
+from mmdet.structures import DetDataSample, ReIDDataSample, TrackDataSample
 from mmdet.structures.bbox import BaseBoxes
 
 
@@ -429,4 +429,82 @@ class PackTrackInputs(BaseTransform):
         repr_str = self.__class__.__name__
         repr_str += f'meta_keys={self.meta_keys}, '
         repr_str += f'default_meta_keys={self.default_meta_keys})'
+        return repr_str
+
+
+@TRANSFORMS.register_module()
+class PackReIDInputs(BaseTransform):
+    """Pack the inputs data for the ReID. The ``meta_info`` item is always
+    populated. The contents of the ``meta_info`` dictionary depends on
+    ``meta_keys``. By default this includes:
+
+        - ``img_path``: path to the image file.
+        - ``ori_shape``: original shape of the image as a tuple (H, W).
+        - ``img_shape``: shape of the image input to the network as a tuple
+            (H, W). Note that images may be zero padded on the bottom/right
+          if the batch tensor is larger than this shape.
+        - ``scale``: scale of the image as a tuple (W, H).
+        - ``scale_factor``: a float indicating the pre-processing scale.
+        -  ``flip``: a boolean indicating if image flip transform was used.
+        - ``flip_direction``: the flipping direction.
+    Args:
+        meta_keys (Sequence[str], optional): The meta keys to saved in the
+            ``metainfo`` of the packed ``data_sample``.
+    """
+    default_meta_keys = ('img_path', 'ori_shape', 'img_shape', 'scale',
+                         'scale_factor')
+
+    def __init__(self, meta_keys: Sequence[str] = ()) -> None:
+        self.meta_keys = self.default_meta_keys
+        if meta_keys is not None:
+            if isinstance(meta_keys, str):
+                meta_keys = (meta_keys, )
+            else:
+                assert isinstance(meta_keys, tuple), \
+                    'meta_keys must be str or tuple.'
+            self.meta_keys += meta_keys
+
+    def transform(self, results: dict) -> dict:
+        """Method to pack the input data.
+        Args:
+            results (dict): Result dict from the data pipeline.
+        Returns:
+            dict:
+            - 'inputs' (dict[Tensor]): The forward data of models.
+            - 'data_samples' (obj:`ReIDDataSample`): The meta info of the
+                sample.
+        """
+        packed_results = dict(inputs=dict(), data_samples=None)
+        assert 'img' in results, 'Missing the key ``img``.'
+        _type = type(results['img'])
+        label = results['gt_label']
+
+        if _type == list:
+            img = results['img']
+            label = np.stack(label, axis=0)  # (N,)
+            assert all([type(v) == _type for v in results.values()]), \
+                'All items in the results must have the same type.'
+        else:
+            img = [results['img']]
+
+        img = np.stack(img, axis=3)  # (H, W, C, N)
+        img = img.transpose(3, 2, 0, 1)  # (N, C, H, W)
+        img = np.ascontiguousarray(img)
+
+        packed_results['inputs'] = to_tensor(img)
+
+        data_sample = ReIDDataSample()
+        data_sample.set_gt_label(label)
+
+        meta_info = dict()
+        for key in self.meta_keys:
+            meta_info[key] = results[key]
+        data_sample.set_metainfo(meta_info)
+        packed_results['data_samples'] = data_sample
+
+        return packed_results
+
+    def __repr__(self) -> str:
+        repr_str = self.__class__.__name__
+        repr_str += f'(meta_keys={self.meta_keys})'
         return repr_str
