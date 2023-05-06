@@ -1133,7 +1133,6 @@ class ATSSVLFusionHead(ATSSHead):
             with_nms=with_nms,
             img_meta=img_meta)
         predictions.labels = predictions.labels + 1
-        print(predictions.labels)
         return predictions
 
     def predict1(self,
