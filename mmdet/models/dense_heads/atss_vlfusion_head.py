@@ -773,7 +773,7 @@ class ATSSVLFusionHead(ATSSHead):
     def _init_layers(self) -> None:
         pass
 
-    def forward(self, visual_feats: Tuple[Tensor], language_feats: dict, ):
+    def forward(self, visual_feats: Tuple[Tensor], language_feats: dict):
         cls_scores, bbox_preds, centerness, dot_product_logits = self.head(
             visual_feats,
             language_feats
