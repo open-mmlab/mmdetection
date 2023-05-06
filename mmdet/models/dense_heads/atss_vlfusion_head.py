@@ -574,14 +574,14 @@ class VLFusionModule(BaseModel):
                  feat_channels,
                  num_base_priors,
                  num_classes,
-                 cfg,
+                 early_fuse=False,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.num_base_priors = num_base_priors
         self.num_classes = num_classes
-        self.early_fuse = cfg.early_fuse
+        self.early_fuse = early_fuse
         self._init_layers()
 
     def _init_layers(self) -> None:
@@ -660,7 +660,10 @@ class VLFusionModule(BaseModel):
 
         dot_product_logits = []
 
-        embedding = dyhead_tower["lang"]["hidden"]
+        if self.early_fuse:
+            embedding = dyhead_tower["lang"]["hidden"]
+        else:
+            embedding = language_feats['embedded']
 
         # norm
         embedding = F.normalize(embedding, p=2, dim=-1)  # text embeding (1,256,768)
@@ -946,12 +949,13 @@ class ATSSPostProcessor(torch.nn.Module):
 
 @MODELS.register_module()
 class ATSSVLFusionHead(ATSSHead):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, early_fuse=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.head = VLFusionModule(in_channels=self.in_channels,
                                    feat_channels=self.feat_channels,
                                    num_base_priors=self.num_base_priors,
-                                   num_classes=self.num_classes)
+                                   num_classes=self.num_classes,
+                                   early_fuse=early_fuse)
         self.postprocess = ATSSPostProcessor(box_coder=self.bbox_coder, cfg=self.test_cfg)
 
     def _init_layers(self) -> None:

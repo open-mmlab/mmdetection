@@ -1,6 +1,3 @@
-_base_ = './glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py'
+_base_ = './glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py'
 
-model = dict(
-    train_cfg=dict(
-        early_fuse=True)
-)
+model = dict(bbox_head=dict(early_fuse=True))
