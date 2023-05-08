@@ -84,7 +84,7 @@ class MOTChallengeMetric(BaseVideoMetric):
                  track_iou_thr: float = 0.5,
                  benchmark: str = 'MOT17',
                  format_only: bool = False,
-                 use_postprocess: bool = True,
+                 use_postprocess: bool = False,
                  postprocess_tracklet_cfg: Optional[List[dict]] = [],
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None) -> None:
@@ -354,7 +354,10 @@ class MOTChallengeMetric(BaseVideoMetric):
 
         # gather seq_info and convert the list of dict to a dict.
         # convert self.seq_info to dict first to make it picklable.
+        import warnings
+        warnings.warn(f'seq_info: {self.seq_info}')
         gathered_seq_info = all_gather_object(dict(self.seq_info))
+        warnings.warn(f'gathered_seq_info: {gathered_seq_info}')
         all_seq_info = dict()
         for _seq_info in gathered_seq_info:
             all_seq_info.update(_seq_info)

@@ -1,16 +1,16 @@
 from unittest import TestCase
 
 import numpy as np
+from mmengine.registry import init_default_scope
 
 from mmdet.registry import TASK_UTILS
-from mmdet.utils import register_all_modules
 
 
 class TestKalmanFilter(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        register_all_modules()
+        init_default_scope('mmdet')
         motion = dict(type='KalmanFilter', )
         cls.kf = TASK_UTILS.build(motion)
 

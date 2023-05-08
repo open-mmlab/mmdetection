@@ -118,7 +118,7 @@ class StrongSORT(DeepSORT):
                          pred_track_instances.bboxes[i][1]).cpu(),
                         pred_track_instances.scores[i].cpu()
                     ]))
-        video_track_instances = np.array(video_track_instances)
+        video_track_instances = np.array(video_track_instances).reshape(-1, 7)
         video_track_instances = self.postprocess_model.forward(
             video_track_instances)
         for frame_id in range(video_len):

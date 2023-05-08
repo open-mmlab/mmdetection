@@ -5,4 +5,5 @@ _base_ = [
 
 # fp16 settings
 optim_wrapper = dict(type='AmpOptimWrapper', loss_scale='dynamic')
+val_cfg = dict(type='ValLoop', fp16=True)
 test_cfg = dict(type='TestLoop', fp16=True)

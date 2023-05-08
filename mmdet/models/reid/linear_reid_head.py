@@ -142,6 +142,7 @@ class LinearReIDHead(BaseModule):
         """Unpack data samples and compute loss."""
         losses = dict()
         gt_label = torch.cat([i.gt_label.label for i in data_samples])
+        gt_label = gt_label.to(feats.device)
 
         if self.loss_triplet:
             losses['triplet_loss'] = self.loss_triplet(feats, gt_label)
