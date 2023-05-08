@@ -19,6 +19,7 @@ from .utils import get_loading_pipeline
 from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
+from .youtube_vis_dataset import YouTubeVISDataset
 
 __all__ = [
     'XMLDataset', 'CocoDataset', 'DeepFashionDataset', 'VOCDataset',
@@ -28,5 +29,6 @@ __all__ = [
     'AspectRatioBatchSampler', 'ClassAwareSampler', 'MultiSourceSampler',
     'GroupMultiSourceSampler', 'BaseDetDataset', 'CrowdHumanDataset',
     'Objects365V1Dataset', 'Objects365V2Dataset', 'BaseVideoDataset',
-    'MOTChallengeDataset', 'TrackImgSampler', 'ReIDDataset'
+    'MOTChallengeDataset', 'TrackImgSampler', 'ReIDDataset',
+    'YouTubeVISDataset'
 ]

@@ -142,9 +142,6 @@ class BaseVideoDataset(BaseDataset):
                 # Therefore, we set it to `i`.
                 instance['instance_id'] = i
             instances.append(instance)
-        if not self.test_mode:
-            assert len(instances) > 0, f'No valid instances found in ' \
-                f'image {data_info["img_path"]}!'
         data_info['instances'] = instances
         return data_info
 
@@ -199,6 +196,7 @@ class BaseVideoDataset(BaseDataset):
                         num_imgs_after_filter += 1
                     else:
                         video_data_info['video_length'] -= 1
+                video_data_info['images'] = valid_imgs_data_info
             new_data_list.append(video_data_info)
 
         print_log(
