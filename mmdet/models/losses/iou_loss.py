@@ -361,7 +361,7 @@ def siou_loss(pred, target, eps=1e-7, neg_gamma=False):
     sin_alpha_2 = torch.abs(s_ch) / sigma
     threshold = pow(2, 0.5) / 2
     sin_alpha = torch.where(sin_alpha_1 > threshold, sin_alpha_2, sin_alpha_1)
-    angle_cost = torch.cos(torch.arcsin(sin_alpha) * 2 - math.pi / 2)
+    angle_cost = torch.cos(torch.asin(sin_alpha) * 2 - math.pi / 2)
 
     # distance cost
     rho_x = (s_cw / cw)**2
