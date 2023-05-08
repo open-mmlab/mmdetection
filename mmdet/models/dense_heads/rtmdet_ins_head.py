@@ -712,9 +712,6 @@ class RTMDetInsHead(RTMDetHead):
             decoded_bboxes.append(bbox_pred)
 
         flatten_bboxes = torch.cat(decoded_bboxes, 1)
-        for gt_instances in batch_gt_instances:
-            gt_instances.masks = gt_instances.masks.to_tensor(
-                dtype=torch.bool, device=device)
 
         cls_reg_targets = self.get_targets(
             flatten_cls_scores,

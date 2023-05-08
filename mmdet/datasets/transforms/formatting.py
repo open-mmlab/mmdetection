@@ -1,12 +1,48 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Sequence, Union
+
+import mmengine
 import numpy as np
-from mmcv.transforms import to_tensor
+import torch
 from mmcv.transforms.base import BaseTransform
 from mmengine.structures import InstanceData, PixelData
 
 from mmdet.registry import TRANSFORMS
 from mmdet.structures import DetDataSample
 from mmdet.structures.bbox import BaseBoxes
+from mmdet.structures.mask import BaseInstanceMasks
+
+
+def to_tensor(
+    data: Union[torch.Tensor, np.ndarray, Sequence, int,
+                float]) -> torch.Tensor:
+    """Convert objects of various python types to :obj:`torch.Tensor`.
+
+    Supported types are: :class:`numpy.ndarray`, :class:`torch.Tensor`,
+    :class:`Sequence`, :class:`int` and :class:`float`.
+
+    Args:
+        data (torch.Tensor | numpy.ndarray | Sequence | int | float): Data to
+            be converted.
+
+    Returns:
+        torch.Tensor: the converted data.
+    """
+
+    if isinstance(data, (torch.Tensor, BaseBoxes)):
+        return data
+    elif isinstance(data, np.ndarray):
+        return torch.from_numpy(data)
+    elif isinstance(data, Sequence) and not mmengine.is_str(data):
+        return torch.tensor(data)
+    elif isinstance(data, int):
+        return torch.LongTensor([data])
+    elif isinstance(data, float):
+        return torch.FloatTensor([data])
+    elif isinstance(data, BaseInstanceMasks):
+        return data.to_tensor(dtype=torch.bool, device='cpu')
+    else:
+        raise TypeError(f'type {type(data)} cannot be converted to tensor.')
 
 
 @TRANSFORMS.register_module()
@@ -94,23 +130,14 @@ class PackDetInputs(BaseTransform):
         for key in self.mapping_table.keys():
             if key not in results:
                 continue
-            if key == 'gt_masks' or isinstance(results[key], BaseBoxes):
-                if 'gt_ignore_flags' in results:
-                    instance_data[
-                        self.mapping_table[key]] = results[key][valid_idx]
-                    ignore_instance_data[
-                        self.mapping_table[key]] = results[key][ignore_idx]
-                else:
-                    instance_data[self.mapping_table[key]] = results[key]
+            if 'gt_ignore_flags' in results:
+                instance_data[self.mapping_table[key]] = to_tensor(
+                    results[key][valid_idx])
+                ignore_instance_data[self.mapping_table[key]] = to_tensor(
+                    results[key][ignore_idx])
             else:
-                if 'gt_ignore_flags' in results:
-                    instance_data[self.mapping_table[key]] = to_tensor(
-                        results[key][valid_idx])
-                    ignore_instance_data[self.mapping_table[key]] = to_tensor(
-                        results[key][ignore_idx])
-                else:
-                    instance_data[self.mapping_table[key]] = to_tensor(
-                        results[key])
+                instance_data[self.mapping_table[key]] = to_tensor(
+                    results[key])
         data_sample.gt_instances = instance_data
         data_sample.ignored_instances = ignore_instance_data
 
