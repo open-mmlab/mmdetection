@@ -41,6 +41,11 @@ class MaskSamplingResult(SamplingResult):
         else:
             self.pos_gt_masks = gt_masks[self.pos_assigned_gt_inds, :]
 
+        if assign_result.labels is not None:
+            self.pos_gt_labels = assign_result.labels[pos_inds]
+        else:
+            self.pos_gt_labels = None
+
     @property
     def masks(self) -> Tensor:
         """torch.Tensor: concatenated positive and negative masks."""
@@ -62,6 +67,7 @@ class MaskSamplingResult(SamplingResult):
             'neg_inds': self.neg_inds,
             'pos_masks': self.pos_masks,
             'neg_masks': self.neg_masks,
+            'pos_gt_labels': self.pos_gt_labels,
             'pos_is_gt': self.pos_is_gt,
             'num_gts': self.num_gts,
             'pos_assigned_gt_inds': self.pos_assigned_gt_inds,

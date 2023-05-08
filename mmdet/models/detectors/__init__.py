@@ -25,6 +25,7 @@ from .gfl import GFL
 from .grid_rcnn import GridRCNN
 from .htc import HybridTaskCascade
 from .kd_one_stage import KnowledgeDistillationSingleStageDetector
+from .knet import KNet
 from .lad import LAD
 from .mask2former import Mask2Former
 from .mask_rcnn import MaskRCNN
@@ -67,5 +68,5 @@ __all__ = [
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
     'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector', 'SoftTeacher',
     'RTMDet', 'Detectron2Wrapper', 'CrowdDet', 'CondInst', 'BoxInst',
-    'DetectionTransformer', 'ConditionalDETR', 'DINO', 'DABDETR'
+    'DetectionTransformer', 'ConditionalDETR', 'DINO', 'DABDETR', 'KNet'
 ]

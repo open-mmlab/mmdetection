@@ -25,6 +25,7 @@ from .ga_retina_head import GARetinaHead
 from .ga_rpn_head import GARPNHead
 from .gfl_head import GFLHead
 from .guided_anchor_head import FeatureAdaption, GuidedAnchorHead
+from .kernel_rpn_head import KernelRPNHead
 from .lad_head import LADHead
 from .ld_head import LDHead
 from .mask2former_head import Mask2FormerHead
@@ -65,5 +66,5 @@ __all__ = [
     'CenterNetUpdateHead', 'RTMDetHead', 'RTMDetSepBNHead', 'CondInstBboxHead',
     'CondInstMaskHead', 'RTMDetInsHead', 'RTMDetInsSepBNHead',
     'BoxInstBboxHead', 'BoxInstMaskHead', 'ConditionalDETRHead', 'DINOHead',
-    'DABDETRHead'
+    'DABDETRHead', 'KernelRPNHead'
 ]
