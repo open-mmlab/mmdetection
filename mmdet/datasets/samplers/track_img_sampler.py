@@ -113,6 +113,7 @@ class TrackImgSampler(Sampler):
 
         if self.test_mode:
             self.num_samples = len(self.indices[self.rank])
+            print(self.num_samples)
             self.total_size = sum(
                 [len(index_list) for index_list in self.indices])
         else:

@@ -1,6 +1,4 @@
-lap
 matplotlib
-motmetrics
 numpy
 pycocotools
 scipy

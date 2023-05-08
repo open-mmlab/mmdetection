@@ -2,13 +2,6 @@ _base_ = [
     './sort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain'
     '_test-mot17halfval.py'
 ]
-model = dict(
-    detector=dict(
-        init_cfg=dict(
-            type='Pretrained',
-            checkpoint=  # noqa: E251
-            'https://download.openmmlab.com/mmtracking/mot/faster_rcnn/faster-rcnn_r50_fpn_4e_mot17-ffa52ae7.pth'  # noqa: E501
-        )))
 
 # dataloader
 val_dataloader = dict(
