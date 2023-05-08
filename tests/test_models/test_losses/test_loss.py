@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from mmengine.utils import digit_version
 
 from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DiceLoss,
-                                 DistributionFocalLoss, FocalLoss,
+                                 DistributionFocalLoss, EQLV2Loss, FocalLoss,
                                  GaussianFocalLoss,
                                  KnowledgeDistillationKLDivLoss, L1Loss,
                                  MSELoss, QualityFocalLoss, SeesawLoss,
@@ -289,3 +289,14 @@ def test_dice_loss(naive_dice):
     with pytest.raises(AssertionError):
         weight = torch.rand((8))
         loss_class(naive_dice=naive_dice)(pred, target, weight)
+
+
+@pytest.mark.parametrize('loss_class', [EQLV2Loss])
+@pytest.mark.parametrize('reduction', ['mean'])
+def test_eqlv2_loss(loss_class, reduction):
+    cls_score = torch.randn((1204, 1204))
+    label = torch.randint(0, 2, (1204, ))
+    weight = None
+
+    loss = loss_class()(cls_score, label, weight)
+    assert isinstance(loss, torch.Tensor)
