@@ -984,7 +984,7 @@ class LoadTrackAnnotations(LoadAnnotations):
 
         results['gt_bboxes'] = np.array(
             gt_bboxes, dtype=np.float32).reshape(-1, 4)
-        results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=np.bool)
+        results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=bool)
 
     def _load_instances_ids(self, results: dict) -> None:
         """Private function to load instances id annotations.

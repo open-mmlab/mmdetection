@@ -53,40 +53,59 @@ Please note that the MOTA on `MOT20-test` is slightly lower than that reported i
 
 Due to the influence of parameters such as learning rate in default configuration file, we recommend using 8 GPUs for training in order to reproduce accuracy. You can use the following command to start the training.
 
+#### Joint training and tracking
+
+Some algorithm like ByteTrack, OCSORT don't need reid model, so we provide joint training and tracking for convenient.
+
 ```shell
 # Training Bytetrack on crowdhuman and mot17-half-train dataset with following command
 # The number after config file represents the number of GPUs used. Here we use 8 GPUs
-./tools/dist_train.sh \
-    configs/bytetrack/bytetrack_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval.py 8
+bash tools/dist_train.sh configs/bytetrack/bytetrack_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval.py 8
 ```
 
-If you want to know about more detailed usage of `train.py/dist_train.sh/slurm_train.sh`, please refer to this [document](../../../docs/en/user_guides/tracking_train_test.md).
+#### Separate training and tracking
+
+Of course, we provide train detector independently like SORT, DeepSORT, StrongSORT. Then use this detector to track.
+
+```shell
+# Training Bytetrack on crowdhuman and mot17-half-train dataset with following command
+# The number after config file represents the number of GPUs used. Here we use 8 GPUs
+bash tools/dist_train.sh configs/bytetrack/yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py 8
+```
 
 ### 2. Testing and evaluation
 
 **2.1 Example on MOTxx-halfval dataset**
 
 ```shell
-# Example 1: Test on motXX-half-val set
-# The number after config file represents the number of GPUs used. Here we use 8 GPUs.
-./tools/dist_test_tracking.sh \
-    configs/bytetrack/bytetrack_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval.py 8 \
-    --checkpoint https://download.openmmlab.com/mmtracking/mot/bytetrack/bytetrack_yolox_x/bytetrack_yolox_x_crowdhuman_mot17-private-half_20211218_205500-1985c9f0.pth
+bash tools/dist_test_tracking.sh configs/bytetrack/bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py 8 --checkpoint {CHECKPOINT_FILE}
 ```
 
-**2.2 Example on MOTxx-test dataset**
+**2.2 Example on MOTxx-halfval dataset**
+
+use separate trained detector to evaluation and testing.
+
+```shell
+bash tools/dist_test_tracking.sh configs/bytetrack/bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py 8 --detector {CHECKPOINT_FILE}
+```
+
+**2.2 Example on MOTxx-halfval dataset**
+
+we also provide two_ways(img_based or video_based) to evaluating and testing.
+if you want to use video_based to evaluating and testing, you can modify config as follows
+
+```
+val_dataloader = dict(
+    sampler=dict(type='DefaultSampler', shuffle=False, round_up=False))
+```
+
+**2.3 Example on MOTxx-test dataset**
 
 If you want to get the results of the [MOT Challenge](https://motchallenge.net/) test set, please use the following command to generate result files that can be used for submission. It will be stored in `./mot_17_test_res`, you can modify the saved path in `test_evaluator` of the config.
 
 ```shell
-# Example 2: Test on motxx-test set
-# The number after config file represents the number of GPUs used
-./tools/dist_test.sh \
-    configs/bytetrack/bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17test.py 8 \
-    --checkpoint https://download.openmmlab.com/mmtracking/mot/bytetrack/bytetrack_yolox_x/bytetrack_yolox_x_crowdhuman_mot17-private-half_20211218_205500-1985c9f0.pth
+bash tools/dist_test.sh configs/bytetrack/bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17test.py 8 --checkpoint {CHECKPOINT_FILE}
 ```
-
-If you want to know about more detailed usage of `test.py/dist_test.sh/slurm_test.sh`, please refer to this [document](../../../docs/en/user_guides/tracking_train_test.md).
 
 ### 3.Inference
 
@@ -95,9 +114,7 @@ Use a single GPU to predict a video and save it as a video.
 ```shell
 python demo/mot_demo.py \
     configs/bytetrack/bytetrack_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval.py \
-    --checkpoint https://download.openmmlab.com/mmtracking/mot/bytetrack/bytetrack_yolox_x/bytetrack_yolox_x_crowdhuman_mot17-private-half_20211218_205500-1985c9f0.pth \
+    --checkpoint {CHECKPOINT_FILE} \
     --input demo/demo.mp4 \
     --output mot.mp4
 ```
-
-If you want to know about more detailed usage of `mot_demo.py`, please refer to this [document](../../../docs/en/user_guides/tracking_inference.md).
