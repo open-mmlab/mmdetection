@@ -84,6 +84,7 @@ class MOTChallengeMetric(BaseVideoMetric):
                  track_iou_thr: float = 0.5,
                  benchmark: str = 'MOT17',
                  format_only: bool = False,
+                 use_postprocess: bool = False,
                  postprocess_tracklet_cfg: Optional[List[dict]] = [],
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None) -> None:
@@ -110,6 +111,7 @@ class MOTChallengeMetric(BaseVideoMetric):
             assert outfile_prefix is not None, 'outfile_prefix must be not'
             'None when format_only is True, otherwise the result files will'
             'be saved to a temp directory which will be cleaned up at the end.'
+        self.use_postprocess = use_postprocess
         self.postprocess_tracklet_cfg = postprocess_tracklet_cfg.copy()
         self.postprocess_tracklet_methods = [
             TASK_UTILS.build(cfg) for cfg in self.postprocess_tracklet_cfg
@@ -174,19 +176,26 @@ class MOTChallengeMetric(BaseVideoMetric):
 
         # load predictions
         assert 'pred_track_instances' in img_data_sample
-        pred_instances = img_data_sample['pred_track_instances']
-        pred_tracks = [
-            np.array([
-                frame_id + 1, pred_instances['instances_id'][i].cpu(),
-                pred_instances['bboxes'][i][0].cpu(),
-                pred_instances['bboxes'][i][1].cpu(),
-                (pred_instances['bboxes'][i][2] -
-                 pred_instances['bboxes'][i][0]).cpu(),
-                (pred_instances['bboxes'][i][3] -
-                 pred_instances['bboxes'][i][1]).cpu(),
-                pred_instances['scores'][i].cpu()
-            ]) for i in range(len(pred_instances['instances_id']))
-        ]
+        if self.use_postprocess:
+            pred_instances = img_data_sample['pred_track_instances']
+            pred_tracks = [
+                pred_instances['bboxes'][i]
+                for i in range(len(pred_instances['bboxes']))
+            ]
+        else:
+            pred_instances = img_data_sample['pred_track_instances']
+            pred_tracks = [
+                np.array([
+                    frame_id + 1, pred_instances['instances_id'][i].cpu(),
+                    pred_instances['bboxes'][i][0].cpu(),
+                    pred_instances['bboxes'][i][1].cpu(),
+                    (pred_instances['bboxes'][i][2] -
+                     pred_instances['bboxes'][i][0]).cpu(),
+                    (pred_instances['bboxes'][i][3] -
+                     pred_instances['bboxes'][i][1]).cpu(),
+                    pred_instances['scores'][i].cpu()
+                ]) for i in range(len(pred_instances['instances_id']))
+            ]
         self.seq_info[video]['pred_tracks'].extend(pred_tracks)
 
     def process_image(self, data_samples, video_len):
