@@ -61,7 +61,8 @@ class TrackDataPreprocessor(DetDataPreprocessor):
                  use_det_processor: bool = False,
                  **kwargs):
         super().__init__(mean=mean, std=std, **kwargs)
-        if mean is not None:
+        self.use_det_processor = use_det_processor
+        if mean is not None and not self.use_det_processor:
             # overwrite the ``register_bufffer`` in ``ImgDataPreprocessor``
             # since the shape of ``mean`` and ``std`` in tracking tasks must be
             # (T, C, H, W), which T is the temporal length of the video.
@@ -69,7 +70,6 @@ class TrackDataPreprocessor(DetDataPreprocessor):
                                  torch.tensor(mean).view(1, -1, 1, 1), False)
             self.register_buffer('std',
                                  torch.tensor(std).view(1, -1, 1, 1), False)
-        self.use_det_processor = use_det_processor
 
     def forward(self, data: dict, training: bool = False) -> Dict:
         """Perform normalization、padding and bgr2rgb conversion based on

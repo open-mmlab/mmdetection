@@ -1,7 +1,7 @@
 # dataset settings
 dataset_type = 'MOTChallengeDataset'
 data_root = 'data/MOT17/'
-resized_shape = (1088, 1088)
+img_scale = (1088, 1088)
 
 # data pipeline
 train_pipeline = [
@@ -18,7 +18,7 @@ train_pipeline = [
             dict(type='LoadTrackAnnotations'),
             dict(
                 type='RandomResize',
-                scale=resized_shape,
+                scale=img_scale,
                 ratio_range=(0.8, 1.2),
                 keep_ratio=True,
                 clip_object_border=False),
@@ -30,9 +30,7 @@ train_pipeline = [
         share_random_params=False,
         transforms=[
             dict(
-                type='RandomCrop',
-                crop_size=resized_shape,
-                bbox_clip_border=False)
+                type='RandomCrop', crop_size=img_scale, bbox_clip_border=False)
         ]),
     dict(
         type='TransformBroadcaster',
@@ -48,7 +46,7 @@ test_pipeline = [
         type='TransformBroadcaster',
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', scale=resized_shape, keep_ratio=True),
+            dict(type='Resize', scale=img_scale, keep_ratio=True),
             dict(type='LoadTrackAnnotations')
         ]),
     dict(type='PackTrackInputs')
@@ -59,9 +57,6 @@ train_dataloader = dict(
     batch_size=2,
     num_workers=2,
     persistent_workers=True,
-    # MOTChallengeDataset is a video-based dataset, so we don't need
-    # "AspectRatioBatchSampler"
-    # batch_sampler=dict(type='AspectRatioBatchSampler'),
     sampler=dict(type='TrackImgSampler'),  # image-based sampling
     dataset=dict(
         type=dataset_type,
@@ -75,7 +70,9 @@ val_dataloader = dict(
     batch_size=1,
     num_workers=2,
     persistent_workers=True,
-    drop_last=False,
+    # Now we support two ways to test, image_based and video_based
+    # if you want to use video_based sampling, you can use as follows
+    # sampler=dict(type='DefaultSampler', shuffle=False, round_up=False),
     sampler=dict(type='TrackImgSampler'),  # image-based sampling
     dataset=dict(
         type=dataset_type,
