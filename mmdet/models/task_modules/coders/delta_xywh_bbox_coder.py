@@ -543,7 +543,7 @@ def delta2bbox_addone(rois: Tensor,
 
     # Compute width/height of each roi
     rois_ = rois.repeat(1, num_classes).reshape(-1, 4)
-    pxy = ((rois_[:, :2] + rois_[:, 2:]) * 0.5)
+    pxy = ((rois_[:, :2] + rois_[:, 2:] - 1) * 0.5)  # note
     pwh = (rois_[:, 2:] - rois_[:, :2])
 
     dxy_wh = pwh * dxy
@@ -557,9 +557,9 @@ def delta2bbox_addone(rois: Tensor,
 
     gxy = pxy + dxy_wh
     gwh = pwh * dwh.exp()
-    x1y1 = gxy - (gwh * 0.5)
 
-    x2y2 = gxy + (gwh * 0.5) - 1  # Note
+    x1y1 = gxy - (gwh-1) * 0.5  # Note
+    x2y2 = gxy + (gwh-1) * 0.5  # Note
 
     bboxes = torch.cat([x1y1, x2y2], dim=-1)
 
