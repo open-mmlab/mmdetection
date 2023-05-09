@@ -31,7 +31,7 @@ pipeline=[
 
 </td>
 <tr>
-<td>2.x Config</td>
+<td>3.x Config</td>
 <td>
 
 ```python
