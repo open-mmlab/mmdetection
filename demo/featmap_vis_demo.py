@@ -1,4 +1,31 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+"""featuremap vis demo for mmdet.
+
+This script help user to visualize the feature map.
+
+Usage:
+    python demo/featmap_vis_demo.py img \
+                                    config \
+                                    checkpoint \
+                                    [--target-layers TARGET_LAYERS] \
+                                    [--channel-reduction CHANNEL_REDUCTION] \
+
+Example:
+    python demo/feature_vis_demo.py \
+        ${MMDET_PATH}/data/images \
+        configs/rtmdet/rtmdet_tiny_8xb32-300e_coco.py \
+        checkpoints/rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth
+        --target-layers backbone \
+        --channel-reduction select_max \
+
+This script is in the experimental verification stage and cannot be guaranteed
+to be completely correct. currently have been tested on ATSS, RetinaNet,
+CenterNet, CentripetalNet, YOLOX, TOOD, RTMDET, CondInst, BoxInst.
+
+For a detail explanation of the usage, please refer to mmyolo's documentation
+https://mmyolo.readthedocs.io/en/dev/recommended_topics/visualization.html
+"""
+
 import argparse
 import os
 from typing import Sequence
