@@ -25,7 +25,7 @@ model = dict(
             strides=[8, 16, 32, 64, 128],
             center_offset=0.5),
         bbox_coder=dict(
-            type='DeltaXYWHBBoxCoder',
+            type='DeltaXYWHAddOneBBoxCoder',
             target_means=[.0, .0, .0, .0],
             target_stds=[0.1, 0.1, 0.2, 0.2]),
     ),
