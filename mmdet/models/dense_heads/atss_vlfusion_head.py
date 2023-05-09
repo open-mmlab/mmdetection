@@ -586,6 +586,7 @@ class VLFusionModule(BaseModel):
                  num_base_priors,
                  num_classes,
                  early_fuse=False,
+                 num_dyhead_blocks=6,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.in_channels = in_channels
@@ -593,6 +594,7 @@ class VLFusionModule(BaseModel):
         self.num_base_priors = num_base_priors
         self.num_classes = num_classes
         self.early_fuse = early_fuse
+        self.num_dyhead_blocks = num_dyhead_blocks
         self._init_layers()
 
     def _init_layers(self) -> None:
@@ -600,7 +602,7 @@ class VLFusionModule(BaseModel):
         use_dyfuse = True
         use_deform = True
         bn_type = ['gn', 16]
-        num_dyhead_blocks = 6
+        num_dyhead_blocks = self.num_dyhead_blocks
         conv_func = lambda i, o, s: Conv3x3Norm(i, o, s, deformable=use_deform, bn_type=bn_type)
         log_scale = 0.0
         prior_prob = 0.01
@@ -685,6 +687,7 @@ class VLFusionModule(BaseModel):
         dot_product_proj_tokens_bias = torch.matmul(embedding, self.bias_lang) + self.bias0  # (1, 256)
 
         for l, feature in enumerate(visual_feats):
+            # import pdb;pdb.set_trace()
             logits.append(self.cls_logits(dyhead_tower["visual"][l]))  # (1,80,100,136)
 
             bbox_pred = self.scales[l](self.bbox_pred(dyhead_tower["visual"][l]))
@@ -762,13 +765,14 @@ def convert_grounding_to_od_logits(logits, box_cls, positive_maps, score_agg=Non
 
 @MODELS.register_module()
 class ATSSVLFusionHead(ATSSHead):
-    def __init__(self, *args, early_fuse=False, **kwargs):
+    def __init__(self, *args, early_fuse=False, num_dyhead_blocks=6,**kwargs):
         super().__init__(*args, **kwargs)
         self.head = VLFusionModule(in_channels=self.in_channels,
                                    feat_channels=self.feat_channels,
                                    num_base_priors=self.num_base_priors,
                                    num_classes=self.num_classes,
-                                   early_fuse=early_fuse)
+                                   early_fuse=early_fuse,
+                                   num_dyhead_blocks=num_dyhead_blocks)
 
     def _init_layers(self) -> None:
         pass
