@@ -61,6 +61,7 @@ class TestDeepSORT(TestCase):
             _model.reid.head.fc_channels = 1
             _model.reid.head.out_channels = 1
             _model.reid.head.num_classes = 2
+            _model.cmc = None
             model = MODELS.build(_model)
 
             if device == 'cuda':
