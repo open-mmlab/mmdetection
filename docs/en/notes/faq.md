@@ -1,28 +1,65 @@
 # Frequently Asked Questions
 
-We list some common troubles faced by many users and their corresponding solutions here. Feel free to enrich the list if you find any frequent issues and have ways to help others to solve them. If the contents here do not cover your issue, please create an issue using the [provided templates](https://github.com/open-mmlab/mmdetection/blob/master/.github/ISSUE_TEMPLATE/error-report.md/) and make sure you fill in all required information in the template.
+We list some common troubles faced by many users and their corresponding solutions here. Feel free to enrich the list if you find any frequent issues and have ways to help others to solve them. If the contents here do not cover your issue, please create an issue using the [provided templates](https://github.com/open-mmlab/mmdetection/blob/main/.github/ISSUE_TEMPLATE/error-report.md/) and make sure you fill in all required information in the template.
+
+## PyTorch 2.0 Support
+
+The vast majority of algorithms in MMDetection now support PyTorch 2.0 and its `torch.compile` function. Users only need to install MMDetection 3.0.0rc7 or later versions to enjoy this feature. If any unsupported algorithms are found during use, please feel free to give us feedback. We also welcome contributions from the community to benchmark the speed improvement brought by using the `torch.compile` function.
+
+To enable the `torch.compile` function, simply add `--cfg-options compile=True` after `train.py` or `test.py`. For example, to enable `torch.compile` for RTMDet, you can use the following command:
+
+```shell
+# Single GPU
+python tools/train.py configs/rtmdet/rtmdet_s_8xb32-300e_coco.py  --cfg-options compile=True
+
+# Single node multiple GPUs
+./tools/dist_train.sh configs/rtmdet/rtmdet_s_8xb32-300e_coco.py 8 --cfg-options compile=True
+
+# Single node multiple GPUs + AMP
+./tools/dist_train.sh configs/rtmdet/rtmdet_s_8xb32-300e_coco.py 8 --cfg-options compile=True --amp
+```
+
+It is important to note that PyTorch 2.0's support for dynamic shapes is not yet fully developed. In most object detection algorithms, not only are the input shapes dynamic, but the loss calculation and post-processing parts are also dynamic. This can lead to slower training speeds when using the `torch.compile` function. Therefore, if you wish to enable the `torch.compile` function, you should follow these principles:
+
+1. Input images to the network are fixed shape, not multi-scale
+2. set `torch._dynamo.config.cache_size_limit` parameter. TorchDynamo will convert and cache the Python bytecode, and the compiled functions will be stored in the cache. When the next check finds that the function needs to be recompiled, the function will be recompiled and cached. However, if the number of recompilations exceeds the maximum value set (64), the function will no longer be cached or recompiled. As mentioned above, the loss calculation and post-processing parts of the object detection algorithm are also dynamically calculated, and these functions need to be recompiled every time. Therefore, setting the `torch._dynamo.config.cache_size_limit` parameter to a smaller value can effectively reduce the compilation time
+
+In MMDetection, you can set the `torch._dynamo.config.cache_size_limit` parameter through the environment variable `DYNAMO_CACHE_SIZE_LIMIT`. For example, the command is as follows:
+
+```shell
+# Single GPU
+export DYNAMO_CACHE_SIZE_LIMIT = 4
+python tools/train.py configs/rtmdet/rtmdet_s_8xb32-300e_coco.py  --cfg-options compile=True
+
+# Single node multiple GPUs
+export DYNAMO_CACHE_SIZE_LIMIT = 4
+./tools/dist_train.sh configs/rtmdet/rtmdet_s_8xb32-300e_coco.py 8 --cfg-options compile=True
+```
+
+About the common questions about PyTorch 2.0's dynamo, you can refer to [here](https://pytorch.org/docs/stable/dynamo/faq.html)
 
 ## Installation
 
-- Compatibility issue between MMCV and MMDetection; "ConvWS is already registered in conv layer"; "AssertionError: MMCV==xxx is used but incompatible. Please install mmcv>=xxx, \<=xxx."
+Compatibility issue between MMCV and MMDetection; "ConvWS is already registered in conv layer"; "AssertionError: MMCV==xxx is used but incompatible. Please install mmcv>=xxx, \<=xxx."
 
-  Compatible MMDetection, MMEngine, and MMCV versions are shown as below. Please choose the correct version of MMCV to avoid installation issues.
+Compatible MMDetection, MMEngine, and MMCV versions are shown as below. Please choose the correct version of MMCV to avoid installation issues.
 
-  | MMDetection version |      MMCV version       |     MMEngine version     |
-  | :-----------------: | :---------------------: | :----------------------: |
-  |         3.x         | mmcv>=2.0.0rc4, \<2.1.0 | mmengine>=0.6.0, \<1.0.0 |
-  |      3.0.0rc6       | mmcv>=2.0.0rc4, \<2.1.0 | mmengine>=0.6.0, \<1.0.0 |
-  |      3.0.0rc5       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.3.0, \<1.0.0 |
-  |      3.0.0rc4       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.3.0, \<1.0.0 |
-  |      3.0.0rc3       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.3.0, \<1.0.0 |
-  |      3.0.0rc2       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.1.0, \<1.0.0 |
-  |      3.0.0rc1       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.1.0, \<1.0.0 |
-  |      3.0.0rc0       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.1.0, \<1.0.0 |
+| MMDetection version |      MMCV version       |     MMEngine version     |
+| :-----------------: | :---------------------: | :----------------------: |
+|        main         |  mmcv>=2.0.0, \<2.1.0   | mmengine>=0.7.1, \<1.0.0 |
+|         3.x         |  mmcv>=2.0.0, \<2.1.0   | mmengine>=0.7.1, \<1.0.0 |
+|      3.0.0rc6       | mmcv>=2.0.0rc4, \<2.1.0 | mmengine>=0.6.0, \<1.0.0 |
+|      3.0.0rc5       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.3.0, \<1.0.0 |
+|      3.0.0rc4       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.3.0, \<1.0.0 |
+|      3.0.0rc3       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.3.0, \<1.0.0 |
+|      3.0.0rc2       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.1.0, \<1.0.0 |
+|      3.0.0rc1       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.1.0, \<1.0.0 |
+|      3.0.0rc0       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.1.0, \<1.0.0 |
 
-  **Note:**
+**Note:**
 
-  1. If you want to install mmdet-v2.x, the compatible MMDetection and MMCV versions table can be found at [here](https://mmdetection.readthedocs.io/en/stable/faq.html#installation). Please choose the correct version of MMCV to avoid installation issues.
-  2. In MMCV-v2.x, `mmcv-full` is rename to `mmcv`, if you want to install `mmcv` without CUDA ops, you can install `mmcv-lite`.
+1. If you want to install mmdet-v2.x, the compatible MMDetection and MMCV versions table can be found at [here](https://mmdetection.readthedocs.io/en/stable/faq.html#installation). Please choose the correct version of MMCV to avoid installation issues.
+2. In MMCV-v2.x, `mmcv-full` is rename to `mmcv`, if you want to install `mmcv` without CUDA ops, you can install `mmcv-lite`.
 
 - "No module named 'mmcv.ops'"; "No module named 'mmcv.\_ext'".
 
@@ -169,7 +206,7 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - Save the best model
 
-  It can be turned on by configuring `default_hooks = dict(checkpoint=dict(type='CheckpointHook', interval=1, save_best='auto'),`. In the case of the `auto` parameter, the first key in the returned evaluation result will be used as the basis for selecting the best model. You can also directly set the key in the evaluation result to manually set it, for example, `save_best='mAP'`.
+  It can be turned on by configuring `default_hooks = dict(checkpoint=dict(type='CheckpointHook', interval=1, save_best='auto'),`. In the case of the `auto` parameter, the first key in the returned evaluation result will be used as the basis for selecting the best model. You can also directly set the key in the evaluation result to manually set it, for example, `save_best='coco/bbox_mAP'`.
 
 ## Evaluation
 

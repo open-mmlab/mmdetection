@@ -3,7 +3,7 @@ import os.path as osp
 from typing import List, Optional
 
 from mmengine.dataset import BaseDataset
-from mmengine.fileio import FileClient, load
+from mmengine.fileio import load
 from mmengine.utils import is_abs
 
 from ..registry import DATASETS
@@ -15,21 +15,28 @@ class BaseDetDataset(BaseDataset):
 
     Args:
         proposal_file (str, optional): Proposals file path. Defaults to None.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmengine.fileio.FileClient` for details.
-            Defaults to ``dict(backend='disk')``.
+        file_client_args (dict): Arguments to instantiate the
+            corresponding backend in mmdet <= 3.0.0rc6. Defaults to None.
+        backend_args (dict, optional): Arguments to instantiate the
+            corresponding backend. Defaults to None.
     """
 
     def __init__(self,
                  *args,
                  seg_map_suffix: str = '.png',
                  proposal_file: Optional[str] = None,
-                 file_client_args: dict = dict(backend='disk'),
+                 file_client_args: dict = None,
+                 backend_args: dict = None,
                  **kwargs) -> None:
         self.seg_map_suffix = seg_map_suffix
         self.proposal_file = proposal_file
-        self.file_client_args = file_client_args
-        self.file_client = FileClient(**file_client_args)
+        self.backend_args = backend_args
+        if file_client_args is not None:
+            raise RuntimeError(
+                'The `file_client_args` is deprecated, '
+                'please use `backend_args` instead, please refer to'
+                'https://github.com/open-mmlab/mmdetection/blob/main/configs/_base_/datasets/coco_detection.py'  # noqa: E501
+            )
         super().__init__(*args, **kwargs)
 
     def full_init(self) -> None:
@@ -88,7 +95,7 @@ class BaseDetDataset(BaseDataset):
         if not is_abs(self.proposal_file):
             self.proposal_file = osp.join(self.data_root, self.proposal_file)
         proposals_list = load(
-            self.proposal_file, file_client_args=self.file_client_args)
+            self.proposal_file, backend_args=self.backend_args)
         assert len(self.data_list) == len(proposals_list)
         for data_info in self.data_list:
             img_path = data_info['img_path']

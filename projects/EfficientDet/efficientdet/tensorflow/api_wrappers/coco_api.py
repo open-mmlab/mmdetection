@@ -30,7 +30,6 @@ class COCO(_COCO):
         return self.getAnnIds(img_ids, cat_ids, area_rng, iscrowd)
 
     def get_cat_ids(self, cat_names=[], sup_names=[], cat_ids=[]):
-        # return self.getCatIds(cat_names, sup_names, cat_ids)
         cat_ids_coco = self.getCatIds(cat_names, sup_names, cat_ids)
         if None in cat_names:
             index = [i for i, v in enumerate(cat_names) if v is not None]

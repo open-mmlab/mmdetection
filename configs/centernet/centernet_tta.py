@@ -5,10 +5,7 @@ tta_model = dict(
     tta_cfg=dict(nms=dict(type='nms', iou_threshold=0.5), max_per_img=100))
 
 tta_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        to_float32=True,
-        file_client_args=dict(backend='disk')),
+    dict(type='LoadImageFromFile', to_float32=True, backend_args=None),
     dict(
         type='TestTimeAug',
         transforms=[

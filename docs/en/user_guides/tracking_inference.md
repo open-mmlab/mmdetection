@@ -23,7 +23,7 @@ python demo/demo_mot.py \
 
 The `INPUT` and `OUTPUT` support both _mp4 video_ format and the _folder_ format.
 
-**Important:** For `DeepSORT`, `SORT`, `Tracktor`, `StrongSORT`, they need load the weight of the `reid` and the weight of the `detector` separately. Therefore, we use `--detector` and `--reid` to load weights. Other algorithms such as `ByteTrack`, `OCSORT` and `QDTrack` use `--checkpoint` to load weights.
+**Important:** For `DeepSORT`, `SORT`, `StrongSORT`, they need load the weight of the `reid` and the weight of the `detector` separately. Therefore, we use `--detector` and `--reid` to load weights. Other algorithms such as `ByteTrack`, `OCSORT` `QDTrack` `MaskTrackRCNN` and `Mask2Former` use `--checkpoint` to load weights.
 
 Optional arguments:
 

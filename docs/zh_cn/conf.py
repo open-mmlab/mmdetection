@@ -67,7 +67,7 @@ source_suffix = {
     '.md': 'markdown',
 }
 
-# The master toctree document.
+# The main toctree document.
 master_doc = 'index'
 
 # List of patterns, relative to source directory, that match files and

@@ -42,11 +42,13 @@ Here is a detailed step-by-step guide to learn more about MMDetection:
 
 2. Refer to the below tutorials for the basic usage of MMDetection.
 
-   - [Train and Test](https://mmdetection.readthedocs.io/en/dev-3.x/user_guides/index.html#train-test)
+   - [Train and Test](https://mmdetection.readthedocs.io/en/latest/user_guides/index.html#train-test)
 
-   - [Useful Tools](https://mmdetection.readthedocs.io/en/dev-3.x/user_guides/index.html#useful-tools)
+   - [Useful Tools](https://mmdetection.readthedocs.io/en/latest/user_guides/index.html#useful-tools)
 
 3. Refer to the below tutorials to dive deeper:
 
-   - [Basic Concepts](https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/index.html#basic-concepts)
-   - [Component Customization](https://mmdetection.readthedocs.io/en/dev-3.x/advanced_guides/index.html#component-customization)
+   - [Basic Concepts](https://mmdetection.readthedocs.io/en/latest/advanced_guides/index.html#basic-concepts)
+   - [Component Customization](https://mmdetection.readthedocs.io/en/latest/advanced_guides/index.html#component-customization)
+
+4. For users of MMDetection 2.x version, we provide a guide to help you adapt to the new version. You can find it in the [migration guide](./migration/migration.md).

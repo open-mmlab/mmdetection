@@ -20,7 +20,7 @@ Keypoint-based detectors have achieved pretty-well performance. However, incorre
 
 Note:
 
-- TTA setting is single-scale and `flip=True`.
+- TTA setting is single-scale and `flip=True`. If you want to reproduce the TTA performance, please add `--tta` in the test command.
 - The model we released is the best checkpoint rather than the latest checkpoint (box AP 44.8 vs 44.6 in our experiment).
 
 ## Citation

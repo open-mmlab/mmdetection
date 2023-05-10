@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Sequence, Union
 import numpy as np
 import torch
 from mmengine.evaluator import BaseMetric
-from mmengine.fileio import FileClient, dump, load
+from mmengine.fileio import dump, get_local_path, load
 from mmengine.logging import MMLogger
 from terminaltables import AsciiTable
 
@@ -50,9 +50,10 @@ class CocoMetric(BaseMetric):
         outfile_prefix (str, optional): The prefix of json files. It includes
             the file path and the prefix of filename, e.g., "a/b/prefix".
             If not specified, a temp file will be created. Defaults to None.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmengine.fileio.FileClient` for details.
-            Defaults to ``dict(backend='disk')``.
+        file_client_args (dict, optional): Arguments to instantiate the
+            corresponding backend in mmdet <= 3.0.0rc6. Defaults to None.
+        backend_args (dict, optional): Arguments to instantiate the
+            corresponding backend. Defaults to None.
         collect_device (str): Device name used for collecting results from
             different ranks during distributed training. Must be 'cpu' or
             'gpu'. Defaults to 'cpu'.
@@ -74,7 +75,8 @@ class CocoMetric(BaseMetric):
                  metric_items: Optional[Sequence[str]] = None,
                  format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
-                 file_client_args: dict = dict(backend='disk'),
+                 file_client_args: dict = None,
+                 backend_args: dict = None,
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None,
                  sort_categories: bool = False) -> None:
@@ -108,13 +110,19 @@ class CocoMetric(BaseMetric):
 
         self.outfile_prefix = outfile_prefix
 
-        self.file_client_args = file_client_args
-        self.file_client = FileClient(**file_client_args)
+        self.backend_args = backend_args
+        if file_client_args is not None:
+            raise RuntimeError(
+                'The `file_client_args` is deprecated, '
+                'please use `backend_args` instead, please refer to'
+                'https://github.com/open-mmlab/mmdetection/blob/main/configs/_base_/datasets/coco_detection.py'  # noqa: E501
+            )
 
         # if ann_file is not specified,
         # initialize coco api with the converted dataset
         if ann_file is not None:
-            with self.file_client.get_local_path(ann_file) as local_path:
+            with get_local_path(
+                    ann_file, backend_args=self.backend_args) as local_path:
                 self._coco_api = COCO(local_path)
                 if sort_categories:
                     # 'categories' list in objects365_train.json and
@@ -511,6 +519,7 @@ class CocoMetric(BaseMetric):
 
                     results_per_category = []
                     for idx, cat_id in enumerate(self.cat_ids):
+                        t = []
                         # area range index 0: all area ranges
                         # max dets index -1: typically 100 per image
                         nm = self._coco_api.loadCats(cat_id)[0]
@@ -520,14 +529,38 @@ class CocoMetric(BaseMetric):
                             ap = np.mean(precision)
                         else:
                             ap = float('nan')
-                        results_per_category.append(
-                            (f'{nm["name"]}', f'{round(ap, 3)}'))
+                        t.append(f'{nm["name"]}')
+                        t.append(f'{round(ap, 3)}')
                         eval_results[f'{nm["name"]}_precision'] = round(ap, 3)
 
-                    num_columns = min(6, len(results_per_category) * 2)
+                        # indexes of IoU  @50 and @75
+                        for iou in [0, 5]:
+                            precision = precisions[iou, :, idx, 0, -1]
+                            precision = precision[precision > -1]
+                            if precision.size:
+                                ap = np.mean(precision)
+                            else:
+                                ap = float('nan')
+                            t.append(f'{round(ap, 3)}')
+
+                        # indexes of area of small, median and large
+                        for area in [1, 2, 3]:
+                            precision = precisions[:, :, idx, area, -1]
+                            precision = precision[precision > -1]
+                            if precision.size:
+                                ap = np.mean(precision)
+                            else:
+                                ap = float('nan')
+                            t.append(f'{round(ap, 3)}')
+                        results_per_category.append(tuple(t))
+
+                    num_columns = len(results_per_category[0])
                     results_flatten = list(
                         itertools.chain(*results_per_category))
-                    headers = ['category', 'AP'] * (num_columns // 2)
+                    headers = [
+                        'category', 'mAP', 'mAP_50', 'mAP_75', 'mAP_s',
+                        'mAP_m', 'mAP_l'
+                    ]
                     results_2d = itertools.zip_longest(*[
                         results_flatten[i::num_columns]
                         for i in range(num_columns)

@@ -1,15 +1,22 @@
 _base_ = 'faster-rcnn_r50-caffe_fpn_1x_coco.py'
+max_iter = 90000
 
-# learning policy
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=500,
-    warmup_ratio=0.001,
-    step=[60000, 80000])
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_iter,
+        by_epoch=False,
+        milestones=[60000, 80000],
+        gamma=0.1)
+]
 
-# Runner type
-runner = dict(_delete_=True, type='IterBasedRunner', max_iters=90000)
-
-checkpoint_config = dict(interval=10000)
-evaluation = dict(interval=10000, metric='bbox')
+train_cfg = dict(
+    _delete_=True,
+    type='IterBasedTrainLoop',
+    max_iters=max_iter,
+    val_interval=10000)
+default_hooks = dict(checkpoint=dict(by_epoch=False, interval=10000))
+log_processor = dict(by_epoch=False)

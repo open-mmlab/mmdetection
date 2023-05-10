@@ -1,0 +1,127 @@
+Collections:
+  - Name: RPN
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - FPN
+        - ResNet
+    Paper:
+      URL: https://arxiv.org/abs/1506.01497
+      Title: "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks"
+    README: configs/rpn/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/rpn.py#L6
+      Version: v2.0.0
+
+Models:
+  - Name: rpn_r50-caffe_fpn_1x_coco
+    In Collection: RPN
+    Config: configs/rpn/rpn_r50-caffe_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 3.5
+      Training Resources: 8x V100 GPUs
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          AR@1000: 58.7
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_r50_caffe_fpn_1x_coco/rpn_r50_caffe_fpn_1x_coco_20200531-5b903a37.pth
+
+  - Name: rpn_r50_fpn_1x_coco
+    In Collection: RPN
+    Config: configs/rpn/rpn_r50_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 3.8
+      Training Resources: 8x V100 GPUs
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          AR@1000: 58.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_r50_fpn_1x_coco/rpn_r50_fpn_1x_coco_20200218-5525fa2e.pth
+
+  - Name: rpn_r50_fpn_2x_coco
+    In Collection: RPN
+    Config: rpn_r50_fpn_2x_coco.py
+    Metadata:
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          AR@1000: 58.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_r50_fpn_2x_coco/rpn_r50_fpn_2x_coco_20200131-0728c9b3.pth
+
+  - Name: rpn_r101-caffe_fpn_1x_coco
+    In Collection: RPN
+    Config: configs/rpn/rpn_r101-caffe_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 5.4
+      Training Resources: 8x V100 GPUs
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          AR@1000: 60.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_r101_caffe_fpn_1x_coco/rpn_r101_caffe_fpn_1x_coco_20200531-0629a2e2.pth
+
+  - Name: rpn_x101-32x4d_fpn_1x_coco
+    In Collection: RPN
+    Config: configs/rpn/rpn_x101-32x4d_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 7.0
+      Training Resources: 8x V100 GPUs
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          AR@1000: 60.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_x101_32x4d_fpn_1x_coco/rpn_x101_32x4d_fpn_1x_coco_20200219-b02646c6.pth
+
+  - Name: rpn_x101-32x4d_fpn_2x_coco
+    In Collection: RPN
+    Config: configs/rpn/rpn_x101-32x4d_fpn_2x_coco.py
+    Metadata:
+      Training Resources: 8x V100 GPUs
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          AR@1000: 61.1
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_x101_32x4d_fpn_2x_coco/rpn_x101_32x4d_fpn_2x_coco_20200208-d22bd0bb.pth
+
+  - Name: rpn_x101-64x4d_fpn_1x_coco
+    In Collection: RPN
+    Config: configs/rpn/rpn_x101-64x4d_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 10.1
+      Training Resources: 8x V100 GPUs
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          AR@1000: 61.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_x101_64x4d_fpn_1x_coco/rpn_x101_64x4d_fpn_1x_coco_20200208-cde6f7dd.pth
+
+  - Name: rpn_x101-64x4d_fpn_2x_coco
+    In Collection: RPN
+    Config: configs/rpn/rpn_x101-64x4d_fpn_2x_coco.py
+    Metadata:
+      Training Resources: 8x V100 GPUs
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          AR@1000: 61.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_x101_64x4d_fpn_2x_coco/rpn_x101_64x4d_fpn_2x_coco_20200208-c65f524f.pth

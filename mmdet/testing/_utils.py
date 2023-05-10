@@ -417,7 +417,7 @@ def random_boxes(num=1, scale=1, rng=None):
 
 # TODO: Support full ceph
 def replace_to_ceph(cfg):
-    file_client_args = dict(
+    backend_args = dict(
         backend='petrel',
         path_mapping=dict({
             './data/': 's3://openmmlab/datasets/detection/',
@@ -429,12 +429,12 @@ def replace_to_ceph(cfg):
 
         def replace_img(pipeline):
             if pipeline['type'] == 'LoadImageFromFile':
-                pipeline['file_client_args'] = file_client_args
+                pipeline['backend_args'] = backend_args
 
         def replace_ann(pipeline):
             if pipeline['type'] == 'LoadAnnotations' or pipeline[
                     'type'] == 'LoadPanopticAnnotations':
-                pipeline['file_client_args'] = file_client_args
+                pipeline['backend_args'] = backend_args
 
         if 'pipeline' in dataset:
             replace_img(dataset.pipeline[0])
@@ -450,7 +450,7 @@ def replace_to_ceph(cfg):
 
     def _process_evaluator(evaluator, name):
         if evaluator['type'] == 'CocoPanopticMetric':
-            evaluator['file_client_args'] = file_client_args
+            evaluator['backend_args'] = backend_args
 
     # half ceph
     _process_pipeline(cfg.train_dataloader.dataset, cfg.filename)
