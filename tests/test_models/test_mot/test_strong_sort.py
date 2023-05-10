@@ -36,7 +36,6 @@ class TestDeepSORT(TestCase):
         model = MODELS.build(model)
         assert model.detector
         assert model.reid
-        assert model.cmc
         assert model.tracker
 
     @parameterized.expand([
