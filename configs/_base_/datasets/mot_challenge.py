@@ -3,6 +3,7 @@ dataset_type = 'MOTChallengeDataset'
 data_root = 'data/MOT17/'
 img_scale = (1088, 1088)
 
+backend_args = None
 # data pipeline
 train_pipeline = [
     dict(
@@ -14,7 +15,7 @@ train_pipeline = [
         type='TransformBroadcaster',
         share_random_params=True,
         transforms=[
-            dict(type='LoadImageFromFile'),
+            dict(type='LoadImageFromFile', backend_args=backend_args),
             dict(type='LoadTrackAnnotations'),
             dict(
                 type='RandomResize',
@@ -45,7 +46,7 @@ test_pipeline = [
     dict(
         type='TransformBroadcaster',
         transforms=[
-            dict(type='LoadImageFromFile'),
+            dict(type='LoadImageFromFile', backend_args=backend_args),
             dict(type='Resize', scale=img_scale, keep_ratio=True),
             dict(type='LoadTrackAnnotations')
         ]),

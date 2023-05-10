@@ -17,7 +17,7 @@ test_pipeline = [
     dict(
         type='TransformBroadcaster',
         transforms=[
-            dict(type='LoadImageFromFile'),
+            dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
             dict(type='Resize', scale=img_scale, keep_ratio=True),
             dict(
                 type='Pad',

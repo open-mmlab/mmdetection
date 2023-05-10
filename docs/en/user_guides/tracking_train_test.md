@@ -141,6 +141,13 @@ You can also manage jobs with Slurm.
 
 Important:
 
+- In MOT, some algorithms like `DeepSORT`, `SORT`, `StrongSORT` need load the weight of the `reid` and the weight of the `detector` separately.
+  Other algorithms such as `ByteTrack`, `OCSORT` and `QDTrack` don't need. So we provide `--checkpoint`, `--detector` and `--reid` to load weights.
+- We provide two ways to evaluate and test models, video_basede test and image_based test. some algorithms like `StrongSORT`, `Mask2former` only support
+  video_based test. if your GPU memory can't fit the entire video, you can switch test way by set sampler type.
+  For example:
+  video_based test: `sampler=dict(type='DefaultSampler', shuffle=False, round_up=False)`
+  image_based test: `sampler=dict(type='TrackImgSampler')`
 - You can set the results saving path by modifying the key `outfile_prefix` in evaluator.
   For example, `val_evaluator = dict(outfile_prefix='results/sort_mot17')`.
   Otherwise, a temporal file will be created and will be removed after evaluation.
@@ -161,7 +168,7 @@ CUDA_VISIBLE_DEVICES=-1 python tools/test_tracking.py ${CONFIG_FILE} [optional a
 An example of testing the MOT model SORT on CPU:
 
 ```shell script
-CUDA_VISIBLE_DEVICES=-1 python tools/test_tracking.py configs/sort/sort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py
+CUDA_VISIBLE_DEVICES=-1 python tools/test_tracking.py configs/sort/sort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py --detector ${CHECKPOINT_FILE}
 ```
 
 #### 2. Test on single GPU
@@ -177,7 +184,7 @@ You can use `export CUDA_VISIBLE_DEVICES=$GPU_ID` to select the GPU.
 An example of testing the MOT model QDTrack on single GPU:
 
 ```shell script
-CUDA_VISIBLE_DEVICES=2 python tools/test_tracking.py configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py --checkpoint https://download.openmmlab.com/mmtracking/mot/qdtrack/mot_dataset/qdtrack_faster-rcnn_r50_fpn_4e_mot17_20220315_145635-76f295ef.pth
+CUDA_VISIBLE_DEVICES=2 python tools/test_tracking.py configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py --detector ${CHECKPOINT_FILE}
 ```
 
 #### 3. Test on single node multiple GPUs
@@ -192,7 +199,7 @@ bash ./tools/dist_test_tracking.sh ${CONFIG_FILE} ${GPU_NUM} [optional arguments
 An example of testing the MOT model DeepSort on single node multiple GPUs:
 
 ```shell script
-bash ./tools/dist_test_tracking.sh configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py 8 --detector https://download.openmmlab.com/mmtracking/mot/faster_rcnn/faster-rcnn_r50_fpn_4e_mot17-half-64ee2ed4.pth --reid https://download.openmmlab.com/mmtracking/mot/reid/tracktor_reid_r50_iter25245-a452f51f.pth
+bash ./tools/dist_test_tracking.sh configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py 8 --detector ${CHECKPOINT_FILE} --reid ${CHECKPOINT_FILE}
 ```
 
 #### 4. Test on multiple nodes
@@ -207,16 +214,16 @@ It supports both single-node and multi-node testing.
 The basic usage is as follows.
 
 ```shell script
-[GPUS=${GPUS}] bash ./tools/slurm_test_tracking.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} [optional arguments]
+[GPUS=${GPUS}] bash tools/slurm_test_tracking.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} [optional arguments]
 ```
 
-An example of testing the MOT model QDTrack with Slurm:
+An example of testing the VIS model Mask2former with Slurm:
 
 ```shell script
 GPUS=8
-bash ./tools/slurm_test_tracking.sh \
+bash tools/slurm_test_tracking.sh \
 mypartition \
-mottrack \
-configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py \
---checkpoint https://download.openmmlab.com/mmtracking/mot/qdtrack/mot_dataset/qdtrack_faster-rcnn_r50_fpn_4e_mot17_20220315_145635-76f295ef.pth
+vis \
+configs/mask2former_vis/mask2former_r50_8xb2-8e_youtubevis2021.py \
+--checkpoint ${CHECKPOINT_FILE}
 ```

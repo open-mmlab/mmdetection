@@ -87,14 +87,6 @@ class DetVisualizationHook(Hook):
         if self.draw is False:
             return
 
-<<<<<<< HEAD
-=======
-        # TODO: video level track visualization
-        # now only support frame level visualization
-        if self.file_client is None:
-            self.file_client = FileClient(**self.file_client_args)
-
->>>>>>> [Feature] Add tracking demo and visulization (#9908)
         # There is no guarantee that the same batch of images
         # is visualized for each evaluation.
         total_curr_iter = runner.iter + batch_idx
