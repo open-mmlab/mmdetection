@@ -6,7 +6,13 @@ from mmdet.registry import HOOKS
 
 @HOOKS.register_module()
 class Fp16CompresssionHook(Hook):
-    """Support fp16 compression in DDP mode."""
+    """Support fp16 compression in DDP mode.
+
+    In detectron2, vitdet use Fp16CompresssionHook in training process
+    Fp16CompresssionHook can reduce training time and improve bbox mAP when you
+    use Fp16CompresssionHook, training time reduce form 3 days to 2 days and
+    box mAP from 51.4 to 51.6
+    """
 
     def before_train(self, runner):
 

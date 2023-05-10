@@ -2,7 +2,7 @@
 
 ## Description
 
-This is an implementation of [ViTDet](https://github.com/facebookresearch/detectron2/tree/main/projects/ViTDet) based on [MMDetection](https://github.com/open-mmlab/mmdetection/tree/3.x), [MMCV](https://github.com/open-mmlab/mmcv), and [MMEngine](https://github.com/open-mmlab/mmengine).
+This is an implementation of [ViTDet](https://github.com/facebookresearch/detectron2/tree/main/projects/ViTDet) based on [MMDetection](https://github.com/facebookresearch/detectron2/tree/main/projects/ViTDet), [MMCV](https://github.com/open-mmlab/mmcv), and [MMEngine](https://github.com/open-mmlab/mmengine).
 
 ## Usage
 
@@ -13,7 +13,7 @@ Follow original [setting](https://github.com/facebookresearch/detectron2/tree/ma
 In MMDetection's root directory, run the following command to train the model:
 
 ```bash
-[GPUS=${GPUS}] ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} ${WORK_DIR}
+GPUS=${GPUS} ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} ${WORK_DIR}
 ```
 
 Below is an example of using 16 GPUs to train VitDet on a Slurm partition named _dev_, and set the work-dir to some shared file systems.
@@ -21,8 +21,6 @@ Below is an example of using 16 GPUs to train VitDet on a Slurm partition named 
 ```shell
 GPUS=16 ./tools/slurm_train.sh dev vitdet_mask_b projects/ViTDet/configs/vitdet_mask-rcnn_vit-b-mae_lsj-100e.py /nfs/xxxx/vitdet_mask-rcnn_vit-b-mae_lsj-100e
 ```
-
-If you want to know about how to scaling learning rate and more detailed usage of `train.py/dist_train.sh/slurm_train.sh`, please refer to this [document](../../docs/en/user_guides/train.md)
 
 ### Testing commands
 
