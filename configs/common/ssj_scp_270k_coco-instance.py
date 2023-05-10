@@ -5,19 +5,25 @@ data_root = 'data/coco/'
 
 image_size = (1024, 1024)
 
-file_client_args = dict(backend='disk')
-# comment out the code below to use different file client
-# file_client_args = dict(
+# Example to use different file client
+# Method 1: simply set the data root and let the file I/O module
+# automatically infer from prefix (not support LMDB and Memcache yet)
+
+# data_root = 's3://openmmlab/datasets/detection/coco/'
+
+# Method 2: Use `backend_args`, `file_client_args` in versions before 3.0.0rc6
+# backend_args = dict(
 #     backend='petrel',
 #     path_mapping=dict({
 #         './data/': 's3://openmmlab/datasets/detection/',
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
+backend_args = None
 
 # Standard Scale Jittering (SSJ) resizes and crops an image
 # with a resize range of 0.8 to 1.25 of the original image size.
 load_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='RandomResize',
@@ -49,5 +55,6 @@ train_dataloader = dict(
             ann_file='annotations/instances_train2017.json',
             data_prefix=dict(img='train2017/'),
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
-            pipeline=load_pipeline),
+            pipeline=load_pipeline,
+            backend_args=backend_args),
         pipeline=train_pipeline))

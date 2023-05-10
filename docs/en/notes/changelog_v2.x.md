@@ -133,7 +133,7 @@ Thanks @ZwwWayne, @DarthThomas, @solyaH, @LutingWang, @chenxinfeng4, @Czm369, @C
   data=dict(train_dataloader=dict(class_aware_sampler=dict(num_sample_class=1))))
   ```
 
-  in the config to use `ClassAwareSampler`. Examples can be found in [the configs of OpenImages Dataset](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages.py).  (#7436)
+  in the config to use `ClassAwareSampler`. Examples can be found in [the configs of OpenImages Dataset](https://github.com/open-mmlab/mmdetection/tree/main/configs/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages.py).  (#7436)
 
 - Support automatically scaling LR according to GPU number and samples per GPU. (#7482)
   In each config, there is a corresponding config of auto-scaling LR as below,

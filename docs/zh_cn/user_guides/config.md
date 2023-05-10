@@ -14,14 +14,14 @@ MMDetection 采用模块化设计，所有功能的模块都可以通过配置�
 model = dict(
     type='MaskRCNN',  # 检测器名
     data_preprocessor=dict(  # 数据预处理器的配置，通常包括图像归一化和 padding
-        type='DetDataPreprocessor',  # 数据预处理器的类型，参考 https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.data_preprocessors.DetDataPreprocessor
+        type='DetDataPreprocessor',  # 数据预处理器的类型，参考 https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.data_preprocessors.DetDataPreprocessor
         mean=[123.675, 116.28, 103.53],  # 用于预训练骨干网络的图像归一化通道均值，按 R、G、B 排序
         std=[58.395, 57.12, 57.375],  # 用于预训练骨干网络的图像归一化通道标准差，按 R、G、B 排序
         bgr_to_rgb=True,  # 是否将图片通道从 BGR 转为 RGB
         pad_mask=True,  # 是否填充实例分割掩码
         pad_size_divisor=32),  # padding 后的图像的大小应该可以被 ``pad_size_divisor`` 整除
     backbone=dict(  # 主干网络的配置文件
-        type='ResNet',  # 主干网络的类别，可用选项请参考 https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.backbones.ResNet
+        type='ResNet',  # 主干网络的类别，可用选项请参考 https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.backbones.ResNet
         depth=50,  # 主干网络的深度，对于 ResNet 和 ResNext 通常设置为 50 或 101
         num_stages=4,  # 主干网络状态(stages)的数目，这些状态产生的特征图作为后续的 head 的输入
         out_indices=(0, 1, 2, 3),  # 每个状态产生的特征图输出的索引
@@ -33,34 +33,34 @@ model = dict(
         style='pytorch',  # 主干网络的风格，'pytorch' 意思是步长为2的层为 3x3 卷积， 'caffe' 意思是步长为2的层为 1x1 卷积
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),  # 加载通过 ImageNet 预训练的模型
     neck=dict(
-        type='FPN',  # 检测器的 neck 是 FPN，我们同样支持 'NASFPN', 'PAFPN' 等，更多细节可以参考 https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.necks.FPN
+        type='FPN',  # 检测器的 neck 是 FPN，我们同样支持 'NASFPN', 'PAFPN' 等，更多细节可以参考 https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.necks.FPN
         in_channels=[256, 512, 1024, 2048],  # 输入通道数，这与主干网络的输出通道一致
         out_channels=256,  # 金字塔特征图每一层的输出通道
         num_outs=5),  # 输出的范围(scales)
     rpn_head=dict(
-        type='RPNHead',  # rpn_head 的类型是 'RPNHead', 我们也支持 'GARPNHead' 等，更多细节可以参考 https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.dense_heads.RPNHead
+        type='RPNHead',  # rpn_head 的类型是 'RPNHead', 我们也支持 'GARPNHead' 等，更多细节可以参考 https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.dense_heads.RPNHead
         in_channels=256,  # 每个输入特征图的输入通道，这与 neck 的输出通道一致
         feat_channels=256,  # head 卷积层的特征通道
         anchor_generator=dict(  # 锚点(Anchor)生成器的配置
-            type='AnchorGenerator',  # 大多数方法使用 AnchorGenerator 作为锚点生成器, SSD 检测器使用 `SSDAnchorGenerator`。更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/prior_generators/anchor_generator.py#L18
+            type='AnchorGenerator',  # 大多数方法使用 AnchorGenerator 作为锚点生成器, SSD 检测器使用 `SSDAnchorGenerator`。更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/prior_generators/anchor_generator.py#L18
             scales=[8],  # 锚点的基本比例，特征图某一位置的锚点面积为 scale * base_sizes
             ratios=[0.5, 1.0, 2.0],  # 高度和宽度之间的比率
             strides=[4, 8, 16, 32, 64]),  # 锚生成器的步幅。这与 FPN 特征步幅一致。 如果未设置 base_sizes，则当前步幅值将被视为 base_sizes
         bbox_coder=dict(  # 在训练和测试期间对框进行编码和解码
-            type='DeltaXYWHBBoxCoder',  # 框编码器的类别，'DeltaXYWHBBoxCoder' 是最常用的，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/coders/delta_xywh_bbox_coder.py#L13
+            type='DeltaXYWHBBoxCoder',  # 框编码器的类别，'DeltaXYWHBBoxCoder' 是最常用的，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/coders/delta_xywh_bbox_coder.py#L13
             target_means=[0.0, 0.0, 0.0, 0.0],  # 用于编码和解码框的目标均值
             target_stds=[1.0, 1.0, 1.0, 1.0]),  # 用于编码和解码框的标准差
         loss_cls=dict(  # 分类分支的损失函数配置
-            type='CrossEntropyLoss',  # 分类分支的损失类型，我们也支持 FocalLoss 等，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/losses/cross_entropy_loss.py#L201
+            type='CrossEntropyLoss',  # 分类分支的损失类型，我们也支持 FocalLoss 等，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/losses/cross_entropy_loss.py#L201
             use_sigmoid=True,  # RPN 通常进行二分类，所以通常使用 sigmoid 函数
             los_weight=1.0),  # 分类分支的损失权重
         loss_bbox=dict(  # 回归分支的损失函数配置
-            type='L1Loss',  # 损失类型，我们还支持许多 IoU Losses 和 Smooth L1-loss 等，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/losses/smooth_l1_loss.py#L56
+            type='L1Loss',  # 损失类型，我们还支持许多 IoU Losses 和 Smooth L1-loss 等，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/losses/smooth_l1_loss.py#L56
             loss_weight=1.0)),  # 回归分支的损失权重
     roi_head=dict(  # RoIHead 封装了两步(two-stage)/级联(cascade)检测器的第二步
-        type='StandardRoIHead',  # RoI head 的类型，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/roi_heads/standard_roi_head.py#L17
+        type='StandardRoIHead',  # RoI head 的类型，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/roi_heads/standard_roi_head.py#L17
         bbox_roi_extractor=dict(  # 用于 bbox 回归的 RoI 特征提取器
-            type='SingleRoIExtractor',  # RoI 特征提取器的类型，大多数方法使用 SingleRoIExtractor，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/roi_heads/roi_extractors/single_level_roi_extractor.py#L13
+            type='SingleRoIExtractor',  # RoI 特征提取器的类型，大多数方法使用 SingleRoIExtractor，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/roi_heads/roi_extractors/single_level_roi_extractor.py#L13
             roi_layer=dict(  # RoI 层的配置
                 type='RoIAlign',  # RoI 层的类别, 也支持 DeformRoIPoolingPack 和 ModulatedDeformRoIPoolingPack，更多细节请参考 https://mmcv.readthedocs.io/en/latest/api.html#mmcv.ops.RoIAlign
                 output_size=7,  # 特征图的输出大小
@@ -68,7 +68,7 @@ model = dict(
             out_channels=256,  # 提取特征的输出通道
             featmap_strides=[4, 8, 16, 32]),  # 多尺度特征图的步幅，应该与主干的架构保持一致
         bbox_head=dict(  # RoIHead 中 box head 的配置
-            type='Shared2FCBBoxHead',  # bbox head 的类别，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/roi_heads/bbox_heads/convfc_bbox_head.py#L220
+            type='Shared2FCBBoxHead',  # bbox head 的类别，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/roi_heads/bbox_heads/convfc_bbox_head.py#L220
             in_channels=256,  # bbox head 的输入通道。 这与 roi_extractor 中的 out_channels 一致
             fc_out_channels=1024,  # FC 层的输出特征通道
             roi_feat_size=7,  # 候选区域(Region of Interest)特征的大小
@@ -94,7 +94,7 @@ model = dict(
             out_channels=256,  # 提取特征的输出通道
             featmap_strides=[4, 8, 16, 32]),  # 多尺度特征图的步幅
         mask_head=dict(  # mask 预测 head 模型
-            type='FCNMaskHead',  # mask head 的类型，更多细节请参考 https://mmdetection.readthedocs.io/en/3.x/api.html#mmdet.models.roi_heads.FCNMaskHead
+            type='FCNMaskHead',  # mask head 的类型，更多细节请参考 https://mmdetection.readthedocs.io/en/latest/api.html#mmdet.models.roi_heads.FCNMaskHead
             num_convs=4,  # mask head 中的卷积层数
             in_channels=256,  # 输入通道，应与 mask roi extractor 的输出通道一致
             conv_out_channels=256,  # 卷积层的输出通道
@@ -106,14 +106,14 @@ model = dict(
     train_cfg = dict(  # rpn 和 rcnn 训练超参数的配置
         rpn=dict(  # rpn 的训练配置
             assigner=dict(  # 分配器(assigner)的配置
-                type='MaxIoUAssigner',  # 分配器的类型，MaxIoUAssigner 用于许多常见的检测器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/assigners/max_iou_assigner.py#L14
+                type='MaxIoUAssigner',  # 分配器的类型，MaxIoUAssigner 用于许多常见的检测器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/assigners/max_iou_assigner.py#L14
                 pos_iou_thr=0.7,  # IoU >= 0.7(阈值) 被视为正样本
                 neg_iou_thr=0.3,  # IoU < 0.3(阈值) 被视为负样本
                 min_pos_iou=0.3,  # 将框作为正样本的最小 IoU 阈值
                 match_low_quality=True,  # 是否匹配低质量的框(更多细节见 API 文档)
                 ignore_iof_thr=-1),  # 忽略 bbox 的 IoF 阈值
             sampler=dict(  # 正/负采样器(sampler)的配置
-                type='RandomSampler',  # 采样器类型，还支持 PseudoSampler 和其他采样器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/samplers/random_sampler.py#L14
+                type='RandomSampler',  # 采样器类型，还支持 PseudoSampler 和其他采样器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/samplers/random_sampler.py#L14
                 num=256,  # 样本数量。
                 pos_fraction=0.5,  # 正样本占总样本的比例
                 neg_pos_ub=-1,  # 基于正样本数量的负样本上限
@@ -133,14 +133,14 @@ model = dict(
             min_bbox_size=0),  # 允许的最小 box 尺寸
         rcnn=dict(  # roi head 的配置。
             assigner=dict(  # 第二阶段分配器的配置，这与 rpn 中的不同
-                type='MaxIoUAssigner',  # 分配器的类型，MaxIoUAssigner 目前用于所有 roi_heads。更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/assigners/max_iou_assigner.py#L14
+                type='MaxIoUAssigner',  # 分配器的类型，MaxIoUAssigner 目前用于所有 roi_heads。更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/assigners/max_iou_assigner.py#L14
                 pos_iou_thr=0.5,  # IoU >= 0.5(阈值)被认为是正样本
                 neg_iou_thr=0.5,  # IoU < 0.5(阈值)被认为是负样本
                 min_pos_iou=0.5,  # 将 box 作为正样本的最小 IoU 阈值
                 match_low_quality=False,  # 是否匹配低质量下的 box(有关更多详细信息，请参阅 API 文档)
                 ignore_iof_thr=-1),  # 忽略 bbox 的 IoF 阈值
             sampler=dict(
-                type='RandomSampler',  # 采样器的类型，还支持 PseudoSampler 和其他采样器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/models/task_modules/samplers/random_sampler.py#L14
+                type='RandomSampler',  # 采样器的类型，还支持 PseudoSampler 和其他采样器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/task_modules/samplers/random_sampler.py#L14
                 num=512,  # 样本数量
                 pos_fraction=0.25,  # 正样本占总样本的比例
                 neg_pos_ub=-1,  # 基于正样本数量的负样本上限
@@ -176,10 +176,9 @@ model = dict(
 ```python
 dataset_type = 'CocoDataset'  # 数据集类型，这将被用来定义数据集。
 data_root = 'data/coco/'  # 数据的根路径。
-file_client_args = dict(backend='disk')  # 文件读取后端的配置，默认从硬盘读取
 
 train_pipeline = [  # 训练数据处理流程
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),  # 第 1 个流程，从文件路径里加载图像。
+    dict(type='LoadImageFromFile'),  # 第 1 个流程，从文件路径里加载图像。
     dict(
         type='LoadAnnotations',  # 第 2 个流程，对于当前图像，加载它的注释信息。
         with_bbox=True,  # 是否使用标注框(bounding box)， 目标检测需要设置为 True。
@@ -196,7 +195,7 @@ train_pipeline = [  # 训练数据处理流程
     dict(type='PackDetInputs')  # 将数据转换为检测器输入格式的流程
 ]
 test_pipeline = [  # 测试数据处理流程
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),  # 第 1 个流程，从文件路径里加载图像。
+    dict(type='LoadImageFromFile'),  # 第 1 个流程，从文件路径里加载图像。
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),  # 变化图像大小的流程。
     dict(
         type='PackDetInputs',  # 将数据转换为检测器输入格式的流程
@@ -519,7 +518,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     dict(
         type='PackDetInputs',

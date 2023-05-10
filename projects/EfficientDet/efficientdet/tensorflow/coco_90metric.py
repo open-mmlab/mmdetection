@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
 from mmengine.evaluator import BaseMetric
-from mmengine.fileio import FileClient, dump, load
+from mmengine.fileio import dump, get_local_path, load
 from mmengine.logging import MMLogger
 from terminaltables import AsciiTable
 
@@ -49,9 +49,8 @@ class Coco90Metric(BaseMetric):
         outfile_prefix (str, optional): The prefix of json files. It includes
             the file path and the prefix of filename, e.g., "a/b/prefix".
             If not specified, a temp file will be created. Defaults to None.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmengine.fileio.FileClient` for details.
-            Defaults to ``dict(backend='disk')``.
+        backend_args (dict, optional): Arguments to instantiate the
+            corresponding backend. Defaults to None.
         collect_device (str): Device name used for collecting results from
             different ranks during distributed training. Must be 'cpu' or
             'gpu'. Defaults to 'cpu'.
@@ -71,7 +70,7 @@ class Coco90Metric(BaseMetric):
                  metric_items: Optional[Sequence[str]] = None,
                  format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
-                 file_client_args: dict = dict(backend='disk'),
+                 backend_args: dict = None,
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
@@ -104,13 +103,13 @@ class Coco90Metric(BaseMetric):
 
         self.outfile_prefix = outfile_prefix
 
-        self.file_client_args = file_client_args
-        self.file_client = FileClient(**file_client_args)
+        self.backend_args = backend_args
 
         # if ann_file is not specified,
         # initialize coco api with the converted dataset
         if ann_file is not None:
-            with self.file_client.get_local_path(ann_file) as local_path:
+            with get_local_path(
+                    ann_file, backend_args=self.backend_args) as local_path:
                 self._coco_api = COCO(local_path)
         else:
             self._coco_api = None

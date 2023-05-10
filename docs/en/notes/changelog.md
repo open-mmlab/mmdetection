@@ -1,5 +1,51 @@
 # Changelog of v3.x
 
+## v3.0.0 (6/4/2023)
+
+### Highlights
+
+- Support Semi-automatic annotation Base [Label-Studio](../../../projects/LabelStudio) (#10039)
+- Support [EfficientDet](../../../projects/EfficientDet) in projects (#9810)
+
+### New Features
+
+- File I/O migration and reconstruction (#9709)
+- Release DINO Swin-L 36e model (#9927)
+
+### Bug Fixes
+
+- Fix benchmark script (#9865)
+- Fix the crop method of PolygonMasks (#9858)
+- Fix Albu augmentation with the mask shape (#9918)
+- Fix `RTMDetIns` prior generator device error (#9964)
+- Fix `img_shape` in data pipeline (#9966)
+- Fix cityscapes import error (#9984)
+- Fix `solov2_r50_fpn_ms-3x_coco.py` config error (#10030)
+- Fix Conditional DETR AP and Log (#9889)
+- Fix accepting an unexpected argument local-rank in PyTorch 2.0 (#10050)
+- Fix `common/ms_3x_coco-instance.py` config error (#10056)
+- Fix compute flops error (#10051)
+- Delete `data_root` in `CocoOccludedSeparatedMetric` to fix bug (#9969)
+- Unifying metafile.yml (#9849)
+
+### Improvements
+
+- Added BoxInst r101 config (#9967)
+- Added config migration guide (#9960)
+- Added more social networking links (#10021)
+- Added RTMDet config introduce (#10042)
+- Added visualization docs (#9938, #10058)
+- Refined data_prepare docs (#9935)
+- Added support for setting the cache_size_limit parameter of dynamo in PyTorch 2.0 (#10054)
+- Updated coco_metric.py (#10033)
+- Update type hint (#10040)
+
+### Contributors
+
+A total of 19 developers contributed to this release.
+
+Thanks @IRONICBo, @vansin, @RangeKing, @Ghlerrix, @okotaku, @JosonChan1998, @zgzhengSE, @bobo0810, @yechenzh, @Zheng-LinXiao, @LYMDLUT, @yarkable, @xiejiajiannb, @chhluo, @BIGWangYuDong, @RangiLy, @zwhus, @hhaAndroid, @ZwwWayne
+
 ## v3.0.0rc6 (24/2/2023)
 
 ### Highlights

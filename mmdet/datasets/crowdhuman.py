@@ -7,7 +7,7 @@ from typing import List, Union
 
 import mmcv
 from mmengine.dist import get_rank
-from mmengine.fileio import dump, load
+from mmengine.fileio import dump, get, get_text, load
 from mmengine.logging import print_log
 from mmengine.utils import ProgressBar
 
@@ -66,8 +66,8 @@ class CrowdHumanDataset(BaseDetDataset):
         Returns:
             List[dict]: A list of annotation.
         """  # noqa: E501
-        anno_strs = self.file_client.get_text(
-            self.ann_file).strip().split('\n')
+        anno_strs = get_text(
+            self.ann_file, backend_args=self.backend_args).strip().split('\n')
         print_log('loading CrowdHuman annotation...', level=logging.INFO)
         data_list = []
         prog_bar = ProgressBar(len(anno_strs))
@@ -110,7 +110,7 @@ class CrowdHumanDataset(BaseDetDataset):
         data_info['img_id'] = raw_data_info['ID']
 
         if not self.extra_ann_exist:
-            img_bytes = self.file_client.get(img_path)
+            img_bytes = get(img_path, backend_args=self.backend_args)
             img = mmcv.imfrombytes(img_bytes, backend='cv2')
             data_info['height'], data_info['width'] = img.shape[:2]
             self.extra_anns[raw_data_info['ID']] = img.shape[:2]

@@ -134,7 +134,7 @@ Slurm 是一个常见的计算集群调度系统。在 Slurm 管理的集群上�
 GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
 ```
 
-你可以查看 [源码](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) 来检查全部的参数和环境变量.
+你可以查看 [源码](https://github.com/open-mmlab/mmdetection/blob/main/tools/slurm_train.sh) 来检查全部的参数和环境变量.
 
 在使用 Slurm 时，端口需要以下方的某个方法之一来设置。
 
@@ -438,7 +438,7 @@ load_from = 'https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn
 python tools/train.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py
 ```
 
-参考 [在标准数据集上训练预定义的模型](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/train.html#id1) 来获取更多详细的使用方法。
+参考 [在标准数据集上训练预定义的模型](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/train.html#id1) 来获取更多详细的使用方法。
 
 ## 测试以及推理
 
@@ -448,4 +448,4 @@ python tools/train.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon
 python tools/test.py configs/balloon/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py work_dirs/mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon/epoch_12.pth
 ```
 
-参考 [测试现有模型](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/test.html) 来获取更多详细的使用方法。
+参考 [测试现有模型](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/test.html) 来获取更多详细的使用方法。

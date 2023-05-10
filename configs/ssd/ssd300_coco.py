@@ -6,7 +6,7 @@ _base_ = [
 # dataset settings
 input_size = 300
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='Expand',
@@ -28,7 +28,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='Resize', scale=(input_size, input_size), keep_ratio=False),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
@@ -50,7 +50,8 @@ train_dataloader = dict(
             ann_file='annotations/instances_train2017.json',
             data_prefix=dict(img='train2017/'),
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
-            pipeline=train_pipeline)))
+            pipeline=train_pipeline,
+            backend_args={{_base_.backend_args}})))
 val_dataloader = dict(batch_size=8, dataset=dict(pipeline=test_pipeline))
 test_dataloader = val_dataloader
 

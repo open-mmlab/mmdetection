@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from typing import List, Optional, Union
 
 import mmcv
-from mmengine.fileio import list_from_file
+from mmengine.fileio import get, get_local_path, list_from_file
 
 from mmdet.registry import DATASETS
 from .base_det_dataset import BaseDetDataset
@@ -17,9 +17,8 @@ class XMLDataset(BaseDetDataset):
     Args:
         img_subdir (str): Subdir where images are stored. Default: JPEGImages.
         ann_subdir (str): Subdir where annotations are. Default: Annotations.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmengine.fileio.FileClient` for details.
-            Defaults to ``dict(backend='disk')``.
+        backend_args (dict, optional): Arguments to instantiate the
+            corresponding backend. Defaults to None.
     """
 
     def __init__(self,
@@ -49,8 +48,7 @@ class XMLDataset(BaseDetDataset):
         }
 
         data_list = []
-        img_ids = list_from_file(
-            self.ann_file, file_client_args=self.file_client_args)
+        img_ids = list_from_file(self.ann_file, backend_args=self.backend_args)
         for img_id in img_ids:
             file_name = osp.join(self.img_subdir, f'{img_id}.jpg')
             xml_path = osp.join(self.sub_data_root, self.ann_subdir,
@@ -90,8 +88,9 @@ class XMLDataset(BaseDetDataset):
         data_info['xml_path'] = img_info['xml_path']
 
         # deal with xml file
-        with self.file_client.get_local_path(
-                img_info['xml_path']) as local_path:
+        with get_local_path(
+                img_info['xml_path'],
+                backend_args=self.backend_args) as local_path:
             raw_ann_info = ET.parse(local_path)
         root = raw_ann_info.getroot()
         size = root.find('size')
@@ -99,7 +98,7 @@ class XMLDataset(BaseDetDataset):
             width = int(size.find('width').text)
             height = int(size.find('height').text)
         else:
-            img_bytes = self.file_client.get(img_path)
+            img_bytes = get(img_path, backend_args=self.backend_args)
             img = mmcv.imfrombytes(img_bytes, backend='cv2')
             height, width = img.shape[:2]
             del img, img_bytes
@@ -107,6 +106,24 @@ class XMLDataset(BaseDetDataset):
         data_info['height'] = height
         data_info['width'] = width
 
+        data_info['instances'] = self._parse_instance_info(
+            raw_ann_info, minus_one=True)
+
+        return data_info
+
+    def _parse_instance_info(self,
+                             raw_ann_info: ET,
+                             minus_one: bool = True) -> List[dict]:
+        """parse instance information.
+
+        Args:
+            raw_ann_info (ElementTree): ElementTree object.
+            minus_one (bool): Whether to subtract 1 from the coordinates.
+                Defaults to True.
+
+        Returns:
+            List[dict]: List of instances.
+        """
         instances = []
         for obj in raw_ann_info.findall('object'):
             instance = {}
@@ -117,11 +134,16 @@ class XMLDataset(BaseDetDataset):
             difficult = 0 if difficult is None else int(difficult.text)
             bnd_box = obj.find('bndbox')
             bbox = [
-                int(float(bnd_box.find('xmin').text)) - 1,
-                int(float(bnd_box.find('ymin').text)) - 1,
-                int(float(bnd_box.find('xmax').text)) - 1,
-                int(float(bnd_box.find('ymax').text)) - 1
+                int(float(bnd_box.find('xmin').text)),
+                int(float(bnd_box.find('ymin').text)),
+                int(float(bnd_box.find('xmax').text)),
+                int(float(bnd_box.find('ymax').text))
             ]
+
+            # VOC needs to subtract 1 from the coordinates
+            if minus_one:
+                bbox = [x - 1 for x in bbox]
+
             ignore = False
             if self.bbox_min_size is not None:
                 assert not self.test_mode
@@ -136,8 +158,7 @@ class XMLDataset(BaseDetDataset):
             instance['bbox'] = bbox
             instance['bbox_label'] = self.cat2label[name]
             instances.append(instance)
-        data_info['instances'] = instances
-        return data_info
+        return instances
 
     def filter_data(self) -> List[dict]:
         """Filter annotations according to filter_cfg.

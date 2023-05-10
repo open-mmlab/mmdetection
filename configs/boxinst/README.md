@@ -15,9 +15,10 @@ of learning masks in instance segmentation, with no modification to the segmenta
 
 ## Results and Models
 
-| Backbone |  Style  | MS train | Lr schd | bbox AP | mask AP |                   Config                   |         Download         |
-| :------: | :-----: | :------: | :-----: | :-----: | :-----: | :----------------------------------------: | :----------------------: |
-|   R-50   | pytorch |    Y     |   1x    |  39.4   |  30.8   | [config](./boxinst_r50_fpn_ms-90k_coco.py) | [model](<>) \| [log](<>) |
+| Backbone |  Style  | MS train | Lr schd | bbox AP | mask AP |                   Config                    |                                                                                                                                                  Download                                                                                                                                                   |
+| :------: | :-----: | :------: | :-----: | :-----: | :-----: | :-----------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|   R-50   | pytorch |    Y     |   1x    |  39.6   |  31.1   | [config](./boxinst_r50_fpn_ms-90k_coco.py)  |  [model](https://download.openmmlab.com/mmdetection/v3.0/boxinst/boxinst_r50_fpn_ms-90k_coco/boxinst_r50_fpn_ms-90k_coco_20221228_163052-6add751a.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/boxinst/boxinst_r50_fpn_ms-90k_coco/boxinst_r50_fpn_ms-90k_coco_20221228_163052.log.json)   |
+|  R-101   | pytorch |    Y     |   1x    |  41.8   |  32.7   | [config](./boxinst_r101_fpn_ms-90k_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/boxinst/boxinst_r101_fpn_ms-90k_coco/boxinst_r101_fpn_ms-90k_coco_20221229_145106-facf375b.pth) \|[log](https://download.openmmlab.com/mmdetection/v3.0/boxinst/boxinst_r101_fpn_ms-90k_coco/boxinst_r101_fpn_ms-90k_coco_20221229_145106.log.json) |
 
 ## Citation
 
