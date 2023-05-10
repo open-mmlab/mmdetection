@@ -30,8 +30,6 @@ In MMDetection's root directory, run the following command to test the model:
 python tools/test.py projects/ViTDet/configs/vitdet_mask-rcnn_vit-b-mae_lsj-100e.py ${CHECKPOINT_PATH}
 ```
 
-If you want to know about how to scaling learning rate and more detailed usage of `test.py/dist_test.sh/slurm_test.sh`, please refer to this [document](../../docs/en/user_guides/test.md)
-
 ## Results
 
 Based on mmdetection, this project almost aligns the test and train accuracy of the [ViTDet](https://github.com/facebookresearch/detectron2/tree/main/projects/ViTDet).
