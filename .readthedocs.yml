@@ -1,9 +1,14 @@
 version: 2
 
-formats: all
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.8"
+
+formats:
+  - epub
 
 python:
-  version: 3.8
   install:
     - requirements: requirements/docs.txt
     - requirements: requirements/readthedocs.txt
