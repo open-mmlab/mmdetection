@@ -15,7 +15,7 @@ from .openimages import OpenImagesChallengeDataset, OpenImagesDataset
 from .reid_dataset import ReIDDataset
 from .samplers import (AspectRatioBatchSampler, ClassAwareSampler,
                        GroupMultiSourceSampler, MultiSourceSampler,
-                       TrackImgSampler, TrackAspectRatioBatchSampler)
+                       TrackAspectRatioBatchSampler, TrackImgSampler)
 from .utils import get_loading_pipeline
 from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
@@ -23,33 +23,13 @@ from .xml_style import XMLDataset
 from .youtube_vis_dataset import YouTubeVISDataset
 
 __all__ = [
-    'XMLDataset',
-    'CocoDataset',
-    'DeepFashionDataset',
-    'VOCDataset',
-    'CityscapesDataset',
-    'LVISDataset',
-    'LVISV05Dataset',
-    'LVISV1Dataset',
-    'WIDERFaceDataset',
-    'get_loading_pipeline',
-    'CocoPanopticDataset',
-    'MultiImageMixDataset',
-    'OpenImagesDataset',
-    'OpenImagesChallengeDataset',
-    'AspectRatioBatchSampler',
-    'ClassAwareSampler',
-    'MultiSourceSampler',
-    'GroupMultiSourceSampler',
-    'BaseDetDataset',
-    'CrowdHumanDataset',
-    'Objects365V1Dataset',
-    'Objects365V2Dataset',
-    'DSDLDetDataset',
-    'BaseVideoDataset',
-    'MOTChallengeDataset',
-    'TrackImgSampler',
-    'ReIDDataset',
-    'YouTubeVISDataset',
-    'TrackAspectRatioBatchSampler'
+    'XMLDataset', 'CocoDataset', 'DeepFashionDataset', 'VOCDataset',
+    'CityscapesDataset', 'LVISDataset', 'LVISV05Dataset', 'LVISV1Dataset',
+    'WIDERFaceDataset', 'get_loading_pipeline', 'CocoPanopticDataset',
+    'MultiImageMixDataset', 'OpenImagesDataset', 'OpenImagesChallengeDataset',
+    'AspectRatioBatchSampler', 'ClassAwareSampler', 'MultiSourceSampler',
+    'GroupMultiSourceSampler', 'BaseDetDataset', 'CrowdHumanDataset',
+    'Objects365V1Dataset', 'Objects365V2Dataset', 'DSDLDetDataset',
+    'BaseVideoDataset', 'MOTChallengeDataset', 'TrackImgSampler',
+    'ReIDDataset', 'YouTubeVISDataset', 'TrackAspectRatioBatchSampler'
 ]
