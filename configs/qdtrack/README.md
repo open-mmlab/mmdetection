@@ -21,11 +21,17 @@ Similarity learning has been recognized as a crucial step for object tracking. H
 
 ## Get started
 
-### 1. Training
+### 1. Development Environment Setup
+
+Tracking Development Environment Setup can refer to this [document](../../docs/en/get_started.md).
+
+### 2. Dataset Prepare
+
+Tracking Dataset Prepare can refer to this [document](../../docs/en/user_guides/tracking_dataset_prepare.md).
+
+### 3. Training
 
 Due to the influence of parameters such as learning rate in default configuration file, we recommend using 8 GPUs for training in order to reproduce accuracy. You can use the following command to start the training.
-
-**1.1 Example on MOT Challenge Dataset**
 
 ```shell
 # Training QDTrack on mot17-half-train dataset with following command.
@@ -33,9 +39,12 @@ Due to the influence of parameters such as learning rate in default configuratio
 bash tools/dist_train.sh configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py 8
 ```
 
-### 2. Testing and evaluation
+If you want to know about more detailed usage of `train.py/dist_train.sh/slurm_train.sh`,
+please refer to this [document](../../docs/en/user_guides/tracking_train_test.md).
 
-**2.1 Example on MOTxx-halfval dataset**
+### 4. Testing and evaluation
+
+**4.1 Example on MOTxx-halfval dataset**
 
 ```shell
 # Example 1: Test on motXX-half-val set
@@ -43,13 +52,27 @@ bash tools/dist_train.sh configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot
 bash tools/dist_test_tracking.sh configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py 8 --checkpoint ${CHECKPOINT_PATH}
 ```
 
-### 3.Inference
+**4.2 use video_baesd to evaluating and testing**
+we also provide two_ways(img_based or video_based) to evaluating and testing.
+if you want to use video_based to evaluating and testing, you can modify config as follows
+
+```
+val_dataloader = dict(
+    sampler=dict(type='DefaultSampler', shuffle=False, round_up=False))
+```
+
+If you want to know about more detailed usage of `test_tracking.py/dist_test_tracking.sh/slurm_test_tracking.sh`,
+please refer to this [document](../../docs/en/user_guides/tracking_train_test.md).
+
+### 5.Inference
 
 Use a single GPU to predict a video and save it as a video.
 
 ```shell
 python demo/mot_demo.py demo/demo_mot.mp4 configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py --checkpoint ${CHECKPOINT_PATH} --out mot.mp4
 ```
+
+If you want to know about more detailed usage of `mot_demo.py`, please refer to this [document](../../docs/en/user_guides/tracking_inference.md).
 
 ## Citation
 

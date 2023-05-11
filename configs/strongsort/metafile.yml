@@ -10,7 +10,7 @@ Collections:
     Paper:
       URL: https://arxiv.org/abs/2202.13514
       Title: "StrongSORT: Make DeepSORT Great Again"
-    README: configs/mot/strongsort/README.md
+    README: configs/strongsort/README.md
 
 Models:
   - Name: strongsort_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval

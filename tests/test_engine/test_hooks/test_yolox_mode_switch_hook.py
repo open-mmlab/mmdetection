@@ -70,5 +70,5 @@ class TestYOLOXModeSwitchHook(TestCase):
         hook = YOLOXModeSwitchHook(num_last_epochs=15)
         hook.before_train_epoch(runner)
         self.assertTrue(hook._restart_dataloader)
-        self.assertTrue(runner.model.module.bbox_head.use_l1)
+        self.assertTrue(runner.model.module.detector.bbox_head.use_l1)
         self.assertFalse(runner.train_dataloader._DataLoader__initialized)

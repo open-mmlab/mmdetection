@@ -10,7 +10,7 @@ Collections:
     Paper:
       URL: https://arxiv.org/abs/1703.07402
       Title: Simple Online and Realtime Tracking with a Deep Association Metric
-    README: configs/mot/deepsort/README.md
+    README: configs/deepsort/README.md
 
 Models:
   - Name: deepsort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval

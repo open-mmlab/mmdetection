@@ -9,7 +9,7 @@ Collections:
     Paper:
       URL: https://arxiv.org/abs/2110.06864
       Title: ByteTrack Multi-Object Tracking by Associating Every Detection Box
-    README: configs/mot/bytetrack/README.md
+    README: configs/bytetrack/README.md
 
 Models:
   - Name: bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval

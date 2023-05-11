@@ -39,7 +39,15 @@ Existing Multi-Object Tracking (MOT) methods can be roughly classified as tracki
 
 ## Get started
 
-### 1. Training
+### 1. Development Environment Setup
+
+Tracking Development Environment Setup can refer to this [document](../../docs/en/get_started.md).
+
+### 2. Dataset Prepare
+
+Tracking Dataset Prepare can refer to this [document](../../docs/en/user_guides/tracking_dataset_prepare.md).
+
+### 3. Training
 
 We implement StrongSORT with independent detector and ReID models.
 Note that, due to the influence of parameters such as learning rate in default configuration file,
@@ -61,14 +69,17 @@ And you can train the ReID model as follows.
 bash tools/dist_train.sh configs/reid/reid_r50_8xb32-6e_mot17train80_test-mot17val20.py 8
 ```
 
-### 2. Testing and evaluation
+If you want to know about more detailed usage of `train.py/dist_train.sh/slurm_train.sh`,
+please refer to this [document](../../docs/en/user_guides/tracking_train_test.md).
+
+### 4. Testing and evaluation
 
 **2.1 Example on MOTxx-halfval dataset**
 
 ```shell script
 # Example 1: Test on motXX-half-val set.
 # The number after config file represents the number of GPUs used. Here we use 8 GPUs.
-bash tools/dist_test_tracking.sh configs/strongsort/strongsort_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval.py 8 --detector {CHECKPOINT_PATH} --reid {CHECKPOINT_PATH}
+bash tools/dist_test_tracking.sh configs/strongsort/strongsort_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval.py 8 --detector ${CHECKPOINT_PATH} --reid ${CHECKPOINT_PATH}
 ```
 
 **2.2 Example on MOTxx-test dataset**
@@ -80,18 +91,18 @@ It will be stored in `./mot_20_test_res`, you can modify the saved path in `test
 ```shell script
 # Example 2: Test on motxx-test set
 # The number after config file represents the number of GPUs used
-bash tools/dist_test_tracking.sh configs/strongsort/strongsort_yolox_x_8xb4-80e_crowdhuman-mot20train_test-mot20test.py 8 --detector {CHECKPOINT_PATH} --reid {CHECKPOINT_PATH}
+bash tools/dist_test_tracking.sh configs/strongsort/strongsort_yolox_x_8xb4-80e_crowdhuman-mot20train_test-mot20test.py 8 --detector ${CHECKPOINT_PATH} --reid ${CHECKPOINT_PATH}
 ```
+
+If you want to know about more detailed usage of `test_tracking.py/dist_test_tracking.sh/slurm_test_tracking.sh`,
+please refer to this [document](../../docs/en/user_guides/tracking_train_test.md).
 
 ### 3.Inference
 
 Use a single GPU to predict a video and save it as a video.
 
 ```shell
-python demo/mot_demo.py \
-    configs/strongsort/strongsort_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval.py \
-    --detector {CHECKPOINT_FILE} \
-    --reid {CHECKPOINT_PATH} \
-    -input demo/demo.mp4 \
-    --output mot.mp4
+python demo/mot_demo.py demo/demo_mot.mp4 configs/strongsort/strongsort_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval.py --detector ${CHECKPOINT_FILE} --reid ${CHECKPOINT_PATH} --out mot.mp4
 ```
+
+If you want to know about more detailed usage of `mot_demo.py`, please refer to this [document](../../docs/en/user_guides/tracking_inference.md).

@@ -2,11 +2,13 @@
 
 You may want to train a ReID model for multiple object tracking or other applications. We support ReID model training in MMDetection, which is built upon [MMClassification](https://github.com/open-mmlab/mmclassification).
 
-## 1.Standard Dataset
+### 1. Development Environment Setup
+
+Tracking Development Environment Setup can refer to this [document](../../docs/en/get_started.md).
+
+### 2. Dataset Preparation
 
 This section will show how to train a ReID model on standard datasets i.e. MOT17.
-
-### Dataset Preparation
 
 We need to download datasets following docs. We use [ReIDDataset](mmdet/datasets/reid_dataset.py) to maintain standard datasets. In this case, you need to convert the official dataset to this style. We provide scripts and the usages as follow:
 
@@ -55,7 +57,7 @@ For validation, The annotation list `val_20.txt` remains the same as format abov
 
 Note: Images in `MOT17/reid/imgs` are cropped from raw images in `MOT17/train` by the corresponding `gt.txt`. The value of ground-truth labels should fall in range `[0, num_classes - 1]`.
 
-### Training
+### 3. Training
 
 #### Training on a single GPU
 
@@ -72,11 +74,11 @@ The basic usage is as follows.
 bash tools/dist_train.sh configs/reid/reid_r50_8xb32-6e_mot17train80_test-mot17val20.py 8
 ```
 
-## 2.Customize Dataset
+### 4. Customize Dataset
 
 This section will show how to train a ReID model on customize datasets.
 
-### Dataset Preparation
+### 4.1 Dataset Preparation
 
 You need to convert your customize datasets to existing dataset format.
 
@@ -128,6 +130,6 @@ data = dict(
 model = dict(reid=dict(head=dict(num_classes=100)))
 ```
 
-### Training
+### 4.2 Training
 
 The training stage is the same as `Standard Dataset`.

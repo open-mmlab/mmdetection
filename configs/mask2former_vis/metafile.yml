@@ -10,7 +10,7 @@ Collections:
     Paper:
       URL: https://arxiv.org/pdf/2112.10764.pdf
       Title: Mask2Former for Video Instance Segmentation
-    README: configs/vis/mask2former/README.md
+    README: configs/mask2former/README.md
 
 Models:
   - Name: mask2former_r50_8xb2-8e_youtubevis2021
@@ -24,7 +24,7 @@ Models:
         Dataset: YouTube-VIS 2021
         Metrics:
           AP: 41.3
-    Weights: https://download.openmmlab.com/mmtracking/vis/mask2former/mask2former_r50_8xb2-8e_youtubevis2021_20220818_164043-1cab1219.pth
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mask2former_vis/mask2former_r50_8xb2-8e_youtubevis2021/mask2former_r50_8xb2-8e_youtubevis2021_20230426_131833-5d215283.pth
 
   - Name: mask2former_r101_8xb2-8e_youtubevis2021
     In Collection: Mask2Former
@@ -37,7 +37,7 @@ Models:
         Dataset: YouTube-VIS 2021
         Metrics:
           AP: 42.3
-    Weights: https://download.openmmlab.com/mmtracking/vis/mask2former/mask2former_r101_8xb2-8e_youtubevis2021_20220823_092747-b7a7d7cc.pth
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mask2former_vis/mask2former_r101_8xb2-8e_youtubevis2021/mask2former_r101_8xb2-8e_youtubevis2021_20220823_092747-8077d115.pth
 
   - Name: mask2former_swin-l-p4-w12-384-in21k_8xb2-8e_youtubevis2021.py
     In Collection: Mask2Former
@@ -50,4 +50,4 @@ Models:
         Dataset: YouTube-VIS 2021
         Metrics:
           AP: 52.3
-    Weights: https://download.openmmlab.com/mmtracking/vis/mask2former/mask2former_swin-l-p4-w12-384-in21k_8xb2-8e_youtubevis2021_20220907_124752-c04b720e.pth
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mask2former_vis/mask2former_swin-l-p4-w12-384-in21k_8xb2-8e_youtubevis2021/mask2former_swin-l-p4-w12-384-in21k_8xb2-8e_youtubevis2021_20220907_124752-48252603.pth

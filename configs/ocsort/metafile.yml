@@ -9,7 +9,7 @@ Collections:
     Paper:
         URL: https://arxiv.org/abs/2203.14360
         Title: Observation-Centric SORT Rethinking SORT for Robust Multi-Object Tracking
-    README: configs/mot/ocsort/README.md
+    README: configs/ocsort/README.md
 
 Models:
   - Name: ocsort_yolox_x_crowdhuman_mot17-private-half

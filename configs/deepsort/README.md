@@ -23,7 +23,15 @@ We directly use the ReID model from [Tracktor](https://github.com/phil-bergmann/
 
 ## Get started
 
-### 1. Training
+### 1. Development Environment Setup
+
+Tracking Development Environment Setup can refer to this [document](../../docs/en/get_started.md).
+
+### 2. Dataset Prepare
+
+Tracking Dataset Prepare can refer to this [document](../../docs/en/user_guides/tracking_dataset_prepare.md).
+
+### 3. Training
 
 We implement DeepSORT with independent detector and ReID models.
 Note that, due to the influence of parameters such as learning rate in default configuration file,
@@ -37,17 +45,32 @@ You can train the detector as follows.
 bash tools/dist_train.sh configs/sort/faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py 8
 ```
 
-### 2. Testing and evaluation
+If you want to know about more detailed usage of `train.py/dist_train.sh/slurm_train.sh`,
+please refer to this [document](../../docs/en/user_guides/tracking_train_test.md).
 
-**2.1 Example on MOTxx-halfval dataset**
+### 4. Testing and evaluation
 
-```shell script
+### 4.1 Example on MOTxx-halfval dataset
+
+**4.1.1 use separate trained detector and reid model to evaluating and testing**
+
+```shell
 # Example 1: Test on motXX-half-val set.
 # The number after config file represents the number of GPUs used. Here we use 8 GPUs.
 bash tools/dist_test_tracking.sh configs/deepsort/deepsort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py 8 --detector ${DETECTOR_CHECKPOINT_PATH} --reid ${REID_CHECKPOINT_PATH}
 ```
 
-**2.2 Example on MOTxx-test dataset**
+**4.1.2 use video_baesd to evaluating and testing**
+
+we also provide two_ways(img_based or video_based) to evaluating and testing.
+if you want to use video_based to evaluating and testing, you can modify config as follows
+
+```
+val_dataloader = dict(
+    sampler=dict(type='DefaultSampler', shuffle=False, round_up=False))
+```
+
+### 4.2 Example on MOTxx-test dataset
 
 If you want to get the results of the [MOT Challenge](https://motchallenge.net/) test set,
 please use the following command to generate result files that can be used for submission.
@@ -59,7 +82,10 @@ It will be stored in `./mot_17_test_res`, you can modify the saved path in `test
 bash tools/dist_test_tracking.sh configs/deepsort/deepsort_faster-rcnn_r50_fpn_8xb2-4e_mot17train_test-mot17test 8 --detector ${DETECTOR_CHECKPOINT_PATH} --reid ${REID_CHECKPOINT_PATH}
 ```
 
-### 3.Inference
+If you want to know about more detailed usage of `test_tracking.py/dist_test_tracking.sh/slurm_test_tracking.sh`,
+please refer to this [document](../../docs/en/user_guides/tracking_train_test.md).
+
+### 5.Inference
 
 Use a single GPU to predict a video and save it as a video.
 
