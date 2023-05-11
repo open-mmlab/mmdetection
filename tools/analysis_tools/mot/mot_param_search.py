@@ -15,7 +15,7 @@ from mmengine.runner.checkpoint import load_checkpoint
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='MMTrack test (and eval) a model')
+        description='MMDet tracking test (and eval) a model')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('--checkpoint', help='checkpoint file')
     parser.add_argument('--detector', help='detection checkpoint file')

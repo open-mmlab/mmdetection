@@ -70,7 +70,7 @@ dataset_version = data_root[-5:-1]  # 2019 or 2021
 # train_dataloader
 train_dataloader = dict(
     _delete_=True,
-    batch_size=4,
+    batch_size=1,
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='TrackImgSampler'),  # image-based sampling
@@ -86,7 +86,7 @@ train_dataloader = dict(
 # optimizer
 optim_wrapper = dict(
     type='OptimWrapper',
-    optimizer=dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.0001),
+    optimizer=dict(type='SGD', lr=0.00125, momentum=0.9, weight_decay=0.0001),
     clip_grad=dict(max_norm=35, norm_type=2))
 
 # learning policy
