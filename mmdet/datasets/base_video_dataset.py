@@ -20,7 +20,8 @@ class BaseVideoDataset(BaseDataset):
     # ann_id is unique in coco dataset.
     ANN_ID_UNIQUE = True
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, backend_args: dict = None, **kwargs):
+        self.backend_args = backend_args
         super().__init__(*args, **kwargs)
 
     def load_data_list(self) -> Tuple[List[dict], List]:

@@ -53,7 +53,7 @@ test_pipeline = [
     dict(
         type='TransformBroadcaster',
         transforms=[
-            dict(type='LoadImageFromFile'),
+            dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
             dict(type='Resize', scale=img_scale, keep_ratio=True),
             dict(
                 type='Pad',
@@ -78,7 +78,9 @@ train_dataloader = dict(
                     filter_cfg=dict(filter_empty_gt=True, min_size=32),
                     metainfo=dict(classes=('pedestrian', )),
                     pipeline=[
-                        dict(type='LoadImageFromFile'),
+                        dict(
+                            type='LoadImageFromFile',
+                            backend_args=_base_.backend_args),
                         dict(type='LoadAnnotations', with_bbox=True),
                     ]),
                 dict(
@@ -89,7 +91,9 @@ train_dataloader = dict(
                     filter_cfg=dict(filter_empty_gt=True, min_size=32),
                     metainfo=dict(classes=('pedestrian', )),
                     pipeline=[
-                        dict(type='LoadImageFromFile'),
+                        dict(
+                            type='LoadImageFromFile',
+                            backend_args=_base_.backend_args),
                         dict(type='LoadAnnotations', with_bbox=True),
                     ]),
                 dict(
@@ -100,7 +104,9 @@ train_dataloader = dict(
                     filter_cfg=dict(filter_empty_gt=True, min_size=32),
                     metainfo=dict(classes=('pedestrian', )),
                     pipeline=[
-                        dict(type='LoadImageFromFile'),
+                        dict(
+                            type='LoadImageFromFile',
+                            backend_args=_base_.backend_args),
                         dict(type='LoadAnnotations', with_bbox=True),
                     ]),
             ]),

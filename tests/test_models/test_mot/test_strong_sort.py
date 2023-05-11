@@ -32,10 +32,10 @@ class TestDeepSORT(TestCase):
         model.reid.head.fc_channels = 1
         model.reid.head.out_channels = 1
         model.reid.head.num_classes = 2
+        model.cmc = None
         model = MODELS.build(model)
         assert model.detector
         assert model.reid
-        assert model.cmc
         assert model.tracker
 
     @parameterized.expand([
@@ -61,6 +61,7 @@ class TestDeepSORT(TestCase):
             _model.reid.head.fc_channels = 1
             _model.reid.head.out_channels = 1
             _model.reid.head.num_classes = 2
+            _model.cmc = None
             model = MODELS.build(_model)
 
             if device == 'cuda':

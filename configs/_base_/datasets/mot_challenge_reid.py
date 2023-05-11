@@ -2,13 +2,17 @@
 dataset_type = 'ReIDDataset'
 data_root = 'data/MOT17/'
 
+backend_args = None
 # data pipeline
 train_pipeline = [
     dict(
         type='TransformBroadcaster',
         share_random_params=False,
         transforms=[
-            dict(type='LoadImageFromFile', to_float32=True),
+            dict(
+                type='LoadImageFromFile',
+                backend_args=backend_args,
+                to_float32=True),
             dict(
                 type='Resize',
                 scale=(128, 256),
@@ -19,7 +23,7 @@ train_pipeline = [
     dict(type='PackReIDInputs', meta_keys=('flip', 'flip_direction'))
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True),
+    dict(type='LoadImageFromFile', backend_args=backend_args, to_float32=True),
     dict(type='Resize', scale=(128, 256), keep_ratio=False),
     dict(type='PackReIDInputs')
 ]
