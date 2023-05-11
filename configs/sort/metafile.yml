@@ -10,7 +10,7 @@ Collections:
     Paper:
       URL: https://arxiv.org/abs/1602.00763
       Title: Simple Online and Realtime Tracking
-    README: configs/mot/sort/README.md
+    README: configs/sort/README.md
 
 Models:
   - Name: sort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval

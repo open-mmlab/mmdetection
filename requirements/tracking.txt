@@ -1,5 +1,3 @@
-git+https://github.com/JonathonLuiten/TrackEval.git
-lap
 mmcls>=1.0.0rc0
 motmetrics
 numpy==1.23.5

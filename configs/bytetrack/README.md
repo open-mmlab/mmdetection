@@ -49,11 +49,19 @@ Please note that the MOTA on `MOT20-test` is slightly lower than that reported i
 
 ## Get started
 
-### 1. Training
+### 1. Development Environment Setup
+
+Tracking Development Environment Setup can refer to this [document](../../docs/en/get_started.md).
+
+### 2. Dataset Prepare
+
+Tracking Dataset Prepare can refer to this [document](../../docs/en/user_guides/tracking_dataset_prepare.md).
+
+### 3. Training
 
 Due to the influence of parameters such as learning rate in default configuration file, we recommend using 8 GPUs for training in order to reproduce accuracy. You can use the following command to start the training.
 
-#### Joint training and tracking
+**3.1 Joint training and tracking**
 
 Some algorithm like ByteTrack, OCSORT don't need reid model, so we provide joint training and tracking for convenient.
 
@@ -63,7 +71,7 @@ Some algorithm like ByteTrack, OCSORT don't need reid model, so we provide joint
 bash tools/dist_train.sh configs/bytetrack/bytetrack_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval.py 8
 ```
 
-#### Separate training and tracking
+**3.2 Separate training and tracking**
 
 Of course, we provide train detector independently like SORT, DeepSORT, StrongSORT. Then use this detector to track.
 
@@ -73,23 +81,26 @@ Of course, we provide train detector independently like SORT, DeepSORT, StrongSO
 bash tools/dist_train.sh configs/bytetrack/yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py 8
 ```
 
-### 2. Testing and evaluation
+If you want to know about more detailed usage of `train.py/dist_train.sh/slurm_train.sh`,
+please refer to this [document](../../docs/en/user_guides/tracking_train_test.md).
 
-**2.1 Example on MOTxx-halfval dataset**
+### 4. Testing and evaluation
 
-```shell
-bash tools/dist_test_tracking.sh configs/bytetrack/bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py 8 --checkpoint {CHECKPOINT_FILE}
-```
+### 4.1 Example on MOTxx-halfval dataset
 
-**2.2 Example on MOTxx-halfval dataset**
-
-use separate trained detector to evaluation and testing.
+**4.1.1 use joint trained detector to evaluating and testing**
 
 ```shell
-bash tools/dist_test_tracking.sh configs/bytetrack/bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py 8 --detector {CHECKPOINT_FILE}
+bash tools/dist_test_tracking.sh configs/bytetrack/bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py 8 --checkpoint ${CHECKPOINT_FILE}
 ```
 
-**2.2 Example on MOTxx-halfval dataset**
+**4.1.2 use separate trained detector to evaluating and testing**
+
+```shell
+bash tools/dist_test_tracking.sh configs/bytetrack/bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py 8 --detector ${CHECKPOINT_FILE}
+```
+
+**4.1.3 use video_baesd to evaluating and testing**
 
 we also provide two_ways(img_based or video_based) to evaluating and testing.
 if you want to use video_based to evaluating and testing, you can modify config as follows
@@ -99,22 +110,23 @@ val_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=False, round_up=False))
 ```
 
-**2.3 Example on MOTxx-test dataset**
+#### 4.2 Example on MOTxx-test dataset
 
 If you want to get the results of the [MOT Challenge](https://motchallenge.net/) test set, please use the following command to generate result files that can be used for submission. It will be stored in `./mot_17_test_res`, you can modify the saved path in `test_evaluator` of the config.
 
 ```shell
-bash tools/dist_test.sh configs/bytetrack/bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17test.py 8 --checkpoint {CHECKPOINT_FILE}
+bash tools/dist_test_tracking.sh configs/bytetrack/bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17test.py 8 --checkpoint ${CHECKPOINT_FILE}
 ```
 
-### 3.Inference
+If you want to know about more detailed usage of `test_tracking.py/dist_test_tracking.sh/slurm_test_tracking.sh`,
+please refer to this [document](../../docs/en/user_guides/tracking_train_test.md).
+
+### 5.Inference
 
 Use a single GPU to predict a video and save it as a video.
 
 ```shell
-python demo/mot_demo.py \
-    configs/bytetrack/bytetrack_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval.py \
-    --checkpoint {CHECKPOINT_FILE} \
-    --input demo/demo.mp4 \
-    --output mot.mp4
+python demo/mot_demo.py demo/demo_mot.mp4 configs/bytetrack/bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py --checkpoint ${CHECKPOINT_FILE} --out mot.mp4
 ```
+
+If you want to know about more detailed usage of `mot_demo.py`, please refer to this [document](../../docs/en/user_guides/tracking_inference.md).

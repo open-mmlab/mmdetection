@@ -37,7 +37,15 @@ Note: Codalab has closed the evaluation portal of `YouTube-VIS 2019`, so we do n
 
 ## Get started
 
-### 1. Training
+### 1. Development Environment Setup
+
+Tracking Development Environment Setup can refer to this [document](../../docs/en/get_started.md).
+
+### 2. Dataset Prepare
+
+Tracking Dataset Prepare can refer to this [document](../../docs/en/user_guides/tracking_dataset_prepare.md).
+
+### 3. Training
 
 Due to the influence of parameters such as learning rate in default configuration file, we recommend using 8 GPUs for training in order to reproduce accuracy. You can use the following command to start the training.
 
@@ -47,19 +55,27 @@ Due to the influence of parameters such as learning rate in default configuratio
 bash tools/dist_train.sh configs/mask2former_vis/mask2former_r50_8xb2-8e_youtubevis202.py 8
 ```
 
-### 2. Testing and evaluation
+If you want to know about more detailed usage of `train.py/dist_train.sh/slurm_train.sh`,
+please refer to this [document](../../docs/en/user_guides/tracking_train_test.md).
+
+### 4. Testing and evaluation
 
 If you want to get the results of the [YouTube-VOS](https://youtube-vos.org/dataset/vis/) val/test set, please use the following command to generate result files that can be used for submission. It will be stored in `./youtube_vis_results.submission_file.zip`, you can modify the saved path in `test_evaluator` of the config.
 
 ```shell
 # The number after config file represents the number of GPUs used.
-bash tools/dist_test_tracking.sh configs/mask2former_vis/mask2former_r50_8xb2-8e_youtubevis2021.py --checkpoint {CHECKPOINT_PATH}
+bash tools/dist_test_tracking.sh configs/mask2former_vis/mask2former_r50_8xb2-8e_youtubevis2021.py --checkpoint ${CHECKPOINT_PATH}
 ```
 
-### 3.Inference
+If you want to know about more detailed usage of `test_tracking.py/dist_test_tracking.sh/slurm_test_tracking.sh`,
+please refer to this [document](../../docs/en/user_guides/tracking_train_test.md).
+
+### 5.Inference
 
 Use a single GPU to predict a video and save it as a video.
 
 ```shell
 python demo/mot_demo.py demo/demo_mot.mp4 configs/mask2former_vis/mask2former_r50_8xb2-8e_youtubevis2021.py  --checkpoint {CHECKPOINT_PATH} --out vis.mp4
 ```
+
+If you want to know about more detailed usage of `mot_demo.py`, please refer to this [document](../../docs/en/user_guides/tracking_inference.md).

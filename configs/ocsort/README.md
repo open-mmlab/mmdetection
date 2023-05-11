@@ -32,3 +32,25 @@ The performance on `MOT17-half-val` is comparable with the performance from [the
 | Method  | Detector |        Train Set        | Test Set | Public | Inf time (fps) | HOTA | MOTA | IDF1 |  FP   |  FN   | IDSw. |                          Config                           |                                                                                                                                               Download                                                                                                                                               |
 | :-----: | :------: | :---------------------: | :------: | :----: | :------------: | :--: | :--: | :--: | :---: | :---: | :---: | :-------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | OC-SORT | YOLOX-X  | CrowdHuman + half-train | half-val |   N    |       -        | 67.5 | 77.5 | 78.2 | 15987 | 19590 |  855  | [config](ocsort_yolox_x_crowdhuman_mot17-private-half.py) | [model](https://download.openmmlab.com/mmtracking/mot/ocsort/mot_dataset/ocsort_yolox_x_crowdhuman_mot17-private-half_20220813_101618-fe150582.pth) \| [log](https://download.openmmlab.com/mmtracking/mot/ocsort/mot_dataset/ocsort_yolox_x_crowdhuman_mot17-private-half_20220813_101618.log.json) |
+
+## Get started
+
+### 1. Development Environment Setup
+
+Tracking Development Environment Setup can refer to this [document](../../docs/en/get_started.md).
+
+### 2. Dataset Prepare
+
+Tracking Dataset Prepare can refer to this [document](../../docs/en/user_guides/tracking_dataset_prepare.md).
+
+### 3. Training
+
+OCSORT training is same as Bytetrack, please refer to [document](../../configs/bytetrack/README.md).
+
+### 4. Testing and evaluation
+
+OCSORT evaluation and test are same as Bytetrack, please refer to [document](../../configs/bytetrack/README.md).
+
+### 5.Inference
+
+OCSORT inference is same as Bytetrack, please refer to [document](../../configs/bytetrack/README.md).
