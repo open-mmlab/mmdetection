@@ -34,6 +34,6 @@ __all__ = [
     'weighted_loss', 'L1Loss', 'l1_loss', 'isr_p', 'carl_loss',
     'AssociativeEmbeddingLoss', 'GaussianFocalLoss', 'QualityFocalLoss',
     'DistributionFocalLoss', 'VarifocalLoss', 'KnowledgeDistillationKLDivLoss',
-    'SeesawLoss', 'DiceLoss', 'EQLV2Loss', 'MarginL2Loss', 'MultiPosCrossEntropyLoss',
-    'L2Loss', 'TripletLoss'
+    'SeesawLoss', 'DiceLoss', 'EQLV2Loss', 'MarginL2Loss',
+    'MultiPosCrossEntropyLoss', 'L2Loss', 'TripletLoss'
 ]
