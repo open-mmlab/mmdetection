@@ -94,3 +94,19 @@ We follow the below style to name config files. Contributors are advised to foll
 
 Sometimes, you may set `_delete_=True` to ignore some of fields in base configs.
 You may refer to [MMEngine](https://github.com/open-mmlab/mmengine/blob/main/docs/en/tutorials/config.md) for simple illustration.
+
+## Tracking Data Structure Introduction
+
+### Advantages and new features
+
+In mmdetection tracking task, we employ videos to organize the dataset and use
+TrackDataSample to descirbe dataset info.
+
+- Based on video organization, we provide transform `UniformRefFrameSample` to sample key frames and ref frames and use `TransformBroadcaster` for for clip training.
+- TrackDataSample can be viewd as a wrapper of multiple DetDataSample to some extent. It contains a property `video_data_samples` which is a list of DetDataSample, each of which corresponds to a single frame. In addition, it's metainfo includes key_frames_inds and ref_frames_inds to apply clip training way.
+- Thanks to video-based data organization, the entire video can be directly tested. This way is more concise and intuitive. We also provide image_based test method, if your GPU mmemory cannot fit the entire video.
+
+### TODO
+
+- Some algorithms like StrongSORT, Mask2Former can not support video_based testing. These algorithms pose a challenge to GPU memory. we will optimize this problem in the future.
+- Now we do not support joint training of video_based dataset like MOT Challenge Dataset and image_based dataset like Crowdhuman for the algorithm QDTrack. we will optimize this problem in the future.

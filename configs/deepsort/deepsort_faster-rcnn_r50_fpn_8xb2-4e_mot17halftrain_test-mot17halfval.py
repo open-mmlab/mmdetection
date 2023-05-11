@@ -36,7 +36,6 @@ model = dict(
         mean=[123.675, 116.28, 103.53],
         std=[58.395, 57.12, 57.375],
         bgr_to_rgb=True,
-        rgb_to_bgr=False,
         pad_size_divisor=32),
     detector=detector,
     reid=dict(

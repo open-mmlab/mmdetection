@@ -24,7 +24,7 @@ def parse_args():
     parser.add_argument(
         '--result-dir', help='directory of the inference result')
     parser.add_argument(
-        '--out-dir',
+        '--output-dir',
         help='directory where painted images or videos will be saved')
     parser.add_argument(
         '--show',

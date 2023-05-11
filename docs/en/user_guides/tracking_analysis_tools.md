@@ -55,7 +55,7 @@ python tools/analysis_tools/mot/mot_error_visualize.py \
     ${CONFIG_FILE}\
     --input ${INPUT} \
     --result-dir ${RESULT_DIR} \
-    [--out-dir ${OUTPUT}] \
+    [--output-dir ${OUTPUT}] \
     [--fps ${FPS}] \
     [--show] \
     [--backend ${BACKEND}]
