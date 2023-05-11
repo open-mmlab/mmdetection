@@ -2,8 +2,9 @@
 dataset_type = 'CocoDataset'
 data_root = 'data/MOT17/'
 
+backend_args = None
 train_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True),
+    dict(type='LoadImageFromFile', backend_args=backend_args, to_float32=True),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='RandomResize',
@@ -18,7 +19,7 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='Resize', scale=(1088, 1088), keep_ratio=True),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(

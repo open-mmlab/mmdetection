@@ -4,11 +4,7 @@ import warnings
 from typing import Optional, Sequence
 
 import mmcv
-<<<<<<< HEAD
 from mmengine.fileio import get
-=======
-from mmengine.fileio import FileClient, get
->>>>>>> [Feature] Add tracking demo and visulization (#9908)
 from mmengine.hooks import Hook
 from mmengine.runner import Runner
 from mmengine.utils import mkdir_or_exist

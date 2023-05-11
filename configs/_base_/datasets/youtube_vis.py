@@ -1,3 +1,9 @@
+dataset_type = 'YouTubeVISDataset'
+data_root = 'data/youtube_vis_2019/'
+dataset_version = data_root[-5:-1]  # 2019 or 2021
+
+backend_args = None
+
 # dataset settings
 train_pipeline = [
     dict(
@@ -9,7 +15,7 @@ train_pipeline = [
         type='TransformBroadcaster',
         share_random_params=True,
         transforms=[
-            dict(type='LoadImageFromFile'),
+            dict(type='LoadImageFromFile', backend_args=backend_args),
             dict(type='LoadTrackAnnotations', with_mask=True),
             dict(type='Resize', scale=(640, 360), keep_ratio=True),
             dict(type='RandomFlip', prob=0.5),
@@ -21,24 +27,18 @@ test_pipeline = [
     dict(
         type='TransformBroadcaster',
         transforms=[
-            dict(type='LoadImageFromFile'),
+            dict(type='LoadImageFromFile', backend_args=backend_args),
             dict(type='Resize', scale=(640, 360), keep_ratio=True),
             dict(type='LoadTrackAnnotations', with_mask=True),
         ]),
     dict(type='PackTrackInputs')
 ]
 
-dataset_type = 'YouTubeVISDataset'
-data_root = 'data/youtube_vis_2019/'
-dataset_version = data_root[-5:-1]  # 2019 or 2021
 # dataloader
 train_dataloader = dict(
     batch_size=2,
     num_workers=2,
     persistent_workers=True,
-    # MOTChallengeDataset is a video-based dataset, so we don't need
-    # "AspectRatioBatchSampler"
-    # batch_sampler=dict(type='AspectRatioBatchSampler'),
     # sampler=dict(type='TrackImgSampler'),  # image-based sampling
     sampler=dict(type='DefaultSampler', shuffle=True),
     batch_sampler=dict(type='TrackAspectRatioBatchSampler'),

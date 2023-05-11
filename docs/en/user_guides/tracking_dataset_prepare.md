@@ -3,8 +3,13 @@
 This page provides the instructions for dataset preparation on existing benchmarks, include
 
 - Multiple Object Tracking
+
   - [MOT Challenge](https://motchallenge.net/)
   - [CrowdHuman](https://www.crowdhuman.org/)
+
+- Video Instance Segmentation
+
+  - [YouTube-VIS](https://youtube-vos.org/dataset/vis/)
 
 ### 1. Download Datasets
 
@@ -12,14 +17,23 @@ Please download the datasets from the official websites. It is recommended to sy
 
 #### 1.1 Multiple Object Tracking
 
-- For the training and testing of multi object tracking task, MOT17 is needed, CrowdHuman can be served as comlementary dataset.
+- For the training and testing of multi object tracking task, one of the MOT Challenge datasets (e.g. MOT17, MOT20) are needed, CrowdHuman can be served as comlementary dataset.
 
 - For users in China, the following datasets can be downloaded from [OpenDataLab](https://opendatalab.com/) with high speed:
 
   - [MOT17](https://opendatalab.com/MOT17/download)
+  - [MOT20](https://opendatalab.com/MOT20/download)
   - [CrowdHuman](https://opendatalab.com/CrowdHuman/download)
 
-#### 1.2 Data Structure
+#### 1.2 Video Instance Segmentation
+
+- For the training and testing of video instance segmetatioon task, only one of YouTube-VIS datasets (e.g. YouTube-VIS 2019, YouTube-VIS 2021) is needed.
+
+- YouTube-VIS 2019 dataset can be download from [YouTubeVOS](https://codalab.lisn.upsaclay.fr/competitions/6064)
+
+- YouTube-VIS 2021 dataset can be download from [YouTubeVOS](https://codalab.lisn.upsaclay.fr/competitions/7680)
+
+#### 1.3 Data Structure
 
 If your folder structure is different from the following, you may need to change the corresponding paths in config files.
 
@@ -37,9 +51,18 @@ mmdetection
 │   │
 |   ├── MOT15/MOT16/MOT17/MOT20
 |   |   ├── train
+|   |   |   ├── MOT17-02-DPM
+|   |   |   |   ├── det
+|   │   │   │   ├── gt
+|   │   │   │   ├── img1
+|   │   │   │   ├── seqinfo.ini
+│   │   │   ├── ......
 |   |   ├── test
-|   |   ├── annotations
-|   |   ├── reid
+|   |   |   ├── MOT17-01-DPM
+|   |   |   |   ├── det
+|   │   │   │   ├── img1
+|   │   │   │   ├── seqinfo.ini
+│   │   │   ├── ......
 │   │
 │   ├── crowdhuman
 │   │   ├── annotation_train.odgt
@@ -68,6 +91,12 @@ python ./tools/dataset_converters/mot2reid.py -i ./data/MOT17/ -o ./data/MOT17/r
 # CrowdHuman
 python ./tools/dataset_converters/crowdhuman2coco.py -i ./data/crowdhuman -o ./data/crowdhuman/annotations
 
+# YouTube-VIS 2019
+python ./tools/dataset_converters/youtubevis/youtubevis2coco.py -i ./data/youtube_vis_2019 -o ./data/youtube_vis_2019/annotations --version 2019
+
+# YouTube-VIS 2021
+python ./tools/dataset_converters/youtubevis/youtubevis2coco.py -i ./data/youtube_vis_2021 -o ./data/youtube_vis_2021/annotations --version 2021
+
 ```
 
 The folder structure will be as following after your run these scripts:
@@ -86,7 +115,18 @@ mmdetection
 │   │
 |   ├── MOT15/MOT16/MOT17/MOT20
 |   |   ├── train
+|   |   |   ├── MOT17-02-DPM
+|   |   |   |   ├── det
+|   │   │   │   ├── gt
+|   │   │   │   ├── img1
+|   │   │   │   ├── seqinfo.ini
+│   │   │   ├── ......
 |   |   ├── test
+|   |   |   ├── MOT17-01-DPM
+|   |   |   |   ├── det
+|   │   │   │   ├── img1
+|   │   │   │   ├── seqinfo.ini
+│   │   │   ├── ......
 |   |   ├── annotations
 |   |   ├── reid
 │   │   │   ├── imgs
@@ -106,6 +146,36 @@ mmdetection
 │   │   ├── annotations
 │   │   │   ├── crowdhuman_train.json
 │   │   │   ├── crowdhuman_val.json
+│   │
+│   ├── youtube_vis_2019
+│   │   │── train
+│   │   │   │── JPEGImages
+│   │   │   │── ......
+│   │   │── valid
+│   │   │   │── JPEGImages
+│   │   │   │── ......
+│   │   │── test
+│   │   │   │── JPEGImages
+│   │   │   │── ......
+│   │   │── train.json (the official annotation files)
+│   │   │── valid.json (the official annotation files)
+│   │   │── test.json (the official annotation files)
+│   │   │── annotations (the converted annotation file)
+│   │
+│   ├── youtube_vis_2021
+│   │   │── train
+│   │   │   │── JPEGImages
+│   │   │   │── instances.json (the official annotation files)
+│   │   │   │── ......
+│   │   │── valid
+│   │   │   │── JPEGImages
+│   │   │   │── instances.json (the official annotation files)
+│   │   │   │── ......
+│   │   │── test
+│   │   │   │── JPEGImages
+│   │   │   │── instances.json (the official annotation files)
+│   │   │   │── ......
+│   │   │── annotations (the converted annotation file)
 ```
 
 #### The folder of annotations and reid in MOT15/MOT16/MOT17/MOT20
@@ -165,3 +235,13 @@ There are 2 JSON files in `data/crowdhuman/annotations`:
 
 `crowdhuman_train.json`:  JSON file containing the annotations information of the training set in CrowdHuman dataset.
 `crowdhuman_val.json`:  JSON file containing the annotations information of the validation set in CrowdHuman dataset.
+
+#### The folder of annotations in youtube_vis_2019/youtube_vis2021
+
+There are 3 JSON files in `data/youtube_vis_2019/annotations` or `data/youtube_vis_2021/annotations`:
+
+`youtube_vis_2019_train.json`/`youtube_vis_2021_train.json`: JSON file containing the annotations information of the training set in youtube_vis_2019/youtube_vis2021 dataset.
+
+`youtube_vis_2019_valid.json`/`youtube_vis_2021_valid.json`: JSON file containing the annotations information of the validation set in youtube_vis_2019/youtube_vis2021 dataset.
+
+`youtube_vis_2019_test.json`/`youtube_vis_2021_test.json`: JSON file containing the annotations information of the testing set in youtube_vis_2019/youtube_vis2021 dataset.

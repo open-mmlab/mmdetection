@@ -20,33 +20,9 @@ Specifically, the `TrackVisualizationHook` has the following arguments:
 - `test_out_dir`: directory where painted images will be saved in testing process.
 - `backend_args`: Arguments to instantiate a file client. Defaults to `None`.
 
-In the `TrackVisualizationHook`, `TrackLocalVisualizer` will be called to implement visualization for MOT tasks.
+In the `TrackVisualizationHook`, `TrackLocalVisualizer` will be called to implement visualization for MOT and VIS tasks.
 We will present the details below.
 You can refer to MMEngine for more details about [Visualization](https://github.com/open-mmlab/mmengine/blob/main/docs/en/advanced_tutorials/visualization.md) and [Hook](https://github.com/open-mmlab/mmengine/blob/main/docs/en/tutorials/hook.md).
-
-#### Detection Visualization
-
-We realize the detection visualization with class `DetLocalVisualizer`.
-You can call it as follows.
-
-```python
-visualizer = dict(type='DetLocalVisualizer')
-```
-
-It has the following arguments:
-
-- `name`: Name of the instance. Defaults to 'visualizer'.
-- `image`: The origin image to draw. The format should be RGB. Defaults to None.
-- `vis_backends`: Visual backend config list. Defaults to None.
-- `save_dir`: Save file dir for all storage backends. If it is None, the backend storage will not save any data.
-- `bbox_color`: Color of bbox lines. The tuple of color should be in BGR order. Defaults to None.
-- `text_color`: Color of texts. The tuple of color should be in BGR order. Defaults to (200, 200, 200).
-- `line_width`: The linewidth of lines. Defaults to 3.
-- `alpha`: The transparency of bboxes or mask. Defaults to 0.8.
-
-Here is a visualization example of YOLOX:
-
-![test_img_29](https://user-images.githubusercontent.com/99722489/186062793-623f6b1e-163e-4e1a-aa79-efea2d97a16d.png)
 
 #### Tracking Visualization
 
@@ -57,9 +33,14 @@ You can call it as follows.
 visualizer = dict(type='TrackLocalVisualizer')
 ```
 
-It has the following arguments, which has the same meaning of that in `DetLocalVisualizer`.
+It has the following arguments:
 
-`name`, `image`, `vis_backends`, `save_dir`, `line_width`, `alpha`.
+- `name`: Name of the instance. Defaults to 'visualizer'.
+- `image`: The origin image to draw. The format should be RGB. Defaults to None.
+- `vis_backends`: Visual backend config list. Defaults to None.
+- `save_dir`: Save file dir for all storage backends. If it is None, the backend storage will not save any data.
+- `line_width`: The linewidth of lines. Defaults to 3.
+- `alpha`: The transparency of bboxes or mask. Defaults to 0.8.
 
 Here is a visualization example of DeepSORT:
 
