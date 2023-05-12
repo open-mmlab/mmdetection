@@ -32,7 +32,7 @@ to solve all the above tasks and achieves superior performance on 20 challenging
 
 **Note**
 
-1. Due to time constraints, this project only realizes VIS tasks testing
+1. this project only support VIS tasks(youtube 2019 dataset) evaluation and test
 2. the training and testing of other tasks will be released in the future
 
 ## Usage
