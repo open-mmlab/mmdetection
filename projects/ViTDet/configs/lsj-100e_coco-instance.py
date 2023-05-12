@@ -90,6 +90,7 @@ optim_wrapper = dict(
         weight_decay=0.1,
     ))
 
+# 100 ep = 184375 iters * 64 images/iter / 118000 images/ep
 max_iters = 184375
 interval = 5000
 dynamic_intervals = [(max_iters // interval * interval + 1, max_iters)]
@@ -101,6 +102,8 @@ param_scheduler = [
         begin=0,
         end=max_iters,
         by_epoch=False,
+        # 88 ep = [163889 iters * 64 images/iter / 118000 images/ep
+        # 96 ep = [177546 iters * 64 images/iter / 118000 images/ep
         milestones=[163889, 177546],
         gamma=0.1)
 ]
@@ -119,7 +122,8 @@ default_hooks = dict(
         type='CheckpointHook',
         by_epoch=False,
         save_last=True,
-        interval=interval))
+        interval=interval,
+        max_keep_ckpts=5))
 vis_backends = [
     dict(type='LocalVisBackend'),
     dict(type='TensorboardVisBackend')
