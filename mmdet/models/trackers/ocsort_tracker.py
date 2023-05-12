@@ -51,6 +51,9 @@ class OCSORTTracker(SORTTracker):
                  vel_consist_weight: float = 0.2,
                  vel_delta_t: int = 3,
                  **kwargs):
+        if lap is None:
+            raise RuntimeError('lap is not installed,\
+                 please install it by: pip install lap')
         super().__init__(motion=motion, **kwargs)
         self.obj_score_thr = obj_score_thr
         self.init_track_thr = init_track_thr

@@ -8,6 +8,7 @@ try:
     from mmcls.models.classifiers import ImageClassifier
 except ImportError:
     mmcls = None
+    ImageClassifier = object
 
 from mmdet.registry import MODELS
 from mmdet.structures import ReIDDataSample
