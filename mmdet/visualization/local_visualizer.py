@@ -4,7 +4,11 @@ from typing import Dict, List, Optional, Tuple, Union
 import cv2
 import mmcv
 import numpy as np
-import seaborn as sns
+
+try:
+    import seaborn as sns
+except ImportError:
+    sns = None
 import torch
 from mmengine.dist import master_only
 from mmengine.structures import InstanceData, PixelData
@@ -404,6 +408,9 @@ class DetLocalVisualizer(Visualizer):
 
 def random_color(seed):
     """Random a color according to the input seed."""
+    if sns is None:
+        raise RuntimeError('motmetrics is not installed,\
+                 please install it by: pip install seaborn')
     np.random.seed(seed)
     colors = sns.color_palette()
     color = colors[np.random.choice(range(len(colors)))]
