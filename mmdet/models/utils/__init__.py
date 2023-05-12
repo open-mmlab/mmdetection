@@ -4,9 +4,10 @@ from .gaussian_target import (gather_feat, gaussian_radius,
                               get_topk_from_heatmap, transpose_and_gather_feat)
 from .make_divisible import make_divisible
 from .misc import (aligned_bilinear, center_of_mass, empty_instances,
-                   filter_gt_instances, filter_scores_and_topk, flip_tensor,
-                   generate_coordinate, images_to_levels, interpolate_as,
-                   levels_to_images, mask2ndarray, multi_apply,
+                   filter_gt_instances, filter_invalid,
+                   filter_invalid_with_std, filter_scores_and_topk,
+                   flip_tensor, generate_coordinate, images_to_levels,
+                   interpolate_as, levels_to_images, mask2ndarray, multi_apply,
                    relative_coordinate_maps, rename_loss_dict,
                    reweight_loss_dict, samplelist_boxtype2tensor,
                    select_single_mlvl, sigmoid_geometric_mean,
@@ -26,5 +27,5 @@ __all__ = [
     'select_single_mlvl', 'unmap', 'images_to_levels',
     'samplelist_boxtype2tensor', 'filter_gt_instances', 'rename_loss_dict',
     'reweight_loss_dict', 'relative_coordinate_maps', 'aligned_bilinear',
-    'unfold_wo_center'
+    'unfold_wo_center', 'filter_invalid', 'filter_invalid_with_std'
 ]

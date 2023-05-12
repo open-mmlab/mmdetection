@@ -17,6 +17,7 @@ from .deformable_detr_head import DeformableDETRHead
 from .detr_head import DETRHead
 from .dino_head import DINOHead
 from .embedding_rpn_head import EmbeddingRPNHead
+from .fam3d_head import FAM3DHead
 from .fcos_head import FCOSHead
 from .fovea_head import FoveaHead
 from .free_anchor_retina_head import FreeAnchorRetinaHead
@@ -65,5 +66,5 @@ __all__ = [
     'CenterNetUpdateHead', 'RTMDetHead', 'RTMDetSepBNHead', 'CondInstBboxHead',
     'CondInstMaskHead', 'RTMDetInsHead', 'RTMDetInsSepBNHead',
     'BoxInstBboxHead', 'BoxInstMaskHead', 'ConditionalDETRHead', 'DINOHead',
-    'DABDETRHead'
+    'DABDETRHead', 'FAM3DHead'
 ]

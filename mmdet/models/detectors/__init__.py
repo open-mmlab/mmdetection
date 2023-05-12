@@ -8,6 +8,7 @@ from .cascade_rcnn import CascadeRCNN
 from .centernet import CenterNet
 from .condinst import CondInst
 from .conditional_detr import ConditionalDETR
+from .consistent_teacher import ConsistentTeacher
 from .cornernet import CornerNet
 from .crowddet import CrowdDet
 from .d2_wrapper import Detectron2Wrapper
@@ -67,5 +68,6 @@ __all__ = [
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
     'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector', 'SoftTeacher',
     'RTMDet', 'Detectron2Wrapper', 'CrowdDet', 'CondInst', 'BoxInst',
-    'DetectionTransformer', 'ConditionalDETR', 'DINO', 'DABDETR'
+    'DetectionTransformer', 'ConditionalDETR', 'DINO', 'DABDETR',
+    'ConsistentTeacher'
 ]

@@ -1,0 +1,46 @@
+Collections:
+  - Name: ConsistentTeacher
+    Metadata:
+      Training Data:
+        - COCO
+        - VOC0712
+      Training Techniques:
+        -
+        -
+      Training Resources: 8x A100 GPUs
+      Architecture:
+        - RetinaNet
+        - FPN
+        - FAM3D
+    Paper:
+      URL: https://arxiv.org/abs/2209.01589
+      Title: "Consistent-Teacher: Towards Reducing Inconsistent Pseudo-targets in Semi-supervised Object Detection"
+    README: configs/consistent_teacher/README.md
+    Code:
+      URL:
+      Version:
+
+Models:
+  - Name:
+    In Collection: ConsistentTeacher
+    Config: configs/consistent_teacher/
+    Metadata:
+      Iterations: 180000
+    Results:
+      - Task: Semi-Supervised Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP:
+    Weights:
+
+  - Name:
+    In Collection: ConsistentTeacher
+    Config: configs/consistent_teacher/
+    Metadata:
+      Iterations: 72000
+    Results:
+      - Task: Semi-Supervised Object Detection
+        Dataset: VOC0712
+        Metrics:
+          box AP:
+    Weights:
