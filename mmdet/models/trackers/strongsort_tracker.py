@@ -4,7 +4,12 @@ from typing import Optional, Tuple
 import numpy as np
 import torch
 from mmengine.structures import InstanceData
-from motmetrics.lap import linear_sum_assignment
+
+try:
+    import motmetrics
+    from motmetrics.lap import linear_sum_assignment
+except ImportError:
+    motmetrics = None
 from torch import Tensor
 
 from mmdet.models.utils import imrenormalize
@@ -70,6 +75,9 @@ class StrongSORTTracker(SORTTracker):
                  match_iou_thr: float = 0.7,
                  num_tentatives: int = 2,
                  **kwargs):
+        if motmetrics is None:
+            raise RuntimeError('motmetrics is not installed,\
+                 please install it by: pip install motmetrics')
         super().__init__(motion, obj_score_thr, reid, match_iou_thr,
                          num_tentatives, **kwargs)
 

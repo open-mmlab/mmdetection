@@ -4,7 +4,12 @@ from typing import List, Optional, Tuple
 import numpy as np
 import torch
 from mmengine.structures import InstanceData
-from motmetrics.lap import linear_sum_assignment
+
+try:
+    import motmetrics
+    from motmetrics.lap import linear_sum_assignment
+except ImportError:
+    motmetrics = None
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS
@@ -49,6 +54,9 @@ class SORTTracker(BaseTracker):
                  match_iou_thr: float = 0.7,
                  num_tentatives: int = 3,
                  **kwargs):
+        if motmetrics is None:
+            raise RuntimeError('motmetrics is not installed,\
+                 please install it by: pip install motmetrics')
         super().__init__(**kwargs)
         if motion is not None:
             self.motion = TASK_UTILS.build(motion)
