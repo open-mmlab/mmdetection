@@ -60,6 +60,7 @@ wget -c https://huggingface.co/bert-base-uncased/resolve/main/pytorch_model.bin
 cd ../../../..
 ```
 
+Vision Model
 Firstly, download UNINEXT R50 [weights](https://maildluteducn-my.sharepoint.com/:f:/g/personal/yan_bin_mail_dlut_edu_cn/ErbTZCzv0vJAoIMwa90_3qoBOFbHIJJTVxI58-kk2nfkhw?e=4qvjrR)
 
 Then, convert weights, please use the following command
