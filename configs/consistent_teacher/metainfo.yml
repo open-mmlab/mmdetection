@@ -5,11 +5,11 @@ Collections:
         - COCO
         - VOC0712
       Training Techniques:
-        -
-        -
-      Training Resources: 8x A100 GPUs
+        - SGD with momentum
+        - Weight decay
+      Training Resources: 8x V100 GPUs
       Architecture:
-        - RetinaNet
+        - ResNet
         - FPN
         - FAM3D
     Paper:
@@ -23,7 +23,7 @@ Collections:
 Models:
   - Name:
     In Collection: ConsistentTeacher
-    Config: configs/consistent_teacher/
+    Config: configs/consistent_teacher/consistent-teacher_retinanet_r50_fpn_180k_semi-0.1-coco.py
     Metadata:
       Iterations: 180000
     Results:
@@ -35,7 +35,55 @@ Models:
 
   - Name:
     In Collection: ConsistentTeacher
-    Config: configs/consistent_teacher/
+    Config: configs/consistent_teacher/consistent-teacher_retinanet_r50_fpn_180k_semi-0.01-coco.py
+    Metadata:
+      Iterations: 180000
+    Results:
+      - Task: Semi-Supervised Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP:
+    Weights:
+
+  - Name:
+    In Collection: ConsistentTeacher
+    Config: configs/consistent_teacher/consistent-teacher_retinanet_r50_fpn_180k_semi-0.02-coco.py
+    Metadata:
+      Iterations: 180000
+    Results:
+      - Task: Semi-Supervised Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP:
+    Weights:
+
+  - Name:
+    In Collection: ConsistentTeacher
+    Config: configs/consistent_teacher/consistent-teacher_retinanet_r50_fpn_180k_semi-0.05-coco.py
+    Metadata:
+      Iterations: 180000
+    Results:
+      - Task: Semi-Supervised Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP:
+    Weights:
+
+  - Name:
+    In Collection: ConsistentTeacher
+    Config: configs/consistent_teacher/consistent-teacher_retinanet_r50_fpn_720k_semi-coco.py
+    Metadata:
+      Iterations: 720000
+    Results:
+      - Task: Semi-Supervised Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP:
+    Weights:
+
+  - Name:
+    In Collection: ConsistentTeacher
+    Config: configs/consistent_teacher/consistent-teacher_retinanet_r50_fpn_72k_semi-voc0712.py
     Metadata:
       Iterations: 72000
     Results:

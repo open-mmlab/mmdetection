@@ -14,10 +14,14 @@ In this study, we dive deep into the inconsistency of pseudo targets in semi-sup
 
 ## Results and Models
 
-|       Model       | Detector  | Labeled Dataset | Iteration | box AP |    Config    |         Download         |
-| :---------------: | :-------: | :-------------: | :-------: | :----: | :----------: | :----------------------: |
-| ConsistentTeacher | RetinaNet |    COCO-10%     |   180k    |        | [config](<>) | [model](<>) \| [log](<>) |
-| ConsistentTeacher | RetinaNet |     VOC0712     |    72k    |        | [config](<>) | [model](<>) \| [log](<>) |
+|       Model       | Detector  | Labeled Dataset | Iteration | box AP |                                 Config                                  |         Download         |
+| :---------------: | :-------: | :-------------: | :-------: | :----: | :---------------------------------------------------------------------: | :----------------------: |
+| ConsistentTeacher | RetinaNet |    COCO-10%     |   180k    |        | [config](./consistent-teacher_retinanet_r50_fpn_180k_semi-0.1-coco.py)  | [model](<>) \| [log](<>) |
+| ConsistentTeacher | RetinaNet |     COCO-1%     |   180k    |        | [config](./consistent-teacher_retinanet_r50_fpn_180k_semi-0.01-coco.py) | [model](<>) \| [log](<>) |
+| ConsistentTeacher | RetinaNet |     COCO-2%     |   180k    |        | [config](./consistent-teacher_retinanet_r50_fpn_180k_semi-0.02-coco.py) | [model](<>) \| [log](<>) |
+| ConsistentTeacher | RetinaNet |     COCO-5%     |   180k    |        | [config](./consistent-teacher_retinanet_r50_fpn_180k_semi-0.05-coco.py) | [model](<>) \| [log](<>) |
+| ConsistentTeacher | RetinaNet |    COCO-100%    |   720k    |        |   [config](./consistent-teacher_retinanet_r50_fpn_720k_semi-coco.py)    | [model](<>) \| [log](<>) |
+| ConsistentTeacher | RetinaNet |     VOC0712     |    72k    |        |  [config](./consistent-teacher_retinanet_r50_fpn_72k_semi-voc0712.py)   | [model](<>) \| [log](<>) |
 
 ## Citation
 
