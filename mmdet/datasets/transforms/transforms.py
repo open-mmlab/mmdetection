@@ -106,23 +106,6 @@ class Resize(MMCV_Resize):
             if self.clip_object_border:
                 results['gt_bboxes'].clip_(results['img_shape'])
 
-    def _resize_seg(self, results: dict) -> None:
-        """Resize semantic segmentation map with ``results['scale']``."""
-        if results.get('gt_seg_map', None) is not None:
-            if self.keep_ratio:
-                gt_seg = mmcv.imrescale(
-                    results['gt_seg_map'],
-                    results['scale'],
-                    interpolation='nearest',
-                    backend=self.backend)
-            else:
-                gt_seg = mmcv.imresize(
-                    results['gt_seg_map'],
-                    results['scale'],
-                    interpolation='nearest',
-                    backend=self.backend)
-            results['gt_seg_map'] = gt_seg
-
     def _record_homography_matrix(self, results: dict) -> None:
         """Record the homography matrix for the Resize."""
         w_scale, h_scale = results['scale_factor']
