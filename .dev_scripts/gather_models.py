@@ -33,10 +33,14 @@ def process_checkpoint(in_file, out_file):
     # remove optimizer for smaller file size
     if 'optimizer' in checkpoint:
         del checkpoint['optimizer']
+    if 'ema_state_dict' in checkpoint:
+        del checkpoint['ema_state_dict']
 
     # remove ema state_dict
     for key in list(checkpoint['state_dict']):
         if key.startswith('ema_'):
+            checkpoint['state_dict'].pop(key)
+        elif key.startswith('data_preprocessor'):
             checkpoint['state_dict'].pop(key)
 
     # if it is necessary to remove some sensitive data in checkpoint['meta'],
@@ -53,12 +57,12 @@ def process_checkpoint(in_file, out_file):
 
 def is_by_epoch(config):
     cfg = Config.fromfile('./configs/' + config)
-    return cfg.train_cfg.type == 'EpochBasedRunner'
+    return cfg.train_cfg.type == 'EpochBasedTrainLoop'
 
 
 def get_final_epoch_or_iter(config):
     cfg = Config.fromfile('./configs/' + config)
-    if cfg.train_cfg.type == 'EpochBasedRunner':
+    if cfg.train_cfg.type == 'EpochBasedTrainLoop':
         return cfg.train_cfg.max_epochs
     else:
         return cfg.train_cfg.max_iters
@@ -169,7 +173,7 @@ def convert_model_info_to_pwc(model_infos):
                     Metrics={'PQ': metric}))
         pwc_model_info['Results'] = results
 
-        link_string = 'https://download.openmmlab.com/mmdetection/v2.0/'
+        link_string = 'https://download.openmmlab.com/mmdetection/v3.0/'
         link_string += '{}/{}'.format(model['config'].rstrip('.py'),
                                       osp.split(model['model_path'])[-1])
         pwc_model_info['Weights'] = link_string
