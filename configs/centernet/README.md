@@ -30,9 +30,9 @@ Note:
 
 ## CenterNet Update
 
-| Backbone  | Style | Lr schd | MS train | Mem (GB) | Box AP |                          Config                          |         Download         |
-| :-------: | :---: | :-----: | :------: | :------: | :----: | :------------------------------------------------------: | :----------------------: |
-| ResNet-50 | caffe |   1x    |   True   |   3.3    |  40.2  | [config](./centernet-update_r50-caffe_fpn_ms-1x_coco.py) | [model](<>) \| [log](<>) |
+| Backbone  | Style | Lr schd | MS train | Mem (GB) | Box AP |                          Config                          |                                                                                                                                                                               Download                                                                                                                                                                               |
+| :-------: | :---: | :-----: | :------: | :------: | :----: | :------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| ResNet-50 | caffe |   1x    |   True   |   3.3    |  40.2  | [config](./centernet-update_r50-caffe_fpn_ms-1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/centernet/centernet-update_r50-caffe_fpn_ms-1x_coco/centernet-update_r50-caffe_fpn_ms-1x_coco_20230512_203845-8306baf2.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/centernet/centernet-update_r50-caffe_fpn_ms-1x_coco/centernet-update_r50-caffe_fpn_ms-1x_coco_20230512_203845.log.json) |
 
 CenterNet Update from the paper of [Probabilistic two-stage detection](https://arxiv.org/abs/2103.07461). The author has updated CenterNet to greatly improve performance and convergence speed.
 The [Details](https://github.com/xingyizhou/CenterNet2/blob/master/docs/MODEL_ZOO.md) are as follows:
@@ -43,6 +43,8 @@ The [Details](https://github.com/xingyizhou/CenterNet2/blob/master/docs/MODEL_ZO
 - Using RetinaNet-style optimizer (SGD), learning rate rule (0.01 for each batch size 16), and schedule (12 epochs)
 - Added FPN neck layers, and assigns objects to FPN levels based on a fixed size range.
 - Using standard NMS instead of max pooling
+
+Note: We found that the performance of the r50 model fluctuates greatly and sometimes it does not converge. If the model does not converge, you can try running it again or reduce the learning rate.
 
 ## Citation
 
