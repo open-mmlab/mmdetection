@@ -14,7 +14,14 @@ model = dict(
         bgr_to_rgb=False,
         pad_size_divisor=32),
     backbone=dict(type='GSwinTransformer'),
-    neck=dict(type='GFPN'),
+    neck=dict(
+            type='FPN',
+            in_channels=[0, 192, 384, 768],
+            out_channels=256,
+            start_level=1,
+            relu_before_extra_convs=True,
+            add_extra_convs='on_output',
+            num_outs=5),
     bbox_head=dict(
         type='ATSSVLFusionHead',
         lang_model_name=lang_model_name,
