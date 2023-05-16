@@ -17,12 +17,48 @@ convert_dict_fpn = {
 }
 
 
+def correct_unfold_reduction_order(x):
+    out_channel, in_channel = x.shape
+    x = x.reshape(out_channel, 4, in_channel // 4)
+    x = x[:, [0, 2, 1, 3], :].transpose(1,
+                                        2).reshape(out_channel, in_channel)
+    return x
+
+
+def correct_unfold_norm_order(x):
+    in_channel = x.shape[0]
+    x = x.reshape(4, in_channel // 4)
+    x = x[[0, 2, 1, 3], :].transpose(0, 1).reshape(in_channel)
+    return x
+
+
 def convert_eva(ckpt):
     new_ckpt = OrderedDict()
 
     for k, v in list(ckpt.items()):
+        new_v = v
         if 'module.backbone.body' in k:
             new_k = k.replace('module.backbone.body', 'backbone')
+            if 'patch_embed.proj' in new_k:
+                new_k = new_k.replace('patch_embed.proj', 'patch_embed.projection')
+            elif 'pos_drop' in new_k:
+                new_k = new_k.replace('pos_drop', 'drop_after_pos')
+
+            if 'layers' in new_k:
+                new_k = new_k.replace('layers', 'stages')
+                if 'mlp.fc1' in new_k:
+                    new_k = new_k.replace('mlp.fc1', 'ffn.layers.0.0')
+                elif 'mlp.fc2' in new_k:
+                    new_k = new_k.replace('mlp.fc2', 'ffn.layers.1')
+                elif 'attn' in new_k:
+                    new_k = new_k.replace('attn', 'attn.w_msa')
+
+                if 'downsample' in k:
+                    if 'reduction.' in k:
+                        new_v = correct_unfold_reduction_order(v)
+                    elif 'norm.' in k:
+                        new_v = correct_unfold_norm_order(v)
+
         elif 'module.backbone.fpn' in k:
             old_k = k.replace('.weight', '')
             old_k = old_k.replace('.bias', '')
@@ -42,7 +78,7 @@ def convert_eva(ckpt):
         else:
             print('skip:', k)
             continue
-        new_ckpt[new_k] = v
+        new_ckpt[new_k] = new_v
     return new_ckpt
 
 
