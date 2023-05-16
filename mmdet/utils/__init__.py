@@ -7,6 +7,7 @@ from .logger import get_caller_name, log_img_scale
 from .memory import AvoidCUDAOOM, AvoidOOM
 from .misc import (find_latest_checkpoint, get_test_pipeline_cfg,
                    update_data_root)
+from .mot_error_visualize import imshow_mot_errors
 from .replace_cfg_vals import replace_cfg_vals
 from .setup_env import (register_all_modules, setup_cache_size_limit_of_dynamo,
                         setup_multi_processes)
@@ -23,5 +24,5 @@ __all__ = [
     'sync_random_seed', 'ConfigType', 'InstanceList', 'MultiConfig',
     'OptConfigType', 'OptInstanceList', 'OptMultiConfig', 'OptPixelList',
     'PixelList', 'RangeType', 'get_test_pipeline_cfg',
-    'setup_cache_size_limit_of_dynamo'
+    'setup_cache_size_limit_of_dynamo', 'imshow_mot_errors'
 ]

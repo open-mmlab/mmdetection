@@ -197,23 +197,6 @@ class Resize(MMCV_Resize):
             if self.clip_object_border:
                 results['gt_bboxes'].clip_(results['img_shape'])
 
-    def _resize_seg(self, results: dict) -> None:
-        """Resize semantic segmentation map with ``results['scale']``."""
-        if results.get('gt_seg_map', None) is not None:
-            if self.keep_ratio:
-                gt_seg = mmcv.imrescale(
-                    results['gt_seg_map'],
-                    results['scale'],
-                    interpolation='nearest',
-                    backend=self.backend)
-            else:
-                gt_seg = mmcv.imresize(
-                    results['gt_seg_map'],
-                    results['scale'],
-                    interpolation='nearest',
-                    backend=self.backend)
-            results['gt_seg_map'] = gt_seg
-
     def _record_homography_matrix(self, results: dict) -> None:
         """Record the homography matrix for the Resize."""
         w_scale, h_scale = results['scale_factor']
@@ -742,6 +725,7 @@ class RandomCrop(BaseTransform):
     - gt_masks (optional)
     - gt_ignore_flags (optional)
     - gt_seg_map (optional)
+    - gt_instances_ids (options, only used in MOT/VIS)
 
     Added Keys:
 
@@ -872,6 +856,11 @@ class RandomCrop(BaseTransform):
                 if self.recompute_bbox:
                     results['gt_bboxes'] = results['gt_masks'].get_bboxes(
                         type(results['gt_bboxes']))
+
+            # We should remove the instance ids corresponding to invalid boxes.
+            if results.get('gt_instances_ids', None) is not None:
+                results['gt_instances_ids'] = \
+                    results['gt_instances_ids'][valid_inds]
 
         # crop semantic seg
         if results.get('gt_seg_map', None) is not None:

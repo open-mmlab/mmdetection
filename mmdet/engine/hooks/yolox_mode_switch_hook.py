@@ -30,6 +30,7 @@ class YOLOXModeSwitchHook(Hook):
         self.num_last_epochs = num_last_epochs
         self.skip_type_keys = skip_type_keys
         self._restart_dataloader = False
+        self._has_switched = False
 
     def before_train_epoch(self, runner) -> None:
         """Close mosaic and mixup augmentation and switches to use L1 loss."""
@@ -39,7 +40,9 @@ class YOLOXModeSwitchHook(Hook):
         # TODO: refactor after mmengine using model wrapper
         if is_model_wrapper(model):
             model = model.module
-        if (epoch + 1) == runner.max_epochs - self.num_last_epochs:
+        epoch_to_be_switched = ((epoch + 1) >=
+                                runner.max_epochs - self.num_last_epochs)
+        if epoch_to_be_switched and not self._has_switched:
             runner.logger.info('No mosaic and mixup aug now!')
             # The dataset pipeline cannot be updated when persistent_workers
             # is True, so we need to force the dataloader's multi-process
@@ -51,7 +54,11 @@ class YOLOXModeSwitchHook(Hook):
                 train_loader._iterator = None
                 self._restart_dataloader = True
             runner.logger.info('Add additional L1 loss now!')
-            model.bbox_head.use_l1 = True
+            if hasattr(model, 'detector'):
+                model.detector.bbox_head.use_l1 = True
+            else:
+                model.bbox_head.use_l1 = True
+            self._has_switched = True
         else:
             # Once the restart is complete, we need to restore
             # the initialization flag.

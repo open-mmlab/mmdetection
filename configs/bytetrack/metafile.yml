@@ -1,0 +1,53 @@
+Collections:
+  - Name: ByteTrack
+    Metadata:
+      Training Techniques:
+        - SGD with Momentum
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - YOLOX
+    Paper:
+      URL: https://arxiv.org/abs/2110.06864
+      Title: ByteTrack Multi-Object Tracking by Associating Every Detection Box
+    README: configs/bytetrack/README.md
+
+Models:
+  - Name: bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval
+    In Collection: ByteTrack
+    Config: configs/bytetrack/bytetrack_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval.py
+    Metadata:
+      Training Data: CrowdHuman + MOT17-half-train
+    Results:
+      - Task: Multiple Object Tracking
+        Dataset: MOT17-half-val
+        Metrics:
+          HOTA: 67.5
+          MOTA: 78.6
+          IDF1: 78.5
+    Weights: https://download.openmmlab.com/mmtracking/mot/bytetrack/bytetrack_yolox_x/bytetrack_yolox_x_crowdhuman_mot17-private-half_20211218_205500-1985c9f0.pth
+
+  - Name: bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17test
+    In Collection: ByteTrack
+    Config: configs/bytetrack/bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17test.py
+    Metadata:
+      Training Data: CrowdHuman + MOT17-half-train
+    Results:
+      - Task: Multiple Object Tracking
+        Dataset: MOT17-test
+        Metrics:
+          MOTA: 78.1
+          IDF1: 74.8
+    Weights: https://download.openmmlab.com/mmtracking/mot/bytetrack/bytetrack_yolox_x/bytetrack_yolox_x_crowdhuman_mot17-private-half_20211218_205500-1985c9f0.pth
+
+  - Name: bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot20train_test-mot20test
+    In Collection: ByteTrack
+    Config: configs/bytetrack/bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot20train_test-mot20test.py
+    Metadata:
+      Training Data: CrowdHuman + MOT20-train
+    Results:
+      - Task: Multiple Object Tracking
+        Dataset: MOT20-test
+        Metrics:
+          MOTA: 77.0
+          IDF1: 75.4
+    Weights: https://download.openmmlab.com/mmtracking/mot/bytetrack/bytetrack_yolox_x/bytetrack_yolox_x_crowdhuman_mot20-private_20220506_101040-9ce38a60.pth

@@ -5,11 +5,11 @@ import torch.nn.functional as F
 from mmengine.utils import digit_version
 
 from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DiceLoss,
-                                 DistributionFocalLoss, FocalLoss,
+                                 DistributionFocalLoss, EQLV2Loss, FocalLoss,
                                  GaussianFocalLoss,
                                  KnowledgeDistillationKLDivLoss, L1Loss,
-                                 MSELoss, QualityFocalLoss, SeesawLoss,
-                                 SmoothL1Loss, VarifocalLoss)
+                                 MarginL2Loss, MSELoss, QualityFocalLoss,
+                                 SeesawLoss, SmoothL1Loss, VarifocalLoss)
 from mmdet.models.losses.ghm_loss import GHMC, GHMR
 from mmdet.models.losses.iou_loss import (BoundedIoULoss, CIoULoss, DIoULoss,
                                           EIoULoss, GIoULoss, IoULoss)
@@ -69,7 +69,7 @@ def test_QualityFocalLoss_Loss(loss_class, activated):
 
 @pytest.mark.parametrize('loss_class', [
     IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss, EIoULoss, MSELoss,
-    L1Loss, SmoothL1Loss, BalancedL1Loss
+    L1Loss, SmoothL1Loss, BalancedL1Loss, MarginL2Loss
 ])
 @pytest.mark.parametrize('input_shape', [(10, 4), (0, 4)])
 def test_regression_losses(loss_class, input_shape):
@@ -289,3 +289,14 @@ def test_dice_loss(naive_dice):
     with pytest.raises(AssertionError):
         weight = torch.rand((8))
         loss_class(naive_dice=naive_dice)(pred, target, weight)
+
+
+@pytest.mark.parametrize('loss_class', [EQLV2Loss])
+@pytest.mark.parametrize('reduction', ['mean'])
+def test_eqlv2_loss(loss_class, reduction):
+    cls_score = torch.randn((1204, 1204))
+    label = torch.randint(0, 2, (1204, ))
+    weight = None
+
+    loss = loss_class()(cls_score, label, weight)
+    assert isinstance(loss, torch.Tensor)
