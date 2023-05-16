@@ -931,5 +931,6 @@ class ATSSVLFusionHead(ATSSHead):
             with_nms=with_nms,
             img_meta=img_meta)
         # important
+        predictions.bboxes[:, 2:] = predictions.bboxes[:, 2:] + 1
         predictions.labels = predictions.labels + 1
         return predictions
