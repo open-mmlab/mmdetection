@@ -20,8 +20,7 @@ convert_dict_fpn = {
 def correct_unfold_reduction_order(x):
     out_channel, in_channel = x.shape
     x = x.reshape(out_channel, 4, in_channel // 4)
-    x = x[:, [0, 2, 1, 3], :].transpose(1,
-                                        2).reshape(out_channel, in_channel)
+    x = x[:, [0, 2, 1, 3], :].transpose(1, 2).reshape(out_channel, in_channel)
     return x
 
 
@@ -40,7 +39,8 @@ def convert_eva(ckpt):
         if 'module.backbone.body' in k:
             new_k = k.replace('module.backbone.body', 'backbone')
             if 'patch_embed.proj' in new_k:
-                new_k = new_k.replace('patch_embed.proj', 'patch_embed.projection')
+                new_k = new_k.replace('patch_embed.proj',
+                                      'patch_embed.projection')
             elif 'pos_drop' in new_k:
                 new_k = new_k.replace('pos_drop', 'drop_after_pos')
 
@@ -64,12 +64,14 @@ def convert_eva(ckpt):
             old_k = old_k.replace('.bias', '')
             new_k = k.replace(old_k, convert_dict_fpn[old_k])
         elif 'module.language_backbone' in k:
-            new_k = k.replace('module.language_backbone', 'language_model.language_backbone')
+            new_k = k.replace('module.language_backbone',
+                              'language_model.language_backbone')
             if 'pooler' in k:
                 continue
         elif 'module.rpn' in k:
             if 'module.rpn.head.scales' in k:
-                new_k = k.replace('module.rpn.head.scales', 'bbox_head.head.scales')
+                new_k = k.replace('module.rpn.head.scales',
+                                  'bbox_head.head.scales')
             else:
                 new_k = k.replace('module.rpn', 'bbox_head')
 
@@ -85,9 +87,11 @@ def convert_eva(ckpt):
 def main():
     parser = argparse.ArgumentParser(
         description='Convert keys in pretrained eva '
-                    'models to mmpretrain style.')
-    parser.add_argument('--src', default='/home/PJLAB/huanghaian/yolo/GLIP/glip_a_tiny_o365.pth',
-                        help='src model path or url')
+        'models to mmpretrain style.')
+    parser.add_argument(
+        '--src',
+        default='/home/PJLAB/huanghaian/yolo/GLIP/glip_a_tiny_o365.pth',
+        help='src model path or url')
     # The dst path must be a full path of the new checkpoint.
     parser.add_argument('--dst', default='../../glip_t.pth', help='save path')
     args = parser.parse_args()

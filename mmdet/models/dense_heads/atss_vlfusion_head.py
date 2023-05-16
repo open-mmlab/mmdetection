@@ -1,33 +1,28 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Tuple
+import copy
+import math
+from typing import List, Optional, Tuple
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import Scale
-from torch import Tensor
-import math
-from mmdet.registry import MODELS
-from .atss_head import ATSSHead
-from mmcv.ops.modulated_deform_conv import ModulatedDeformConv2d
 import torch.nn.functional as F
-from mmcv.ops.nms import batched_nms
-from mmengine.structures import InstanceData
-from mmdet.structures.bbox import scale_boxes
-from mmdet.structures import DetDataSample
-
-from transformers import BertConfig
 import torch.utils.checkpoint as checkpoint
-from typing import List, Optional, Tuple
-from mmdet.utils import InstanceList, OptMultiConfig
+from mmcv.cnn import Scale
+from mmcv.ops.modulated_deform_conv import ModulatedDeformConv2d
 from mmengine.config import ConfigDict
-from ..utils import (filter_scores_and_topk, select_single_mlvl,
-                     unpack_gt_instances)
-import copy
-from mmdet.structures.bbox import (cat_boxes, get_box_tensor, get_box_wh,
-                                   scale_boxes)
+from mmengine.structures import InstanceData
+from torch import Tensor
+from transformers import BertConfig
+
+from mmdet.registry import MODELS
+from mmdet.structures.bbox import cat_boxes
+from mmdet.utils import InstanceList
+from ..utils import filter_scores_and_topk, select_single_mlvl
+from .atss_head import ATSSHead
 
 
 class Conv3x3Norm(torch.nn.Module):
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -38,25 +33,33 @@ class Conv3x3Norm(torch.nn.Module):
         super(Conv3x3Norm, self).__init__()
 
         if use_dcn:
-            self.conv = ModulatedDeformConv2d(in_channels,
-                                              out_channels,
-                                              kernel_size=3,
-                                              stride=stride,
-                                              padding=1,
-                                              groups=groups)
+            self.conv = ModulatedDeformConv2d(
+                in_channels,
+                out_channels,
+                kernel_size=3,
+                stride=stride,
+                padding=1,
+                groups=groups)
         else:
-            self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, groups=groups)
+            self.conv = nn.Conv2d(
+                in_channels,
+                out_channels,
+                kernel_size=3,
+                stride=stride,
+                padding=1,
+                groups=groups)
 
         if isinstance(norm_type, (list, tuple)):
             assert len(norm_type) == 2
-            assert norm_type[0] == "gn"
+            assert norm_type[0] == 'gn'
             gn_group = norm_type[1]
             norm_type = norm_type[0]
 
-        if norm_type == "bn":
+        if norm_type == 'bn':
             bn_op = nn.BatchNorm2d(out_channels)
-        elif norm_type == "gn":
-            bn_op = nn.GroupNorm(num_groups=gn_group, num_channels=out_channels)
+        elif norm_type == 'gn':
+            bn_op = nn.GroupNorm(
+                num_groups=gn_group, num_channels=out_channels)
         if norm_type is not None:
             self.bn = bn_op
         else:
@@ -70,6 +73,7 @@ class Conv3x3Norm(torch.nn.Module):
 
 
 class h_sigmoid(nn.Module):
+
     def __init__(self, inplace=True, h_max=1):
         super(h_sigmoid, self).__init__()
         self.relu = nn.ReLU6(inplace=inplace)
@@ -90,8 +94,17 @@ def _make_divisible(v, divisor, min_value=None):
 
 
 class DYReLU(nn.Module):
-    def __init__(self, inp, oup, reduction=4, lambda_a=1.0, K2=True, use_bias=True, use_spatial=False,
-                 init_a=[1.0, 0.0], init_b=[0.0, 0.0]):
+
+    def __init__(self,
+                 inp,
+                 oup,
+                 reduction=4,
+                 lambda_a=1.0,
+                 K2=True,
+                 use_bias=True,
+                 use_spatial=False,
+                 init_a=[1.0, 0.0],
+                 init_b=[0.0, 0.0]):
         super(DYReLU, self).__init__()
         self.oup = oup
         self.lambda_a = lambda_a * 2
@@ -115,11 +128,8 @@ class DYReLU(nn.Module):
         # print('init_a: {}, init_b: {}'.format(self.init_a, self.init_b))
 
         self.fc = nn.Sequential(
-            nn.Linear(inp, squeeze),
-            nn.ReLU(inplace=True),
-            nn.Linear(squeeze, oup * self.exp),
-            h_sigmoid()
-        )
+            nn.Linear(inp, squeeze), nn.ReLU(inplace=True),
+            nn.Linear(squeeze, oup * self.exp), h_sigmoid())
         if use_spatial:
             self.spa = nn.Sequential(
                 nn.Conv2d(inp, 1, kernel_size=1),
@@ -181,14 +191,14 @@ def permute_and_flatten(layer, N, A, C, H, W):
 
 
 class DyConv(torch.nn.Module):
+
     def __init__(self,
                  conv_func,
                  in_channels=256,
                  out_channels=256,
                  use_dyfuse=True,
                  use_dyrelu=False,
-                 use_dcn=False
-                 ):
+                 use_dcn=False):
         super(DyConv, self).__init__()
 
         self.DyConv = nn.ModuleList()
@@ -211,7 +221,8 @@ class DyConv(torch.nn.Module):
             self.relu = nn.ReLU()
 
         if use_dcn:
-            self.offset = nn.Conv2d(in_channels, 27, kernel_size=3, stride=1, padding=1)
+            self.offset = nn.Conv2d(
+                in_channels, 27, kernel_size=3, stride=1, padding=1)
         else:
             self.offset = None
 
@@ -231,8 +242,8 @@ class DyConv(torch.nn.Module):
                         m.bias.data.zero_()
 
     def forward(self, inputs):
-        visual_feats = inputs["visual"]
-        language_dict_features = inputs["lang"]
+        visual_feats = inputs['visual']
+        language_dict_features = inputs['lang']
 
         next_x = []
         for level, feature in enumerate(visual_feats):
@@ -247,10 +258,14 @@ class DyConv(torch.nn.Module):
             temp_fea = [self.DyConv[1](feature, **conv_args)]
 
             if level > 0:
-                temp_fea.append(self.DyConv[2](visual_feats[level - 1], **conv_args))
+                temp_fea.append(self.DyConv[2](visual_feats[level - 1],
+                                               **conv_args))
             if level < len(visual_feats) - 1:
-                temp_fea.append(F.upsample_bilinear(self.DyConv[0](visual_feats[level + 1], **conv_args),
-                                                    size=[feature.size(2), feature.size(3)]))
+                temp_fea.append(
+                    F.upsample_bilinear(
+                        self.DyConv[0](visual_feats[level + 1], **conv_args),
+                        size=[feature.size(2),
+                              feature.size(3)]))
             mean_fea = torch.mean(torch.stack(temp_fea), dim=0, keepdim=False)
 
             if self.AttnConv is not None:
@@ -263,14 +278,14 @@ class DyConv(torch.nn.Module):
                 res_fea = torch.stack(res_fea)
                 spa_pyr_attn = self.h_sigmoid(torch.stack(attn_fea))
 
-                mean_fea = torch.mean(res_fea * spa_pyr_attn, dim=0, keepdim=False)
+                mean_fea = torch.mean(
+                    res_fea * spa_pyr_attn, dim=0, keepdim=False)
 
             next_x.append(mean_fea)
 
         next_x = [self.relu(item) for item in next_x]
 
-        features_dict = {"visual": next_x,
-                         "lang": language_dict_features}
+        features_dict = {'visual': next_x, 'lang': language_dict_features}
 
         return features_dict
 
@@ -280,7 +295,14 @@ from mmengine.model import BaseModel
 
 # TODO: move VLFusion related Classes to a separate file
 class BiMultiHeadAttention(nn.Module):
-    def __init__(self, v_dim, l_dim, embed_dim, num_heads, dropout=0.1, cfg=None):
+
+    def __init__(self,
+                 v_dim,
+                 l_dim,
+                 embed_dim,
+                 num_heads,
+                 dropout=0.1,
+                 cfg=None):
         super(BiMultiHeadAttention, self).__init__()
 
         self.embed_dim = embed_dim
@@ -290,9 +312,9 @@ class BiMultiHeadAttention(nn.Module):
         self.l_dim = l_dim
 
         assert (
-                self.head_dim * self.num_heads == self.embed_dim
-        ), f"embed_dim must be divisible by num_heads (got `embed_dim`: {self.embed_dim} and `num_heads`: {self.num_heads})."
-        self.scale = self.head_dim ** (-0.5)
+            self.head_dim * self.num_heads == self.embed_dim
+        ), f'embed_dim must be divisible by num_heads (got `embed_dim`: {self.embed_dim} and `num_heads`: {self.num_heads}).'
+        self.scale = self.head_dim**(-0.5)
         self.dropout = dropout
 
         self.v_proj = nn.Linear(self.v_dim, self.embed_dim)
@@ -310,7 +332,8 @@ class BiMultiHeadAttention(nn.Module):
         self._reset_parameters()
 
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
-        return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
+        return tensor.view(bsz, seq_len, self.num_heads,
+                           self.head_dim).transpose(1, 2).contiguous()
 
     def _reset_parameters(self):
         nn.init.xavier_uniform_(self.v_proj.weight)
@@ -335,7 +358,8 @@ class BiMultiHeadAttention(nn.Module):
         value_l_states = self._shape(self.values_l_proj(l), -1, bsz)
 
         proj_shape = (bsz * self.num_heads, -1, self.head_dim)
-        query_states = self._shape(query_states, tgt_len, bsz).view(*proj_shape)
+        query_states = self._shape(query_states, tgt_len,
+                                   bsz).view(*proj_shape)
         key_states = key_states.view(*proj_shape)
         value_v_states = value_v_states.view(*proj_shape)
         value_l_states = value_l_states.view(*proj_shape)
@@ -345,7 +369,7 @@ class BiMultiHeadAttention(nn.Module):
 
         if attn_weights.size() != (bsz * self.num_heads, tgt_len, src_len):
             raise ValueError(
-                f"Attention weights should be of size {(bsz * self.num_heads, tgt_len, src_len)}, but is {attn_weights.size()}"
+                f'Attention weights should be of size {(bsz * self.num_heads, tgt_len, src_len)}, but is {attn_weights.size()}'
             )
 
         # attn_weights_l = nn.functional.softmax(attn_weights.transpose(1, 2), dim=-1)
@@ -354,21 +378,26 @@ class BiMultiHeadAttention(nn.Module):
             attn_weights = attn_weights - attn_weights.max()
 
         if self.clamp_min_for_underflow:
-            attn_weights = torch.clamp(attn_weights,
-                                       min=-50000)  # Do not increase -50000, data type half has quite limited range
+            attn_weights = torch.clamp(
+                attn_weights, min=-50000
+            )  # Do not increase -50000, data type half has quite limited range
         if self.clamp_max_for_overflow:
-            attn_weights = torch.clamp(attn_weights,
-                                       max=50000)  # Do not increase 50000, data type half has quite limited range
+            attn_weights = torch.clamp(
+                attn_weights, max=50000
+            )  # Do not increase 50000, data type half has quite limited range
 
         attn_weights_T = attn_weights.transpose(1, 2)
-        attn_weights_l = (attn_weights_T - torch.max(attn_weights_T, dim=-1, keepdim=True)[
-            0])
+        attn_weights_l = (
+            attn_weights_T -
+            torch.max(attn_weights_T, dim=-1, keepdim=True)[0])
         if self.clamp_min_for_underflow:
-            attn_weights_l = torch.clamp(attn_weights_l,
-                                         min=-50000)  # Do not increase -50000, data type half has quite limited range
+            attn_weights_l = torch.clamp(
+                attn_weights_l, min=-50000
+            )  # Do not increase -50000, data type half has quite limited range
         if self.clamp_max_for_overflow:
-            attn_weights_l = torch.clamp(attn_weights_l,
-                                         max=50000)  # Do not increase 50000, data type half has quite limited range
+            attn_weights_l = torch.clamp(
+                attn_weights_l, max=50000
+            )  # Do not increase 50000, data type half has quite limited range
 
         attn_weights_l = attn_weights_l.softmax(dim=-1)
 
@@ -376,38 +405,47 @@ class BiMultiHeadAttention(nn.Module):
             assert (attention_mask_l.dim() == 2)
             attention_mask = attention_mask_l.unsqueeze(1).unsqueeze(1)
             attention_mask = attention_mask.expand(bsz, 1, tgt_len, src_len)
-            attention_mask = attention_mask.masked_fill(attention_mask == 0, -9e15)
+            attention_mask = attention_mask.masked_fill(
+                attention_mask == 0, -9e15)
 
             if attention_mask.size() != (bsz, 1, tgt_len, src_len):
                 raise ValueError(
-                    f"Attention mask should be of size {(bsz, 1, tgt_len, src_len)}"
+                    f'Attention mask should be of size {(bsz, 1, tgt_len, src_len)}'
                 )
-            attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len) + attention_mask
-            attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
+            attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len,
+                                             src_len) + attention_mask
+            attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len,
+                                             src_len)
 
         attn_weights_v = nn.functional.softmax(attn_weights, dim=-1)
 
-        attn_probs_v = F.dropout(attn_weights_v, p=self.dropout, training=self.training)
-        attn_probs_l = F.dropout(attn_weights_l, p=self.dropout, training=self.training)
+        attn_probs_v = F.dropout(
+            attn_weights_v, p=self.dropout, training=self.training)
+        attn_probs_l = F.dropout(
+            attn_weights_l, p=self.dropout, training=self.training)
 
         attn_output_v = torch.bmm(attn_probs_v, value_l_states)
         attn_output_l = torch.bmm(attn_probs_l, value_v_states)
 
-        if attn_output_v.size() != (bsz * self.num_heads, tgt_len, self.head_dim):
+        if attn_output_v.size() != (bsz * self.num_heads, tgt_len,
+                                    self.head_dim):
             raise ValueError(
-                f"`attn_output_v` should be of size {(bsz, self.num_heads, tgt_len, self.head_dim)}, but is {attn_output_v.size()}"
+                f'`attn_output_v` should be of size {(bsz, self.num_heads, tgt_len, self.head_dim)}, but is {attn_output_v.size()}'
             )
 
-        if attn_output_l.size() != (bsz * self.num_heads, src_len, self.head_dim):
+        if attn_output_l.size() != (bsz * self.num_heads, src_len,
+                                    self.head_dim):
             raise ValueError(
-                f"`attn_output_l` should be of size {(bsz, self.num_heads, src_len, self.head_dim)}, but is {attn_output_l.size()}"
+                f'`attn_output_l` should be of size {(bsz, self.num_heads, src_len, self.head_dim)}, but is {attn_output_l.size()}'
             )
 
-        attn_output_v = attn_output_v.view(bsz, self.num_heads, tgt_len, self.head_dim)
+        attn_output_v = attn_output_v.view(bsz, self.num_heads, tgt_len,
+                                           self.head_dim)
         attn_output_v = attn_output_v.transpose(1, 2)
         attn_output_v = attn_output_v.reshape(bsz, tgt_len, self.embed_dim)
 
-        attn_output_l = attn_output_l.view(bsz, self.num_heads, src_len, self.head_dim)
+        attn_output_l = attn_output_l.view(bsz, self.num_heads, src_len,
+                                           self.head_dim)
         attn_output_l = attn_output_l.transpose(1, 2)
         attn_output_l = attn_output_l.reshape(bsz, src_len, self.embed_dim)
 
@@ -418,8 +456,17 @@ class BiMultiHeadAttention(nn.Module):
 
 
 class BiAttentionBlockForCheckpoint(nn.Module):
-    def __init__(self, v_dim, l_dim, embed_dim, num_heads, hidden_dim=None, dropout=0.1,
-                 drop_path=.0, init_values=1e-4, cfg=None):
+
+    def __init__(self,
+                 v_dim,
+                 l_dim,
+                 embed_dim,
+                 num_heads,
+                 hidden_dim=None,
+                 dropout=0.1,
+                 drop_path=.0,
+                 init_values=1e-4,
+                 cfg=None):
         """
         Inputs:
             embed_dim - Dimensionality of input and attention feature vectors
@@ -433,21 +480,33 @@ class BiAttentionBlockForCheckpoint(nn.Module):
         # pre layer norm
         self.layer_norm_v = nn.LayerNorm(v_dim)
         self.layer_norm_l = nn.LayerNorm(l_dim)
-        self.attn = BiMultiHeadAttention(v_dim=v_dim,
-                                         l_dim=l_dim,
-                                         embed_dim=embed_dim,
-                                         num_heads=num_heads,
-                                         dropout=dropout,
-                                         cfg=cfg)
+        self.attn = BiMultiHeadAttention(
+            v_dim=v_dim,
+            l_dim=l_dim,
+            embed_dim=embed_dim,
+            num_heads=num_heads,
+            dropout=dropout,
+            cfg=cfg)
 
         # add layer scale for training stability
-        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
-        self.gamma_v = nn.Parameter(init_values * torch.ones((v_dim)), requires_grad=True)
-        self.gamma_l = nn.Parameter(init_values * torch.ones((l_dim)), requires_grad=True)
+        self.drop_path = DropPath(
+            drop_path) if drop_path > 0. else nn.Identity()
+        self.gamma_v = nn.Parameter(
+            init_values * torch.ones((v_dim)), requires_grad=True)
+        self.gamma_l = nn.Parameter(
+            init_values * torch.ones((l_dim)), requires_grad=True)
 
         self.cfg = cfg
 
-    def forward(self, q0, q1, q2, q3, q4, l, attention_mask_l=None, dummy_tensor=None):
+    def forward(self,
+                q0,
+                q1,
+                q2,
+                q3,
+                q4,
+                l,
+                attention_mask_l=None,
+                dummy_tensor=None):
 
         visu_feat = []
         size_per_level, visual_features_flatten = [], []
@@ -457,13 +516,16 @@ class BiAttentionBlockForCheckpoint(nn.Module):
             feat = permute_and_flatten(feat_per_level, bs, 1, c, h, w)
             visual_features_flatten.append(feat)
         visual_features_flatten = torch.cat(visual_features_flatten, dim=1)
-        new_v, new_l = self.single_attention_call(visual_features_flatten, l, attention_mask_l=attention_mask_l)
+        new_v, new_l = self.single_attention_call(
+            visual_features_flatten, l, attention_mask_l=attention_mask_l)
         # [bs, N, C] -> [bs, C, N]
         new_v = new_v.transpose(1, 2).contiguous()
 
         start = 0
         for (h, w) in size_per_level:
-            new_v_per_level = new_v[:, :, start:start + h * w].view(bs, -1, h, w).contiguous()
+            new_v_per_level = new_v[:, :,
+                                    start:start + h * w].view(bs, -1, h,
+                                                              w).contiguous()
             visu_feat.append(new_v_per_level)
             start += h * w
 
@@ -472,7 +534,11 @@ class BiAttentionBlockForCheckpoint(nn.Module):
         return visu_feat[0], visu_feat[1], visu_feat[2], visu_feat[3], visu_feat[4], lang_feat[0], lang_feat[1], \
             lang_feat[2], lang_feat[3], lang_feat[4]
 
-    def single_attention_call(self, v, l, attention_mask_l=None, dummy_tensor=None):
+    def single_attention_call(self,
+                              v,
+                              l,
+                              attention_mask_l=None,
+                              dummy_tensor=None):
         v = self.layer_norm_v(v)
         l = self.layer_norm_l(l)
         delta_v, delta_l = self.attn(v, l, attention_mask_l=attention_mask_l)
@@ -483,9 +549,7 @@ class BiAttentionBlockForCheckpoint(nn.Module):
 
 
 class VLFuse(torch.nn.Module):
-    """
-    Early Fusion Module
-    """
+    """Early Fusion Module."""
 
     def __init__(self):
         super(VLFuse, self).__init__()
@@ -495,24 +559,25 @@ class VLFuse(torch.nn.Module):
         # TODO: support use_checkpoint as cfg
         self.use_checkpoint = True
         if self.use_checkpoint:  # True
-            self.dummy_tensor = torch.ones(1, dtype=torch.float32, requires_grad=True)
+            self.dummy_tensor = torch.ones(
+                1, dtype=torch.float32, requires_grad=True)
 
-        print("EARLY FUSION ON, USING {}".format("MHA-B"))
+        print('EARLY FUSION ON, USING {}'.format('MHA-B'))
 
         # bi-direction (text->image, image->text)
-        self.b_attn = BiAttentionBlockForCheckpoint(v_dim=self.joint_embedding_size,
-                                                    l_dim=self.lang_dim,
-                                                    embed_dim=self.embed_dim,
-                                                    num_heads=self.n_head,
-                                                    hidden_dim=self.i2t_hidden_dim,
-                                                    dropout=0.1,
-                                                    drop_path=.0,
-                                                    init_values=1.0 / 6.0
-                                                    )
+        self.b_attn = BiAttentionBlockForCheckpoint(
+            v_dim=self.joint_embedding_size,
+            l_dim=self.lang_dim,
+            embed_dim=self.embed_dim,
+            num_heads=self.n_head,
+            hidden_dim=self.i2t_hidden_dim,
+            dropout=0.1,
+            drop_path=.0,
+            init_values=1.0 / 6.0)
 
     def init_configs(self):
         # common params
-        self.lang_model = "bert-base-uncased"
+        self.lang_model = 'bert-base-uncased'
         self.joint_embedding_size = 256
         self.joint_embedding_dropout = 0.1
         self.joint_mlp_layers = 2
@@ -533,8 +598,8 @@ class VLFuse(torch.nn.Module):
 
     def forward(self, x):
         # import pdb; pdb.set_trace()
-        visual_features = x["visual"]
-        language_dict_features = x["lang"]
+        visual_features = x['visual']
+        language_dict_features = x['lang']
 
         batch_size = visual_features[0].shape[0]
         device = visual_features[0].device
@@ -543,23 +608,17 @@ class VLFuse(torch.nn.Module):
         fused_language_dict_features = None
 
         if self.use_checkpoint:
-            q0, q1, q2, q3, q4, l0, l1, l2, l3, l4 = checkpoint.checkpoint(self.b_attn,
-                                                                           visual_features[0], visual_features[1],
-                                                                           visual_features[2], visual_features[3],
-                                                                           visual_features[4],
-                                                                           language_dict_features['hidden'],
-                                                                           language_dict_features['masks'],
-                                                                           self.dummy_tensor
-                                                                           )
+            q0, q1, q2, q3, q4, l0, l1, l2, l3, l4 = checkpoint.checkpoint(
+                self.b_attn, visual_features[0], visual_features[1],
+                visual_features[2], visual_features[3], visual_features[4],
+                language_dict_features['hidden'],
+                language_dict_features['masks'], self.dummy_tensor)
         else:
             q0, q1, q2, q3, q4, l0, l1, l2, l3, l4 = self.b_attn(
-                visual_features[0], visual_features[1],
-                visual_features[2], visual_features[3],
-                visual_features[4],
+                visual_features[0], visual_features[1], visual_features[2],
+                visual_features[3], visual_features[4],
                 language_dict_features['hidden'],
-                language_dict_features['masks'],
-                self.dummy_tensor
-            )
+                language_dict_features['masks'], self.dummy_tensor)
 
         fused_visual_features = [q0, q1, q2, q3, q4]
         language_features = l0
@@ -567,13 +626,16 @@ class VLFuse(torch.nn.Module):
         language_dict_features['hidden'] = language_features
         fused_language_dict_features = language_dict_features
 
-        features_dict = {"visual": fused_visual_features,
-                         "lang": fused_language_dict_features}
+        features_dict = {
+            'visual': fused_visual_features,
+            'lang': fused_language_dict_features
+        }
 
         return features_dict
 
 
 class VLFusionModule(BaseModel):
+
     def __init__(self,
                  in_channels,
                  feat_channels,
@@ -602,7 +664,8 @@ class VLFusionModule(BaseModel):
         bias_value = -math.log((1 - 0.01) / 0.01)
         num_dyhead_blocks = self.num_dyhead_blocks
 
-        conv_func = lambda i, o, s: Conv3x3Norm(i, o, s, use_dcn=self.use_dcn, norm_type=['gn', 16])
+        conv_func = lambda i, o, s: Conv3x3Norm(
+            i, o, s, use_dcn=self.use_dcn, norm_type=['gn', 16])
 
         dyhead_tower = []
         for i in range(num_dyhead_blocks):
@@ -610,16 +673,13 @@ class VLFusionModule(BaseModel):
                 from ..language_models import BertEncoderLayer
 
                 # cross-modality fusion
-                dyhead_tower.append(
-                    VLFuse()
-                )
+                dyhead_tower.append(VLFuse())
                 # lang branch
                 dyhead_tower.append(
                     BertEncoderLayer(
                         self.lang_cfg,
                         clamp_min_for_underflow=True,
-                        clamp_max_for_overflow=True)
-                )
+                        clamp_max_for_overflow=True))
 
             # vision branch
             dyhead_tower.append(
@@ -627,61 +687,72 @@ class VLFusionModule(BaseModel):
                     conv_func,
                     self.in_channels if i == 0 else self.feat_channels,
                     self.feat_channels,
-                    use_dyrelu=(
-                                self.use_dyrelu and self.in_channels == self.feat_channels) if i == 0 else self.use_dyrelu,
-                    use_dyfuse=(
-                                self.use_dyfuse and self.in_channels == self.feat_channels) if i == 0 else self.use_dyfuse,
-                    use_dcn=(self.use_dcn and self.in_channels == self.feat_channels) if i == 0 else self.use_dcn,
-                )
-            )
+                    use_dyrelu=(self.use_dyrelu
+                                and self.in_channels == self.feat_channels)
+                    if i == 0 else self.use_dyrelu,
+                    use_dyfuse=(self.use_dyfuse
+                                and self.in_channels == self.feat_channels)
+                    if i == 0 else self.use_dyfuse,
+                    use_dcn=(self.use_dcn
+                             and self.in_channels == self.feat_channels)
+                    if i == 0 else self.use_dcn,
+                ))
 
         self.add_module('dyhead_tower', nn.Sequential(*dyhead_tower))
 
-        self.bbox_pred = nn.Conv2d(self.feat_channels, self.num_base_priors * 4, kernel_size=1)
-        self.centerness = nn.Conv2d(self.feat_channels, self.num_base_priors * 1, kernel_size=1)
-        self.dot_product_projection_text = nn.Linear(self.lang_dim,
-                                                     self.num_base_priors * self.feat_channels, bias=True)
+        self.bbox_pred = nn.Conv2d(
+            self.feat_channels, self.num_base_priors * 4, kernel_size=1)
+        self.centerness = nn.Conv2d(
+            self.feat_channels, self.num_base_priors * 1, kernel_size=1)
+        self.dot_product_projection_text = nn.Linear(
+            self.lang_dim,
+            self.num_base_priors * self.feat_channels,
+            bias=True)
         self.log_scale = nn.Parameter(torch.Tensor([0.0]), requires_grad=True)
-        self.bias_lang = nn.Parameter(torch.zeros(self.lang_dim), requires_grad=True)
-        self.bias0 = nn.Parameter(torch.Tensor([bias_value]), requires_grad=True)
+        self.bias_lang = nn.Parameter(
+            torch.zeros(self.lang_dim), requires_grad=True)
+        self.bias0 = nn.Parameter(
+            torch.Tensor([bias_value]), requires_grad=True)
         self.scales = nn.ModuleList([Scale(1.0) for _ in range(5)])
 
-    def forward(self,
-                visual_feats: Tuple[Tensor],
-                language_feats: dict):
+    def forward(self, visual_feats: Tuple[Tensor], language_feats: dict):
         bbox_reg = []
         centerness = []
 
-        feat_inputs = {"visual": visual_feats,
-                       "lang": language_feats}
+        feat_inputs = {'visual': visual_feats, 'lang': language_feats}
 
         dyhead_tower = self.dyhead_tower(feat_inputs)
 
         cls_logits = []
 
         if self.early_fuse:
-            embedding = dyhead_tower["lang"]["hidden"]
+            embedding = dyhead_tower['lang']['hidden']
         else:
             embedding = language_feats['embedded']
 
         embedding = F.normalize(embedding, p=2, dim=-1)
-        dot_product_proj_tokens = self.dot_product_projection_text(embedding / 2.0)
-        dot_product_proj_tokens_bias = torch.matmul(embedding, self.bias_lang) + self.bias0
+        dot_product_proj_tokens = self.dot_product_projection_text(embedding /
+                                                                   2.0)
+        dot_product_proj_tokens_bias = torch.matmul(
+            embedding, self.bias_lang) + self.bias0
 
         for l, feature in enumerate(visual_feats):
-            visual = dyhead_tower["visual"][l]
+            visual = dyhead_tower['visual'][l]
             B, C, H, W = visual.shape
 
             bbox_pred = self.scales[l](self.bbox_pred(visual))
             bbox_reg.append(bbox_pred)
             centerness.append(self.centerness(visual))
 
-            dot_product_proj_queries = permute_and_flatten(visual, B, -1, C, H, W)
+            dot_product_proj_queries = permute_and_flatten(
+                visual, B, -1, C, H, W)
 
             A = dot_product_proj_queries.shape[1]
             bias = dot_product_proj_tokens_bias.unsqueeze(1).repeat(1, A, 1)
-            dot_product_logit = (torch.matmul(dot_product_proj_queries, dot_product_proj_tokens.transpose(-1,
-                                                                                                          -2)) / self.log_scale.exp()) + bias
+            dot_product_logit = (
+                torch.matmul(dot_product_proj_queries,
+                             dot_product_proj_tokens.transpose(-1, -2)) /
+                self.log_scale.exp()) + bias
             dot_product_logit = torch.clamp(dot_product_logit, max=50000)
             dot_product_logit = torch.clamp(dot_product_logit, min=-50000)
             cls_logits.append(dot_product_logit)
@@ -692,40 +763,51 @@ class VLFusionModule(BaseModel):
 def convert_grounding_to_cls_scores(logits, positive_maps):
     assert len(positive_maps) == logits.shape[0]  # batch size
 
-    scores = torch.zeros(logits.shape[0], logits.shape[1], len(positive_maps[0])).to(logits.device)
+    scores = torch.zeros(logits.shape[0], logits.shape[1],
+                         len(positive_maps[0])).to(logits.device)
     if positive_maps is not None:
         if all(x == positive_maps[0] for x in positive_maps):
             # only need to compute once
             positive_map = positive_maps[0]
             for label_j in positive_map:
-                scores[:, :, label_j - 1] = logits[:, :, torch.LongTensor(positive_map[label_j])].mean(-1)
+                scores[:, :, label_j -
+                       1] = logits[:, :,
+                                   torch.LongTensor(positive_map[label_j]
+                                                    )].mean(-1)
         else:
             for i, positive_map in enumerate(positive_maps):
                 for label_j in positive_map:
-                    scores[i, :, label_j - 1] = logits[i, :, torch.LongTensor(positive_map[label_j])].mean(-1)
+                    scores[i, :, label_j - 1] = logits[
+                        i, :, torch.LongTensor(positive_map[label_j])].mean(-1)
     return scores
 
 
 @MODELS.register_module()
 class ATSSVLFusionHead(ATSSHead):
-    def __init__(self, *args, early_fuse=False, num_dyhead_blocks=6, lang_model_name='bert-base-uncased', **kwargs):
+
+    def __init__(self,
+                 *args,
+                 early_fuse=False,
+                 num_dyhead_blocks=6,
+                 lang_model_name='bert-base-uncased',
+                 **kwargs):
         super().__init__(*args, **kwargs)
-        self.head = VLFusionModule(in_channels=self.in_channels,
-                                   feat_channels=self.feat_channels,
-                                   num_base_priors=self.num_base_priors,
-                                   early_fuse=early_fuse,
-                                   num_dyhead_blocks=num_dyhead_blocks,
-                                   lang_model_name=lang_model_name)
+        self.head = VLFusionModule(
+            in_channels=self.in_channels,
+            feat_channels=self.feat_channels,
+            num_base_priors=self.num_base_priors,
+            early_fuse=early_fuse,
+            num_dyhead_blocks=num_dyhead_blocks,
+            lang_model_name=lang_model_name)
 
     def _init_layers(self) -> None:
-        """No need to initialize the ATSS head layer"""
+        """No need to initialize the ATSS head layer."""
         pass
 
-    def forward(self, visual_feats: Tuple[Tensor], language_feats: dict) -> Tuple[Tensor]:
-        bbox_preds, centerness, cls_logits = self.head(
-            visual_feats,
-            language_feats
-        )
+    def forward(self, visual_feats: Tuple[Tensor],
+                language_feats: dict) -> Tuple[Tensor]:
+        bbox_preds, centerness, cls_logits = self.head(visual_feats,
+                                                       language_feats)
         return bbox_preds, centerness, cls_logits
 
     def predict(self,
@@ -737,7 +819,8 @@ class ATSSVLFusionHead(ATSSHead):
             data_samples.metainfo for data_samples in batch_data_samples
         ]
         batch_token_positive_maps = [
-            data_samples.token_positive_map for data_samples in batch_data_samples
+            data_samples.token_positive_map
+            for data_samples in batch_data_samples
         ]
         outs = self(visual_feats, language_feats)
 
@@ -775,7 +858,8 @@ class ATSSVLFusionHead(ATSSHead):
                 bbox_preds, img_id, detach=True)
             score_factor_list = select_single_mlvl(
                 score_factors, img_id, detach=True)
-            cls_logit_list = select_single_mlvl(cls_logits, img_id, detach=True)
+            cls_logit_list = select_single_mlvl(
+                cls_logits, img_id, detach=True)
 
             results = self._predict_by_feat_single(
                 bbox_pred_list=bbox_pred_list,
@@ -814,12 +898,13 @@ class ATSSVLFusionHead(ATSSHead):
         for level_idx, (bbox_pred, score_factor, cls_logit, priors) in \
                 enumerate(zip(bbox_pred_list,
                               score_factor_list, cls_logit_list, mlvl_priors)):
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, self.bbox_coder.encode_size)
-            score_factor = score_factor.permute(1, 2,
-                                                0).reshape(-1).sigmoid()
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(
+                -1, self.bbox_coder.encode_size)
+            score_factor = score_factor.permute(1, 2, 0).reshape(-1).sigmoid()
 
-            scores = convert_grounding_to_cls_scores(logits=cls_logit.sigmoid()[None],
-                                                     positive_maps=[token_positive_maps])[0]
+            scores = convert_grounding_to_cls_scores(
+                logits=cls_logit.sigmoid()[None],
+                positive_maps=[token_positive_maps])[0]
 
             results = filter_scores_and_topk(
                 scores, score_thr, nms_pre,
@@ -855,6 +940,7 @@ class ATSSVLFusionHead(ATSSHead):
 
         if len(predictions) > 0:
             # Note: GLIP adopts a very strange bbox decoder logic,
-            # and if 1 is not added here, it will not align with the official mAP.
+            # and if 1 is not added here, it will not align with
+            # the official mAP.
             predictions.bboxes[:, 2:] = predictions.bboxes[:, 2:] + 1
         return predictions

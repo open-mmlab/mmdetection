@@ -7,6 +7,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 import cv2
 import mmcv
 import numpy as np
+from mmcv.image import imresize
 from mmcv.image.geometric import _scale_size
 from mmcv.transforms import BaseTransform
 from mmcv.transforms import Pad as MMCV_Pad
@@ -21,7 +22,6 @@ from mmdet.registry import TRANSFORMS
 from mmdet.structures.bbox import HorizontalBoxes, autocast_box_type
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from mmdet.utils import log_img_scale
-from mmcv.image import imresize
 
 try:
     from imagecorruptions import corrupt
@@ -38,7 +38,7 @@ except ImportError:
 Number = Union[int, float]
 
 
-def _scale_size(
+def _fixed_scale_size(
     size: Tuple[int, int],
     scale: Union[float, int, tuple],
 ) -> Tuple[int, int]:
@@ -56,6 +56,7 @@ def _scale_size(
     w, h = size
     # don’t need o.5 offset
     return int(w * float(scale[0])), int(h * float(scale[1]))
+
 
 def rescale_size(old_size: tuple,
                  scale: Union[float, int, tuple],
@@ -88,12 +89,13 @@ def rescale_size(old_size: tuple,
         raise TypeError(
             f'Scale must be a number or tuple of int, but got {type(scale)}')
     # only change this
-    new_size = _scale_size((w, h), scale_factor)
+    new_size = _fixed_scale_size((w, h), scale_factor)
 
     if return_scale:
         return new_size, scale_factor
     else:
         return new_size
+
 
 def imrescale(
     img: np.ndarray,
@@ -256,8 +258,6 @@ class FixScaleResize(Resize):
                     interpolation=self.interpolation,
                     return_scale=True,
                     backend=self.backend)
-                # the w_scale and h_scale has minor difference
-                # a real fix should be done in the mmcv.imrescale in the future
                 new_h, new_w = img.shape[:2]
                 h, w = results['img'].shape[:2]
                 w_scale = new_w / w

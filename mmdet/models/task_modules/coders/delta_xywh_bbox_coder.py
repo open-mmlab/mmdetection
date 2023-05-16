@@ -69,12 +69,12 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         return encoded_bboxes
 
     def decode(
-            self,
-            bboxes: Union[Tensor, BaseBoxes],
-            pred_bboxes: Tensor,
-            max_shape: Optional[Union[Sequence[int], Tensor,
-            Sequence[Sequence[int]]]] = None,
-            wh_ratio_clip: Optional[float] = 16 / 1000
+        self,
+        bboxes: Union[Tensor, BaseBoxes],
+        pred_bboxes: Tensor,
+        max_shape: Optional[Union[Sequence[int], Tensor,
+                                  Sequence[Sequence[int]]]] = None,
+        wh_ratio_clip: Optional[float] = 16 / 1000
     ) -> Union[Tensor, BaseBoxes]:
         """Apply transformation `pred_bboxes` to `boxes`.
 
@@ -133,9 +133,10 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
 class DeltaXYWHBBoxCoderForGLIP(DeltaXYWHBBoxCoder):
     """This is designed specifically for the GLIP algorithm.
 
-    In order to completely match the official performance, we need to perform special
-    calculations in the encoding and decoding processes, such as additional +1 and -1 calculations.
-    However, this is not a user-friendly design.
+    In order to completely match the official performance, we need to perform
+    special calculations in the encoding and decoding processes, such as
+    additional +1 and -1 calculations. However, this is not a user-friendly
+    design.
     """
 
     def encode(self, bboxes: Union[Tensor, BaseBoxes],
@@ -160,12 +161,12 @@ class DeltaXYWHBBoxCoderForGLIP(DeltaXYWHBBoxCoder):
         return encoded_bboxes
 
     def decode(
-            self,
-            bboxes: Union[Tensor, BaseBoxes],
-            pred_bboxes: Tensor,
-            max_shape: Optional[Union[Sequence[int], Tensor,
-            Sequence[Sequence[int]]]] = None,
-            wh_ratio_clip: Optional[float] = 16 / 1000
+        self,
+        bboxes: Union[Tensor, BaseBoxes],
+        pred_bboxes: Tensor,
+        max_shape: Optional[Union[Sequence[int], Tensor,
+                                  Sequence[Sequence[int]]]] = None,
+        wh_ratio_clip: Optional[float] = 16 / 1000
     ) -> Union[Tensor, BaseBoxes]:
         """Apply transformation `pred_bboxes` to `boxes`.
 
@@ -195,8 +196,9 @@ class DeltaXYWHBBoxCoderForGLIP(DeltaXYWHBBoxCoder):
         if pred_bboxes.ndim == 2 and not torch.onnx.is_in_onnx_export():
             # single image decode
             decoded_bboxes = delta2bbox_glip(bboxes, pred_bboxes, self.means,
-                                             self.stds, max_shape, wh_ratio_clip,
-                                             self.clip_border, self.add_ctr_clamp,
+                                             self.stds, max_shape,
+                                             wh_ratio_clip, self.clip_border,
+                                             self.add_ctr_clamp,
                                              self.ctr_clamp)
         else:
             raise NotImplementedError()
@@ -210,10 +212,10 @@ class DeltaXYWHBBoxCoderForGLIP(DeltaXYWHBBoxCoder):
 
 
 def bbox2delta(
-        proposals: Tensor,
-        gt: Tensor,
-        means: Sequence[float] = (0., 0., 0., 0.),
-        stds: Sequence[float] = (1., 1., 1., 1.)
+    proposals: Tensor,
+    gt: Tensor,
+    means: Sequence[float] = (0., 0., 0., 0.),
+    stds: Sequence[float] = (1., 1., 1., 1.)
 ) -> Tensor:
     """Compute deltas of proposals w.r.t. gt.
 
@@ -264,7 +266,7 @@ def delta2bbox(rois: Tensor,
                means: Sequence[float] = (0., 0., 0., 0.),
                stds: Sequence[float] = (1., 1., 1., 1.),
                max_shape: Optional[Union[Sequence[int], Tensor,
-               Sequence[Sequence[int]]]] = None,
+                                         Sequence[Sequence[int]]]] = None,
                wh_ratio_clip: float = 16 / 1000,
                clip_border: bool = True,
                add_ctr_clamp: bool = False,
@@ -364,7 +366,7 @@ def onnx_delta2bbox(rois: Tensor,
                     means: Sequence[float] = (0., 0., 0., 0.),
                     stds: Sequence[float] = (1., 1., 1., 1.),
                     max_shape: Optional[Union[Sequence[int], Tensor,
-                    Sequence[Sequence[int]]]] = None,
+                                              Sequence[Sequence[int]]]] = None,
                     wh_ratio_clip: float = 16 / 1000,
                     clip_border: Optional[bool] = True,
                     add_ctr_clamp: bool = False,
@@ -497,7 +499,7 @@ def delta2bbox_glip(rois: Tensor,
                     means: Sequence[float] = (0., 0., 0., 0.),
                     stds: Sequence[float] = (1., 1., 1., 1.),
                     max_shape: Optional[Union[Sequence[int], Tensor,
-                    Sequence[Sequence[int]]]] = None,
+                                              Sequence[Sequence[int]]]] = None,
                     wh_ratio_clip: float = 16 / 1000,
                     clip_border: bool = True,
                     add_ctr_clamp: bool = False,
