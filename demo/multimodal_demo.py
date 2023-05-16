@@ -1,12 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 
 from argparse import ArgumentParser
-
+import os.path as osp
 import mmcv
 from mmdet.apis import inference_detector, init_detector
-from mmengine.config import Config, ConfigDict
-from mmengine.logging import print_log
-from mmengine.utils import ProgressBar, path
+from mmengine.utils import path
 
 from mmdet.registry import VISUALIZERS
 
@@ -25,6 +23,9 @@ def parse_args():
         '--show', action='store_true', help='Show the detection results')
     parser.add_argument(
         '--score-thr', type=float, default=0.5, help='Bbox score threshold')
+    parser.add_argument(
+        '--custom-entities', '-c', action='store_true', help='Whether to customize entity names? '
+                                                             'If so, the input text should be "cls_name1 . cls_name2 . cls_name3 ." format')
     args = parser.parse_args()
     return args
 
@@ -35,32 +36,30 @@ def main():
     # build the model from a config file and a checkpoint file
     model = init_detector(args.config, args.checkpoint, device=args.device)
 
-    from mmengine.runner import save_checkpoint
-    save_checkpoint(dict(state_dict=model.state_dict()), 'mmdet.pth')
-
-    if not args.show:
-        path.mkdir_or_exist(args.out_dir)
-
-    result = inference_detector(model, args.img, text_prompt=args.text)
+    result = inference_detector(model, args.img, text_prompt=args.text, custom_entities=args.custom_entities)
 
     visualizer = VISUALIZERS.build(model.cfg.visualizer)
 
     img = mmcv.imread(args.img)
     img = mmcv.imconvert(img, 'bgr', 'rgb')
 
-    result.pred_instances = result.pred_instances[
-        result.pred_instances.scores > args.score_thr]
-    print(result.pred_instances)
+    out_file = None
+    if not args.show:
+        path.mkdir_or_exist(args.out_dir)
+        out_file = osp.join(args.out_dir, osp.basename(args.img))
 
     visualizer.add_datasample(
-        'xxx',
+        'results',
         img,
         data_sample=result,
         draw_gt=False,
-        show=True,
+        show=args.show,
         wait_time=0,
-        out_file=None,
-        pred_score_thr=0)
+        out_file=out_file,
+        pred_score_thr=args.score_thr)
+
+    if out_file:
+        print(f'\nResults have been saved at {osp.abspath(out_file)}')
 
 
 if __name__ == '__main__':

@@ -129,6 +129,7 @@ class CocoDataset(BaseDetDataset):
 
         if self.return_caption:
             data_info['caption'] = self.metainfo['classes']
+            data_info['custom_entities'] = True
 
         instances = []
         for i, ann in enumerate(ann_info):

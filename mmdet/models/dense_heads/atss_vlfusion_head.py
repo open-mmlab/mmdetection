@@ -857,5 +857,4 @@ class ATSSVLFusionHead(ATSSHead):
             # Note: GLIP adopts a very strange bbox decoder logic,
             # and if 1 is not added here, it will not align with the official mAP.
             predictions.bboxes[:, 2:] = predictions.bboxes[:, 2:] + 1
-            predictions.labels = predictions.labels + 1
         return predictions

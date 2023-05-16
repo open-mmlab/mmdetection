@@ -120,7 +120,8 @@ def inference_detector(
         model: nn.Module,
         imgs: ImagesType,
         test_pipeline: Optional[Compose] = None,
-        text_prompt: Optional[Union[str, Sequence[str]]] = None,
+        text_prompt: Optional[str] = None,
+        custom_entities: bool = False,
 ) -> Union[DetDataSample, SampleList]:
     """Inference image(s) with the detector.
 
@@ -141,10 +142,6 @@ def inference_detector(
     else:
         imgs = [imgs]
         is_batch = False
-
-    if text_prompt and isinstance(text_prompt, str):
-        text_prompt = [text_prompt]
-        assert len(text_prompt) == len(imgs)
 
     cfg = model.cfg
 
@@ -175,7 +172,8 @@ def inference_detector(
             data_ = dict(img_path=img, img_id=0)
 
         if text_prompt:
-            data_['caption'] = text_prompt[i]
+            data_['caption'] = text_prompt
+            data_['custom_entities'] = custom_entities
 
         # build the data pipeline
         data_ = test_pipeline(data_)
