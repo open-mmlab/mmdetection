@@ -69,12 +69,12 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         return encoded_bboxes
 
     def decode(
-        self,
-        bboxes: Union[Tensor, BaseBoxes],
-        pred_bboxes: Tensor,
-        max_shape: Optional[Union[Sequence[int], Tensor,
-                                  Sequence[Sequence[int]]]] = None,
-        wh_ratio_clip: Optional[float] = 16 / 1000
+            self,
+            bboxes: Union[Tensor, BaseBoxes],
+            pred_bboxes: Tensor,
+            max_shape: Optional[Union[Sequence[int], Tensor,
+            Sequence[Sequence[int]]]] = None,
+            wh_ratio_clip: Optional[float] = 16 / 1000
     ) -> Union[Tensor, BaseBoxes]:
         """Apply transformation `pred_bboxes` to `boxes`.
 
@@ -130,7 +130,14 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
 
 
 @TASK_UTILS.register_module()
-class DeltaXYWHAddOneBBoxCoder(DeltaXYWHBBoxCoder):
+class DeltaXYWHBBoxCoderForGLIP(DeltaXYWHBBoxCoder):
+    """This is designed specifically for the GLIP algorithm.
+
+    In order to completely match the official performance, we need to perform special
+    calculations in the encoding and decoding processes, such as additional +1 and -1 calculations.
+    However, this is not a user-friendly design.
+    """
+
     def encode(self, bboxes: Union[Tensor, BaseBoxes],
                gt_bboxes: Union[Tensor, BaseBoxes]) -> Tensor:
         """Get box regression transformation deltas that can be used to
@@ -187,10 +194,10 @@ class DeltaXYWHAddOneBBoxCoder(DeltaXYWHBBoxCoder):
 
         if pred_bboxes.ndim == 2 and not torch.onnx.is_in_onnx_export():
             # single image decode
-            decoded_bboxes = delta2bbox_addone(bboxes, pred_bboxes, self.means,
-                                               self.stds, max_shape, wh_ratio_clip,
-                                               self.clip_border, self.add_ctr_clamp,
-                                               self.ctr_clamp)
+            decoded_bboxes = delta2bbox_glip(bboxes, pred_bboxes, self.means,
+                                             self.stds, max_shape, wh_ratio_clip,
+                                             self.clip_border, self.add_ctr_clamp,
+                                             self.ctr_clamp)
         else:
             raise NotImplementedError()
 
@@ -203,10 +210,10 @@ class DeltaXYWHAddOneBBoxCoder(DeltaXYWHBBoxCoder):
 
 
 def bbox2delta(
-    proposals: Tensor,
-    gt: Tensor,
-    means: Sequence[float] = (0., 0., 0., 0.),
-    stds: Sequence[float] = (1., 1., 1., 1.)
+        proposals: Tensor,
+        gt: Tensor,
+        means: Sequence[float] = (0., 0., 0., 0.),
+        stds: Sequence[float] = (1., 1., 1., 1.)
 ) -> Tensor:
     """Compute deltas of proposals w.r.t. gt.
 
@@ -257,7 +264,7 @@ def delta2bbox(rois: Tensor,
                means: Sequence[float] = (0., 0., 0., 0.),
                stds: Sequence[float] = (1., 1., 1., 1.),
                max_shape: Optional[Union[Sequence[int], Tensor,
-                                         Sequence[Sequence[int]]]] = None,
+               Sequence[Sequence[int]]]] = None,
                wh_ratio_clip: float = 16 / 1000,
                clip_border: bool = True,
                add_ctr_clamp: bool = False,
@@ -357,7 +364,7 @@ def onnx_delta2bbox(rois: Tensor,
                     means: Sequence[float] = (0., 0., 0., 0.),
                     stds: Sequence[float] = (1., 1., 1., 1.),
                     max_shape: Optional[Union[Sequence[int], Tensor,
-                                              Sequence[Sequence[int]]]] = None,
+                    Sequence[Sequence[int]]]] = None,
                     wh_ratio_clip: float = 16 / 1000,
                     clip_border: Optional[bool] = True,
                     add_ctr_clamp: bool = False,
@@ -485,16 +492,16 @@ def onnx_delta2bbox(rois: Tensor,
     return bboxes
 
 
-def delta2bbox_addone(rois: Tensor,
-                      deltas: Tensor,
-                      means: Sequence[float] = (0., 0., 0., 0.),
-                      stds: Sequence[float] = (1., 1., 1., 1.),
-                      max_shape: Optional[Union[Sequence[int], Tensor,
-                      Sequence[Sequence[int]]]] = None,
-                      wh_ratio_clip: float = 16 / 1000,
-                      clip_border: bool = True,
-                      add_ctr_clamp: bool = False,
-                      ctr_clamp: int = 32) -> Tensor:
+def delta2bbox_glip(rois: Tensor,
+                    deltas: Tensor,
+                    means: Sequence[float] = (0., 0., 0., 0.),
+                    stds: Sequence[float] = (1., 1., 1., 1.),
+                    max_shape: Optional[Union[Sequence[int], Tensor,
+                    Sequence[Sequence[int]]]] = None,
+                    wh_ratio_clip: float = 16 / 1000,
+                    clip_border: bool = True,
+                    add_ctr_clamp: bool = False,
+                    ctr_clamp: int = 32) -> Tensor:
     """Apply deltas to shift/scale base boxes.
 
     Typically the rois are anchor or proposed bounding boxes and the deltas are
@@ -558,8 +565,8 @@ def delta2bbox_addone(rois: Tensor,
     gxy = pxy + dxy_wh
     gwh = pwh * dwh.exp()
 
-    x1y1 = gxy - (gwh-1) * 0.5  # Note
-    x2y2 = gxy + (gwh-1) * 0.5  # Note
+    x1y1 = gxy - (gwh - 1) * 0.5  # Note
+    x2y2 = gxy + (gwh - 1) * 0.5  # Note
 
     bboxes = torch.cat([x1y1, x2y2], dim=-1)
 
