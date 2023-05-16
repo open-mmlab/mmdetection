@@ -2,6 +2,9 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
+
+lang_model_name = "bert-base-uncased"
+
 model = dict(
     type='GLIP',
     data_preprocessor=dict(
@@ -14,6 +17,7 @@ model = dict(
     neck=dict(type='GFPN'),
     bbox_head=dict(
         type='ATSSVLFusionHead',
+        lang_model_name=lang_model_name,
         num_classes=80,
         in_channels=256,
         feat_channels=256,
@@ -29,7 +33,7 @@ model = dict(
             target_means=[.0, .0, .0, .0],
             target_stds=[0.1, 0.1, 0.2, 0.2]),
     ),
-    language_model=dict(type='BertModel'),
+    language_model=dict(type='BertModel', name=lang_model_name),
     train_cfg=dict(
         assigner=dict(type='ATSSAssigner', topk=9),
         allowed_border=-1,

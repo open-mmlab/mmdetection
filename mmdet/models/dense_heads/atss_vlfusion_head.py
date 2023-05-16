@@ -33,35 +33,37 @@ class Conv3x3Norm(torch.nn.Module):
                  out_channels,
                  stride,
                  groups=1,
-                 deformable=False,
-                 bn_type=None):
+                 use_dcn=False,
+                 norm_type=None):
         super(Conv3x3Norm, self).__init__()
 
-        if deformable:
-            self.conv = ModulatedDeformConv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1,
+        if use_dcn:
+            self.conv = ModulatedDeformConv2d(in_channels,
+                                              out_channels,
+                                              kernel_size=3,
+                                              stride=stride,
+                                              padding=1,
                                               groups=groups)
         else:
             self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, groups=groups)
 
-        if isinstance(bn_type, (list, tuple)):
-            assert len(bn_type) == 2
-            assert bn_type[0] == "gn"
-            gn_group = bn_type[1]
-            bn_type = bn_type[0]
+        if isinstance(norm_type, (list, tuple)):
+            assert len(norm_type) == 2
+            assert norm_type[0] == "gn"
+            gn_group = norm_type[1]
+            norm_type = norm_type[0]
 
-        if bn_type == "bn":
+        if norm_type == "bn":
             bn_op = nn.BatchNorm2d(out_channels)
-        elif bn_type == "sbn":
-            bn_op = nn.SyncBatchNorm(out_channels)
-        elif bn_type == "gn":
+        elif norm_type == "gn":
             bn_op = nn.GroupNorm(num_groups=gn_group, num_channels=out_channels)
-        if bn_type is not None:
+        if norm_type is not None:
             self.bn = bn_op
         else:
             self.bn = None
 
-    def forward(self, input, **kwargs):
-        x = self.conv(input, **kwargs)
+    def forward(self, x, **kwargs):
+        x = self.conv(x, **kwargs)
         if self.bn:
             x = self.bn(x)
         return x
@@ -180,12 +182,12 @@ def permute_and_flatten(layer, N, A, C, H, W):
 
 class DyConv(torch.nn.Module):
     def __init__(self,
+                 conv_func,
                  in_channels=256,
                  out_channels=256,
-                 conv_func=nn.Conv2d,
                  use_dyfuse=True,
                  use_dyrelu=False,
-                 use_deform=False
+                 use_dcn=False
                  ):
         super(DyConv, self).__init__()
 
@@ -208,7 +210,7 @@ class DyConv(torch.nn.Module):
         else:
             self.relu = nn.ReLU()
 
-        if use_deform:
+        if use_dcn:
             self.offset = nn.Conv2d(in_channels, 27, kernel_size=3, stride=1, padding=1)
         else:
             self.offset = None
@@ -559,14 +561,6 @@ class VLFuse(torch.nn.Module):
                 self.dummy_tensor
             )
 
-        # q0, q1, q2, q3, q4, l0, l1, l2, l3, l4 = self.b_attn(
-        #     visual_features[0], visual_features[1],
-        #     visual_features[2], visual_features[3],
-        #     visual_features[4],
-        #     language_dict_features['hidden'],
-        #     language_dict_features['masks']
-        # )
-
         fused_visual_features = [q0, q1, q2, q3, q4]
         language_features = l0
 
@@ -584,85 +578,77 @@ class VLFusionModule(BaseModel):
                  in_channels,
                  feat_channels,
                  num_base_priors,
-                 num_classes,
                  early_fuse=False,
                  num_dyhead_blocks=6,
+                 lang_model_name='bert-base-uncased',
+                 use_dyrelu=True,
+                 use_dyfuse=True,
+                 use_dcn=True,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.num_base_priors = num_base_priors
-        self.num_classes = num_classes
         self.early_fuse = early_fuse
         self.num_dyhead_blocks = num_dyhead_blocks
+        self.use_dyrelu = use_dyrelu
+        self.use_dyfuse = use_dyfuse
+        self.use_dcn = use_dcn
+        self.lang_cfg = BertConfig.from_pretrained(lang_model_name)
+        self.lang_dim = self.lang_cfg.hidden_size
         self._init_layers()
 
     def _init_layers(self) -> None:
-        use_dyrelu = True
-        use_dyfuse = True
-        use_deform = True
-        bn_type = ['gn', 16]
+        bias_value = -math.log((1 - 0.01) / 0.01)
         num_dyhead_blocks = self.num_dyhead_blocks
-        conv_func = lambda i, o, s: Conv3x3Norm(i, o, s, deformable=use_deform, bn_type=bn_type)
-        log_scale = 0.0
-        prior_prob = 0.01
-        lang_dim = 768
 
-        bias_value = -math.log((1 - prior_prob) / prior_prob)
-
-        # TODO: put the name into kwargs or cfg
-        lang_cfg = BertConfig.from_pretrained('bert-base-uncased')
+        conv_func = lambda i, o, s: Conv3x3Norm(i, o, s, use_dcn=self.use_dcn, norm_type=['gn', 16])
 
         dyhead_tower = []
         for i in range(num_dyhead_blocks):
             if self.early_fuse:
+                from ..language_models import BertEncoderLayer
+
                 # cross-modality fusion
                 dyhead_tower.append(
-                    # TODO: add init parameters for VLFUSE
                     VLFuse()
                 )
-                # self language path
-                from ..language_models import BertEncoderLayer
+                # lang branch
                 dyhead_tower.append(
                     BertEncoderLayer(
-                        lang_cfg,
+                        self.lang_cfg,
                         clamp_min_for_underflow=True,
                         clamp_max_for_overflow=True)
                 )
 
+            # vision branch
             dyhead_tower.append(
                 DyConv(
+                    conv_func,
                     self.in_channels if i == 0 else self.feat_channels,
                     self.feat_channels,
-                    conv_func=conv_func,
-                    use_dyrelu=(use_dyrelu and self.in_channels == self.feat_channels) if i == 0 else use_dyrelu,
-                    use_dyfuse=(use_dyfuse and self.in_channels == self.feat_channels) if i == 0 else use_dyfuse,
-                    use_deform=(use_deform and self.in_channels == self.feat_channels) if i == 0 else use_deform,
+                    use_dyrelu=(
+                                self.use_dyrelu and self.in_channels == self.feat_channels) if i == 0 else self.use_dyrelu,
+                    use_dyfuse=(
+                                self.use_dyfuse and self.in_channels == self.feat_channels) if i == 0 else self.use_dyfuse,
+                    use_dcn=(self.use_dcn and self.in_channels == self.feat_channels) if i == 0 else self.use_dcn,
                 )
             )
 
         self.add_module('dyhead_tower', nn.Sequential(*dyhead_tower))
 
-        self.cls_logits = nn.Conv2d(self.feat_channels, self.num_base_priors * self.num_classes, kernel_size=1)
-        self.bbox_pred = nn.Conv2d(self.feat_channels, self.num_base_priors * 4, kernel_size=1)  # num_anchors=1
+        self.bbox_pred = nn.Conv2d(self.feat_channels, self.num_base_priors * 4, kernel_size=1)
         self.centerness = nn.Conv2d(self.feat_channels, self.num_base_priors * 1, kernel_size=1)
-
-        self.dot_product_projection_image = nn.Identity()
-        # 将语言模型输出进行投影到视觉语义上
-        self.dot_product_projection_text = nn.Linear(lang_dim,
+        self.dot_product_projection_text = nn.Linear(self.lang_dim,
                                                      self.num_base_priors * self.feat_channels, bias=True)
-        self.log_scale = nn.Parameter(torch.Tensor([log_scale]), requires_grad=True)
-        # DEBUG
-        # self.bias = nn.Parameter(torch.zeros(channels), requires_grad=True)
-        self.bias_lang = nn.Parameter(torch.zeros(lang_dim), requires_grad=True)
+        self.log_scale = nn.Parameter(torch.Tensor([0.0]), requires_grad=True)
+        self.bias_lang = nn.Parameter(torch.zeros(self.lang_dim), requires_grad=True)
         self.bias0 = nn.Parameter(torch.Tensor([bias_value]), requires_grad=True)
-
         self.scales = nn.ModuleList([Scale(1.0) for _ in range(5)])
 
     def forward(self,
                 visual_feats: Tuple[Tensor],
                 language_feats: dict):
-        logits = []
         bbox_reg = []
         centerness = []
 
@@ -671,118 +657,76 @@ class VLFusionModule(BaseModel):
 
         dyhead_tower = self.dyhead_tower(feat_inputs)
 
-        dot_product_logits = []
+        cls_logits = []
 
         if self.early_fuse:
             embedding = dyhead_tower["lang"]["hidden"]
         else:
             embedding = language_feats['embedded']
 
-        # norm
-        embedding = F.normalize(embedding, p=2, dim=-1)  # text embeding (1,256,768)
-
-        # 语言特征投影到视觉空间
-        dot_product_proj_tokens = self.dot_product_projection_text(embedding / 2.0)  # (1,256,256)
-        # print(embedding.sum(), dot_product_proj_tokens.sum())
-        dot_product_proj_tokens_bias = torch.matmul(embedding, self.bias_lang) + self.bias0  # (1, 256)
+        embedding = F.normalize(embedding, p=2, dim=-1)
+        dot_product_proj_tokens = self.dot_product_projection_text(embedding / 2.0)
+        dot_product_proj_tokens_bias = torch.matmul(embedding, self.bias_lang) + self.bias0
 
         for l, feature in enumerate(visual_feats):
-            # import pdb;pdb.set_trace()
-            logits.append(self.cls_logits(dyhead_tower["visual"][l]))  # (1,80,100,136)
+            visual = dyhead_tower["visual"][l]
+            B, C, H, W = visual.shape
 
-            bbox_pred = self.scales[l](self.bbox_pred(dyhead_tower["visual"][l]))
+            bbox_pred = self.scales[l](self.bbox_pred(visual))
             bbox_reg.append(bbox_pred)
+            centerness.append(self.centerness(visual))
 
-            centerness.append(self.centerness(dyhead_tower["visual"][l]))
-
-            x = dyhead_tower["visual"][l]
-            B, C, H, W = x.shape
-
-            # add bias (language)
-            # 图像特征作为 query，文本特征作为 key，计算相似度
-            dot_product_proj_queries = self.dot_product_projection_image(x)
-            dot_product_proj_queries = permute_and_flatten(dot_product_proj_queries, B, -1, C, H, W)  # 1,13600,256
+            dot_product_proj_queries = permute_and_flatten(visual, B, -1, C, H, W)
 
             A = dot_product_proj_queries.shape[1]
             bias = dot_product_proj_tokens_bias.unsqueeze(1).repeat(1, A, 1)
-            # dot_product_proj_tokens 融合后的文本特征 1,13600,256
             dot_product_logit = (torch.matmul(dot_product_proj_queries, dot_product_proj_tokens.transpose(-1,
                                                                                                           -2)) / self.log_scale.exp()) + bias
-            # print(x.sum(), dot_product_logit.sum(), dot_product_proj_queries.sum(), dot_product_proj_tokens.sum(),
-            #       self.log_scale)
-
             dot_product_logit = torch.clamp(dot_product_logit, max=50000)
             dot_product_logit = torch.clamp(dot_product_logit, min=-50000)
-            dot_product_logits.append(dot_product_logit)
+            cls_logits.append(dot_product_logit)
 
-        return logits, bbox_reg, centerness, dot_product_logits
+        return bbox_reg, centerness, cls_logits
 
 
-def convert_grounding_to_od_logits(logits, box_cls, positive_maps, score_agg=None):
-    # 这个 scores 维度是 (1,13600,80)，这个 80 是明显不合理的，这个地方应该是当前句子中 token 的个数
-    # 假设当前句子一共 3 个命名实体，那么这个维度应该是 (1,13600,3)
-    # 虽然结果一样，但是含义就不一样，当某一种图片的实体超过 80 那就会报错了
-    assert len(positive_maps) == logits.shape[0]
+def convert_grounding_to_cls_scores(logits, positive_maps):
+    assert len(positive_maps) == logits.shape[0]  # batch size
 
-    scores = torch.zeros(logits.shape[0], logits.shape[1], box_cls.shape[-1]).to(logits.device)  # (1,13600,80)
-    # 256 -> 80, average for each class
+    scores = torch.zeros(logits.shape[0], logits.shape[1], len(positive_maps[0])).to(logits.device)
     if positive_maps is not None:
         if all(x == positive_maps[0] for x in positive_maps):
             # only need to compute once
             positive_map = positive_maps[0]
-            # score aggregation method
-            if score_agg == "MEAN":  # ture
-                for label_j in positive_map:  # logits (1,13600,256) 取出对应 token 位置的预测值，然后求均值,将其转换为 80 类的预测值
-                    scores[:, :, label_j - 1] = logits[:, :, torch.LongTensor(positive_map[label_j])].mean(-1)
-            elif score_agg == "MAX":
-                # torch.max() returns (values, indices)
-                for label_j in positive_map:
-                    scores[:, :, label_j - 1] = logits[:, :, torch.LongTensor(positive_map[label_j])].max(-1)[
-                        0]
-            elif score_agg == "ONEHOT":
-                # one hot
-                scores = logits[:, :, :len(positive_map)]
-            else:
-                raise NotImplementedError
+            for label_j in positive_map:
+                scores[:, :, label_j - 1] = logits[:, :, torch.LongTensor(positive_map[label_j])].mean(-1)
         else:
             for i, positive_map in enumerate(positive_maps):
-                if score_agg == "MEAN":  # ture
-                    for label_j in positive_map:  # logits (1,13600,256) 取出对应 token 位置的预测值，然后求均值,将其转换为 80 类的预测值
-                        scores[i, :, label_j - 1] = logits[i, :, torch.LongTensor(positive_map[label_j])].mean(-1)
-                elif score_agg == "MAX":
-                    # torch.max() returns (values, indices)
-                    for label_j in positive_map:
-                        scores[i, :, label_j - 1] = logits[i, :, torch.LongTensor(positive_map[label_j])].max(-1)[
-                            0]
-                elif score_agg == "ONEHOT":
-                    # one hot
-                    raise NotImplementedError
-                else:
-                    raise NotImplementedError
-
+                for label_j in positive_map:
+                    scores[i, :, label_j - 1] = logits[i, :, torch.LongTensor(positive_map[label_j])].mean(-1)
     return scores
 
 
 @MODELS.register_module()
 class ATSSVLFusionHead(ATSSHead):
-    def __init__(self, *args, early_fuse=False, num_dyhead_blocks=6,**kwargs):
+    def __init__(self, *args, early_fuse=False, num_dyhead_blocks=6, lang_model_name='bert-base-uncased', **kwargs):
         super().__init__(*args, **kwargs)
         self.head = VLFusionModule(in_channels=self.in_channels,
                                    feat_channels=self.feat_channels,
                                    num_base_priors=self.num_base_priors,
-                                   num_classes=self.num_classes,
                                    early_fuse=early_fuse,
-                                   num_dyhead_blocks=num_dyhead_blocks)
+                                   num_dyhead_blocks=num_dyhead_blocks,
+                                   lang_model_name=lang_model_name)
 
     def _init_layers(self) -> None:
+        """No need to initialize the ATSS head layer"""
         pass
 
-    def forward(self, visual_feats: Tuple[Tensor], language_feats: dict):
-        cls_scores, bbox_preds, centerness, dot_product_logits = self.head(
+    def forward(self, visual_feats: Tuple[Tensor], language_feats: dict) -> Tuple[Tensor]:
+        bbox_preds, centerness, cls_logits = self.head(
             visual_feats,
             language_feats
         )
-        return cls_scores, bbox_preds, centerness, dot_product_logits
+        return bbox_preds, centerness, cls_logits
 
     def predict(self,
                 visual_feats: Tuple[Tensor],
@@ -805,45 +749,40 @@ class ATSSVLFusionHead(ATSSHead):
         return predictions
 
     def predict_by_feat(self,
-                        cls_scores: List[Tensor],
                         bbox_preds: List[Tensor],
                         score_factors: List[Tensor],
-                        dot_product_logits: List[Tensor],
+                        cls_logits: List[Tensor],
                         batch_img_metas: Optional[List[dict]] = None,
                         batch_token_positive_maps: Optional[List[dict]] = None,
                         cfg: Optional[ConfigDict] = None,
                         rescale: bool = False,
                         with_nms: bool = True) -> InstanceList:
-        assert len(cls_scores) == len(bbox_preds) == len(score_factors)
-        num_levels = len(cls_scores)
+        assert len(bbox_preds) == len(score_factors)
+        num_levels = len(bbox_preds)
 
-        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
+        featmap_sizes = [bbox_preds[i].shape[-2:] for i in range(num_levels)]
         mlvl_priors = self.prior_generator.grid_priors(
             featmap_sizes,
-            dtype=cls_scores[0].dtype,
-            device=cls_scores[0].device)
+            dtype=bbox_preds[0].dtype,
+            device=bbox_preds[0].device)
 
         result_list = []
 
         for img_id in range(len(batch_img_metas)):
             img_meta = batch_img_metas[img_id]
-            token_positive_map = batch_token_positive_maps[img_id]
-            # 实际上 cls_score_list 不需要
-            cls_score_list = select_single_mlvl(
-                cls_scores, img_id, detach=True)
+            token_positive_maps = batch_token_positive_maps[img_id]
             bbox_pred_list = select_single_mlvl(
                 bbox_preds, img_id, detach=True)
             score_factor_list = select_single_mlvl(
                 score_factors, img_id, detach=True)
-            dot_product_logit_list = select_single_mlvl(dot_product_logits, img_id, detach=True)
+            cls_logit_list = select_single_mlvl(cls_logits, img_id, detach=True)
 
             results = self._predict_by_feat_single(
-                cls_score_list=cls_score_list,
                 bbox_pred_list=bbox_pred_list,
                 score_factor_list=score_factor_list,
-                dot_product_logit_list=dot_product_logit_list,
+                cls_logit_list=cls_logit_list,
                 mlvl_priors=mlvl_priors,
-                token_positive_map=token_positive_map,
+                token_positive_maps=token_positive_maps,
                 img_meta=img_meta,
                 cfg=cfg,
                 rescale=rescale,
@@ -852,51 +791,35 @@ class ATSSVLFusionHead(ATSSHead):
         return result_list
 
     def _predict_by_feat_single(self,
-                                cls_score_list: List[Tensor],
                                 bbox_pred_list: List[Tensor],
                                 score_factor_list: List[Tensor],
-                                dot_product_logit_list: List[Tensor],
+                                cls_logit_list: List[Tensor],
                                 mlvl_priors: List[Tensor],
-                                token_positive_map: dict,
+                                token_positive_maps: dict,
                                 img_meta: dict,
                                 cfg: ConfigDict,
-                                rescale: bool = False,
+                                rescale: bool = True,
                                 with_nms: bool = True) -> InstanceData:
-
         cfg = self.test_cfg if cfg is None else cfg
         cfg = copy.deepcopy(cfg)
         img_shape = img_meta['img_shape']
         nms_pre = cfg.get('nms_pre', -1)
+        score_thr = cfg.get('score_thr', 0)
 
         mlvl_bbox_preds = []
         mlvl_valid_priors = []
         mlvl_scores = []
         mlvl_labels = []
 
-        for level_idx, (cls_score, bbox_pred, score_factor, dot_product_logit, priors) in \
-                enumerate(zip(cls_score_list, bbox_pred_list,
-                              score_factor_list, dot_product_logit_list, mlvl_priors)):
-            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            dim = self.bbox_coder.encode_size
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, dim)
+        for level_idx, (bbox_pred, score_factor, cls_logit, priors) in \
+                enumerate(zip(bbox_pred_list,
+                              score_factor_list, cls_logit_list, mlvl_priors)):
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, self.bbox_coder.encode_size)
             score_factor = score_factor.permute(1, 2,
                                                 0).reshape(-1).sigmoid()
-            cls_score = cls_score.permute(1, 2,
-                                          0).reshape(-1, self.cls_out_channels)
-            if self.use_sigmoid_cls:
-                scores = cls_score.sigmoid()
-            else:
-                # remind that we set FG labels to [0, num_class-1]
-                # since mmdet v2.0
-                # BG cat_id: num_class
-                scores = cls_score.softmax(-1)[:, :-1]
 
-            dot_product_logit = dot_product_logit.sigmoid()
-            # TODO cls_score 不需要
-            scores = convert_grounding_to_od_logits(logits=dot_product_logit[None], box_cls=scores,
-                                                    positive_maps=[token_positive_map],
-                                                    score_agg="MEAN")[0]
-            score_thr = cfg.get('score_thr', 0)
+            scores = convert_grounding_to_cls_scores(logits=cls_logit.sigmoid()[None],
+                                                     positive_maps=[token_positive_maps])[0]
 
             results = filter_scores_and_topk(
                 scores, score_thr, nms_pre,
@@ -907,7 +830,6 @@ class ATSSVLFusionHead(ATSSHead):
             bbox_pred = filtered_results['bbox_pred']
             priors = filtered_results['priors']
             score_factor = score_factor[keep_idxs]
-
             scores = torch.sqrt(scores * score_factor)
 
             mlvl_bbox_preds.append(bbox_pred)
@@ -930,7 +852,10 @@ class ATSSVLFusionHead(ATSSHead):
             rescale=rescale,
             with_nms=with_nms,
             img_meta=img_meta)
-        # important
-        predictions.bboxes[:, 2:] = predictions.bboxes[:, 2:] + 1
-        predictions.labels = predictions.labels + 1
+
+        if len(predictions) > 0:
+            # Note: GLIP adopts a very strange bbox decoder logic,
+            # and if 1 is not added here, it will not align with the official mAP.
+            predictions.bboxes[:, 2:] = predictions.bboxes[:, 2:] + 1
+            predictions.labels = predictions.labels + 1
         return predictions

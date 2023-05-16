@@ -9,7 +9,7 @@ import torch
 from torch import nn
 
 from transformers.activations import ACT2FN
-from transformers import AutoTokenizer,BertPreTrainedModel
+from transformers import AutoTokenizer, BertPreTrainedModel
 from transformers import BertConfig
 from transformers import BertModel as TBertModel
 from transformers.modeling_utils import apply_chunking_to_forward
@@ -17,37 +17,35 @@ from collections import OrderedDict
 from typing import Sequence
 
 
+def clamp_values(vector, min_val=-50000, max_val=50000):
+    vector = torch.clamp(vector, min=min_val, max=max_val)
+    return vector
+
+
 class BertEncoder(nn.Module):
-    def __init__(self, name='bert-base-uncased', num_layers=1, use_checkpoint=False):
+    def __init__(self, name, num_layers_of_embedded=1, use_checkpoint=False):
         super(BertEncoder, self).__init__()
         config = BertConfig.from_pretrained(name)
         config.gradient_checkpointing = use_checkpoint
         self.model = TBertModel.from_pretrained(name, add_pooling_layer=False, config=config)
-        self.language_dim = 768
-        self.num_layers = num_layers
+        self.language_dim = config.hidden_size
+        self.num_layers_of_embedded = num_layers_of_embedded
 
     def forward(self, x):
-        input = x["input_ids"]
         mask = x["attention_mask"]
-
-        # with padding, always 256
         outputs = self.model(
-            input_ids=input,
+            input_ids=x["input_ids"],
             attention_mask=mask,
             output_hidden_states=True,
         )
         # outputs has 13 layers, 1 input layer and 12 hidden layers
         encoded_layers = outputs.hidden_states[1:]
-        features = torch.stack(encoded_layers[-self.num_layers:], 1).mean(1)
-
+        features = torch.stack(encoded_layers[-self.num_layers_of_embedded:], 1).mean(1)
         # language embedding has shape [len(phrase), seq_len, language_dim]
-        features = features / self.num_layers
-
+        features = features / self.num_layers_of_embedded
         embedded = features * mask.unsqueeze(-1).float()
-        aggregate = embedded.sum(1) / (mask.sum(-1).unsqueeze(-1).float())
 
         ret = {
-            "aggregate": aggregate,
             "embedded": embedded,
             "masks": mask,
             "hidden": encoded_layers[-1]
@@ -58,14 +56,19 @@ class BertEncoder(nn.Module):
 @MODELS.register_module()
 class BertModel(BaseModel):
     def __init__(self,
+                 name='bert-base-uncased',
                  max_tokens=256,
                  pad_to_max=True,
+                 num_layers_of_embedded=1,
+                 use_checkpoint=False,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.max_tokens = max_tokens
         self.pad_to_max = pad_to_max
-        self.tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
-        self.language_backbone = nn.Sequential(OrderedDict([("body", BertEncoder('bert-base-uncased'))]))
+        self.tokenizer = AutoTokenizer.from_pretrained(name)
+        self.language_backbone = nn.Sequential(OrderedDict([("body", BertEncoder(name,
+                                                                                 num_layers_of_embedded=num_layers_of_embedded,
+                                                                                 use_checkpoint=use_checkpoint))]))
 
     def forward(self,
                 captions: Sequence[str],
@@ -83,11 +86,6 @@ class BertModel(BaseModel):
                            "attention_mask": tokenized.attention_mask}
         language_dict_features = self.language_backbone(tokenizer_input)
         return language_dict_features
-
-
-def clamp_values(vector, min_val = -50000, max_val = 50000):
-    vector = torch.clamp(vector, min = min_val, max = max_val)
-    return vector
 
 
 class BertSelfAttention(nn.Module):
@@ -123,14 +121,14 @@ class BertSelfAttention(nn.Module):
         return x.permute(0, 2, 1, 3)
 
     def forward(
-        self,
-        hidden_states,
-        attention_mask=None,
-        head_mask=None,
-        encoder_hidden_states=None,
-        encoder_attention_mask=None,
-        past_key_value=None,
-        output_attentions=False,
+            self,
+            hidden_states,
+            attention_mask=None,
+            head_mask=None,
+            encoder_hidden_states=None,
+            encoder_attention_mask=None,
+            past_key_value=None,
+            output_attentions=False,
     ):
         mixed_query_layer = self.query(hidden_states)
 
@@ -191,9 +189,11 @@ class BertSelfAttention(nn.Module):
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
 
         if self.clamp_min_for_underflow:
-            attention_scores = torch.clamp(attention_scores, min=-50000) # Do not increase -50000, data type half has quite limited range
+            attention_scores = torch.clamp(attention_scores,
+                                           min=-50000)  # Do not increase -50000, data type half has quite limited range
         if self.clamp_max_for_overflow:
-            attention_scores = torch.clamp(attention_scores, max=50000) # Do not increase 50000, data type half has quite limited range
+            attention_scores = torch.clamp(attention_scores,
+                                           max=50000)  # Do not increase 50000, data type half has quite limited range
 
         if attention_mask is not None:
             # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
@@ -270,14 +270,14 @@ class BertAttention(nn.Module):
         self.pruned_heads = self.pruned_heads.union(heads)
 
     def forward(
-        self,
-        hidden_states,
-        attention_mask=None,
-        head_mask=None,
-        encoder_hidden_states=None,
-        encoder_attention_mask=None,
-        past_key_value=None,
-        output_attentions=False,
+            self,
+            hidden_states,
+            attention_mask=None,
+            head_mask=None,
+            encoder_hidden_states=None,
+            encoder_attention_mask=None,
+            past_key_value=None,
+            output_attentions=False,
     ):
         self_outputs = self.self(
             hidden_states,
@@ -325,14 +325,15 @@ class BertOutput(nn.Module):
         hidden_states = clamp_values(hidden_states)
         return hidden_states
 
+
 class BertEncoderLayer(BertPreTrainedModel):
-    def __init__(self, config,  clamp_min_for_underflow = False, clamp_max_for_overflow = False):
+    def __init__(self, config, clamp_min_for_underflow=False, clamp_max_for_overflow=False):
         super().__init__(config)
         self.config = config
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
         self.seq_len_dim = 1
 
-        self.attention = BertAttention(config,  clamp_min_for_underflow, clamp_max_for_overflow)
+        self.attention = BertAttention(config, clamp_min_for_underflow, clamp_max_for_overflow)
         self.intermediate = BertIntermediate(config)
         self.output = BertOutput(config)
 
