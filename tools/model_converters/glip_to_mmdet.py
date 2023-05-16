@@ -31,7 +31,7 @@ def correct_unfold_norm_order(x):
     return x
 
 
-def convert_eva(ckpt):
+def convert(ckpt):
     new_ckpt = OrderedDict()
 
     for k, v in list(ckpt.items()):
@@ -90,10 +90,10 @@ def main():
         'models to mmpretrain style.')
     parser.add_argument(
         '--src',
-        default='/home/PJLAB/huanghaian/yolo/GLIP/glip_a_tiny_o365.pth',
+        default='glip_a_tiny_o365.pth',
         help='src model path or url')
     # The dst path must be a full path of the new checkpoint.
-    parser.add_argument('--dst', default='../../glip_t.pth', help='save path')
+    parser.add_argument('--dst', default='../../glip_tiny_a_mmdet.pth', help='save path')
     args = parser.parse_args()
 
     checkpoint = CheckpointLoader.load_checkpoint(args.src, map_location='cpu')
@@ -103,7 +103,7 @@ def main():
     else:
         state_dict = checkpoint
 
-    weight = convert_eva(state_dict)
+    weight = convert(state_dict)
     torch.save(weight, args.dst)
 
     print('Done!!')
