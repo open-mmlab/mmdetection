@@ -232,6 +232,20 @@ class Resize(MMCV_Resize):
         self._record_homography_matrix(results)
         return results
 
+    def __repr__(self) -> str:
+        repr_str = self.__class__.__name__
+        repr_str += f'(scale={self.scale}, '
+        repr_str += f'scale_factor={self.scale_factor}, '
+        repr_str += f'keep_ratio={self.keep_ratio}, '
+        repr_str += f'clip_object_border={self.clip_object_border}), '
+        repr_str += f'backend={self.backend}), '
+        repr_str += f'interpolation={self.interpolation})'
+        return repr_str
+
+
+@TRANSFORMS.register_module()
+class FixScaleResize(Resize):
+
     def _resize_img(self, results):
         """Resize images with ``results['scale']``."""
         if results.get('img', None) is not None:
@@ -259,16 +273,6 @@ class Resize(MMCV_Resize):
             results['img_shape'] = img.shape[:2]
             results['scale_factor'] = (w_scale, h_scale)
             results['keep_ratio'] = self.keep_ratio
-
-    def __repr__(self) -> str:
-        repr_str = self.__class__.__name__
-        repr_str += f'(scale={self.scale}, '
-        repr_str += f'scale_factor={self.scale_factor}, '
-        repr_str += f'keep_ratio={self.keep_ratio}, '
-        repr_str += f'clip_object_border={self.clip_object_border}), '
-        repr_str += f'backend={self.backend}), '
-        repr_str += f'interpolation={self.interpolation})'
-        return repr_str
 
 
 @TRANSFORMS.register_module()

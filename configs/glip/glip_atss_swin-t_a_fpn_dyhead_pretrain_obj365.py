@@ -71,7 +71,7 @@ model = dict(
 
 test_pipeline = [
     dict(type='LoadImageFromFile', backend_args=_base_.backend_args, imdecode_backend='pillow'),
-    dict(type='Resize', scale=(800, 1333), keep_ratio=True, backend='pillow'),
+    dict(type='FixScaleResize', scale=(800, 1333), keep_ratio=True, backend='pillow'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PackDetInputs',
