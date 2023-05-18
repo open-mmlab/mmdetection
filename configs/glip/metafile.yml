@@ -19,7 +19,7 @@ Collections:
       Version: v3.0.0
 
 Models:
-  - Name: glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py
+  - Name: glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365
     In Collection: GLIP
     Config: configs/glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py
     Results:
@@ -27,8 +27,8 @@ Models:
         Dataset: COCO
         Metrics:
           box AP:
-    Weights:
-  - Name: glip_atss_swin-t_b_fpn_dyhead_pretrain_obj365.py
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth
+  - Name: glip_atss_swin-t_b_fpn_dyhead_pretrain_obj365
     In Collection: GLIP
     Config: configs/glip/glip_atss_swin-t_b_fpn_dyhead_pretrain_obj365.py
     Results:
@@ -36,4 +36,13 @@ Models:
         Dataset: COCO
         Metrics:
           box AP:
-    Weights:
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_b_mmdet-6dfbd102.pth
+  - Name: glip_atss_swin-l_fpn_dyhead_pretrain_mixeddata
+    In Collection: GLIP
+    Config: configs/glip/glip_atss_swin-l_fpn_dyhead_pretrain_mixeddata.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP:
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/glip/glip_l_mmdet-abfe026b.pth

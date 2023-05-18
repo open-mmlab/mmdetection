@@ -8,14 +8,16 @@ import torch.utils.checkpoint as checkpoint
 from mmcv.cnn.bricks import DropPath
 
 try:
-    from transformers import BertPreTrainedModel
-    from transformers.models.bert.modeling_bert import BertSelfOutput
-    from transformers.models.bert.modeling_bert import BertAttention as HFBertAttention
-    from transformers.models.bert.modeling_bert import BertIntermediate as HFBertIntermediate
-    from transformers.models.bert.modeling_bert import BertOutput as HFBertOutput
+    from transformers import BertConfig, BertPreTrainedModel
     from transformers.activations import ACT2FN
     from transformers.modeling_utils import apply_chunking_to_forward
-    from transformers import BertConfig
+    from transformers.models.bert.modeling_bert import \
+        BertAttention as HFBertAttention
+    from transformers.models.bert.modeling_bert import \
+        BertIntermediate as HFBertIntermediate
+    from transformers.models.bert.modeling_bert import \
+        BertOutput as HFBertOutput
+    from transformers.models.bert.modeling_bert import BertSelfOutput
 except ImportError:
     BertPreTrainedModel = None
     ACT2FN = None
@@ -53,9 +55,9 @@ class BiMultiHeadAttention(nn.Module):
         self.l_dim = l_dim
 
         assert (
-                self.head_dim * self.num_heads == self.embed_dim
+            self.head_dim * self.num_heads == self.embed_dim
         ), f'embed_dim must be divisible by num_heads (got `embed_dim`: {self.embed_dim} and `num_heads`: {self.num_heads}).'
-        self.scale = self.head_dim ** (-0.5)
+        self.scale = self.head_dim**(-0.5)
         self.dropout = dropout
 
         self.v_proj = nn.Linear(self.v_dim, self.embed_dim)
@@ -90,13 +92,13 @@ class BiMultiHeadAttention(nn.Module):
         nn.init.xavier_uniform_(self.out_l_proj.weight)
         self.out_l_proj.bias.data.fill_(0)
 
-    def forward(self, v, l, attention_mask_l=None):
-        bsz, tgt_len, _ = v.size()
+    def forward(self, vision, lang, attention_mask_l=None):
+        bsz, tgt_len, _ = vision.size()
 
-        query_states = self.v_proj(v) * self.scale
-        key_states = self._shape(self.l_proj(l), -1, bsz)
-        value_v_states = self._shape(self.values_v_proj(v), -1, bsz)
-        value_l_states = self._shape(self.values_l_proj(l), -1, bsz)
+        query_states = self.v_proj(vision) * self.scale
+        key_states = self._shape(self.l_proj(lang), -1, bsz)
+        value_v_states = self._shape(self.values_v_proj(vision), -1, bsz)
+        value_l_states = self._shape(self.values_l_proj(lang), -1, bsz)
 
         proj_shape = (bsz * self.num_heads, -1, self.head_dim)
         query_states = self._shape(query_states, tgt_len,
@@ -118,29 +120,21 @@ class BiMultiHeadAttention(nn.Module):
 
         if self.clamp_min_for_underflow:
             # Do not increase -50000, data type half has quite limited range
-            attn_weights = torch.clamp(
-                attn_weights, min=-MAX_CLAMP_VALUE
-            )
+            attn_weights = torch.clamp(attn_weights, min=-MAX_CLAMP_VALUE)
         if self.clamp_max_for_overflow:
             # Do not increase 50000, data type half has quite limited range
-            attn_weights = torch.clamp(
-                attn_weights, max=MAX_CLAMP_VALUE
-            )
+            attn_weights = torch.clamp(attn_weights, max=MAX_CLAMP_VALUE)
 
         attn_weights_T = attn_weights.transpose(1, 2)
         attn_weights_l = (
-                attn_weights_T -
-                torch.max(attn_weights_T, dim=-1, keepdim=True)[0])
+            attn_weights_T -
+            torch.max(attn_weights_T, dim=-1, keepdim=True)[0])
         if self.clamp_min_for_underflow:
             # Do not increase -50000, data type half has quite limited range
-            attn_weights_l = torch.clamp(
-                attn_weights_l, min=-MAX_CLAMP_VALUE
-            )
+            attn_weights_l = torch.clamp(attn_weights_l, min=-MAX_CLAMP_VALUE)
         if self.clamp_max_for_overflow:
             # Do not increase 50000, data type half has quite limited range
-            attn_weights_l = torch.clamp(
-                attn_weights_l, max=MAX_CLAMP_VALUE
-            )
+            attn_weights_l = torch.clamp(attn_weights_l, max=MAX_CLAMP_VALUE)
 
         attn_weights_l = attn_weights_l.softmax(dim=-1)
 
@@ -255,8 +249,8 @@ class BiAttentionBlockForCheckpoint(nn.Module):
         start = 0
         for (h, w) in size_per_level:
             new_v_per_level = new_v[:, :,
-                              start:start + h * w].view(bs, -1, h,
-                                                        w).contiguous()
+                                    start:start + h * w].view(bs, -1, h,
+                                                              w).contiguous()
             visu_feat.append(new_v_per_level)
             start += h * w
 
@@ -277,6 +271,7 @@ class BiAttentionBlockForCheckpoint(nn.Module):
 
 class VLFuse(nn.Module):
     """Early Fusion Module."""
+
     def __init__(self):
         super().__init__()
         # bi-direction (text->image, image->text)
@@ -314,6 +309,7 @@ class VLFuse(nn.Module):
 
 class BertEncoderLayer(BertPreTrainedModel):
     """Modified from transformers.models.bert.modeling_bert.BertLayer."""
+
     def __init__(self,
                  config,
                  clamp_min_for_underflow: bool = False,
@@ -351,12 +347,12 @@ class BertEncoderLayer(BertPreTrainedModel):
         )
         attention_output = self_attention_outputs[0]
         outputs = self_attention_outputs[
-                  1:]  # add self attentions if we output attention weights
+            1:]  # add self attentions if we output attention weights
         layer_output = apply_chunking_to_forward(self.feed_forward_chunk,
                                                  self.chunk_size_feed_forward,
                                                  self.seq_len_dim,
                                                  attention_output)
-        outputs = (layer_output,) + outputs
+        outputs = (layer_output, ) + outputs
         hidden_states = outputs[0]
 
         language_dict_features['hidden'] = hidden_states
@@ -378,6 +374,7 @@ class BertEncoderLayer(BertPreTrainedModel):
 # with the only difference being the additional clamp operation.
 class BertSelfAttention(nn.Module):
     """BERT self-attention layer from Huggingface transformers.
+
     Compared to the BertSelfAttention of Huggingface, only add the clamp.
     """
 
@@ -422,14 +419,14 @@ class BertSelfAttention(nn.Module):
         return x.permute(0, 2, 1, 3)
 
     def forward(
-            self,
-            hidden_states,
-            attention_mask=None,
-            head_mask=None,
-            encoder_hidden_states=None,
-            encoder_attention_mask=None,
-            past_key_value=None,
-            output_attentions=False,
+        self,
+        hidden_states,
+        attention_mask=None,
+        head_mask=None,
+        encoder_hidden_states=None,
+        encoder_attention_mask=None,
+        past_key_value=None,
+        output_attentions=False,
     ):
         mixed_query_layer = self.query(hidden_states)
 
@@ -530,19 +527,19 @@ class BertSelfAttention(nn.Module):
 
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
         new_context_layer_shape = context_layer.size()[:-2] + (
-            self.all_head_size,)
+            self.all_head_size, )
         context_layer = context_layer.view(*new_context_layer_shape)
 
         outputs = (context_layer,
-                   attention_probs) if output_attentions else (context_layer,)
+                   attention_probs) if output_attentions else (context_layer, )
 
         if self.is_decoder:
-            outputs = outputs + (past_key_value,)
+            outputs = outputs + (past_key_value, )
         return outputs
 
 
 class BertAttention(HFBertAttention):
-    """BertAttention is made up of self-attention and intermediate+output
+    """BertAttention is made up of self-attention and intermediate+output.
 
     Compared to the BertAttention of Huggingface, only add the clamp.
     """
@@ -557,6 +554,7 @@ class BertAttention(HFBertAttention):
 
 
 class BertIntermediate(HFBertIntermediate):
+
     def forward(self, hidden_states):
         hidden_states = self.dense(hidden_states)
         hidden_states = clamp_values(hidden_states)
@@ -566,6 +564,7 @@ class BertIntermediate(HFBertIntermediate):
 
 
 class BertOutput(HFBertOutput):
+
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)

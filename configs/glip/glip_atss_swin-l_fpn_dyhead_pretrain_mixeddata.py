@@ -8,5 +8,5 @@ model = dict(
         window_size=12,
         drop_path_rate=0.4,
     ),
-    neck=dict(in_channels=[0, 384, 768, 1536]),
+    neck=dict(in_channels=[384, 768, 1536]),
     bbox_head=dict(early_fuse=True, num_dyhead_blocks=8))

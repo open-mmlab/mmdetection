@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
+import subprocess
 from collections import OrderedDict
 
 import torch
 from mmengine.runner import CheckpointLoader
-import subprocess
 
 convert_dict_fpn = {
     'module.backbone.fpn.fpn_inner2': 'neck.lateral_convs.0.conv',
@@ -98,7 +98,7 @@ def convert(ckpt):
 def main():
     parser = argparse.ArgumentParser(
         description='Convert keys in pretrained eva '
-                    'models to mmpretrain style.')
+        'models to mmpretrain style.')
     parser.add_argument(
         'src', default='glip_a_tiny_o365.pth', help='src model path or url')
     # The dst path must be a full path of the new checkpoint.

@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import math
-from typing import List, Optional, Tuple, Union, Sequence, Callable
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -9,9 +9,9 @@ import torch.nn.functional as F
 from mmcv.cnn import Scale
 from mmcv.ops.modulated_deform_conv import ModulatedDeformConv2d
 from mmengine.config import ConfigDict
+from mmengine.model import BaseModel
 from mmengine.structures import InstanceData
 from torch import Tensor
-from mmengine.model import BaseModel
 
 try:
     from transformers import BertConfig
@@ -23,11 +23,12 @@ from mmdet.structures.bbox import cat_boxes
 from mmdet.utils import InstanceList
 from ..utils import (BertEncoderLayer, VLFuse, filter_scores_and_topk,
                      permute_and_flatten, select_single_mlvl)
-from .atss_head import ATSSHead
 from ..utils.vlfuse_helper import MAX_CLAMP_VALUE
+from .atss_head import ATSSHead
 
 
-def convert_grounding_to_cls_scores(logits: Tensor, positive_maps: List[dict]) -> Tensor:
+def convert_grounding_to_cls_scores(logits: Tensor,
+                                    positive_maps: List[dict]) -> Tensor:
     """Convert logits to class scores."""
     assert len(positive_maps) == logits.shape[0]  # batch size
 
@@ -39,14 +40,14 @@ def convert_grounding_to_cls_scores(logits: Tensor, positive_maps: List[dict]) -
             positive_map = positive_maps[0]
             for label_j in positive_map:
                 scores[:, :, label_j -
-                             1] = logits[:, :,
-                                  torch.LongTensor(positive_map[label_j]
-                                                   )].mean(-1)
+                       1] = logits[:, :,
+                                   torch.LongTensor(positive_map[label_j]
+                                                    )].mean(-1)
         else:
             for i, positive_map in enumerate(positive_maps):
                 for label_j in positive_map:
                     scores[i, :, label_j - 1] = logits[
-                                                i, :, torch.LongTensor(positive_map[label_j])].mean(-1)
+                        i, :, torch.LongTensor(positive_map[label_j])].mean(-1)
     return scores
 
 
@@ -117,7 +118,8 @@ class DyReLU(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(in_channels, in_channels // expand_ratio),
             nn.ReLU(inplace=True),
-            nn.Linear(in_channels // expand_ratio, out_channels * self.expand_ratio),
+            nn.Linear(in_channels // expand_ratio,
+                      out_channels * self.expand_ratio),
             nn.Hardsigmoid(inplace=True))
 
     def forward(self, x) -> Tensor:
@@ -136,7 +138,7 @@ class DyReLU(nn.Module):
 
 
 class DyConv(nn.Module):
-    """Dynamic Convolution"""
+    """Dynamic Convolution."""
 
     def __init__(self,
                  conv_func: Callable,
@@ -204,14 +206,16 @@ class DyConv(nn.Module):
 
             if level > 0:
                 temp_feats.append(self.dyconvs[2](visual_feats[level - 1],
-                                                 **offset_conv_args))
+                                                  **offset_conv_args))
             if level < len(visual_feats) - 1:
                 temp_feats.append(
                     F.upsample_bilinear(
-                        self.dyconvs[0](visual_feats[level + 1], **offset_conv_args),
+                        self.dyconvs[0](visual_feats[level + 1],
+                                        **offset_conv_args),
                         size=[feature.size(2),
                               feature.size(3)]))
-            mean_feats = torch.mean(torch.stack(temp_feats), dim=0, keepdim=False)
+            mean_feats = torch.mean(
+                torch.stack(temp_feats), dim=0, keepdim=False)
 
             if self.attnconv is not None:
                 attn_feat = []
@@ -236,7 +240,7 @@ class DyConv(nn.Module):
 
 
 class VLFusionModule(BaseModel):
-    """Visual-lang Fusion Module"""
+    """Visual-lang Fusion Module."""
 
     def __init__(self,
                  in_channels: int,
@@ -271,9 +275,6 @@ class VLFusionModule(BaseModel):
         """Initialize layers of the model."""
         bias_value = -math.log((1 - 0.01) / 0.01)
 
-        conv_func = lambda i, o, s: Conv3x3Norm(
-            i, o, s, use_dcn=self.use_dcn, norm_type=['gn', 16])
-
         dyhead_tower = []
         for i in range(self.num_dyhead_blocks):
             if self.early_fuse:
@@ -289,7 +290,8 @@ class VLFusionModule(BaseModel):
             # vision branch
             dyhead_tower.append(
                 DyConv(
-                    conv_func,
+                    lambda i, o, s: Conv3x3Norm(
+                        i, o, s, use_dcn=self.use_dcn, norm_type=['gn', 16]),
                     self.in_channels if i == 0 else self.feat_channels,
                     self.feat_channels,
                     use_dyrelu=(self.use_dyrelu
@@ -320,7 +322,8 @@ class VLFusionModule(BaseModel):
             torch.Tensor([bias_value]), requires_grad=True)
         self.scales = nn.ModuleList([Scale(1.0) for _ in range(5)])
 
-    def forward(self, visual_feats: Tuple[Tensor], language_feats: dict) -> Tuple:
+    def forward(self, visual_feats: Tuple[Tensor],
+                language_feats: dict) -> Tuple:
         feat_inputs = {'visual': visual_feats, 'lang': language_feats}
         dyhead_tower = self.dyhead_tower(feat_inputs)
 
@@ -350,13 +353,16 @@ class VLFusionModule(BaseModel):
             dot_product_proj_queries = permute_and_flatten(
                 visual, B, self.num_base_priors, C, H, W)
 
-            bias = dot_product_proj_tokens_bias.unsqueeze(1).repeat(1, self.num_base_priors, 1)
+            bias = dot_product_proj_tokens_bias.unsqueeze(1).repeat(
+                1, self.num_base_priors, 1)
             dot_product_logit = (
-                                        torch.matmul(dot_product_proj_queries,
-                                                     dot_product_proj_tokens.transpose(-1, -2)) /
-                                        self.log_scale.exp()) + bias
-            dot_product_logit = torch.clamp(dot_product_logit, max=MAX_CLAMP_VALUE)
-            dot_product_logit = torch.clamp(dot_product_logit, min=-MAX_CLAMP_VALUE)
+                torch.matmul(dot_product_proj_queries,
+                             dot_product_proj_tokens.transpose(-1, -2)) /
+                self.log_scale.exp()) + bias
+            dot_product_logit = torch.clamp(
+                dot_product_logit, max=MAX_CLAMP_VALUE)
+            dot_product_logit = torch.clamp(
+                dot_product_logit, min=-MAX_CLAMP_VALUE)
             cls_logits.append(dot_product_logit)
 
         return bbox_preds, centerness, cls_logits
@@ -370,8 +376,10 @@ class ATSSVLFusionHead(ATSSHead):
         early_fuse (bool): Whether to fuse visual and language features
             Defaults to False.
         num_dyhead_blocks (int): Number of dynamic head blocks. Defaults to 6.
-        lang_model_name (str): Name of the language model. Defaults to 'bert-base-uncased'.
+        lang_model_name (str): Name of the language model.
+            Defaults to 'bert-base-uncased'.
     """
+
     def __init__(self,
                  *args,
                  early_fuse: bool = False,
@@ -464,8 +472,8 @@ class ATSSVLFusionHead(ATSSHead):
                 (batch_size, num_priors * num_classes, H, W).
             batch_img_metas (list[dict], Optional): Batch image meta info.
                 Defaults to None.
-            batch_token_positive_maps (list[dict], Optional): Batch token positive map.
-                Defaults to None.
+            batch_token_positive_maps (list[dict], Optional): Batch token
+                positive map. Defaults to None.
             cfg (ConfigDict, optional): Test / postprocessing
                 configuration, if None, test_cfg would be used.
                 Defaults to None.
