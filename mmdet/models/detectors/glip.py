@@ -2,7 +2,7 @@
 import copy
 import re
 import warnings
-
+from typing import Tuple
 import torch
 from torch import Tensor
 
@@ -12,7 +12,13 @@ from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .single_stage import SingleStageDetector
 
 
-def find_noun_phrases(caption: str):
+def find_noun_phrases(caption: str) -> list:
+    """Find noun phrases in a caption using nltk.
+
+    Examples:
+        >>> caption = 'There is two cat and a remote in the picture'
+        >>> find_noun_phrases(caption) # ['cat', 'a remote', 'the picture']
+    """
     import nltk
 
     caption = caption.lower()
@@ -23,7 +29,7 @@ def find_noun_phrases(caption: str):
     cp = nltk.RegexpParser(grammar)
     result = cp.parse(pos_tags)
 
-    noun_phrases = list()
+    noun_phrases = []
     for subtree in result.subtrees():
         if subtree.label() == 'NP':
             noun_phrases.append(' '.join(t[0] for t in subtree.leaves()))
@@ -32,16 +38,18 @@ def find_noun_phrases(caption: str):
 
 
 def remove_punctuation(text: str) -> str:
-    punct = [
+    """Remove punctuation from a text."""
+    punctuation = [
         '|', ':', ';', '@', '(', ')', '[', ']', '{', '}', '^', '\'', '\"', '’',
         '`', '?', '$', '%', '#', '!', '&', '*', '+', ',', '.'
     ]
-    for p in punct:
+    for p in punctuation:
         text = text.replace(p, '')
     return text.strip()
 
 
-def run_ner(caption):
+def run_ner(caption: str) -> Tuple[list, list]:
+    """Run NER on a caption and return the tokens and noun phrases."""
     noun_phrases = find_noun_phrases(caption)
     noun_phrases = [remove_punctuation(phrase) for phrase in noun_phrases]
     noun_phrases = [phrase for phrase in noun_phrases if phrase != '']
@@ -62,10 +70,10 @@ def run_ner(caption):
     return tokens_positive, noun_phrases
 
 
-def create_positive_map(tokenized, tokens_positive):
+def create_positive_map(tokenized, tokens_positive: list, max_num_entities: int = 256) -> Tensor:
     """construct a map such that positive_map[i,j] = True
     if box i is associated to token j"""
-    positive_map = torch.zeros((len(tokens_positive), 256), dtype=torch.float)
+    positive_map = torch.zeros((len(tokens_positive), max_num_entities), dtype=torch.float)
 
     for j, tok_list in enumerate(tokens_positive):
         for (beg, end) in tok_list:
@@ -98,7 +106,8 @@ def create_positive_map(tokenized, tokens_positive):
     return positive_map / (positive_map.sum(-1)[:, None] + 1e-6)
 
 
-def create_positive_map_label_to_token(positive_map, plus=0):
+def create_positive_map_label_to_token(positive_map: list, plus: int = 0) -> dict:
+    """Create a dictionary mapping the label to the token."""
     positive_map_label_to_token = {}
     for i in range(len(positive_map)):
         positive_map_label_to_token[i + plus] = torch.nonzero(
@@ -108,7 +117,7 @@ def create_positive_map_label_to_token(positive_map, plus=0):
 
 @MODELS.register_module()
 class GLIP(SingleStageDetector):
-
+    """Implementation of `GLIP <https://arxiv.org/abs/2112.03857>`_"""
     def __init__(self,
                  backbone: ConfigType,
                  neck: ConfigType,
@@ -134,8 +143,9 @@ class GLIP(SingleStageDetector):
         self._entities = None
 
     def get_tokens_positive_and_prompts(self,
-                                        original_caption,
-                                        custom_entities: bool = False):
+                                        original_caption: str,
+                                        custom_entities: bool = False) -> Tuple[dict, str]:
+        """Get the tokens positive and prompts for the caption."""
         if isinstance(original_caption, (list, tuple)) or custom_entities:
             if custom_entities and isinstance(original_caption, str):
                 if not original_caption.endswith('.'):
@@ -232,6 +242,7 @@ class GLIP(SingleStageDetector):
                         label_names.append('unobject')
                     else:
                         label_names.append(self._entities[labels])
+                # for visualization
                 pred_instances.label_names = label_names
             data_sample.pred_instances = pred_instances
         return batch_data_samples

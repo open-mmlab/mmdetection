@@ -1,0 +1,39 @@
+Collections:
+  - Name: GLIP
+    Metadata:
+      Training Data: Objects365, GoldG, CC3M, SBU and COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: A100 GPUs
+      Architecture:
+        - Swin Transformer
+        - DYHead
+        - BERT
+    Paper:
+      URL: https://arxiv.org/abs/2112.03857
+      Title: 'GLIP: Grounded Language-Image Pre-training'
+    README: configs/glip/README.md
+    Code:
+      URL:
+      Version: v3.0.0
+
+Models:
+  - Name: glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py
+    In Collection: GLIP
+    Config: configs/glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP:
+    Weights:
+  - Name: glip_atss_swin-t_b_fpn_dyhead_pretrain_obj365.py
+    In Collection: GLIP
+    Config: configs/glip/glip_atss_swin-t_b_fpn_dyhead_pretrain_obj365.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP:
+    Weights:
