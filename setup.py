@@ -215,6 +215,7 @@ if __name__ == '__main__':
             'optional': parse_requirements('requirements/optional.txt'),
             'mim': parse_requirements('requirements/mminstall.txt'),
             'tracking': parse_requirements('requirements/tracking.txt'),
+            'multimodal': parse_requirements('requirements/multimodal.txt'),
         },
         ext_modules=[],
         cmdclass={'build_ext': BuildExtension},
