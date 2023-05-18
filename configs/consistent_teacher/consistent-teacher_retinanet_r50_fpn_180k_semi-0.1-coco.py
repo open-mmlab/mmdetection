@@ -1,7 +1,6 @@
 _base_ = [
     '../_base_/models/retinanet_r50_fpn.py', '../_base_/default_runtime.py',
-    '../_base_/datasets/semi_coco_detection.py',
-    '../_base_/schedules/schedule_1x.py'
+    '../_base_/datasets/semi_coco_detection.py'
 ]
 
 detector = _base_.model
@@ -31,7 +30,7 @@ detector.bbox_head = dict(
         loss_weight=1.0),
     loss_bbox=dict(type='GIoULoss', loss_weight=2.0))
 detector.train_cfg = dict(
-    assigner=dict(type='DynamicSoftLabelAssigner', topk=13, iou_factor=2.0),
+    assigner=dict(type='DynamicSoftLabelAssigner', topk=13, iou_weight=2.0),
     alpha=1,
     beta=6,
     allowed_border=-1,
@@ -61,9 +60,9 @@ fold = 1
 percent = 10
 labeled_dataset = _base_.labeled_dataset
 unlabeled_dataset = _base_.unlabeled_dataset
-labeled_dataset.ann_file = 'semi_anns/instances_train2017.${fold}@${percent}.json'
+labeled_dataset.ann_file = 'semi_anns/instances_train2017.1@10.json'
 unlabeled_dataset.ann_file = 'semi_anns/' \
-                             'instances_train2017.${fold}@${percent}-unlabeled.json'
+                             'instances_train2017.1@10-unlabeled.json'
 unlabeled_dataset.data_prefix = dict(img='train2017/')
 train_dataloader = dict(
     dataset=dict(datasets=[labeled_dataset, unlabeled_dataset]))
@@ -97,6 +96,8 @@ default_hooks = dict(
 log_processor = dict(by_epoch=False)
 
 custom_hooks = [
-    dict(type='SetIterInfoHook'),
-    dict(type='MeanTeacher', momentum=0.9995, interval=1, warm_up=0),
+    dict(type='NumClassCheckHook'),
+    dict(type='MeanTeacherHook', momentum=0.9995, interval=1),
 ]
+
+auto_scale_lr = dict(enable=False, base_batch_size=16)

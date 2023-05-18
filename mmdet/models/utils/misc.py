@@ -546,7 +546,7 @@ def rename_loss_dict(prefix: str, losses: dict) -> dict:
         losses (dict):  A dictionary of loss components.
 
     Returns:
-            dict: A dictionary of loss components with prefix.
+        dict: A dictionary of loss components with prefix.
     """
     return {prefix + k: v for k, v in losses.items()}
 
@@ -650,63 +650,3 @@ def unfold_wo_center(x, kernel_size: int, dilation: int) -> Tensor:
         dim=2)
 
     return unfolded_x
-
-
-def filter_invalid(bbox,
-                   label=None,
-                   score=None,
-                   mask=None,
-                   thr: float = 0.0,
-                   min_size: float = 0):
-    """Filter ground truth (GT) instances by score and/or size."""
-    if score is not None:
-        valid = score > thr
-        bbox = bbox[valid]
-        if label is not None:
-            label = label[valid]
-        if mask is not None:
-            mask = BitmapMasks(mask.masks[valid.cpu().numpy()], mask.height,
-                               mask.width)
-    if min_size is not None:
-        bw = bbox[:, 2] - bbox[:, 0]
-        bh = bbox[:, 3] - bbox[:, 1]
-        valid = (bw > min_size) & (bh > min_size)
-        bbox = bbox[valid]
-        if label is not None:
-            label = label[valid]
-        if mask is not None:
-            mask = BitmapMasks(mask.masks[valid.cpu().numpy()], mask.height,
-                               mask.width)
-    return bbox, label, mask
-
-
-def filter_invalid_with_std(bbox,
-                            label=None,
-                            score=None,
-                            mask=None,
-                            thr: float = 0.0,
-                            min_size: float = 0):
-    """Filter ground truth (GT) instances by std."""
-    if (score is not None) and (thr > 0):
-        valid = score > thr
-        bbox = bbox[valid]
-        if label is not None:
-            label = label[valid]
-        if std is not None:
-            std = std[valid]
-        if mask is not None:
-            mask = BitmapMasks(mask.masks[valid.cpu().numpy()], mask.height,
-                               mask.width)
-    if min_size is not None:
-        bw = bbox[:, 2] - bbox[:, 0]
-        bh = bbox[:, 3] - bbox[:, 1]
-        valid = (bw > min_size) & (bh > min_size)
-        bbox = bbox[valid]
-        if label is not None:
-            label = label[valid]
-        if std is not None:
-            std = std[valid]
-        if mask is not None:
-            mask = BitmapMasks(mask.masks[valid.cpu().numpy()], mask.height,
-                               mask.width)
-    return bbox, label, mask, std

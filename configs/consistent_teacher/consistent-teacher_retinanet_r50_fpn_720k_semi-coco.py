@@ -29,5 +29,5 @@ param_scheduler = [
 ]
 
 custom_hooks = [
-    dict(type='MeanTeacher', momentum=0.9998, interval=1, warm_up=0),
+    dict(type='MeanTeacherHook', momentum=0.9998, interval=1),
 ]
