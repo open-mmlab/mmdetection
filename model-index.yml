@@ -95,3 +95,4 @@ Import:
   - configs/deepsort/metafile.yml
   - configs/mask2former_vis/metafile.yml
   - configs/masktrack_rcnn/metafile.yml
+  - configs/glip/metafile.yml
