@@ -147,19 +147,19 @@ class DyConv(nn.Module):
                  use_dcn: bool = False):
         super().__init__()
 
-        self.DyConv = nn.ModuleList()
-        self.DyConv.append(conv_func(in_channels, out_channels, 1))
-        self.DyConv.append(conv_func(in_channels, out_channels, 1))
-        self.DyConv.append(conv_func(in_channels, out_channels, 2))
+        self.dyconvs = nn.ModuleList()
+        self.dyconvs.append(conv_func(in_channels, out_channels, 1))
+        self.dyconvs.append(conv_func(in_channels, out_channels, 1))
+        self.dyconvs.append(conv_func(in_channels, out_channels, 2))
 
         if use_dyfuse:
-            self.AttnConv = nn.Sequential(
+            self.attnconv = nn.Sequential(
                 nn.AdaptiveAvgPool2d(1),
                 nn.Conv2d(in_channels, 1, kernel_size=1),
                 nn.ReLU(inplace=True))
             self.h_sigmoid = nn.Hardsigmoid(inplace=True)
         else:
-            self.AttnConv = None
+            self.attnconv = None
 
         if use_dyrelu:
             self.relu = DyReLU(in_channels, out_channels)
@@ -175,13 +175,13 @@ class DyConv(nn.Module):
         self.init_weights()
 
     def init_weights(self):
-        for m in self.DyConv.modules():
+        for m in self.dyconvs.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.normal_(m.weight.data, 0, 0.01)
                 if m.bias is not None:
                     m.bias.data.zero_()
-        if self.AttnConv is not None:
-            for m in self.AttnConv.modules():
+        if self.attnconv is not None:
+            for m in self.attnconv.modules():
                 if isinstance(m, nn.Conv2d):
                     nn.init.normal_(m.weight.data, 0, 0.01)
                     if m.bias is not None:
@@ -200,25 +200,25 @@ class DyConv(nn.Module):
                 mask = offset_mask[:, 18:, :, :].sigmoid()
                 offset_conv_args = dict(offset=offset, mask=mask)
 
-            temp_feats = [self.DyConv[1](feature, **offset_conv_args)]
+            temp_feats = [self.dyconvs[1](feature, **offset_conv_args)]
 
             if level > 0:
-                temp_feats.append(self.DyConv[2](visual_feats[level - 1],
+                temp_feats.append(self.dyconvs[2](visual_feats[level - 1],
                                                  **offset_conv_args))
             if level < len(visual_feats) - 1:
                 temp_feats.append(
                     F.upsample_bilinear(
-                        self.DyConv[0](visual_feats[level + 1], **offset_conv_args),
+                        self.dyconvs[0](visual_feats[level + 1], **offset_conv_args),
                         size=[feature.size(2),
                               feature.size(3)]))
             mean_feats = torch.mean(torch.stack(temp_feats), dim=0, keepdim=False)
 
-            if self.AttnConv is not None:
+            if self.attnconv is not None:
                 attn_feat = []
                 res_feat = []
                 for feat in temp_feats:
                     res_feat.append(feat)
-                    attn_feat.append(self.AttnConv(feat))
+                    attn_feat.append(self.attnconv(feat))
 
                 res_feat = torch.stack(res_feat)
                 spa_pyr_attn = self.h_sigmoid(torch.stack(attn_feat))

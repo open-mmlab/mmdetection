@@ -4,6 +4,7 @@ from collections import OrderedDict
 
 import torch
 from mmengine.runner import CheckpointLoader
+import subprocess
 
 convert_dict_fpn = {
     'module.backbone.fpn.fpn_inner2': 'neck.lateral_convs.0.conv',
@@ -35,6 +36,9 @@ def convert(ckpt):
     new_ckpt = OrderedDict()
 
     for k, v in list(ckpt.items()):
+        if 'anchor_generator' in k or 'resizer' in k or 'cls_logits' in k:
+            continue
+
         new_v = v
         if 'module.backbone.body' in k:
             new_k = k.replace('module.backbone.body', 'backbone')
@@ -80,6 +84,13 @@ def convert(ckpt):
         else:
             print('skip:', k)
             continue
+
+        if 'DyConv' in new_k:
+            new_k = new_k.replace('DyConv', 'dyconvs')
+
+        if 'AttnConv' in new_k:
+            new_k = new_k.replace('AttnConv', 'attnconv')
+
         new_ckpt[new_k] = new_v
     return new_ckpt
 
@@ -87,12 +98,12 @@ def convert(ckpt):
 def main():
     parser = argparse.ArgumentParser(
         description='Convert keys in pretrained eva '
-        'models to mmpretrain style.')
+                    'models to mmpretrain style.')
     parser.add_argument(
-        '--src', default='glip_a_tiny_o365.pth', help='src model path or url')
+        'src', default='glip_a_tiny_o365.pth', help='src model path or url')
     # The dst path must be a full path of the new checkpoint.
     parser.add_argument(
-        '--dst', default='../../glip_tiny_a_mmdet.pth', help='save path')
+        '--dst', default='glip_tiny_a_mmdet.pth', help='save path')
     args = parser.parse_args()
 
     checkpoint = CheckpointLoader.load_checkpoint(args.src, map_location='cpu')
@@ -105,7 +116,10 @@ def main():
     weight = convert(state_dict)
     torch.save(weight, args.dst)
 
-    print('Done!!')
+    sha = subprocess.check_output(['sha256sum', args.dst]).decode()
+    final_file = args.dst.replace('.pth', '') + '-{}.pth'.format(sha[:8])
+    subprocess.Popen(['mv', args.dst, final_file])
+    print(f'Done!!, save to {final_file}')
 
 
 if __name__ == '__main__':

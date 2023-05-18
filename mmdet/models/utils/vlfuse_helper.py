@@ -244,7 +244,7 @@ class BiAttentionBlockForCheckpoint(nn.Module):
         for i, feat_per_level in enumerate([q0, q1, q2, q3, q4]):
             bs, c, h, w = feat_per_level.shape
             size_per_level.append([h, w])
-            feat = permute_and_flatten(feat_per_level, bs, c, h, w)
+            feat = permute_and_flatten(feat_per_level, bs, -1, c, h, w)
             visual_features_flatten.append(feat)
         visual_features_flatten = torch.cat(visual_features_flatten, dim=1)
         new_v, new_l = self.single_attention_call(
