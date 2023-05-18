@@ -364,7 +364,14 @@ class VLFusionModule(BaseModel):
 
 @MODELS.register_module()
 class ATSSVLFusionHead(ATSSHead):
+    """ATSS head with visual-language fusion module.
 
+    Args:
+        early_fuse (bool): Whether to fuse visual and language features
+            Defaults to False.
+        num_dyhead_blocks (int): Number of dynamic head blocks. Defaults to 6.
+        lang_model_name (str): Name of the language model. Defaults to 'bert-base-uncased'.
+    """
     def __init__(self,
                  *args,
                  early_fuse: bool = False,
@@ -386,6 +393,7 @@ class ATSSVLFusionHead(ATSSHead):
 
     def forward(self, visual_feats: Tuple[Tensor],
                 language_feats: dict) -> Tuple[Tensor]:
+        """Forward function."""
         bbox_preds, centerness, cls_logits = self.head(visual_feats,
                                                        language_feats)
         return bbox_preds, centerness, cls_logits
@@ -395,6 +403,23 @@ class ATSSVLFusionHead(ATSSHead):
                 language_feats: dict,
                 batch_data_samples,
                 rescale: bool = True):
+        """Perform forward propagation of the detection head and predict
+        detection results on the features of the upstream network.
+
+        Args:
+            visual_feats (tuple[Tensor]): Multi-level visual features from the
+                upstream network, each is a 4D-tensor.
+            language_feats (dict): Language features from the upstream network.
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[obj:`InstanceData`]: Detection results of each image
+            after the post process.
+        """
         batch_img_metas = [
             data_samples.metainfo for data_samples in batch_data_samples
         ]
@@ -420,6 +445,46 @@ class ATSSVLFusionHead(ATSSHead):
                         cfg: Optional[ConfigDict] = None,
                         rescale: bool = False,
                         with_nms: bool = True) -> InstanceList:
+        """Transform a batch of output features extracted from the head into
+        bbox results.
+
+        Note: When score_factors is not None, the cls_scores are
+        usually multiplied by it then obtain the real score used in NMS,
+        such as CenterNess in FCOS, IoU branch in ATSS.
+
+        Args:
+            bbox_preds (list[Tensor]): Box energies / deltas for all
+                scale levels, each is a 4D-tensor, has shape
+                (batch_size, num_priors * 4, H, W).
+            score_factors (list[Tensor], optional): Score factor for
+                all scale level, each is a 4D-tensor, has shape
+                (batch_size, num_priors * 1, H, W). Defaults to None.
+            cls_logits (list[Tensor]): Classification scores for all
+                scale levels, each is a 4D-tensor, has shape
+                (batch_size, num_priors * num_classes, H, W).
+            batch_img_metas (list[dict], Optional): Batch image meta info.
+                Defaults to None.
+            batch_token_positive_maps (list[dict], Optional): Batch token positive map.
+                Defaults to None.
+            cfg (ConfigDict, optional): Test / postprocessing
+                configuration, if None, test_cfg would be used.
+                Defaults to None.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
+            with_nms (bool): If True, do nms before return boxes.
+                Defaults to True.
+
+        Returns:
+            list[:obj:`InstanceData`]: Object detection results of each image
+            after the post process. Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
+        """
         assert len(bbox_preds) == len(score_factors)
         num_levels = len(bbox_preds)
 
@@ -464,6 +529,46 @@ class ATSSVLFusionHead(ATSSHead):
                                 cfg: ConfigDict,
                                 rescale: bool = True,
                                 with_nms: bool = True) -> InstanceData:
+        """Transform a single image's features extracted from the head into
+        bbox results.
+
+        Args:
+            bbox_pred_list (list[Tensor]): Box energies / deltas from
+                all scale levels of a single image, each item has shape
+                (num_priors * 4, H, W).
+            score_factor_list (list[Tensor]): Score factor from all scale
+                levels of a single image, each item has shape
+                (num_priors * 1, H, W).
+            cls_logit_list (list[Tensor]): Box scores from all scale
+                levels of a single image, each item has shape
+                (num_priors * num_classes, H, W).
+            mlvl_priors (list[Tensor]): Each element in the list is
+                the priors of a single level in feature pyramid. In all
+                anchor-based methods, it has shape (num_priors, 4). In
+                all anchor-free methods, it has shape (num_priors, 2)
+                when `with_stride=True`, otherwise it still has shape
+                (num_priors, 4).
+            token_positive_maps (dict): Token positive map.
+            img_meta (dict): Image meta info.
+            cfg (mmengine.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
+            with_nms (bool): If True, do nms before return boxes.
+                Defaults to True.
+
+        Returns:
+            :obj:`InstanceData`: Detection results of each image
+            after the post process.
+            Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
+        """
         cfg = self.test_cfg if cfg is None else cfg
         cfg = copy.deepcopy(cfg)
         img_shape = img_meta['img_shape']

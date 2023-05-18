@@ -5,18 +5,29 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
-from timm.models.layers import DropPath
+from mmcv.cnn.bricks import DropPath
 
 try:
     from transformers import BertPreTrainedModel
+    from transformers.models.bert.modeling_bert import BertSelfOutput
+    from transformers.models.bert.modeling_bert import BertAttention as HFBertAttention
+    from transformers.models.bert.modeling_bert import BertIntermediate as HFBertIntermediate
+    from transformers.models.bert.modeling_bert import BertOutput as HFBertOutput
     from transformers.activations import ACT2FN
     from transformers.modeling_utils import apply_chunking_to_forward
+    from transformers import BertConfig
 except ImportError:
     BertPreTrainedModel = None
     ACT2FN = None
     apply_chunking_to_forward = None
+    BertSelfOutput = None
+    HFBertAttention = None
+    HFBertIntermediate = None
+    HFBertOutput = None
+    BertConfig = None
 
 MAX_CLAMP_VALUE = 50000
+
 
 def permute_and_flatten(layer, N, A, C, H, W):
     layer = layer.view(N, A, C, H, W)
@@ -24,9 +35,11 @@ def permute_and_flatten(layer, N, A, C, H, W):
     layer = layer.reshape(N, -1, C)
     return layer
 
+
 def clamp_values(vector):
     vector = torch.clamp(vector, min=-MAX_CLAMP_VALUE, max=MAX_CLAMP_VALUE)
     return vector
+
 
 class BiMultiHeadAttention(nn.Module):
 
@@ -40,9 +53,9 @@ class BiMultiHeadAttention(nn.Module):
         self.l_dim = l_dim
 
         assert (
-            self.head_dim * self.num_heads == self.embed_dim
+                self.head_dim * self.num_heads == self.embed_dim
         ), f'embed_dim must be divisible by num_heads (got `embed_dim`: {self.embed_dim} and `num_heads`: {self.num_heads}).'
-        self.scale = self.head_dim**(-0.5)
+        self.scale = self.head_dim ** (-0.5)
         self.dropout = dropout
 
         self.v_proj = nn.Linear(self.v_dim, self.embed_dim)
@@ -100,32 +113,34 @@ class BiMultiHeadAttention(nn.Module):
                 f'Attention weights should be of size {(bsz * self.num_heads, tgt_len, src_len)}, but is {attn_weights.size()}'
             )
 
-        # attn_weights_l = nn.functional.softmax(attn_weights.transpose(1, 2), dim=-1)
-
         if self.stable_softmax_2d:
             attn_weights = attn_weights - attn_weights.max()
 
         if self.clamp_min_for_underflow:
+            # Do not increase -50000, data type half has quite limited range
             attn_weights = torch.clamp(
-                attn_weights, min=-50000
-            )  # Do not increase -50000, data type half has quite limited range
+                attn_weights, min=-MAX_CLAMP_VALUE
+            )
         if self.clamp_max_for_overflow:
+            # Do not increase 50000, data type half has quite limited range
             attn_weights = torch.clamp(
-                attn_weights, max=50000
-            )  # Do not increase 50000, data type half has quite limited range
+                attn_weights, max=MAX_CLAMP_VALUE
+            )
 
         attn_weights_T = attn_weights.transpose(1, 2)
         attn_weights_l = (
-            attn_weights_T -
-            torch.max(attn_weights_T, dim=-1, keepdim=True)[0])
+                attn_weights_T -
+                torch.max(attn_weights_T, dim=-1, keepdim=True)[0])
         if self.clamp_min_for_underflow:
+            # Do not increase -50000, data type half has quite limited range
             attn_weights_l = torch.clamp(
-                attn_weights_l, min=-50000
-            )  # Do not increase -50000, data type half has quite limited range
+                attn_weights_l, min=-MAX_CLAMP_VALUE
+            )
         if self.clamp_max_for_overflow:
+            # Do not increase 50000, data type half has quite limited range
             attn_weights_l = torch.clamp(
-                attn_weights_l, max=50000
-            )  # Do not increase 50000, data type half has quite limited range
+                attn_weights_l, max=MAX_CLAMP_VALUE
+            )
 
         attn_weights_l = attn_weights_l.softmax(dim=-1)
 
@@ -240,8 +255,8 @@ class BiAttentionBlockForCheckpoint(nn.Module):
         start = 0
         for (h, w) in size_per_level:
             new_v_per_level = new_v[:, :,
-                                    start:start + h * w].view(bs, -1, h,
-                                                              w).contiguous()
+                              start:start + h * w].view(bs, -1, h,
+                                                        w).contiguous()
             visu_feat.append(new_v_per_level)
             start += h * w
 
@@ -260,52 +275,23 @@ class BiAttentionBlockForCheckpoint(nn.Module):
         return v, l
 
 
-class VLFuse(torch.nn.Module):
+class VLFuse(nn.Module):
     """Early Fusion Module."""
-
     def __init__(self):
-        super(VLFuse, self).__init__()
-        self.init_configs()
-
-        print('EARLY FUSION ON, USING {}'.format('MHA-B'))
-
+        super().__init__()
         # bi-direction (text->image, image->text)
         self.b_attn = BiAttentionBlockForCheckpoint(
-            v_dim=self.joint_embedding_size,
-            l_dim=self.lang_dim,
-            embed_dim=self.embed_dim,
-            num_heads=self.n_head,
+            v_dim=256,
+            l_dim=768,
+            embed_dim=2048,
+            num_heads=8,
             dropout=0.1,
             drop_path=.0,
             init_values=1.0 / 6.0)
 
-    def init_configs(self):
-        # common params
-        self.lang_model = 'bert-base-uncased'
-        self.joint_embedding_size = 256
-        self.joint_embedding_dropout = 0.1
-        self.joint_mlp_layers = 2
-
-        self.max_query_len = 256
-        self.n_layers = 1
-        self.coord_dim = 8
-        self.joint_inp_dim = self.coord_dim + self.joint_embedding_size
-        self.joint_out_dim = 256
-
-        # mha params
-        self.n_head = 8
-        self.embed_dim = 2048
-        self.t2i_hidden_dim = 1024  # 256 * 4
-        self.i2t_hidden_dim = 3072  # 768 * 4
-
-        self.lang_dim = 768
-
     def forward(self, x):
         visual_features = x['visual']
         language_dict_features = x['lang']
-
-        fused_visual_features = None
-        fused_language_dict_features = None
 
         q0, q1, q2, q3, q4, l0, _, _, _, _ = checkpoint.checkpoint(
             self.b_attn, visual_features[0], visual_features[1],
@@ -326,13 +312,79 @@ class VLFuse(torch.nn.Module):
         return features_dict
 
 
-# Bert related classes Used for VLFusion
+class BertEncoderLayer(BertPreTrainedModel):
+    """Modified from transformers.models.bert.modeling_bert.BertLayer."""
+    def __init__(self,
+                 config,
+                 clamp_min_for_underflow: bool = False,
+                 clamp_max_for_overflow: bool = False):
+        super().__init__(config)
+        self.config = config
+        self.chunk_size_feed_forward = config.chunk_size_feed_forward
+        self.seq_len_dim = 1
+
+        self.attention = BertAttention(config, clamp_min_for_underflow,
+                                       clamp_max_for_overflow)
+        self.intermediate = BertIntermediate(config)
+        self.output = BertOutput(config)
+
+    def forward(self, inputs):
+        language_dict_features = inputs['lang']
+        hidden_states = language_dict_features['hidden']
+        attention_mask = language_dict_features['masks']
+
+        device = hidden_states.device
+        input_shape = hidden_states.size()[:-1]
+        # We can provide a self-attention mask of dimensions
+        # [batch_size, from_seq_length, to_seq_length]
+        # ourselves in which case we just need to make it
+        # broadcastable to all heads.
+        extended_attention_mask = self.get_extended_attention_mask(
+            attention_mask, input_shape, device)
+
+        self_attention_outputs = self.attention(
+            hidden_states,
+            extended_attention_mask,
+            None,
+            output_attentions=False,
+            past_key_value=None,
+        )
+        attention_output = self_attention_outputs[0]
+        outputs = self_attention_outputs[
+                  1:]  # add self attentions if we output attention weights
+        layer_output = apply_chunking_to_forward(self.feed_forward_chunk,
+                                                 self.chunk_size_feed_forward,
+                                                 self.seq_len_dim,
+                                                 attention_output)
+        outputs = (layer_output,) + outputs
+        hidden_states = outputs[0]
+
+        language_dict_features['hidden'] = hidden_states
+
+        features_dict = {
+            'visual': inputs['visual'],
+            'lang': language_dict_features
+        }
+
+        return features_dict
+
+    def feed_forward_chunk(self, attention_output):
+        intermediate_output = self.intermediate(attention_output)
+        layer_output = self.output(intermediate_output, attention_output)
+        return layer_output
+
+
+# The following code is the same as the Huggingface code,
+# with the only difference being the additional clamp operation.
 class BertSelfAttention(nn.Module):
+    """BERT self-attention layer from Huggingface transformers.
+    Compared to the BertSelfAttention of Huggingface, only add the clamp.
+    """
 
     def __init__(self,
                  config,
-                 clamp_min_for_underflow=False,
-                 clamp_max_for_overflow=False):
+                 clamp_min_for_underflow: bool = False,
+                 clamp_max_for_overflow: bool = False):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(
                 config, 'embedding_size'):
@@ -370,14 +422,14 @@ class BertSelfAttention(nn.Module):
         return x.permute(0, 2, 1, 3)
 
     def forward(
-        self,
-        hidden_states,
-        attention_mask=None,
-        head_mask=None,
-        encoder_hidden_states=None,
-        encoder_attention_mask=None,
-        past_key_value=None,
-        output_attentions=False,
+            self,
+            hidden_states,
+            attention_mask=None,
+            head_mask=None,
+            encoder_hidden_states=None,
+            encoder_attention_mask=None,
+            past_key_value=None,
+            output_attentions=False,
     ):
         mixed_query_layer = self.query(hidden_states)
 
@@ -452,11 +504,11 @@ class BertSelfAttention(nn.Module):
 
         if self.clamp_min_for_underflow:
             attention_scores = torch.clamp(
-                attention_scores, min=-50000
+                attention_scores, min=-MAX_CLAMP_VALUE
             )  # Do not increase -50000, data type half has quite limited range
         if self.clamp_max_for_overflow:
             attention_scores = torch.clamp(
-                attention_scores, max=50000
+                attention_scores, max=MAX_CLAMP_VALUE
             )  # Do not increase 50000, data type half has quite limited range
 
         if attention_mask is not None:
@@ -465,13 +517,6 @@ class BertSelfAttention(nn.Module):
 
         # Normalize the attention scores to probabilities.
         attention_probs = nn.Softmax(dim=-1)(attention_scores)
-
-        # if math.isnan(attention_probs.sum().item()):
-        #     for i in range(attention_probs.size(1)):
-        #         for j in range(attention_probs.size(2)):
-        #             if math.isnan(attention_probs[0, i, j].sum().item()):
-        #                 print(i, j)
-        #                 pdb.set_trace()
 
         # This is actually dropping out entire tokens to attend to, which might
         # seem a bit unusual, but is taken from the original Transformer paper.
@@ -485,99 +530,33 @@ class BertSelfAttention(nn.Module):
 
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
         new_context_layer_shape = context_layer.size()[:-2] + (
-            self.all_head_size, )
+            self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
 
         outputs = (context_layer,
-                   attention_probs) if output_attentions else (context_layer, )
+                   attention_probs) if output_attentions else (context_layer,)
 
         if self.is_decoder:
-            outputs = outputs + (past_key_value, )
+            outputs = outputs + (past_key_value,)
         return outputs
 
 
-class BertSelfOutput(nn.Module):
+class BertAttention(HFBertAttention):
+    """BertAttention is made up of self-attention and intermediate+output
 
-    def __init__(self, config):
-        super().__init__()
-        self.dense = nn.Linear(config.hidden_size, config.hidden_size)
-        self.LayerNorm = nn.LayerNorm(
-            config.hidden_size, eps=config.layer_norm_eps)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
-
-    def forward(self, hidden_states, input_tensor):
-        hidden_states = self.dense(hidden_states)
-        hidden_states = self.dropout(hidden_states)
-        hidden_states = self.LayerNorm(hidden_states + input_tensor)
-        return hidden_states
-
-
-class BertAttention(nn.Module):
+    Compared to the BertAttention of Huggingface, only add the clamp.
+    """
 
     def __init__(self,
                  config,
-                 clamp_min_for_underflow=False,
-                 clamp_max_for_overflow=False):
-        super().__init__()
+                 clamp_min_for_underflow: bool = False,
+                 clamp_max_for_overflow: bool = False):
+        super().__init__(config)
         self.self = BertSelfAttention(config, clamp_min_for_underflow,
                                       clamp_max_for_overflow)
-        self.output = BertSelfOutput(config)
-        self.pruned_heads = set()
-
-    def prune_heads(self, heads):
-        if len(heads) == 0:
-            return
-        heads, index = find_pruneable_heads_and_indices(
-            heads, self.self.num_attention_heads,
-            self.self.attention_head_size, self.pruned_heads)
-
-        # Prune linear layers
-        self.self.query = prune_linear_layer(self.self.query, index)
-        self.self.key = prune_linear_layer(self.self.key, index)
-        self.self.value = prune_linear_layer(self.self.value, index)
-        self.output.dense = prune_linear_layer(self.output.dense, index, dim=1)
-
-        # Update hyper params and store pruned heads
-        self.self.num_attention_heads = self.self.num_attention_heads - len(
-            heads)
-        self.self.all_head_size = self.self.attention_head_size * self.self.num_attention_heads
-        self.pruned_heads = self.pruned_heads.union(heads)
-
-    def forward(
-        self,
-        hidden_states,
-        attention_mask=None,
-        head_mask=None,
-        encoder_hidden_states=None,
-        encoder_attention_mask=None,
-        past_key_value=None,
-        output_attentions=False,
-    ):
-        self_outputs = self.self(
-            hidden_states,
-            attention_mask,
-            head_mask,
-            encoder_hidden_states,
-            encoder_attention_mask,
-            past_key_value,
-            output_attentions,
-        )
-        attention_output = self.output(self_outputs[0], hidden_states)
-        outputs = (attention_output,
-                   ) + self_outputs[1:]  # add attentions if we output them
-        return outputs
 
 
-class BertIntermediate(nn.Module):
-
-    def __init__(self, config):
-        super().__init__()
-        self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
-        if isinstance(config.hidden_act, str):
-            self.intermediate_act_fn = ACT2FN[config.hidden_act]
-        else:
-            self.intermediate_act_fn = config.hidden_act
-
+class BertIntermediate(HFBertIntermediate):
     def forward(self, hidden_states):
         hidden_states = self.dense(hidden_states)
         hidden_states = clamp_values(hidden_states)
@@ -586,15 +565,7 @@ class BertIntermediate(nn.Module):
         return hidden_states
 
 
-class BertOutput(nn.Module):
-
-    def __init__(self, config):
-        super().__init__()
-        self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
-        self.LayerNorm = nn.LayerNorm(
-            config.hidden_size, eps=config.layer_norm_eps)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
-
+class BertOutput(HFBertOutput):
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -602,65 +573,3 @@ class BertOutput(nn.Module):
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
         hidden_states = clamp_values(hidden_states)
         return hidden_states
-
-
-class BertEncoderLayer(BertPreTrainedModel):
-
-    def __init__(self,
-                 config,
-                 clamp_min_for_underflow=False,
-                 clamp_max_for_overflow=False):
-        super().__init__(config)
-        self.config = config
-        self.chunk_size_feed_forward = config.chunk_size_feed_forward
-        self.seq_len_dim = 1
-
-        self.attention = BertAttention(config, clamp_min_for_underflow,
-                                       clamp_max_for_overflow)
-        self.intermediate = BertIntermediate(config)
-        self.output = BertOutput(config)
-
-    def forward(self, inputs):
-        language_dict_features = inputs['lang']
-        hidden_states = language_dict_features['hidden']
-        attention_mask = language_dict_features['masks']
-
-        device = hidden_states.device
-        input_shape = hidden_states.size()[:-1]
-        # We can provide a self-attention mask of dimensions
-        # [batch_size, from_seq_length, to_seq_length]
-        # ourselves in which case we just need to make it
-        # broadcastable to all heads.
-        extended_attention_mask = self.get_extended_attention_mask(
-            attention_mask, input_shape, device)
-
-        self_attention_outputs = self.attention(
-            hidden_states,
-            extended_attention_mask,
-            None,
-            output_attentions=False,
-            past_key_value=None,
-        )
-        attention_output = self_attention_outputs[0]
-        outputs = self_attention_outputs[
-            1:]  # add self attentions if we output attention weights
-        layer_output = apply_chunking_to_forward(self.feed_forward_chunk,
-                                                 self.chunk_size_feed_forward,
-                                                 self.seq_len_dim,
-                                                 attention_output)
-        outputs = (layer_output, ) + outputs
-        hidden_states = outputs[0]
-
-        language_dict_features['hidden'] = hidden_states
-
-        features_dict = {
-            'visual': inputs['visual'],
-            'lang': language_dict_features
-        }
-
-        return features_dict
-
-    def feed_forward_chunk(self, attention_output):
-        intermediate_output = self.intermediate(attention_output)
-        layer_output = self.output(intermediate_output, attention_output)
-        return layer_output
