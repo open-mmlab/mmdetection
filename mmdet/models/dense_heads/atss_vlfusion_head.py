@@ -17,7 +17,8 @@ from transformers import BertConfig
 from mmdet.registry import MODELS
 from mmdet.structures.bbox import cat_boxes
 from mmdet.utils import InstanceList
-from ..utils import filter_scores_and_topk, select_single_mlvl, VLFuse, permute_and_flatten, BertEncoderLayer
+from ..utils import (BertEncoderLayer, VLFuse, filter_scores_and_topk,
+                     permute_and_flatten, select_single_mlvl)
 from .atss_head import ATSSHead
 
 
@@ -291,6 +292,7 @@ class DyConv(torch.nn.Module):
 
 
 from mmengine.model import BaseModel
+
 
 class VLFusionModule(BaseModel):
 

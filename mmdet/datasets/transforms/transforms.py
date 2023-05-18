@@ -247,6 +247,8 @@ class Resize(MMCV_Resize):
 
 @TRANSFORMS.register_module()
 class FixScaleResize(Resize):
+    """Compared to Resize, FixScaleResize fixes the scaling issue when
+    `keep_ratio=true`."""
 
     def _resize_img(self, results):
         """Resize images with ``results['scale']``."""

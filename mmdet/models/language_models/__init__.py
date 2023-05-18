@@ -1,4 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .bert import BertEncoderLayer, BertModel
+from .bert import BertModel
 
-__all__ = ['BertModel', 'BertEncoderLayer']
+__all__ = ['BertModel']

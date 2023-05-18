@@ -2,7 +2,8 @@
 import pytest
 import torch
 
-from mmdet.models.task_modules.coders import DeltaXYWHBBoxCoder
+from mmdet.models.task_modules.coders import (DeltaXYWHBBoxCoder,
+                                              DeltaXYWHBBoxCoderForGLIP)
 
 
 def test_delta_bbox_coder():
@@ -53,4 +54,20 @@ def test_delta_bbox_coder():
                                            [5.0000, 5.0000, 5.0000, 5.0000]])
 
     out = coder.decode(rois, deltas, max_shape=(32, 32))
+    assert expected_decode_bboxes.allclose(out, atol=1e-04)
+
+    coder = DeltaXYWHBBoxCoderForGLIP()
+
+    rois = torch.Tensor([[0., 0., 1., 1.], [0., 0., 1., 1.], [0., 0., 1., 1.],
+                         [5., 5., 5., 5.]])
+    deltas = torch.Tensor([[0., 0., 0., 0.], [1., 1., 1., 1.],
+                           [0., 0., 2., -1.], [0.7, -1.9, -0.5, 0.3]])
+    expected_decode_bboxes = torch.Tensor([[0.0000, 0.0000, 0.0000, 0.0000],
+                                           [0.1409, 0.1409, 1.8591, 1.8591],
+                                           [0.0000, 0.3161, 3.1945, 0.0000],
+                                           [5.0000, 5.0000, 4.0000, 4.0000]])
+
+    out = coder.decode(rois, deltas, max_shape=(32, 32))
+    assert expected_decode_bboxes.allclose(out, atol=1e-04)
+    out = coder.decode(rois, deltas, max_shape=torch.Tensor((32, 32)))
     assert expected_decode_bboxes.allclose(out, atol=1e-04)

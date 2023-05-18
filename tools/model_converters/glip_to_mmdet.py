@@ -89,11 +89,10 @@ def main():
         description='Convert keys in pretrained eva '
         'models to mmpretrain style.')
     parser.add_argument(
-        '--src',
-        default='glip_a_tiny_o365.pth',
-        help='src model path or url')
+        '--src', default='glip_a_tiny_o365.pth', help='src model path or url')
     # The dst path must be a full path of the new checkpoint.
-    parser.add_argument('--dst', default='../../glip_tiny_a_mmdet.pth', help='save path')
+    parser.add_argument(
+        '--dst', default='../../glip_tiny_a_mmdet.pth', help='save path')
     args = parser.parse_args()
 
     checkpoint = CheckpointLoader.load_checkpoint(args.src, map_location='cpu')

@@ -97,8 +97,7 @@ def demo_mm_inputs(batch_size=2,
                    use_box_type=False,
                    device='cpu',
                    captions=None,
-                   custom_entities=False
-                   ):
+                   custom_entities=False):
     """Create a superset of inputs needed to run test or train batches.
 
     Args:

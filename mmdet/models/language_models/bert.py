@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import math
 from collections import OrderedDict
 from typing import Sequence
 
@@ -58,9 +57,7 @@ class BertModel(BaseModel):
                               num_layers_of_embedded=num_layers_of_embedded,
                               use_checkpoint=use_checkpoint))]))
 
-    def forward(self,
-                captions: Sequence[str],
-                **kwargs) -> dict:
+    def forward(self, captions: Sequence[str], **kwargs) -> dict:
         """Forward function."""
         device = next(self.language_backbone.parameters()).device
         tokenized = self.tokenizer.batch_encode_plus(
@@ -91,7 +88,10 @@ class BertEncoder(nn.Module):
                 Defaults to False.
     """
 
-    def __init__(self, name: str, num_layers_of_embedded: int = 1, use_checkpoint: bool = False):
+    def __init__(self,
+                 name: str,
+                 num_layers_of_embedded: int = 1,
+                 use_checkpoint: bool = False):
         super().__init__()
         config = BertConfig.from_pretrained(name)
         config.gradient_checkpointing = use_checkpoint
@@ -124,5 +124,3 @@ class BertEncoder(nn.Module):
             'hidden': encoded_layers[-1]
         }
         return results
-
-

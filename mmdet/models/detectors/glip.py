@@ -3,6 +3,7 @@ import copy
 import re
 import warnings
 from typing import Tuple
+
 import torch
 from torch import Tensor
 
@@ -70,10 +71,13 @@ def run_ner(caption: str) -> Tuple[list, list]:
     return tokens_positive, noun_phrases
 
 
-def create_positive_map(tokenized, tokens_positive: list, max_num_entities: int = 256) -> Tensor:
+def create_positive_map(tokenized,
+                        tokens_positive: list,
+                        max_num_entities: int = 256) -> Tensor:
     """construct a map such that positive_map[i,j] = True
     if box i is associated to token j"""
-    positive_map = torch.zeros((len(tokens_positive), max_num_entities), dtype=torch.float)
+    positive_map = torch.zeros((len(tokens_positive), max_num_entities),
+                               dtype=torch.float)
 
     for j, tok_list in enumerate(tokens_positive):
         for (beg, end) in tok_list:
@@ -106,7 +110,8 @@ def create_positive_map(tokenized, tokens_positive: list, max_num_entities: int 
     return positive_map / (positive_map.sum(-1)[:, None] + 1e-6)
 
 
-def create_positive_map_label_to_token(positive_map: list, plus: int = 0) -> dict:
+def create_positive_map_label_to_token(positive_map: list,
+                                       plus: int = 0) -> dict:
     """Create a dictionary mapping the label to the token."""
     positive_map_label_to_token = {}
     for i in range(len(positive_map)):
@@ -118,6 +123,7 @@ def create_positive_map_label_to_token(positive_map: list, plus: int = 0) -> dic
 @MODELS.register_module()
 class GLIP(SingleStageDetector):
     """Implementation of `GLIP <https://arxiv.org/abs/2112.03857>`_"""
+
     def __init__(self,
                  backbone: ConfigType,
                  neck: ConfigType,
@@ -142,9 +148,10 @@ class GLIP(SingleStageDetector):
         self._language_dict_features = None
         self._entities = None
 
-    def get_tokens_positive_and_prompts(self,
-                                        original_caption: str,
-                                        custom_entities: bool = False) -> Tuple[dict, str]:
+    def get_tokens_positive_and_prompts(
+            self,
+            original_caption: str,
+            custom_entities: bool = False) -> Tuple[dict, str]:
         """Get the tokens positive and prompts for the caption."""
         if isinstance(original_caption, (list, tuple)) or custom_entities:
             if custom_entities and isinstance(original_caption, str):

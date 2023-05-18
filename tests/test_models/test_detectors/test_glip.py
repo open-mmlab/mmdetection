@@ -15,9 +15,8 @@ class TestGLIP(TestCase):
     def setUp(self):
         register_all_modules()
 
-    @parameterized.expand([
-        'glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py'
-    ])
+    @parameterized.expand(
+        ['glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py'])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
@@ -30,7 +29,8 @@ class TestGLIP(TestCase):
         self.assertTrue(detector.bbox_head)
 
     @parameterized.expand([
-        ('glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py', ('cpu', 'cuda'))
+        ('glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py', ('cpu',
+                                                                   'cuda'))
     ])
     def test_glip_forward_predict_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
@@ -48,7 +48,10 @@ class TestGLIP(TestCase):
                 detector = detector.cuda()
 
             # test custom_entities is True
-            packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]], captions=['a', 'b'], custom_entities=True)
+            packed_inputs = demo_mm_inputs(
+                2, [[3, 128, 128], [3, 125, 130]],
+                captions=['a', 'b'],
+                custom_entities=True)
             data = detector.data_preprocessor(packed_inputs, False)
             # Test forward test
             detector.eval()
@@ -58,7 +61,10 @@ class TestGLIP(TestCase):
                 self.assertIsInstance(batch_results[0], DetDataSample)
 
             # test custom_entities is False
-            packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]], captions=['a', 'b'], custom_entities=False)
+            packed_inputs = demo_mm_inputs(
+                2, [[3, 128, 128], [3, 125, 130]],
+                captions=['a', 'b'],
+                custom_entities=False)
             data = detector.data_preprocessor(packed_inputs, False)
             # Test forward test
             detector.eval()

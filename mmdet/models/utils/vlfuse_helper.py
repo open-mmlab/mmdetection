@@ -1,11 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from timm.models.layers import DropPath
 import torch.utils.checkpoint as checkpoint
+from timm.models.layers import DropPath
 
 try:
     from transformers import BertPreTrainedModel
@@ -16,11 +16,13 @@ except ImportError:
     ACT2FN = None
     apply_chunking_to_forward = None
 
+
 def permute_and_flatten(layer, N, C, H, W):
     layer = layer.view(N, -1, C, H, W)
     layer = layer.permute(0, 3, 4, 1, 2)
     layer = layer.reshape(N, -1, C)
     return layer
+
 
 def clamp_values(vector, min_val=-50000, max_val=50000):
     vector = torch.clamp(vector, min=min_val, max=max_val)
@@ -29,12 +31,7 @@ def clamp_values(vector, min_val=-50000, max_val=50000):
 
 class BiMultiHeadAttention(nn.Module):
 
-    def __init__(self,
-                 v_dim,
-                 l_dim,
-                 embed_dim,
-                 num_heads,
-                 dropout=0.1):
+    def __init__(self, v_dim, l_dim, embed_dim, num_heads, dropout=0.1):
         super(BiMultiHeadAttention, self).__init__()
 
         self.embed_dim = embed_dim
@@ -226,14 +223,7 @@ class BiAttentionBlockForCheckpoint(nn.Module):
 
         self.cfg = cfg
 
-    def forward(self,
-                q0,
-                q1,
-                q2,
-                q3,
-                q4,
-                l,
-                attention_mask_l=None):
+    def forward(self, q0, q1, q2, q3, q4, l, attention_mask_l=None):
 
         visu_feat = []
         size_per_level, visual_features_flatten = [], []
@@ -261,10 +251,7 @@ class BiAttentionBlockForCheckpoint(nn.Module):
         return visu_feat[0], visu_feat[1], visu_feat[2], visu_feat[3], visu_feat[4], lang_feat[0], lang_feat[1], \
             lang_feat[2], lang_feat[3], lang_feat[4]
 
-    def single_attention_call(self,
-                              v,
-                              l,
-                              attention_mask_l=None):
+    def single_attention_call(self, v, l, attention_mask_l=None):
         v = self.layer_norm_v(v)
         l = self.layer_norm_l(l)
         delta_v, delta_l = self.attn(v, l, attention_mask_l=attention_mask_l)
@@ -322,10 +309,9 @@ class VLFuse(torch.nn.Module):
         fused_language_dict_features = None
 
         q0, q1, q2, q3, q4, l0, _, _, _, _ = checkpoint.checkpoint(
-                self.b_attn, visual_features[0], visual_features[1],
-                visual_features[2], visual_features[3], visual_features[4],
-                language_dict_features['hidden'],
-                language_dict_features['masks'])
+            self.b_attn, visual_features[0], visual_features[1],
+            visual_features[2], visual_features[3], visual_features[4],
+            language_dict_features['hidden'], language_dict_features['masks'])
 
         fused_visual_features = [q0, q1, q2, q3, q4]
         language_features = l0
@@ -385,14 +371,14 @@ class BertSelfAttention(nn.Module):
         return x.permute(0, 2, 1, 3)
 
     def forward(
-            self,
-            hidden_states,
-            attention_mask=None,
-            head_mask=None,
-            encoder_hidden_states=None,
-            encoder_attention_mask=None,
-            past_key_value=None,
-            output_attentions=False,
+        self,
+        hidden_states,
+        attention_mask=None,
+        head_mask=None,
+        encoder_hidden_states=None,
+        encoder_attention_mask=None,
+        past_key_value=None,
+        output_attentions=False,
     ):
         mixed_query_layer = self.query(hidden_states)
 
@@ -500,14 +486,14 @@ class BertSelfAttention(nn.Module):
 
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
         new_context_layer_shape = context_layer.size()[:-2] + (
-            self.all_head_size,)
+            self.all_head_size, )
         context_layer = context_layer.view(*new_context_layer_shape)
 
         outputs = (context_layer,
-                   attention_probs) if output_attentions else (context_layer,)
+                   attention_probs) if output_attentions else (context_layer, )
 
         if self.is_decoder:
-            outputs = outputs + (past_key_value,)
+            outputs = outputs + (past_key_value, )
         return outputs
 
 
@@ -559,14 +545,14 @@ class BertAttention(nn.Module):
         self.pruned_heads = self.pruned_heads.union(heads)
 
     def forward(
-            self,
-            hidden_states,
-            attention_mask=None,
-            head_mask=None,
-            encoder_hidden_states=None,
-            encoder_attention_mask=None,
-            past_key_value=None,
-            output_attentions=False,
+        self,
+        hidden_states,
+        attention_mask=None,
+        head_mask=None,
+        encoder_hidden_states=None,
+        encoder_attention_mask=None,
+        past_key_value=None,
+        output_attentions=False,
     ):
         self_outputs = self.self(
             hidden_states,
@@ -658,12 +644,12 @@ class BertEncoderLayer(BertPreTrainedModel):
         )
         attention_output = self_attention_outputs[0]
         outputs = self_attention_outputs[
-                  1:]  # add self attentions if we output attention weights
+            1:]  # add self attentions if we output attention weights
         layer_output = apply_chunking_to_forward(self.feed_forward_chunk,
                                                  self.chunk_size_feed_forward,
                                                  self.seq_len_dim,
                                                  attention_output)
-        outputs = (layer_output,) + outputs
+        outputs = (layer_output, ) + outputs
         hidden_states = outputs[0]
 
         language_dict_features['hidden'] = hidden_states

@@ -1,4 +1,4 @@
-# GLIP: Grounded Language-Image Pre-training  
+# GLIP: Grounded Language-Image Pre-training
 
 > [GLIP: Grounded Language-Image Pre-training](https://arxiv.org/abs/2112.03857)
 
@@ -14,16 +14,15 @@ This paper presents a grounded language-image pre-training (GLIP) model for lear
 
 ## Results and Models
 
-|   Model    | Zero-shot or Funetune | COCO mAP |       Pre-Train Data       |                           Config                           |  Download  |
-|:----------:|:---------------------:|:--------:|:--------------------------:|:----------------------------------------------------------:|:----------:| 
-| GLIP-T (A) |       Zero-shot       |   42.9   |            O365            | [config](glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py) | [model]() |
-| GLIP-T (B) |       Zero-shot       |   44.9   |            O365            | [config](glip_atss_swin-t_b_fpn_dyhead_pretrain_obj365.py) | [model]() |
-| GLIP-T (C) |       Zero-shot       |   46.7   |         O365,GoldG         |                         [config]()                         | [model]() |
-|   GLIP-T   |       Zero-shot       |   46.6   |    O365,GoldG,CC3M,SBU     |                         [config]()                         | [model]() |
-|   GLIP-L   |       Zero-shot       |   51.4   | FourODs,GoldG,CC3M+12M,SBU |                         [config](glip_atss_swin-l_fpn_dyhead_pretrain_mixeddata.py)                         | [model]() |
+|   Model    | Zero-shot or Funetune | COCO mAP |       Pre-Train Data       |                           Config                            |  Download   |
+| :--------: | :-------------------: | :------: | :------------------------: | :---------------------------------------------------------: | :---------: |
+| GLIP-T (A) |       Zero-shot       |   42.9   |            O365            | [config](glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py)  | [model](<>) |
+| GLIP-T (B) |       Zero-shot       |   44.9   |            O365            | [config](glip_atss_swin-t_b_fpn_dyhead_pretrain_obj365.py)  | [model](<>) |
+| GLIP-T (C) |       Zero-shot       |   46.7   |         O365,GoldG         |                        [config](<>)                         | [model](<>) |
+|   GLIP-T   |       Zero-shot       |   46.6   |    O365,GoldG,CC3M,SBU     |                        [config](<>)                         | [model](<>) |
+|   GLIP-L   |       Zero-shot       |   51.4   | FourODs,GoldG,CC3M+12M,SBU | [config](glip_atss_swin-l_fpn_dyhead_pretrain_mixeddata.py) | [model](<>) |
 
-Note: 
+Note:
 
 1. The weights corresponding to the zero-shot model are adopted from the official weights and converted using the [script](../../tools/model_converters/glip_to_mmdet.py). We have not retrained the model for the time being.
 2. We will soon support fine-tuning on COCO.
-
