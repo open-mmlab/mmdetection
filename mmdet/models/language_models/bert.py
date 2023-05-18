@@ -93,6 +93,10 @@ class BertEncoder(nn.Module):
                  num_layers_of_embedded: int = 1,
                  use_checkpoint: bool = False):
         super().__init__()
+        if BertConfig is None:
+            raise RuntimeError(
+                'transformers is not installed, please install it by: '
+                'pip install transformers.')
         config = BertConfig.from_pretrained(name)
         config.gradient_checkpointing = use_checkpoint
         # only encoder

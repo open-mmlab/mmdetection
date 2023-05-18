@@ -1,18 +1,22 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import math
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union, Sequence, Callable
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.utils.checkpoint as checkpoint
 from mmcv.cnn import Scale
 from mmcv.ops.modulated_deform_conv import ModulatedDeformConv2d
 from mmengine.config import ConfigDict
 from mmengine.structures import InstanceData
 from torch import Tensor
-from transformers import BertConfig
+from mmengine.model import BaseModel
+
+try:
+    from transformers import BertConfig
+except ImportError:
+    BertConfig = None
 
 from mmdet.registry import MODELS
 from mmdet.structures.bbox import cat_boxes
@@ -20,18 +24,43 @@ from mmdet.utils import InstanceList
 from ..utils import (BertEncoderLayer, VLFuse, filter_scores_and_topk,
                      permute_and_flatten, select_single_mlvl)
 from .atss_head import ATSSHead
+from ..utils.vlfuse_helper import MAX_CLAMP_VALUE
 
 
-class Conv3x3Norm(torch.nn.Module):
+def convert_grounding_to_cls_scores(logits: Tensor, positive_maps: List[dict]) -> Tensor:
+    """Convert logits to class scores."""
+    assert len(positive_maps) == logits.shape[0]  # batch size
+
+    scores = torch.zeros(logits.shape[0], logits.shape[1],
+                         len(positive_maps[0])).to(logits.device)
+    if positive_maps is not None:
+        if all(x == positive_maps[0] for x in positive_maps):
+            # only need to compute once
+            positive_map = positive_maps[0]
+            for label_j in positive_map:
+                scores[:, :, label_j -
+                             1] = logits[:, :,
+                                  torch.LongTensor(positive_map[label_j]
+                                                   )].mean(-1)
+        else:
+            for i, positive_map in enumerate(positive_maps):
+                for label_j in positive_map:
+                    scores[i, :, label_j - 1] = logits[
+                                                i, :, torch.LongTensor(positive_map[label_j])].mean(-1)
+    return scores
+
+
+class Conv3x3Norm(nn.Module):
+    """Conv3x3 and norm."""
 
     def __init__(self,
-                 in_channels,
-                 out_channels,
-                 stride,
-                 groups=1,
-                 use_dcn=False,
-                 norm_type=None):
-        super(Conv3x3Norm, self).__init__()
+                 in_channels: int,
+                 out_channels: int,
+                 stride: int,
+                 groups: int = 1,
+                 use_dcn: bool = False,
+                 norm_type: Optional[Union[Sequence, str]] = None):
+        super().__init__()
 
         if use_dcn:
             self.conv = ModulatedDeformConv2d(
@@ -50,7 +79,7 @@ class Conv3x3Norm(torch.nn.Module):
                 padding=1,
                 groups=groups)
 
-        if isinstance(norm_type, (list, tuple)):
+        if isinstance(norm_type, Sequence):
             assert len(norm_type) == 2
             assert norm_type[0] == 'gn'
             gn_group = norm_type[1]
@@ -73,134 +102,50 @@ class Conv3x3Norm(torch.nn.Module):
         return x
 
 
-class h_sigmoid(nn.Module):
-
-    def __init__(self, inplace=True, h_max=1):
-        super(h_sigmoid, self).__init__()
-        self.relu = nn.ReLU6(inplace=inplace)
-        self.h_max = h_max
-
-    def forward(self, x):
-        return self.relu(x + 3) * self.h_max / 6
-
-
-def _make_divisible(v, divisor, min_value=None):
-    if min_value is None:
-        min_value = divisor
-    new_v = max(min_value, int(v + divisor / 2) // divisor * divisor)
-    # Make sure that round down does not go down by more than 10%.
-    if new_v < 0.9 * v:
-        new_v += divisor
-    return new_v
-
-
-class DYReLU(nn.Module):
+class DyReLU(nn.Module):
+    """Dynamic ReLU."""
 
     def __init__(self,
-                 inp,
-                 oup,
-                 reduction=4,
-                 lambda_a=1.0,
-                 K2=True,
-                 use_bias=True,
-                 use_spatial=False,
-                 init_a=[1.0, 0.0],
-                 init_b=[0.0, 0.0]):
-        super(DYReLU, self).__init__()
-        self.oup = oup
-        self.lambda_a = lambda_a * 2
-        self.K2 = K2
+                 in_channels: int,
+                 out_channels: int,
+                 expand_ratio: int = 4):
+        super().__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-
-        self.use_bias = use_bias
-        if K2:
-            self.exp = 4 if use_bias else 2
-        else:
-            self.exp = 2 if use_bias else 1
-        self.init_a = init_a
-        self.init_b = init_b
-
-        # determine squeeze
-        if reduction == 4:
-            squeeze = inp // reduction
-        else:
-            squeeze = _make_divisible(inp // reduction, 4)
-        # print('reduction: {}, squeeze: {}/{}'.format(reduction, inp, squeeze))
-        # print('init_a: {}, init_b: {}'.format(self.init_a, self.init_b))
+        self.expand_ratio = expand_ratio
+        self.out_channels = out_channels
 
         self.fc = nn.Sequential(
-            nn.Linear(inp, squeeze), nn.ReLU(inplace=True),
-            nn.Linear(squeeze, oup * self.exp), h_sigmoid())
-        if use_spatial:
-            self.spa = nn.Sequential(
-                nn.Conv2d(inp, 1, kernel_size=1),
-                nn.BatchNorm2d(1),
-            )
-        else:
-            self.spa = None
+            nn.Linear(in_channels, in_channels // expand_ratio),
+            nn.ReLU(inplace=True),
+            nn.Linear(in_channels // expand_ratio, out_channels * self.expand_ratio),
+            nn.Hardsigmoid(inplace=True))
 
-    def forward(self, x):
-        if isinstance(x, list):
-            x_in = x[0]
-            x_out = x[1]
-        else:
-            x_in = x
-            x_out = x
-        b, c, h, w = x_in.size()
-        y = self.avg_pool(x_in).view(b, c)
-        y = self.fc(y).view(b, self.oup * self.exp, 1, 1)
-        if self.exp == 4:
-            a1, b1, a2, b2 = torch.split(y, self.oup, dim=1)
-            a1 = (a1 - 0.5) * self.lambda_a + self.init_a[0]  # 1.0
-            a2 = (a2 - 0.5) * self.lambda_a + self.init_a[1]
+    def forward(self, x) -> Tensor:
+        x_out = x
+        b, c, h, w = x.size()
+        x = self.avg_pool(x).view(b, c)
+        x = self.fc(x).view(b, -1, 1, 1)
 
-            b1 = b1 - 0.5 + self.init_b[0]
-            b2 = b2 - 0.5 + self.init_b[1]
-            out = torch.max(x_out * a1 + b1, x_out * a2 + b2)
-        elif self.exp == 2:
-            if self.use_bias:  # bias but not PL
-                a1, b1 = torch.split(y, self.oup, dim=1)
-                a1 = (a1 - 0.5) * self.lambda_a + self.init_a[0]  # 1.0
-                b1 = b1 - 0.5 + self.init_b[0]
-                out = x_out * a1 + b1
-
-            else:
-                a1, a2 = torch.split(y, self.oup, dim=1)
-                a1 = (a1 - 0.5) * self.lambda_a + self.init_a[0]  # 1.0
-                a2 = (a2 - 0.5) * self.lambda_a + self.init_a[1]
-                out = torch.max(x_out * a1, x_out * a2)
-
-        elif self.exp == 1:
-            a1 = y
-            a1 = (a1 - 0.5) * self.lambda_a + self.init_a[0]  # 1.0
-            out = x_out * a1
-
-        if self.spa:
-            ys = self.spa(x_in).view(b, -1)
-            ys = F.softmax(ys, dim=1).view(b, 1, h, w) * h * w
-            ys = F.hardtanh(ys, 0, 3, inplace=True) / 3
-            out = out * ys
-
+        a1, b1, a2, b2 = torch.split(x, self.out_channels, dim=1)
+        a1 = (a1 - 0.5) * 2 + 1.0
+        a2 = (a2 - 0.5) * 2
+        b1 = b1 - 0.5
+        b2 = b2 - 0.5
+        out = torch.max(x_out * a1 + b1, x_out * a2 + b2)
         return out
 
 
-def permute_and_flatten(layer, N, A, C, H, W):
-    layer = layer.view(N, -1, C, H, W)
-    layer = layer.permute(0, 3, 4, 1, 2)
-    layer = layer.reshape(N, -1, C)
-    return layer
-
-
-class DyConv(torch.nn.Module):
+class DyConv(nn.Module):
+    """Dynamic Convolution"""
 
     def __init__(self,
-                 conv_func,
-                 in_channels=256,
-                 out_channels=256,
-                 use_dyfuse=True,
-                 use_dyrelu=False,
-                 use_dcn=False):
-        super(DyConv, self).__init__()
+                 conv_func: Callable,
+                 in_channels: int,
+                 out_channels: int,
+                 use_dyfuse: bool = True,
+                 use_dyrelu: bool = False,
+                 use_dcn: bool = False):
+        super().__init__()
 
         self.DyConv = nn.ModuleList()
         self.DyConv.append(conv_func(in_channels, out_channels, 1))
@@ -212,12 +157,12 @@ class DyConv(torch.nn.Module):
                 nn.AdaptiveAvgPool2d(1),
                 nn.Conv2d(in_channels, 1, kernel_size=1),
                 nn.ReLU(inplace=True))
-            self.h_sigmoid = h_sigmoid()
+            self.h_sigmoid = nn.Hardsigmoid(inplace=True)
         else:
             self.AttnConv = None
 
         if use_dyrelu:
-            self.relu = DYReLU(in_channels, out_channels)
+            self.relu = DyReLU(in_channels, out_channels)
         else:
             self.relu = nn.ReLU()
 
@@ -242,72 +187,73 @@ class DyConv(torch.nn.Module):
                     if m.bias is not None:
                         m.bias.data.zero_()
 
-    def forward(self, inputs):
+    def forward(self, inputs: dict) -> dict:
         visual_feats = inputs['visual']
-        language_dict_features = inputs['lang']
 
-        next_x = []
+        out_vis_feats = []
         for level, feature in enumerate(visual_feats):
 
-            conv_args = dict()
+            offset_conv_args = {}
             if self.offset is not None:
                 offset_mask = self.offset(feature)
                 offset = offset_mask[:, :18, :, :]
                 mask = offset_mask[:, 18:, :, :].sigmoid()
-                conv_args = dict(offset=offset, mask=mask)
+                offset_conv_args = dict(offset=offset, mask=mask)
 
-            temp_fea = [self.DyConv[1](feature, **conv_args)]
+            temp_feats = [self.DyConv[1](feature, **offset_conv_args)]
 
             if level > 0:
-                temp_fea.append(self.DyConv[2](visual_feats[level - 1],
-                                               **conv_args))
+                temp_feats.append(self.DyConv[2](visual_feats[level - 1],
+                                                 **offset_conv_args))
             if level < len(visual_feats) - 1:
-                temp_fea.append(
+                temp_feats.append(
                     F.upsample_bilinear(
-                        self.DyConv[0](visual_feats[level + 1], **conv_args),
+                        self.DyConv[0](visual_feats[level + 1], **offset_conv_args),
                         size=[feature.size(2),
                               feature.size(3)]))
-            mean_fea = torch.mean(torch.stack(temp_fea), dim=0, keepdim=False)
+            mean_feats = torch.mean(torch.stack(temp_feats), dim=0, keepdim=False)
 
             if self.AttnConv is not None:
-                attn_fea = []
-                res_fea = []
-                for fea in temp_fea:
-                    res_fea.append(fea)
-                    attn_fea.append(self.AttnConv(fea))
+                attn_feat = []
+                res_feat = []
+                for feat in temp_feats:
+                    res_feat.append(feat)
+                    attn_feat.append(self.AttnConv(feat))
 
-                res_fea = torch.stack(res_fea)
-                spa_pyr_attn = self.h_sigmoid(torch.stack(attn_fea))
+                res_feat = torch.stack(res_feat)
+                spa_pyr_attn = self.h_sigmoid(torch.stack(attn_feat))
 
-                mean_fea = torch.mean(
-                    res_fea * spa_pyr_attn, dim=0, keepdim=False)
+                mean_feats = torch.mean(
+                    res_feat * spa_pyr_attn, dim=0, keepdim=False)
 
-            next_x.append(mean_fea)
+            out_vis_feats.append(mean_feats)
 
-        next_x = [self.relu(item) for item in next_x]
+        out_vis_feats = [self.relu(item) for item in out_vis_feats]
 
-        features_dict = {'visual': next_x, 'lang': language_dict_features}
+        features_dict = {'visual': out_vis_feats, 'lang': inputs['lang']}
 
         return features_dict
 
 
-from mmengine.model import BaseModel
-
-
 class VLFusionModule(BaseModel):
+    """Visual-lang Fusion Module"""
 
     def __init__(self,
-                 in_channels,
-                 feat_channels,
-                 num_base_priors,
-                 early_fuse=False,
-                 num_dyhead_blocks=6,
-                 lang_model_name='bert-base-uncased',
-                 use_dyrelu=True,
-                 use_dyfuse=True,
-                 use_dcn=True,
+                 in_channels: int,
+                 feat_channels: int,
+                 num_base_priors: int,
+                 early_fuse: bool = False,
+                 num_dyhead_blocks: int = 6,
+                 lang_model_name: str = 'bert-base-uncased',
+                 use_dyrelu: bool = True,
+                 use_dyfuse: bool = True,
+                 use_dcn: bool = True,
                  **kwargs) -> None:
         super().__init__(**kwargs)
+        if BertConfig is None:
+            raise RuntimeError(
+                'transformers is not installed, please install it by: '
+                'pip install transformers.')
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.num_base_priors = num_base_priors
@@ -316,19 +262,20 @@ class VLFusionModule(BaseModel):
         self.use_dyrelu = use_dyrelu
         self.use_dyfuse = use_dyfuse
         self.use_dcn = use_dcn
+
         self.lang_cfg = BertConfig.from_pretrained(lang_model_name)
         self.lang_dim = self.lang_cfg.hidden_size
         self._init_layers()
 
     def _init_layers(self) -> None:
+        """Initialize layers of the model."""
         bias_value = -math.log((1 - 0.01) / 0.01)
-        num_dyhead_blocks = self.num_dyhead_blocks
 
         conv_func = lambda i, o, s: Conv3x3Norm(
             i, o, s, use_dcn=self.use_dcn, norm_type=['gn', 16])
 
         dyhead_tower = []
-        for i in range(num_dyhead_blocks):
+        for i in range(self.num_dyhead_blocks):
             if self.early_fuse:
                 # cross-modality fusion
                 dyhead_tower.append(VLFuse())
@@ -373,15 +320,9 @@ class VLFusionModule(BaseModel):
             torch.Tensor([bias_value]), requires_grad=True)
         self.scales = nn.ModuleList([Scale(1.0) for _ in range(5)])
 
-    def forward(self, visual_feats: Tuple[Tensor], language_feats: dict):
-        bbox_reg = []
-        centerness = []
-
+    def forward(self, visual_feats: Tuple[Tensor], language_feats: dict) -> Tuple:
         feat_inputs = {'visual': visual_feats, 'lang': language_feats}
-
         dyhead_tower = self.dyhead_tower(feat_inputs)
-
-        cls_logits = []
 
         if self.early_fuse:
             embedding = dyhead_tower['lang']['hidden']
@@ -394,50 +335,31 @@ class VLFusionModule(BaseModel):
         dot_product_proj_tokens_bias = torch.matmul(
             embedding, self.bias_lang) + self.bias0
 
-        for l, feature in enumerate(visual_feats):
-            visual = dyhead_tower['visual'][l]
+        bbox_preds = []
+        centerness = []
+        cls_logits = []
+
+        for i, feature in enumerate(visual_feats):
+            visual = dyhead_tower['visual'][i]
             B, C, H, W = visual.shape
 
-            bbox_pred = self.scales[l](self.bbox_pred(visual))
-            bbox_reg.append(bbox_pred)
+            bbox_pred = self.scales[i](self.bbox_pred(visual))
+            bbox_preds.append(bbox_pred)
             centerness.append(self.centerness(visual))
 
             dot_product_proj_queries = permute_and_flatten(
-                visual, B, -1, C, H, W)
+                visual, B, self.num_base_priors, C, H, W)
 
-            A = dot_product_proj_queries.shape[1]
-            bias = dot_product_proj_tokens_bias.unsqueeze(1).repeat(1, A, 1)
+            bias = dot_product_proj_tokens_bias.unsqueeze(1).repeat(1, self.num_base_priors, 1)
             dot_product_logit = (
-                torch.matmul(dot_product_proj_queries,
-                             dot_product_proj_tokens.transpose(-1, -2)) /
-                self.log_scale.exp()) + bias
-            dot_product_logit = torch.clamp(dot_product_logit, max=50000)
-            dot_product_logit = torch.clamp(dot_product_logit, min=-50000)
+                                        torch.matmul(dot_product_proj_queries,
+                                                     dot_product_proj_tokens.transpose(-1, -2)) /
+                                        self.log_scale.exp()) + bias
+            dot_product_logit = torch.clamp(dot_product_logit, max=MAX_CLAMP_VALUE)
+            dot_product_logit = torch.clamp(dot_product_logit, min=-MAX_CLAMP_VALUE)
             cls_logits.append(dot_product_logit)
 
-        return bbox_reg, centerness, cls_logits
-
-
-def convert_grounding_to_cls_scores(logits, positive_maps):
-    assert len(positive_maps) == logits.shape[0]  # batch size
-
-    scores = torch.zeros(logits.shape[0], logits.shape[1],
-                         len(positive_maps[0])).to(logits.device)
-    if positive_maps is not None:
-        if all(x == positive_maps[0] for x in positive_maps):
-            # only need to compute once
-            positive_map = positive_maps[0]
-            for label_j in positive_map:
-                scores[:, :, label_j -
-                       1] = logits[:, :,
-                                   torch.LongTensor(positive_map[label_j]
-                                                    )].mean(-1)
-        else:
-            for i, positive_map in enumerate(positive_maps):
-                for label_j in positive_map:
-                    scores[i, :, label_j - 1] = logits[
-                        i, :, torch.LongTensor(positive_map[label_j])].mean(-1)
-    return scores
+        return bbox_preds, centerness, cls_logits
 
 
 @MODELS.register_module()
@@ -445,9 +367,9 @@ class ATSSVLFusionHead(ATSSHead):
 
     def __init__(self,
                  *args,
-                 early_fuse=False,
-                 num_dyhead_blocks=6,
-                 lang_model_name='bert-base-uncased',
+                 early_fuse: bool = False,
+                 num_dyhead_blocks: int = 6,
+                 lang_model_name: str = 'bert-base-uncased',
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.head = VLFusionModule(

@@ -16,18 +16,17 @@ except ImportError:
     ACT2FN = None
     apply_chunking_to_forward = None
 
+MAX_CLAMP_VALUE = 50000
 
-def permute_and_flatten(layer, N, C, H, W):
-    layer = layer.view(N, -1, C, H, W)
+def permute_and_flatten(layer, N, A, C, H, W):
+    layer = layer.view(N, A, C, H, W)
     layer = layer.permute(0, 3, 4, 1, 2)
     layer = layer.reshape(N, -1, C)
     return layer
 
-
-def clamp_values(vector, min_val=-50000, max_val=50000):
-    vector = torch.clamp(vector, min=min_val, max=max_val)
+def clamp_values(vector):
+    vector = torch.clamp(vector, min=-MAX_CLAMP_VALUE, max=MAX_CLAMP_VALUE)
     return vector
-
 
 class BiMultiHeadAttention(nn.Module):
 
