@@ -1,18 +1,24 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
 from collections import OrderedDict
-from copy import deepcopy
 from typing import Sequence
 
-import numpy as np
 import torch
 from mmengine.model import BaseModel
 from torch import nn
-from transformers import AutoTokenizer, BertConfig
-from transformers import BertModel as TBertModel
-from transformers import BertPreTrainedModel
-from transformers.activations import ACT2FN
-from transformers.modeling_utils import apply_chunking_to_forward
+
+try:
+    from transformers import AutoTokenizer, BertConfig
+    from transformers import BertModel as HFBertModel
+    from transformers import BertPreTrainedModel
+    from transformers.activations import ACT2FN
+    from transformers.modeling_utils import apply_chunking_to_forward
+except ImportError:
+    AutoTokenizer = None
+    HFBertModel = None
+    BertPreTrainedModel = None
+    ACT2FN = None
+    apply_chunking_to_forward = None
 
 from mmdet.registry import MODELS
 
@@ -22,53 +28,39 @@ def clamp_values(vector, min_val=-50000, max_val=50000):
     return vector
 
 
-class BertEncoder(nn.Module):
-
-    def __init__(self, name, num_layers_of_embedded=1, use_checkpoint=False):
-        super(BertEncoder, self).__init__()
-        config = BertConfig.from_pretrained(name)
-        config.gradient_checkpointing = use_checkpoint
-        self.model = TBertModel.from_pretrained(
-            name, add_pooling_layer=False, config=config)
-        self.language_dim = config.hidden_size
-        self.num_layers_of_embedded = num_layers_of_embedded
-
-    def forward(self, x):
-        mask = x['attention_mask']
-        outputs = self.model(
-            input_ids=x['input_ids'],
-            attention_mask=mask,
-            output_hidden_states=True,
-        )
-        # outputs has 13 layers, 1 input layer and 12 hidden layers
-        encoded_layers = outputs.hidden_states[1:]
-        features = torch.stack(encoded_layers[-self.num_layers_of_embedded:],
-                               1).mean(1)
-        # language embedding has shape [len(phrase), seq_len, language_dim]
-        features = features / self.num_layers_of_embedded
-        embedded = features * mask.unsqueeze(-1).float()
-
-        ret = {
-            'embedded': embedded,
-            'masks': mask,
-            'hidden': encoded_layers[-1]
-        }
-        return ret
-
-
 @MODELS.register_module()
 class BertModel(BaseModel):
+    """BERT model for language embedding only encoder.
+
+    Args:
+        name (str): name of the pretrained BERT model from HuggingFace.
+             Defaults to bert-base-uncased.
+        max_tokens (int): maximum number of tokens to be used for BERT.
+             Defaults to 256.
+        pad_to_max (bool): whether to pad the tokens to max_tokens.
+             Defaults to True.
+        num_layers_of_embedded (int): number of layers of the embedded model.
+             Defaults to 1.
+        use_checkpoint (bool): whether to use gradient checkpointing.
+             Defaults to False.
+    """
 
     def __init__(self,
-                 name='bert-base-uncased',
-                 max_tokens=256,
-                 pad_to_max=True,
-                 num_layers_of_embedded=1,
-                 use_checkpoint=False,
+                 name: str = 'bert-base-uncased',
+                 max_tokens: int = 256,
+                 pad_to_max: bool = True,
+                 num_layers_of_embedded: int = 1,
+                 use_checkpoint: bool = False,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.max_tokens = max_tokens
         self.pad_to_max = pad_to_max
+
+        if AutoTokenizer is None:
+            raise RuntimeError(
+                'transformers is not installed, please install it by: '
+                'pip install transformers.')
+
         self.tokenizer = AutoTokenizer.from_pretrained(name)
         self.language_backbone = nn.Sequential(
             OrderedDict([('body',
@@ -79,8 +71,8 @@ class BertModel(BaseModel):
 
     def forward(self,
                 captions: Sequence[str],
-                data_samples=None,
-                mode: str = 'tensor'):
+                **kwargs) -> dict:
+        """Forward function."""
         device = next(self.language_backbone.parameters()).device
         tokenized = self.tokenizer.batch_encode_plus(
             captions,
@@ -98,6 +90,54 @@ class BertModel(BaseModel):
         return language_dict_features
 
 
+class BertEncoder(nn.Module):
+    """BERT encoder for language embedding.
+
+    Args:
+        name (str): name of the pretrained BERT model from HuggingFace.
+                Defaults to bert-base-uncased.
+        num_layers_of_embedded (int): number of layers of the embedded model.
+                Defaults to 1.
+        use_checkpoint (bool): whether to use gradient checkpointing.
+                Defaults to False.
+    """
+
+    def __init__(self, name: str, num_layers_of_embedded: int = 1, use_checkpoint: bool = False):
+        super().__init__()
+        config = BertConfig.from_pretrained(name)
+        config.gradient_checkpointing = use_checkpoint
+        # only encoder
+        self.model = HFBertModel.from_pretrained(
+            name, add_pooling_layer=False, config=config)
+        self.language_dim = config.hidden_size
+        self.num_layers_of_embedded = num_layers_of_embedded
+
+    def forward(self, x) -> dict:
+        mask = x['attention_mask']
+
+        outputs = self.model(
+            input_ids=x['input_ids'],
+            attention_mask=mask,
+            output_hidden_states=True,
+        )
+
+        # outputs has 13 layers, 1 input layer and 12 hidden layers
+        encoded_layers = outputs.hidden_states[1:]
+        features = torch.stack(encoded_layers[-self.num_layers_of_embedded:],
+                               1).mean(1)
+        # language embedding has shape [len(phrase), seq_len, language_dim]
+        features = features / self.num_layers_of_embedded
+        embedded = features * mask.unsqueeze(-1).float()
+
+        results = {
+            'embedded': embedded,
+            'masks': mask,
+            'hidden': encoded_layers[-1]
+        }
+        return results
+
+
+# Use for VLFusion
 class BertSelfAttention(nn.Module):
 
     def __init__(self,
@@ -141,14 +181,14 @@ class BertSelfAttention(nn.Module):
         return x.permute(0, 2, 1, 3)
 
     def forward(
-        self,
-        hidden_states,
-        attention_mask=None,
-        head_mask=None,
-        encoder_hidden_states=None,
-        encoder_attention_mask=None,
-        past_key_value=None,
-        output_attentions=False,
+            self,
+            hidden_states,
+            attention_mask=None,
+            head_mask=None,
+            encoder_hidden_states=None,
+            encoder_attention_mask=None,
+            past_key_value=None,
+            output_attentions=False,
     ):
         mixed_query_layer = self.query(hidden_states)
 
@@ -256,14 +296,14 @@ class BertSelfAttention(nn.Module):
 
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
         new_context_layer_shape = context_layer.size()[:-2] + (
-            self.all_head_size, )
+            self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
 
         outputs = (context_layer,
-                   attention_probs) if output_attentions else (context_layer, )
+                   attention_probs) if output_attentions else (context_layer,)
 
         if self.is_decoder:
-            outputs = outputs + (past_key_value, )
+            outputs = outputs + (past_key_value,)
         return outputs
 
 
@@ -315,14 +355,14 @@ class BertAttention(nn.Module):
         self.pruned_heads = self.pruned_heads.union(heads)
 
     def forward(
-        self,
-        hidden_states,
-        attention_mask=None,
-        head_mask=None,
-        encoder_hidden_states=None,
-        encoder_attention_mask=None,
-        past_key_value=None,
-        output_attentions=False,
+            self,
+            hidden_states,
+            attention_mask=None,
+            head_mask=None,
+            encoder_hidden_states=None,
+            encoder_attention_mask=None,
+            past_key_value=None,
+            output_attentions=False,
     ):
         self_outputs = self.self(
             hidden_states,
@@ -414,12 +454,12 @@ class BertEncoderLayer(BertPreTrainedModel):
         )
         attention_output = self_attention_outputs[0]
         outputs = self_attention_outputs[
-            1:]  # add self attentions if we output attention weights
+                  1:]  # add self attentions if we output attention weights
         layer_output = apply_chunking_to_forward(self.feed_forward_chunk,
                                                  self.chunk_size_feed_forward,
                                                  self.seq_len_dim,
                                                  attention_output)
-        outputs = (layer_output, ) + outputs
+        outputs = (layer_output,) + outputs
         hidden_states = outputs[0]
 
         language_dict_features['hidden'] = hidden_states
