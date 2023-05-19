@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 import torch
@@ -10,7 +10,6 @@ from mmdet.models.utils import (filter_gt_instances, rename_loss_dict,
                                 reweight_loss_dict)
 from mmdet.registry import MODELS
 from mmdet.structures import SampleList
-from mmdet.structures.bbox import bbox_project
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .semi_base import SemiBaseDetector
 
@@ -53,10 +52,6 @@ class ConsistentTeacher(SemiBaseDetector):
             data_preprocessor=data_preprocessor,
             init_cfg=init_cfg)
 
-        if self.semi_train_cfg is not None:
-            self.freeze(self.teacher)
-            self.unsup_weight = self.semi_train_cfg.unsup_weight
-
         num_classes = self.teacher.bbox_head.num_classes
         num_scores = self.semi_train_cfg.num_scores
 
@@ -95,6 +90,32 @@ class ConsistentTeacher(SemiBaseDetector):
     #         multi_batch_inputs['unsup_student'],
     #         multi_batch_data_samples['unsup_student'], batch_info))
 
+    #     # if self.train_cfg.get('collect_keys', None):
+    #     #     # In case of only sup or unsup images
+    #     #     num_sup = len(data_groups["sup"]['img']) if 'sup' in data_groups else 0
+    #     #     num_unsup = len(data_groups['unsup_student']['img']) if 'unsup_student' in data_groups else 0
+    #     #     num_sup = img.new_tensor(num_sup)
+    #     #     avg_num_sup = reduce_mean(num_sup).clamp(min=1e-5)
+    #     #     num_unsup = img.new_tensor(num_unsup)
+    #     #     avg_num_unsup = reduce_mean(num_unsup).clamp(min=1e-5)
+    #     #     collect_keys = self.train_cfg.collect_keys
+    #     #     losses = OrderedDict()
+    #     #     for k in collect_keys:
+    #     #         if k in loss:
+    #     #             v = loss[k]
+    #     #             if isinstance(v, torch.Tensor):
+    #     #                 losses[k] = v.mean()
+    #     #             elif isinstance(v, list):
+    #     #                 losses[k] = sum(_loss.mean() for _loss in v)
+    #     #         else:
+    #     #             losses[k] = img.new_tensor(0)
+    #     #     loss = losses
+    #     #     for key in loss:
+    #     #         if key.startswith('sup_'):
+    #     #             loss[key] = loss[key] * num_sup / avg_num_sup
+    #     #         elif key.startswith('unsup_'):
+    #     #             loss[key] = loss[key] * num_unsup / avg_num_unsup
+
     #     return losses
 
     def loss_by_gt_instances(self, batch_inputs: Tensor,
@@ -114,11 +135,12 @@ class ConsistentTeacher(SemiBaseDetector):
         """
 
         losses = self.student.loss(batch_inputs, batch_data_samples)
+        gt_instances = []
+        gt_instances.append(data_samples.gt_instances
+                            for data_samples in batch_data_samples)
         losses['num_gts'] = torch.tensor(
-            sum([
-                len(data_samples.gt_instances)
-                for data_samples in batch_data_samples
-            ]) / len(batch_data_samples))
+            sum([len(b) for b in gt_instances]) / len(gt_instances)).to(
+                gt_instances[0])
         sup_weight = self.semi_train_cfg.get('sup_weight', 1.)
         return rename_loss_dict('sup_', reweight_loss_dict(losses, sup_weight))
 
@@ -152,6 +174,10 @@ class ConsistentTeacher(SemiBaseDetector):
         losses = {}
         bbox_losses, bbox_results_list = self.bbox_loss_by_pseudo_instances(
             x, batch_data_samples)
+
+        # losses['gmm_thr'] = torch.tensor(
+        #     teacher_info['gmm_thr']).to(teacher_data["img"].device)
+
         losses.update(**bbox_losses)
         unsup_weight = self.semi_train_cfg.get('unsup_weight', 1.)
         return rename_loss_dict('unsup_',
@@ -165,23 +191,18 @@ class ConsistentTeacher(SemiBaseDetector):
         assert self.teacher.with_bbox, 'Bbox head must be implemented.'
         x = self.teacher.extract_feat(batch_inputs)
 
-        bbox_results_list = [
-            data_sample.proposals for data_sample in batch_data_samples
-        ]
         results_list = self.teacher.bbox_head.predict(
-            x, bbox_results_list, rescale=False)
-        results_label_list = [r[1] for r in results_list]
+            x, batch_data_samples, rescale=False)
 
         # dynamic thresholds
         thrs = []
-        for _, data_samples in enumerate(batch_data_samples):
+        for _, result in enumerate(results_list):
             dynamic_ratio = self.semi_train_cfg.dynamic_ratio
-            scores = data_samples[:, 4].clone()
+            scores = result['scores'].clone()
             scores = scores.sort(descending=True)[0]
             if len(scores) == 0:
                 thrs.append(1)  # no kept pseudo boxes
             else:
-                # num_gt = int(scores.sum() + 0.5)
                 num_gt = int(scores.sum() * dynamic_ratio + 0.5)
                 num_gt = min(num_gt, len(scores) - 1)
                 thrs.append(scores[num_gt] - 1e-5)
@@ -192,11 +213,8 @@ class ConsistentTeacher(SemiBaseDetector):
         batch_data_samples = filter_gt_instances(
             batch_data_samples, score_thr=(thr for thr in thrs))
 
-        scores = torch.cat([
-            data_samples.gt_instances[:, 4]
-            for data_samples in batch_data_samples
-        ])
-        labels = torch.cat(results_label_list)
+        scores = results_list['scores']
+        labels = results_list['labels']
         thrs = torch.zeros_like(scores)
         for label in torch.unique(labels):
             label = int(label)
@@ -214,17 +232,13 @@ class ConsistentTeacher(SemiBaseDetector):
         if len(thrs) == 0:
             mean_thr.fill_(0)
 
-        thrs = torch.split(
-            thrs, [len(data_samples) for data_samples in batch_data_samples])
+        thrs = torch.split(thrs, [
+            len(data_samples.gt_instances.bboxes)
+            for data_samples in batch_data_samples
+        ])
 
-        for data_samples, results in zip(batch_data_samples, results_list):
-            data_samples.gt_instances = results
-            data_samples.gt_instances.bboxes = bbox_project(
-                data_samples.gt_instances.bboxes,
-                torch.from_numpy(data_samples.homography_matrix).inverse().to(
-                    self.data_preprocessor.device), data_samples.ori_shape)
         batch_data_samples = filter_gt_instances(
-            batch_data_samples, score_thr=(thr_tmp for thr_tmp in thrs))
+            batch_data_samples, score_thr=(thr for thr in thrs))
 
         batch_info = {
             'feat': x,
@@ -238,7 +252,6 @@ class ConsistentTeacher(SemiBaseDetector):
                 torch.from_numpy(data_samples.homography_matrix).to(
                     self.data_preprocessor.device))
             batch_info['metainfo'].append(data_samples.metainfo)
-
         return batch_data_samples, batch_info
 
     def bbox_loss_by_pseudo_instances(self, x: Tuple[Tensor],
@@ -255,15 +268,14 @@ class ConsistentTeacher(SemiBaseDetector):
         Returns:
             dict: A dictionary of rpn loss components
         """
-        bbox_data_samples = copy.deepcopy(batch_data_samples)
-        num_bbox_data = [len(bbox) for bbox in bbox_data_samples]
+        num_gts = [len(data_samples) for data_samples in batch_data_samples]
         bbox_losses, bbox_results_list = self.student.bbox_head.loss_and_predict(
-            x, bbox_data_samples)
-        if len([n for n in num_bbox_data if n > 0]) < len(num_bbox_data) / 2:
+            x, batch_data_samples)
+        if len([n for n in num_gts if n > 0]) < len(num_gts) / 2:
             bbox_losses = reweight_loss_dict(
                 bbox_losses,
                 weight=self.semi_train_cfg.get('background_weight', 1e-2))
-        bbox_losses['num_bbox_data'] = torch.tensor(sum([]))
+        bbox_losses['num_gts'] = torch.tensor(sum(num_gts).to(num_gts[0]))
         return bbox_losses, bbox_results_list
 
     def gmm_policy(self,

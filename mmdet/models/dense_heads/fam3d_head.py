@@ -1,22 +1,22 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from math import pi
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale
-from mmcv.ops import DeformConv2d
+from mmcv.ops import deform_conv2d
+from mmengine.config import ConfigDict
 from mmengine.model import bias_init_with_prob, normal_init
 from mmengine.structures import InstanceData
 from torch import Tensor
 
-from mmdet.models.task_modules import anchor_inside_flags, build_assigner
+from mmdet.models.task_modules import anchor_inside_flags
 from mmdet.models.utils import images_to_levels, multi_apply, unmap
-from mmdet.registry import MODELS
+from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures.bbox import distance2bbox
-from mmdet.utils import (ConfigType, InstanceList, MultiConfig, OptConfigType,
-                         OptInstanceList)
+from mmdet.utils import InstanceList, OptInstanceList, reduce_mean
 from ..utils import filter_scores_and_topk
 from . import ATSSHead
 
@@ -41,13 +41,11 @@ class FAM3DHead(ATSSHead):
     def __init__(self,
                  num_classes: int,
                  in_channels: int,
-                 num_dcn: int = 0,
                  anchor_type: str = 'anchor_free',
-                 use_atan: bool = False,
-                 offset_channel_shrink: int = 4,
+                 use_atan=False,
+                 offset_channel_shrink=4,
                  **kwargs) -> None:
         assert anchor_type in ['anchor_free', 'anchor_based']
-        self.num_dcn = num_dcn
         self.anchor_type = anchor_type
         self.use_atan = use_atan
         self.offset_channel_shrink = offset_channel_shrink
@@ -55,10 +53,11 @@ class FAM3DHead(ATSSHead):
         super().__init__(num_classes, in_channels, **kwargs)
 
         if self.train_cfg:
-            self.assigner = build_assigner(self.train_cfg.assigner)
-            self.alignment_assigner = build_assigner(self.train_cfg.assigner)
-            self.alpha = self.train_cfg.alpha
-            self.beta = self.train_cfg.beta
+            self.assigner = TASK_UTILS.build(self.train_cfg['assigner'])
+            self.alignment_assigner = TASK_UTILS.build(
+                self.train_cfg['assigner'])
+            self.alpha = self.train_cfg['alpha']
+            self.beta = self.train_cfg['beta']
 
     def _init_layers(self) -> None:
         """Initialize layers of the head."""
@@ -164,7 +163,6 @@ class FAM3DHead(ATSSHead):
             inter_feat = torch.cat(inter_feat, 1)
 
             cls_score = self.tood_cls(cls_feat).sigmoid()
-
             # reg prediciton and alignment
             if self.anchor_type == 'anchor_free':
                 reg_dist = scale(self.tood_reg(reg_feat).exp()).float()
@@ -182,7 +180,6 @@ class FAM3DHead(ATSSHead):
                 raise NotImplementedError(
                     f'Unknow anchor type: {self.anchor_type}.'
                     f'Please use either `anchor_free` or `anchor_based`.')
-
             cls_scores.append(cls_score)
             bbox_preds.append(reg_bbox)
             offset_feats.append(self.pyramid_mapping_module(inter_feat))
@@ -210,7 +207,6 @@ class FAM3DHead(ATSSHead):
 
             offset_feat = torch.cat([lower, offset_feats[idx], upper], dim=1)
             weight = self.pyramid_offset(offset_feat)
-
             if self.use_atan:
                 weight = weight.atan() / (pi / 2)
                 if idx == 0:
@@ -250,7 +246,7 @@ class FAM3DHead(ATSSHead):
             bbox_preds_new.append(bbox_pred)
         return tuple(cls_scores), tuple(bbox_preds_new)
 
-    def deform_sampling(self, x: Tensor, offset: Tensor) -> Tensor:
+    def deform_sampling(self, feat: Tensor, offset: Tensor) -> Tensor:
         """Sampling the feature x according to offset.
 
         Args:
@@ -261,11 +257,13 @@ class FAM3DHead(ATSSHead):
             Tensor: An equivalent implementation of the bnlinear
                 interpolation
         """
-        b, c, h, w = x.shape
-        weight = x.new_ones(c, 1, 1, 1)
-        return DeformConv2d(x, offset, weight, 1, 0, 1, c, c)
+        # it is an equivalent implementation of bilinear interpolation
+        b, c, h, w = feat.shape
+        weight = feat.new_ones(c, 1, 1, 1)
+        y = deform_conv2d(feat, offset, weight, 1, 0, 1, c, c)
+        return y
 
-    def centerness_target(self, anchors: Tensor) -> Tensor:
+    def anchor_center(self, anchors: Tensor) -> Tensor:
         """Get anchor centers from anchors.
 
         Args:
@@ -311,28 +309,31 @@ class FAM3DHead(ATSSHead):
         cls_score = cls_score.permute(0, 2, 3, 1).reshape(
             -1, self.cls_out_channels).contiguous()
         bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
-        labels = labels.reshape(-1)
-        label_weights = label_weights.reshape(-1)
         bbox_targets = bbox_targets.reshape(-1, 4)
-        alignment_metrics = alignment_metrics.reshape(-1, 4)
-
+        labels = labels.reshape(-1)
+        alignment_metrics = alignment_metrics.reshape(-1)
+        label_weights = label_weights.reshape(-1)
         targets = labels
         cls_loss_func = self.loss_cls
+
         loss_cls = cls_loss_func(
             cls_score, targets, label_weights, avg_factor=1.0)
 
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-        bg_class_id = self.num_classes
-        pos_ids = ((labels >= 0) & (labels < bg_class_id)).nonzero().squeeze(1)
-        if len(pos_ids) > 0:
-            pos_bbox_targets = bbox_targets[pos_ids]
-            pos_bbox_pred = bbox_pred[pos_ids]
-            pos_anchors = anchors[pos_ids]
+        bg_class_ind = self.num_classes
+        pos_inds = ((labels >= 0)
+                    & (labels < bg_class_ind)).nonzero().squeeze(1)
+
+        if len(pos_inds) > 0:
+            pos_bbox_targets = bbox_targets[pos_inds]
+            pos_bbox_pred = bbox_pred[pos_inds]
+            pos_anchors = anchors[pos_inds]
+
             pos_decode_bbox_pred = pos_bbox_pred
             pos_decode_bbox_targets = pos_bbox_targets / stride[0]
 
             # regression loss
-            pos_bbox_weight = alignment_metrics[pos_ids]
+            pos_bbox_weight = alignment_metrics[pos_inds]
 
             loss_bbox = self.loss_bbox(
                 pos_decode_bbox_pred,
@@ -346,7 +347,6 @@ class FAM3DHead(ATSSHead):
         return loss_cls, loss_bbox, alignment_metrics.sum(
         ), pos_bbox_weight.sum()
 
-    # force_fp32(apply_to=('cls_scores, 'bbox_preds'))
     def loss_by_feat(self,
                      cls_scores: List[Tensor],
                      bbox_preds: List[Tensor],
@@ -363,7 +363,7 @@ class FAM3DHead(ATSSHead):
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
                 level with shape (N, num_anchors * 4, H, W)
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
-                gt_instance.  It usually includes ``bboxes`` and ``labels``
+                gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
             batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
@@ -375,20 +375,13 @@ class FAM3DHead(ATSSHead):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        batch_gt_bboxes = [
-        ]  # (list[Tensor]): ground truth bboxes for each image with shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-        batch_gt_labels = [
-        ]  # (list[Tensor]): class indices corresponding to each box
-        for gt_instance in batch_gt_instances:
-            batch_gt_bboxes.append(gt_instance['bboxes'])
-            batch_gt_labels.append(gt_instance['labels'])
         num_imgs = len(batch_img_metas)
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, batch_img_metas, device)
+            featmap_sizes, batch_img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
 
         flatten_cls_scores = torch.cat([
@@ -407,13 +400,34 @@ class FAM3DHead(ATSSHead):
             flatten_bbox_preds,
             anchor_list,
             valid_flag_list,
-            batch_gt_bboxes,
+            batch_gt_instances,
             batch_img_metas,
-            gt_bboxes_ignore_list=batch_gt_instances_ignore,
-            gt_labels_list=batch_gt_labels,
+            batch_gt_instances_ignore=batch_gt_instances_ignore,
             label_channels=label_channels)
         if return_targets_only:
             return cls_reg_targets
+        (anchor_list, labels_list, label_weights_list, bbox_targets_list,
+         alignment_metrics_list, gt_cost_list) = cls_reg_targets
+
+        losses_cls, losses_bbox,\
+            cls_avg_factors, bbox_avg_factors = multi_apply(
+                self.loss_by_feat_single,
+                anchor_list,
+                cls_scores,
+                bbox_preds,
+                labels_list,
+                label_weights_list,
+                bbox_targets_list,
+                alignment_metrics_list,
+                self.prior_generator.strides)
+
+        cls_avg_factor = reduce_mean(sum(cls_avg_factors)).clamp_(min=1).item()
+        losses_cls = list(map(lambda x: x / cls_avg_factor, losses_cls))
+
+        bbox_avg_factor = reduce_mean(
+            sum(bbox_avg_factors)).clamp_(min=1).item()
+        losses_bbox = list(map(lambda x: x / bbox_avg_factor, losses_bbox))
+        return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
     def _get_bboxes_single(self,
                            cls_score_list: list[Tensor],
@@ -421,10 +435,9 @@ class FAM3DHead(ATSSHead):
                            score_factor_list: list[Tensor],
                            mlvl_priors: list[Tensor],
                            img_meta: dict,
-                           cfg: ConfigType,
+                           cfg: Optional[ConfigDict] = None,
                            rescale: bool = False,
-                           with_nms: bool = True,
-                           **kwargs) -> Tuple[Tensor]:
+                           with_nms: bool = True) -> Tuple[Tensor]:
         """Transform outputs of a single image into bbox predictions.
 
         Args:
@@ -466,7 +479,7 @@ class FAM3DHead(ATSSHead):
                     box with shape [num_bboxes].
         """
 
-        cfg = self.test_cfg if cfg is not None else cfg
+        cfg = self.test_cfg if cfg is None else cfg
         nms_pre = cfg.get('nms_pre', -1)
 
         mlvl_bboxes = []
@@ -486,37 +499,48 @@ class FAM3DHead(ATSSHead):
             # There is no difference in performance for most models. If you
             # find a slight drop in performance, you can set a larger
             # `nms_pre` than before.
-            results = filter_scores_and_topk(scores, cfg.score_thr, nms_pre,
-                                             dict(bbox_pred, priors))
-            scores, labels, kept_anchor_idxs, filtered_results = results
+            results = filter_scores_and_topk(
+                scores, cfg.score_thr, nms_pre,
+                dict(bbox_pred=bbox_pred, priors=priors))
+            scores, labels, keep_idxs, filtered_results = results
+
             bboxes = filtered_results['bbox_pred']
 
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_labels.append(labels)
 
-        return self._bbox_post_process(mlvl_scores, mlvl_labels, mlvl_bboxes,
-                                       img_meta['scale_factor'], cfg, rescale,
-                                       with_nms, **kwargs)
+        results = InstanceData()
+        results.bboxes = torch.cat(mlvl_bboxes)
+        results.scores = torch.cat(mlvl_scores)
+        results.labels = torch.cat(mlvl_labels)
+
+        return self._bbox_post_process(
+            results=results,
+            cfg=cfg,
+            rescale=rescale,
+            with_nms=with_nms,
+            img_meta=img_meta)
 
     def get_targets(self,
-                    cls_scores: Tensor,
-                    bbox_preds: Tensor,
+                    cls_scores: List[List[Tensor]],
+                    bbox_preds: List[List[Tensor]],
                     anchor_list: List[List[Tensor]],
                     valid_flag_list: List[List[Tensor]],
                     batch_gt_instances: InstanceList,
                     batch_img_metas: List[dict],
                     batch_gt_instances_ignore: OptInstanceList = None,
-                    label_channels: int = 1,
                     unmap_outputs: bool = True) -> tuple:
-        """Get targets for FAM3D head.
+        """Compute regression and classification targets for anchors in
+        multiple images.
 
         Args:
-            cls_scores (Tensor): Classification predictions of images,
-                a 3D-Tensor with shape [num_imgs, num_priors, num_classes].
-            bbox_preds (Tensor): Decoded bboxes predictions of one image,
-                a 3D-Tensor with shape [num_imgs, num_priors, 4] in [tl_x,
-                tl_y, br_x, br_y] format.
+            cls_scores (list[list[Tensor]]): Classification predictions of
+                images, a 3D-Tensor with shape [num_imgs, num_priors,
+                num_classes].
+            bbox_preds (list[list[Tensor]]): Decoded bboxes predictions of one
+                image, a 3D-Tensor with shape [num_imgs, num_priors, 4] in
+                [tl_x, tl_y, br_x, br_y] format.
             anchor_list (list[list[Tensor]]): Multi level anchors of each
                 image. The outer list indicates images, and the inner list
                 corresponds to feature levels of the image. Each element of
@@ -525,25 +549,30 @@ class FAM3DHead(ATSSHead):
                 each image. The outer list indicates images, and the inner list
                 corresponds to feature levels of the image. Each element of
                 the inner list is a tensor of shape (num_anchors, )
-            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
-            img_metas (list[dict]): Meta info of each image.
-            gt_bboxes_ignore_list (list[Tensor]): Ground truth bboxes to be
-                ignored.
-            gt_labels_list (list[Tensor]): Ground truth labels of each box.
-            label_channels (int): Channel of label.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], Optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
             unmap_outputs (bool): Whether to map outputs back to the original
                 set of anchors.
 
         Returns:
-            tuple: a tuple contains learning targets.
-                anchors_list (list[list[Tensor]]): Anchors of each level.
-                labels_list (list[Tensor]): Labels of each level.
-                label_weights_list (list[Tensor]): Label weights of each level.
-                bbox_targets_list (list[Tensor]): BBox targets of each level.
-                norm_alignment_metrics_list (list[Tensor]): Normalized
-                    alignment metrics of each level.
+            tuple: a tuple containing learning targets.
+
+                - anchors_list (list[list[Tensor]]): Anchors of each level.
+                - labels_list (list[Tensor]): Labels of each level.
+                - label_weights_list (list[Tensor]): Label weights of each
+                  level.
+                - bbox_targets_list (list[Tensor]): BBox targets of each level.
+                - norm_alignment_metrics_list (list[Tensor]): Normalized
+                  alignment metrics of each level.
         """
-        num_imgs = len(batch_gt_instances)
+        num_imgs = len(batch_img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
 
         # anchor number of multi levels
@@ -559,11 +588,9 @@ class FAM3DHead(ATSSHead):
         # compute targets for each image
         if batch_gt_instances_ignore is None:
             batch_gt_instances_ignore = [None] * num_imgs
-        if batch_gt_instances is None:
-            batch_gt_instances = [None] * num_imgs
         # anchor_list: list(b * [-1, 4])
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
-         all_assign_metrics, gt_cost_list) = multi_apply(
+         all_assign_metrics) = multi_apply(
              self._get_targets_single,
              cls_scores,
              bbox_preds,
@@ -572,7 +599,6 @@ class FAM3DHead(ATSSHead):
              batch_gt_instances,
              batch_img_metas,
              batch_gt_instances_ignore,
-             label_channels=label_channels,
              unmap_outputs=unmap_outputs)
         # no valid anchors
         if any([labels is None for labels in all_labels]):
@@ -587,29 +613,30 @@ class FAM3DHead(ATSSHead):
                                              num_level_anchors)
         norm_alignment_metrics_list = images_to_levels(all_assign_metrics,
                                                        num_level_anchors)
+
         return (anchors_list, labels_list, label_weights_list,
-                bbox_targets_list, norm_alignment_metrics_list, gt_cost_list)
+                bbox_targets_list, norm_alignment_metrics_list)
 
     def _get_targets_single(self,
-                            cls_scores: List[Tensor],
-                            bbox_preds: List[Tensor],
+                            cls_scores: Tensor,
+                            bbox_preds: Tensor,
                             flat_anchors: Tensor,
                             valid_flags: Tensor,
                             gt_instances: InstanceData,
                             img_meta: dict,
-                            gt_instances_ignore: InstanceData | None = None,
-                            label_channel: int = 1,
-                            unmap_outputs: bool = True) -> Tensor:
+                            gt_instances_ignore: Optional[InstanceData] = None,
+                            unmap_outputs: bool = True) -> tuple:
         """Compute regression, classification targets for anchors in a single
         image.
 
         Args:
-            cls_scores (list(Tensor)): Box scores for each image.
-            bbox_preds (list(Tensor)): Box energies / deltas for each image.
+            cls_scores (Tensor): Box scores for each image.
+            bbox_preds (Tensor): Box energies / deltas for each image.
             flat_anchors (Tensor): Multi-level anchors of the image, which are
                 concatenated into a single tensor of shape (num_anchors ,4)
             valid_flags (Tensor): Multi level valid flags of the image,
-                which are concatenated into a single tensor of shape (num_anchors,).
+                which are concatenated into a single tensor of
+                    shape (num_anchors,).
             gt_instances (:obj:`InstanceData`): Ground truth of instance
                 annotations. It usually includes ``bboxes`` and ``labels``
                 attributes.
@@ -623,47 +650,44 @@ class FAM3DHead(ATSSHead):
 
         Returns:
             tuple: N is the number of total anchors in the image.
-                nchors (Tensor): All anchors in the image with shape (N, 4).
+                anchors (Tensor): All anchors in the image with shape (N, 4).
                 labels (Tensor): Labels of all anchors in the image with shape
                     (N,).
                 label_weights (Tensor): Label weights of all anchor in the
                     image with shape (N,).
                 bbox_targets (Tensor): BBox targets of all anchors in the
                     image with shape (N, 4).
-                bbox_weights (Tensor): BBox weights of all anchors in the
-                    image with shape (N, 4)
                 norm_alignment_metrics (Tensor): Normalized alignment metrics
                     of all priors in the image with shape (N,).
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
-                                           self.train_cfg.allowed_border)
+                                           self.train_cfg['allowed_border'])
         if not inside_flags.any():
             return (None, ) * 7
-
-        gt_bboxes = gt_instances['bboxes']
-        gt_labels = gt_instances['labels']
-        gt_bboxes_ignore = gt_instances_ignore['bboxes']
-
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
 
         # TODO: use point generator
-        ct_priors = self.centerness_target(anchors)
+        ct_priors = self.anchor_center(anchors)
         strides = (anchors[..., 2:] -
-                   anchors[..., 2]) / 8  # octave_based_scale
+                   anchors[..., :2]) / 8  # octave_base_scale
         ct_priors = torch.cat([ct_priors, strides], dim=1)
+        pred_instances = InstanceData(
+            priors=ct_priors,
+            scores=cls_scores[inside_flags, :],
+            bboxes=bbox_preds[inside_flags, :])
 
-        assign_result = self.alignment_assigner.assign(
-            cls_scores[inside_flags, :], bbox_preds[inside_flags, :],
-            ct_priors, gt_bboxes, gt_bboxes_ignore, gt_labels, self.alpha,
-            self.beta)
+        assign_result = self.alignment_assigner.assign(pred_instances,
+                                                       gt_instances,
+                                                       gt_instances_ignore,
+                                                       self.alpha, self.beta)
         assign_ious = assign_result.max_overlaps
         assign_metrics = assign_result.assign_metrics
         gt_cost = assign_result.gt_cost
 
         sampling_result = self.sampler.sample(assign_result, anchors,
-                                              gt_bboxes)
+                                              gt_instances)
 
         num_valid_anchors = anchors.shape[0]
         bbox_targets = torch.zeros_like(anchors)
@@ -681,17 +705,11 @@ class FAM3DHead(ATSSHead):
             pos_bbox_targets = sampling_result.pos_gt_bboxes
             bbox_targets[pos_inds, :] = pos_bbox_targets
 
-            if gt_labels is None:
-                # Only rpn gives gt_labels as None
-                # Foreground is the first class since v2.5.0
-                labels[pos_inds] = 0
-            else:
-                labels[pos_inds] = gt_labels[
-                    sampling_result.pos_assigned_gt_inds]
-            if self.train_cfg.pos_weight <= 0:
+            labels[pos_inds] = sampling_result.pos_gt_labels
+            if self.train_cfg['pos_weight'] <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
+                label_weights[pos_inds] = self.train_cfg['pos_weight']
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 
@@ -717,6 +735,5 @@ class FAM3DHead(ATSSHead):
             bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
             norm_alignment_metrics = unmap(norm_alignment_metrics,
                                            num_total_anchors, inside_flags)
-
         return (anchors, labels, label_weights, bbox_targets,
                 norm_alignment_metrics, gt_cost)
