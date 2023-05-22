@@ -1,12 +1,13 @@
-from mmcv.transforms.loading import LoadImageFromFile, LoadImageFromFile
-from mmdet.datasets.transforms.loading import LoadAnnotations, LoadAnnotations
-from mmdet.datasets.transforms.transforms import Resize, RandomFlip, Resize
-from mmdet.datasets.transforms.formatting import PackDetInputs, PackDetInputs
-from mmengine.dataset.sampler import DefaultSampler, DefaultSampler, DefaultSampler
-from mmdet.datasets.samplers.batch_sampler import AspectRatioBatchSampler
-from mmdet.evaluation.metrics.coco_metric import CocoMetric, CocoMetric
+from mmcv.transforms import LoadImageFromFile
+from mmengine.dataset.sampler import DefaultSampler
+
+from mmdet.datasets import AspectRatioBatchSampler, CocoDataset
+from mmdet.datasets.transforms import (LoadAnnotations, PackDetInputs,
+                                       RandomFlip, Resize)
+from mmdet.evaluation import CocoMetric
+
 # dataset settings
-dataset_type = 'CocoDataset'
+dataset_type = CocoDataset
 data_root = 'data/coco/'
 
 # Example to use different file client

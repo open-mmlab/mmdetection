@@ -1,14 +1,12 @@
-from mmengine.hooks.iter_timer_hook import IterTimerHook
-from mmengine.hooks.logger_hook import LoggerHook
-from mmengine.hooks.param_scheduler_hook import ParamSchedulerHook
-from mmengine.hooks.checkpoint_hook import CheckpointHook
-from mmengine.hooks.sampler_seed_hook import DistSamplerSeedHook
-from mmdet.engine.hooks.visualization_hook import DetVisualizationHook
-from mmengine.visualization.vis_backend import LocalVisBackend
-from mmdet.visualization.local_visualizer import DetLocalVisualizer
-from mmengine.runner.log_processor import LogProcessor
+from mmengine.hooks import (CheckpointHook, DistSamplerSeedHook, IterTimerHook,
+                            LoggerHook, ParamSchedulerHook)
+from mmengine.runner import LogProcessor
+from mmengine.visualization import LocalVisBackend
 
-default_scope = 'mmdet'
+from mmdet.engine.hooks import DetVisualizationHook
+from mmdet.visualization import DetLocalVisualizer
+
+default_scope = None
 
 default_hooks = dict(
     timer=dict(type=IterTimerHook),
