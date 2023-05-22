@@ -228,8 +228,8 @@ class DDODHead(AnchorHead):
                 (N, num_total_anchors).
             label_weights (Tensor): Label weights of each anchor with shape
                 (N, num_total_anchors)
-            bbox_targets (Tensor): BBox regression targets of each anchor
-                weight shape (N, num_total_anchors, 4).
+            bbox_targets (Tensor): BBox regression targets of each anchor with
+                shape (N, num_total_anchors, 4).
             bbox_weights (Tensor): BBox weights of all anchors in the
                 image with shape (N, 4)
             reweight_factor (List[float]): Reweight factor for cls and reg
