@@ -5,12 +5,12 @@ model = dict(
     train_cfg=dict(type='DynamicSoftLabelAssigner', topk=13, iou_factor=3.0))
 
 # full coco train2017 is set as labeled dataset
-fold = 1
-percent = 100
 labeled_dataset = _base_.labeled_dataset
 unlabeled_dataset = _base_.unlabeled_dataset
 labeled_dataset.ann_file = 'data/coco/annotations/instances_train2017.json'
 unlabeled_dataset.ann_file = 'data/coco/annotations/instances_unlabeled2017.json'
+train_dataloader = dict(
+    dataset=dict(datasets=[labeled_dataset, unlabeled_dataset]))
 
 train_cfg = dict(
     type='IterBasedTrainLoop', max_iters=720000, val_interval=4000)

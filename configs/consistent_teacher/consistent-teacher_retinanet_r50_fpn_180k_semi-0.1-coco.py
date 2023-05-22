@@ -56,8 +56,6 @@ model = dict(
     semi_test_cfg=dict(predict_on='teacher'))
 
 # 10% coco train2017 is set as labeled dataset
-fold = 1
-percent = 10
 labeled_dataset = _base_.labeled_dataset
 unlabeled_dataset = _base_.unlabeled_dataset
 labeled_dataset.ann_file = 'semi_anns/instances_train2017.1@10.json'
