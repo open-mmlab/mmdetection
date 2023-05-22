@@ -1,7 +1,9 @@
-from mmengine.runner.loops import EpochBasedTrainLoop, ValLoop, TestLoop
-from mmengine.optim.scheduler.lr_scheduler import LinearLR, MultiStepLR
+# Copyright (c) OpenMMLab. All rights reserved.
 from mmengine.optim.optimizer.optimizer_wrapper import OptimWrapper
+from mmengine.optim.scheduler.lr_scheduler import LinearLR, MultiStepLR
+from mmengine.runner.loops import EpochBasedTrainLoop, TestLoop, ValLoop
 from torch.optim.sgd import SGD
+
 # training schedule for 1x
 train_cfg = dict(type=EpochBasedTrainLoop, max_epochs=12, val_interval=1)
 val_cfg = dict(type=ValLoop)
