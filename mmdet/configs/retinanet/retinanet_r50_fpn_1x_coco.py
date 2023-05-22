@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 if '_base_':
     from .._base_.models.retinanet_r50_fpn import *
     from .._base_.datasets.coco_detection import *

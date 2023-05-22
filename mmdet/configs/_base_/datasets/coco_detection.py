@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from mmcv.transforms import LoadImageFromFile
 from mmengine.dataset.sampler import DefaultSampler
 
