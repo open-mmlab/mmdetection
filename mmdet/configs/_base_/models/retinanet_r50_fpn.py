@@ -1,14 +1,10 @@
-from mmdet.models.detectors.retinanet import RetinaNet
-from mmdet.models.data_preprocessors.data_preprocessor import DetDataPreprocessor
-from mmdet.models.backbones.resnet import ResNet
-from mmdet.models.necks.fpn import FPN
-from mmdet.models.dense_heads.retina_head import RetinaHead
-from mmdet.models.task_modules.prior_generators.anchor_generator import AnchorGenerator
-from mmdet.models.task_modules.coders.delta_xywh_bbox_coder import DeltaXYWHBBoxCoder
-from mmdet.models.losses.focal_loss import FocalLoss
-from mmdet.models.losses.smooth_l1_loss import L1Loss
-from mmdet.models.task_modules.assigners.max_iou_assigner import MaxIoUAssigner
-from mmdet.models.task_modules.samplers.pseudo_sampler import PseudoSampler
+from mmdet.models import (FPN, DetDataPreprocessor, FocalLoss, L1Loss, ResNet,
+                          RetinaHead, RetinaNet)
+from mmdet.models.task_modules import (AnchorGenerator, DeltaXYWHBBoxCoder,
+                                       MaxIoUAssigner, PseudoSampler)
+from torch.nn import BatchNorm2d
+from mmcv.ops import nms
+
 # model settings
 model = dict(
     type=RetinaNet,
@@ -24,7 +20,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type=BatchNorm2d, requires_grad=True),
         norm_eval=True,
         style='pytorch',
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
@@ -75,5 +71,5 @@ model = dict(
         nms_pre=1000,
         min_bbox_size=0,
         score_thr=0.05,
-        nms=dict(type='nms', iou_threshold=0.5),
+        nms=dict(type=nms, iou_threshold=0.5),
         max_per_img=100))
