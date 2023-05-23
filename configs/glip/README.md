@@ -36,11 +36,10 @@ https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.
 <img src="https://github.com/open-mmlab/mmdetection/assets/17425982/de370086-a5ae-4b77-8cbd-4592abf4afb0" width="40%"/>
 </div>
 
-
 ## Results and Models
 
 |   Model    | Zero-shot or Funetune | COCO mAP |       Pre-Train Data       |                                 Config                                  |                                           Download                                           |
-| :--------: | :-------------------: |:--------:| :------------------------: | :---------------------------------------------------------------------: | :------------------------------------------------------------------------------------------: |
+| :--------: | :-------------------: | :------: | :------------------------: | :---------------------------------------------------------------------: | :------------------------------------------------------------------------------------------: |
 | GLIP-T (A) |       Zero-shot       |   43.0   |            O365            |       [config](glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py)        | [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth) |
 | GLIP-T (B) |       Zero-shot       |   44.9   |            O365            |       [config](glip_atss_swin-t_b_fpn_dyhead_pretrain_obj365.py)        | [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_b_mmdet-6dfbd102.pth) |
 | GLIP-T (C) |       Zero-shot       |   46.7   |         O365,GoldG         |    [config](glip_atss_swin-t_c_fpn_dyhead_pretrain_obj365-goldg.py)     | [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_c_mmdet-2fc427dd.pth) |
