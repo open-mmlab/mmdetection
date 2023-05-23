@@ -1,4 +1,23 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+"""MultiModal Demo.
+
+Example:
+    python demo/multimodal_demo.py demo/demo.jpg bench \
+    configs/glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py \
+    https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth
+
+    python demo/multimodal_demo.py demo/demo.jpg "bench . car . " \
+    configs/glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py \
+    https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth
+
+    python demo/multimodal_demo.py demo/demo.jpg "bench . car . "  -c \
+    configs/glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py \
+    https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth
+
+    python demo/multimodal_demo.py demo/demo.jpg "There are a lot of cars here." \
+    configs/glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py \
+    https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth
+"""
 
 import os.path as osp
 from argparse import ArgumentParser

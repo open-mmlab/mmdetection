@@ -20,9 +20,22 @@ cd $MMDETROOT
 # source installation
 pip install -r requirements/multimodal.txt
 
-# or pypi installation
-pip install mmdet[multimodal]
+# or mim installation
+mim install mmdet[multimodal]
 ```
+
+```shell
+cd $MMDETROOT
+
+python demo/multimodal_demo.py demo/demo.jpg "bench . car . " \
+configs/glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py \
+https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth
+```
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/de370086-a5ae-4b77-8cbd-4592abf4afb0" width="40%"/>
+</div>
+
 
 ## Results and Models
 
