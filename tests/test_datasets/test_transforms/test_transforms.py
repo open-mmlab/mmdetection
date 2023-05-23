@@ -10,12 +10,12 @@ from mmcv.transforms import LoadImageFromFile
 
 # yapf:disable
 from mmdet.datasets.transforms import (CopyPaste, CutOut, Expand,
-                                       FixShapeResize, MinIoURandomCrop, MixUp,
-                                       Mosaic, Pad, PhotoMetricDistortion,
-                                       RandomAffine, RandomCenterCropPad,
-                                       RandomCrop, RandomErasing, RandomFlip,
-                                       RandomShift, Resize, SegRescale,
-                                       YOLOXHSVRandomAug)
+                                       FixScaleResize, FixShapeResize,
+                                       MinIoURandomCrop, MixUp, Mosaic, Pad,
+                                       PhotoMetricDistortion, RandomAffine,
+                                       RandomCenterCropPad, RandomCrop,
+                                       RandomErasing, RandomFlip, RandomShift,
+                                       Resize, SegRescale, YOLOXHSVRandomAug)
 # yapf:enable
 from mmdet.evaluation import bbox_overlaps
 from mmdet.registry import TRANSFORMS
@@ -132,7 +132,36 @@ class TestResize(unittest.TestCase):
                               'interpolation=bilinear)'))
 
 
-class TestFIXShapeResize(unittest.TestCase):
+class TestFixScaleResize(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod()
+        -> tearDown() -> cleanUp()
+        """
+        rng = np.random.RandomState(0)
+        self.data_info1 = dict(
+            img=np.random.random((1333, 800, 3)),
+            gt_seg_map=np.random.random((1333, 800, 3)),
+            gt_bboxes=np.array([[0, 0, 112, 112]], dtype=np.float32),
+            gt_masks=BitmapMasks(
+                rng.rand(1, 1333, 800), height=1333, width=800))
+        self.data_info2 = dict(
+            img=np.random.random((300, 400, 3)),
+            gt_bboxes=np.array([[200, 150, 600, 450]], dtype=np.float32),
+            dtype=np.float32)
+        self.data_info3 = dict(img=np.random.random((300, 400, 3)))
+
+    def test_resize(self):
+        # test keep_ratio is True
+        transform = FixScaleResize(scale=(2001, 2002), keep_ratio=True)
+        results = transform(copy.deepcopy(self.data_info1))
+        self.assertEqual(results['img_shape'], (2002, 1201))
+        self.assertEqual(results['scale_factor'], (1201 / 800, 2002 / 1333))
+
+
+class TestFixShapeResize(unittest.TestCase):
 
     def setUp(self):
         """Setup the model and optimizer which are used in every test method.

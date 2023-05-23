@@ -27,10 +27,12 @@ class BaseDetDataset(BaseDataset):
                  proposal_file: Optional[str] = None,
                  file_client_args: dict = None,
                  backend_args: dict = None,
+                 return_caption: Optional[bool] = False,
                  **kwargs) -> None:
         self.seg_map_suffix = seg_map_suffix
         self.proposal_file = proposal_file
         self.backend_args = backend_args
+        self.return_caption = return_caption
         if file_client_args is not None:
             raise RuntimeError(
                 'The `file_client_args` is deprecated, '

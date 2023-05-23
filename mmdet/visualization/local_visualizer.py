@@ -147,8 +147,11 @@ class DetLocalVisualizer(Visualizer):
             scales = _get_adaptive_scales(areas)
 
             for i, (pos, label) in enumerate(zip(positions, labels)):
-                label_text = classes[
-                    label] if classes is not None else f'class {label}'
+                if 'label_names' in instances:
+                    label_text = instances.label_names[i]
+                else:
+                    label_text = classes[
+                        label] if classes is not None else f'class {label}'
                 if 'scores' in instances:
                     score = round(float(instances.scores[i]) * 100, 1)
                     label_text += f': {score}'

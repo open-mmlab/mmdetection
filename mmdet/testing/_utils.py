@@ -95,7 +95,9 @@ def demo_mm_inputs(batch_size=2,
                    with_mask=False,
                    with_semantic=False,
                    use_box_type=False,
-                   device='cpu'):
+                   device='cpu',
+                   captions=None,
+                   custom_entities=False):
     """Create a superset of inputs needed to run test or train batches.
 
     Args:
@@ -122,6 +124,9 @@ def demo_mm_inputs(batch_size=2,
     if isinstance(num_items, list):
         assert len(num_items) == batch_size
 
+    if captions is not None:
+        assert batch_size == len(captions)
+
     packed_inputs = []
     for idx in range(batch_size):
         image_shape = image_shapes[idx]
@@ -142,6 +147,10 @@ def demo_mm_inputs(batch_size=2,
             'flip_direction': None,
             'border': [1, 1, 1, 1]  # Only used by CenterNet
         }
+
+        if captions:
+            img_meta['caption'] = captions[idx]
+            img_meta['custom_entities'] = custom_entities
 
         data_sample = DetDataSample()
         data_sample.set_metainfo(img_meta)

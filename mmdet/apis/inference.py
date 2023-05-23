@@ -119,7 +119,9 @@ ImagesType = Union[str, np.ndarray, Sequence[str], Sequence[np.ndarray]]
 def inference_detector(
     model: nn.Module,
     imgs: ImagesType,
-    test_pipeline: Optional[Compose] = None
+    test_pipeline: Optional[Compose] = None,
+    text_prompt: Optional[str] = None,
+    custom_entities: bool = False,
 ) -> Union[DetDataSample, SampleList]:
     """Inference image(s) with the detector.
 
@@ -160,7 +162,7 @@ def inference_detector(
             ), 'CPU inference with RoIPool is not supported currently.'
 
     result_list = []
-    for img in imgs:
+    for i, img in enumerate(imgs):
         # prepare data
         if isinstance(img, np.ndarray):
             # TODO: remove img_id.
@@ -168,6 +170,11 @@ def inference_detector(
         else:
             # TODO: remove img_id.
             data_ = dict(img_path=img, img_id=0)
+
+        if text_prompt:
+            data_['caption'] = text_prompt
+            data_['custom_entities'] = custom_entities
+
         # build the data pipeline
         data_ = test_pipeline(data_)
 

@@ -2,6 +2,7 @@
 from .anchor_free_head import AnchorFreeHead
 from .anchor_head import AnchorHead
 from .atss_head import ATSSHead
+from .atss_vlfusion_head import ATSSVLFusionHead
 from .autoassign_head import AutoAssignHead
 from .boxinst_head import BoxInstBboxHead, BoxInstMaskHead
 from .cascade_rpn_head import CascadeRPNHead, StageCascadeRPNHead
@@ -65,5 +66,5 @@ __all__ = [
     'CenterNetUpdateHead', 'RTMDetHead', 'RTMDetSepBNHead', 'CondInstBboxHead',
     'CondInstMaskHead', 'RTMDetInsHead', 'RTMDetInsSepBNHead',
     'BoxInstBboxHead', 'BoxInstMaskHead', 'ConditionalDETRHead', 'DINOHead',
-    'DABDETRHead'
+    'ATSSVLFusionHead', 'DABDETRHead'
 ]
