@@ -252,6 +252,7 @@ class VLFusionModule(BaseModel):
                  use_dyrelu: bool = True,
                  use_dyfuse: bool = True,
                  use_dcn: bool = True,
+                 use_checkpoint: bool = False,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         if BertConfig is None:
@@ -266,6 +267,7 @@ class VLFusionModule(BaseModel):
         self.use_dyrelu = use_dyrelu
         self.use_dyfuse = use_dyfuse
         self.use_dcn = use_dcn
+        self.use_checkpoint = use_checkpoint
 
         self.lang_cfg = BertConfig.from_pretrained(lang_model_name)
         self.lang_dim = self.lang_cfg.hidden_size
@@ -279,7 +281,7 @@ class VLFusionModule(BaseModel):
         for i in range(self.num_dyhead_blocks):
             if self.early_fuse:
                 # cross-modality fusion
-                dyhead_tower.append(VLFuse())
+                dyhead_tower.append(VLFuse(self.use_checkpoint))
                 # lang branch
                 dyhead_tower.append(
                     BertEncoderLayer(
@@ -383,6 +385,7 @@ class ATSSVLFusionHead(ATSSHead):
     def __init__(self,
                  *args,
                  early_fuse: bool = False,
+                 use_checkpoint: bool = False,
                  num_dyhead_blocks: int = 6,
                  lang_model_name: str = 'bert-base-uncased',
                  **kwargs):
@@ -392,6 +395,7 @@ class ATSSVLFusionHead(ATSSHead):
             feat_channels=self.feat_channels,
             num_base_priors=self.num_base_priors,
             early_fuse=early_fuse,
+            use_checkpoint=use_checkpoint,
             num_dyhead_blocks=num_dyhead_blocks,
             lang_model_name=lang_model_name)
 
