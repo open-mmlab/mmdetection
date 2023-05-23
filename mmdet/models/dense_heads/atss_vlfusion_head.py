@@ -281,7 +281,7 @@ class VLFusionModule(BaseModel):
         for i in range(self.num_dyhead_blocks):
             if self.early_fuse:
                 # cross-modality fusion
-                dyhead_tower.append(VLFuse(self.use_checkpoint))
+                dyhead_tower.append(VLFuse(use_checkpoint=self.use_checkpoint))
                 # lang branch
                 dyhead_tower.append(
                     BertEncoderLayer(
@@ -377,6 +377,7 @@ class ATSSVLFusionHead(ATSSHead):
     Args:
         early_fuse (bool): Whether to fuse visual and language features
             Defaults to False.
+        use_checkpoint (bool): Whether to use checkpoint. Defaults to False.
         num_dyhead_blocks (int): Number of dynamic head blocks. Defaults to 6.
         lang_model_name (str): Name of the language model.
             Defaults to 'bert-base-uncased'.

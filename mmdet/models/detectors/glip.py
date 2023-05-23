@@ -20,7 +20,11 @@ def find_noun_phrases(caption: str) -> list:
         >>> caption = 'There is two cat and a remote in the picture'
         >>> find_noun_phrases(caption) # ['cat', 'a remote', 'the picture']
     """
-    import nltk
+    try:
+        import nltk
+    except ImportError:
+        raise RuntimeError('nltk is not installed, please install it by: '
+                           'pip install nltk.')
 
     caption = caption.lower()
     tokens = nltk.word_tokenize(caption)
@@ -110,7 +114,7 @@ def create_positive_map(tokenized,
     return positive_map / (positive_map.sum(-1)[:, None] + 1e-6)
 
 
-def create_positive_map_label_to_token(positive_map: list,
+def create_positive_map_label_to_token(positive_map: Tensor,
                                        plus: int = 0) -> dict:
     """Create a dictionary mapping the label to the token."""
     positive_map_label_to_token = {}

@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 from mmcv.cnn.bricks import DropPath
+from torch import Tensor
 
 try:
     from transformers import BertConfig, BertPreTrainedModel
@@ -44,8 +45,14 @@ def clamp_values(vector):
 
 
 class BiMultiHeadAttention(nn.Module):
+    """Bidirectional fusion Multi-Head Attention layer."""
 
-    def __init__(self, v_dim, l_dim, embed_dim, num_heads, dropout=0.1):
+    def __init__(self,
+                 v_dim: int,
+                 l_dim: int,
+                 embed_dim: int,
+                 num_heads: int,
+                 dropout: float = 0.1):
         super(BiMultiHeadAttention, self).__init__()
 
         self.embed_dim = embed_dim
@@ -56,7 +63,9 @@ class BiMultiHeadAttention(nn.Module):
 
         assert (
             self.head_dim * self.num_heads == self.embed_dim
-        ), f'embed_dim must be divisible by num_heads (got `embed_dim`: {self.embed_dim} and `num_heads`: {self.num_heads}).'
+        ), 'embed_dim must be divisible by num_heads ' \
+           f'(got `embed_dim`: {self.embed_dim} ' \
+           f'and `num_heads`: {self.num_heads}).'
         self.scale = self.head_dim**(-0.5)
         self.dropout = dropout
 
@@ -74,7 +83,7 @@ class BiMultiHeadAttention(nn.Module):
 
         self._reset_parameters()
 
-    def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
+    def _shape(self, tensor: Tensor, seq_len: int, bsz: int):
         return tensor.view(bsz, seq_len, self.num_heads,
                            self.head_dim).transpose(1, 2).contiguous()
 
@@ -92,7 +101,7 @@ class BiMultiHeadAttention(nn.Module):
         nn.init.xavier_uniform_(self.out_l_proj.weight)
         self.out_l_proj.bias.data.fill_(0)
 
-    def forward(self, vision, lang, attention_mask_l=None):
+    def forward(self, vision: Tensor, lang: Tensor, attention_mask_l=None):
         bsz, tgt_len, _ = vision.size()
 
         query_states = self.v_proj(vision) * self.scale
@@ -112,8 +121,9 @@ class BiMultiHeadAttention(nn.Module):
 
         if attn_weights.size() != (bsz * self.num_heads, tgt_len, src_len):
             raise ValueError(
-                f'Attention weights should be of size {(bsz * self.num_heads, tgt_len, src_len)}, but is {attn_weights.size()}'
-            )
+                f'Attention weights should be of '
+                f'size {(bsz * self.num_heads, tgt_len, src_len)}, '
+                f'but is {attn_weights.size()}')
 
         if self.stable_softmax_2d:
             attn_weights = attn_weights - attn_weights.max()
@@ -146,9 +156,8 @@ class BiMultiHeadAttention(nn.Module):
                 attention_mask == 0, -9e15)
 
             if attention_mask.size() != (bsz, 1, tgt_len, src_len):
-                raise ValueError(
-                    f'Attention mask should be of size {(bsz, 1, tgt_len, src_len)}'
-                )
+                raise ValueError('Attention mask should be of '
+                                 f'size {(bsz, 1, tgt_len, src_len)}')
             attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len,
                                              src_len) + attention_mask
             attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len,
@@ -167,14 +176,16 @@ class BiMultiHeadAttention(nn.Module):
         if attn_output_v.size() != (bsz * self.num_heads, tgt_len,
                                     self.head_dim):
             raise ValueError(
-                f'`attn_output_v` should be of size {(bsz, self.num_heads, tgt_len, self.head_dim)}, but is {attn_output_v.size()}'
-            )
+                '`attn_output_v` should be of '
+                f'size {(bsz, self.num_heads, tgt_len, self.head_dim)}, '
+                f'but is {attn_output_v.size()}')
 
         if attn_output_l.size() != (bsz * self.num_heads, src_len,
                                     self.head_dim):
             raise ValueError(
-                f'`attn_output_l` should be of size {(bsz, self.num_heads, src_len, self.head_dim)}, but is {attn_output_l.size()}'
-            )
+                '`attn_output_l` should be of size '
+                f'{(bsz, self.num_heads, src_len, self.head_dim)}, '
+                f'but is {attn_output_l.size()}')
 
         attn_output_v = attn_output_v.view(bsz, self.num_heads, tgt_len,
                                            self.head_dim)
@@ -192,29 +203,23 @@ class BiMultiHeadAttention(nn.Module):
         return attn_output_v, attn_output_l
 
 
-class BiAttentionBlockForCheckpoint(nn.Module):
+class BiAttentionBlock(nn.Module):
     """BiAttentionBlock Module:
-        First, multi-level visual features are concated;
-        Then the concated visual feature and lang feature are fused by attention;
-        Finally the newly visual feature are split into multi levels.
+
+    First, multi-level visual features are concat; Then the concat visual
+    feature and lang feature are fused by attention; Finally the newly visual
+    feature are split into multi levels.
     """
 
     def __init__(self,
-                 v_dim,
-                 l_dim,
-                 embed_dim,
-                 num_heads,
-                 dropout=0.1,
-                 drop_path=.0,
-                 init_values=1e-4,
-                 cfg=None):
-        """
-        Inputs:
-            embed_dim - Dimensionality of input and attention feature vectors
-            num_heads - Number of heads to use in the Multi-Head Attention block
-            dropout - Amount of dropout to apply in the feed-forward network
-        """
-        super(BiAttentionBlockForCheckpoint, self).__init__()
+                 v_dim: int,
+                 l_dim: int,
+                 embed_dim: int,
+                 num_heads: int,
+                 dropout: float = 0.1,
+                 drop_path: float = .0,
+                 init_values: float = 1e-4):
+        super().__init__()
 
         # pre layer norm
         self.layer_norm_v = nn.LayerNorm(v_dim)
@@ -230,61 +235,72 @@ class BiAttentionBlockForCheckpoint(nn.Module):
         self.drop_path = DropPath(
             drop_path) if drop_path > 0. else nn.Identity()
         self.gamma_v = nn.Parameter(
-            init_values * torch.ones((v_dim)), requires_grad=True)
+            init_values * torch.ones(v_dim), requires_grad=True)
         self.gamma_l = nn.Parameter(
-            init_values * torch.ones((l_dim)), requires_grad=True)
+            init_values * torch.ones(l_dim), requires_grad=True)
 
-        self.cfg = cfg
+    def forward(self,
+                visual_features: list,
+                lang_feature: Tensor,
+                attention_mask_l=None):
 
-    def forward(self, q0, q1, q2, q3, q4, l, attention_mask_l=None):
-
-        visu_feat = []
         size_per_level, visual_features_flatten = [], []
-        for i, feat_per_level in enumerate([q0, q1, q2, q3, q4]):
+        for i, feat_per_level in enumerate(visual_features):
             bs, c, h, w = feat_per_level.shape
             size_per_level.append([h, w])
             feat = permute_and_flatten(feat_per_level, bs, -1, c, h, w)
             visual_features_flatten.append(feat)
         visual_features_flatten = torch.cat(visual_features_flatten, dim=1)
-        new_v, new_l = self.single_attention_call(
-            visual_features_flatten, l, attention_mask_l=attention_mask_l)
+        new_v, new_lang_feature = self.single_attention_call(
+            visual_features_flatten,
+            lang_feature,
+            attention_mask_l=attention_mask_l)
         # [bs, N, C] -> [bs, C, N]
         new_v = new_v.transpose(1, 2).contiguous()
 
         start = 0
+        fusion_visual_features = []
         for (h, w) in size_per_level:
             new_v_per_level = new_v[:, :,
                                     start:start + h * w].view(bs, -1, h,
                                                               w).contiguous()
-            visu_feat.append(new_v_per_level)
+            fusion_visual_features.append(new_v_per_level)
             start += h * w
 
-        return visu_feat[0], visu_feat[1], visu_feat[2], visu_feat[3], visu_feat[4], new_l
+        return fusion_visual_features, new_lang_feature
 
-    def single_attention_call(self, v, l, attention_mask_l=None):
-        v = self.layer_norm_v(v)
-        l = self.layer_norm_l(l)
-        delta_v, delta_l = self.attn(v, l, attention_mask_l=attention_mask_l)
-        # v, l = v + delta_v, l + delta_l
-        v = v + self.drop_path(self.gamma_v * delta_v)
-        l = l + self.drop_path(self.gamma_l * delta_l)
-        return v, l
+    def single_attention_call(self, visual, lang, attention_mask_l=None):
+        visual = self.layer_norm_v(visual)
+        lang = self.layer_norm_l(lang)
+        delta_v, delta_l = self.attn(
+            visual, lang, attention_mask_l=attention_mask_l)
+        # visual, lang = visual + delta_v, l + delta_l
+        visual = visual + self.drop_path(self.gamma_v * delta_v)
+        lang = lang + self.drop_path(self.gamma_l * delta_l)
+        return visual, lang
 
 
 class VLFuse(nn.Module):
     """Early Fusion Module."""
 
-    def __init__(self, use_checkpoint):
+    def __init__(self,
+                 v_dim: int = 256,
+                 l_dim: int = 768,
+                 embed_dim: int = 2048,
+                 num_heads: int = 8,
+                 dropout: float = 0.1,
+                 drop_path: float = 0.0,
+                 use_checkpoint: bool = False):
         super().__init__()
         # bi-direction (text->image, image->text)
         self.use_checkpoint = use_checkpoint
-        self.b_attn = BiAttentionBlockForCheckpoint(
-            v_dim=256,
-            l_dim=768,
-            embed_dim=2048,
-            num_heads=8,
-            dropout=0.1,
-            drop_path=.0,
+        self.b_attn = BiAttentionBlock(
+            v_dim=v_dim,
+            l_dim=l_dim,
+            embed_dim=embed_dim,
+            num_heads=num_heads,
+            dropout=dropout,
+            drop_path=drop_path,
             init_values=1.0 / 6.0)
 
     def forward(self, x):
@@ -292,18 +308,13 @@ class VLFuse(nn.Module):
         language_dict_features = x['lang']
 
         if self.use_checkpoint:
-            q0, q1, q2, q3, q4, l0 = checkpoint.checkpoint(
-                self.b_attn, visual_features[0], visual_features[1],
-                visual_features[2], visual_features[3], visual_features[4],
-                language_dict_features['hidden'], language_dict_features['masks'])
+            fused_visual_features, language_features = checkpoint.checkpoint(
+                self.b_attn, visual_features, language_dict_features['hidden'],
+                language_dict_features['masks'])
         else:
-            q0, q1, q2, q3, q4, l0 = self.b_attn(
-                visual_features[0], visual_features[1],
-                visual_features[2], visual_features[3], visual_features[4],
-                language_dict_features['hidden'], language_dict_features['masks'])
-
-        fused_visual_features = [q0, q1, q2, q3, q4]
-        language_features = l0
+            fused_visual_features, language_features = self.b_attn(
+                visual_features, language_dict_features['hidden'],
+                language_dict_features['masks'])
 
         language_dict_features['hidden'] = language_features
         fused_language_dict_features = language_dict_features
@@ -392,16 +403,17 @@ class BertSelfAttention(nn.Module):
                  clamp_min_for_underflow: bool = False,
                  clamp_max_for_overflow: bool = False):
         super().__init__()
-        if config.hidden_size % config.num_attention_heads != 0 and not hasattr(
-                config, 'embedding_size'):
-            raise ValueError(
-                f'The hidden size ({config.hidden_size}) is not a multiple of the number of attention '
-                f'heads ({config.num_attention_heads})')
+        if config.hidden_size % config.num_attention_heads != 0 and \
+                not hasattr(config, 'embedding_size'):
+            raise ValueError(f'The hidden size ({config.hidden_size}) is '
+                             'not a multiple of the number of attention '
+                             f'heads ({config.num_attention_heads})')
 
         self.num_attention_heads = config.num_attention_heads
         self.attention_head_size = int(config.hidden_size /
                                        config.num_attention_heads)
-        self.all_head_size = self.num_attention_heads * self.attention_head_size
+        self.all_head_size = self.num_attention_heads * \
+            self.attention_head_size
 
         self.query = nn.Linear(config.hidden_size, self.all_head_size)
         self.key = nn.Linear(config.hidden_size, self.all_head_size)
@@ -411,7 +423,8 @@ class BertSelfAttention(nn.Module):
         self.position_embedding_type = getattr(config,
                                                'position_embedding_type',
                                                'absolute')
-        if self.position_embedding_type == 'relative_key' or self.position_embedding_type == 'relative_key_query':
+        if self.position_embedding_type == 'relative_key' or \
+                self.position_embedding_type == 'relative_key_query':
             self.max_position_embeddings = config.max_position_embeddings
             self.distance_embedding = nn.Embedding(
                 2 * config.max_position_embeddings - 1,
@@ -467,20 +480,15 @@ class BertSelfAttention(nn.Module):
         query_layer = self.transpose_for_scores(mixed_query_layer)
 
         if self.is_decoder:
-            # if cross_attention save Tuple(torch.Tensor, torch.Tensor) of all cross attention key/value_states.
-            # Further calls to cross_attention layer can then reuse all cross-attention
-            # key/value_states (first "if" case)
-            # if uni-directional self-attention (decoder) save Tuple(torch.Tensor, torch.Tensor) of
-            # all previous decoder key/value_states. Further calls to uni-directional self-attention
-            # can concat previous decoder key/value_states to current projected key/value_states (third "elif" case)
-            # if encoder bi-directional self-attention `past_key_value` is always `None`
             past_key_value = (key_layer, value_layer)
 
-        # Take the dot product between "query" and "key" to get the raw attention scores.
+        # Take the dot product between "query" and "key"
+        # to get the raw attention scores.
         attention_scores = torch.matmul(query_layer,
                                         key_layer.transpose(-1, -2))
 
-        if self.position_embedding_type == 'relative_key' or self.position_embedding_type == 'relative_key_query':
+        if self.position_embedding_type == 'relative_key' or \
+                self.position_embedding_type == 'relative_key_query':
             seq_length = hidden_states.size()[1]
             position_ids_l = torch.arange(
                 seq_length, dtype=torch.long,
@@ -503,7 +511,9 @@ class BertSelfAttention(nn.Module):
                     'bhld,lrd->bhlr', query_layer, positional_embedding)
                 relative_position_scores_key = torch.einsum(
                     'bhrd,lrd->bhlr', key_layer, positional_embedding)
-                attention_scores = attention_scores + relative_position_scores_query + relative_position_scores_key
+                attention_scores = attention_scores + \
+                    relative_position_scores_query + \
+                    relative_position_scores_key
 
         attention_scores = attention_scores / math.sqrt(
             self.attention_head_size)
@@ -518,7 +528,8 @@ class BertSelfAttention(nn.Module):
             )  # Do not increase 50000, data type half has quite limited range
 
         if attention_mask is not None:
-            # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
+            # Apply the attention mask is
+            # (precomputed for all layers in BertModel forward() function)
             attention_scores = attention_scores + attention_mask
 
         # Normalize the attention scores to probabilities.
