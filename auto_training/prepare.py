@@ -24,8 +24,8 @@ def make_coco_folder(cocos, coco_path, train_image_path, val_image_path):
 
 def main():
     args = parse_args()
-
-    cocos = convert_kitti_files(args.kitti_train, args.kitti_val, args.target_class_map)
+    target_class_map = json.loads(args.target_class_map)
+    cocos = convert_kitti_files(args.kitti_train, args.kitti_val, target_class_map)
     make_coco_folder(cocos, args.coco_folder, args.kitti_train, args.kitti_val)
 
 
