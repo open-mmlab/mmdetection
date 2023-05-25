@@ -26,10 +26,8 @@ class XDecoderOVSemSegHead(nn.Module):
         self.pixel_decoder = MODELS.build(pixel_decoder_)
         self.predictor = MODELS.build(transformer_decoder)
 
-    def predict(self, features, batch_data_samples, rescale=True):
-        text_prompts = [
-            data_samples.caption for data_samples in batch_data_samples
-        ]
+    def predict(self, features, batch_data_samples, text_prompts, rescale=True):
+
         self.predictor.lang_encoder.get_text_embeddings(text_prompts + ["background"], is_eval=True)
         mask_features, multi_scale_features = self.pixel_decoder(features)
         predictions = self.predictor(multi_scale_features, mask_features)

@@ -43,9 +43,21 @@ class XDecoder(SingleStageDetector):
         visual_features = self.extract_feat(batch_inputs)
 
         if self.sem_seg_head:
+
+            text_prompts = []
+            for data_samples in batch_data_samples:
+                original_caption = data_samples.caption.split('.')
+                original_caption = list(
+                    filter(lambda x: len(x) > 0, original_caption))
+                text_prompts.append(original_caption)
+
+            # TODO: Fix
+            text_prompts = text_prompts[0]
+
             outputs = self.sem_seg_head.predict(
                 visual_features,
                 batch_data_samples,
+                text_prompts,
                 rescale=rescale)
             mask_cls_results = outputs["pred_logits"]
             mask_pred_results = outputs["pred_masks"]
@@ -74,6 +86,9 @@ class XDecoder(SingleStageDetector):
                 if sem_seg.shape[0] == 1:
                     sem_seg = sem_seg.squeeze(0) > 0.5
                 else:
+                    # flag = sem_seg > 0.5
+                    # sem_seg = sem_seg.max(0)[1] + 1
+                    # sem_seg[flag.sum(0) == 0] = 0
                     sem_seg = sem_seg.max(0)[1]
                 pred_sem_seg = PixelData(metainfo={'bg_value': 0}, data=sem_seg)
                 data_samples.pred_sem_seg = pred_sem_seg
