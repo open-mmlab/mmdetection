@@ -9,8 +9,7 @@ from mmcv.cnn.bricks import DropPath
 from torch import Tensor
 
 try:
-    from transformers import BertConfig, BertPreTrainedModel
-    from transformers.activations import ACT2FN
+    from transformers import BertPreTrainedModel
     from transformers.modeling_utils import apply_chunking_to_forward
     from transformers.models.bert.modeling_bert import \
         BertAttention as HFBertAttention
@@ -18,16 +17,12 @@ try:
         BertIntermediate as HFBertIntermediate
     from transformers.models.bert.modeling_bert import \
         BertOutput as HFBertOutput
-    from transformers.models.bert.modeling_bert import BertSelfOutput
 except ImportError:
-    BertPreTrainedModel = None
-    ACT2FN = None
+    BertPreTrainedModel = object
     apply_chunking_to_forward = None
-    BertSelfOutput = None
-    HFBertAttention = None
-    HFBertIntermediate = None
-    HFBertOutput = None
-    BertConfig = None
+    HFBertAttention = object
+    HFBertIntermediate = object
+    HFBertOutput = object
 
 MAX_CLAMP_VALUE = 50000
 
