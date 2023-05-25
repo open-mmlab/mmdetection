@@ -9,31 +9,29 @@ from mmdet.registry import MODELS
 @MODELS.register_module()
 class FocalNet(nn.Module):
     def __init__(self,
-                 pretrain_img_size=1600,
                  patch_size=4,
                  in_chans=3,
                  embed_dim=96,
                  depths=[2, 2, 6, 2],
                  mlp_ratio=4.,
                  drop_rate=0.,
-                 drop_path_rate=0.2,
+                 drop_path_rate=0.3,
                  norm_layer=nn.LayerNorm,
                  patch_norm=True,
                  out_indices=[0, 1, 2, 3],
                  frozen_stages=-1,
-                 focal_levels=[2, 2, 2, 2],
-                 focal_windows=[9, 9, 9, 9],
+                 focal_levels=[3, 3, 3, 3],
+                 focal_windows=[3, 3, 3, 3],
                  use_pre_norms=[False, False, False, False],
-                 use_conv_embed=False,
-                 use_postln=False,
+                 use_conv_embed=True,
+                 use_postln=True,
                  use_postln_in_modulation=False,
-                 scaling_modulator=False,
-                 use_layerscale=False,
+                 scaling_modulator=True,
+                 use_layerscale=True,
                  use_checkpoint=False,
                  ):
         super().__init__()
 
-        self.pretrain_img_size = pretrain_img_size
         self.num_layers = len(depths)
         self.embed_dim = embed_dim
         self.patch_norm = patch_norm

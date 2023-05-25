@@ -3,26 +3,26 @@ import torch
 from .transformer_blocks import PositionEmbeddingSine, SelfAttentionLayer, CrossAttentionLayer, FFNLayer, Conv2d, MLP
 from torch.nn import functional as F
 from mmdet.registry import MODELS
+from .language_model import LanguageEncoder
 
 
 @MODELS.register_module()
 class XDecoderTransformerDecoder(nn.Module):
     def __init__(
             self,
-            lang_encoder: nn.Module,
-            in_channels,
-            hidden_dim: int,
-            dim_proj: int,
-            num_queries: int,
-            contxt_len: int,
-            nheads: int,
-            dim_feedforward: int,
-            dec_layers: int,
-            pre_norm: bool,
-            mask_dim: int,
-            task_switch: dict,
-            captioning_step: int,
-            enforce_input_project: bool,
+            in_channels=512,
+            hidden_dim: int = 512,
+            dim_proj: int = 512,
+            num_queries: int = 101,
+            contxt_len: int = 77,
+            nheads: int = 8,
+            dim_feedforward: int = 2048,
+            dec_layers: int = 9,
+            pre_norm: bool = False,
+            mask_dim: int = 512,
+            task='semseg',
+            captioning_step: int = 50,
+            enforce_input_project: bool = False,
     ):
         super().__init__()
         self.mask_classification = True
@@ -87,11 +87,11 @@ class XDecoderTransformerDecoder(nn.Module):
             else:
                 self.input_proj.append(nn.Sequential())
 
-        self.task_switch = task_switch
+        self.task = task
 
         # output FFNs
-        self.lang_encoder = lang_encoder
-        if self.task_switch['mask']:
+        self.lang_encoder = LanguageEncoder()
+        if self.task == 'semseg':
             self.mask_embed = MLP(hidden_dim, hidden_dim, mask_dim, 3)
 
         self.class_embed = nn.Parameter(torch.empty(hidden_dim, dim_proj))
@@ -116,7 +116,7 @@ class XDecoderTransformerDecoder(nn.Module):
         self_attn_mask[:, num_queries:, num_queries:] = torch.triu(torch.ones((1, contxt_len, contxt_len)),
                                                                    diagonal=1).bool()
         # object query does not attend with class query.
-        self_attn_mask[:, :num_queries - 1,num_queries - 1:num_queries] = True
+        self_attn_mask[:, :num_queries - 1, num_queries - 1:num_queries] = True
         # class query does not attend with object query.
         self_attn_mask[:, num_queries - 1:num_queries, :num_queries - 1] = True
         self.register_buffer("self_attn_mask", self_attn_mask)
@@ -150,13 +150,13 @@ class XDecoderTransformerDecoder(nn.Module):
         predictions_captioning = []
 
         self_tgt_mask = self.self_attn_mask[:, :self.num_queries, :self.num_queries].repeat(
-                output.shape[1] * self.num_heads, 1, 1)  # 8,101,101
+            output.shape[1] * self.num_heads, 1, 1)  # 8,101,101
 
         results = self.forward_prediction_heads(output, mask_features, attn_mask_target_size=size_list[0])
         attn_mask = results["attn_mask"]
         predictions_class.append(results["outputs_class"])
         predictions_mask.append(results["outputs_mask"])
-        predictions_bbox.append(results["outputs_bbox"])
+        # predictions_bbox.append(results["outputs_bbox"])
         # predictions_caption.append(results["outputs_caption"])
         # predictions_captioning.append(results["outputs_captionting"])
 
@@ -187,16 +187,16 @@ class XDecoderTransformerDecoder(nn.Module):
             attn_mask = results["attn_mask"]
             predictions_class.append(results["outputs_class"])
             predictions_mask.append(results["outputs_mask"])
-            predictions_bbox.append(results["outputs_bbox"])
+            # predictions_bbox.append(results["outputs_bbox"])
             # predictions_caption.append(results["outputs_caption"])
             # predictions_captioning.append(results["outputs_captionting"])
 
         assert len(predictions_class) == self.num_layers + 1
         out = {
-                'pred_logits': predictions_class[-1],
-                'pred_masks': predictions_mask[-1],
-                'pred_boxes': predictions_bbox[-1],
-                # 'pred_captions': predictions_caption[-1],
+            'pred_logits': predictions_class[-1],
+            'pred_masks': predictions_mask[-1],
+            # 'pred_boxes': predictions_bbox[-1],
+            # 'pred_captions': predictions_caption[-1],
         }
         return out
 
@@ -218,14 +218,16 @@ class XDecoderTransformerDecoder(nn.Module):
         class_embed = decoder_output @ self.class_embed
         # HACK do not compute similarity if mask is not on
         outputs_class = self.lang_encoder.compute_similarity(class_embed, fake=(
-        ((not self.task_switch['mask']) and self.training)))  # 1 101, 10
+                (not self.task == 'semgseg') and self.training))  # 1 101, 10
 
-        if self.task_switch['mask']:
+        if self.task == 'semseg':
             mask_embed = self.mask_embed(decoder_output)
             outputs_mask = torch.einsum("bqc,bchw->bqhw", mask_embed, mask_features)  # 1,101,h,w
 
             # NOTE: prediction is of higher-resolution
             # [B, Q, H, W] -> [B, Q, H*W] -> [B, h, Q, H*W] -> [B*h, Q, HW]
+
+            # pytorch1.7 没有 antialias 参数
             attn_mask = F.interpolate(outputs_mask, size=attn_mask_target_size, mode="bicubic", align_corners=False,
                                       antialias=True)
 
@@ -243,19 +245,19 @@ class XDecoderTransformerDecoder(nn.Module):
                 (list(decoder_output.shape[:2]) + [attn_mask_target_size[0] * attn_mask_target_size[1]]),
                 device=decoder_output.device).repeat(self.num_heads, 1, 1).bool()
 
-        outputs_bbox = [None for i in range(len(decoder_output))]
-        if self.task_switch['bbox']:
-            outputs_bbox = self.bbox_embed(decoder_output)
+        # outputs_bbox = [None for i in range(len(decoder_output))]
+        # if self.task_switch['bbox']:
+        #     outputs_bbox = self.bbox_embed(decoder_output)
 
-        outputs_caption = None
-        if self.task_switch['caption']:
-            outputs_caption = class_embed
+        # outputs_caption = None
+        # if self.task_switch['caption']:
+        #     outputs_caption = class_embed
 
         results = {
             "outputs_class": outputs_class,
             "outputs_mask": outputs_mask,
-            "outputs_bbox": outputs_bbox,
+            # "outputs_bbox": outputs_bbox,
             "attn_mask": attn_mask,
-            "outputs_caption": outputs_caption,
+            # "outputs_caption": outputs_caption,
         }
         return results

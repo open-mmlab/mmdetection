@@ -1,5 +1,8 @@
 _base_ = 'mmdet::_base_/default_runtime.py'
 
+custom_imports = dict(
+    imports=['projects.XDecoder.xdecoder'], allow_failed_imports=False)
+
 model = dict(
     type='XDecoder',
     data_preprocessor=dict(
@@ -11,8 +14,10 @@ model = dict(
     ),
     backbone=dict(type='FocalNet'),
     semseg_head=dict(type='XDecoderOVSemSegHead',
+                     in_channels=(96, 192, 384, 768),
+                     num_classes=133,
                      pixel_decoder=dict(type='TransformerEncoderPixelDecoder'),
-                     transformer_decoder=dict(type='XTransformerDecoder'),
+                     transformer_decoder=dict(type='XDecoderTransformerDecoder'),
                      ),
 )
 
@@ -33,12 +38,11 @@ backend_args = None
 
 test_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
-    dict(type='Resize', scale=(512, 512), keep_ratio=True),
-    dict(type='LoadPanopticAnnotations', backend_args=backend_args),
+    dict(type='FixScaleResize', scale=512, keep_ratio=True, short_side_mode=True, backend='pillow'),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor'))
+                   'scale_factor', 'caption'))
 ]
 
 dataset_type = 'CocoDataset'

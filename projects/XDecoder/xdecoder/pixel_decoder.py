@@ -9,14 +9,14 @@ from mmdet.registry import MODELS
 
 class TransformerEncoderOnly(nn.Module):
     def __init__(
-        self,
-        d_model=512,
-        nhead=8,
-        num_encoder_layers=6,
-        dim_feedforward=2048,
-        dropout=0.1,
-        activation="relu",
-        normalize_before=False,
+            self,
+            d_model=512,
+            nhead=8,
+            num_encoder_layers=6,
+            dim_feedforward=2048,
+            dropout=0.1,
+            activation="relu",
+            normalize_before=False,
     ):
         super().__init__()
 
@@ -51,7 +51,7 @@ class TransformerEncoderOnly(nn.Module):
 class BasePixelDecoder(nn.Module):
     def __init__(
             self,
-            input_shape,
+            in_channels,
             conv_dim: int,
             mask_dim: int,
             mask_on: bool,
@@ -59,19 +59,15 @@ class BasePixelDecoder(nn.Module):
     ):
         super().__init__()
 
-        input_shape = sorted(input_shape.items(), key=lambda x: x[1].stride)
-        self.in_features = [k for k, v in input_shape]  # starting from "res2" to "res5"
-        feature_channels = [v.channels for k, v in input_shape]
-
         lateral_convs = []
         output_convs = []
 
         use_bias = norm == ""
-        for idx, in_channels in enumerate(feature_channels):
-            if idx == len(self.in_features) - 1:
+        for idx, in_channel in enumerate(in_channels):
+            if idx == len(in_channels) - 1:
                 output_norm = get_norm(norm, conv_dim)
                 output_conv = Conv2d(
-                    in_channels,
+                    in_channel,
                     conv_dim,
                     kernel_size=3,
                     stride=1,
@@ -90,7 +86,7 @@ class BasePixelDecoder(nn.Module):
                 output_norm = get_norm(norm, conv_dim)
 
                 lateral_conv = Conv2d(
-                    in_channels, conv_dim, kernel_size=1, bias=use_bias, norm=lateral_norm
+                    in_channel, conv_dim, kernel_size=1, bias=use_bias, norm=lateral_norm
                 )
                 output_conv = Conv2d(
                     conv_dim,
@@ -129,32 +125,29 @@ class BasePixelDecoder(nn.Module):
         self.maskformer_num_feature_levels = 3  # always use 3 scales
 
 
-@MODELS.register_module()
+@MODELS.register_module(force=True)
 class TransformerEncoderPixelDecoder(BasePixelDecoder):
 
     def __init__(
             self,
-            input_shape,
-            *,
-            transformer_dropout: float,
-            transformer_nheads: int,
-            transformer_dim_feedforward: int,
-            transformer_enc_layers: int,
-            transformer_pre_norm: bool,
-            conv_dim: int,
-            mask_dim: int,
-            mask_on: bool,
-            norm: Optional[Union[str, Callable]] = None,
+            in_channels,
+            transformer_dropout: float = 0.0,
+            transformer_nheads: int = 8,
+            transformer_dim_feedforward: int = 2048,
+            transformer_enc_layers: int = 6,
+            transformer_pre_norm: bool = False,
+            conv_dim: int = 512,
+            mask_dim: int = 512,
+            mask_on: bool = True,
+            norm: Optional[Union[str, Callable]] = 'GN',
     ):
 
-        super().__init__(input_shape, conv_dim=conv_dim, mask_dim=mask_dim, norm=norm, mask_on=mask_on)
+        super().__init__(in_channels, conv_dim=conv_dim, mask_dim=mask_dim, norm=norm, mask_on=mask_on)
 
-        input_shape = sorted(input_shape.items(), key=lambda x: x[1].stride)
-        self.in_features = [k for k, v in input_shape]  # starting from "res2" to "res5"
-        feature_strides = [v.stride for k, v in input_shape]
-        feature_channels = [v.channels for k, v in input_shape]
+        self.in_features = ['res2', 'res3', 'res4', 'res5']
+        feature_channels = in_channels
 
-        in_channels = feature_channels[len(self.in_features) - 1]
+        in_channels = feature_channels[len(in_channels) - 1]
         self.input_proj = Conv2d(in_channels, conv_dim, kernel_size=1)
         # weight_init.c2_xavier_fill(self.input_proj)
         self.transformer = TransformerEncoderOnly(
@@ -214,5 +207,3 @@ class TransformerEncoderPixelDecoder(BasePixelDecoder):
 
         mask_features = self.mask_features(y) if self.mask_on else None
         return mask_features, multi_scale_features
-
-

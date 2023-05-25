@@ -302,6 +302,52 @@ class DetLocalVisualizer(Visualizer):
                 horizontal_alignments='center')
         return self.get_image()
 
+    def _draw_sem_seg(self, image: np.ndarray, sem_seg: PixelData,
+                      classes: Optional[List],
+                      palette: Optional[List]) -> np.ndarray:
+        """Draw semantic seg of GT or prediction.
+
+        Args:
+            image (np.ndarray): The image to draw.
+            sem_seg (:obj:`PixelData`): Data structure for pixel-level
+                annotations or predictions.
+            classes (list, optional): Input classes for result rendering, as
+                the prediction of segmentation model is a segment map with
+                label indices, `classes` is a list which includes items
+                responding to the label indices. If classes is not defined,
+                visualizer will take `cityscapes` classes by default.
+                Defaults to None.
+            palette (list, optional): Input palette for result rendering, which
+                is a list of color palette responding to the classes.
+                Defaults to None.
+
+        Returns:
+            np.ndarray: the drawn image which channel is RGB.
+        """
+        num_classes = len(classes)
+
+        sem_seg_data = sem_seg.data
+        ids = np.unique(sem_seg_data)[::-1]
+
+        # TODO: Is there a way to bypass？
+        if 'bg_value' in sem_seg:
+            ids = ids[ids != sem_seg.bg_value]
+
+        legal_indices = ids < num_classes
+        ids = ids[legal_indices]
+        labels = np.array(ids, dtype=np.int64)
+
+        colors = [palette[label] for label in labels]
+
+        self.set_image(image)
+
+        # draw semantic masks
+        for label, color in zip(labels, colors):
+            self.draw_binary_masks(
+                sem_seg_data == label, colors=[color], alphas=self.alpha)
+
+        return self.get_image()
+
     @master_only
     def add_datasample(
             self,
@@ -359,6 +405,11 @@ class DetLocalVisualizer(Visualizer):
                 gt_img_data = self._draw_instances(image,
                                                    data_sample.gt_instances,
                                                    classes, palette)
+            if 'gt_sem_seg' in data_sample:
+                gt_img_data = self._draw_sem_seg(gt_img_data,
+                                                 data_sample.gt_sem_seg,
+                                                 classes,
+                                                 palette)
 
             if 'gt_panoptic_seg' in data_sample:
                 assert classes is not None, 'class information is ' \
@@ -376,6 +427,12 @@ class DetLocalVisualizer(Visualizer):
                     pred_instances.scores > pred_score_thr]
                 pred_img_data = self._draw_instances(image, pred_instances,
                                                      classes, palette)
+
+            if 'pred_sem_seg' in data_sample:
+                pred_img_data = self._draw_sem_seg(pred_img_data,
+                                                   data_sample.pred_sem_seg,
+                                                   classes, palette)
+
             if 'pred_panoptic_seg' in data_sample:
                 assert classes is not None, 'class information is ' \
                                             'not provided when ' \
