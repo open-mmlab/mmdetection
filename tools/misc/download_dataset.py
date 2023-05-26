@@ -177,7 +177,7 @@ def main():
             # validation url root_2
             'https://dorc.ks3-cn-beijing.ksyun.com/data-set/2020Objects365%E6%95%B0%E6%8D%AE%E9%9B%86/val/images/v2/'  # noqa
         ],
-        ade20k=[
+        ade20k_2016=[
             # training images and semantic segmentation annotations
             'http://data.csail.mit.edu/places/ADEchallenge/ADEChallengeData2016.zip',  # noqa
             # instance segmentation annotations

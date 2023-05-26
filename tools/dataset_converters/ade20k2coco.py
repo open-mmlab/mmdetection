@@ -1,4 +1,5 @@
 import argparse
+import os
 from pathlib import Path
 
 import numpy as np
@@ -12,7 +13,7 @@ from mmdet.datasets.ade20k import ADE20KPanopticDataset
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Convert ADE20K annotations to COCO format')
-    parser.add_argument('ade20k_path', help='ade20k data path')
+    parser.add_argument('src', help='ade20k data path')
     args = parser.parse_args()
     return args
 
@@ -168,7 +169,7 @@ def prepare_panoptic_annotations(dataset_dir: str):
 
             panoptic_json_annotation = {
                 'image_id': image_id,
-                'file_name': filename.name,
+                'file_name': image_id + '.png',
                 'segments_info': segm_info
             }
 
@@ -189,8 +190,17 @@ def prepare_panoptic_annotations(dataset_dir: str):
 
 def main():
     args = parse_args()
-    ade20k_path = args.ade20k_path
-    prepare_panoptic_annotations(ade20k_path)
+    src = args.src
+    annotation_train_path = f'{src}/ade20k_panoptic_train'
+    annotation_val_path = f'{src}/ade20k_panoptic_val'
+    print('Preparing ADE20K panoptic annotations ...')
+    print(
+        f'Creating panoptic annotations to {annotation_train_path} and {annotation_val_path} ...'  # noqa
+    )
+    if os.path.exists(annotation_train_path) or os.path.exists(
+            annotation_val_path):
+        raise RuntimeError('Panoptic annotations already exist.')
+    prepare_panoptic_annotations(src)
 
 
 if __name__ == '__main__':
