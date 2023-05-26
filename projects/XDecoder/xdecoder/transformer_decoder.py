@@ -6,6 +6,13 @@ from mmdet.registry import MODELS
 from .language_model import LanguageEncoder
 
 
+def vl_similarity(image_feat, text_feat, temperature=1):
+    # Only support single GPU for now.
+    logits = torch.matmul(image_feat, text_feat.t())
+    logits = temperature.exp().clamp(max=100) * logits
+    return logits
+
+
 @MODELS.register_module()
 class XDecoderTransformerDecoder(nn.Module):
     def __init__(
@@ -91,7 +98,7 @@ class XDecoderTransformerDecoder(nn.Module):
 
         # output FFNs
         self.lang_encoder = LanguageEncoder()
-        if self.task == 'semseg':
+        if self.task == 'semseg' or self.task == 'ref-semseg':
             self.mask_embed = MLP(hidden_dim, hidden_dim, mask_dim, 3)
 
         self.class_embed = nn.Parameter(torch.empty(hidden_dim, dim_proj))
@@ -145,16 +152,34 @@ class XDecoderTransformerDecoder(nn.Module):
 
         predictions_class = []
         predictions_mask = []
-        predictions_bbox = []
+        predictions_class_embed = []
         predictions_caption = []
         predictions_captioning = []
 
-        self_tgt_mask = self.self_attn_mask[:, :self.num_queries, :self.num_queries].repeat(
-            output.shape[1] * self.num_heads, 1, 1)  # 8,101,101
+        if self.task == 'semseg':
+            self_tgt_mask = self.self_attn_mask[:, :self.num_queries, :self.num_queries].repeat(
+                output.shape[1] * self.num_heads, 1, 1)  # 8,101,101
+        elif self.task == 'ref-semseg':
+            self_tgt_mask = self.self_attn_mask[:, :self.num_queries, :self.num_queries].repeat(
+                output.shape[1] * self.num_heads, 1, 1)
+            grounding_tokens = extra['grounding_tokens']
+            _grounding_tokens = grounding_tokens.detach().clone()
+            # initialize with negative attention at the beginning.
+            pad_tgt_mask = torch.ones((1, self.num_queries + (self.num_queries - 1) + len(grounding_tokens),
+                                       self.num_queries + (self.num_queries - 1) + len(grounding_tokens)),
+                                      device=self_tgt_mask.device).bool().repeat(output.shape[1] * self.num_heads, 1, 1)
+            pad_tgt_mask[:, :self.num_queries, :self.num_queries] = self_tgt_mask
+            pad_tgt_mask[:, self.num_queries:,
+            self.num_queries:] = False  # grounding tokens could attend with eatch other
+            self_tgt_mask = pad_tgt_mask
+            output = torch.cat((output, output[:-1]), dim=0)
+            query_embed = torch.cat((query_embed, query_embed[:-1]),
+                                    dim=0)  # also pad language embdding to fix embedding
 
         results = self.forward_prediction_heads(output, mask_features, attn_mask_target_size=size_list[0])
         attn_mask = results["attn_mask"]
         predictions_class.append(results["outputs_class"])
+        predictions_class_embed.append(results["class_embed"])
         predictions_mask.append(results["outputs_mask"])
         # predictions_bbox.append(results["outputs_bbox"])
         # predictions_caption.append(results["outputs_caption"])
@@ -172,6 +197,10 @@ class XDecoderTransformerDecoder(nn.Module):
                 pos=pos[level_index], query_pos=query_embed
             )
 
+            if self.task == 'ref-semseg':
+                output = torch.cat((output, _grounding_tokens), dim=0)
+                query_embed = torch.cat((query_embed, grounding_tokens), dim=0)
+
             output = self.transformer_self_attention_layers[i](
                 output, tgt_mask=self_tgt_mask,
                 tgt_key_padding_mask=None,
@@ -182,11 +211,17 @@ class XDecoderTransformerDecoder(nn.Module):
                 output
             )
 
+            if self.task == 'ref-semseg':
+                _grounding_tokens = output[-len(_grounding_tokens):]
+                output = output[:-len(_grounding_tokens)]
+                query_embed = query_embed[:-len(_grounding_tokens)]
+
             results = self.forward_prediction_heads(output, mask_features,
                                                     attn_mask_target_size=size_list[(i + 1) % self.num_feature_levels])
             attn_mask = results["attn_mask"]
             predictions_class.append(results["outputs_class"])
             predictions_mask.append(results["outputs_mask"])
+            predictions_class_embed.append(results["class_embed"])
             # predictions_bbox.append(results["outputs_bbox"])
             # predictions_caption.append(results["outputs_caption"])
             # predictions_captioning.append(results["outputs_captionting"])
@@ -198,6 +233,24 @@ class XDecoderTransformerDecoder(nn.Module):
             # 'pred_boxes': predictions_bbox[-1],
             # 'pred_captions': predictions_caption[-1],
         }
+
+        if self.task == 'ref-semseg':
+            mask_pred_results = []
+            for idx in range(mask_features.shape[0]):
+                pred_gmasks = out['pred_masks'][idx, self.num_queries:2 * self.num_queries - 1]
+                v_emb = predictions_class_embed[-1][idx, self.num_queries:2 * self.num_queries - 1]
+                t_emb = extra['class_emb']
+
+                t_emb = t_emb / (t_emb.norm(dim=-1, keepdim=True) + 1e-7)
+                v_emb = v_emb / (v_emb.norm(dim=-1, keepdim=True) + 1e-7)
+
+                temperature = self.lang_encoder.logit_scale
+                out_prob = vl_similarity(v_emb, t_emb, temperature=temperature)
+
+                matched_id = out_prob.max(0)[1]
+                mask_pred_results += [pred_gmasks[matched_id, :, :]]
+            out['pred_masks'] = mask_pred_results
+            out.pop('pred_logits')
         return out
 
     def forward_prediction_heads(self, output, mask_features, attn_mask_target_size, task='seg'):
@@ -212,15 +265,20 @@ class XDecoderTransformerDecoder(nn.Module):
         sim = (cls_token @ obj_token.transpose(1, 2)).softmax(-1)[:, 0, :, None]  # TODO include class token.
         cls_token = (sim * decoder_output[:, :self.num_queries - 1]).sum(dim=1, keepdim=True)  # 1 1 512
 
-        decoder_output = torch.cat((decoder_output[:, :self.num_queries - 1], cls_token), dim=1)
+        if self.task == 'semseg':
+            decoder_output = torch.cat((decoder_output[:, :self.num_queries - 1], cls_token), dim=1)
+        elif self.task == 'ref-semseg':
+            decoder_output = torch.cat((decoder_output[:, :self.num_queries - 1], cls_token,
+                                        decoder_output[:, self.num_queries:2 * self.num_queries - 1]), dim=1)
 
         # compute class, mask and bbox.
         class_embed = decoder_output @ self.class_embed
         # HACK do not compute similarity if mask is not on
-        outputs_class = self.lang_encoder.compute_similarity(class_embed, fake=(
-                (not self.task == 'semgseg') and self.training))  # 1 101, 10
-
+        outputs_class = None
         if self.task == 'semseg':
+            outputs_class = self.lang_encoder.compute_similarity(class_embed, fake=False)  # 1 101, 10
+
+        if self.task == 'semseg' or self.task == 'ref-semseg':
             mask_embed = self.mask_embed(decoder_output)
             outputs_mask = torch.einsum("bqc,bchw->bqhw", mask_embed, mask_features)  # 1,101,h,w
 
@@ -258,6 +316,7 @@ class XDecoderTransformerDecoder(nn.Module):
             "outputs_mask": outputs_mask,
             # "outputs_bbox": outputs_bbox,
             "attn_mask": attn_mask,
+            'class_embed': class_embed,
             # "outputs_caption": outputs_caption,
         }
         return results

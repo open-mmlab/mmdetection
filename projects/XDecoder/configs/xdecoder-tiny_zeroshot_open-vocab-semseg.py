@@ -5,6 +5,7 @@ custom_imports = dict(
 
 model = dict(
     type='XDecoder',
+    task='semseg',
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
@@ -38,7 +39,12 @@ backend_args = None
 
 test_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
-    dict(type='FixScaleResize', scale=512, keep_ratio=True, short_side_mode=True, backend='pillow'),
+    dict(type='FixScaleResize',
+         scale=512,
+         keep_ratio=True,
+         short_side_mode=True,
+         backend='pillow',
+         interpolation='bicubic'),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',

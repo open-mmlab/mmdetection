@@ -15,13 +15,14 @@ class XDecoder(SingleStageDetector):
                  backbone: ConfigType,
                  neck: OptConfigType = None,
                  semseg_head: OptConfigType = None,
+                 task: str = 'semseg',
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None,
                  data_preprocessor: OptConfigType = None,
                  init_cfg: OptMultiConfig = None):
         super(SingleStageDetector, self).__init__(
             data_preprocessor=data_preprocessor, init_cfg=init_cfg)
-
+        self.task = task
         self.backbone = MODELS.build(backbone)
         if neck is not None:
             self.neck = MODELS.build(neck)
@@ -31,6 +32,7 @@ class XDecoder(SingleStageDetector):
             semseg_head_ = semseg_head.deepcopy()
             semseg_head_.update(train_cfg=train_cfg)
             semseg_head_.update(test_cfg=test_cfg)
+            semseg_head_.update(task=task)
             self.sem_seg_head = MODELS.build(semseg_head_)
 
     def predict(self,
@@ -43,7 +45,6 @@ class XDecoder(SingleStageDetector):
         visual_features = self.extract_feat(batch_inputs)
 
         if self.sem_seg_head:
-
             text_prompts = []
             for data_samples in batch_data_samples:
                 original_caption = data_samples.caption.split('.')
@@ -59,40 +60,72 @@ class XDecoder(SingleStageDetector):
                 batch_data_samples,
                 text_prompts,
                 rescale=rescale)
-            mask_cls_results = outputs["pred_logits"]
-            mask_pred_results = outputs["pred_masks"]
 
-            # upsample masks
-            mask_pred_results = F.interpolate(
-                mask_pred_results,
-                size=(batch_inputs.shape[-2], batch_inputs.shape[-1]),
-                mode="bicubic",
-                align_corners=False,
-                antialias=True
-            )
+            if self.task == 'semseg':
+                mask_cls_results = outputs["pred_logits"]
+                mask_pred_results = outputs["pred_masks"]
+                # upsample masks
+                mask_pred_results = F.interpolate(
+                    mask_pred_results,
+                    size=(batch_inputs.shape[-2], batch_inputs.shape[-1]),
+                    mode="bicubic",
+                    align_corners=False,
+                    antialias=True
+                )
+                for mask_cls_result, mask_pred_result, img_metas, data_samples in zip(mask_cls_results,
+                                                                                      mask_pred_results,
+                                                                                      batch_img_metas,
+                                                                                      batch_data_samples):
+                    height = img_metas["ori_shape"][0]
+                    width = img_metas["ori_shape"][1]
+                    image_size = img_metas["img_shape"][:2]
 
-            for mask_cls_result, mask_pred_result, img_metas, data_samples in zip(mask_cls_results, mask_pred_results,
-                                                                                  batch_img_metas, batch_data_samples):
-                height = img_metas["ori_shape"][0]
-                width = img_metas["ori_shape"][1]
-                image_size = img_metas["img_shape"][:2]
+                    mask_pred_result = retry_if_cuda_oom(sem_seg_postprocess)(
+                        mask_pred_result, image_size, height, width
+                    )  # 101，h,w,
+                    mask_cls_result = mask_cls_result.to(mask_pred_result)  # 101,10，
 
-                mask_pred_result = retry_if_cuda_oom(sem_seg_postprocess)(
-                    mask_pred_result, image_size, height, width
-                )  # 101，h,w,
-                mask_cls_result = mask_cls_result.to(mask_pred_result)  # 101,10，
+                    sem_seg = retry_if_cuda_oom(self.semantic_inference)(mask_cls_result, mask_pred_result, False)
+                    if sem_seg.shape[0] == 1:
+                        sem_seg = sem_seg.squeeze(0) > 0.5
+                    else:
+                        # flag = sem_seg > 0.5
+                        # sem_seg = sem_seg.max(0)[1] + 1
+                        # sem_seg[flag.sum(0) == 0] = 0
+                        sem_seg = sem_seg.max(0)[1]
+                    # pred_sem_seg = PixelData(metainfo={'bg_value': 0}, data=sem_seg)
+                    pred_sem_seg = PixelData(data=sem_seg)
+                    data_samples.pred_sem_seg = pred_sem_seg
 
-                sem_seg = retry_if_cuda_oom(self.semantic_inference)(mask_cls_result, mask_pred_result, False)
-                if sem_seg.shape[0] == 1:
-                    sem_seg = sem_seg.squeeze(0) > 0.5
-                else:
-                    # flag = sem_seg > 0.5
-                    # sem_seg = sem_seg.max(0)[1] + 1
-                    # sem_seg[flag.sum(0) == 0] = 0
-                    sem_seg = sem_seg.max(0)[1]
-                pred_sem_seg = PixelData(metainfo={'bg_value': 0}, data=sem_seg)
-                data_samples.pred_sem_seg = pred_sem_seg
-
+            elif self.task == 'ref-semseg':
+                mask_pred_results = outputs["pred_masks"]
+                for mask_pred_result, img_metas, data_samples in zip(
+                        mask_pred_results,
+                        batch_img_metas,
+                        batch_data_samples):
+                    mask_pred_result = F.interpolate(
+                        mask_pred_result[None,],
+                        size=(batch_inputs.shape[-2], batch_inputs.shape[-1]),
+                        mode="bicubic",
+                        align_corners=False,
+                        antialias=True
+                    )[0]
+                    height = img_metas["ori_shape"][0]
+                    width = img_metas["ori_shape"][1]
+                    image_size = img_metas["img_shape"][:2]
+                    mask_pred_result = retry_if_cuda_oom(sem_seg_postprocess)(
+                        mask_pred_result, image_size, height, width
+                    )
+                    if mask_pred_result.shape[0] == 1:
+                        sem_seg = mask_pred_result > 0
+                    else:
+                        # flag = mask_pred_result > 0
+                        # sem_seg = mask_pred_result.max(0)[1]+1
+                        sem_seg = mask_pred_result.max(0)[1]
+                        # sem_seg[flag.sum(0) == 0] = 0
+                    # pred_sem_seg = PixelData(metainfo={'bg_value': 0}, data=sem_seg)
+                    pred_sem_seg = PixelData(data=sem_seg)
+                    data_samples.pred_sem_seg = pred_sem_seg
         return batch_data_samples
 
     def semantic_inference(self, mask_cls, mask_pred, keep_sem_bgd=False):
