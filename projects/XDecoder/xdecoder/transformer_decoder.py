@@ -98,7 +98,7 @@ class XDecoderTransformerDecoder(nn.Module):
 
         # output FFNs
         self.lang_encoder = LanguageEncoder()
-        if self.task == 'semseg' or self.task == 'ref-semseg':
+        if self.task == 'semseg' or self.task == 'ref-semseg' or self.task == 'instance':
             self.mask_embed = MLP(hidden_dim, hidden_dim, mask_dim, 3)
 
         self.class_embed = nn.Parameter(torch.empty(hidden_dim, dim_proj))
@@ -156,7 +156,7 @@ class XDecoderTransformerDecoder(nn.Module):
         predictions_caption = []
         predictions_captioning = []
 
-        if self.task == 'semseg':
+        if self.task == 'semseg' or self.task == 'instance':
             self_tgt_mask = self.self_attn_mask[:, :self.num_queries, :self.num_queries].repeat(
                 output.shape[1] * self.num_heads, 1, 1)  # 8,101,101
         elif self.task == 'ref-semseg':
@@ -265,7 +265,7 @@ class XDecoderTransformerDecoder(nn.Module):
         sim = (cls_token @ obj_token.transpose(1, 2)).softmax(-1)[:, 0, :, None]  # TODO include class token.
         cls_token = (sim * decoder_output[:, :self.num_queries - 1]).sum(dim=1, keepdim=True)  # 1 1 512
 
-        if self.task == 'semseg':
+        if self.task == 'semseg' or self.task == 'instance':
             decoder_output = torch.cat((decoder_output[:, :self.num_queries - 1], cls_token), dim=1)
         elif self.task == 'ref-semseg':
             decoder_output = torch.cat((decoder_output[:, :self.num_queries - 1], cls_token,
@@ -275,10 +275,10 @@ class XDecoderTransformerDecoder(nn.Module):
         class_embed = decoder_output @ self.class_embed
         # HACK do not compute similarity if mask is not on
         outputs_class = None
-        if self.task == 'semseg':
+        if self.task == 'semseg' or self.task == 'instance':
             outputs_class = self.lang_encoder.compute_similarity(class_embed, fake=False)  # 1 101, 10
 
-        if self.task == 'semseg' or self.task == 'ref-semseg':
+        if self.task == 'semseg' or self.task == 'ref-semseg' or self.task == 'instance':
             mask_embed = self.mask_embed(decoder_output)
             outputs_mask = torch.einsum("bqc,bchw->bqhw", mask_embed, mask_features)  # 1,101,h,w
 
@@ -314,7 +314,6 @@ class XDecoderTransformerDecoder(nn.Module):
         results = {
             "outputs_class": outputs_class,
             "outputs_mask": outputs_mask,
-            # "outputs_bbox": outputs_bbox,
             "attn_mask": attn_mask,
             'class_embed': class_embed,
             # "outputs_caption": outputs_caption,

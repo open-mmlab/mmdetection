@@ -32,7 +32,7 @@ class XDecoderOVSemSegHead(nn.Module):
 
     def predict(self, features, batch_data_samples, text_prompts, rescale=True):
         extra = {}
-        if self.task == 'semseg':
+        if self.task == 'semseg' or self.task == 'instance':
             self.predictor.lang_encoder.get_text_embeddings(text_prompts + ["background"], is_eval=True)
         elif self.task == 'ref-semseg':
             token_info = self.predictor.lang_encoder.get_text_token_embeddings(text_prompts, name='grounding',
