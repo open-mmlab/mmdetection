@@ -1,9 +1,7 @@
 import argparse
-import json
 from pathlib import Path
 
 import numpy as np
-import pycocotools.mask as mask_util
 from mmengine.utils import ProgressBar, mkdir_or_exist
 from panopticapi.utils import IdGenerator, save_json
 from PIL import Image
@@ -17,118 +15,6 @@ def parse_args():
     parser.add_argument('ade20k_path', help='ade20k data path')
     args = parser.parse_args()
     return args
-
-
-def prepare_semantic_annotations(dataset_dir: str):
-    dataset_dir = Path(dataset_dir)
-    for name in ['training', 'validation']:
-        annotation_dir = dataset_dir / 'annotations' / name
-        output_dir = dataset_dir / 'annotations_sem' / name
-        output_dir.mkdir(parents=True, exist_ok=True)
-        file_list = list(annotation_dir.iterdir())
-        progressbar = ProgressBar(len(file_list))
-        for file in file_list:
-            output_file = output_dir / file.name
-            img = np.asarray(Image.open(file))
-            assert img.dtype == np.uint8
-            img = img - 1  # 0 (ignore) becomes 255. others are shifted by 1
-            Image.fromarray(img).save(output_file)
-            progressbar.update()
-
-
-def prepare_instance_annotations(dataset_dir: str):
-    dataset_dir = Path(dataset_dir)
-    for name, dirname in [('train', 'training'), ('val', 'validation')]:
-        image_dir = dataset_dir / 'images' / dirname
-        instance_dir = dataset_dir / 'annotations_instance' / dirname
-
-        ann_id = 0
-
-        # json
-        out_file = dataset_dir / f'ade20k_instance_{name}.json'
-
-        # json config
-        instance_config_file = dataset_dir / 'imgCatIds.json'
-        with open(instance_config_file, 'r') as f:
-            category_dict = json.load(f)['categories']
-
-        # catid mapping
-        mapping_file = dataset_dir / 'categoryMapping.txt'
-        with open(mapping_file, 'r') as f:
-            map_id = {}
-            for i, line in enumerate(f.readlines()):
-                if i == 0:
-                    continue
-                ins_id, sem_id, _ = line.strip().split()
-                map_id[int(ins_id)] = int(sem_id) - 1
-
-        for cat in category_dict:
-            cat['id'] = map_id[cat['id']]
-
-        filenames = sorted(list(image_dir.iterdir()))
-
-        ann_dict = {}
-        images = []
-        annotations = []
-
-        progressbar = ProgressBar(len(filenames))
-        for filename in filenames:
-            image = {}
-            image_id = filename.stem
-
-            image['id'] = image_id
-            image['file_name'] = filename.name
-
-            original_format = np.array(Image.open(filename))
-            image['height'] = original_format.shape[0]
-            image['width'] = original_format.shape[1]
-
-            images.append(image)
-
-            instance_file = instance_dir / f'{image_id}.png'
-            ins_seg = np.array(Image.open(instance_file))
-            assert ins_seg.dtype == np.uint8
-
-            instance_cat_ids = ins_seg[..., 0]
-            instance_ins_ids = ins_seg[..., 1]
-
-            for thing_id in np.unique(instance_ins_ids):
-                if thing_id == 0:
-                    continue
-                mask = instance_ins_ids == thing_id
-                instance_cat_id = np.unique(instance_cat_ids[mask])
-                assert len(instance_cat_id) == 1
-
-                anno = {}
-                anno['id'] = ann_id
-                ann_id += 1
-                anno['image_id'] = image['id']
-                anno['iscrowd'] = int(0)
-                anno['category_id'] = int(map_id[instance_cat_id[0]])
-
-                inds = np.nonzero(mask)
-                ymin, ymax = inds[0].min(), inds[0].max()
-                xmin, xmax = inds[1].min(), inds[1].max()
-                anno['bbox'] = [
-                    int(xmin),
-                    int(ymin),
-                    int(xmax - xmin + 1),
-                    int(ymax - ymin + 1)
-                ]
-
-                rle = mask_util.encode(
-                    np.array(mask[:, :, np.newaxis], order='F',
-                             dtype='uint8'))[0]
-                rle['counts'] = rle['counts'].decode('utf-8')
-                anno['segmentation'] = rle
-                anno['area'] = int(mask_util.area(rle))
-                annotations.append(anno)
-            progressbar.update()
-
-        ann_dict['images'] = images
-        ann_dict['categories'] = category_dict
-        ann_dict['annotations'] = annotations
-        save_json(ann_dict, out_file)
 
 
 def prepare_panoptic_annotations(dataset_dir: str):
