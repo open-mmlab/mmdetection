@@ -7,11 +7,8 @@ backend_args = None
 train_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadPanopticAnnotations', backend_args=backend_args),
-    dict(
-        type='RandomChoiceResize',
-        scales=[int(512 * x * 0.1) for x in range(5, 21)],
-        resize_type='ResizeShortestEdge',
-        max_size=2048),
+    # TODO: the performance of `FixScaleResize` need to check.
+    dict(type='FixScaleResize', scale=(2560, 640), backend_args=backend_args),
     dict(type='RandomCrop', crop_size=(640, 640), crop_type='absolute'),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
@@ -27,7 +24,7 @@ test_pipeline = [
 ]
 
 train_dataloader = dict(
-    batch_size=2,
+    batch_size=4,
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
