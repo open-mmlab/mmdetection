@@ -3,6 +3,9 @@ _base_ = [
 ]
 # optimizer
 model = dict(
-    pretrained='open-mmlab://resnext101_64x4d',
-    backbone=dict(type='ResNeXt', depth=101, groups=64, base_width=4))
+    backbone=dict(type='ResNeXt',
+                  depth=101,
+                  groups=64,
+                  base_width=4,
+                  init_cfg=dict(type='Pretrained', checkpoint='open-mmlab://resnext101_64x4d')))
 optimizer = dict(type='SGD', lr=0.01)

@@ -73,15 +73,14 @@ class BboxOverlaps2D:
 
 
 def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
-    """Calculate overlap between two set of bboxes.
+    """计算两组 box 之间的IOU.
 
     FP16 Contributed by https://github.com/open-mmlab/mmdetection/pull/4889
     Note:
-        Assume bboxes1 is M x 4, bboxes2 is N x 4, when mode is 'iou',
-        there are some new generated variable when calculating IOU
-        using bbox_overlaps function:
+        假设 box1 为 [M, 4], box2 为 [N, 4], 当mode='iou'时,
+        使用 bbox_overlaps 函数计算 IOU 时会有一些新生成的变量:
 
-        1) is_aligned is False
+        1) is_aligned == False
             area1: M x 1
             area2: N x 1
             lt: M x N x 2
@@ -91,28 +90,26 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
             union: M x N x 1
             ious: M x N x 1
 
-            Total memory:
+            总占用显存:
                 S = (9 x N x M + N + M) * 4 Byte,
 
-            When using FP16, we can reduce:
+            使用 FP16 精度时,我们可以降低至:
                 R = (9 x N x M + N + M) * 4 / 2 Byte
-                R large than (N + M) * 4 * 2 is always true when N and M >= 1.
-                Obviously, N + M <= N * M < 3 * N * M, when N >=2 and M >=2,
-                           N + 1 < 3 * N, when N or M is 1.
+                当 N和M >= 1, R始终大于 (N + M) * 4 * 2.
+                显然, 当 N和M >= 2, N + M <= N * M < 3 * N * M, ,
+                     当 N或M == 2, N + 1 < 3 * N, .
 
-            Given M = 40 (ground truth), N = 400000 (three anchor boxes
-            in per grid, FPN, R-CNNs),
-                R = 275 MB (one times)
+            给定 M = 40 (gt box), N = 400000 (每个特征点三个anchor, FPN, R-CNNs),
+            可得 R = 275 MB
 
-            A special case (dense detection), M = 512 (ground truth),
-                R = 3516 MB = 3.43 GB
+            在一些特殊场景下, 比如密集物体检测, M = 512 (gt box),
+            可得 R = 3516 MB = 3.43 GB
 
-            When the batch size is B, reduce:
-                B x R
+            当batch size为B时, 可得: B x R
 
-            Therefore, CUDA memory runs out frequently.
+            因此,CUDA内存经常耗尽.
 
-            Experiments on GeForce RTX 2080Ti (11019 MiB):
+            以 GeForce RTX 2080Ti (11019 MiB) 实验为例:
 
             |   dtype   |   M   |   N   |   Use    |   Real   |   Ideal   |
             |:----:|:----:|:----:|:----:|:----:|:----:|
@@ -121,7 +118,7 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
             |   FP32   |   40 | 400000 |   1540 MiB |   --   |   --   |
             |   FP16   |   40 | 400000 |   1264 MiB |   276MiB   | 275 MiB |
 
-        2) is_aligned is True
+        2) is_aligned == True
             area1: N x 1
             area2: N x 1
             lt: N x 2
@@ -131,39 +128,26 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
             union: N x 1
             ious: N x 1
 
-            Total memory:
+            总占用显存:
                 S = 11 x N * 4 Byte
 
-            When using FP16, we can reduce:
+            使用 FP16 精度时,我们可以降低至:
                 R = 11 x N * 4 / 2 Byte
 
-        So do the 'giou' (large than 'iou').
-
-        Time-wise, FP16 is generally faster than FP32.
-
-        When gpu_assign_thr is not -1, it takes more time on cpu
-        but not reduce memory.
-        There, we can reduce half the memory and keep the speed.
-
-    If ``is_aligned`` is ``False``, then calculate the overlaps between each
-    bbox of bboxes1 and bboxes2, otherwise the overlaps between each aligned
-    pair of bboxes1 and bboxes2.
+        当mode='giou'时也一样, (比'iou'占用更多显存).
+        从时间上看, FP16 通常比 FP32 快.
 
     Args:
-        bboxes1 (Tensor): shape (B, m, 4) in <x1, y1, x2, y2> format or empty.
-        bboxes2 (Tensor): shape (B, n, 4) in <x1, y1, x2, y2> format or empty.
-            B indicates the batch dim, in shape (B1, B2, ..., Bn).
-            If ``is_aligned`` is ``True``, then m and n must be equal.
-        mode (str): "iou" (intersection over union), "iof" (intersection over
-            foreground) or "giou" (generalized intersection over union).
-            Default "iou".
-        is_aligned (bool, optional): If True, then m and n must be equal.
-            Default False.
-        eps (float, optional): A value added to the denominator for numerical
-            stability. Default 1e-6.
+        bboxes1 (Tensor): shape [B, m, 4] , [x1, y1, x2, y2].
+        bboxes2 (Tensor): shape [B, n, 4] , [x1, y1, x2, y2].
+            B 代表batch维度,注意该batch与batch size没有关系.
+        mode (str): 可选为"iou" , "iof", "giou".
+        is_aligned (bool, optional): If True, 那么 m 和 n 必须相等.如果为False
+            会存在广播操作.
+        eps (float, optional): 在进行除法操作时,防止分母为0额外添加的数.
 
     Returns:
-        Tensor: shape (m, n) if ``is_aligned`` is False else shape (m,)
+        Tensor: shape [B, m, n] if ``is_aligned`` is False else shape [B, m]
 
     Example:
         >>> bboxes1 = torch.FloatTensor([
@@ -189,13 +173,12 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
         >>> assert tuple(bbox_overlaps(empty, empty).shape) == (0, 0)
     """
 
-    assert mode in ['iou', 'iof', 'giou'], f'Unsupported mode {mode}'
+    assert mode in ['iou', 'iof', 'giou'], f'不支持 {mode}'
     # Either the boxes are empty or the length of boxes' last dimension is 4
     assert (bboxes1.size(-1) == 4 or bboxes1.size(0) == 0)
     assert (bboxes2.size(-1) == 4 or bboxes2.size(0) == 0)
 
-    # Batch dim must be the same
-    # Batch dim: (B1, B2, ... Bn)
+    # batch维度必须相同
     assert bboxes1.shape[:-2] == bboxes2.shape[:-2]
     batch_shape = bboxes1.shape[:-2]
 

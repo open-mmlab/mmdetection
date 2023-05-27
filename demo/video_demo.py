@@ -9,14 +9,14 @@ from mmdet.apis import inference_detector, init_detector
 
 def parse_args():
     parser = argparse.ArgumentParser(description='MMDetection video demo')
-    parser.add_argument('video', help='Video file')
-    parser.add_argument('config', help='Config file')
-    parser.add_argument('checkpoint', help='Checkpoint file')
+    parser.add_argument('--video', help='Video file', default="D:\BaiduNetdiskDownload\C4_S20220701170000_E20220701170959.mp4")
+    parser.add_argument('--config', help='Config file', default=r'D:\mmdetection\configs\mask_rcnn\mask_rcnn_r50_fpn_1x_coco.py')
+    parser.add_argument('--checkpoint', help='Checkpoint file', default=r'D:\mmdetection\tools\work_dirs\mask_rcnn_r50_fpn_1x_coco\epoch_12.pth')
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
         '--score-thr', type=float, default=0.3, help='Bbox score threshold')
-    parser.add_argument('--out', type=str, help='Output video file')
+    parser.add_argument('--out', type=str, help='Output video file',default="D:\BaiduNetdiskDownload\C4_S20220701170000_E20220701170959_out.mp4")
     parser.add_argument('--show', action='store_true', help='Show video')
     parser.add_argument(
         '--wait-time',

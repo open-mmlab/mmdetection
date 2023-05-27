@@ -10,12 +10,10 @@ class RandomSampler(BaseSampler):
     """Random sampler.
 
     Args:
-        num (int): Number of samples
-        pos_fraction (float): Fraction of positive samples
-        neg_pos_up (int, optional): Upper bound number of negative and
-            positive samples. Defaults to -1.
-        add_gt_as_proposals (bool, optional): Whether to add ground truth
-            boxes as proposals. Defaults to True.
+        num (int): 样本总数
+        pos_fraction (float): 正样本比例
+        neg_pos_up (int, optional): pos/neg的上限. 默认-1,即无上限.
+        add_gt_as_proposals (bool, optional): 是否将gt box添加进roi. 默认True.
     """
 
     def __init__(self,
@@ -30,18 +28,14 @@ class RandomSampler(BaseSampler):
         self.rng = demodata.ensure_rng(kwargs.get('rng', None))
 
     def random_choice(self, gallery, num):
-        """Random select some elements from the gallery.
-
-        If `gallery` is a Tensor, the returned indices will be a Tensor;
-        If `gallery` is a ndarray or list, the returned indices will be a
-        ndarray.
+        """从样本中随机抽取指定数量样本.返回值类型与输入样本保持一致.
 
         Args:
-            gallery (Tensor | ndarray | list): indices pool.
-            num (int): expected sample num.
+            gallery (Tensor | ndarray | list): 样本池.
+            num (int): 抽取样本数.
 
         Returns:
-            Tensor or ndarray: sampled indices.
+            Tensor or ndarray: 采样后的索引.
         """
         assert len(gallery) >= num
 
@@ -52,8 +46,7 @@ class RandomSampler(BaseSampler):
             else:
                 device = 'cpu'
             gallery = torch.tensor(gallery, dtype=torch.long, device=device)
-        # This is a temporary fix. We can revert the following code
-        # when PyTorch fixes the abnormal return of torch.randperm.
+        # PyTorch的torch.randperm操作在GPU上偶尔会产生bug(生成非常大的数值),这是一个临时解决方案.
         # See: https://github.com/open-mmlab/mmdetection/pull/5014
         perm = torch.randperm(gallery.numel())[:num].to(device=gallery.device)
         rand_inds = gallery[perm]

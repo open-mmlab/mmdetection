@@ -49,14 +49,13 @@ class YOLOX(SingleStageDetector):
                  bbox_head,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None,
                  input_size=(640, 640),
                  size_multiplier=32,
                  random_size_range=(15, 25),
                  random_size_interval=10,
                  init_cfg=None):
         super(YOLOX, self).__init__(backbone, neck, bbox_head, train_cfg,
-                                    test_cfg, pretrained, init_cfg)
+                                    test_cfg, init_cfg)
         log_img_scale(input_size, skip_square=True)
         self.rank, self.world_size = get_dist_info()
         self._default_input_size = input_size

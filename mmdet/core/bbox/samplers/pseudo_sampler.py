@@ -26,13 +26,13 @@ class PseudoSampler(BaseSampler):
 
         Args:
             assign_result (:obj:`AssignResult`): box分配的结果
-            bboxes (torch.Tensor): box
+            bboxes (torch.Tensor): box, 如果来源是anchor,则是过滤后的anchor
             gt_bboxes (torch.Tensor): gt
 
         Returns:
             :obj:`SamplingResult`: 采样的结果
         """
-        # 在所有样本中正样本索引,(gt_ind 正数为gt索引,从1开始∈[1,len(gt)],0为负样本,-1为背景)
+        # 在所有样本中正样本索引.(gt_inds:0为负样本,-1为忽略,其余为gt索引(1-base))
         pos_inds = torch.nonzero(
             assign_result.gt_inds > 0, as_tuple=False).squeeze(-1).unique()
         # 在所有样本中负样本索引

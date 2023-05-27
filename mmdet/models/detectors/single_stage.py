@@ -10,10 +10,9 @@ from .base import BaseDetector
 
 @DETECTORS.register_module()
 class SingleStageDetector(BaseDetector):
-    """Base class for single-stage detectors.
+    """one-stage检测器的基类.
 
-    Single-stage detectors directly and densely predict bounding boxes on the
-    output features of the backbone+neck.
+    one-stage检测器直接且密集地在backbone+neck的输出特征图上预测box.
     """
 
     def __init__(self,
@@ -57,16 +56,16 @@ class SingleStageDetector(BaseDetector):
                       gt_bboxes_ignore=None):
         """
         Args:
-            img (Tensor): shape为 (N, C, H, W) 的 输入图像数据.
+            img (Tensor): shape为 (N, C, H, W) 的输入图像数据.
                 通常这些数据应该是经过归一化的(减均值除以方差).
             img_metas (list[dict]): 图像信息字典列表,其中每一个字典 含有键: 'img_shape',
                 'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 有关这些键值的详细信息, 请参见
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
-            gt_bboxes (list[Tensor]): 标注框列表, 每个元素的shape都是 (num_gts, 4),
-                其中4代表 [x1, y1, x2, y2] 格式的gt.
-            gt_labels (list[Tensor]): 标注类别列表, 每个元素的shape都是 (num_gts,)
+            gt_bboxes (list[Tensor]):  batch张图片的gt box, [[num_gts, 4],] * bs
+                其中4代表 [x1, y1, x2, y2].
+            gt_labels (list[Tensor]): gt box对应的label, [[num_gts,],] * bs
             gt_bboxes_ignore (None | list[Tensor]): 计算损失时可以忽略的标注类别列表.
 
         Returns:
@@ -82,7 +81,7 @@ class SingleStageDetector(BaseDetector):
         """没有TTA的测试方法,len(TTA)=1.
 
         Args:
-            img (torch.Tensor): 输入shape (N, C, H, W).
+            img (torch.Tensor): 输入shape [bs, 3, H, W].
             img_metas (list[dict]): batch张图像信息.
             rescale (bool, optional): 是否缩放box.
 
@@ -109,9 +108,8 @@ class SingleStageDetector(BaseDetector):
             imgs (list[Tensor]): the outer list indicates test-time
                 augmentations and inner Tensor should have a shape NxCxHxW,
                 which contains all images in the batch.
-            img_metas (list[list[dict]]): the outer list indicates test-time
-                augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch. each dict has image information.
+                img_metas (list[list[dict]]): 外部列表表示TTA列表(多尺度、翻转等)
+                内部列表表示batch张图像,其中每个字典都有图像信息.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
 

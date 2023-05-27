@@ -57,18 +57,17 @@ class SinePositionalEncoding(BaseModule):
         """Forward function for `SinePositionalEncoding`.
 
         Args:
-            mask (Tensor): ByteTensor mask. Non-zero values representing
-                ignored positions, while zero values means valid positions
-                for this image. Shape [bs, h, w].
+            mask (Tensor): Bool类型mask,0代表有效区域,非0值代表collect_fn
+                中的padding区域. [bs, batch_h/32, batch_w/32]. 向上取整
 
         Returns:
-            pos (Tensor): Returned position embedding with shape
-                [bs, num_feats*2, h, w].
+            pos (Tensor): 返回处理后的位置编码.
+                [bs, 2*(num_feats/2)*2, batch_h/32, batch_w/32].
+                注意,第二维度中的第一个2是指y,x.最后的2代表num_feats/2个sin,cos值.
         """
-        # For convenience of exporting to ONNX, it's required to convert
-        # `masks` from bool to int.
+        # 为了方便导出到ONNX,需要将mask由bool转换为int.
         mask = mask.to(torch.int)
-        not_mask = 1 - mask  # logical_not
+        not_mask = 1 - mask  # 为了方便后续计算,这里取反.1/0代表有/无效区域
         y_embed = not_mask.cumsum(1, dtype=torch.float32)
         x_embed = not_mask.cumsum(2, dtype=torch.float32)
         if self.normalize:
@@ -76,13 +75,21 @@ class SinePositionalEncoding(BaseModule):
                       (y_embed[:, -1:, :] + self.eps) * self.scale
             x_embed = (x_embed + self.offset) / \
                       (x_embed[:, :, -1:] + self.eps) * self.scale
+        # dim_t改为类全局变量比较好,因为它不会随着训练或测试进行改变.
         dim_t = torch.arange(
             self.num_feats, dtype=torch.float32, device=mask.device)
+        # 因为num_feats基本为偶数,而下面的先//再*2操作是把0,1,2,3,n-2,n-1
+        # 这种值都变为0,0,1,1...n-2,n-2这样的值再进行后续操作.
+        # 这么做是为了将两个相同值分别分配给sin,cos.参见下面的[0::2],[1::2]
         dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+        # [bs, h, w, 1] / [num_feats, ] -> [bs, h, w, num_feats]
         pos_x = x_embed[:, :, :, None] / dim_t
         pos_y = y_embed[:, :, :, None] / dim_t
         # use `view` instead of `flatten` for dynamically exporting to ONNX
         B, H, W = mask.size()
+        # 由于sin(θ)的周期性,存在同一值有两个解的情况,cos同理
+        # 所以这里以[sin(θ), cos(θ)]来表示.同时仍具有周期性.可以理解为时钟.
+        # pos_x:[bs, h, w, (num_feat/2) * 2]
         pos_x = torch.stack(
             (pos_x[:, :, :, 0::2].sin(), pos_x[:, :, :, 1::2].cos()),
             dim=4).view(B, H, W, -1)

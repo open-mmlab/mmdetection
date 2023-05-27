@@ -24,13 +24,8 @@ class SingleStageInstanceSegmentor(BaseDetector):
                  mask_head=None,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None,
                  init_cfg=None):
 
-        if pretrained:
-            warnings.warn('DeprecationWarning: pretrained is deprecated, '
-                          'please use "init_cfg" instead')
-            backbone.pretrained = pretrained
         super(SingleStageInstanceSegmentor, self).__init__(init_cfg=init_cfg)
         self.backbone = build_backbone(backbone)
         if neck is not None:

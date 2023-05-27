@@ -12,11 +12,15 @@ def multiclass_nms(multi_bboxes,
                    max_num=-1,
                    score_factors=None,
                    return_inds=False):
-    """NMS for multi-class bboxes.
+    """用于多类别 boxes 的 NMS.
+        一般的reg值与cls值是解耦的,即对于网络输出层来说一个anchor/point输出4个reg值
+        同时输出nc个cls值,此时reg与cls是无关的.
+        但当这二者耦合在一起时,对网络输出层来说一个anchor/point就输出nc*4个reg值,
+        同时输出nc个cls值,此时reg与cls是一一对应的.
 
     Args:
-        multi_bboxes (Tensor): shape (n, #class*4) or (n, 4)
-        multi_scores (Tensor): shape (n, #class),最后一列为bg score,但这将被忽略.
+        multi_bboxes (Tensor): shape [n, nc*4] or [n, 4]
+        multi_scores (Tensor): shape [n, nc],最后一列为背景score,但这将被忽略.
         score_thr (float): box 阈值,分数低于该阈值的 box 将不被考虑.
         nms_cfg (dict): nms的配置表
         max_num (int, optional): 截取nms后前max_num个box. -1代表不截取.
@@ -31,7 +35,7 @@ def multiclass_nms(multi_bboxes,
     # 忽略背景类别
     if multi_bboxes.shape[1] > 4:
         bboxes = multi_bboxes.view(multi_scores.size(0), -1, 4)
-    else:  # 如果仅仅是单一类的box.那么先增维再复制至指定维度
+    else:  # 如果仅仅是单一类的box.为了兼容性,需要先增维再复制
         bboxes = multi_bboxes[:, None].expand(
             multi_scores.size(0), num_classes, 4)
 
@@ -45,8 +49,7 @@ def multiclass_nms(multi_bboxes,
     labels = labels.reshape(-1)
 
     if not torch.onnx.is_in_onnx_export():
-        # 在TensorRT中并不支持NonZero操作
-        # 过滤score低于score_thr的对饮box
+        # 在TensorRT中并不支持NonZero操作, 过滤score低于score_thr的box
         valid_mask = scores > score_thr
     # 先过滤再乘以 score_factor 以保留更多 box, 在YOLOv3上 mAP 提高 1%
     if score_factors is not None:
@@ -57,12 +60,12 @@ def multiclass_nms(multi_bboxes,
         scores = scores * score_factors
 
     if not torch.onnx.is_in_onnx_export():
-        # 在TensorRT中并不支持NonZero操作
+        # .squeeze(1)的目的是nonzero在处理一维数据时会返回[m,1]格式的数据
         inds = valid_mask.nonzero(as_tuple=False).squeeze(1)
         bboxes, scores, labels = bboxes[inds], scores[inds], labels[inds]
     else:
-        # TensorRT NMS plugin has invalid output filled with -1
-        # add dummy data to make detection output correct.
+        # 在TensorRT中并不支持NonZero操作,
+        # TensorRT NMS 插件的无效输出会填充-1, 因此添加虚拟数据以使检测输出正确.
         bboxes = torch.cat([bboxes, bboxes.new_zeros(1, 4)], dim=0)
         scores = torch.cat([scores, scores.new_zeros(1)], dim=0)
         labels = torch.cat([labels, labels.new_zeros(1)], dim=0)
@@ -97,51 +100,50 @@ def fast_nms(multi_bboxes,
              max_num=-1):
     """Fast NMS in `YOLACT <https://arxiv.org/abs/1904.02689>`_.
 
-    Fast NMS allows already-removed detections to suppress other detections so
-    that every instance can be decided to be kept or discarded in parallel,
-    which is not possible in traditional NMS. This relaxation allows us to
-    implement Fast NMS entirely in standard GPU-accelerated matrix operations.
+    Fast NMS 允许已经删除的box去抑制其他box,这样每个实例都可以并行决定保留或丢弃,这在传统的NMS
+    中是不可能的,这种宽松的策略使我们能够完全在标准 GPU 加速矩阵运算中实现快速的NMS.值得注意的是
+    每个box是可以预测nc个物体的,只要它们所属nc个不同类别.这也是有所区别于传统NMS的.
 
     Args:
-        multi_bboxes (Tensor): shape (n, #class*4) or (n, 4)
-        multi_scores (Tensor): shape (n, #class+1), where the last column
-            contains scores of the background class, but this will be ignored.
-        multi_coeffs (Tensor): shape (n, #class*coeffs_dim).
-        score_thr (float): bbox threshold, bboxes with scores lower than it
-            will not be considered.
-        iou_thr (float): IoU threshold to be considered as conflicted.
-        top_k (int): if there are more than top_k bboxes before NMS,
-            only top top_k will be kept.
-        max_num (int): if there are more than max_num bboxes after NMS,
-            only top max_num will be kept. If -1, keep all the bboxes.
-            Default: -1.
+        multi_bboxes (Tensor): shape [num_level*nms_pre, 4]
+        multi_scores (Tensor): shape [num_level*nms_pre, nc+1],
+            最后一列是背景类别的分数,但这将被忽略.
+        multi_coeffs (Tensor): shape (num_level*nms_pre, num_protos).
+        score_thr (float): box score阈值, box score低于该值得 box将被过滤.
+        iou_thr (float): 过滤box时的iou阈值.
+        top_k (int):如果在执行NMS之前有超过 top_k 个 box,那么只保留score最高的top_k个.
+        max_num (int): 如果执行NMS之后有超过 max_num 个box,
+            那么只保留score最高的max_num个, -1表示不进行该步操作.
 
     Returns:
-        tuple: (dets, labels, coefficients), tensors of shape (k, 5), (k, 1),
-            and (k, coeffs_dim). Dets are boxes with scores.
-            Labels are 0-based.
+        tuple: (dets, labels, coefficients)
+            [max_per_img, 5], 具体格式为[x1, y1, x2, y2, cls_score]
+            [max_per_img,], [max_per_img, num_protos].
     """
 
-    scores = multi_scores[:, :-1].t()  # [#class, n]
+    scores = multi_scores[:, :-1].t()  # [nc, num_level*nms_pre] 剔除背景类
     scores, idx = scores.sort(1, descending=True)
 
     idx = idx[:, :top_k].contiguous()
-    scores = scores[:, :top_k]  # [#class, topk]
+    scores = scores[:, :top_k]  # [nc, top_k]
     num_classes, num_dets = idx.size()
+    # 这里将idx [nc, top_k]表示在不同类情况下score最大的top_k个box索引,
+    # 展平后作为索引,是为了将box在每个类上复制一份,因为box本身是与类无关的.
+    # 同时也和scores在前两个维度对齐
     boxes = multi_bboxes[idx.view(-1), :].view(num_classes, num_dets, 4)
     coeffs = multi_coeffs[idx.view(-1), :].view(num_classes, num_dets, -1)
 
-    iou = bbox_overlaps(boxes, boxes)  # [#class, topk, topk]
+    iou = bbox_overlaps(boxes, boxes)  # [nc, top_k, top_k]
     iou.triu_(diagonal=1)
-    iou_max, _ = iou.max(dim=1)
+    iou_max, _ = iou.max(dim=1)  # 对纵向的iou值进行坍塌取最大值 [nc, top_k]
 
-    # Now just filter out the ones higher than the threshold
+    # 只过滤掉那些高于阈值的iou
     keep = iou_max <= iou_thr
 
-    # Second thresholding introduces 0.2 mAP gain at negligible time cost
+    # 第二个阈值以可忽略的时间成本提升了 0.2 mAP
     keep *= scores > score_thr
 
-    # Assign each kept detection to its corresponding class
+    # 将每个筛选下来的box分配给其对应的类
     classes = torch.arange(
         num_classes, device=boxes.device)[:, None].expand_as(keep)
     classes = classes[keep]
@@ -150,7 +152,7 @@ def fast_nms(multi_bboxes,
     coeffs = coeffs[keep]
     scores = scores[keep]
 
-    # Only keep the top max_num highest scores across all classes
+    # 只保留所有类别中前max_num个最大score
     scores, idx = scores.sort(0, descending=True)
     if max_num > 0:
         idx = idx[:max_num]

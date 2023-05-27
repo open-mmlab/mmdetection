@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/datasets/coco_instance.py',
+    '../_base_/datasets/beach_max_instance.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
@@ -22,7 +22,7 @@ model = dict(
         num_outs=5),
     mask_head=dict(
         type='SOLOV2Head',
-        num_classes=80,
+        num_classes=1,
         in_channels=256,
         feat_channels=512,
         stacked_convs=4,
@@ -36,7 +36,7 @@ model = dict(
             start_level=0,
             end_level=3,
             out_channels=256,
-            mask_stride=4,
+            mask_stride=4,  # 表示mask分支输出的特征图相较于batch_shape下采样倍数
             norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)),
         loss_mask=dict(type='DiceLoss', use_sigmoid=True, loss_weight=3.0),
         loss_cls=dict(

@@ -13,8 +13,7 @@ from mmdet.models.utils import build_linear_layer
 
 @HEADS.register_module()
 class BBoxHead(BaseModule):
-    """Simplest RoI head, with only two fc layers for classification and
-    regression respectively."""
+    """最简单的 RoI Head,只有两个 fc 层分别用于分类和回归."""
 
     def __init__(self,
                  with_avg_pool=False,
@@ -121,45 +120,27 @@ class BBoxHead(BaseModule):
 
     def _get_target_single(self, pos_bboxes, neg_bboxes, pos_gt_bboxes,
                            pos_gt_labels, cfg):
-        """Calculate the ground truth for proposals in the single image
-        according to the sampling results.
+        """根据采样结果计算单张图片中正负样本对应的cls target与reg target.
 
         Args:
-            pos_bboxes (Tensor): Contains all the positive boxes,
-                has shape (num_pos, 4), the last dimension 4
-                represents [tl_x, tl_y, br_x, br_y].
-            neg_bboxes (Tensor): Contains all the negative boxes,
-                has shape (num_neg, 4), the last dimension 4
-                represents [tl_x, tl_y, br_x, br_y].
-            pos_gt_bboxes (Tensor): Contains gt_boxes for
-                all positive samples, has shape (num_pos, 4),
-                the last dimension 4
-                represents [tl_x, tl_y, br_x, br_y].
-            pos_gt_labels (Tensor): Contains gt_labels for
-                all positive samples, has shape (num_pos, ).
-            cfg (obj:`ConfigDict`): `train_cfg` of R-CNN.
+            pos_bboxes (Tensor): [num_pos, 4], batch幅图像的正样本
+            neg_bboxes (Tensor): [num_neg, 4], batch幅图像的负样本
+            pos_gt_bboxes (Tensor): [num_pos, 4], 正样本对应的的gt box
+            pos_gt_labels (Tensor): [num_pos, ], 正样本对应的的gt label
+            cfg (obj:`ConfigDict`): R-CNN的训练配置,仅使用pos_weight作为正样本的cls weight
 
         Returns:
-            Tuple[Tensor]: Ground truth for proposals
-            in a single image. Containing the following Tensors:
+            Tuple[Tensor]: 单张图片中正负样本的拟合目标:
 
-                - labels(Tensor): Gt_labels for all proposals, has
-                  shape (num_proposals,).
-                - label_weights(Tensor): Labels_weights for all
-                  proposals, has shape (num_proposals,).
-                - bbox_targets(Tensor):Regression target for all
-                  proposals, has shape (num_proposals, 4), the
-                  last dimension 4 represents [tl_x, tl_y, br_x, br_y].
-                - bbox_weights(Tensor):Regression weights for all
-                  proposals, has shape (num_proposals, 4).
+                - labels(Tensor): cls目标, [num_pos+num_neg, ].
+                - label_weights(Tensor): cls权重, [num_pos+num_neg, ].
+                - bbox_targets(Tensor): reg目标, [num_pos+num_neg, 4].
+                - bbox_weights(Tensor): reg权重, [num_pos+num_neg, 4].
         """
         num_pos = pos_bboxes.size(0)
         num_neg = neg_bboxes.size(0)
         num_samples = num_pos + num_neg
 
-        # original implementation uses new_zeros since BG are set to be 0
-        # now use empty & fill because BG cat_id = num_classes,
-        # FG cat_id = [0, num_classes-1]
         labels = pos_bboxes.new_full((num_samples, ),
                                      self.num_classes,
                                      dtype=torch.long)
@@ -170,12 +151,13 @@ class BBoxHead(BaseModule):
             labels[:num_pos] = pos_gt_labels
             pos_weight = 1.0 if cfg.pos_weight <= 0 else cfg.pos_weight
             label_weights[:num_pos] = pos_weight
-            if not self.reg_decoded_bbox:  # 该参数为False时,需要计算出理论修正系数
+            # reg_decoded_bbox为True(loss为IOU类时).此时对绝对坐标计算loss
+            # 否则对anchor/roi/point -> gt box 的修正系数计算loss
+            if self.reg_decoded_bbox:
+                pos_bbox_targets = pos_gt_bboxes
+            else:
                 pos_bbox_targets = self.bbox_coder.encode(
                     pos_bboxes, pos_gt_bboxes)
-            else:
-                # 当loss为IOU类时,reg_decoded_bbox为True.此时对绝对坐标进行计算损失
-                pos_bbox_targets = pos_gt_bboxes
             bbox_targets[:num_pos, :] = pos_bbox_targets
             bbox_weights[:num_pos, :] = 1
         if num_neg > 0:
@@ -195,39 +177,21 @@ class BBoxHead(BaseModule):
         neg_inds_list 传递给 `_get_target_single` 函数.
 
         Args:
-            sampling_results (List[obj:SamplingResults]): Assign results of
-                all images in a batch after sampling.
-            gt_bboxes (list[Tensor]): Gt_bboxes of all images in a batch,
-                each tensor has shape (num_gt, 4),  the last dimension 4
-                represents [tl_x, tl_y, br_x, br_y].
-            gt_labels (list[Tensor]): Gt_labels of all images in a batch,
-                each tensor has shape (num_gt,).
-            rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
-            concat (bool): Whether to concatenate the results of all
-                the images in a single batch.
+            sampling_results (List[obj:SamplingResults]): batch幅图像的样本采样结果.
+            gt_bboxes (list[Tensor]): [[num_gt, 4],] * bs
+            gt_labels (list[Tensor]): [[num_gt, ],] * bs
+            rcnn_train_cfg (obj:ConfigDict): r-cnn的训练配置.
+            concat (bool): 是否将batch张图像的结果cat到一起.
 
         Returns:
-            Tuple[Tensor]: Ground truth for proposals in a single image.
-            Containing the following list of Tensors:
+            Tuple[Tensor]: roi对应的cls target与reg target.
+            包含以下张量:
 
-                - labels (list[Tensor],Tensor): Gt_labels for all
-                  proposals in a batch, each tensor in list has
-                  shape (num_proposals,) when `concat=False`, otherwise
-                  just a single tensor has shape (num_all_proposals,).
-                - label_weights (list[Tensor]): Labels_weights for
-                  all proposals in a batch, each tensor in list has
-                  shape (num_proposals,) when `concat=False`, otherwise
-                  just a single tensor has shape (num_all_proposals,).
-                - bbox_targets (list[Tensor],Tensor): Regression target
-                  for all proposals in a batch, each tensor in list
-                  has shape (num_proposals, 4) when `concat=False`,
-                  otherwise just a single tensor has shape
-                  (num_all_proposals, 4), the last dimension 4 represents
-                  [tl_x, tl_y, br_x, br_y].
-                - bbox_weights (list[tensor],Tensor): Regression weights for
-                  all proposals in a batch, each tensor in list has shape
-                  (num_proposals, 4) when `concat=False`, otherwise just a
-                  single tensor has shape (num_all_proposals, 4).
+                - labels (list[Tensor],Tensor): [num_roi, ] * bs
+                  如果 concat为True时,则为[bs * num_roi, ]. 下同
+                - label_weights (list[Tensor]): [num_roi, ] * bs
+                - bbox_targets (list[Tensor],Tensor): [num_roi, 4] * bs
+                - bbox_weights (list[tensor],Tensor): [num_roi, 4] * bs
         """
         pos_bboxes_list = [res.pos_bboxes for res in sampling_results]
         neg_bboxes_list = [res.neg_bboxes for res in sampling_results]
@@ -259,19 +223,19 @@ class BBoxHead(BaseModule):
              bbox_weights,
              reduction_override=None):
         """
-        cls_score [batch_boxes, num_class+1]  batch_boxes为整个batch图片上出现的网络输出
-        其最大值取决于模型文件中的sampler中的num有关,即batch_boxes最大为batch*num
-        1是指背景,对于背景自然就没有所谓的回归
-        bbox_pred [batch_boxes, num_class*4]
-        rois [batch_boxes, 5] 5代指[batch_ind, x1, y1, x2, y2]
-        labels [batch_boxes,]
-        label_weights [batch_boxes,]
-        bbox_targets [batch_boxes, 4]
-        bbox_weights [batch_boxes, 4]
-        reduction_override代表是否覆盖Loss类初始化中的reduction
+        Args:
+            cls_score (Tensor): 根据正负样本输出的cls score, [bs*(pos_num+neg_num), nc]
+            bbox_pred (Tensor): 根据正负样本输出的reg score, [bs*(pos_num+neg_num), nc*4]
+            rois (Tensor): rpn或r-cnn提供的roi,然后根据与gt box匹配与采样后的结果提取出
+                [bs*(pos_num+neg_num), 5] 5 -> [img_index, x1, y1, x2, y2]
+            labels (Tensor): rois对应的gt label[bs*(pos_num+neg_num), ]
+            label_weights (Tensor): rois对应的cls weight[bs*(pos_num+neg_num), ]
+            bbox_targets (Tensor): rois对应的gt box[bs*(pos_num+neg_num), 4]
+            bbox_weights (Tensor): rois对应的reg weight[bs*(pos_num+neg_num), 4]
+            reduction_override (bool, str): 代表是否覆盖Loss类初始化中的reduction
         """
         losses = dict()
-        if cls_score is not None:  # avg_factor为正样本数量
+        if cls_score is not None:  # avg_factor为batch幅图像中正样本总和
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
             if cls_score.numel() > 0:
                 loss_cls_ = self.loss_cls(
@@ -280,6 +244,7 @@ class BBoxHead(BaseModule):
                     label_weights,
                     avg_factor=avg_factor,  # 该参数仅在最终reduction=mean时才生效
                     reduction_override=reduction_override)
+                # 一般来说是 torch.Tensor类型的
                 if isinstance(loss_cls_, dict):
                     losses.update(loss_cls_)
                 else:
@@ -291,7 +256,7 @@ class BBoxHead(BaseModule):
                     losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
             bg_class_ind = self.num_classes
-            # 0~self.num_classes-1 are FG, self.num_classes is BG
+            # 前景:[0, nc), 背景:nc
             pos_inds = (labels >= 0) & (labels < bg_class_ind)
             # do not perform bounding box regression for BG anymore.
             if pos_inds.any():
@@ -328,13 +293,13 @@ class BBoxHead(BaseModule):
                    scale_factor,
                    rescale=False,
                    cfg=None):
-        """将网络的batch输出转换为 bbox reg/cls.
+        """将网络的单张图片输出转换为最终检测box与label.
 
         Args:
             rois (Tensor): 将要进行修正的box. (num_boxes, 5).
                5 -> (batch_index, x1, y1, x2, y2).
-            cls_score (Tensor): Box scores, (num_boxes, num_classes + 1).
-            bbox_pred (Tensor, optional): 网络回归值.(num_boxes, num_classes * 4).
+            cls_score (Tensor): Box scores, (num_boxes, nc + 1).
+            bbox_pred (Tensor, optional): 网络回归值.(num_boxes, 4).
             img_shape (Sequence[int], optional): 框的最大界限,
                指定 (H, W, C) or (H, W).
             scale_factor (ndarray): 图像的缩放因子,参考transforms.py中的Resize类
@@ -381,20 +346,17 @@ class BBoxHead(BaseModule):
 
     @force_fp32(apply_to=('bbox_preds', ))
     def refine_bboxes(self, rois, labels, bbox_preds, pos_is_gts, img_metas):
-        """Refine bboxes during training.
+        """在训练期间微调box. 令N=bs*(pos_num+neg_num)
 
         Args:
-            rois (Tensor): Shape (n*bs, 5), where n is image number per GPU,
-                and bs is the sampled RoIs per image. The first column is
-                the image id and the next 4 columns are x1, y1, x2, y2.
-            labels (Tensor): Shape (n*bs, ).
-            bbox_preds (Tensor): Shape (n*bs, 4) or (n*bs, 4*#class).
-            pos_is_gts (list[Tensor]): Flags indicating if each positive bbox
-                is a gt bbox.
-            img_metas (list[dict]): Meta info of each image.
+            rois (Tensor): [N, 5], [img_ind, x1, y1, x2, y2]
+            labels (Tensor): [N, ].
+            bbox_preds (Tensor): [N, 4] or [N, 4*#class].
+            pos_is_gts (list[Tensor]): [[num_pos, ], ] * bs. roi是否为gt的mask.
+            img_metas (list[dict]): [dict(), ] * bs, 每个图像的元信息.
 
         Returns:
-            list[Tensor]: Refined bboxes of each image in a mini-batch.
+            list[Tensor]: [[N-num_gt, 5], ] * bs, 调整后的box,同时也过滤了gt.
 
         Example:
             >>> # xdoctest: +REQUIRES(module:kwarray)
@@ -438,8 +400,9 @@ class BBoxHead(BaseModule):
         for i in range(len(img_metas)):
             inds = torch.nonzero(
                 rois[:, 0] == i, as_tuple=False).squeeze(dim=1)
-            num_rois = inds.numel()
+            num_rois = inds.numel()  # 当前图像的正负样本数量
 
+            # 归属于某张图片的 roi [num_pos+num_neg, 4]
             bboxes_ = rois[inds, 1:]
             label_ = labels[inds]
             bbox_pred_ = bbox_preds[inds]
@@ -449,7 +412,7 @@ class BBoxHead(BaseModule):
             bboxes = self.regress_by_class(bboxes_, label_, bbox_pred_,
                                            img_meta_)
 
-            # filter gt bboxes
+            # 过滤掉box中的gt
             pos_keep = 1 - pos_is_gts_
             keep_inds = pos_is_gts_.new_ones(num_rois)
             keep_inds[:len(pos_is_gts_)] = pos_keep
@@ -460,22 +423,20 @@ class BBoxHead(BaseModule):
 
     @force_fp32(apply_to=('bbox_pred', ))
     def regress_by_class(self, rois, label, bbox_pred, img_meta):
-        """Regress the bbox for the predicted class. Used in Cascade R-CNN.
+        """根据roi类别获取指定回归结果来修正roi. Used in Cascade R-CNN.
 
         Args:
-            rois (Tensor): Rois from `rpn_head` or last stage
-                `bbox_head`, has shape (num_proposals, 4) or
-                (num_proposals, 5).
-            label (Tensor): Only used when `self.reg_class_agnostic`
-                is False, has shape (num_proposals, ).
-            bbox_pred (Tensor): Regression prediction of
-                current stage `bbox_head`. When `self.reg_class_agnostic`
-                is False, it has shape (n, num_classes * 4), otherwise
-                it has shape (n, 4).
-            img_meta (dict): Image meta info.
+            rois (Tensor): 来自`rpn_head` 或 `roi head的bbox_head`的pred_box,
+                [sample.num, 4/5].
+            label (Tensor): 仅在reg_class_agnostic为False时使用, [sample.num, ].
+            bbox_pred (Tensor): box head的reg输出,对roi再次修正 reg_class_agnostic
+                为True时,表示当前box仅仅是前景[sample.num, 4],仅有一个(前景).
+                为False时,表示当前box在不同类别上独立回归[sample.num, nc * 4],所以就根据
+                最大的cls score所对应的cls ind(上面的label参数)来获取相应的reg score.
+            img_meta (dict): 图像元信息.
 
         Returns:
-            Tensor: Regressed bboxes, the same shape as input rois.
+            Tensor: 微调后的roi, [sample.num, 4/5].
         """
 
         assert rois.size(1) == 4 or rois.size(1) == 5, repr(rois.shape)

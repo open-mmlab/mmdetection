@@ -1,10 +1,15 @@
 _base_ = [
-    '../_base_/models/ssd300.py', '../_base_/datasets/coco_detection.py',
+    '../_base_/models/ssd300.py', '../_base_/datasets/yexi_detection.py',
     '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
 ]
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+data_root = 'd:/mmdetection/data/yexi/'
+classes = (
+    'RaggedBeggar', 'DwarfClown', 'LongLeggedClown', 'DartsClown', 'Truffe', 'LightDwarf',
+    'BallClown', 'NakedElderly', 'ChangeClown', 'HostWhite', 'HostBlack', 'StormRider',
+    'Gold', 'Door', 'Close',
+)
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -37,7 +42,7 @@ test_pipeline = [
         img_scale=(300, 300),
         flip=False,
         transforms=[
-            dict(type='Resize', keep_ratio=False),
+            # dict(type='Resize', keep_ratio=False),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
@@ -45,15 +50,16 @@ test_pipeline = [
 ]
 data = dict(
     samples_per_gpu=8,
-    workers_per_gpu=3,
+    workers_per_gpu=4,
     train=dict(
         _delete_=True,
         type='RepeatDataset',
         times=5,
         dataset=dict(
             type=dataset_type,
-            ann_file=data_root + 'annotations/instances_train2017.json',
-            img_prefix=data_root + 'train2017/',
+            ann_file=data_root + 'yexi_train.json',
+            classes=classes,
+            img_prefix=data_root + 'images/',
             pipeline=train_pipeline)),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))

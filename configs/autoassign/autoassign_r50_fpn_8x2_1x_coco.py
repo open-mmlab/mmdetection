@@ -1,7 +1,7 @@
 # We follow the original implementation which
 # adopts the Caffe pre-trained backbone.
 _base_ = [
-    '../_base_/datasets/coco_detection.py',
+    '../_base_/datasets/yexi_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 model = dict(
@@ -29,7 +29,7 @@ model = dict(
         init_cfg=dict(type='Caffe2Xavier', layer='Conv2d')),
     bbox_head=dict(
         type='AutoAssignHead',
-        num_classes=80,
+        num_classes=15,
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,

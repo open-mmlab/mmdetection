@@ -241,7 +241,7 @@ class DefaultFormatBundle:
         return results
 
     def _add_default_meta_keys(self, results):
-        """Add default meta keys.
+        """添加默认元键.
 
         我们设置了默认的 meta keys 其中包括 `pad_shape`, `scale_factor` and
         `img_norm_cfg` ,主要是为了避免在整个pipline中没有实现 Resize、Normalize 和 Pad 的情况.
@@ -288,7 +288,7 @@ class Collect:
 
         - "ori_shape": 输入图像的原始形状 (h, w, c)
 
-        - "pad_shape": 填充后的图像形状
+        - "pad_shape": pipline中Pad后的shape.
 
         - "img_norm_cfg": 包含归一化信息的字典:
 

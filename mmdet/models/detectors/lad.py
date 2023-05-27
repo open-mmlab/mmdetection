@@ -21,11 +21,9 @@ class LAD(KnowledgeDistillationSingleStageDetector):
                  teacher_ckpt,
                  eval_teacher=True,
                  train_cfg=None,
-                 test_cfg=None,
-                 pretrained=None):
+                 test_cfg=None):
         super(KnowledgeDistillationSingleStageDetector,
-              self).__init__(backbone, neck, bbox_head, train_cfg, test_cfg,
-                             pretrained)
+              self).__init__(backbone, neck, bbox_head, train_cfg, test_cfg)
         self.eval_teacher = eval_teacher
         self.teacher_model = nn.Module()
         self.teacher_model.backbone = build_backbone(teacher_backbone)

@@ -30,7 +30,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         loss_bbox (dict): 回归loss的配置字典.
         train_cfg (dict): anchor head的训练配置字典.
         test_cfg (dict): anchor head的测试配置字典.
-        init_cfg (dict or list[dict], optional): 初始化配置字典.
+        init_cfg (dict or list[dict], optional): 参数初始化配置字典.
     """  # noqa: W605
 
     def __init__(self,
@@ -102,23 +102,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         self.prior_generator = build_prior_generator(anchor_generator)
 
-        # 通常每个层级的基础anchor数量是相同的,除了SSD. 大部分模型的head的都是一个整数,
-        # 而SSDHead的各个层级的基础anchor则是一个列表,每个层级基础anchor数量不同
+        # 通常每个层级的基础anchor数量是相同的,但是SSDHead的各层级基础anchor则是一个列表,
+        # 因为它不同层级特征点上的anchor数量不同,所以无法用整数表示.
+        # self.prior_generator.num_base_priors是指各个层级上先验数量,是个列表
+        # 而本类中的self.num_base_priors则指单一层级上的先验数量,是个整数
         self.num_base_priors = self.prior_generator.num_base_priors[0]
         self._init_layers()
-
-    @property
-    def num_anchors(self):
-        warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
-                      'for consistency or also use '
-                      '`num_base_priors` instead')
-        return self.prior_generator.num_base_priors[0]
-
-    @property
-    def anchor_generator(self):
-        warnings.warn('DeprecationWarning: anchor_generator is deprecated, '
-                      'please use "prior_generator" instead')
-        return self.prior_generator
 
     def _init_layers(self):
         """Initialize layers of the head."""
@@ -129,17 +118,15 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                                   1)
 
     def forward_single(self, x):
-        """Forward feature of a single scale level.
+        """单一层级特征图的前向传播.
 
         Args:
-            x (Tensor): Features of a single scale level.
+            x (Tensor): 单一层级特征图.
 
         Returns:
             tuple:
-                cls_score (Tensor): Cls scores for a single scale level \
-                    the channels number is num_base_priors * num_classes.
-                bbox_pred (Tensor): Box energies / deltas for a single scale \
-                    level, the channels number is num_base_priors * 4.
+                cls_score (Tensor): 单层级的cls_scores, [bs, na*nc, h, w]
+                bbox_pred (Tensor): 单层级的cls_scores, [bs, na*4, h, w]
         """
         cls_score = self.conv_cls(x)
         bbox_pred = self.conv_reg(x)
@@ -152,38 +139,46 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             feats (tuple[Tensor]): 来自上游网络的特征图,每个都是 4维 张量.
 
         Returns:
-            tuple: tuple(cls_scores, bbox_preds).
+            tuple: tuple(cls_scores, reg_predict).
 
-                - cls_scores (list[Tensor]): 所有层级的cls_scores,每个都是4D张量,
-                    通道数是num_base_priors * num_classes.
-                - bbox_preds (list[Tensor]): 所有层级的box_predict,每个都是4D张量,
-                    通道数是num_base_priors * 4.
+                - cls_scores (list[Tensor]): 所有层级的cls_scores,
+                    [[bs, na*nc, h, w], ] * num_level
+                - reg_predict (list[Tensor]): 所有层级的box_reg,
+                    [[bs, na*4, h, w], ] * num_level
         """
         return multi_apply(self.forward_single, feats)
 
     def get_anchors(self, featmap_sizes, img_metas, device='cuda'):
-        """根据特征图尺寸获取anchors(多层级).
+        """根据batch幅图像(直接复制)、多层级特征图尺寸获取anchors.
 
+        对于每副图像,collate阶段会将较小图片进行padding,这些padding区域就称为无效区域.
+        anchor生成时是基于输入图像尺寸进行生成的,当然也会在无效区域生成一些anchor.
+        因此过滤这些无效区域的anchor以使其避免参与后续的相关计算是有必要的.
+        值得注意的是这与anchor本身的尺寸是无关的,极端点来看只要在有效区域,
+        哪怕这个anchor尺寸非常离谱甚至超出了图像范围也是"有效anchor".
+        只要在无效区域,哪怕这个anchor与gt box的iou很高也是"无效anchor"
+        以及anchor生成时默认以特征点左上角为中心点的.
         Args:
             featmap_sizes (list[tuple]): 多层级特征图尺寸.
             img_metas (list[dict]): 图像元信息.
-            device (torch.device | str): 返回张量所在的设备
+            device (torch.device | str): 生成anchor的设备
 
         Returns:
             tuple:
-                anchor_list (list[Tensor]): 单张图像的anchor.
-                valid_flag_list (list[Tensor]): 每张图像的有效mask.
+                anchor_list (list[Tensor]): 多张图像的anchor.
+                    [[[h * w * na, 4], ] * num_levels,] * bs
+                valid_flag_list (list[Tensor]): 各个特征图上有效anchor的mask.
+                    [[[h * w * na, ], ] * num_levels, ] * bs
         """
         num_imgs = len(img_metas)
 
         # 由于一个batch中所有图像的特征图大小相同,我们这里只计算一次anchor,然后复制即可
-        # [(feat_h*feat_w*A,4)]*self.num_levels,注意anchor数量和尺寸随着level变化而变化
+        # [[h * w * na, 4], ] * num_levels
         multi_level_anchors = self.prior_generator.grid_priors(
             featmap_sizes, device=device)
         anchor_list = [multi_level_anchors for _ in range(num_imgs)]
 
-        # 对于每副图像,我们需要计算出多个特征图上的anchor的有效索引
-        valid_flag_list = []  # [[(f_h*f_w*A),]*self.num_levels]*num_imgs
+        valid_flag_list = []  # [[[h * w * na, ], ] * num_levels] * bs
         for img_id, img_meta in enumerate(img_metas):
             multi_level_flags = self.prior_generator.valid_flags(
                 featmap_sizes, img_meta['pad_shape'], device)
@@ -203,28 +198,30 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         """计算单张图像上anchor的回归和分类拟合目标.
 
         Args:
-            flat_anchors (Tensor): 被合并到一起的单张图像的多层级anchor, (num_levels*feat_h*feat_w*A ,4)
-            valid_flags (Tensor): 同上,有效anchor的mask, (num_levels*feat_h*feat_w*A ,)
-            gt_bboxes (Tensor): 单张图片的真实框, (num_gts, 4)
-            gt_bboxes_ignore (Tensor): 单张图片中将要被忽略的gt box, (num_ignored_gts, 4)
+            flat_anchors (Tensor): 被合并到一起的单张图像的多层级anchor, [num_levels * h * w * na, 4]
+            valid_flags (Tensor): 同上,有效anchor的mask, [num_levels * h * w * na,]
+            gt_bboxes (Tensor): 单张图片的真实框, [num_gts, 4]
+            gt_bboxes_ignore (Tensor): 单张图片中将要被忽略的gt box, [num_ignored_gts, 4]
             img_meta (dict): 单张图片的元信息
-            gt_labels (Tensor): 单张图片中真实框的所属类别, (num_gts,)
+            gt_labels (Tensor): 单张图片中真实框的所属类别, [num_gts,]
             label_channels (int): 类别总数
             unmap_outputs (bool): 是否将计算出的有效anchor的label、target、weight映射回原始anchor上
 
         Returns:
             tuple:
-                labels_list (list[Tensor]): Labels of each level
-                label_weights_list (list[Tensor]): Label weights of each level
-                bbox_targets_list (list[Tensor]): BBox targets of each level
-                bbox_weights_list (list[Tensor]): BBox weights of each level
-                num_total_pos (int): Number of positive samples in all images
-                num_total_neg (int): Number of negative samples in all images
+                labels (list[Tensor]): 各层级上的cls_target,
+                    unmap_outputs为True时,[num_levels * h * w * na, ]
+                    unmap_outputs为False时,[num_valid_anchors, ]
+                label_weights (list[Tensor]): 各层级上的cls_target权重,
+                bbox_targets (list[Tensor]): 各层级上的reg_target,
+                bbox_weights (list[Tensor]): 各层级上的target_reg权重,
+                num_total_pos (int): 该张图片中的正样本数量
+                num_total_neg (int): 该张图片中的负样本数量
         """
-        # flat_anchors -> (feat_h*feat_w*A*self.num_levels,4)
-        # 注意feat_h*feat_w随着level变化而变化,valid_flags过滤了
-        # 在collact阶段填充的多余像素区域生成的anchor,而这一步是过滤掉超出图像边界的一些anchor
-        # self.train_cfg.allowed_border默认为-1,即不进行过滤,
+        # flat_anchors -> [num_levels*(h * w * na), 4]
+        # valid_flags过滤了在collact阶段填充的多余像素区域生成的anchor,而这一步是过滤掉超出图像边界的一些anchor
+        # 此处的图像边界指的是在进行collact操作之前时的图像尺寸.
+        # self.train_cfg.allowed_border默认为-1,即不进行过滤.
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
                                            self.train_cfg.allowed_border)
@@ -233,7 +230,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
 
-        # 先对单张图片上的有效anchor进行分配正负样本及背景
+        # 先对单张图片上的有效anchor进行分配正负样本
         # 若采用sampling,那么不需要传递gt_labels.因为后面还会再次计算assigned_labels
         assign_result = self.assigner.assign(
             anchors, gt_bboxes, gt_bboxes_ignore,
@@ -301,8 +298,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         """计算多张图像中anchor的回归和分类目标.
 
         Args:
-            anchor_list (list[list[Tensor]]): [[(feat_h*feat_w*A,4)]*self.num_levels]*B.
-            valid_flag_list (list[list[Tensor]]):[[(f_h*f_w*A,)]*self.num_levels]*B
+            anchor_list (list[list[Tensor]]): [[[h * w * na, 4], ] * num_levels] * bs.
+            valid_flag_list (list[list[Tensor]]):[[[h * w * na, ], ] * num_levels] * bs
             gt_bboxes_list (list[Tensor]): 每张图像中的标注box.
             img_metas (list[dict]): 每张图片的元信息.
             gt_bboxes_ignore_list (list[Tensor]): batch幅图像的要忽略的gt box列表.
@@ -315,13 +312,13 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             tuple: 通常返回一个包含网络拟合目标的元组.
 
                 - labels_list (list[Tensor]): 每个层级上对应的label.
-                    [B,feat_h*feat_w*A] * num_level feat_h*feat_w随着层级不同而不同
+                    [[bs, h * w * na, ], ] * num_level
                 - label_weights_list (list[Tensor]): 每个层级上的label权重.
-                    [B,feat_h*feat_w*A] * num_level
+                    [[bs, h * w * na, ], ] * num_level
                 - bbox_targets_list (list[Tensor]): 每个层级上特征图需要回归的目标.
-                    [B,feat_h*feat_w*A, 4] * num_level
+                    [[bs, h * w * na, 4], ] * num_level
                 - bbox_weights_list (list[Tensor]): 每个层级上特征图回归的权重.
-                    [B,feat_h*feat_w*A, 4] * num_level
+                    [[bs, h * w * na, 4], ] * num_level
                 - num_total_pos (int): batch幅图像中的正样本数.
                 - num_total_neg (int): batch幅图像中的负样本数.
 
@@ -331,7 +328,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
-        # 单张图片的各个层级上的anchor总数量,(向上取整),以retinanet-fpn为例
+        # 单张图片的各个层级上的anchor总数量,(向上取整),以RetinaNet-FPN为例
         # [h/8*w/8*9, h/16*w/16*9, h/32*w/32*9, h/64*w/64*9, h/128*w/128*9]
         # [43200, 10800, 2700, 720, 180],其中网络输入batch尺寸(h,w)=(480, 640)
         num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
@@ -360,7 +357,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             unmap_outputs=unmap_outputs)
         (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
          pos_inds_list, neg_inds_list, sampling_results_list) = results[:7]
-        rest_results = list(results[7:])  # user-added return values
+        rest_results = list(results[7:])  # 用户自定义添加的返回值
         # 没有有效的anchor ,出现该种情况的原因:
         # 直接原因:
         #   在前向传播时,batch中某一幅图像边界内没有任何"有效"anchor.
@@ -375,7 +372,10 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         # 整个batch图像上经过sample的正负anchor
         num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
         num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
-        # 将targets拆分为一个列表 与各个特征图层级对应
+        # [target_img0, target_img1, ...] -> [target_level0, target_level1, ...]
+        # 这里存在一个设计缺陷, 当unmap_outputs为False时,且当concat_valid_flag_list
+        # 以及后续allowed_border参数真的过滤某些anchor时,
+        # all_labels与num_level_anchors在shape上是不匹配的.
         labels_list = images_to_levels(all_labels, num_level_anchors)
         label_weights_list = images_to_levels(all_label_weights,
                                               num_level_anchors)
@@ -394,19 +394,17 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
     def loss_single(self, cls_score, bbox_pred, anchors, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples):
-        """计算单个层级的损失.其中B代表batch_size,A代表每个特征点上的基础anchor数量
-            H代表该层级特征图的高度,W为宽度
+        """计算单个层级的损失.
 
         Args:
-            cls_score (Tensor): 每层级输出的类别置信度 (B, A * num_cls, H, W).
-            bbox_pred (Tensor): 每层级输出的box/loc  (B, A * 4, H, W).
-            anchors (Tensor): 每层级的基础anchor     (B, H * W * A, 4).
-            labels (Tensor): 每层级的类别拟合目标     (B, H * W * A,).
-            label_weights (Tensor): 每层级的类别权重 (B, H * W * A,).
-            bbox_targets (Tensor): 每层级的回归拟合目标  (B, H * W * A, 4).
-            bbox_weights (Tensor): 每层级的回归权重  (B, H * W * A, 4).
-            num_total_samples (int): 如果经过采样,则该值等于正负样本总数;
-                否则,它是正样本的数量.
+            cls_score (Tensor): 每层级输出的类别置信度 [bs, na * cls_out_channels, h, w].
+            bbox_pred (Tensor): 每层级输出的box/loc  [bs, na * 4, h, w].
+            anchors (Tensor): 每层级的基础anchor     [bs, h * w * na, 4].
+            labels (Tensor): 每层级的类别拟合目标     [bs, h * w * na,].
+            label_weights (Tensor): 每层级的类别权重 [bs, h * w * na,].
+            bbox_targets (Tensor): 每层级的回归拟合目标  [bs, h * w * na, 4].
+            bbox_weights (Tensor): 每层级的回归权重  [bs, h * w * na, 4].
+            num_total_samples (int): 如果经过采样,则该值等于正负样本总数;否则是正样本的数量.
 
         Returns:
             dict[str, Tensor]: 分类和回归损失.
@@ -443,17 +441,14 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         """Compute losses of the head.
 
         Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (N, num_anchors * num_classes, H, W)
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W)
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss. Default: None
+            cls_scores (list[Tensor]): 每个层级的box score
+                 [[bs, na * cls_out_channels, h, w],] * num_level
+            bbox_preds (list[Tensor]): 每个层级的box reg
+                [[bs, na * 4, h, w],] * num_level
+            gt_bboxes (list[Tensor]): 每幅图像的gt box, 格式为[x1, y1, x2, y2].
+            gt_labels (list[Tensor]): 每幅图像上gt box对应的class
+            img_metas (list[dict]): 每张图片的元信息.
+            gt_bboxes_ignore (None | list[Tensor]): 计算损失时可以指定忽略哪些gt box.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -464,14 +459,14 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         device = cls_scores[0].device
 
         # 获取batch图像上的所有anchor,以及有效anchor的mask(在collate阶段填充的区域被视为无效区域)
-        # [[(feat_h*feat_w*A,4)]*self.num_levels]*B, [[(f_h*f_w*A)]*self.num_levels]*B.
+        # [[[h * w * na, 4], ] * num_levels, ] * bs, [[[h * w * na, ], ] * num_levels] * bs.
         # 注意以上两个变量,前者只要计算一张图像上的anchor然后复制B次,因为同一batch下所有图像尺寸一致
         # 而后者依据每幅图片的尺寸不同,anchor有效区域也可能不同,需要具体计算出每张图像的有效mask.
         # 以及feat_h*feat_w是随着层级(level)变化而变化的
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
-        # 利用提供的anchor将其与每张图片上的target计算IOU以及利用相应的thr来分配正负样本及背景
+        # 利用提供的anchor将其与每张图片上的target计算IOU以及利用相应的thr来分配正负样本
         # 接着采取sample采样正负样本,主要用来筛选合适的正负样本用来训练.同时为他们分配最佳gt和label
         # 最后将数据进行调整以和网络前向传播结果保持一致,方便loss计算
         cls_reg_targets = self.get_targets(  # [level0,level1,...]

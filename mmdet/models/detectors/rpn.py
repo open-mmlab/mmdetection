@@ -20,13 +20,8 @@ class RPN(BaseDetector):
                  rpn_head,
                  train_cfg,
                  test_cfg,
-                 pretrained=None,
                  init_cfg=None):
         super(RPN, self).__init__(init_cfg)
-        if pretrained:
-            warnings.warn('DeprecationWarning: pretrained is deprecated, '
-                          'please use "init_cfg" instead')
-            backbone.pretrained = pretrained
         self.backbone = build_backbone(backbone)
         self.neck = build_neck(neck) if neck is not None else None
         rpn_train_cfg = train_cfg.rpn if train_cfg is not None else None

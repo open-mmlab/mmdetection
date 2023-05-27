@@ -209,31 +209,24 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         return loss, log_vars
 
     def train_step(self, data, optimizer):
-        """The iteration step during training.
+        """训练期间的最基础迭代步骤,所有检测器都依赖此实现训练.
 
-        This method defines an iteration step during training, except for the
-        back propagation and optimizer updating, which are done in an optimizer
-        hook. Note that in some complicated cases or models, the whole process
-        including back propagation and optimizer updating is also defined in
-        this method, such as GAN.
+        此方法在训练期间定义了一个迭代步骤, 除了在优化器钩子中完成的反向传播和优化器更新.
+        注意,在一些复杂的情况或模型中,包括反向传播和优化器更新在内的整个过程也在这个方法中定义,
+        例如 GAN.
 
         Args:
-            data (dict): The output of dataloader.
-            optimizer (:obj:`torch.optim.Optimizer` | dict): The optimizer of
-                runner is passed to ``train_step()``. This argument is unused
-                and reserved.
+            data (dict): dataloader的输出.
+            optimizer (:obj:`torch.optim.Optimizer` | dict): runner的优化器.
+                此参数未使用且保留.
 
         Returns:
-            dict: It should contain at least 3 keys: ``loss``, ``log_vars``, \
-                ``num_samples``.
+            dict: 它应该至少包含 3 个键: ``loss``，``log_vars``，``num_samples``.
 
-                - ``loss`` is a tensor for back propagation, which can be a
-                  weighted sum of multiple losses.
-                - ``log_vars`` contains all the variables to be sent to the
-                  logger.
-                - ``num_samples`` indicates the batch size (when the model is
-                  DDP, it means the batch size on each GPU), which is used for
-                  averaging the logs.
+                - ``loss`` 是反向传播的张量,可以是多个损失的加权和.
+                - ``log_vars`` 包含要发送到日志中去的所有变量.
+                - ``num_samples`` 表示batch size(DDP模式时,表示每个GPU上的batch size),
+                    用于对日志进行平均.
         """
         losses = self(**data)
         loss, log_vars = self._parse_losses(losses)

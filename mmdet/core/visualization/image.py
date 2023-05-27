@@ -184,6 +184,12 @@ def draw_masks(ax, img, masks, color=None, with_edge=True, alpha=0.8):
     polygons = []
     for i, mask in enumerate(masks):
         if with_edge:
+            # _mask = mask.astype(int)
+            # _mask[mask] = np.cumsum(mask, 0)[mask]
+            # argmax = np.argmax(_mask, 0)
+            # max_px = np.max(_mask, 0)
+            # mask[:] = False
+            # mask[argmax[max_px > 0], np.arange(argmax.shape[0])[max_px > 0]] = True
             contours, _ = bitmap_to_polygon(mask)
             polygons += [Polygon(c) for c in contours]
 
@@ -196,7 +202,7 @@ def draw_masks(ax, img, masks, color=None, with_edge=True, alpha=0.8):
         img[mask] = img[mask] * (1 - alpha) + color_mask * alpha
 
     p = PatchCollection(
-        polygons, facecolor='none', edgecolors='w', linewidths=1, alpha=0.8)
+        polygons, facecolor='none', edgecolors='r', linewidths=4, alpha=0.8)
     ax.add_collection(p)
 
     return ax, img

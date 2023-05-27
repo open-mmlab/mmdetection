@@ -76,19 +76,18 @@ class RPNHead(AnchorHead):
         """Compute losses of the head.
 
         Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (N, num_anchors * num_classes, H, W)
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W)
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.
+            cls_scores (list[Tensor]): 网络所有层级输出的box_score
+                [[bs, na * nc, h, w], ] * num_level
+            bbox_preds (list[Tensor]): 网络所有层级输出的box_reg
+                [[bs, na * 4, h, w], ] * num_level
+            gt_bboxes (list[Tensor]): batch幅图像的gt box
+                [[num_gts, 4],] * bs 格式为[x1, y1, x2, y2].
+            img_metas (list[dict]): batch幅图像的元信息
+            gt_bboxes_ignore (None | list[Tensor]): 计算loss时可以忽略的gt box.
+                如果不为None,其shape为[[num_ignored_gts, 4], ] * bs
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict[str, Tensor]: 计算出的loss字典.
         """
         losses = super(RPNHead, self).loss(
             cls_scores,
@@ -110,36 +109,29 @@ class RPNHead(AnchorHead):
                            rescale=False,
                            with_nms=True,
                            **kwargs):
-        """Transform outputs of a single image into bbox predictions.
+        """将单张图像的网络输出转换为 roi.
 
         Args:
-            cls_score_list (list[Tensor]): Box scores from all scale
-                levels of a single image, each item has shape
-                (num_anchors * num_classes, H, W).
-            bbox_pred_list (list[Tensor]): Box energies / deltas from
-                all scale levels of a single image, each item has
-                shape (num_anchors * 4, H, W).
-            score_factor_list (list[Tensor]): Score factor from all scale
-                levels of a single image. RPN head does not need this value.
-            mlvl_anchors (list[Tensor]): Anchors of all scale level
-                each item has shape (num_anchors, 4).
-            img_meta (dict): Image meta info.
-            cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
+            cls_score_list (list[Tensor]): 所有层级的cls_scores,
+                    [[na*nc, h, w], ] * num_level
+            bbox_pred_list (list[Tensor]): 所有层级的box_reg,
+                    [[na*4, h, w], ] * num_level
+            score_factor_list (list[Tensor]): 所有层级的box_conf. RPN中为None
+            mlvl_anchors (list[Tensor]):所有层级的基础anchor,
+                [[h * w * na, 4],] * num_level.
+            img_meta (dict): 图像元信息.
+            cfg (mmcv.Config): 测试 / 后处理配置,如果为None, test_cfg将被适用.
+            rescale (bool): 如果True, 将box缩放回Resize前尺寸空间. 默认: False.
+            with_nms (bool): 是否在返回box之前执行nms. 默认: True.
 
         Returns:
-            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1.
+            Tensor: RPN提供的roi [n, 5], (x1, y1, x2, y2, score) .
         """
         cfg = self.test_cfg if cfg is None else cfg
         cfg = copy.deepcopy(cfg)
         img_shape = img_meta['img_shape']
 
+        # level_ids 用作 batch-NMS 的label以将它们分开,可能是为了增加roi数量.
         # bboxes from different level should be independent during NMS,
         # level_ids are used as labels for batched NMS to separate them
         level_ids = []
@@ -157,10 +149,7 @@ class RPNHead(AnchorHead):
                 scores = rpn_cls_score.sigmoid()
             else:
                 rpn_cls_score = rpn_cls_score.reshape(-1, 2)
-                # We set FG labels to [0, num_class-1] and BG label to
-                # num_class in RPN head since mmdet v2.5, which is unified to
-                # be consistent with other head since mmdet v2.0. In mmdet v2.0
-                # to v2.4 we keep BG label as 0 and FG label as 1 in rpn head.
+                # 在RPN中, 前景∈[0, nc) 背景=nc
                 scores = rpn_cls_score.softmax(dim=1)[:, 0]
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
 
@@ -188,28 +177,22 @@ class RPNHead(AnchorHead):
 
     def _bbox_post_process(self, mlvl_scores, mlvl_bboxes, mlvl_valid_anchors,
                            level_ids, cfg, img_shape, **kwargs):
-        """bbox post-processing method.
-
-        Do the nms operation for bboxes in same level.
+        """box后处理方法.
 
         Args:
-            mlvl_scores (list[Tensor]): Box scores from all scale
-                levels of a single image, each item has shape
-                (num_bboxes, ).
-            mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
-                levels of a single image, each item has shape (num_bboxes, 4).
-            mlvl_valid_anchors (list[Tensor]): Anchors of all scale level
-                each item has shape (num_bboxes, 4).
-            level_ids (list[Tensor]): Indexes from all scale levels of a
-                single image, each item has shape (num_bboxes, ).
-            cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, `self.test_cfg` would be used.
-            img_shape (tuple(int)): The shape of model's input image.
+            mlvl_scores (list[Tensor]): 所有层级上的box score,
+                [[nms_pre, ],] * num_level
+            mlvl_bboxes (list[Tensor]): 所有层级上的box reg,
+                [[nms_pre, 4],] * num_level.
+            mlvl_valid_anchors (list[Tensor]): 所有层级上的基础anchor,
+                [[nms_pre, 4],] * num_level.
+            level_ids (list[Tensor]): 当前anchor/reg/score所属的层级索引
+                [[nms_pre, ],] * num_level
+            cfg (mmcv.Config): 测试 / 后处理配置,如果为None, test_cfg将被适用.
+            img_shape (tuple(int)): 图像Resize后的尺寸,也即batch幅图片对齐前的尺寸.
 
         Returns:
-            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1.
+            Tensor: RPN提供的roi [max_per_img, 5], (x1, y1, x2, y2, score) ..
         """
         scores = torch.cat(mlvl_scores)
         anchors = torch.cat(mlvl_valid_anchors)

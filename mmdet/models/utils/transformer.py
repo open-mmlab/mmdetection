@@ -577,12 +577,10 @@ class Transformer(BaseModule):
         Args:
             x (Tensor): Input query with shape [bs, c, h, w] where
                 c = embed_dims.
-            mask (Tensor): The key_padding_mask used for encoder and decoder,
-                with shape [bs, h, w].
-            query_embed (Tensor): The query embedding for decoder, with shape
-                [num_query, c].
-            pos_embed (Tensor): The positional encoding for encoder and
-                decoder, with the same shape as `x`.
+            mask (Tensor): 代表x上面值是否有效,0代表有效,非0代表无效,[bs, h, w].
+                The key_padding_mask used for encoder and decoder,
+            query_embed (Tensor): 用于decode的query, [num_query, c].
+            pos_embed (Tensor): 用于encode和decode的位置编码, [bs, c, h, w].
 
         Returns:
             tuple[Tensor]: results of decoder containing the following tensor.

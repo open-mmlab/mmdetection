@@ -18,10 +18,9 @@ class YOLACT(SingleStageDetector):
                  mask_head,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None,
                  init_cfg=None):
         super(YOLACT, self).__init__(backbone, neck, bbox_head, train_cfg,
-                                     test_cfg, pretrained, init_cfg)
+                                     test_cfg, init_cfg)
         self.segm_head = build_head(segm_head)
         self.mask_head = build_head(mask_head)
 
@@ -44,25 +43,24 @@ class YOLACT(SingleStageDetector):
                       gt_masks=None):
         """
         Args:
-            img (Tensor): of shape (N, C, H, W) encoding input images.
-                Typically these should be mean centered and std scaled.
-            img_metas (list[dict]): list of image info dict where each dict
-                has: 'img_shape', 'scale_factor', 'flip', and may also contain
+            img (Tensor): of shape (bs, c, H, W) 输入数据.
+                通常这些数据应该是经过归一化的(减均值除以方差).
+            img_metas (list[dict]): 图像信息字典列表,其中每一个字典 含有键: 'img_shape',
+                'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
+                有关这些键值的详细信息, 请参见
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.
-            gt_masks (None | Tensor) : true segmentation masks for each box
-                used if the architecture supports a segmentation task.
+            gt_bboxes (list[Tensor]): batch张图片的gt box, [[num_gts, 4],] * bs
+                其中4代表 [x1, y1, x2, y2].
+            gt_labels (list[Tensor]): gt box对应的label, [[num_gts,],] * bs
+            gt_bboxes_ignore (None | list[Tensor]): 计算损失时可以忽略的标注类别列表.
+            gt_masks (None | Tensor) : 如变量名.它是gt box的mask
+                其类型结构为[BitmapMasks(num_masks=num_gt, height=550, width=550),] * bs
 
         Returns:
-            dict[str, Tensor]: a dictionary of loss components
+            dict[str, Tensor]: 模型的loss字典
         """
-        # convert Bitmap mask or Polygon Mask to Tensor here
+        # 将Bitmap mask或Polygon Mask转换为Tensor [[num_gt, H, W],] * bs
         gt_masks = [
             gt_mask.to_tensor(dtype=torch.uint8, device=img.device)
             for gt_mask in gt_masks
@@ -86,16 +84,16 @@ class YOLACT(SingleStageDetector):
                                         img_metas, sampling_results)
         losses.update(loss_mask)
 
-        # check NaN and Inf
+        # 检查是否存在INF和NaN
         for loss_name in losses.keys():
             assert torch.isfinite(torch.stack(losses[loss_name]))\
-                .all().item(), '{} becomes infinite or NaN!'\
+                .all().item(), '{}中存在INF或NaN!'\
                 .format(loss_name)
 
         return losses
 
     def simple_test(self, img, img_metas, rescale=False):
-        """Test function without test-time augmentation."""
+        """非TTA模式."""
         feat = self.extract_feat(img)
         det_bboxes, det_labels, det_coeffs = self.bbox_head.simple_test(
             feat, img_metas, rescale=rescale)
@@ -115,6 +113,6 @@ class YOLACT(SingleStageDetector):
         return list(zip(bbox_results, segm_results))
 
     def aug_test(self, imgs, img_metas, rescale=False):
-        """Test with augmentations."""
+        """TTA."""
         raise NotImplementedError(
-            'YOLACT does not support test-time augmentation')
+            'YOLACT 不支持 TTA')

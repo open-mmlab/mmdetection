@@ -62,13 +62,13 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                       **kwargs):
         """
         Args:
-            x (list[Tensor]): 多层级特征图[(bs, c, f_h, f_w),]*num_level.
+            x (list[Tensor]): 多层级特征图[[bs, c, h, w],] * num_level.
             img_metas (list[dict]): 图像信息字典列表,其中每个字典具有:'img_shape'、
                 'scale_factor'、'flip',还可能包含 'filename'、'ori_shape'、
                 'pad_shape'和'img_norm_cfg'. img_metas长度为bs
                 有关这些键值的详细信息, 请参见
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
-            proposal_list (list[Tensors]): list of region proposals.
+            proposal_list (list[Tensors]): batch幅图像的roi,[[rpn.max_per_img, 5], ] * bs
             gt_bboxes (list[Tensor]): bs幅图像的gt box,其内部shape为(num_gts, 4)
                 其中num_gts代表该幅图像标有num_gts个gt,4代表[x1, y1, x2, y2]
             gt_labels (list[Tensor]): bs幅图像的gt label,其内部shape为(num_gts,)
@@ -95,7 +95,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     gt_bboxes[i],
                     gt_labels[i],
                     # 这里添加[None]是因为对x的batch维度循环,而循环元素为(c,h,w)
-                    # 自然需要增加一个维度为[1,c,h,w]
+                    # 自然需要增加一个维度为[1,c,h,w].但是不明白为什么要传入feats
                     feats=[lvl_feat[i][None] for lvl_feat in x])
                 sampling_results.append(sampling_result)
 
@@ -120,7 +120,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         """在训练和测试阶段的 Box Head 的前向传播函数."""
         # TODO: a more flexible way to decide which feature maps to use
         # rois -> [k, 5] bbox_feats -> [k, self.out_channels, 7, 7]
-        # k是指batch张图片上的RoI总数
+        # k是指batch张图片上的RoI总数,注意x并非所有层级的特征图都使用到
         bbox_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], rois)
         if self.with_shared_head:
@@ -134,8 +134,12 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
                             img_metas):
         """Run forward function and calculate loss for box head in training."""
-        # res.bboxes 最大数量为sampler中num,所以其shape最大为(num, 4)
+        # sample会根据add_gt_as_proposals是否将gt添加进box,如果是其理想情况的shape就为
+        # [rpn.rpn_proposal.max_per_img, 4].
+        # res.bboxes的为sampler中正负样本之和,其与sample.num有多种大小对应关系,取决于实际情况.
+        # 最终为[min(rpn/r-cnn.max_per_img, pos_num+neg_num), 4]
         rois = bbox2roi([res.bboxes for res in sampling_results])
+        # {"cls_score":..., "bbox_pred":..., "bbox_feats":..., }
         bbox_results = self._bbox_forward(x, rois)
 
         bbox_targets = self.bbox_head.get_targets(sampling_results, gt_bboxes,
@@ -234,7 +238,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         Args:
             x (tuple[Tensor]): 来自上游网络的特征图.
-                ((batch_size, c, f_h, f_w),) * num_level.
+                [[batch_size, c, h, w],] * num_level.
             proposal_list (list(Tensor)): 来自rpn head 的Proposals.
                 [(num_proposals, 5),]*bs, 5 -> (x1, y1, x2, y2, score).
                 num_proposals最大值取决于模型配置文件中rpn中的max_per_img

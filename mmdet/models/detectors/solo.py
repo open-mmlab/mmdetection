@@ -17,8 +17,7 @@ class SOLO(SingleStageInstanceSegmentor):
                  mask_head=None,
                  train_cfg=None,
                  test_cfg=None,
-                 init_cfg=None,
-                 pretrained=None):
+                 init_cfg=None):
         super().__init__(
             backbone=backbone,
             neck=neck,
@@ -26,5 +25,4 @@ class SOLO(SingleStageInstanceSegmentor):
             mask_head=mask_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            init_cfg=init_cfg,
-            pretrained=pretrained)
+            init_cfg=init_cfg)

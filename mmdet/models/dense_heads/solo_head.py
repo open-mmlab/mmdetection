@@ -19,31 +19,25 @@ class SOLOHead(BaseMaskHead):
     <https://arxiv.org/abs/1912.04488>`_
 
     Args:
-        num_classes (int): Number of categories excluding the background
-            category.
-        in_channels (int): Number of channels in the input feature map.
-        feat_channels (int): Number of hidden channels. Used in child classes.
-            Default: 256.
-        stacked_convs (int): Number of stacking convs of the head.
-            Default: 4.
-        strides (tuple): Downsample factor of each feature map.
-        scale_ranges (tuple[tuple[int, int]]): Area range of multiple
-            level masks, in the format [(min1, max1), (min2, max2), ...].
-            A range of (16, 64) means the area range between (16, 64).
+        num_classes (int): 背景类别数.
+        in_channels (int): 输入特征维度.
+        feat_channels (int): 隐藏层维度. 用于子类. 默认: 256.
+        stacked_convs (int): head部分公共区域卷积数量. 默认: 4.
+        strides (tuple): 各个特征图的下采样倍数.
+        scale_ranges (tuple[tuple[int, int]]): 多层级mask的面积范围,((min1, max1), ) * nl.
         pos_scale (float): Constant scale factor to control the center region.
         num_grids (list[int]): Divided image into a uniform grids, each
             feature map has a different grid value. The number of output
             channels is grid ** 2. Default: [40, 36, 24, 16, 12].
-        cls_down_index (int): The index of downsample operation in
-            classification branch. Default: 0.
-        loss_mask (dict): Config of mask loss.
-        loss_cls (dict): Config of classification loss.
-        norm_cfg (dict): dictionary to construct and config norm layer.
-            Default: norm_cfg=dict(type='GN', num_groups=32,
-                                   requires_grad=True).
-        train_cfg (dict): Training config of head.
-        test_cfg (dict): Testing config of head.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        cls_down_index (int): 在stacked_convs中cls_down_index位置处的卷积操作之前
+            将cls_feat进行下采样至num_grid[i]. 默认: 0.
+        loss_mask (dict): mask loss配置.
+        loss_cls (dict): cls loss配置.
+        norm_cfg (dict): norm层配置.Default:
+            norm_cfg=dict(type='GN', num_groups=32, requires_grad=True).
+        train_cfg (dict): head的训练配置.
+        test_cfg (dict): head的测试配置.
+        init_cfg (dict or list[dict], optional): head权重初始化配置.
     """
 
     def __init__(
@@ -130,7 +124,7 @@ class SOLOHead(BaseMaskHead):
             self.feat_channels, self.cls_out_channels, 3, padding=1)
 
     def resize_feats(self, feats):
-        """Downsample the first feat and upsample last feat in feats."""
+        """对第一层级特征进行下采样,最后一层特征进行上采样,其余层feat保持不变返回."""
         out = []
         for i in range(len(feats)):
             if i == 0:
@@ -160,7 +154,7 @@ class SOLOHead(BaseMaskHead):
             x = feats[i]
             mask_feat = x
             cls_feat = x
-            # generate and concat the coordinate
+            # 生成并cat特征坐标[-1, 1], [bs, c, h, w] -> [bs, c+2, h, w]
             coord_feat = generate_coordinate(mask_feat.size(),
                                              mask_feat.device)
             mask_feat = torch.cat([mask_feat, coord_feat], 1)
@@ -205,21 +199,16 @@ class SOLOHead(BaseMaskHead):
              img_metas,
              gt_bboxes=None,
              **kwargs):
-        """Calculate the loss of total batch.
+        """计算batch幅图像的损失.
 
         Args:
-            mlvl_mask_preds (list[Tensor]): Multi-level mask prediction.
-                Each element in the list has shape
-                (batch_size, num_grids**2 ,h ,w).
-            mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
-                in the list has shape
+            mlvl_mask_preds (list[Tensor]): 多层级的mask输出, [[bs, num_grids**2, h, w], ] * nl.
+            mlvl_cls_preds (list[Tensor]): 多层级的cls输出. [[bs, nc, num_grid, num_grid], ] * nl.
                 (batch_size, num_classes, num_grids ,num_grids).
-            gt_labels (list[Tensor]): Labels of multiple images.
-            gt_masks (list[Tensor]): Ground truth masks of multiple images.
-                Each has shape (num_instances, h, w).
-            img_metas (list[dict]): Meta information of multiple images.
-            gt_bboxes (list[Tensor]): Ground truth bboxes of multiple
-                images. Default: None.
+            gt_labels (list[Tensor]): [[num_gt, ], ] * bs.
+            gt_masks (list[Tensor]): [[num_gt, batch_h, batch_w], ] * bs.
+            img_metas (list[dict]): [dict(), ] * bs.
+            gt_bboxes (list[Tensor]): [[num_gt, 4], ] * bs. Default: None.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -229,9 +218,10 @@ class SOLOHead(BaseMaskHead):
 
         featmap_sizes = [featmap.size()[-2:] for featmap in mlvl_mask_preds]
 
-        # `BoolTensor` in `pos_masks` represent
-        # whether the corresponding point is
-        # positive
+        # pos_mask是bool类型的值,代表该位置是否是正样本区域.
+        # [[[sum(pos_mask), h, w], * nl], ] * bs
+        # [[[num_grid, num_grid], * nl], ] * bs
+        # [[[num_grid**2, ], * nl], ] * bs
         pos_mask_targets, labels, pos_masks = multi_apply(
             self._get_targets_single,
             gt_bboxes,
@@ -239,8 +229,7 @@ class SOLOHead(BaseMaskHead):
             gt_masks,
             featmap_sizes=featmap_sizes)
 
-        # change from the outside list meaning multi images
-        # to the outside list meaning multi levels
+        # [[?], * nl] * bs -> [[?], * img] * nl
         mlvl_pos_mask_targets = [[] for _ in range(num_levels)]
         mlvl_pos_mask_preds = [[] for _ in range(num_levels)]
         mlvl_pos_masks = [[] for _ in range(num_levels)]
@@ -252,21 +241,24 @@ class SOLOHead(BaseMaskHead):
                     pos_mask_targets[img_id][lvl])
                 mlvl_pos_mask_preds[lvl].append(
                     mlvl_mask_preds[lvl][img_id, pos_masks[img_id][lvl], ...])
-                mlvl_pos_masks[lvl].append(pos_masks[img_id][lvl].flatten())
+                mlvl_pos_masks[lvl].append(pos_masks[img_id][lvl])
                 mlvl_labels[lvl].append(labels[img_id][lvl].flatten())
 
         # cat multiple image
         temp_mlvl_cls_preds = []
         for lvl in range(num_levels):
+            # 将同一层级上的batch幅数据cat到一起,[bs*sum(pos_mask), h, w]
             mlvl_pos_mask_targets[lvl] = torch.cat(
                 mlvl_pos_mask_targets[lvl], dim=0)
             mlvl_pos_mask_preds[lvl] = torch.cat(
                 mlvl_pos_mask_preds[lvl], dim=0)
+            # 同上,[bs * (num_grid**2), ]
             mlvl_pos_masks[lvl] = torch.cat(mlvl_pos_masks[lvl], dim=0)
             mlvl_labels[lvl] = torch.cat(mlvl_labels[lvl], dim=0)
+            # [bs, num_grid ,num_grid, nc] -> [bs * (num_grid**2), nc]
             temp_mlvl_cls_preds.append(mlvl_cls_preds[lvl].permute(
                 0, 2, 3, 1).reshape(-1, self.cls_out_channels))
-
+        # batch幅图像上正样本区域bool值总和.
         num_pos = sum(item.sum() for item in mlvl_pos_masks)
         # dice loss
         loss_mask = []
@@ -292,33 +284,20 @@ class SOLOHead(BaseMaskHead):
                             gt_labels,
                             gt_masks,
                             featmap_sizes=None):
-        """Compute targets for predictions of single image.
+        """计算单个图像的mask/cls_target.
 
         Args:
-            gt_bboxes (Tensor): Ground truth bbox of each instance,
-                shape (num_gts, 4).
-            gt_labels (Tensor): Ground truth label of each instance,
-                shape (num_gts,).
-            gt_masks (Tensor): Ground truth mask of each instance,
-                shape (num_gts, h, w).
-            featmap_sizes (list[:obj:`torch.size`]): Size of each
-                feature map from feature pyramid, each element
-                means (feat_h, feat_w). Default: None.
+            gt_bboxes (Tensor): [num_gt, 4].
+            gt_labels (Tensor): [num_gt, ].
+            gt_masks (Tensor): [num_gt, batch_h, batch_w].
+            featmap_sizes (list[:obj:`torch.size`]): [[h, w], ] * nl. 默认: None.
 
         Returns:
-            Tuple: Usually returns a tuple containing targets for predictions.
-
-                - mlvl_pos_mask_targets (list[Tensor]): Each element represent
-                  the binary mask targets for positive points in this
-                  level, has shape (num_pos, out_h, out_w).
-                - mlvl_labels (list[Tensor]): Each element is
-                  classification labels for all
-                  points in this level, has shape
-                  (num_grid, num_grid).
-                - mlvl_pos_masks (list[Tensor]): Each element is
-                  a `BoolTensor` to represent whether the
-                  corresponding point in single level
-                  is positive, has shape (num_grid **2).
+            - mlvl_pos_mask_targets (list[Tensor]):  [[num_pos, h, w], ] * nl.
+                正样本的mask_target, 由gt_instance直接resize过来的.
+            - mlvl_labels (list[Tensor]): [[num_grid, num_grid], ] * nl.
+                gt box中心0.2倍宽高区域内值为gt_label.
+            - mlvl_pos_masks (list[Tensor]): [[num_grid**2, ], ] * nl.
         """
         device = gt_labels.device
         gt_areas = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
@@ -342,7 +321,6 @@ class SOLOHead(BaseMaskHead):
             pos_mask = torch.zeros([num_grid**2],
                                    dtype=torch.bool,
                                    device=device)
-
             gt_inds = ((gt_areas >= lower_bound) &
                        (gt_areas <= upper_bound)).nonzero().flatten()
             if len(gt_inds) == 0:
@@ -355,6 +333,12 @@ class SOLOHead(BaseMaskHead):
             hit_gt_labels = gt_labels[gt_inds]
             hit_gt_masks = gt_masks[gt_inds, ...]
 
+            # 以质心为中心生成gt_w/h*pos_scale(默认0.2)为宽高的正样本区域,
+            # FCOS中,有类似的设计,它里面默认是整个gt范围都是正样本区域,
+            # 不过它也有个center_samping参数来控制从gt中心向四周扩散范围
+            # 如果开启,则范围固定为self.strides[lvl_idx] * radius(默认1.5)
+            # SOLO里面正样本区域算是一种动态收紧,但感觉收的太紧了,仅为宽高的0.2倍
+            # 这也是一个超参数,增大pos_scale则正样本数量增多,但是质量可能会下降一点.
             pos_w_ranges = 0.5 * (hit_gt_bboxes[:, 2] -
                                   hit_gt_bboxes[:, 0]) * self.pos_scale
             pos_h_ranges = 0.5 * (hit_gt_bboxes[:, 3] -
@@ -362,6 +346,7 @@ class SOLOHead(BaseMaskHead):
 
             # Make sure hit_gt_masks has a value
             valid_mask_flags = hit_gt_masks.sum(dim=-1).sum(dim=-1) > 0
+            # 此处/2是因为在Head部分的stack conv后又将所有层级的mask分支特征图放大了2倍
             output_stride = stride / 2
 
             for gt_mask, gt_label, pos_h_range, pos_w_range, \
@@ -370,16 +355,18 @@ class SOLOHead(BaseMaskHead):
                         pos_w_ranges, valid_mask_flags):
                 if not valid_mask_flag:
                     continue
+                # 这里应该是获取forward前的输入尺寸,但是这样固定写法感觉不太稳妥
                 upsampled_size = (featmap_sizes[0][0] * 4,
                                   featmap_sizes[0][1] * 4)
                 center_h, center_w = center_of_mass(gt_mask)
 
+                # 获取质心坐标在当前层级num_grid尺寸下的坐标
                 coord_w = int(
                     (center_w / upsampled_size[1]) // (1. / num_grid))
                 coord_h = int(
                     (center_h / upsampled_size[0]) // (1. / num_grid))
 
-                # left, top, right, down
+                # 并计算其在num_grid尺寸下的四个边界,left, top, right, down
                 top_box = max(
                     0,
                     int(((center_h - pos_h_range) / upsampled_size[0]) //
@@ -397,22 +384,32 @@ class SOLOHead(BaseMaskHead):
                     int(((center_w + pos_w_range) / upsampled_size[1]) //
                         (1. / num_grid)))
 
+                # 强制正样本区域在质心的外部
                 top = max(top_box, coord_h - 1)
                 down = min(down_box, coord_h + 1)
-                left = max(coord_w - 1, left_box)
+                left = max(left_box, coord_w - 1)
                 right = min(right_box, coord_w + 1)
 
+                # 在[num_grid, num_grid]大小的mask上的正样本区域赋予[0, nc-1]的label
                 labels[top:(down + 1), left:(right + 1)] = gt_label
                 # ins
                 gt_mask = np.uint8(gt_mask.cpu().numpy())
                 # Follow the original implementation, F.interpolate is
                 # different from cv2 and opencv
+                # 将gt mask放缩该层级上对应的stride/2倍.注意配置文件中的strides/2才是真实
+                # 输入尺寸对应每个层级的下采样倍数.
                 gt_mask = mmcv.imrescale(gt_mask, scale=1. / output_stride)
                 gt_mask = torch.from_numpy(gt_mask).to(device=device)
 
                 for i in range(top, down + 1):
                     for j in range(left, right + 1):
                         index = int(i * num_grid + j)
+                        # [num_grid**2, featmap_size[0], featmap_size[1]]
+                        # mask_target 与 gt_mask的后两个维度shape本质是有区别,
+                        # gt_mask在rescale之前是pad_shape, -> pad_shape//4
+                        # 而mask_target是batch_shape, -> batch_shape//4
+                        # 在collect_fn中为了将batch幅数据shape保持一致,
+                        # 会在pad_shape的基础上在右下角额外进行padding从而得到batch_shape.
                         mask_target[index, :gt_mask.shape[0], :gt_mask.
                                     shape[1]] = gt_mask
                         pos_mask[index] = True
@@ -423,27 +420,22 @@ class SOLOHead(BaseMaskHead):
 
     def get_results(self, mlvl_mask_preds, mlvl_cls_scores, img_metas,
                     **kwargs):
-        """Get multi-image mask results.
+        """获取多张图片的分割结果.
 
         Args:
-            mlvl_mask_preds (list[Tensor]): Multi-level mask prediction.
-                Each element in the list has shape
-                (batch_size, num_grids**2 ,h ,w).
-            mlvl_cls_scores (list[Tensor]): Multi-level scores. Each element
-                in the list has shape
-                (batch_size, num_classes, num_grids ,num_grids).
-            img_metas (list[dict]): Meta information of all images.
+            mlvl_mask_preds (list[Tensor]): 多层级mask输出结果.
+                [[bs, num_grids**2 ,h ,w], ] * nl.
+            mlvl_cls_scores (list[Tensor]): 多层级cls输出结果.
+                [[bs, nc, num_grids ,num_grids], ] * nl.
+            img_metas (list[dict]): batch幅图像的元信息.
 
         Returns:
-            list[:obj:`InstanceData`]: Processed results of multiple
-            images.Each :obj:`InstanceData` usually contains
-            following keys.
+            list[:obj:`InstanceData`]: 处理后的batch幅图像分割结果,
+            [img_result, ] * bs, img_result包含以下键值.
 
-                - scores (Tensor): Classification scores, has shape
-                  (num_instance,).
-                - labels (Tensor): Has shape (num_instances,).
-                - masks (Tensor): Processed mask results, has
-                  shape (num_instances, h, w).
+                - scores (Tensor): pred_cls_score, [num_instance, ].
+                - labels (Tensor): pred_cls_ind, [num_instance, ].
+                - masks (Tensor): pred_mask, [num_instances, h, w].
         """
         mlvl_cls_scores = [
             item.permute(0, 2, 3, 1) for item in mlvl_cls_scores
@@ -453,14 +445,16 @@ class SOLOHead(BaseMaskHead):
 
         results_list = []
         for img_id in range(len(img_metas)):
+            # [[num_grids**2, nc], ] * nl, 以下皆是获取单张图像的多层级输出再cat到一起
             cls_pred_list = [
                 mlvl_cls_scores[lvl][img_id].view(-1, self.cls_out_channels)
                 for lvl in range(num_levels)
             ]
+            # [[num_grids**2 ,h ,w], ] * nl
             mask_pred_list = [
                 mlvl_mask_preds[lvl][img_id] for lvl in range(num_levels)
             ]
-
+            # [nl * num_grids**2, nc], [nl * num_grids**2 ,h ,w]
             cls_pred_list = torch.cat(cls_pred_list, dim=0)
             mask_pred_list = torch.cat(mask_pred_list, dim=0)
 
@@ -471,30 +465,24 @@ class SOLOHead(BaseMaskHead):
         return results_list
 
     def _get_results_single(self, cls_scores, mask_preds, img_meta, cfg=None):
-        """Get processed mask related results of single image.
+        """获取单张图像上处理过的mask预测结果.
 
         Args:
-            cls_scores (Tensor): Classification score of all points
-                in single image, has shape (num_points, num_classes).
-            mask_preds (Tensor): Mask prediction of all points in
-                single image, has shape (num_points, feat_h, feat_w).
-            img_meta (dict): Meta information of corresponding image.
-            cfg (dict, optional): Config used in test phase.
-                Default: None.
+            cls_scores (Tensor): [nl * num_grids**2, nc].
+            mask_preds (Tensor): [nl * num_grids**2, h ,w].
+            img_meta (dict): 当前图片元信息.
+            cfg (dict, optional): 测试阶段使用的配置.默认: None.
 
         Returns:
-            :obj:`InstanceData`: Processed results of single image.
-             it usually contains following keys.
-
-                - scores (Tensor): Classification scores, has shape
-                  (num_instance,).
-                - labels (Tensor): Has shape (num_instances,).
-                - masks (Tensor): Processed mask results, has
-                  shape (num_instances, h, w).
+            :obj:`InstanceData`: 单张图像的处理结果.一种储存分割结果的特殊数据结构
+             它通常包含以下键.
+                - scores (Tensor): pred_cls_score, [num_instance,].
+                - labels (Tensor): pred_cls_ind, [num_instance,].
+                - masks (Tensor): pred_mask, [num_instances, H, W], 原始图像尺寸.
         """
 
         def empty_results(results, cls_scores):
-            """Generate a empty results."""
+            """生成一个空的分割结果."""
             results.scores = cls_scores.new_ones(0)
             results.masks = cls_scores.new_zeros(0, *results.ori_shape[:2])
             results.labels = cls_scores.new_ones(0)
@@ -512,27 +500,30 @@ class SOLOHead(BaseMaskHead):
         h, w, _ = img_shape
         upsampled_size = (featmap_size[0] * 4, featmap_size[1] * 4)
 
+        # 1.根据score_thr阈值过滤掉cls_score低于该值的mask
         score_mask = (cls_scores > cfg.score_thr)
         cls_scores = cls_scores[score_mask]
         if len(cls_scores) == 0:
             return empty_results(results, cls_scores)
 
+        # [?, 2]类似形状的数据,其中"2"维度上的第二列代表nc上的索引也即label
         inds = score_mask.nonzero()
         cls_labels = inds[:, 1]
 
-        # Filter the mask mask with an area is smaller than
-        # stride of corresponding feature level
+        # [1600., 2896., 3472., 3728., 3872.]
         lvl_interval = cls_labels.new_tensor(self.num_grids).pow(2).cumsum(0)
         strides = cls_scores.new_ones(lvl_interval[-1])
         strides[:lvl_interval[0]] *= self.strides[0]
         for lvl in range(1, self.num_levels):
-            strides[lvl_interval[lvl -
-                                 1]:lvl_interval[lvl]] *= self.strides[lvl]
+            # 将strides上第lvl+1层级的值乘以相应层级下采样倍数
+            strides[lvl_interval[lvl-1]:lvl_interval[lvl]] *= self.strides[lvl]
         strides = strides[inds[:, 0]]
         mask_preds = mask_preds[inds[:, 0]]
 
+        # 2.根据mask_thr过滤掉低于该值的mask, 并计算出满足条件的mask总数
         masks = mask_preds > cfg.mask_thr
         sum_masks = masks.sum((1, 2)).float()
+        # 3.过滤掉任意一个在[h, w]上面积区域小于strides值的实例
         keep = sum_masks > strides
         if keep.sum() == 0:
             return empty_results(results, cls_scores)
@@ -542,7 +533,8 @@ class SOLOHead(BaseMaskHead):
         cls_scores = cls_scores[keep]
         cls_labels = cls_labels[keep]
 
-        # maskness.
+        # maskness. 计算num_grid**2上任意一个mask区域的平均得分,计算方式就是统计
+        # mask在[h, w]区域上的满足条件的score总和再除以区域面积
         mask_scores = (mask_preds * masks).sum((1, 2)) / sum_masks
         cls_scores *= mask_scores
 
@@ -557,6 +549,8 @@ class SOLOHead(BaseMaskHead):
             sigma=cfg.sigma,
             filter_thr=cfg.filter_thr)
         mask_preds = mask_preds[keep_inds]
+        # upsampled_size是指batch_shape(在右下角进行padding),
+        # 而img_shape是指ori_img进行Resize后的尺寸,ori_shape才是图像原始尺寸
         mask_preds = F.interpolate(
             mask_preds.unsqueeze(0), size=upsampled_size,
             mode='bilinear')[:, :, :h, :w]
@@ -719,24 +713,16 @@ class DecoupledSOLOHead(SOLOHead):
              img_metas,
              gt_bboxes=None,
              **kwargs):
-        """Calculate the loss of total batch.
+        """计算batch幅图像的损失.
 
         Args:
-            mlvl_mask_preds_x (list[Tensor]): Multi-level mask prediction
-                from x branch. Each element in the list has shape
-                (batch_size, num_grids ,h ,w).
-            mlvl_mask_preds_x (list[Tensor]): Multi-level mask prediction
-                from y branch. Each element in the list has shape
-                (batch_size, num_grids ,h ,w).
-            mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
-                in the list has shape
-                (batch_size, num_classes, num_grids ,num_grids).
-            gt_labels (list[Tensor]): Labels of multiple images.
-            gt_masks (list[Tensor]): Ground truth masks of multiple images.
-                Each has shape (num_instances, h, w).
-            img_metas (list[dict]): Meta information of multiple images.
-            gt_bboxes (list[Tensor]): Ground truth bboxes of multiple
-                images. Default: None.
+            mlvl_mask_preds_x (list[Tensor]): 多层级x分支的mask输出, [[bs, num_grids, h ,w], ] * nl.
+            mlvl_mask_preds_y (list[Tensor]): 多层级y分支的mask输出, [[bs, num_grids, h, w], ] * nl.
+            mlvl_cls_preds (list[Tensor]): 多层级的cls输出. [[bs, nc ,num_grid, num_grids], ] * nl.
+            gt_labels (list[Tensor]): [[num_gt, ], ] * bs.
+            gt_masks (list[Tensor]): [[num_gt, batch_h, batch_w], ] * bs.
+            img_metas (list[dict]): [dict(), ] * bs.
+            gt_bboxes (list[Tensor]): [[num_gt, 4], ] * bs. Default: None.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -745,6 +731,8 @@ class DecoupledSOLOHead(SOLOHead):
         num_imgs = len(gt_labels)
         featmap_sizes = [featmap.size()[-2:] for featmap in mlvl_mask_preds_x]
 
+        # [[[[num_pos, h, w], ] * nl], ] * bs, [[[num_grid, num_grid], ] * nl, ] * bs
+        # [[[num_grid, 2], ] * nl, ] * bs
         pos_mask_targets, labels, \
             xy_pos_indexes = \
             multi_apply(self._get_targets_single,
@@ -818,39 +806,31 @@ class DecoupledSOLOHead(SOLOHead):
                             gt_labels,
                             gt_masks,
                             featmap_sizes=None):
-        """Compute targets for predictions of single image.
+        """计算单个图像的mask/cls_target.
 
         Args:
-            gt_bboxes (Tensor): Ground truth bbox of each instance,
-                shape (num_gts, 4).
-            gt_labels (Tensor): Ground truth label of each instance,
-                shape (num_gts,).
-            gt_masks (Tensor): Ground truth mask of each instance,
-                shape (num_gts, h, w).
-            featmap_sizes (list[:obj:`torch.size`]): Size of each
-                feature map from feature pyramid, each element
-                means (feat_h, feat_w). Default: None.
+            gt_bboxes (Tensor): [num_gt, 4].
+            gt_labels (Tensor): [num_gt, ].
+            gt_masks (Tensor): [num_gt, batch_h, batch_w].
+            featmap_sizes (list[:obj:`torch.size`]): [[h, w], ] * nl. 默认: None.
 
         Returns:
             Tuple: Usually returns a tuple containing targets for predictions.
 
-                - mlvl_pos_mask_targets (list[Tensor]): Each element represent
-                  the binary mask targets for positive points in this
-                  level, has shape (num_pos, out_h, out_w).
-                - mlvl_labels (list[Tensor]): Each element is
-                  classification labels for all
-                  points in this level, has shape
-                  (num_grid, num_grid).
-                - mlvl_xy_pos_indexes (list[Tensor]): Each element
-                  in the list contains the index of positive samples in
-                  corresponding level, has shape (num_pos, 2), last
-                  dimension 2 present (index_x, index_y).
+                - mlvl_pos_mask_targets (list[Tensor]): [[num_pos, h, w], ] * nl.
+                    正样本的mask_target, 由gt_instance直接resize过来的.
+                - mlvl_labels (list[Tensor]): [[num_grid, num_grid], ] * nl.
+                    gt box中心0.2倍宽高区域内值为gt_label.
+                - mlvl_xy_pos_indexes (list[Tensor]): 优化了SOLOv1中的实例位置表示方法,
+                  由[[num_grid, 2], ] * nl, 其中2代表x与y索引.
         """
+        # [[num_pos, h, w], ] * nl, [[num_grid, num_grid], ] * nl, [[num_grid**2, ], ] * nl.
         mlvl_pos_mask_targets, mlvl_labels, \
             mlvl_pos_masks = \
             super()._get_targets_single(gt_bboxes, gt_labels, gt_masks,
                                         featmap_sizes=featmap_sizes)
 
+        # 注意.nonzero表示的是二维坐标,所以[num_pos, 2]第一列是纵向y坐标,第二列是横向x坐标.
         mlvl_xy_pos_indexes = [(item - self.num_classes).nonzero()
                                for item in mlvl_labels]
 
@@ -863,30 +843,24 @@ class DecoupledSOLOHead(SOLOHead):
                     img_metas,
                     rescale=None,
                     **kwargs):
-        """Get multi-image mask results.
+        """获取多张图片的分割结果.
 
         Args:
-            mlvl_mask_preds_x (list[Tensor]): Multi-level mask prediction
-                from x branch. Each element in the list has shape
-                (batch_size, num_grids ,h ,w).
-            mlvl_mask_preds_y (list[Tensor]): Multi-level mask prediction
-                from y branch. Each element in the list has shape
-                (batch_size, num_grids ,h ,w).
-            mlvl_cls_scores (list[Tensor]): Multi-level scores. Each element
-                in the list has shape
-                (batch_size, num_classes ,num_grids ,num_grids).
-            img_metas (list[dict]): Meta information of all images.
+            mlvl_mask_preds_x (list[Tensor]): 多层级x分支的mask输出结果.
+                [[bs, num_grids ,h ,w], ] * nl.
+            mlvl_mask_preds_y (list[Tensor]): 多层级y分支的mask输出结果.
+                [[bs, num_grids ,h ,w], ] * nl.
+            mlvl_cls_scores (list[Tensor]): 多层级cls输出结果.
+                [[bs, nc, num_grids ,num_grids], ] * nl.
+            img_metas (list[dict]): batch幅图像的元信息.
 
         Returns:
-            list[:obj:`InstanceData`]: Processed results of multiple
-            images.Each :obj:`InstanceData` usually contains
-            following keys.
+            list[:obj:`InstanceData`]: 处理后的batch幅图像分割结果,
+            [img_result, ] * bs, img_result包含以下键值.
 
-                - scores (Tensor): Classification scores, has shape
-                  (num_instance,).
-                - labels (Tensor): Has shape (num_instances,).
-                - masks (Tensor): Processed mask results, has
-                  shape (num_instances, h, w).
+                - scores (Tensor): pred_cls_score, [num_instance,].
+                - labels (Tensor): pred_cls_ind, [num_instance,].
+                - masks (Tensor): pred_mask, [num_instances, h, w].
         """
         mlvl_cls_scores = [
             item.permute(0, 2, 3, 1) for item in mlvl_cls_scores
@@ -923,33 +897,26 @@ class DecoupledSOLOHead(SOLOHead):
 
     def _get_results_single(self, cls_scores, mask_preds_x, mask_preds_y,
                             img_meta, cfg):
-        """Get processed mask related results of single image.
+        """获取单张图像上处理过的mask预测结果.
 
         Args:
-            cls_scores (Tensor): Classification score of all points
-                in single image, has shape (num_points, num_classes).
-            mask_preds_x (Tensor): Mask prediction of x branch of
-                all points in single image, has shape
-                (sum_num_grids, feat_h, feat_w).
-            mask_preds_y (Tensor): Mask prediction of y branch of
-                all points in single image, has shape
-                (sum_num_grids, feat_h, feat_w).
-            img_meta (dict): Meta information of corresponding image.
-            cfg (dict): Config used in test phase.
+            cls_scores (Tensor): [nl * num_grids**2, nc].
+            mask_preds_x (Tensor): [nl * num_grids, h ,w].
+            mask_preds_y (Tensor): [nl * num_grids, h ,w].
+            img_meta (dict): 当前图片元信息.
+            cfg (dict): 测试阶段使用的配置.默认: None.
 
         Returns:
-            :obj:`InstanceData`: Processed results of single image.
-             it usually contains following keys.
+            :obj:`InstanceData`: 处理后的单幅图像分割结果.
+             它通常包含以下键.
 
-                - scores (Tensor): Classification scores, has shape
-                  (num_instance,).
-                - labels (Tensor): Has shape (num_instances,).
-                - masks (Tensor): Processed mask results, has
-                  shape (num_instances, h, w).
+                - scores (Tensor): pred_cls_score, [num_instance,].
+                - labels (Tensor): pred_cls_ind, [num_instance,].
+                - masks (Tensor): pred_mask, [num_instances, H, W], 原始图像尺寸.
         """
 
         def empty_results(results, cls_scores):
-            """Generate a empty results."""
+            """生成一个空的分割结果."""
             results.scores = cls_scores.new_ones(0)
             results.masks = cls_scores.new_zeros(0, *results.ori_shape[:2])
             results.labels = cls_scores.new_ones(0)
@@ -957,54 +924,78 @@ class DecoupledSOLOHead(SOLOHead):
 
         cfg = self.test_cfg if cfg is None else cfg
 
+        # 获取图像的形状信息, 包括原始形状和缩放后形状
         results = InstanceData(img_meta)
         img_shape = results.img_shape
         ori_shape = results.ori_shape
         h, w, _ = img_shape
+
+        # 获取特征图尺寸和上采样后的尺寸
         featmap_size = mask_preds_x.size()[-2:]
         upsampled_size = (featmap_size[0] * 4, featmap_size[1] * 4)
 
+        # 根据分类得分 cls_scores 找到所有置信度大于阈值 cfg.score_thr 的部分
         score_mask = (cls_scores > cfg.score_thr)
         cls_scores = cls_scores[score_mask]
+        # [?, 2] 第一列表示满足条件的位置索引∈[0, nl*num_grid**2), 第二列表示类别索引∈[0, nc)
         inds = score_mask.nonzero()
-        lvl_interval = inds.new_tensor(self.num_grids).pow(2).cumsum(0)
-        num_all_points = lvl_interval[-1]
-        lvl_start_index = inds.new_ones(num_all_points)
-        num_grids = inds.new_ones(num_all_points)
-        seg_size = inds.new_tensor(self.num_grids).cumsum(0)
-        mask_lvl_start_index = inds.new_ones(num_all_points)
-        strides = inds.new_ones(num_all_points)
 
+        # num_grids = [40, 36, 24, 16, 12] 注意这里的操作是为了后续分割cat到一起的多层级数据.
+        # [1600., 2896., 3472., 3728., 3872.], 3872
+        lvl_interval = inds.new_tensor(self.num_grids).pow(2).cumsum(0)  # num_grid**2前缀和
+        num_all_points = lvl_interval[-1]
+
+        # 定义相关变量, 除了seg_size为[nl, ]. 其余皆是[nl*num_grid**2, ]
+        lvl_start_index = inds.new_ones(num_all_points)       # 实例所属层级的num_grid**2前缀和
+        num_grids = inds.new_ones(num_all_points)             # 实例所属层级的num_grid值
+        seg_size = inds.new_tensor(self.num_grids).cumsum(0)  # num_grid前缀和
+        mask_lvl_start_index = inds.new_ones(num_all_points)  # 实例所属层级的num_grid前缀和
+        strides = inds.new_ones(num_all_points)               # 实例所属层级的stride值
+
+        # 初始化相关变量在第一层级上的值,方便下面循环中被后续层级引用
         lvl_start_index[:lvl_interval[0]] *= 0
         mask_lvl_start_index[:lvl_interval[0]] *= 0
         num_grids[:lvl_interval[0]] *= self.num_grids[0]
         strides[:lvl_interval[0]] *= self.strides[0]
 
         for lvl in range(1, self.num_levels):
+            # 将第lvl+1层级上对应的num_grid**2个值乘以(前lvl层num_grid**2总和)
             lvl_start_index[lvl_interval[lvl - 1]:lvl_interval[lvl]] *= \
                 lvl_interval[lvl - 1]
+            # 将第lvl+1层级上对应的num_grid**2个值乘以(前lvl层num_grid总和)
             mask_lvl_start_index[lvl_interval[lvl - 1]:lvl_interval[lvl]] *= \
                 seg_size[lvl - 1]
+            # 将num_grids第lvl+1层级上对应的num_grid**2个值乘以(第lvl+1层num_grid值(int))
             num_grids[lvl_interval[lvl - 1]:lvl_interval[lvl]] *= \
                 self.num_grids[lvl]
+            # 将strides第lvl+1层级上对应的num_grid**2个值乘以(第lvl+1层strides值(int))
             strides[lvl_interval[lvl - 1]:lvl_interval[lvl]] *= \
                 self.strides[lvl]
 
+        # 1.根据score_thr阈值筛选出cls_score高于该值的有效索引
         lvl_start_index = lvl_start_index[inds[:, 0]]
         mask_lvl_start_index = mask_lvl_start_index[inds[:, 0]]
         num_grids = num_grids[inds[:, 0]]
         strides = strides[inds[:, 0]]
 
+        # inds[:, 0]是nl*(num_grid**2)上的索引,lvl_start_index则是不同层级上累加的num_grid**2前缀和,
+        # 减法之后就得到满足score_thr阈值条件的实例在对应层级num_grid**2上的索引
+        # 再做整除和取余则就得到纵向y坐标和横向x坐标了.
         y_lvl_offset = (inds[:, 0] - lvl_start_index) // num_grids
         x_lvl_offset = (inds[:, 0] - lvl_start_index) % num_grids
+        # mask_lvl_start_index表示满足score_thr阈值条件的实例在对应层级的num_grid前缀和
+        # 再加上num_grid的纵向/横向索引则就对齐了网络输出的mask_x/y,[nl*num_grid, h, w]
         y_inds = mask_lvl_start_index + y_lvl_offset
         x_inds = mask_lvl_start_index + x_lvl_offset
 
         cls_labels = inds[:, 1]
+        # 令mask_preds表示为mask_x*mask_y
         mask_preds = mask_preds_x[x_inds, ...] * mask_preds_y[y_inds, ...]
 
+        # 2.根据mask_thr过滤掉低于该值的mask, 并计算出满足条件的mask总数
         masks = mask_preds > cfg.mask_thr
         sum_masks = masks.sum((1, 2)).float()
+        # 3.过滤掉任意一个在[h, w]上面积区域小于strides值的实例
         keep = sum_masks > strides
         if keep.sum() == 0:
             return empty_results(results, cls_scores)
@@ -1015,7 +1006,8 @@ class DecoupledSOLOHead(SOLOHead):
         cls_scores = cls_scores[keep]
         cls_labels = cls_labels[keep]
 
-        # maskness.
+        # maskness. 计算num_grid**2上任意一个mask区域的平均得分,计算方式就是统计
+        # mask在[h, w]区域上的满足条件的score总和再除以区域面积
         mask_scores = (mask_preds * masks).sum((1, 2)) / sum_masks
         cls_scores *= mask_scores
 
@@ -1030,6 +1022,8 @@ class DecoupledSOLOHead(SOLOHead):
             sigma=cfg.sigma,
             filter_thr=cfg.filter_thr)
         mask_preds = mask_preds[keep_inds]
+        # upsampled_size是指batch_shape(在右下角进行padding),
+        # 而img_shape是指ori_img进行Resize后的尺寸,ori_shape才是图像原始尺寸
         mask_preds = F.interpolate(
             mask_preds.unsqueeze(0), size=upsampled_size,
             mode='bilinear')[:, :, :h, :w]
@@ -1048,6 +1042,7 @@ class DecoupledSOLOHead(SOLOHead):
 class DecoupledSOLOLightHead(DecoupledSOLOHead):
     """Decoupled Light SOLO mask head used in `SOLO: Segmenting Objects by
     Locations <https://arxiv.org/abs/1912.04488>`_
+    前半部分是SOLOHead,后面上采样后分叉出x/y分支保持与DecoupledSOLOHead一致的输出.
 
     Args:
         with_dcn (bool): Whether use dcn in mask_convs and cls_convs,

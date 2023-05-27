@@ -24,7 +24,7 @@ from mmdet.utils import (build_ddp, build_dp, compat_cfg, get_device,
 def parse_args():
     parser = argparse.ArgumentParser(description='MMDet test (and eval) a model')
     parser.add_argument('--config', help='测试配置文件路径',default=r'D:\mmdetection\configs\retinanet\retinanet_r50_fpn_1x_coco.py')
-    parser.add_argument('--checkpoint', help='模型文件',default=r'D:\mmdetection\tools\work_dirs\retinanet_r50_fpn_1x_coco\epoch_12.pth')
+    parser.add_argument('--checkpoint', help='模型文件',default=r"C:\Users\User\Downloads\retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth")
     parser.add_argument('--work-dir', help='保存包含评估指标的文件的目录')
     parser.add_argument('--out', help='以pickle格式输出结果文件')
     parser.add_argument('--fuse-conv-bn', action='store_true', help='是否融合conv和bn, 这将略微提高推理速度')
@@ -32,8 +32,8 @@ def parse_args():
     parser.add_argument('--format-only', action='store_true', help='格式化输出结果而不执行评估. '
                         '当您想将结果格式化为特定格式并将其提交到测试服务器时,它很有用')
     parser.add_argument('--eval', type=str, nargs='+', help='评估指标, 取决于数据集.'
-                        '例如, COCO: "bbox", "segm", "proposal", VOC: "mAP", "recall"')
-    parser.add_argument('--show', action='store_true', help='是否显示结果',default=True)
+                        '例如, COCO: "bbox", "segm", "proposal", VOC: "mAP", "recall"', default='bbox')
+    parser.add_argument('--show', action='store_true', help='是否显示结果')
     parser.add_argument('--show-dir', help='将保存绘制图像的目录')
     parser.add_argument('--show-score-thr', type=float, default=0.3, help='分数阈值(默认值：0.3)')
     parser.add_argument('--gpu-collect', action='store_true', help='是否使用gpu收集结果.')

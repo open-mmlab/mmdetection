@@ -42,14 +42,12 @@ def py_sigmoid_focal_loss(pred,
     if weight is not None:
         if weight.shape != loss.shape:
             if weight.size(0) == loss.size(0):
-                # For most cases, weight is of shape (num_priors, ),
-                #  which means it does not have the second axis num_class
+                # 在大多数情况下,权重的形状为[num_priors,],而非[num_priors,num_class]
                 weight = weight.view(-1, 1)
             else:
-                # Sometimes, weight per anchor per class is also needed. e.g.
-                #  in FSAF. But it may be flattened of shape
-                #  (num_priors x num_class, ), while loss is still of shape
-                #  (num_priors, num_class).
+                # 不过有时,还需要每个anchor每个label的权重.比如在FSAF中. 但它可能是一维的shape
+                # 比如[num_priors x num_class,], 此时我们就需将它与loss的shape对齐为
+                # [num_priors, num_class].
                 assert weight.numel() == loss.numel()
                 weight = weight.view(loss.size(0), -1)
         assert weight.ndim == loss.ndim
@@ -95,14 +93,12 @@ def py_focal_loss_with_prob(pred,
     if weight is not None:
         if weight.shape != loss.shape:
             if weight.size(0) == loss.size(0):
-                # For most cases, weight is of shape (num_priors, ),
-                #  which means it does not have the second axis num_class
+                # 在大多数情况下,权重的形状为[num_priors,],而非[num_priors,num_class]
                 weight = weight.view(-1, 1)
             else:
-                # Sometimes, weight per anchor per class is also needed. e.g.
-                #  in FSAF. But it may be flattened of shape
-                #  (num_priors x num_class, ), while loss is still of shape
-                #  (num_priors, num_class).
+                # 不过有时,还需要每个anchor每个label的权重.比如在FSAF中. 但它可能是一维的shape
+                # 比如[num_priors x num_class,], 此时我们就需将它与loss的shape对齐.
+                #  [num_priors, num_class].
                 assert weight.numel() == loss.numel()
                 weight = weight.view(loss.size(0), -1)
         assert weight.ndim == loss.ndim
@@ -137,14 +133,12 @@ def sigmoid_focal_loss(pred,
     if weight is not None:
         if weight.shape != loss.shape:
             if weight.size(0) == loss.size(0):
-                # For most cases, weight is of shape (num_priors, ),
-                #  which means it does not have the second axis num_class
+                # 在大多数情况下,权重的形状为[num_priors,],而非[num_priors,num_class]
                 weight = weight.view(-1, 1)
             else:
-                # Sometimes, weight per anchor per class is also needed. e.g.
-                #  in FSAF. But it may be flattened of shape
-                #  (num_priors x num_class, ), while loss is still of shape
-                #  (num_priors, num_class).
+                # 不过有时,还需要每个anchor每个label的权重.比如在FSAF中. 但它可能是一维的shape
+                # 比如[num_priors x num_class,], 此时我们就需将它与loss的shape对齐.
+                #  [num_priors, num_class].
                 assert weight.numel() == loss.numel()
                 weight = weight.view(loss.size(0), -1)
         assert weight.ndim == loss.ndim
@@ -213,6 +207,8 @@ class FocalLoss(nn.Module):
                     calculate_loss_func = sigmoid_focal_loss
                 else:
                     num_classes = pred.size(1)
+                    # 这里num_classes + 1的原因是target在初始化时为num_class(背景类)
+                    # 所以需要临时+1,但实际仅仅需要前num_class个值即可
                     target = F.one_hot(target, num_classes=num_classes + 1)
                     target = target[:, :num_classes]
                     calculate_loss_func = py_sigmoid_focal_loss

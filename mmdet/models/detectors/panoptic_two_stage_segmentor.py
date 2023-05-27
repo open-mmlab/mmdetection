@@ -26,14 +26,13 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
             roi_head=None,
             train_cfg=None,
             test_cfg=None,
-            pretrained=None,
             init_cfg=None,
             # for panoptic segmentation
             semantic_head=None,
             panoptic_fusion_head=None):
         super(TwoStagePanopticSegmentor,
               self).__init__(backbone, neck, rpn_head, roi_head, train_cfg,
-                             test_cfg, pretrained, init_cfg)
+                             test_cfg, init_cfg)
         if semantic_head is not None:
             self.semantic_head = build_head(semantic_head)
         if panoptic_fusion_head is not None:

@@ -581,7 +581,7 @@ class Pad:
             if self.pad_to_square:  # 该参数与模式(1)(2)并不冲突
                 max_size = max(results[key].shape[:2])
                 self.size = (max_size, max_size)
-            if self.size is not None:  # 模式(1)
+            if self.size is not None:  # 模式(1) 填充至固定尺寸
                 padded_img = mmcv.impad(
                     results[key], shape=self.size, pad_val=pad_val)
             elif self.size_divisor is not None:  # 模式(2) 默认右边下边填充像素
@@ -898,24 +898,22 @@ class SegRescale:
 
 @PIPELINES.register_module()
 class PhotoMetricDistortion:
-    """Apply photometric distortion to image sequentially, every transformation
-    is applied with a probability of 0.5. The position of random contrast is in
-    second or second to last.
+    """依次对图像应用光度失真,每个变换都以 0.5 的概率应用.随机对比的位置在第二或倒数第二.
 
-    1. random brightness
-    2. random contrast (mode 0)
-    3. convert color from BGR to HSV
-    4. random saturation
-    5. random hue
-    6. convert color from HSV to BGR
-    7. random contrast (mode 1)
-    8. randomly swap channels
+    1. 随机亮度
+    2. 随机对比 (mode 0)
+    3. 将颜色从 BGR 转换为 HSV
+    4. 随机饱和度
+    5. 随机色调
+    6. 将颜色从 HSV 转换为 BGR
+    7. 随机对比 (mode 1)
+    8. 随机交换通道
 
     Args:
-        brightness_delta (int): delta of brightness.
-        contrast_range (tuple): range of contrast.
-        saturation_range (tuple): range of saturation.
-        hue_delta (int): delta of hue.
+        brightness_delta (int): 亮度增加/减少范围.
+        contrast_range (tuple): 对比度范围.
+        saturation_range (tuple): 饱和度范围.
+        hue_delta (int): 色调的增量增加/减少范围.
     """
 
     def __init__(self,
@@ -929,13 +927,13 @@ class PhotoMetricDistortion:
         self.hue_delta = hue_delta
 
     def __call__(self, results):
-        """Call function to perform photometric distortion on images.
+        """对图像执行光度失真.比如改变亮度、饱和度等
 
         Args:
-            results (dict): Result dict from loading pipeline.
+            results (dict): 来自上一pipline的Result.
 
         Returns:
-            dict: Result dict with images distorted.
+            dict: 图像失真的Result.
         """
 
         if 'img_fields' in results:
@@ -943,14 +941,14 @@ class PhotoMetricDistortion:
                 'Only single img_fields is allowed'
         img = results['img']
         img = img.astype(np.float32)
-        # random brightness
+        # 随机亮度,numpy.random.randint->[a,b),random.randint->[a,b]
         if random.randint(2):
             delta = random.uniform(-self.brightness_delta,
                                    self.brightness_delta)
             img += delta
 
-        # mode == 0 --> do random contrast first
-        # mode == 1 --> do random contrast last
+        # mode == 0 --> 先做随机对比
+        # mode == 1 --> 后做随机对比
         mode = random.randint(2)
         if mode == 1:
             if random.randint(2):
@@ -958,31 +956,31 @@ class PhotoMetricDistortion:
                                        self.contrast_upper)
                 img *= alpha
 
-        # convert color from BGR to HSV
+        # 将颜色从 BGR 转换为 HSV
         img = mmcv.bgr2hsv(img)
 
-        # random saturation
+        # 随机饱和
         if random.randint(2):
             img[..., 1] *= random.uniform(self.saturation_lower,
                                           self.saturation_upper)
 
-        # random hue
+        # 随机色调
         if random.randint(2):
             img[..., 0] += random.uniform(-self.hue_delta, self.hue_delta)
             img[..., 0][img[..., 0] > 360] -= 360
             img[..., 0][img[..., 0] < 0] += 360
 
-        # convert color from HSV to BGR
+        # 将颜色从 HSV 转换为 BGR
         img = mmcv.hsv2bgr(img)
 
-        # random contrast
+        # 后做随机对比
         if mode == 0:
             if random.randint(2):
                 alpha = random.uniform(self.contrast_lower,
                                        self.contrast_upper)
                 img *= alpha
 
-        # randomly swap channels
+        # 随机交换通道
         if random.randint(2):
             img = img[..., random.permutation(3)]
 
@@ -1482,16 +1480,13 @@ class Albu:
 
 @PIPELINES.register_module()
 class RandomCenterCropPad:
-    """Random center crop and random around padding for CornerNet.
+    """CornerNet网络专属的随机中心裁剪和随机填充.
 
-    This operation generates randomly cropped image from the original image and
-    pads it simultaneously. Different from :class:`RandomCrop`, the output
-    shape may not equal to ``crop_size`` strictly. We choose a random value
-    from ``ratios`` and the output shape could be larger or smaller than
-    ``crop_size``. The padding operation is also different from :class:`Pad`,
-    here we use around padding instead of right-bottom padding.
+    此操作从原始图像生成随机裁剪的图像并同时对其进行填充.与 RandomCrop 不同,输出形状可能
+    严格不等于 ``crop_size``.我们从“ratios”中选择一个随机值,输出形状可以大于或小于
+    “crop_size”.padding操作也和Pad不同,这里我们用四周padding代替右下角padding.
 
-    The relation between output image (padding image) and original image:
+    输出图像(填充后)与原始图像之间的关系:
 
     .. code:: text
 
@@ -1509,64 +1504,53 @@ class RandomCenterCropPad:
                |          padded area       |
                +----------------------------+
 
-    There are 5 main areas in the figure:
+    图中主要有5个区域:
 
-    - output image: output image of this operation, also called padding
-      image in following instruction.
-    - original image: input image of this operation.
-    - padded area: non-intersect area of output image and original image.
-    - cropped area: the overlap of output image and original image.
-    - center range: a smaller area where random center chosen from.
-      center range is computed by ``border`` and original image's shape
-      to avoid our random center is too close to original image's border.
+    - output image: 此操作的输出图像,在下文中也称为填充图像.
+    - original image: 此操作的输入图像.
+    - padded area: 输出图像和原始图像的非公共区域.
+    - cropped area: 输出图像和原始图像的公共区域.
+    - center range: 一个较小的区域,从该区域中选择随机中心.中心范围由“border”和
+      原始图像的尺寸计算,以避免我们的随机中心太靠近原始图像的边界.
 
-    Also this operation act differently in train and test mode, the summary
-    pipeline is listed below.
+    此操作在训练和测试时的作用是不同的,总结如下.
 
-    Train pipeline:
+    训练时:
 
-    1. Choose a ``random_ratio`` from ``ratios``, the shape of padding image
-       will be ``random_ratio * crop_size``.
-    2. Choose a ``random_center`` in center range.
-    3. Generate padding image with center matches the ``random_center``.
-    4. Initialize the padding image with pixel value equals to ``mean``.
-    5. Copy the cropped area to padding image.
-    6. Refine annotations.
+    1. 从“ratios”中随机选择一个值,记“random_ratio * crop_size”为gen_size.
+    2. 在[border, h - border](border<=h/2)内随机选择值作为原始图像的"随机中心"y坐标,x同理
+    3. 在原始图像的"随机中心"生成一个中心与它重合大小为gen_size的空白图像,
+    4. 使用等于参数mean的像素值初始化填充图像的各通道.
+    5. 原始图像与空白的重合区域称为``cropped area``, 将``cropped area``复制到生成的图像上.
+    6. 过滤中心坐标不在截取区域的gt_box,同时将限制这些gt_box的坐标范围使其不超出生成图像
+    7. 更新Result.
 
-    Test pipeline:
+    测试时:
 
-    1. Compute output shape according to ``test_pad_mode``.
-    2. Generate padding image with center matches the original image
-       center.
-    3. Initialize the padding image with pixel value equals to ``mean``.
-    4. Copy the ``cropped area`` to padding image.
+    1. 根据 ``test_pad_mode`` 计算gen_size(现有两种模式中宽高都会比原始图像大).
+    2. 直接将原始图像的中心作为"随机中心",后续与训练时一致
 
     Args:
-        crop_size (tuple | None): expected size after crop, final size will
-            computed according to ratio. Requires (h, w) in train mode, and
-            None in test mode.
-        ratios (tuple): random select a ratio from tuple and crop image to
-            (crop_size[0] * ratio) * (crop_size[1] * ratio).
-            Only available in train mode.
-        border (int): max distance from center select area to image border.
-            Only available in train mode.
-        mean (sequence): Mean values of 3 channels.
-        std (sequence): Std values of 3 channels.
-        to_rgb (bool): Whether to convert the image from BGR to RGB.
-        test_mode (bool): whether involve random variables in transform.
-            In train mode, crop_size is fixed, center coords and ratio is
-            random selected from predefined lists. In test mode, crop_size
-            is image's original shape, center coords and ratio is fixed.
-        test_pad_mode (tuple): padding method and padding shape value, only
-            available in test mode. Default is using 'logical_or' with
-            127 as padding shape value.
+        crop_size (tuple | None): 生成图像尺寸,在Train时为(h, w),在Test时为None.
+        ratios (tuple): 从该元组中随机选择一个ratio,并生成crop_size*ratio大小的图像
+            仅在Train时适用.
+        border (int): 从中心选择区域到图像边界的最大距离.仅在Train时适用.
+        mean (sequence): 生成图像的3个通道的平均值.该值一般为0,或来源于训练数据集的平均值.
+        std (sequence): 生成图像的3个通道的标准差.该值一般为1,或来源于训练数据集的标准差.
+        to_rgb (bool): 是否将图像从 BGR 转换为 RGB.
+        test_mode (bool): 是否为Test模式,也即是否在变换中涉及随机变量.
+            在Train时, crop_size是固定的, 中心坐标和ratio是从预定义列表中随机选择的.
+            在Test时, crop_size是在图像的原始尺寸上向上兼容指定倍数大小, 中心坐标和ratio是固定的.
+        test_pad_mode (tuple): padding方式和向上兼容指定倍数大小, 仅在Test时,可用.
 
-            - 'logical_or': final_shape = input_shape | padding_shape_value
-            - 'size_divisor': final_shape = int(
+            - 'logical_or': 最终生成图像尺寸为 n * padding_shape_value + test_pad_add_pix
+            - 'size_divisor': 最终生成图像尺寸为 = int(
               ceil(input_shape / padding_shape_value) * padding_shape_value)
-        test_pad_add_pix (int): Extra padding pixel in test mode. Default 0.
-        bbox_clip_border (bool, optional): Whether clip the objects outside
-            the border of the image. Defaults to True.
+        test_pad_add_pix (int): test_mode=True且test_pad_mode='logical_or'时额外增加的像素.
+        bbox_clip_border (bool, optional): 是否限制裁剪后的gt box坐标在生成图像的范围,
+            如果生成图像尺寸某一边小于原始图像对应边,那么在生成图像上的某些gt box坐标可能为负值,
+            所以这里需要进行限制,使得0<=最终生成图像上的gt box坐标<=h/w
+
     """
 
     def __init__(self,
@@ -1597,9 +1581,8 @@ class RandomCenterCropPad:
         self.crop_size = crop_size
         self.ratios = ratios
         self.border = border
-        # We do not set default value to mean, std and to_rgb because these
-        # hyper-parameters are easy to forget but could affect the performance.
-        # Please use the same setting as Normalize for performance assurance.
+        # 我们没有将默认值设置为mean、std和to_rgb因为这些超参数很容易忘记但会影响性能.
+        # 请使用与Normalize相同的设置以保证性能.
         assert mean is not None and std is not None and to_rgb is not None
         self.to_rgb = to_rgb
         self.input_mean = mean
@@ -1616,76 +1599,76 @@ class RandomCenterCropPad:
         self.bbox_clip_border = bbox_clip_border
 
     def _get_border(self, border, size):
-        """Get final border for the target size.
-
-        This function generates a ``final_border`` according to image's shape.
-        The area between ``final_border`` and ``size - final_border`` is the
-        ``center range``. We randomly choose center from the ``center range``
-        to avoid our random center is too close to original image's border.
-        Also ``center range`` should be larger than 0.
+        """获取生成尺寸的final_border.至于怎么生成final_border是一个值得关注的细节.
+        但是这里的MMDet代码可读性较差.CornerNet作者源码如下:
+        def _get_border(border, size):
+            i = 1
+            while size - border // i <= border // i:
+                i *= 2
+            return border // i
+        https://github.com/princeton-vl/CornerNet/blob/e5c39a31a8abef5841976c8eab18da86d6ee5f9a/sample/utils.py#L49
+        通过以上代码不难理解出_get_border尝试计算出一个new_border.
+        当new_border*2小于等于size时返回该new_border,否则new_border不断减半
+        初始new_border即为border=128
 
         Args:
-            border (int): The initial border, default is 128.
-            size (int): The width or height of original image.
+            border (int): 初始border, 默认128.
+            size (int): 原始图像的宽或高.
         Returns:
-            int: The final border.
+            int: 最终border.
         """
         k = 2 * border / size
         i = pow(2, np.ceil(np.log2(np.ceil(k))) + (k == int(k)))
         return border // i
 
     def _filter_boxes(self, patch, boxes):
-        """Check whether the center of each box is in the patch.
+        """检查每个gt box的中心是否在公共区域中.
 
         Args:
-            patch (list[int]): The cropped area, [left, top, right, bottom].
-            boxes (numpy array, (N x 4)): Ground truth boxes.
+            patch (list[int]): 公共区域, [left, top, right, bottom].
+            表示截取区域在的左上右下坐标x1,y1,x2,y2,相对于原始图像尺寸
+            boxes (numpy array, (N x 4)): gt box.
 
         Returns:
-            mask (numpy array, (N,)): Each box is inside or outside the patch.
+            mask (numpy array, (N,)): 每个gt box是否在公共区域内.
         """
         center = (boxes[:, :2] + boxes[:, 2:]) / 2
         mask = (center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) * (
-            center[:, 0] < patch[2]) * (
-                center[:, 1] < patch[3])
+            center[:, 0] < patch[2]) * (center[:, 1] < patch[3])
         return mask
 
     def _crop_image_and_paste(self, image, center, size):
-        """Crop image with a given center and size, then paste the cropped
-        image to a blank image with two centers align.
-
-        This function is equivalent to generating a blank image with ``size``
-        as its shape. Then cover it on the original image with two centers (
-        the center of blank image and the random center of original image)
-        aligned. The overlap area is paste from the original image and the
-        outside area is filled with ``mean pixel``.
+        """生成一个中心与原始图像中心重合的指定size的空白图像,然后对公共区域进行复制并将其
+            粘贴到空白图像上,非重合区域各通道使用训练数据集各通道的平均像素填充.
 
         Args:
-            image (np array, H x W x C): Original image.
-            center (list[int]): Target crop center coord.
-            size (list[int]): Target crop size. [target_h, target_w]
+            image (np array,): 原始图像.[h, w, c]
+            center (list[int]): 原始图像中心坐标.[h//2, w//2]
+            size (list[int]): 生成图像尺寸. [target_h, target_w]
 
         Returns:
-            cropped_img (np array, target_h x target_w x C): Cropped image.
-            border (np array, 4): The distance of four border of
-                ``cropped_img`` to the original image area, [top, bottom,
-                left, right]
-            patch (list[int]): The cropped area, [left, top, right, bottom].
+            cropped_img (np array, target_h x target_w x C): 生成图像.
+            border (np array, 4): 生成图像的粘贴区域, [top, bottom, left, right],
+                这四个值分别表示在y,x,y,x坐标上的分割直线,相对于生成图像尺寸.
+            patch (np array, 4): 原始图像的剪裁区域, [left, top, right, bottom].
+                这四个值分别表示在x,y,x,y坐标上的分割直线,相对于原始图像尺寸.
         """
         center_y, center_x = center
         target_h, target_w = size
         img_h, img_w, img_c = image.shape
+        cropped_center_y, cropped_center_x = target_h // 2, target_w // 2
 
-        x0 = max(0, center_x - target_w // 2)
-        x1 = min(center_x + target_w // 2, img_w)
-        y0 = max(0, center_y - target_h // 2)
-        y1 = min(center_y + target_h // 2, img_h)
+        # 以下四个值代表截取区域在原始图像上的左上右下坐标,不能超出原始图像边界.
+        x0 = max(0, center_x - cropped_center_x)
+        x1 = min(center_x + cropped_center_x, img_w)
+        y0 = max(0, center_y - cropped_center_y)
+        y1 = min(center_y + cropped_center_y, img_h)
         patch = np.array((int(x0), int(y0), int(x1), int(y1)))
 
+        # 这四个值代表中心点坐标到截取边界的四个距离
         left, right = center_x - x0, x1 - center_x
         top, bottom = center_y - y0, y1 - center_y
 
-        cropped_center_y, cropped_center_x = target_h // 2, target_w // 2
         cropped_img = np.zeros((target_h, target_w, img_c), dtype=image.dtype)
         for i in range(img_c):
             cropped_img[:, :, i] += self.mean[i]
@@ -1693,22 +1676,22 @@ class RandomCenterCropPad:
         x_slice = slice(cropped_center_x - left, cropped_center_x + right)
         cropped_img[y_slice, x_slice, :] = image[y0:y1, x0:x1, :]
 
+        # 该值代表截取像素区域的四条边在生成图像上的坐标, 上下左右
         border = np.array([
             cropped_center_y - top, cropped_center_y + bottom,
             cropped_center_x - left, cropped_center_x + right
-        ],
-                          dtype=np.float32)
+        ], dtype=np.float32)
 
         return cropped_img, border, patch
 
     def _train_aug(self, results):
-        """Random crop and around padding the original image.
+        """随机裁剪和在四周填充原始图像Random crop and around padding the original image.
 
         Args:
-            results (dict): Image infomations in the augment pipeline.
+            results (dict): 来自上一个pipline的Result.
 
         Returns:
-            results (dict): The updated dict.
+            results (dict): 更新后的Result.
         """
         img = results['img']
         h, w, c = img.shape
@@ -1717,18 +1700,30 @@ class RandomCenterCropPad:
             scale = random.choice(self.ratios)
             new_h = int(self.crop_size[0] * scale)
             new_w = int(self.crop_size[1] * scale)
+            # _get_border尝试计算出一个new_border.
+            # 当new_border*2严格小于h或w时返回该new_border,否则new_border不断减半
+            # 初始new_border即为self.border=128
             h_border = self._get_border(self.border, h)
             w_border = self._get_border(self.border, w)
 
+            # 随机选取合适的中心点,不合适则重选.如果50次都选不出合适中心点则代表当前生成图像
+            # 尺寸不适合进行此项操作,重新生成图像
             for i in range(50):
+                # 训练时原始图像的剪裁区域的中心点是在指定范围内随机生成的
+                #   即[w/h_border, w/h - w/h_border]矩形的中心区域,
+                #   从该区域中随机选择一个中心,以避免我们的随机中心太靠近原始图像的边界
+                # 测试时是固定为原始图像的中心点.
                 center_x = random.randint(low=w_border, high=w - w_border)
                 center_y = random.randint(low=h_border, high=h - h_border)
 
+                # cropped_img [new_h, new_w, img_c], 生成图像.
+                # border [4,], 生成图像中的截取像素区域距离生成图像上下左右边界的距离.
+                # patch [4,], 原始图像中截取区域左上右下坐标.x1,y1,x2,y2
                 cropped_img, border, patch = self._crop_image_and_paste(
                     img, [center_y, center_x], [new_h, new_w])
 
                 mask = self._filter_boxes(patch, boxes)
-                # if image do not have valid bbox, any crop patch is valid.
+                # 如果gt box的中心点全部在原始图像的裁剪区域外,则本次中心点的选取无效,重新选取.
                 if not mask.any() and len(boxes) > 0:
                     continue
 
@@ -1736,20 +1731,21 @@ class RandomCenterCropPad:
                 results['img_shape'] = cropped_img.shape
                 results['pad_shape'] = cropped_img.shape
 
-                x0, y0, x1, y1 = patch
-
-                left_w, top_h = center_x - x0, center_y - y0
                 cropped_center_x, cropped_center_y = new_w // 2, new_h // 2
 
                 # crop bboxes accordingly and clip to the image boundary
                 for key in results.get('bbox_fields', []):
                     mask = self._filter_boxes(patch, results[key])
                     bboxes = results[key][mask]
-                    bboxes[:, 0:4:2] += cropped_center_x - left_w - x0
-                    bboxes[:, 1:4:2] += cropped_center_y - top_h - y0
+                    # _crop_image_and_paste方法兼容原始图像尺寸比生成图像尺寸大的
+                    # 多种情况,所以这里+=右边可能会为负值
+                    bboxes[:, 0:4:2] += cropped_center_x - center_x
+                    bboxes[:, 1:4:2] += cropped_center_y - center_y
+                    # 是否限制剪裁后的box是否在生成图像尺寸范围内
                     if self.bbox_clip_border:
                         bboxes[:, 0:4:2] = np.clip(bboxes[:, 0:4:2], 0, new_w)
                         bboxes[:, 1:4:2] = np.clip(bboxes[:, 1:4:2], 0, new_h)
+                    # 过滤异常数据
                     keep = (bboxes[:, 2] > bboxes[:, 0]) & (
                         bboxes[:, 3] > bboxes[:, 1])
                     bboxes = bboxes[keep]
@@ -1770,31 +1766,35 @@ class RandomCenterCropPad:
                 return results
 
     def _test_aug(self, results):
-        """Around padding the original image without cropping.
-
-        The padding mode and value are from ``test_pad_mode``.
+        """在不对原始图像裁剪的情况下填充原始图像.该函数生成的图像尺寸始终会比原图像大.
+            不过_crop_image_and_paste方法兼容了生成图像比原图小的场景.
 
         Args:
-            results (dict): Image infomations in the augment pipeline.
+            results (dict): 来自上一pipline的Result.
 
         Returns:
-            results (dict): The updated dict.
+            results (dict): 更新后的Result.
         """
         img = results['img']
         h, w, c = img.shape
         results['img_shape'] = img.shape
         if self.test_pad_mode[0] in ['logical_or']:
-            # self.test_pad_add_pix is only used for centernet
+            # self.test_pad_add_pix仅用于CornerNet系列模型,该参数存在的意义是为了使得输出尺寸
+            # 为某个数(c)的整数倍,但由于|操作的限制,所以c不能是任意值.一般表现为二进制低位上连续的1,
+            # 比如31,63,127.分别在低位上连续5,6,7位全部是1.该操作的意义在于将任何不同范围下的尺寸
+            # 与其进行|操作都会向上取参数c的倍数.以c=127为例,下面展示不同范围内的数与127做|操作后的值,
+            # 0~127 -> 127, 128~255 -> 255, 255~383 -> 383, ...
             target_h = (h | self.test_pad_mode[1]) + self.test_pad_add_pix
             target_w = (w | self.test_pad_mode[1]) + self.test_pad_add_pix
         elif self.test_pad_mode[0] in ['size_divisor']:
+            # 向上取divisor的整数倍
             divisor = self.test_pad_mode[1]
             target_h = int(np.ceil(h / divisor)) * divisor
             target_w = int(np.ceil(w / divisor)) * divisor
         else:
             raise NotImplementedError(
-                'RandomCenterCropPad only support two testing pad mode:'
-                'logical-or and size_divisor.')
+                'RandomCenterCropPad 仅支持两种testing pad mode:'
+                'logical-or 和 size_divisor.')
 
         cropped_img, border, _ = self._crop_image_and_paste(
             img, [h // 2, w // 2], [target_h, target_w])
@@ -1806,8 +1806,8 @@ class RandomCenterCropPad:
     def __call__(self, results):
         img = results['img']
         assert img.dtype == np.float32, (
-            'RandomCenterCropPad needs the input image of dtype np.float32,'
-            ' please set "to_float32=True" in "LoadImageFromFile" pipeline')
+            'RandomCenterCropPad增强操作需要np.float32类型的输入图像,'
+            '请在"LoadImageFromFile"中设置"to_float32=True".')
         h, w, c = img.shape
         assert c == len(self.mean)
         if self.test_mode:

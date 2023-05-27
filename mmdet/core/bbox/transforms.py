@@ -20,16 +20,16 @@ def find_inside_bboxes(bboxes, img_h, img_w):
 
 
 def bbox_flip(bboxes, img_shape, direction='horizontal'):
-    """Flip bboxes horizontally or vertically.
+    """水平或垂直翻转 box.
 
     Args:
-        bboxes (Tensor): Shape (..., 4*k)
-        img_shape (tuple): Image shape.
-        direction (str): Flip direction, options are "horizontal", "vertical",
-            "diagonal". Default: "horizontal"
+        bboxes (Tensor): Shape (..., 4*k),不太明白官方代码这里k表示什么意思
+        img_shape (tuple): 在什么样的图像尺寸下面对box进行翻转,[h, w, c].
+        direction (str): 翻转方向,可选 "horizontal", "vertical",
+            "diagonal". 默认: "horizontal"
 
     Returns:
-        Tensor: Flipped bboxes.
+        Tensor: 翻转后的 box.
     """
     assert bboxes.shape[-1] % 4 == 0
     assert direction in ['horizontal', 'vertical', 'diagonal']
@@ -65,7 +65,7 @@ def bbox_mapping_back(bboxes,
                       scale_factor,
                       flip,
                       flip_direction='horizontal'):
-    """Map bboxes from testing scale to original image scale."""
+    """将 box 从测试尺寸映射到原始图像尺寸."""
     new_bboxes = bbox_flip(bboxes, img_shape,
                            flip_direction) if flip else bboxes
     new_bboxes = new_bboxes.view(-1, 4) / new_bboxes.new_tensor(scale_factor)
@@ -73,8 +73,8 @@ def bbox_mapping_back(bboxes,
 
 
 def bbox2roi(bbox_list):
-    """将 box 列表转换为 roi shape转换过程为[(num,4),]*batch -> (batch_gts, 5)
-        batch_gts意为batch幅图像上所有的gt box, 5意为[batch_ind, x1, y1, x2, y2]
+    """将列表格式的box转换为适合进行ROI Pooling/Align操作的格式.
+        shape由[(num,4),]*bs -> [batch_box, 5], 5意为[batch_ind, x1, y1, x2, y2]
         注!num是指sampler中num参数的值,上限是该值,实际可能低于该值,取决于每幅图片的情况
     Args:
         bbox_list (list[Tensor]): batch张图像的 box 列表.
@@ -114,15 +114,15 @@ def roi2bbox(rois):
 
 
 def bbox2result(bboxes, labels, num_classes):
-    """将检测结果转换为numpy数组列表,[np].
+    """将检测结果转换为numpy数组列表,[ndarray] * num_class.
 
     Args:
-        bboxes (torch.Tensor | np.ndarray): shape (n, 5)
-        labels (torch.Tensor | np.ndarray): shape (n, )
-        num_classes (int): class number, including background class
+        bboxes (torch.Tensor | np.ndarray): [n, 5], 格式为[x, y, x, y, score]
+        labels (torch.Tensor | np.ndarray): [n,]
+        num_classes (int): 检测类别数, 不包括背景类
 
     Returns:
-        list(ndarray): bbox results of each class
+        list(ndarray): [[num_box_per_class, 5],] * num_class
     """
     if bboxes.shape[0] == 0:
         return [np.zeros((0, 5), dtype=np.float32) for i in range(num_classes)]
@@ -134,20 +134,18 @@ def bbox2result(bboxes, labels, num_classes):
 
 
 def distance2bbox(points, distance, max_shape=None):
-    """Decode distance prediction to bounding box.
+    """将预测的四个方向距离[left, top, right, bottom]与point结合转换成[x1, y1, x2, y2].
 
     Args:
-        points (Tensor): Shape (B, N, 2) or (N, 2).
-        distance (Tensor): Distance from the given point to 4
-            boundaries (left, top, right, bottom). Shape (B, N, 4) or (N, 4)
+        points (Tensor): Shape [B, N, 2] or [N, 2].
+        distance (Tensor): 从points到4个边界的距离[left, top, right, bottom].
+                Shape [B, N, 4] or [N, 4]
         max_shape (Sequence[int] or torch.Tensor or Sequence[
-            Sequence[int]],optional): Maximum bounds for boxes, specifies
-            (H, W, C) or (H, W). If priors shape is (B, N, 4), then
-            the max_shape should be a Sequence[Sequence[int]]
-            and the length of max_shape should also be B.
+            Sequence[int]],optional): box的边界, 指定格式为 (H, W, C) 或 (H, W).
+                如果 points 形状是 [B, N, 4], 那么max_shape应该是 [[int,],] * B
 
     Returns:
-        Tensor: Boxes with shape (N, 4) or (B, N, 4)
+        Tensor: Boxes with shape [N, 4] or [B, N, 4]
     """
 
     x1 = points[..., 0] - distance[..., 0]
@@ -164,7 +162,7 @@ def distance2bbox(points, distance, max_shape=None):
             bboxes[:, 1::2].clamp_(min=0, max=max_shape[0])
             return bboxes
 
-        # clip bboxes with dynamic `min` and `max` for onnx
+        # 在onnx状态下,使用曲线救国的方式设置动态边界范围
         if torch.onnx.is_in_onnx_export():
             from mmdet.core.export import dynamic_clip_for_onnx
             x1, y1, x2, y2 = dynamic_clip_for_onnx(x1, y1, x2, y2, max_shape)
@@ -178,6 +176,7 @@ def distance2bbox(points, distance, max_shape=None):
             assert max_shape.size(0) == bboxes.size(0)
 
         min_xy = x1.new_tensor(0)
+        # [B,2] -> [B, 4](h,w,h,w) -> [B, 4](w,h,w,h) -> [1, B, 4]
         max_xy = torch.cat([max_shape, max_shape],
                            dim=-1).flip(-1).unsqueeze(-2)
         bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
@@ -187,7 +186,7 @@ def distance2bbox(points, distance, max_shape=None):
 
 
 def bbox2distance(points, bbox, max_dis=None, eps=0.1):
-    """Decode bounding box based on distances.
+    """根据point与[x1, y1, x2, y2]格式的box来计算[left, top, right, bottom].
 
     Args:
         points (Tensor): Shape (n, 2), [x, y].

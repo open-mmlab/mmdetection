@@ -93,7 +93,7 @@ class TwoStageDetector(BaseDetector):
                       **kwargs):
         """
         Args:
-            img (Tensor): shape为 (N, C, H, W) 的 输入图像数据.
+            img (Tensor): shape为 [N, C, H, W] 的 输入图像数据.
                 通常这些数据应该是经过归一化的(减均值除以方差).
 
             img_metas (list[dict]): 图像信息字典列表,其中每一个字典 含有键: 'img_shape',

@@ -42,14 +42,12 @@ class PointGenerator:
 
 @PRIOR_GENERATORS.register_module()
 class MlvlPointGenerator:
-    """Standard points generator for multi-level (Mlvl) feature maps in 2D
-    points-based detectors.
+    """基于 2D points-based检测器中多层级特征图的标准点生成器.
 
     Args:
-        strides (list[int] | list[tuple[int, int]]): Strides of anchors
-            in multiple feature levels in order (w, h).
-        offset (float): The offset of points, the value is normalized with
-            corresponding stride. Defaults to 0.5.
+        strides (list[int] | list[tuple[int, int]]): 多层级特征图上anchor下采样倍数,
+            如果参数格式为后者, 那么按(w, h)顺序排列.
+        offset (float): 点的偏移量, 该值用相应的stride进行归一化. Defaults to 0.5.
     """
 
     def __init__(self, strides, offset=0.5):
@@ -63,15 +61,13 @@ class MlvlPointGenerator:
 
     @property
     def num_base_priors(self):
-        """list[int]: The number of priors (points) at a point
-        on the feature grid"""
+        """list[int]: 各层级上特征点的先验(点)数,它在anchor_base中称为先验(框)数"""
         return [1 for _ in range(len(self.strides))]
 
     def _meshgrid(self, x, y, row_major=True):
-        yy, xx = torch.meshgrid(y, x)
+        yy, xx = torch.meshgrid(y, x, indexing='ij')
         if row_major:
-            # warning .flatten() would cause error in ONNX exporting
-            # have to use reshape here
+            # 警告 .flatten() 会导致 ONNX 导出错误,因此必须在此处使用 reshape
             return xx.reshape(-1), yy.reshape(-1)
 
         else:
@@ -82,26 +78,19 @@ class MlvlPointGenerator:
                     dtype=torch.float32,
                     device='cuda',
                     with_stride=False):
-        """Generate grid points of multiple feature levels.
+        """生成多层级的先验点.
 
         Args:
-            featmap_sizes (list[tuple]): List of feature map sizes in
-                multiple feature levels, each size arrange as
-                as (h, w).
-            dtype (:obj:`dtype`): Dtype of priors. Default: torch.float32.
-            device (str): The device where the anchors will be put on.
-            with_stride (bool): Whether to concatenate the stride to
-                the last dimension of points.
+            featmap_sizes (list[tuple]): 多层级的特征图大小, [[h, w],] * num_level.
+            dtype (:obj:`dtype`): priors的类型. Default: torch.float32.
+            device (str): 在该设备上生成priors.
+            with_stride (bool): 是否将stride合并到先验点的坐标上去.
 
         Return:
-            list[torch.Tensor]: Points of  multiple feature levels.
-            The sizes of each tensor should be (N, 2) when with stride is
-            ``False``, where N = width * height, width and height
-            are the sizes of the corresponding feature level,
-            and the last dimension 2 represent (coord_x, coord_y),
-            otherwise the shape should be (N, 4),
-            and the last dimension 4 represent
-            (coord_x, coord_y, stride_w, stride_h).
+            list[torch.Tensor]: 多个特征图上的先验点. 默认:[[h*w, 2],] * num_level
+            当with_stride为 False 时, [h*w, 2], 2 -> [x, y]
+            当with_stride为 True 时, [h*w, 4], 4 -> [x, y, stride_w, stride_h]
+                priors中心偏移grid左上角offset*(stride_h/w)/2个单位像素.
         """
 
         assert self.num_levels == len(featmap_sizes)
@@ -122,49 +111,40 @@ class MlvlPointGenerator:
                                  dtype=torch.float32,
                                  device='cuda',
                                  with_stride=False):
-        """Generate grid Points of a single level.
+        """生成单层特征图上的网格点.
 
-        Note:
-            This function is usually called by method ``self.grid_priors``.
+        注意:
+            此函数通常由方法 ``self.grid_priors`` 调用.
 
         Args:
-            featmap_size (tuple[int]): Size of the feature maps, arrange as
-                (h, w).
-            level_idx (int): The index of corresponding feature map level.
-            dtype (:obj:`dtype`): Dtype of priors. Default: torch.float32.
-            device (str, optional): The device the tensor will be put on.
-                Defaults to 'cuda'.
-            with_stride (bool): Concatenate the stride to the last dimension
-                of points.
+            featmap_size (tuple[int]): 特征图的大小, 表示为[h, w].
+            level_idx (int): 对应特征图的索引.
+            dtype (:obj:`dtype`): priors的类型. 默认: torch.float32.
+            device (str, optional): 在该设备上生成priors.
+            with_stride (bool): 是否将stride与prior中心坐标合并到一起.
 
         Return:
-            Tensor: Points of single feature levels.
-            The shape of tensor should be (N, 2) when with stride is
-            ``False``, where N = width * height, width and height
-            are the sizes of the corresponding feature level,
-            and the last dimension 2 represent (coord_x, coord_y),
-            otherwise the shape should be (N, 4),
-            and the last dimension 4 represent
-            (coord_x, coord_y, stride_w, stride_h).
+            Tensor: 单个特征图上的先验点,偏移grid左上角offset*(stride_h/w)/2个单位像素.
+            当with_stride为 False 时, Tensor的形状应为 (h*w, 2), 2 代表 (x, y),
+            当with_stride为 True 时, Tensor的形状应为 (h*w, 4),
+            4 代表 (x, y, stride_w, stride_h).
         """
         feat_h, feat_w = featmap_size
         stride_w, stride_h = self.strides[level_idx]
         shift_x = (torch.arange(0, feat_w, device=device) +
                    self.offset) * stride_w
-        # keep featmap_size as Tensor instead of int, so that we
-        # can convert to ONNX correctly
+        # 让shift_x保持为Tensor 而非int, 是为了我们可以正确的转换到ONNX
         shift_x = shift_x.to(dtype)
 
         shift_y = (torch.arange(0, feat_h, device=device) +
                    self.offset) * stride_h
-        # keep featmap_size as Tensor instead of int, so that we
-        # can convert to ONNX correctly
+        # 同上
         shift_y = shift_y.to(dtype)
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
         if not with_stride:
             shifts = torch.stack([shift_xx, shift_yy], dim=-1)
         else:
-            # use `shape[0]` instead of `len(shift_xx)` for ONNX export
+            # 进行 ONNX 导出时,使用 shape[0] 而不是 len(shift_xx)
             stride_w = shift_xx.new_full((shift_xx.shape[0], ),
                                          stride_w).to(dtype)
             stride_h = shift_xx.new_full((shift_yy.shape[0], ),

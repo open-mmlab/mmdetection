@@ -17,10 +17,9 @@ class DETR(SingleStageDetector):
                  bbox_head,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None,
                  init_cfg=None):
         super(DETR, self).__init__(backbone, None, bbox_head, train_cfg,
-                                   test_cfg, pretrained, init_cfg)
+                                   test_cfg, init_cfg)
 
     # over-write `forward_dummy` because:
     # the forward of bbox_head requires img_metas

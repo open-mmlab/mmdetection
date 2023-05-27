@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/default_runtime.py', '../_base_/datasets/coco_detection.py'
+    '../_base_/default_runtime.py', '../_base_/datasets/yexi_detection.py'
 ]
 
 # model settings
@@ -15,7 +15,7 @@ model = dict(
     neck=None,
     bbox_head=dict(
         type='CornerHead',
-        num_classes=80,
+        num_classes=15,
         in_channels=256,
         num_feat_levels=2,
         corner_emb_channels=1,

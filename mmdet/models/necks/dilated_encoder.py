@@ -52,17 +52,16 @@ class Bottleneck(nn.Module):
 class DilatedEncoder(nn.Module):
     """Dilated Encoder for YOLOF <https://arxiv.org/abs/2103.09460>`.
 
-    This module contains two types of components:
-        - the original FPN lateral convolution layer and fpn convolution layer,
-              which are 1x1 conv + 3x3 conv
-        - the dilated residual block
+    该模块包含两种类型的组件:
+        - 原始的FPN横向升降维卷积层(1x1 conv)和fpn卷积层(3x3 conv),
+        - 几个含有dilation参数的残差块
 
     Args:
-        in_channels (int): The number of input channels.
-        out_channels (int): The number of output channels.
-        block_mid_channels (int): The number of middle block output channels
-        num_residual_blocks (int): The number of residual blocks.
-        block_dilations (list): The list of residual blocks dilation.
+        in_channels (int): 输入通道数.
+        out_channels (int): 输入通道数.
+        block_mid_channels (int): 中间block的输出通道数
+        num_residual_blocks (int): 残差块数量.
+        block_dilations (list): 各个残差块中dilation参数.
     """
 
     def __init__(self, in_channels, out_channels, block_mid_channels,

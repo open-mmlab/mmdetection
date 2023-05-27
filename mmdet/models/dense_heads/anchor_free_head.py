@@ -19,26 +19,22 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
     """Anchor-free head (FCOS, Fovea, RepPoints, etc.).
 
     Args:
-        num_classes (int): Number of categories excluding the background
-            category.
-        in_channels (int): Number of channels in the input feature map.
-        feat_channels (int): Number of hidden channels. Used in child classes.
-        stacked_convs (int): Number of stacking convs of the head.
-        strides (tuple): Downsample factor of each feature map.
-        dcn_on_last_conv (bool): If true, use dcn in the last layer of
-            towers. Default: False.
-        conv_bias (bool | str): If specified as `auto`, it will be decided by
-            the norm_cfg. Bias of conv will be set as True if `norm_cfg` is
-            None, otherwise False. Default: "auto".
-        loss_cls (dict): Config of classification loss.
-        loss_bbox (dict): Config of localization loss.
-        bbox_coder (dict): Config of bbox coder. Defaults
-            'DistancePointBBoxCoder'.
-        conv_cfg (dict): Config dict for convolution layer. Default: None.
-        norm_cfg (dict): Config dict for normalization layer. Default: None.
-        train_cfg (dict): Training config of anchor head.
-        test_cfg (dict): Testing config of anchor head.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        num_classes (int): 不包括背景类别的类别数.
+        in_channels (int): 输入特征图中的通道数.
+        feat_channels (int): 隐藏通道数. 用于子类.
+        stacked_convs (int): head部分重复的conv数量.
+        strides (tuple): 各个特征图的下采样倍数.
+        dcn_on_last_conv (bool): If true, 在最后一层使用dcn. Default: False.
+        conv_bias (bool | str): 如果值为 `auto`,将由 norm_cfg 决定. 如果 `norm_cfg` 为 None,
+            则 conv 的偏差将设置为 True, 否则False. Default: "auto".
+        loss_cls (dict): 分类损失的配置.
+        loss_bbox (dict): 回归损失的配置.
+        bbox_coder (dict): box的编解码配置. Default 'DistancePointBBoxCoder'.
+        conv_cfg (dict): 卷积层的配置字典. Default: None.
+        norm_cfg (dict): norm层的配置字典. Default: None.
+        train_cfg (dict): head的训练配置.
+        test_cfg (dict): head的测试配置.
+        init_cfg (dict or list[dict], optional): 参数初始化配置字典.
     """  # noqa: W605
 
     _version = 1
@@ -92,8 +88,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
 
         self.prior_generator = MlvlPointGenerator(strides)
 
-        # In order to keep a more general interface and be consistent with
-        # anchor_head. We can think of point like one anchor
+        # 为了保持更通用的接口,和anchor_head保持一致. 我们可以把点想成单个anchor
         self.num_base_priors = self.prior_generator.num_base_priors[0]
 
         self.train_cfg = train_cfg
@@ -105,13 +100,13 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         self._init_layers()
 
     def _init_layers(self):
-        """Initialize layers of the head."""
+        """初始化各层结构."""
         self._init_cls_convs()
         self._init_reg_convs()
         self._init_predictor()
 
     def _init_cls_convs(self):
-        """Initialize classification conv layers of the head."""
+        """初始化分类卷积层."""
         self.cls_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
             chn = self.in_channels if i == 0 else self.feat_channels
@@ -131,7 +126,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                     bias=self.conv_bias))
 
     def _init_reg_convs(self):
-        """Initialize bbox regression conv layers of the head."""
+        """初始化回归卷积层."""
         self.reg_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
             chn = self.in_channels if i == 0 else self.feat_channels
@@ -151,7 +146,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                     bias=self.conv_bias))
 
     def _init_predictor(self):
-        """Initialize predictor layers of the head."""
+        """初始化预测层."""
         self.conv_cls = nn.Conv2d(
             self.feat_channels, self.cls_out_channels, 3, padding=1)
         self.conv_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
@@ -213,15 +208,14 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         return multi_apply(self.forward_single, feats)[:2]
 
     def forward_single(self, x):
-        """Forward features of a single scale level.
+        """单层级上的前向传播.
 
         Args:
-            x (Tensor): FPN feature maps of the specified stride.
+            x (Tensor): 指定stride的 FPN 特征图.
 
         Returns:
-            tuple: Scores for each class, bbox predictions, features
-                after classification and regression conv layers, some
-                models needs these features like FCOS.
+            tuple: 最终预测的cls, reg,以及分类卷积后的分类特征图,回归卷积后的回归特征图,
+                一些模型需要这些返回值,如 FCOS.
         """
         cls_feat = x
         reg_feat = x

@@ -12,7 +12,7 @@ from ..utils import ResLayer
 
 
 class BasicBlock(BaseModule):
-    expansion = 1
+    expansion = 1  # 代表了该block中最后一个卷积个数是第一个卷积个数的几倍
 
     def __init__(self,
                  inplanes,
@@ -95,7 +95,7 @@ class BasicBlock(BaseModule):
 
 
 class Bottleneck(BaseModule):
-    expansion = 4
+    expansion = 4  # 代表了该block中最后一个卷积个数是第一个卷积个数的几倍
 
     def __init__(self,
                  inplanes,
@@ -307,41 +307,44 @@ class ResNet(BaseModule):
     """ResNet backbone.
 
     Args:
-        depth (int): Depth of resnet, from {18, 34, 50, 101, 152}.
-        stem_channels (int | None): Number of stem channels. If not specified,
-            it will be the same as `base_channels`. Default: None.
-        base_channels (int): Number of base channels of res layer. Default: 64.
-        in_channels (int): Number of input image channels. Default: 3.
-        num_stages (int): Resnet stages. Default: 4.
-        strides (Sequence[int]): Strides of the first block of each stage.
-        dilations (Sequence[int]): Dilation of each stage.
-        out_indices (Sequence[int]): Output from which stages.
-        style (str): `pytorch` or `caffe`. If set to "pytorch", the stride-two
-            layer is the 3x3 conv layer, otherwise the stride-two layer is
-            the first 1x1 conv layer.
-        deep_stem (bool): Replace 7x7 conv in input stem with 3 3x3 conv
-        avg_down (bool): Use AvgPool instead of stride conv when
-            downsampling in the bottleneck.
-        frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
-            -1 means not freezing any parameters.
-        norm_cfg (dict): Dictionary to construct and config norm layer.
-        norm_eval (bool): Whether to set norm layers to eval mode, namely,
-            freeze running stats (mean and var). Note: Effect on Batch Norm
-            and its variants only.
-        plugins (list[dict]): List of plugins for stages, each dict contains:
-
-            - cfg (dict, required): Cfg dict to build plugin.
-            - position (str, required): Position inside block to insert
-              plugin, options are 'after_conv1', 'after_conv2', 'after_conv3'.
-            - stages (tuple[bool], optional): Stages to apply plugin, length
-              should be same as 'num_stages'.
-        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
-            memory while slowing down the training speed.
-        zero_init_residual (bool): Whether to use zero init for last norm layer
-            in resblocks to let them behave as identity.
-        pretrained (str, optional): model pretrained path. Default: None
-        init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
+        depth (int): resnet的深度, 可选 {18, 34, 50, 101, 152}.
+        stem_channels (int | None): deep_stem参数为True时,self.stem的输出通道数.
+            如果为None时,它将与 `base_channels` 相同. 默认: None.
+        base_channels (int): res layer的基本通道数. 默认: 64.
+        in_channels (int): 输入图像通道数. 默认: 3.
+        num_stages (int): Resnet的stage一共4个,该参数表示实际使用前n个. 默认: 4.
+        strides (Sequence[int]): 每个阶段的第一个block的下采样倍数.
+            默认为(1, 2, 2, 2),第1阶段的stride为1是由于该阶段的下采样
+            由maxpool完成而非卷积.除此之外以res18/34为例,每阶段的下采样
+            都是在第一个block的第一个卷积完成.而在res50/101/152中则是由第一个block的
+            第二个卷积完成(默认pytorch模式,caffe模式则由第一个卷积完成)
+        dilations (Sequence[int]): 每个阶段的卷积膨胀倍数.
+        out_indices (Sequence[int]): 哪些阶段(0-base)的特征图会被输出.默认(0,1,2,3)
+        style (str): 卷积下采样模式,可选`pytorch` 或 `caffe`.
+            "pytorch"时, 下采样在3x3的卷积上, `caffe`时在第一个1x1卷积上.
+        deep_stem (bool): 是否用 3个3x3 conv 替换conv1中的 7x7 conv.
+            ResNet的魔改版本ResNetV1d就使用了该操作.
+        avg_down (bool): 在shortcut路径上,用AvgPool来代替stride=2的卷积做下采样.
+        frozen_stages (int): 要冻结的前n个stage数 (该stage的参数不记录梯度以及处于eval模式).
+            -1 表示不冻结任何参数.
+        norm_cfg (dict): 构造和配置norm layer的字典.
+        norm_eval (bool): 是否将norm layer设置为eval模式, 也即,停止统计均值和方差.
+            注意: 仅对 BN 及其变体产生影响.
+        dcn(dict|None): DCN的配置文件, 默认不采用.
+        stage_with_dcn(Sequence[bool]): 指定每个阶段是否采用DCN.
+            默认为(False, False, False, False)
+        plugins (list[dict]): 各阶段插件列表, 每个字典包含:
+            - cfg (dict, required): 构建插件的字典.
+            - position (str, required): 插件插入block内的位置,
+              可选 'after_conv1', 'after_conv2', 'after_conv3'.
+            - stages (tuple[bool], optional): 应用插件的阶段,长度应与“num_stages”相同.
+        with_cp (bool): 是否采用torch.utils.checkpoint.checkpoint方法.
+            在减慢训练速度的同时节省一些内存.在前向传播时不保存中间激活值,仅保存各个节点的input.
+            在反向传播时需要哪个节点的梯度再临时由input与function计算所需的梯度.
+        zero_init_residual (bool): 在论文(https://arxiv.org/pdf/1812.01187.pdf)中
+            提到的迁移训练时的小技巧,将所有残差块中的最后一个batchnorm的可训练参数 γ 和 β
+            初始化设置成0,这样残差块的输出就等于输入,更有利于训练.
+        init_cfg (dict or list[dict], optional): 权重初始化配置字典. 默认: None
 
     Example:
         >>> from mmdet.models import ResNet
@@ -387,7 +390,6 @@ class ResNet(BaseModule):
                  plugins=None,
                  with_cp=False,
                  zero_init_residual=True,
-                 pretrained=None,
                  init_cfg=None):
         super(ResNet, self).__init__(init_cfg)
         self.zero_init_residual = zero_init_residual
@@ -395,35 +397,26 @@ class ResNet(BaseModule):
             raise KeyError(f'invalid depth {depth} for resnet')
 
         block_init_cfg = None
-        assert not (init_cfg and pretrained), \
-            'init_cfg and pretrained cannot be specified at the same time'
-        if isinstance(pretrained, str):
-            warnings.warn('DeprecationWarning: pretrained is deprecated, '
-                          'please use "init_cfg" instead')
-            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
-        elif pretrained is None:
-            if init_cfg is None:
-                self.init_cfg = [
-                    dict(type='Kaiming', layer='Conv2d'),
-                    dict(
+        if init_cfg is None:
+            self.init_cfg = [
+                dict(type='Kaiming', layer='Conv2d'),
+                dict(
+                    type='Constant',
+                    val=1,
+                    layer=['_BatchNorm', 'GroupNorm'])
+            ]
+            block = self.arch_settings[depth][0]
+            if self.zero_init_residual:
+                if block is BasicBlock:
+                    block_init_cfg = dict(
                         type='Constant',
-                        val=1,
-                        layer=['_BatchNorm', 'GroupNorm'])
-                ]
-                block = self.arch_settings[depth][0]
-                if self.zero_init_residual:
-                    if block is BasicBlock:
-                        block_init_cfg = dict(
-                            type='Constant',
-                            val=0,
-                            override=dict(name='norm2'))
-                    elif block is Bottleneck:
-                        block_init_cfg = dict(
-                            type='Constant',
-                            val=0,
-                            override=dict(name='norm3'))
-        else:
-            raise TypeError('pretrained must be a str or None')
+                        val=0,
+                        override=dict(name='norm2'))
+                elif block is Bottleneck:
+                    block_init_cfg = dict(
+                        type='Constant',
+                        val=0,
+                        override=dict(name='norm3'))
 
         self.depth = depth
         if stem_channels is None:
@@ -454,10 +447,10 @@ class ResNet(BaseModule):
         self.stage_blocks = stage_blocks[:num_stages]
         self.inplanes = stem_channels
 
-        self._make_stem_layer(in_channels, stem_channels)
+        self._make_stem_layer(in_channels, stem_channels)  # conv1
 
         self.res_layers = []
-        for i, num_blocks in enumerate(self.stage_blocks):
+        for i, num_blocks in enumerate(self.stage_blocks):  # conv2/3/4/5_x
             stride = strides[i]
             dilation = dilations[i]
             dcn = self.dcn if self.stage_with_dcn[i] else None
@@ -481,7 +474,7 @@ class ResNet(BaseModule):
                 dcn=dcn,
                 plugins=stage_plugins,
                 init_cfg=block_init_cfg)
-            self.inplanes = planes * self.block.expansion
+            self.inplanes = planes * self.block.expansion  # 下一个ResLayer的输入维度
             layer_name = f'layer{i + 1}'
             self.add_module(layer_name, res_layer)
             self.res_layers.append(layer_name)
@@ -629,7 +622,7 @@ class ResNet(BaseModule):
                 param.requires_grad = False
 
     def forward(self, x):
-        """Forward function."""
+        """前向传播."""
         if self.deep_stem:
             x = self.stem(x)
         else:
@@ -662,9 +655,10 @@ class ResNetV1d(ResNet):
     r"""ResNetV1d variant described in `Bag of Tricks
     <https://arxiv.org/pdf/1812.01187.pdf>`_.
 
-    Compared with default ResNet(ResNetV1b), ResNetV1d replaces the 7x7 conv in
-    the input stem with three 3x3 convs. And in the downsampling block, a 2x2
-    avg_pool with stride 2 is added before conv, whose stride is changed to 1.
+    与默认的 ResNet(ResNetV1b) 相比,ResNetV1d 将输入 stem 中的 7x7 conv
+    替换为三个 3x3 conv. 并且在down_sample(stride!=1 或 in_c != out_c)中,
+    在 conv(升降维或者升降维+下采样) 之前添加了一个stride与kernel_size同时
+    为(如果进行下采样则为2否则为1)的avg_pool,并且其后续卷积步长固定为1.
     """
 
     def __init__(self, **kwargs):

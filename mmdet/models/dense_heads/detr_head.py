@@ -22,29 +22,21 @@ class DETRHead(AnchorFreeHead):
     <https://arxiv.org/pdf/2005.12872>`_ for details.
 
     Args:
-        num_classes (int): Number of categories excluding the background.
-        in_channels (int): Number of channels in the input feature map.
-        num_query (int): Number of query in Transformer.
-        num_reg_fcs (int, optional): Number of fully-connected layers used in
-            `FFN`, which is then used for the regression head. Default 2.
-        transformer (obj:`mmcv.ConfigDict`|dict): Config for transformer.
-            Default: None.
+        num_classes (int): 不包括背景类的总类别数.
+        in_channels (int): 输入特征图的通道数.
+        num_query (int): Transformer 中的query数量.
+        num_reg_fcs (int, optional): 用于head reg的维度. 默认为2.
+        transformer (obj:`mmcv.ConfigDict`|dict): transformer配置.
         sync_cls_avg_factor (bool): Whether to sync the avg_factor of
-            all ranks. Default to False.
+            all ranks. 默认False.
         positional_encoding (obj:`mmcv.ConfigDict`|dict):
-            Config for position encoding.
-        loss_cls (obj:`mmcv.ConfigDict`|dict): Config of the
-            classification loss. Default `CrossEntropyLoss`.
-        loss_bbox (obj:`mmcv.ConfigDict`|dict): Config of the
-            regression loss. Default `L1Loss`.
-        loss_iou (obj:`mmcv.ConfigDict`|dict): Config of the
-            regression iou loss. Default `GIoULoss`.
-        tran_cfg (obj:`mmcv.ConfigDict`|dict): Training config of
-            transformer head.
-        test_cfg (obj:`mmcv.ConfigDict`|dict): Testing config of
-            transformer head.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
+            位置编码的配置信息.
+        loss_cls (obj:`mmcv.ConfigDict`|dict): cls loss的配置. 默认CE.
+        loss_bbox (obj:`mmcv.ConfigDict`|dict): reg loss的配置. 默认L1Loss.
+        loss_iou (obj:`mmcv.ConfigDict`|dict): iou loss的配置. 默认GIoULoss.
+        tran_cfg (obj:`mmcv.ConfigDict`|dict): transformer head的训练配置.
+        test_cfg (obj:`mmcv.ConfigDict`|dict): transformer head的测试配置.
+        init_cfg (dict or list[dict], optional): 权重初始化信息.
     """
 
     _version = 2
@@ -89,14 +81,13 @@ class DETRHead(AnchorFreeHead):
             assert isinstance(class_weight, float), 'Expected ' \
                 'class_weight to have type float. Found ' \
                 f'{type(class_weight)}.'
-            # NOTE following the official DETR rep0, bg_cls_weight means
-            # relative classification weight of the no-object class.
+            # 表示no-object(背景)类的相对分类权重
             bg_cls_weight = loss_cls.get('bg_cls_weight', class_weight)
             assert isinstance(bg_cls_weight, float), 'Expected ' \
                 'bg_cls_weight to have type float. Found ' \
                 f'{type(bg_cls_weight)}.'
             class_weight = torch.ones(num_classes + 1) * class_weight
-            # set background class as the last indice
+            # 设置背景类的分类权重
             class_weight[num_classes] = bg_cls_weight
             loss_cls.update({'class_weight': class_weight})
             if 'bg_cls_weight' in loss_cls:
@@ -224,24 +215,21 @@ class DETRHead(AnchorFreeHead):
         return multi_apply(self.forward_single, feats, img_metas_list)
 
     def forward_single(self, x, img_metas):
-        """"Forward function for a single feature level.
+        """单层级上的前向传播.
 
         Args:
-            x (Tensor): Input feature from backbone's single stage, shape
-                [bs, c, h, w].
-            img_metas (list[dict]): List of image information.
+            x (Tensor): [bs, c, h, w].
+            img_metas (list[dict]): [img_info, ] * bs.
 
         Returns:
-            all_cls_scores (Tensor): Outputs from the classification head,
-                shape [nb_dec, bs, num_query, cls_out_channels]. Note
-                cls_out_channels should includes background.
-            all_bbox_preds (Tensor): Sigmoid outputs from the regression
-                head with normalized coordinate format (cx, cy, w, h).
-                Shape [nb_dec, bs, num_query, 4].
+            all_cls_scores (Tensor): [max_det, bs, num_query, nc+1].
+            all_bbox_preds (Tensor): 经过Sigmoid的reg输出, shape为
+                [max_det, bs, num_query, 4]. 格式为[x, y, w, h]
         """
-        # construct binary masks which used for the transformer.
-        # NOTE following the official DETR repo, non-zero values representing
-        # ignored positions, while zero values means valid positions.
+        # 构造用于transformer的mask.非零值表示被忽略的位置,而零值表示有效位置.
+        # 因为img_shape表示Resize后的图像尺寸,而collect_fn为了将batch内所有
+        # 图像对齐,会在较小图像右下角填充padding,这里的mask是为了保证padding区域
+        # 为无效区域
         batch_size = x.size(0)
         input_img_h, input_img_w = img_metas[0]['batch_input_shape']
         masks = x.new_ones((batch_size, input_img_h, input_img_w))
@@ -251,11 +239,12 @@ class DETRHead(AnchorFreeHead):
 
         x = self.input_proj(x)
         # interpolate masks to have the same spatial shape with x
+        # [bs, batch_h, batch_w] -> [bs, batch_h/32, batch_w/32], 注意向上取整
         masks = F.interpolate(
             masks.unsqueeze(1), size=x.shape[-2:]).to(torch.bool).squeeze(1)
-        # position encoding
-        pos_embed = self.positional_encoding(masks)  # [bs, embed_dim, h, w]
-        # outs_dec: [nb_dec, bs, num_query, embed_dim]
+        # 位置编码 [bs, 2*(num_feats/2)*2, batch_h/32, batch_w/32].
+        pos_embed = self.positional_encoding(masks)
+        # [max_det, bs, num_query, embed_dim]
         outs_dec, _ = self.transformer(x, masks, self.query_embedding.weight,
                                        pos_embed)
 

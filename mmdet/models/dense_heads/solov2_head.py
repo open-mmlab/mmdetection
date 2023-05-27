@@ -20,22 +20,17 @@ class MaskFeatModule(BaseModule):
     Instance Segmentation. <https://arxiv.org/pdf/2003.10152>`_
 
     Args:
-        in_channels (int): Number of channels in the input feature map.
-        feat_channels (int): Number of hidden channels of the mask feature
-             map branch.
-        start_level (int): The starting feature map level from RPN that
-             will be used to predict the mask feature map.
-        end_level (int): The ending feature map level from rpn that
-             will be used to predict the mask feature map.
-        out_channels (int): Number of output channels of the mask feature
-             map branch. This is the channel count of the mask
+        in_channels (int): 输入特征图中的通道数.
+        feat_channels (int): mask feature map分支的隐藏通道数.
+        start_level (int): 来自 RPN 的起始特征图索引,将从该索引开始用于mask feature map.
+        end_level (int): 来自 RPN 的截至特征图索引,将到该索引为止用于mask feature map.
+        out_channels (int): mask feature map branch的输出通道数. This is the channel count of the mask
              feature map that to be dynamically convolved with the predicted
              kernel.
-        mask_stride (int): Downsample factor of the mask feature map output.
-            Default: 4.
-        conv_cfg (dict): Config dict for convolution layer. Default: None.
-        norm_cfg (dict): Config dict for normalization layer. Default: None.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        mask_stride (int): mask feature map 输出的下采样因子. 默认: 4.
+        conv_cfg (dict): conv层的配置. 默认: None.
+        norm_cfg (dict): norm层的配置. 默认: None.
+        init_cfg (dict or list[dict], optional): 权重的初始化配置.
     """
 
     def __init__(self,
@@ -155,15 +150,12 @@ class SOLOV2Head(SOLOHead):
     Segmentation. <https://arxiv.org/pdf/2003.10152>`_
 
     Args:
-        mask_feature_head (dict): Config of SOLOv2MaskFeatHead.
+        mask_feature_head (dict): SOLOv2MaskFeatHead的配置项.
         dynamic_conv_size (int): Dynamic Conv kernel size. Default: 1.
-        dcn_cfg (dict): Dcn conv configurations in kernel_convs and cls_conv.
-            default: None.
-        dcn_apply_to_all_conv (bool): Whether to use dcn in every layer of
-            kernel_convs and cls_convs, or only the last layer. It shall be set
-            `True` for the normal version of SOLOv2 and `False` for the
-            light-weight version. default: True.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        dcn_cfg (dict): kernel_conv 和 cls_conv中的DCN配置项.默认: None.
+        dcn_apply_to_all_conv (bool): 在kernel_conv和cls_conv的每一层都使用dcn,
+            还是只在最后一层使用,在SOLOv2-Light上为False. 默认: True.
+        init_cfg (dict or list[dict], optional): 权重初始化配置.
     """
 
     def __init__(self,
@@ -192,7 +184,7 @@ class SOLOV2Head(SOLOHead):
 
         super().__init__(*args, init_cfg=init_cfg, **kwargs)
 
-        # update the in_channels of mask_feature_head
+        # 更新mask_feature_head的in_channels, 不理解这段代码有何意义
         if mask_feature_head.get('in_channels', None) is not None:
             if mask_feature_head.in_channels != self.in_channels:
                 warnings.warn('The `in_channels` of SOLOv2MaskFeatHead and '
@@ -213,6 +205,7 @@ class SOLOV2Head(SOLOHead):
         conv_cfg = None
         for i in range(self.stacked_convs):
             if self.with_dcn:
+                # 是否在整个head区域都适用DCN还是仅在最后一层卷积适用
                 if self.dcn_apply_to_all_conv:
                     conv_cfg = self.dcn_cfg
                 elif i == self.stacked_convs - 1:
@@ -252,6 +245,7 @@ class SOLOV2Head(SOLOHead):
     @auto_fp16()
     def forward(self, feats):
         assert len(feats) == self.num_levels
+        # mask_feature_head默认配置下仅利用了前四层,[bs, out_c, batch_h//4, batch_w//4]
         mask_feats = self.mask_feature_head(feats)
         feats = self.resize_feats(feats)
         mlvl_kernel_preds = []
@@ -295,37 +289,29 @@ class SOLOV2Head(SOLOHead):
                             gt_labels,
                             gt_masks,
                             featmap_size=None):
-        """Compute targets for predictions of single image.
+        """计算单张图像的拟合目标.
 
         Args:
-            gt_bboxes (Tensor): Ground truth bbox of each instance,
-                shape (num_gts, 4).
-            gt_labels (Tensor): Ground truth label of each instance,
-                shape (num_gts,).
-            gt_masks (Tensor): Ground truth mask of each instance,
-                shape (num_gts, h, w).
-            featmap_sizes (:obj:`torch.size`): Size of UNified mask
-                feature map used to generate instance segmentation
-                masks by dynamic convolution, each element means
-                (feat_h, feat_w). Default: None.
+            gt_bboxes (Tensor): [num_gts, 4].
+            gt_labels (Tensor): [num_gts, ].
+            gt_masks (Tensor): [num_gts, pad_h, pad_w].
+            featmap_size (:obj:`torch.size`): [batch_h//4, batch_w//4]. 默认: None.
+                注意SOLOv1中,该参数是[[h, w], ] * nl.即v1中不同层级的mask_target尺寸是不同的
+                而v2中是固定为[batch_h//4, batch_w//4],因为Head部分的mask输出是将2~4层级
+                分别上采样至第1层级尺寸[batch_h//4, batch_w//4]再相加到一起的再通过
+                conv1x1_GN_ReLU得到的.所以各层上生成的target_mask尺寸都是一致的.
 
         Returns:
-            Tuple: Usually returns a tuple containing targets for predictions.
+            Tuple: 通常返回一个包含拟合目标的元组.
 
-                - mlvl_pos_mask_targets (list[Tensor]): Each element represent
-                  the binary mask targets for positive points in this
-                  level, has shape (num_pos, out_h, out_w).
-                - mlvl_labels (list[Tensor]): Each element is
-                  classification labels for all
-                  points in this level, has shape
-                  (num_grid, num_grid).
-                - mlvl_pos_masks  (list[Tensor]): Each element is
-                  a `BoolTensor` to represent whether the
-                  corresponding point in single level
-                  is positive, has shape (num_grid **2).
-                - mlvl_pos_indexes  (list[list]): Each element
-                  in the list contains the positive index in
-                  corresponding level, has shape (num_pos).
+                - mlvl_pos_mask_targets (list[Tensor]): 所有层级上正样本的target_mask
+                  [[num_pos_per_img_lvl, batch_h//4, batch_w//4], ] * nl.
+                - mlvl_labels (list[Tensor]): 所有层级上正样本的target_cls
+                  [[num_grid, num_grid], ] * nl.
+                - mlvl_pos_masks  (list[Tensor]): bool值,正样本区域为True(0.2倍gt范围)
+                   [[num_grid**2, ], ] * nl.
+                - mlvl_pos_indexes  (list[list]): 所有层级上正样本区域的一维索引
+                  [[num_pos_per_img_lvl, ], ] * nl.
         """
 
         device = gt_labels.device
@@ -339,7 +325,7 @@ class SOLOV2Head(SOLOHead):
         for (lower_bound, upper_bound), num_grid \
                 in zip(self.scale_ranges, self.num_grids):
             mask_target = []
-            # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+            # 前景: [0, nc), 背景: nc
             pos_index = []
             labels = torch.zeros([num_grid, num_grid],
                                  dtype=torch.int64,
@@ -456,65 +442,77 @@ class SOLOV2Head(SOLOHead):
         """Calculate the loss of total batch.
 
         Args:
-            mlvl_kernel_preds (list[Tensor]): Multi-level dynamic kernel
-                prediction. The kernel is used to generate instance
-                segmentation masks by dynamic convolution. Each element in the
-                list has shape
-                (batch_size, kernel_out_channels, num_grids, num_grids).
-            mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
-                in the list has shape
-                (batch_size, num_classes, num_grids, num_grids).
-            mask_feats (Tensor): Unified mask feature map used to generate
-                instance segmentation masks by dynamic convolution. Has shape
-                (batch_size, mask_out_channels, h, w).
-            gt_labels (list[Tensor]): Labels of multiple images.
-            gt_masks (list[Tensor]): Ground truth masks of multiple images.
-                Each has shape (num_instances, h, w).
-            img_metas (list[dict]): Meta information of multiple images.
-            gt_bboxes (list[Tensor]): Ground truth bboxes of multiple
-                images. Default: None.
+            mlvl_kernel_preds (list[Tensor]): 多层级的动态卷积输出.
+                [[bs, kernel_c, num_grid, num_grid], ] * nl, 其中kernel_c为
+                mask_out_c * dynamic_conv_size**2
+            mlvl_cls_preds (list[Tensor]): 多层级的cls输出.
+                [[bs, nc, num_grid, num_grid], ] * nl
+            mask_feats (Tensor): 该值结合正样本对应的pred_kernel生成最终的pred_mask
+                [bs, mask_out_c, batch_h//4, batch_w//4].
+            gt_labels (list[Tensor]): [[num_gt, ], ] * bs
+            gt_masks (list[Tensor]): [[num_gt, pad_h, pad_w], ] * bs.
+            img_metas (list[dict]): [dict(), ] * bs.
+            gt_bboxes (list[Tensor]): [[num_gt, 4], ] * bs. 默认: None.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
         featmap_size = mask_feats.size()[-2:]
-
+        # [[[num_pos_per_img_lvl, batch_h//4, batch_w//4], ] * nl], ] * bs. 正样本的target_mask
+        # [[[num_grid, num_grid], ] * nl], ] * bs. 样本的target_cls(默认值为nc)
+        # [[[num_grid**2, ], ] * nl], ] * bs. bool值,正样本区域为True(0.2倍gt范围)
+        # [[[num_pos_per_img_lvl, ], ] * nl], ] * bs. 正样本区域的一维索引, ∈[0,h*w)
         pos_mask_targets, labels, pos_masks, pos_indexes = multi_apply(
             self._get_targets_single,
             gt_bboxes,
             gt_labels,
             gt_masks,
             featmap_size=featmap_size)
-
+        # -> [[bs * num_pos_per_img_lvl, batch_h//4, batch_w//4], ] * nl
         mlvl_mask_targets = [
             torch.cat(lvl_mask_targets, 0)
             for lvl_mask_targets in zip(*pos_mask_targets)
         ]
-
+        # 最终成为:[[[kernel_c, num_pos_per_img_lvl], ] * bs, ] * nl
         mlvl_pos_kernel_preds = []
+        # 因为mlvl_kernel_preds是[l0, l1...], 而zip(*pos_indexes)->[l0, l1...]
+        # 所以外层的zip就把这二者合到一起了. l0, l1...代表不同层级的数据.
         for lvl_kernel_preds, lvl_pos_indexes in zip(mlvl_kernel_preds,
                                                      zip(*pos_indexes)):
             lvl_pos_kernel_preds = []
+            # 在单层级上循环不同img上的pred_kernel, pos_index
             for img_lvl_kernel_preds, img_lvl_pos_indexes in zip(
                     lvl_kernel_preds, lvl_pos_indexes):
+                # [kernel_c, num_grid, num_grid] -> [kernel_c, num_grid**2]
+                # 获取正样本区域位置所对应的pred_kernel
                 img_lvl_pos_kernel_preds = img_lvl_kernel_preds.view(
                     img_lvl_kernel_preds.shape[0], -1)[:, img_lvl_pos_indexes]
                 lvl_pos_kernel_preds.append(img_lvl_pos_kernel_preds)
             mlvl_pos_kernel_preds.append(lvl_pos_kernel_preds)
 
-        # make multilevel mlvl_mask_pred
+        # 生成多层级上的pred_mask
         mlvl_mask_preds = []
         for lvl_pos_kernel_preds in mlvl_pos_kernel_preds:
             lvl_mask_preds = []
             for img_id, img_lvl_pos_kernel_pred in enumerate(
                     lvl_pos_kernel_preds):
+                # 如果当前层级当前图像上没有正样本,则跳过
                 if img_lvl_pos_kernel_pred.size()[-1] == 0:
                     continue
+                # [1, mask_out_c, batch_h//4, batch_w//4]. 在切片操作上[i]等价于i:i+1
                 img_mask_feats = mask_feats[[img_id]]
                 h, w = img_mask_feats.shape[-2:]
+                # 正样本个数
                 num_kernel = img_lvl_pos_kernel_pred.shape[1]
+                # F.conv2d(input, weight, stride=1), 此处相当于对输入做了一个s=1的卷积操作
+                # 这个卷积的核大小是固定的,输出维度等于正样本数量,具体参数则是网络预测的
+                # 实际上网络所有层级上num_grid**2都预测了,最终是挑选正样本位置的预测
+                # 再将其reshape成与img_mask_feats适配的shape与其进行卷积操作.
+                # 最终view得到[1*num_pos_per_img_lvl, batch_h//4, batch_w//4]
                 img_lvl_mask_pred = F.conv2d(
                     img_mask_feats,
+                    # [kernel_c, num_pos_per_img_lvl] -> [num_pos_per_img_lvl, kernel_c]
+                    # [num_pos_per_img_lvl, mask_out_c, dynamic_conv_size, dynamic_conv_size]
                     img_lvl_pos_kernel_pred.permute(1, 0).view(
                         num_kernel, -1, self.dynamic_conv_size,
                         self.dynamic_conv_size),
@@ -524,17 +522,19 @@ class SOLOV2Head(SOLOHead):
                 lvl_mask_preds = None
             else:
                 lvl_mask_preds = torch.cat(lvl_mask_preds, 0)
+            # [[bs * num_pos_per_img_lvl, batch_h//4, batch_w//4], ] * nl
             mlvl_mask_preds.append(lvl_mask_preds)
-        # dice loss
+        # dice loss, 统计batch张数据所有层级上正样本数量
         num_pos = 0
         for img_pos_masks in pos_masks:
             for lvl_img_pos_masks in img_pos_masks:
                 num_pos += lvl_img_pos_masks.count_nonzero()
 
         loss_mask = []
+        # mlvl_mask_targets: [[bs*num_pos_per_img_lvl, batch_h//4, batch_w//4], ] * nl
         for lvl_mask_preds, lvl_mask_targets in zip(mlvl_mask_preds,
                                                     mlvl_mask_targets):
-            if lvl_mask_preds is None:
+            if lvl_mask_preds is None:  # 当前层级没有正样本
                 continue
             loss_mask.append(
                 self.loss_mask(
@@ -546,14 +546,14 @@ class SOLOV2Head(SOLOHead):
         else:
             loss_mask = torch.cat(loss_mask).mean()
 
-        # cate
+        # target_cls -> [[bs * num_grid**2, ], ] * nl
         flatten_labels = [
             torch.cat(
                 [img_lvl_labels.flatten() for img_lvl_labels in lvl_labels])
             for lvl_labels in zip(*labels)
         ]
         flatten_labels = torch.cat(flatten_labels)
-
+        # pred_cls -> [[bs*num_grid**2, nc], ] * nl
         flatten_cls_preds = [
             lvl_cls_preds.permute(0, 2, 3, 1).reshape(-1, self.num_classes)
             for lvl_cls_preds in mlvl_cls_preds
@@ -571,29 +571,22 @@ class SOLOV2Head(SOLOHead):
         """Get multi-image mask results.
 
         Args:
-            mlvl_kernel_preds (list[Tensor]): Multi-level dynamic kernel
-                prediction. The kernel is used to generate instance
-                segmentation masks by dynamic convolution. Each element in the
-                list has shape
-                (batch_size, kernel_out_channels, num_grids, num_grids).
-            mlvl_cls_scores (list[Tensor]): Multi-level scores. Each element
-                in the list has shape
-                (batch_size, num_classes, num_grids, num_grids).
-            mask_feats (Tensor): Unified mask feature map used to generate
-                instance segmentation masks by dynamic convolution. Has shape
-                (batch_size, mask_out_channels, h, w).
-            img_metas (list[dict]): Meta information of all images.
+            mlvl_kernel_preds (list[Tensor]): 多层级的动态卷积输出.利用它与mask_feat
+                结合生成最终的pred_mask.[[bs, kernel_c, num_grid, num_grid], ] * nl
+                其中kernel_c为mask_out_c * dynamic_conv_size**2
+            mlvl_cls_scores (list[Tensor]): 多层级的cls输出.
+                [[bs, nc, num_grid, num_grid], ] * nl
+            mask_feats (Tensor): 该值结合mlvl_kernel_preds生成最终的pred_mask
+                [bs, mask_out_c, batch_h//4, batch_w//4].
+            img_metas (list[dict]): [dict(), ] * bs. batch幅图像元信息.
 
         Returns:
-            list[:obj:`InstanceData`]: Processed results of multiple
-            images.Each :obj:`InstanceData` usually contains
-            following keys.
+            list[:obj:`InstanceData`]: 处理后的batch幅图像分割结果.
+            每个都是`InstanceData`数据结构.通常包含以下键.
 
-                - scores (Tensor): Classification scores, has shape
-                  (num_instance,).
-                - labels (Tensor): Has shape (num_instances,).
-                - masks (Tensor): Processed mask results, has
-                  shape (num_instances, h, w).
+                - scores (Tensor): pred_cls_score, [num_instance, ].
+                - labels (Tensor): pred_cls_ind, [num_instance, ].
+                - masks (Tensor): pred_mask, [num_instances, h, w].
         """
         num_levels = len(mlvl_cls_scores)
         assert len(mlvl_kernel_preds) == len(mlvl_cls_scores)
@@ -633,28 +626,22 @@ class SOLOV2Head(SOLOHead):
                             mask_feats,
                             img_meta,
                             cfg=None):
-        """Get processed mask related results of single image.
+        """获取单张图像上处理过的mask预测结果.
 
         Args:
-            kernel_preds (Tensor): Dynamic kernel prediction of all points
-                in single image, has shape
-                (num_points, kernel_out_channels).
-            cls_scores (Tensor): Classification score of all points
-                in single image, has shape (num_points, num_classes).
-            mask_preds (Tensor): Mask prediction of all points in
-                single image, has shape (num_points, feat_h, feat_w).
-            img_meta (dict): Meta information of corresponding image.
-            cfg (dict, optional): Config used in test phase.
-                Default: None.
+            kernel_preds (Tensor): 所有层级所有位置上输出的动态卷积权重,
+                [nl * num_grid**2, kernel_c]
+            cls_scores (Tensor): 所有层级所有位置上的cls输出,[nl * num_grids**2, nc].
+            mask_feats (Tensor): [1, mask_out_c, batch_h//4, batch_w//4].
+            img_meta (dict): 当前图片元信息.
+            cfg (dict, optional): 测试阶段使用的配置.默认: None.
 
         Returns:
-            :obj:`InstanceData`: Processed results of single image.
-             it usually contains following keys.
-                - scores (Tensor): Classification scores, has shape
-                  (num_instance,).
-                - labels (Tensor): Has shape (num_instances,).
-                - masks (Tensor): Processed mask results, has
-                  shape (num_instances, h, w).
+            :obj:`InstanceData`: 单张图像的处理结果.一种储存分割结果的特殊数据结构
+             通常包含以下键.
+                - scores (Tensor): pred_cls_score, [num_instance,].
+                - labels (Tensor): pred_cls_ind, [num_instance,].
+                - masks (Tensor): pred_mask, [num_instances, H, W], 原始图像尺寸.
         """
 
         def empty_results(results, cls_scores):

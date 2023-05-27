@@ -223,12 +223,12 @@ def parse_normalize_cfg(test_pipeline):
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Convert MMDetection models to ONNX')
-    parser.add_argument('config', help='test config file path')
-    parser.add_argument('checkpoint', help='checkpoint file')
-    parser.add_argument('--input-img', type=str, help='Images for input')
+    parser.add_argument('--config', help='test config file path', default=r"D:\mmdetection\configs\solov2\solov2_r50_fpn_1x_coco.py")
+    parser.add_argument('--checkpoint', help='checkpoint file', default=r"D:\mmdetection\tools\work_dirs\solov2_r50_fpn_3x_coco\epoch_36.pth")
+    parser.add_argument('--input-img', type=str, help='Images for input', default=r"D:\Tencent\beach_max\C4_S20220703150000_E20220703150959_320_max.jpg")
     parser.add_argument(
         '--show',
-        action='store_true',
+        action='store_false',
         help='Show onnx graph and detection outputs')
     parser.add_argument('--output-file', type=str, default='tmp.onnx')
     parser.add_argument('--opset-version', type=int, default=11)
@@ -284,7 +284,7 @@ def parse_args():
         help='Whether to export onnx with dynamic axis.')
     parser.add_argument(
         '--skip-postprocess',
-        action='store_true',
+        action='store_false',
         help='Whether to export model without post process. Experimental '
         'option. We do not guarantee the correctness of the exported '
         'model.')

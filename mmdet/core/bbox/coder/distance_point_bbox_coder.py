@@ -8,12 +8,11 @@ from .base_bbox_coder import BaseBBoxCoder
 class DistancePointBBoxCoder(BaseBBoxCoder):
     """Distance Point BBox coder.
 
-    This coder encodes gt bboxes (x1, y1, x2, y2) into (top, bottom, left,
-    right) and decode it back to the original.
+    该类可以将[x1, y1, x2, y2]格式 转为[top, bottom, left, right]格式
+        同时也可以将其转回原来格式.
 
     Args:
-        clip_border (bool, optional): Whether clip the objects outside the
-            border of the image. Defaults to True.
+        clip_border (bool, optional): 是否限制图像边界外的box. Defaults to True.
     """
 
     def __init__(self, clip_border=True):
@@ -21,12 +20,12 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
         self.clip_border = clip_border
 
     def encode(self, points, gt_bboxes, max_dis=None, eps=0.1):
-        """Encode bounding box to distances.
+        """将[x1, y1, x2, y2] -> [top, bottom, left, right].
 
         Args:
-            points (Tensor): Shape (N, 2), The format is [x, y].
-            gt_bboxes (Tensor): Shape (N, 4), The format is "xyxy"
-            max_dis (float): Upper bound of the distance. Default None.
+            points (Tensor): Shape [N, 2], The format is [x, y].
+            gt_bboxes (Tensor): Shape [N, 4], 格式为[x1, y1, x2, y2]
+            max_dis (float): 距离上限. Default None.
             eps (float): a small value to ensure target < max_dis, instead <=.
                 Default 0.1.
 
@@ -39,18 +38,15 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
         return bbox2distance(points, gt_bboxes, max_dis, eps)
 
     def decode(self, points, pred_bboxes, max_shape=None):
-        """Decode distance prediction to bounding box.
+        """将预测的四个方向距离[left, top, right, bottom]转换成[x1, y1, x2, y2].
 
         Args:
-            points (Tensor): Shape (B, N, 2) or (N, 2).
-            pred_bboxes (Tensor): Distance from the given point to 4
-                boundaries (left, top, right, bottom). Shape (B, N, 4)
-                or (N, 4)
+            points (Tensor): Shape [B, N, 2] or [N, 2].
+            pred_bboxes (Tensor): 从points到4个边界的距离[left, top, right, bottom].
+                Shape [B, N, 4] or [N, 4]
             max_shape (Sequence[int] or torch.Tensor or Sequence[
-                Sequence[int]],optional): Maximum bounds for boxes, specifies
-                (H, W, C) or (H, W). If priors shape is (B, N, 4), then
-                the max_shape should be a Sequence[Sequence[int]],
-                and the length of max_shape should also be B.
+                Sequence[int]],optional): box的边界, 指定格式为 [H, W, C] 或 [H, W].
+                如果 points 形状是 (B, N, 4), 那么 max_shape 应该是 [[int,],] * B
                 Default None.
         Returns:
             Tensor: Boxes with shape (N, 4) or (B, N, 4)

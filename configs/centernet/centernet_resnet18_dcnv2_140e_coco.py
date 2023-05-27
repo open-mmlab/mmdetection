@@ -1,8 +1,12 @@
 _base_ = [
-    '../_base_/datasets/coco_detection.py',
+    '../_base_/datasets/yexi_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-
+classes = (
+    'RaggedBeggar', 'DwarfClown', 'LongLeggedClown', 'DartsClown', 'Truffe', 'LightDwarf',
+    'BallClown', 'NakedElderly', 'ChangeClown', 'HostWhite', 'HostBlack', 'StormRider',
+    'Gold', 'Door', 'Close',
+)
 model = dict(
     type='CenterNet',
     backbone=dict(
@@ -13,13 +17,13 @@ model = dict(
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet18')),
     neck=dict(
         type='CTResNetNeck',
-        in_channel=512,
+        in_channel=512,  # 这里对应的backbone为resnet34/18,如果更换为更深则需要更改
         num_deconv_filters=(256, 128, 64),
         num_deconv_kernels=(4, 4, 4),
         use_dcn=True),
     bbox_head=dict(
         type='CenterNetHead',
-        num_classes=80,
+        num_classes=15,
         in_channel=64,
         feat_channel=64,
         loss_center_heatmap=dict(type='GaussianFocalLoss', loss_weight=1.0),
@@ -86,20 +90,21 @@ test_pipeline = [
 ]
 
 dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+data_root = 'd:/mmdetection/data/yexi/'
 
 # Use RepeatDataset to speed up training
 data = dict(
     samples_per_gpu=16,
-    workers_per_gpu=4,
+    workers_per_gpu=8,
     train=dict(
         _delete_=True,
         type='RepeatDataset',
         times=5,
         dataset=dict(
             type=dataset_type,
-            ann_file=data_root + 'annotations/instances_train2017.json',
-            img_prefix=data_root + 'train2017/',
+            ann_file=data_root + 'yexi_train.json',
+            img_prefix=data_root + 'images/',
+            classes=classes,
             pipeline=train_pipeline)),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))

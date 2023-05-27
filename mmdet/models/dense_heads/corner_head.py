@@ -19,16 +19,15 @@ from .dense_test_mixins import BBoxTestMixin
 
 
 class BiCornerPool(BaseModule):
-    """Bidirectional Corner Pooling Module (TopLeft, BottomRight, etc.)
+    """双向Corner Pooling模块(TopLeft, BottomRight, etc.)
 
     Args:
-        in_channels (int): Input channels of module.
-        out_channels (int): Output channels of module.
-        feat_channels (int): Feature channels of module.
-        directions (list[str]): Directions of two CornerPools.
-        norm_cfg (dict): Dictionary to construct and config norm layer.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
+        in_channels (int): 模块输入通道数.
+        out_channels (int): 模块输出通道数.
+        feat_channels (int): 模块特征图通道数.
+        directions (list[str]): 两个 CornerPool 的方向.
+        norm_cfg (dict): 构造和配置norm层的字典.
+        init_cfg (dict or list[dict], optional): 初始化配置字典.默认: None
     """
 
     def __init__(self,
@@ -62,13 +61,17 @@ class BiCornerPool(BaseModule):
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
-        """Forward features from the upstream network.
-
+        """CornerPool的前向传播函数.以下CBL为conv+bn+relu, CB为conv+bn
+        ((x -> 3x3CBL -> top-cornerpool) + (x -> 3x3CBL -> left-cornerpool)
+        -> 3x3CB) + (x -> 1x1CB) -> relu -> 3x3CBL
+        direction1_pool其实就是对x指定维度翻转然后使用cummax函数而已,其中left/top为
+        从左上角向右/下看(需要对x翻转),而right/bottom为从右下角向左/上看(不需要对x翻转).
+        需要注意的是,进行pool完后要记得对x翻转回来(如果需要的话)
         Args:
-            x (tensor): Input feature of BiCornerPool.
+            x (tensor): 输入特征图.
 
         Returns:
-            conv2 (tensor): Output feature of BiCornerPool.
+            conv2 (tensor): 输出特征图.
         """
         direction1_conv = self.direction1_conv(x)
         direction2_conv = self.direction2_conv(x)
@@ -83,36 +86,28 @@ class BiCornerPool(BaseModule):
 
 @HEADS.register_module()
 class CornerHead(BaseDenseHead, BBoxTestMixin):
-    """Head of CornerNet: Detecting Objects as Paired Keypoints.
+    """CornerNet的Head部分.
 
-    Code is modified from the `official github repo
-    <https://github.com/princeton-vl/CornerNet/blob/master/models/py_utils/
-    kp.py#L73>`_ .
+    代码修改自官方代码,<https://github.com/princeton-vl/CornerNet/blob/master/
+    models/py_utils/kp.py#L73>.
 
-    More details can be found in the `paper
-    <https://arxiv.org/abs/1808.01244>`_ .
+    详情参考 <https://arxiv.org/abs/1808.01244>.
 
     Args:
-        num_classes (int): Number of categories excluding the background
-            category.
-        in_channels (int): Number of channels in the input feature map.
-        num_feat_levels (int): Levels of feature from the previous module. 2
-            for HourglassNet-104 and 1 for HourglassNet-52. Because
-            HourglassNet-104 outputs the final feature and intermediate
-            supervision feature and HourglassNet-52 only outputs the final
-            feature. Default: 2.
-        corner_emb_channels (int): Channel of embedding vector. Default: 1.
-        train_cfg (dict | None): Training config. Useless in CornerHead,
-            but we keep this variable for SingleStageDetector. Default: None.
-        test_cfg (dict | None): Testing config of CornerHead. Default: None.
-        loss_heatmap (dict | None): Config of corner heatmap loss. Default:
-            GaussianFocalLoss.
-        loss_embedding (dict | None): Config of corner embedding loss. Default:
+        num_classes (int): 检测类别数.
+        in_channels (int): 输入特征图中的通道数.
+        num_feat_levels (int): 上一个模块的特征层级数. HourglassNet-104为2,
+            HourglassNet-52为1. 因为HourglassNet-104 输出最终和中间特征图,
+            而 HourglassNet-52 只输出最终特征图.
+        corner_emb_channels (int): embedding vector的维度. 默认: 1.
+        train_cfg (dict | None): 训练配置. 在CornerHead中没有使用,
+            此参数的存在仅仅是为了兼容SingleStageDetector.
+        test_cfg (dict | None): CornerHead 的测试配置. 默认: None.
+        loss_heatmap (dict | None): heatmap loss的配置. 默认:GaussianFocalLoss.
+        loss_embedding (dict | None): embedding loss的配置. 默认:
             AssociativeEmbeddingLoss.
-        loss_offset (dict | None): Config of corner offset loss. Default:
-            SmoothL1Loss.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
+        loss_offset (dict | None): offset loss的配置. 默认:SmoothL1Loss.
+        init_cfg (dict or list[dict], optional): 初始化配置字典.默认: None
     """
 
     def __init__(self,
@@ -134,8 +129,7 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                  loss_offset=dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=1),
                  init_cfg=None):
-        assert init_cfg is None, 'To prevent abnormal initialization ' \
-                                 'behavior, init_cfg is not allowed to be set'
+        assert init_cfg is None, '为防止异常初始化行为,不允许设置init_cfg'
         super(CornerHead, self).__init__(init_cfg)
         self.num_classes = num_classes
         self.in_channels = in_channels
@@ -156,17 +150,17 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         self._init_layers()
 
     def _make_layers(self, out_channels, in_channels=256, feat_channels=256):
-        """Initialize conv sequential for CornerHead."""
+        """为 CornerHead 初始化 conv 单元."""
+        # CL3x3 + Conv1x1
         return nn.Sequential(
             ConvModule(in_channels, feat_channels, 3, padding=1),
             ConvModule(
                 feat_channels, out_channels, 1, norm_cfg=None, act_cfg=None))
 
     def _init_corner_kpt_layers(self):
-        """Initialize corner keypoint layers.
+        """初始化keypoint层.
 
-        Including corner heatmap branch and corner offset branch. Each branch
-        has two parts: prefix `tl_` for top-left and `br_` for bottom-right.
+        包括heatmap和offset分支. 每个分支有两个部分: 左上角和右下角.
         """
         self.tl_pool, self.br_pool = nn.ModuleList(), nn.ModuleList()
         self.tl_heat, self.br_heat = nn.ModuleList(), nn.ModuleList()
@@ -201,10 +195,9 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                     in_channels=self.in_channels))
 
     def _init_corner_emb_layers(self):
-        """Initialize corner embedding layers.
+        """初始化embedding层.
 
-        Only include corner embedding branch with two parts: prefix `tl_` for
-        top-left and `br_` for bottom-right.
+        仅包含左上和右下的embedding分支.
         """
         self.tl_emb, self.br_emb = nn.ModuleList(), nn.ModuleList()
 
@@ -219,9 +212,9 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                     in_channels=self.in_channels))
 
     def _init_layers(self):
-        """Initialize layers for CornerHead.
+        """初始化CornerHead.注意,head的权重在不同的层级间并不共享.
 
-        Including two parts: corner keypoint layers and corner embedding layers
+        包括两部分:keypoint层和embedding层
         """
         self._init_corner_kpt_layers()
         if self.with_corner_emb:
@@ -246,61 +239,53 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                 self.br_emb[i][-1].conv.reset_parameters()
 
     def forward(self, feats):
-        """Forward features from the upstream network.
-
+        """
         Args:
-            feats (tuple[Tensor]): Features from the upstream network, each is
-                a 4D-tensor.
+            feats (tuple[Tensor]): 来自HourglassNet-104(默认)的特征,注意CornerNet
+                没有Neck,同时它是list而非tuple格式的数据,[[bs, 256, h, w],] * num_stack.
 
         Returns:
-            tuple: Usually a tuple of corner heatmaps, offset heatmaps and
-            embedding heatmaps.
-                - tl_heats (list[Tensor]): Top-left corner heatmaps for all
-                  levels, each is a 4D-tensor, the channels number is
-                  num_classes.
-                - br_heats (list[Tensor]): Bottom-right corner heatmaps for all
-                  levels, each is a 4D-tensor, the channels number is
-                  num_classes.
-                - tl_embs (list[Tensor] | list[None]): Top-left embedding
-                  heatmaps for all levels, each is a 4D-tensor or None.
-                  If not None, the channels number is corner_emb_channels.
-                - br_embs (list[Tensor] | list[None]): Bottom-right embedding
-                  heatmaps for all levels, each is a 4D-tensor or None.
-                  If not None, the channels number is corner_emb_channels.
-                - tl_offs (list[Tensor]): Top-left offset heatmaps for all
-                  levels, each is a 4D-tensor. The channels number is
-                  corner_offset_channels.
-                - br_offs (list[Tensor]): Bottom-right offset heatmaps for all
-                  levels, each is a 4D-tensor. The channels number is
-                  corner_offset_channels.
+            tuple: 通常是一个heatmap元组,(corner, offset, embedding).
+                - tl_heats (list[Tensor]): 所有层级的左上角热图,
+                    [[bs, num_class, h, w],] * num_stack.
+                - br_heats (list[Tensor]): 所有层级的右下角热图,
+                    [[bs, num_class, h, w],] * num_stack.
+                - tl_embs (list[Tensor] | list[None]): 所有层级的左上角embedding,
+                  [[bs, corner_emb_channels, h, w],] * num_stack.
+                - br_embs (list[Tensor] | list[None]): 所有层级的右下角embedding,
+                  [[bs, corner_emb_channels, h, w],] * num_stack.
+                - tl_offs (list[Tensor]): 所有层级的左上角embedding,
+                  [[bs, corner_offset_channels, h, w],] * num_stack.
+                - br_offs (list[Tensor]): 所有层级的右下角embedding,
+                  [[bs, corner_offset_channels, h, w],] * num_stack.
         """
         lvl_ind = list(range(self.num_feat_levels))
         return multi_apply(self.forward_single, feats, lvl_ind)
 
     def forward_single(self, x, lvl_ind, return_pool=False):
-        """Forward feature of a single level.
+        """单层级的前向传播.
 
+        x -> corner pool -> heat/em/off 最后得到左上/右下各三个分支的输出张量
         Args:
-            x (Tensor): Feature of a single level.
-            lvl_ind (int): Level index of current feature.
-            return_pool (bool): Return corner pool feature or not.
+            x (Tensor): 单层级特征. [bs, in_channel, h, w]
+            lvl_ind (int): 当前特征的层级索引.
+            return_pool (bool): 是否返回corner pool后的特征图.
 
         Returns:
-            tuple[Tensor]: A tuple of CornerHead's output for current feature
-            level. Containing the following Tensors:
+            tuple[Tensor]: 当前层级输出的CornerHead元组. 包含以下张量:
 
-                - tl_heat (Tensor): Predicted top-left corner heatmap.
-                - br_heat (Tensor): Predicted bottom-right corner heatmap.
-                - tl_emb (Tensor | None): Predicted top-left embedding heatmap.
-                  None for `self.with_corner_emb == False`.
-                - br_emb (Tensor | None): Predicted bottom-right embedding
-                  heatmap. None for `self.with_corner_emb == False`.
-                - tl_off (Tensor): Predicted top-left offset heatmap.
-                - br_off (Tensor): Predicted bottom-right offset heatmap.
-                - tl_pool (Tensor): Top-left corner pool feature. Not must
-                  have.
-                - br_pool (Tensor): Bottom-right corner pool feature. Not must
-                  have.
+                - tl_heat (Tensor): 预测的左上corner heatmap.[bs, num_class, h, w]
+                - br_heat (Tensor): 预测的右下corner heatmap.[bs, num_class, h, w]
+                - tl_emb (Tensor | None): 预测的左上corner embedding.
+                    [bs, corner_emb_channels, h, w],`self.with_corner_emb == False`时为None.
+                - br_emb (Tensor | None): 预测的右下corner embedding.
+                    [bs, corner_emb_channels, h, w],`self.with_corner_emb == False`时为None.·
+                - tl_off (Tensor): 预测的左上corner offset.[bs, 2, h, w]
+                - br_off (Tensor): 预测的右下corner offset.[bs, 2, h, w]
+                - tl_pool (Tensor): 左上corner pool后的特征图. 不一定存在.
+                    [bs, in_channel, h, w], 注意corner pool操作不改变输入的维度.
+                - br_pool (Tensor): 右下corner pool后的特征图. 不一定存在.
+                    [bs, in_channel, h, w]
         """
         tl_pool = self.tl_pool[lvl_ind](x)
         tl_heat = self.tl_heat[lvl_ind](tl_pool)
@@ -330,56 +315,38 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                     with_corner_emb=False,
                     with_guiding_shift=False,
                     with_centripetal_shift=False):
-        """Generate corner targets.
+        """生成corner target.
 
-        Including corner heatmap, corner offset.
+        包括 corner heatmap, corner offset.
 
-        Optional: corner embedding, corner guiding shift, centripetal shift.
+        可选: corner embedding, corner guiding shift, centripetal shift.
 
-        For CornerNet, we generate corner heatmap, corner offset and corner
-        embedding from this function.
+        对于 CornerNet, 该函数额外生成corner embedding.
 
-        For CentripetalNet, we generate corner heatmap, corner offset, guiding
-        shift and centripetal shift from this function.
+        对于 CentripetalNet, 该函数额外生成corner guiding shift 和 centripetal shift.
 
         Args:
-            gt_bboxes (list[Tensor]): Ground truth bboxes of each image, each
-                has shape (num_gt, 4).
-            gt_labels (list[Tensor]): Ground truth labels of each box, each has
-                shape (num_gt,).
-            feat_shape (list[int]): Shape of output feature,
-                [batch, channel, height, width].
-            img_shape (list[int]): Shape of input image,
-                [height, width, channel].
-            with_corner_emb (bool): Generate corner embedding target or not.
-                Default: False.
-            with_guiding_shift (bool): Generate guiding shift target or not.
-                Default: False.
-            with_centripetal_shift (bool): Generate centripetal shift target or
-                not. Default: False.
+            gt_bboxes (list[Tensor]): [[num_gt,4],] * bs.
+            gt_labels (list[Tensor]): [[num_gt,],] * bs.
+            feat_shape (list[int]): 网络输出特征的形状, [bs, _, h, w].
+            img_shape (list[int]): pipline中Pad后的shape,[h, w, c].
+            with_corner_emb (bool): 是否生成 corner embedding target.默认: False.
+            with_guiding_shift (bool): 是否生成 guiding shift target.默认: False.
+            with_centripetal_shift (bool): 是否生成 centripetal shift target.默认: False.
 
         Returns:
-            dict: Ground truth of corner heatmap, corner offset, corner
-            embedding, guiding shift and centripetal shift. Containing the
-            following keys:
+            dict: corner heatmap, corner offset, corner embedding, guiding shift
+                and centripetal shift的拟合目标 . 包含以下键(倒数五个不一定存在):
 
-                - topleft_heatmap (Tensor): Ground truth top-left corner
-                  heatmap.
-                - bottomright_heatmap (Tensor): Ground truth bottom-right
-                  corner heatmap.
-                - topleft_offset (Tensor): Ground truth top-left corner offset.
-                - bottomright_offset (Tensor): Ground truth bottom-right corner
-                  offset.
-                - corner_embedding (list[list[list[int]]]): Ground truth corner
-                  embedding. Not must have.
-                - topleft_guiding_shift (Tensor): Ground truth top-left corner
-                  guiding shift. Not must have.
-                - bottomright_guiding_shift (Tensor): Ground truth bottom-right
-                  corner guiding shift. Not must have.
-                - topleft_centripetal_shift (Tensor): Ground truth top-left
-                  corner centripetal shift. Not must have.
-                - bottomright_centripetal_shift (Tensor): Ground truth
-                  bottom-right corner centripetal shift. Not must have.
+                - topleft_heatmap (Tensor): 左上corner heatmap的拟合目标.
+                - bottomright_heatmap (Tensor): 右下corner heatmap的拟合目标.
+                - topleft_offset (Tensor): 左上corner offset的拟合目标.
+                - bottomright_offset (Tensor): 右下corner offset的拟合目标.
+                - corner_embedding (list[list[list[int]]]): corner offset的拟合目标.
+                - topleft_guiding_shift (Tensor): 左上corner guiding shift的拟合目标.
+                - bottomright_guiding_shift (Tensor): 右下corner guiding shift的拟合目标.
+                - topleft_centripetal_shift (Tensor): 左上corner centripetal shift的拟合目标.
+                - bottomright_centripetal_shift (Tensor): 右下corner centripetal shift的拟合目标.
         """
         batch_size, _, height, width = feat_shape
         img_h, img_w = img_shape[:2]
@@ -387,6 +354,7 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         width_ratio = float(width / img_w)
         height_ratio = float(height / img_h)
 
+        # 初始化corner offset的拟合目标
         gt_tl_heatmap = gt_bboxes[-1].new_zeros(
             [batch_size, self.num_classes, height, width])
         gt_br_heatmap = gt_bboxes[-1].new_zeros(
@@ -397,14 +365,13 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         if with_corner_emb:
             match = []
 
-        # Guiding shift is a kind of offset, from center to corner
+        # Guiding shift 是一种从中心到角落的偏移
         if with_guiding_shift:
             gt_tl_guiding_shift = gt_bboxes[-1].new_zeros(
                 [batch_size, 2, height, width])
             gt_br_guiding_shift = gt_bboxes[-1].new_zeros(
                 [batch_size, 2, height, width])
-        # Centripetal shift is also a kind of offset, from center to corner
-        # and normalized by log.
+        # Centripetal shift 也是一种偏移,从中心到角落并通过对数归一化.
         if with_centripetal_shift:
             gt_tl_centripetal_shift = gt_bboxes[-1].new_zeros(
                 [batch_size, 2, height, width])
@@ -412,7 +379,8 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                 [batch_size, 2, height, width])
 
         for batch_id in range(batch_size):
-            # Ground truth of corner embedding per image is a list of coord set
+            # bs张图像的embedding target [[[t, l],[b, r],] * num_gt], ] * bs
+            # t, l, b, r皆为int型.表示两个角点所属左上角索引
             corner_match = []
             for box_id in range(len(gt_labels[batch_id])):
                 left, top, right, bottom = gt_bboxes[batch_id][box_id]
@@ -420,7 +388,7 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                 center_y = (top + bottom) / 2.0
                 label = gt_labels[batch_id][box_id]
 
-                # Use coords in the feature level to generate ground truth
+                # 将gt的坐标缩放到特征图尺寸上
                 scale_left = left * width_ratio
                 scale_right = right * width_ratio
                 scale_top = top * height_ratio
@@ -428,18 +396,19 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                 scale_center_x = center_x * width_ratio
                 scale_center_y = center_y * height_ratio
 
-                # Int coords on feature map/ground truth tensor
+                # 获取gt缩放后的int型坐标
                 left_idx = int(min(scale_left, width - 1))
                 right_idx = int(min(scale_right, width - 1))
                 top_idx = int(min(scale_top, height - 1))
                 bottom_idx = int(min(scale_bottom, height - 1))
 
-                # Generate gaussian heatmap
+                # 生成corner heatmap
                 scale_box_width = ceil(scale_right - scale_left)
                 scale_box_height = ceil(scale_bottom - scale_top)
-                radius = gaussian_radius((scale_box_height, scale_box_width),
+                radius = gaussian_radius([scale_box_height, scale_box_width],
                                          min_overlap=0.3)
                 radius = max(0, int(radius))
+                # 计算指定gt box的corner heatmap的高斯核,可能存在重合部分(取较大值)
                 gt_tl_heatmap[batch_id, label] = gen_gaussian_target(
                     gt_tl_heatmap[batch_id, label], [left_idx, top_idx],
                     radius)
@@ -447,7 +416,7 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                     gt_br_heatmap[batch_id, label], [right_idx, bottom_idx],
                     radius)
 
-                # Generate corner offset
+                # 生成corner offset,在左上/右下的相对左上角的偏移.
                 left_offset = scale_left - left_idx
                 top_offset = scale_top - top_idx
                 right_offset = scale_right - right_idx
@@ -455,10 +424,9 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                 gt_tl_offset[batch_id, 0, top_idx, left_idx] = left_offset
                 gt_tl_offset[batch_id, 1, top_idx, left_idx] = top_offset
                 gt_br_offset[batch_id, 0, bottom_idx, right_idx] = right_offset
-                gt_br_offset[batch_id, 1, bottom_idx,
-                             right_idx] = bottom_offset
+                gt_br_offset[batch_id, 1, bottom_idx, right_idx] = bottom_offset
 
-                # Generate corner embedding
+                # 生成corner embedding
                 if with_corner_emb:
                     corner_match.append([[top_idx, left_idx],
                                          [bottom_idx, right_idx]])
@@ -522,41 +490,40 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
-        """Compute losses of the head.
+        """计算head的loss.
+            需要注意的是CornerNet默认使用HourglassNet-104,该主干网络的stack=2
+            而CornerNet的Head部分在两个层级上的特征图上是都计算loss的,并且其在各自特征图上
+            生成的target都是一致的(直接复制),但是在测试阶段只考虑最后一层特征图!!!
+
 
         Args:
-            tl_heats (list[Tensor]): Top-left corner heatmaps for each level
-                with shape (N, num_classes, H, W).
-            br_heats (list[Tensor]): Bottom-right corner heatmaps for each
-                level with shape (N, num_classes, H, W).
-            tl_embs (list[Tensor]): Top-left corner embeddings for each level
-                with shape (N, corner_emb_channels, H, W).
-            br_embs (list[Tensor]): Bottom-right corner embeddings for each
-                level with shape (N, corner_emb_channels, H, W).
-            tl_offs (list[Tensor]): Top-left corner offsets for each level
-                with shape (N, corner_offset_channels, H, W).
-            br_offs (list[Tensor]): Bottom-right corner offsets for each level
-                with shape (N, corner_offset_channels, H, W).
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [left, top, right, bottom] format.
-            gt_labels (list[Tensor]): Class indices corresponding to each box.
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes_ignore (list[Tensor] | None): Specify which bounding
-                boxes can be ignored when computing the loss.
+            tl_heats (list[Tensor]): 所有层级上的左上 corner heatmaps,
+                [[bs, num_classes, h, w],] * num_stack.
+            br_heats (list[Tensor]): 所有层级上的右下 corner heatmaps,
+                [[bs, num_classes, h, w],] * num_stack.
+            tl_embs (list[Tensor]): 所有层级上的左上 corner embedding,
+                [[bs, 1, h, w],] * num_stack.
+            br_embs (list[Tensor]): 所有层级上的右下 corner embedding,
+                [[bs, 1, h, w],] * num_stack.
+            tl_offs (list[Tensor]): 所有层级上的左上 corner offset
+                [[bs, 2, h, w],] * num_stack.
+            br_offs (list[Tensor]): 所有层级上的右下 corner offset
+                [[bs, 2, h, w],] * num_stack.
+            gt_bboxes (list[Tensor]): [[num_gts, 4],] * bs, [x1,y1,x2,y2].
+            gt_labels (list[Tensor]): [[num_gts,],] * bs
+            img_metas (list[dict]): [dict(),] * bs.
+            gt_bboxes_ignore (list[Tensor] | None): [[num_ignore_gts, 4],] * bs
+                计算loss时可以忽略的哪些边界框.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components. Containing the
-            following losses:
+            dict[str, Tensor]: loss字典。包含以下种类的loss:
 
-                - det_loss (list[Tensor]): Corner keypoint losses of all
-                  feature levels.
+                - det_loss (list[Tensor]): 所有层级的Corner keypoint loss.
                 - pull_loss (list[Tensor]): Part one of AssociativeEmbedding
                   losses of all feature levels.
                 - push_loss (list[Tensor]): Part two of AssociativeEmbedding
                   losses of all feature levels.
-                - off_loss (list[Tensor]): Corner offset losses of all feature
-                  levels.
+                - off_loss (list[Tensor]): 所有层级的Corner offset loss..
         """
         targets = self.get_targets(
             gt_bboxes,
@@ -575,30 +542,30 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
 
     def loss_single(self, tl_hmp, br_hmp, tl_emb, br_emb, tl_off, br_off,
                     targets):
-        """Compute losses for single level.
+        """计算单层级上的损失.
 
         Args:
-            tl_hmp (Tensor): Top-left corner heatmap for current level with
-                shape (N, num_classes, H, W).
-            br_hmp (Tensor): Bottom-right corner heatmap for current level with
-                shape (N, num_classes, H, W).
-            tl_emb (Tensor): Top-left corner embedding for current level with
-                shape (N, corner_emb_channels, H, W).
-            br_emb (Tensor): Bottom-right corner embedding for current level
-                with shape (N, corner_emb_channels, H, W).
-            tl_off (Tensor): Top-left corner offset for current level with
-                shape (N, corner_offset_channels, H, W).
-            br_off (Tensor): Bottom-right corner offset for current level with
-                shape (N, corner_offset_channels, H, W).
-            targets (dict): Corner target generated by `get_targets`.
+            tl_hmp (Tensor): 当前层级上的左上 corner heatmap[bs, num_classes, h, w].
+            br_hmp (Tensor): 当前层级上的右下 corner heatmap[bs, num_classes, h, w].
+            tl_emb (Tensor): 当前层级上的左上 corner embedding[bs, corner_emb_channels, h, w].
+            br_emb (Tensor): 当前层级上的右下 corner embedding[bs, corner_emb_channels, h, w].
+            tl_off (Tensor): 当前层级上的左上 corner offset[bs, corner_offset_channels, h, w].
+            br_off (Tensor): 当前层级上的右下 corner offset[bs, corner_offset_channels, h, w].
+            targets (dict): 由`get_targets`生成的三个Corner target .
+                {
+                    topleft_heatmap:[bs, num_classes, h, w].
+                    topleft_offset:[bs, 2, h, w].
+                    bottomright_heatmap:[bs, num_classes, h, w].
+                    bottomright_offset:[bs, 2, h, w].
+                    corner_embedding:[[[top_idx, left_idx],[bottom_idx, right_idx],] * num_gt] * bs
+                }
 
         Returns:
-            tuple[torch.Tensor]: Losses of the head's different branches
-            containing the following losses:
+            tuple[torch.Tensor]: head中不同分支的损失,包含以下:
 
                 - det_loss (Tensor): Corner keypoint loss.
-                - pull_loss (Tensor): Part one of AssociativeEmbedding loss.
-                - push_loss (Tensor): Part two of AssociativeEmbedding loss.
+                - pull_loss (Tensor): AssociativeEmbedding loss中的pull loss.
+                - push_loss (Tensor): AssociativeEmbedding loss中的push loss.
                 - off_loss (Tensor): Corner offset loss.
         """
         gt_tl_hmp = targets['topleft_heatmap']
@@ -627,11 +594,11 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         else:
             pull_loss, push_loss = None, None
 
-        # Offset loss
-        # We only compute the offset loss at the real corner position.
-        # The value of real corner would be 1 in heatmap ground truth.
-        # The mask is computed in class agnostic mode and its shape is
-        # batch * 1 * width * height.
+        # offset loss,分别代表corner在其所属grid区域上的横向与纵向的偏移∈[0, 1),单位:8px
+        # 我们仅计算gt corner的位置的偏移损失.即在gt_tl/br_hmp中值为1的点(gt左上右下角的左上角坐标)
+        # gt_tl_hmp.eq(1) -> [bs,num_class,h,w]任意位置上是否有gt,.sum(1)就是获取类别维度上有多少gt,
+        # 也就是该张图像在指定位置中有多少gt,.gt(0)就是获取任意位置上是否含有gt box
+        # tl_off_mask最终shape 为 [bs, 1, h, w].该值作为off_loss的权重
         tl_off_mask = gt_tl_hmp.eq(1).sum(1).gt(0).unsqueeze(1).type_as(
             gt_tl_hmp)
         br_off_mask = gt_br_hmp.eq(1).sum(1).gt(0).unsqueeze(1).type_as(
@@ -662,27 +629,24 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                    img_metas,
                    rescale=False,
                    with_nms=True):
-        """Transform network output for a batch into bbox predictions.
+        """将模型输出(batch)转换为预测的box.注意,测试阶段只考虑最后一层特征图!!!
 
         Args:
-            tl_heats (list[Tensor]): Top-left corner heatmaps for each level
-                with shape (N, num_classes, H, W).
-            br_heats (list[Tensor]): Bottom-right corner heatmaps for each
-                level with shape (N, num_classes, H, W).
-            tl_embs (list[Tensor]): Top-left corner embeddings for each level
-                with shape (N, corner_emb_channels, H, W).
-            br_embs (list[Tensor]): Bottom-right corner embeddings for each
-                level with shape (N, corner_emb_channels, H, W).
-            tl_offs (list[Tensor]): Top-left corner offsets for each level
-                with shape (N, corner_offset_channels, H, W).
-            br_offs (list[Tensor]): Bottom-right corner offsets for each level
-                with shape (N, corner_offset_channels, H, W).
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
+            tl_heats (list[Tensor]): 左上 corner heatmaps
+                [bs, num_classes, H, W] * num_level.
+            br_heats (list[Tensor]): 右下 corner heatmaps
+                [bs, num_classes, H, W] * num_level.
+            tl_embs (list[Tensor]): 左上 corner embeddings
+                [bs, corner_emb_channels, H, W] * num_level.
+            br_embs (list[Tensor]): 右下 corner embeddings
+                [bs, corner_emb_channels, H, W] * num_level.
+            tl_offs (list[Tensor]): 左上 corner offsets
+                [bs, 2, H, W] * num_level.
+            br_offs (list[Tensor]): 右下 corner offsets
+                [bs, 2, H, W] * num_level.
+            img_metas (list[dict]): batch张图像元信息, [dict(),] * bs.
+            rescale (bool): 如果为True, 则将预测box缩放回原始图像尺寸上.
+            with_nms (bool): 如果为True, 在返回box前实行nms操作.
         """
         assert tl_heats[-1].shape[0] == br_heats[-1].shape[0] == len(img_metas)
         result_list = []
@@ -713,31 +677,20 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                            br_centripetal_shift=None,
                            rescale=False,
                            with_nms=True):
-        """Transform outputs for a single batch item into bbox predictions.
+        """将模型输出(单张图片)转换为预测的box.
 
         Args:
-            tl_heat (Tensor): Top-left corner heatmap for current level with
-                shape (N, num_classes, H, W).
-            br_heat (Tensor): Bottom-right corner heatmap for current level
-                with shape (N, num_classes, H, W).
-            tl_off (Tensor): Top-left corner offset for current level with
-                shape (N, corner_offset_channels, H, W).
-            br_off (Tensor): Bottom-right corner offset for current level with
-                shape (N, corner_offset_channels, H, W).
-            img_meta (dict): Meta information of current image, e.g.,
-                image size, scaling factor, etc.
-            tl_emb (Tensor): Top-left corner embedding for current level with
-                shape (N, corner_emb_channels, H, W).
-            br_emb (Tensor): Bottom-right corner embedding for current level
-                with shape (N, corner_emb_channels, H, W).
-            tl_centripetal_shift: Top-left corner's centripetal shift for
-                current level with shape (N, 2, H, W).
-            br_centripetal_shift: Bottom-right corner's centripetal shift for
-                current level with shape (N, 2, H, W).
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
+            tl_heat (Tensor): 左上corner heatmaps(最后一层,下同) [1, num_classes, H, W].
+            br_heat (Tensor): 右下corner heatmaps [1, num_classes, H, W].
+            tl_off (Tensor): 左上corner offset [1, 2, H, W].
+            br_off (Tensor): 右下corner offset [1, 2, H, W].
+            img_meta (dict): 当前图片的元信息.
+            tl_emb (Tensor): 左上corner embedding [1, corner_emb_channels, H, W].
+            br_emb (Tensor): 右下corner embedding [1, corner_emb_channels, H, W].
+            tl_centripetal_shift: 左上corner centripetal shift [1, 2, H, W].
+            br_centripetal_shift: 右下corner centripetal shift [1, 2, H, W].
+            rescale (bool): 如果为True, 则将预测box缩放回原始图像尺寸上.默认: False.
+            with_nms (bool): 如果为True, 在返回box前实行nms操作,默认: True.
         """
         if isinstance(img_meta, (list, tuple)):
             img_meta = img_meta[0]
@@ -775,14 +728,12 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         return detections, labels
 
     def _bboxes_nms(self, bboxes, labels, cfg):
-        if 'nms_cfg' in cfg:
-            warning.warn('nms_cfg in test_cfg will be deprecated. '
-                         'Please rename it as nms')
-        if 'nms' not in cfg:
-            cfg.nms = cfg.nms_cfg
-
         if labels.numel() > 0:
             max_num = cfg.max_per_img
+            # 注意batch-nms,并非是将一整个batch图片的预测box同时进行nms
+            # 而是对一张图片上所有类别的box进行nms,区分不同类别box的方法就是
+            # 在不同类别box坐标上添加base_val*cls_id,base_val取自最大box坐标
+            # cls_id为每个box所属类别id
             bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:,
                                                              -1].contiguous(),
                                        labels, cfg.nms)
@@ -806,41 +757,36 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                        kernel=3,
                        distance_threshold=0.5,
                        num_dets=1000):
-        """Transform outputs for a single batch item into raw bbox predictions.
+        """将模型输出(单张图片)转换为预测的box.
+            需要注意的是,corner heatmap相当于每个corner的score,类似YOLO系列中的obj_score,
+            首先得出合适的若干corner,因为CornerNet是corner-base.主要是枚举所有k*k种corner
+            的组合方式,然后过各种限制对其过滤最后返回predict_box/score/label
+
 
         Args:
-            tl_heat (Tensor): Top-left corner heatmap for current level with
-                shape (N, num_classes, H, W).
-            br_heat (Tensor): Bottom-right corner heatmap for current level
-                with shape (N, num_classes, H, W).
-            tl_off (Tensor): Top-left corner offset for current level with
-                shape (N, corner_offset_channels, H, W).
-            br_off (Tensor): Bottom-right corner offset for current level with
-                shape (N, corner_offset_channels, H, W).
-            tl_emb (Tensor | None): Top-left corner embedding for current
-                level with shape (N, corner_emb_channels, H, W).
-            br_emb (Tensor | None): Bottom-right corner embedding for current
-                level with shape (N, corner_emb_channels, H, W).
-            tl_centripetal_shift (Tensor | None): Top-left centripetal shift
-                for current level with shape (N, 2, H, W).
-            br_centripetal_shift (Tensor | None): Bottom-right centripetal
-                shift for current level with shape (N, 2, H, W).
-            img_meta (dict): Meta information of current image, e.g.,
-                image size, scaling factor, etc.
-            k (int): Get top k corner keypoints from heatmap.
-            kernel (int): Max pooling kernel for extract local maximum pixels.
-            distance_threshold (float): Distance threshold. Top-left and
-                bottom-right corner keypoints with feature distance less than
-                the threshold will be regarded as keypoints from same object.
-            num_dets (int): Num of raw boxes before doing nms.
+            tl_heat (Tensor): 左上corner heatmaps [1, num_classes, H, W].等价于各corner的obj_score
+            br_heat (Tensor): 右下corner heatmaps [1, num_classes, H, W].
+            tl_off (Tensor): 左上corner offset [1, 2, H, W].等价于各corner的相对偏移值,2代表横纵向
+            br_off (Tensor): 右下corner offset [1, 2, H, W].
+            tl_emb (Tensor | None): 左上corner embedding [1, corner_emb_channels, H, W].
+            br_emb (Tensor | None): 右下corner embedding [1, corner_emb_channels, H, W].
+            tl_centripetal_shift (Tensor | None): 左上corner centripetal shift
+                [1, 2, H, W].
+            br_centripetal_shift (Tensor | None): 右下corner centripetal shift
+                [1, 2, H, W].
+            img_meta (dict): 当前图片的元信息.
+            k (int): 从heatmap中截取前k个corner keypoint.
+            kernel (int): 用于提取局部最大像素的最大池化核大小.
+            distance_threshold (float): 距离阈值. 左上和右下的特征距离小于该阈值的
+                一对corner将被视为来自同一gt box.
+            num_dets (int): 进行 nms 之后的最大box数量.
 
         Returns:
-            tuple[torch.Tensor]: Decoded output of CornerHead, containing the
-            following Tensors:
+            tuple[torch.Tensor]: CornerHead 的解码输出, 包含以下张量-:
 
-            - bboxes (Tensor): Coords of each box.
-            - scores (Tensor): Scores of each box.
-            - clses (Tensor): Categories of each box.
+            - bboxes (Tensor): 每个box的两个corner坐标(x,y).
+            - scores (Tensor): 每个box的score.
+            - clses (Tensor): 每个box的类别.
         """
         with_embedding = tl_emb is not None and br_emb is not None
         with_centripetal_shift = (
@@ -851,31 +797,40 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         if torch.onnx.is_in_onnx_export():
             inp_h, inp_w = img_meta['pad_shape_for_onnx'][:2]
         else:
+            # 在CornerNet系列网络中,该值代表做完MultiScaleFlipAug增强操作后的shape
+            # 其在训练与测试阶段的具体操作不同,有关剪裁区域这里不再描述,(训练时)该操作后的
+            # 图像尺寸会生成到指定crop_size,(测试时)则生成图像尺寸向上兼容指定像素的倍数.
+            # 而这里的pad_shape就代表生成图像的尺寸.
             inp_h, inp_w, _ = img_meta['pad_shape']
 
-        # perform nms on heatmaps
+        # 在heatmap上执行nms
         tl_heat = get_local_maximum(tl_heat, kernel=kernel)
         br_heat = get_local_maximum(br_heat, kernel=kernel)
 
+        # [bs, k]
         tl_scores, tl_inds, tl_clses, tl_ys, tl_xs = get_topk_from_heatmap(
             tl_heat, k=k)
         br_scores, br_inds, br_clses, br_ys, br_xs = get_topk_from_heatmap(
             br_heat, k=k)
 
-        # We use repeat instead of expand here because expand is a
-        # shallow-copy function. Thus it could cause unexpected testing result
-        # sometimes. Using expand will decrease about 10% mAP during testing
-        # compared to repeat.
+        # 我们在这里使用repeat而非expand,因为expand是一个浅拷贝函数.
+        # 因此有时会导致意外的测试结果.与repeat相比,在测试期间使用expand将降低约10%的mAP.
+        # 第一个k代表tl维度,第二个k代表br维度,所以tl需要向右复制k列,br需要向下复制k行
+        # 所以对于tl_ys/xs和br_ys/xs来说会有不同的view与repeat操作
+        # 直白一点就是,网络这里筛选(通过corner heatmap)出k个左上/右下坐标后.
+        # 模型还并不知道这k个左上和k个右下坐标如何对应,既然不知道索性就用暴力法,直接生成k*k种可能
         tl_ys = tl_ys.view(batch, k, 1).repeat(1, 1, k)
         tl_xs = tl_xs.view(batch, k, 1).repeat(1, 1, k)
         br_ys = br_ys.view(batch, 1, k).repeat(1, k, 1)
         br_xs = br_xs.view(batch, 1, k).repeat(1, k, 1)
 
+        # [bs, k, 2],tl_off不需要显示进行repeat,它依靠广播机制也可实现repeat操作
         tl_off = transpose_and_gather_feat(tl_off, tl_inds)
         tl_off = tl_off.view(batch, k, 1, 2)
         br_off = transpose_and_gather_feat(br_off, br_inds)
         br_off = br_off.view(batch, 1, k, 2)
 
+        # 例,score高的corner的x坐标+该位置的修正系数=在该特征图下的x坐标,单位:8px.下同
         tl_xs = tl_xs + tl_off[..., 0]
         tl_ys = tl_ys + tl_off[..., 1]
         br_xs = br_xs + br_off[..., 0]
@@ -892,7 +847,7 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
             br_ctxs = br_xs - br_centripetal_shift[..., 0]
             br_ctys = br_ys - br_centripetal_shift[..., 1]
 
-        # all possible boxes based on top k corners (ignoring class)
+        # 将前k个corner坐标缩放回Pad后的图像尺寸上
         tl_xs *= (inp_w / width)
         tl_ys *= (inp_h / height)
         br_xs *= (inp_w / width)
@@ -904,32 +859,35 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
             br_ctxs *= (inp_w / width)
             br_ctys *= (inp_h / height)
 
-        x_off, y_off = 0, 0  # no crop
+        x_off, y_off = 0, 0  # 没有剪裁时
         if not torch.onnx.is_in_onnx_export():
-            # since `RandomCenterCropPad` is done on CPU with numpy and it's
-            # not dynamic traceable when exporting to ONNX, thus 'border'
-            # does not appears as key in 'img_meta'. As a tmp solution,
-            # we move this 'border' handle part to the postprocess after
-            # finished exporting to ONNX, which is handle in
-            # `mmdet/core/export/model_wrappers.py`. Though difference between
-            # pytorch and exported onnx model, it might be ignored since
-            # comparable performance is achieved between them (e.g. 40.4 vs
-            # 40.6 on COCO val2017, for CornerNet without test-time flip)
+            # 因为 `RandomCenterCropPad` 是在 CPU 上使用 numpy 完成的,并且在导出到
+            # ONNX时它不是动态可跟踪的,因此 'border' 不会作为 'img_meta'中的键出现.
+            # 作为一个临时解决方案,在完成导出到ONNX之后,我们将这部分移动到模型后处理中解决.
+            # 该部分在`mmdet/core/export/model_wrappers.py中`. 尽管pytorch和导出的
+            # onnx 模型之间存在差异,但可以被忽略,因为它们之间实现了相当的性能(例如在没有
+            # test-time flip的CornerNet上,他们的COCO val2017 mAP分别为40.4与40.6)
+            # img_meta['border']代表生成图像的粘贴区域, [top, bottom, left, right],
+            # 这四个值分别表示在y,x,y,x坐标上的分割直线,相对于生成图像尺寸.
+            # 这也是get_bboxes的参数rescale为False的原因,因为该操作在这里执行了.
             if 'border' in img_meta:
                 x_off = img_meta['border'][2]
                 y_off = img_meta['border'][0]
 
+        # 将网络在生成图像上预测的box减去padding部分的坐标,以适应原始图像尺寸.
         tl_xs -= x_off
         tl_ys -= y_off
         br_xs -= x_off
         br_ys -= y_off
 
+        # 限制两个corner的 x y坐标(>=0)
         zeros = tl_xs.new_zeros(*tl_xs.size())
         tl_xs = torch.where(tl_xs > 0.0, tl_xs, zeros)
         tl_ys = torch.where(tl_ys > 0.0, tl_ys, zeros)
         br_xs = torch.where(br_xs > 0.0, br_xs, zeros)
         br_ys = torch.where(br_ys > 0.0, br_ys, zeros)
 
+        # [bs, k, k, 4]
         bboxes = torch.stack((tl_xs, tl_ys, br_xs, br_ys), dim=3)
         area_bboxes = ((br_xs - tl_xs) * (br_ys - tl_ys)).abs()
 
@@ -976,7 +934,7 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
             br_cty_inds = (ct_bboxes[..., 3] <= rcentral[..., 1]) | (
                 ct_bboxes[..., 3] >= rcentral[..., 3])
 
-        if with_embedding:
+        if with_embedding:  # 获取k个tl_emb与k个br_emb的绝对差距
             tl_emb = transpose_and_gather_feat(tl_emb, tl_inds)
             tl_emb = tl_emb.view(batch, k, 1)
             br_emb = transpose_and_gather_feat(br_emb, br_inds)
@@ -986,24 +944,26 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         tl_scores = tl_scores.view(batch, k, 1).repeat(1, 1, k)
         br_scores = br_scores.view(batch, 1, k).repeat(1, k, 1)
 
-        scores = (tl_scores + br_scores) / 2  # scores for all possible boxes
+        scores = (tl_scores + br_scores) / 2  # 所有可能的box([bs,k,k])的score
 
-        # tl and br should have same class
+        # 如果左上和右下表示某个box的话,那么它们两应该属于同一类别.否则不属于同一box
         tl_clses = tl_clses.view(batch, k, 1).repeat(1, 1, k)
         br_clses = br_clses.view(batch, 1, k).repeat(1, k, 1)
         cls_inds = (tl_clses != br_clses)
 
-        # reject boxes based on distances
+        # 过滤左上和右下的emb差距大于指定阈值的corner
         dist_inds = dists > distance_threshold
 
-        # reject boxes based on widths and heights
+        # 过滤宽高小于等于0的.
         width_inds = (br_xs <= tl_xs)
         height_inds = (br_ys <= tl_ys)
 
-        # No use `scores[cls_inds]`, instead we use `torch.where` here.
+        # 我们在这里使用 `torch.where`来代替`scores[cls_inds]`.
         # Since only 1-D indices with type 'tensor(bool)' are supported
         # when exporting to ONNX, any other bool indices with more dimensions
         # (e.g. 2-D bool tensor) as input parameter in node is invalid
+        # 因为在导出到 ONNX 时仅支持类型为“tensor(bool)”的一维索引,因此任何其他具有
+        # 更多维度的bool indices(例如二维bool tensor)作为节点中的输入参数都是无效的
         negative_scores = -1 * torch.ones_like(scores)
         scores = torch.where(cls_inds, negative_scores, scores)
         scores = torch.where(width_inds, negative_scores, scores)
@@ -1016,8 +976,10 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
             scores[br_ctx_inds] = -1
             scores[br_cty_inds] = -1
 
+        # [bs, k, k] -> [bs, k*k]  仅排序选前num_det个,此时还没通过score_thr来进行过滤
         scores = scores.view(batch, -1)
         scores, inds = torch.topk(scores, num_dets)
+        # [bs, num_dets, 1]
         scores = scores.unsqueeze(2)
 
         bboxes = bboxes.view(batch, -1, 4)
@@ -1025,7 +987,7 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
 
         clses = tl_clses.contiguous().view(batch, -1, 1)
         clses = gather_feat(clses, inds).float()
-
+        # 理论上最大shape为[bs,num_det,4/1/1], box/score/cls
         return bboxes, scores, clses
 
     def onnx_export(self,

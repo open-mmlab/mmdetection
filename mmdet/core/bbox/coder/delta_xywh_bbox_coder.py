@@ -13,22 +13,18 @@ from .base_bbox_coder import BaseBBoxCoder
 class DeltaXYWHBBoxCoder(BaseBBoxCoder):
     """Delta XYWH BBox coder.
 
-    Following the practice in `R-CNN <https://arxiv.org/abs/1311.2524>`_,
-    this coder encodes bbox (x1, y1, x2, y2) into delta (dx, dy, dw, dh) and
-    decodes delta (dx, dy, dw, dh) back to original bbox (x1, y1, x2, y2).
+    按照 `R-CNN <https://arxiv.org/abs/1311.2524>` 中的做法,
+    下列代码可计算出基础box与目标box之间的修正系数,也可根据基础box与修正系数计算出目标box.
 
     Args:
         target_means (Sequence[float]): Denormalizing means of target for
             delta coordinates
         target_stds (Sequence[float]): Denormalizing standard deviation of
             target for delta coordinates
-        clip_border (bool, optional): Whether clip the objects outside the
-            border of the image. Defaults to True.
-        add_ctr_clamp (bool): Whether to add center clamp, when added, the
-            predicted box is clamped is its center is too far away from
-            the original anchor's center. Only used by YOLOF. Default False.
-        ctr_clamp (int): the maximum pixel shift to clamp. Only used by YOLOF.
-            Default 32.
+        clip_border (bool, optional): 是否限制box范围在图像内部. 默认True.
+        add_ctr_clamp (bool): 是否进行中心限制, 当进行该操作时, 预测框被固定住是因为
+            它的中心离anchor的中心太远. 仅在 YOLOF 中使用. 默认 False.
+        ctr_clamp (int): 限制最大像素偏移. 仅在 YOLOF 中使用. 默认 32.
     """
 
     def __init__(self,
@@ -45,16 +41,17 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         self.ctr_clamp = ctr_clamp
 
     def encode(self, bboxes, gt_bboxes):
-        """Get box regression transformation deltas that can be used to
-        transform the ``bboxes`` into the ``gt_bboxes``.
+        """计算box修正到gt box的修正系数.但计算得到后需要再次进行归一化,
+        进行该操作是由于回归的loss通常要比分类loss小的多.为了提高多任务学习的有效性,
+        也即平衡多个loss.需要对回归值进行归一化,这普遍应用于rcnn系列网络.
+        参见于Cascade R-CNN论文3.1节内容.
 
         Args:
-            bboxes (torch.Tensor): Source boxes, e.g., object proposals.
-            gt_bboxes (torch.Tensor): Target of the transformation, e.g.,
-                ground-truth boxes.
+            bboxes (torch.Tensor): 初始box.
+            gt_bboxes (torch.Tensor): gt box.
 
         Returns:
-            torch.Tensor: Box transformation deltas
+            torch.Tensor: 修正系数
         """
 
         assert bboxes.size(0) == gt_bboxes.size(0)
@@ -67,24 +64,20 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
                pred_bboxes,
                max_shape=None,
                wh_ratio_clip=16 / 1000):
-        """Apply transformation `pred_bboxes` to `boxes`.
+        """在box上应用修正系数以得到修正后的box.
 
         Args:
-            bboxes (torch.Tensor): Basic boxes. Shape (B, N, 4) or (N, 4)
-            pred_bboxes (Tensor): Encoded offsets with respect to each roi.
-               Has shape (B, N, num_classes * 4) or (B, N, 4) or
-               (N, num_classes * 4) or (N, 4). Note N = num_anchors * W * H
-               when rois is a grid of anchors.Offset encoding follows [1]_.
+            bboxes (torch.Tensor): 初始box. [bs, N, 4] or [N, 4], N = na * H * W.
+            pred_bboxes (Tensor): box的修正系数.
+               [bs, N, nc * 4] or [bs, N, 4] or [N, nc * 4] or [N, 4].
             max_shape (Sequence[int] or torch.Tensor or Sequence[
-               Sequence[int]],optional): Maximum bounds for boxes, specifies
-               (H, W, C) or (H, W). If bboxes shape is (B, N, 4), then
-               the max_shape should be a Sequence[Sequence[int]]
-               and the length of max_shape should also be B.
-            wh_ratio_clip (float, optional): The allowed ratio between
-                width and height.
+               Sequence[int]],optional): box的最大边界, shape可能为
+               [H, W, C] or [H, W]. 如果box的shape为 [bs, N, 4], 那么max_shape就应该是
+               [Sequence[int], ] * bs,最外层格式也可能是元组
+            wh_ratio_clip (float, optional): 允许的宽高比.
 
         Returns:
-            torch.Tensor: Decoded boxes.
+            torch.Tensor: 修正后的box.
         """
 
         assert pred_bboxes.size(0) == bboxes.size(0)
@@ -92,7 +85,7 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
             assert pred_bboxes.size(1) == bboxes.size(1)
 
         if pred_bboxes.ndim == 2 and not torch.onnx.is_in_onnx_export():
-            # single image decode
+            # 在单张图像上对box修正
             decoded_bboxes = delta2bbox(bboxes, pred_bboxes, self.means,
                                         self.stds, max_shape, wh_ratio_clip,
                                         self.clip_border, self.add_ctr_clamp,
@@ -116,22 +109,18 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
 
 @mmcv.jit(coderize=True)
 def bbox2delta(proposals, gt, means=(0., 0., 0., 0.), stds=(1., 1., 1., 1.)):
-    """Compute deltas of proposals w.r.t. gt.
+    """计算基础box与目标box之间的修正系数.
 
-    We usually compute the deltas of x, y, w, h of proposals w.r.t ground
-    truth bboxes to get regression target.
-    This is the inverse function of :func:`delta2bbox`.
+    通常来说是计算x, y, w, h四个维度的修正系数
 
     Args:
-        proposals (Tensor): Boxes to be transformed, shape (N, ..., 4)
-        gt (Tensor): Gt bboxes to be used as base, shape (N, ..., 4)
-        means (Sequence[float]): Denormalizing means for delta coordinates
-        stds (Sequence[float]): Denormalizing standard deviation for delta
-            coordinates
+        proposals (Tensor): 基础box, shape (N, ..., 4)
+        gt (Tensor): 目标box, shape (N, ..., 4)
+        means (Sequence[float]): 计算出修正系数后要减去的均值
+        stds (Sequence[float]): 计算出修正系数后要除以的方差
 
     Returns:
-        Tensor: deltas with shape (N, 4), where columns represent dx, dy,
-            dw, dh.
+        Tensor: 计算得到的修正系数,shape与输入box一致
     """
     assert proposals.size() == gt.size()
 
@@ -170,38 +159,22 @@ def delta2bbox(rois,
                clip_border=True,
                add_ctr_clamp=False,
                ctr_clamp=32):
-    """Apply deltas to shift/scale base boxes.
-
-    Typically the rois are anchor or proposed bounding boxes and the deltas are
-    network outputs used to shift/scale those boxes.
-    This is the inverse function of :func:`bbox2delta`.
+    """利用修正系数修正基础box.基础box可能是anchor也可能是roi
 
     Args:
-        rois (Tensor): Boxes to be transformed. Has shape (N, 4).
-        deltas (Tensor): Encoded offsets relative to each roi.
-            Has shape (N, num_classes * 4) or (N, 4). Note
-            N = num_base_anchors * W * H, when rois is a grid of
-            anchors. Offset encoding follows [1]_.
-        means (Sequence[float]): Denormalizing means for delta coordinates.
-            Default (0., 0., 0., 0.).
-        stds (Sequence[float]): Denormalizing standard deviation for delta
-            coordinates. Default (1., 1., 1., 1.).
-        max_shape (tuple[int, int]): Maximum bounds for boxes, specifies
-           (H, W). Default None.
-        wh_ratio_clip (float): Maximum aspect ratio for boxes. Default
-            16 / 1000.
-        clip_border (bool, optional): Whether clip the objects outside the
-            border of the image. Default True.
-        add_ctr_clamp (bool): Whether to add center clamp. When set to True,
-            the center of the prediction bounding box will be clamped to
-            avoid being too far away from the center of the anchor.
-            Only used by YOLOF. Default False.
-        ctr_clamp (int): the maximum pixel shift to clamp. Only used by YOLOF.
-            Default 32.
+        rois (Tensor): 基础box. [N, 4].
+        deltas (Tensor): 修正系数. [N, nc * 4] or [N, 4]. N = na * W * H
+        means (Sequence[float]): 逆归一化的均值. 默认 [0., 0., 0., 0.].
+        stds (Sequence[float]): 逆归一化的方差. 默认 [1., 1., 1., 1.].
+        max_shape (tuple[int, int]): 修正后的box最大边界, (H, W). 默认 None.
+        wh_ratio_clip (float): 修正后的box最大宽高比. 默认 16 / 1000.
+        clip_border (bool, optional): 是否截断box超出图像边界外的区域. 默认 True.
+        add_ctr_clamp (bool): 是否增加一个偏移限制. 当设置为True时,偏移距离会被约束,
+            以避免离anchor的中心太远. 仅用于YOLOF. 默认 False.
+        ctr_clamp (int): 中心坐标的最大偏移像素. 仅用于YOLOF. 默认 32.
 
     Returns:
-        Tensor: Boxes with shape (N, num_classes * 4) or (N, 4), where 4
-           represent tl_x, tl_y, br_x, br_y.
+        Tensor: 修正后的box [N, num_classes * 4] or [N, 4], x1, y1, x2, y2.
 
     References:
         .. [1] https://arxiv.org/abs/1311.2524

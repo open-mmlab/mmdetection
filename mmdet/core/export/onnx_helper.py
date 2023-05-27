@@ -7,8 +7,11 @@ import torch
 def dynamic_clip_for_onnx(x1, y1, x2, y2, max_shape):
     """Clip boxes dynamically for onnx.
 
-    Since torch.clamp cannot have dynamic `min` and `max`, we scale the
-      boxes by 1/max_shape and clamp in the range [0, 1].
+    这个方法存在的原因大概是因为在onnx前向传播时,torch.clamp一旦设定了`min` 和 `max`,
+    就无法在后续对`min` 和 `max`进行改动,但输入图像尺寸可能会改变.所以我们希望能有个动态
+    范围来限制坐标.我们先将坐标进行归一化然后将其限制在[0, 1]这个固定范围内.
+    之后再乘以宽高逆归一化回去.这个过程中除了`min` 和 `max`是固定的.其他都是动态的.
+    以此来达到动态限制坐标范围的目的.不过这应该算是onnx的问题.本身在torch中是没必要的.
 
     Args:
         x1 (Tensor): The x1 for bounding boxes.

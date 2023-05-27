@@ -38,19 +38,18 @@ class BaseSampler(metaclass=ABCMeta):
                gt_bboxes,
                gt_labels=None,
                **kwargs):
-        """Sample positive and negative bboxes.
+        """从所有样本中采样正负样本.
 
-        This is a simple implementation of bbox sampling given candidates,
-        assigning results and ground truth bboxes.
+        这是一个给定条件下对样本分配结果采样的简单实现.
 
         Args:
-            assign_result (:obj:`AssignResult`): Bbox assigning results.
-            bboxes (Tensor): Boxes to be sampled from.
-            gt_bboxes (Tensor): Ground truth bboxes.
-            gt_labels (Tensor, optional): Class labels of ground truth bboxes.
+            assign_result (:obj:`AssignResult`): box分配结果.
+            bboxes (Tensor): 总样本.
+            gt_bboxes (Tensor): gt box.
+            gt_labels (Tensor, optional): gt label.
 
         Returns:
-            :obj:`SamplingResult`: Sampling result.
+            :obj:`SamplingResult`: 采样结果.
 
         Example:
             >>> from mmdet.core.bbox import RandomSampler
@@ -70,11 +69,13 @@ class BaseSampler(metaclass=ABCMeta):
 
         bboxes = bboxes[:, :4]
 
+        # box是否来自gt
         gt_flags = bboxes.new_zeros((bboxes.shape[0], ), dtype=torch.uint8)
         if self.add_gt_as_proposals and len(gt_bboxes) > 0:
             if gt_labels is None:
                 raise ValueError(
-                    'gt_labels must be given when add_gt_as_proposals is True')
+                    '当add_gt_as_proposals参数为True时,gt_labels不能为None,'
+                    '否则无法确定添加roi的类别')
             bboxes = torch.cat([gt_bboxes, bboxes], dim=0)
             assign_result.add_gt_(gt_labels)
             gt_ones = bboxes.new_ones(gt_bboxes.shape[0], dtype=torch.uint8)
@@ -83,8 +84,7 @@ class BaseSampler(metaclass=ABCMeta):
         num_expected_pos = int(self.num * self.pos_fraction)
         pos_inds = self.pos_sampler._sample_pos(
             assign_result, num_expected_pos, bboxes=bboxes, **kwargs)
-        # We found that sampled indices have duplicated items occasionally.
-        # (may be a bug of PyTorch)
+        # 我们发现pos_inds偶尔会有重复项.可能是 PyTorch 的一个bug
         pos_inds = pos_inds.unique()
         num_sampled_pos = pos_inds.numel()
         num_expected_neg = self.num - num_sampled_pos

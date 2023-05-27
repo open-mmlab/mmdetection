@@ -47,7 +47,7 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
             warnings.simplefilter('once')
             warnings.warn('加载的权重中不存在类别列表,默认使用COCO类.')
             model.CLASSES = get_classes('coco')  # 初始化为coco的80类
-    model.cfg = config  # save the config in the model for convenience
+    model.cfg = config  # 为方便起见,将配置保存在模型中
     model.to(device)
     model.eval()
     return model
@@ -225,7 +225,7 @@ def show_result_pyplot(model,
     Args:
         model (nn.Module): 加载的检测模型.
         img (str or np.ndarray): 图像文件名或加载的图像数据.
-        result (tuple[list] or list): 检测结果,可以是 (bbox, segm) 或只是 bbox.
+        result (tuple[list] or list): 检测结果,(bbox, segm) or bbox
         score_thr (float): boxes 和 mask 的置信度显示阈值.
         title (str): 图像展示窗口的标题.
         wait_time (float): waitKey 参数的值. 默认为: 0ms.意为无限等待

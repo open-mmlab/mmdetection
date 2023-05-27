@@ -15,13 +15,13 @@ model = dict(
         type='SSDNeck',
         in_channels=(512, 1024),
         out_channels=(512, 1024, 512, 256, 256, 256),
-        level_strides=(2, 2, 1, 1),
+        level_strides=(2, 2, 1, 1),  # 最后两层特征图尺寸是通过3x3卷积padding=0从5->3->1的
         level_paddings=(1, 1, 0, 0),
         l2_norm_scale=20),
     bbox_head=dict(
         type='SSDHead',
         in_channels=(512, 1024, 512, 256, 256, 256),
-        num_classes=80,
+        num_classes=15,
         anchor_generator=dict(
             type='SSDAnchorGenerator',
             scale_major=False,

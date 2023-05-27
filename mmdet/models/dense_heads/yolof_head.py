@@ -13,25 +13,22 @@ INF = 1e8
 
 
 def levels_to_images(mlvl_tensor):
-    """Concat multi-level feature maps by image.
+    """将一张图像的多层级特征图cat到一起.
 
     [feature_level0, feature_level1...] -> [feature_image0, feature_image1...]
-    Convert the shape of each element in mlvl_tensor from (N, C, H, W) to
-    (N, H*W , C), then split the element to N elements with shape (H*W, C), and
-    concat elements in same image of all level along first dimension.
+    将 mlvl_tensor 中每个张量的形状从 (B, C, H, W) 转换为 (B, H*W , C), 再转换为
+    [(H*W, C),] * B, 并将同一图像中所有级别上的特征图cat到一起.
 
     Args:
-        mlvl_tensor (list[torch.Tensor]): list of Tensor which collect from
-            corresponding level. Each element is of shape (N, C, H, W)
+        mlvl_tensor (list[torch.Tensor]): [(B, C, H, W),] * num_level
 
     Returns:
-        list[torch.Tensor]: A list that contains N tensors and each tensor is
-            of shape (num_elements, C)
+        list[torch.Tensor]: [(num_level * H * W, C),] * B
     """
     batch_size = mlvl_tensor[0].size(0)
     batch_list = [[] for _ in range(batch_size)]
     channels = mlvl_tensor[0].size(1)
-    for t in mlvl_tensor:
+    for t in mlvl_tensor:  # [[bs, na * nc/4, h, w],] * num_level
         t = t.permute(0, 2, 3, 1)
         t = t.view(batch_size, -1, channels).contiguous()
         for img in range(batch_size):
@@ -44,13 +41,11 @@ class YOLOFHead(AnchorHead):
     """YOLOFHead Paper link: https://arxiv.org/abs/2103.09460.
 
     Args:
-        num_classes (int): The number of object classes (w/o background)
-        in_channels (List[int]): The number of input channels per scale.
-        cls_num_convs (int): The number of convolutions of cls branch.
-           Default 2.
-        reg_num_convs (int): The number of convolutions of reg branch.
-           Default 4.
-        norm_cfg (dict): Dictionary to construct and config norm layer.
+        num_classes (int): 检测类别数量
+        in_channels (List[int]): 每个scale的输入通道数量.
+        cls_num_convs (int): cls分支的卷积数量.默认为2.
+        reg_num_convs (int): reg分支的卷积数量.默认为4.
+        norm_cfg (dict): 构造和配置norm层的字典.
     """
 
     def __init__(self,
@@ -125,7 +120,8 @@ class YOLOFHead(AnchorHead):
         bbox_reg = self.bbox_pred(reg_feat)
         objectness = self.object_pred(reg_feat)
 
-        # implicit objectness
+        # 这里是为了方便使用sigmoid而进行的操作,
+        # 即sigmoid(normalized_cls_score) = sigmoid(cls)*sigmoid(obj)
         objectness = objectness.view(N, -1, 1, H, W)
         normalized_cls_score = cls_score + objectness - torch.log(
             1. + torch.clamp(cls_score.exp(), max=INF) +
@@ -141,20 +137,15 @@ class YOLOFHead(AnchorHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
-        """Compute losses of the head.
+        """计算Head的损失.
 
         Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (batch, num_anchors * num_classes, h, w)
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (batch, num_anchors * 4, h, w)
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss. Default: None
+            cls_scores (list[Tensor]): [[bs, na * nc, h, w],] * num_level
+            bbox_preds (list[Tensor]): [[bs, na * 4, h, w],] * num_level
+            gt_bboxes (list[Tensor]): [[num_gts, 4],] * bs.
+            gt_labels (list[Tensor]): [[num_gts,],] * bs.
+            img_metas (list[dict]): [{img_meta},] * bs.
+            gt_bboxes_ignore (None | list[Tensor]): 计算损失时可以指定忽略哪些gt box.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -164,13 +155,15 @@ class YOLOFHead(AnchorHead):
 
         device = cls_scores[0].device
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
+        # [[[h * w * na, 4], ] * num_levels,] * bs
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
 
-        # The output level is always 1
+        # 因为YOLOF是单个特征图,所以输出的anchor层级始终为第一个
         anchor_list = [anchors[0] for anchors in anchor_list]
         valid_flag_list = [valid_flags[0] for valid_flags in valid_flag_list]
 
+        # [[bs, c, h, w],] * num_level -> [[num_level * h * w, c],] * bs
         cls_scores_list = levels_to_images(cls_scores)
         bbox_preds_list = levels_to_images(bbox_preds)
 
@@ -185,7 +178,7 @@ class YOLOFHead(AnchorHead):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels)
-        if cls_reg_targets is None:
+        if cls_reg_targets is None:  # batch幅图像中任意一个没有有效anchor
             return None
         (batch_labels, batch_label_weights, num_total_pos, num_total_neg,
          batch_bbox_weights, batch_pos_predicted_boxes,
@@ -201,22 +194,22 @@ class YOLOFHead(AnchorHead):
         num_total_samples = reduce_mean(
             cls_score.new_tensor(num_total_samples)).clamp_(1.0).item()
 
-        # classification loss
+        # cls loss
         loss_cls = self.loss_cls(
             cls_score,
             flatten_labels,
-            batch_label_weights,
+            batch_label_weights,  # 仅仅包括正负样本的权重,不计算忽略样本的权重
             avg_factor=num_total_samples)
 
-        # regression loss
+        # reg loss
         if batch_pos_predicted_boxes.shape[0] == 0:
-            # no pos sample
+            # 没有正样本
             loss_bbox = batch_pos_predicted_boxes.sum() * 0
         else:
             loss_bbox = self.loss_bbox(
                 batch_pos_predicted_boxes,
                 batch_target_boxes,
-                batch_bbox_weights.float(),
+                batch_bbox_weights.float(),  # 没有被pos_ignore_thr阈值忽略掉的正样本
                 avg_factor=num_total_samples)
 
         return dict(loss_cls=loss_cls, loss_bbox=loss_bbox)
@@ -232,48 +225,36 @@ class YOLOFHead(AnchorHead):
                     gt_labels_list=None,
                     label_channels=1,
                     unmap_outputs=True):
-        """Compute regression and classification targets for anchors in
-        multiple images.
+        """计算batch张图像中anchor的reg和cls的target.
 
         Args:
-            cls_scores_list (list[Tensor])： Classification scores of
-                each image. each is a 4D-tensor, the shape is
-                (h * w, num_anchors * num_classes).
-            bbox_preds_list (list[Tensor])： Bbox preds of each image.
-                each is a 4D-tensor, the shape is (h * w, num_anchors * 4).
-            anchor_list (list[Tensor]): Anchors of each image. Each element of
-                is a tensor of shape (h * w * num_anchors, 4).
-            valid_flag_list (list[Tensor]): Valid flags of each image. Each
-               element of is a tensor of shape (h * w * num_anchors, )
-            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
-            img_metas (list[dict]): Meta info of each image.
-            gt_bboxes_ignore_list (list[Tensor]): Ground truth bboxes to be
-                ignored.
-            gt_labels_list (list[Tensor]): Ground truth labels of each box.
-            label_channels (int): Channel of label.
-            unmap_outputs (bool): Whether to map outputs back to the original
-                set of anchors.
+            cls_scores_list (list[Tensor])： [[h * w, na * nc], ] * bs
+            bbox_preds_list (list[Tensor])： [[h * w, na * 4], ] * bs
+            anchor_list (list[Tensor]): [[h * w * na, 4],] * bs.
+            valid_flag_list (list[Tensor]): [[h * w * na, ], ] * bs.
+            gt_bboxes_list (list[Tensor]): [[num_gts, 4], ] * bs.
+            img_metas (list[dict]): [{img_meta},] * bs.
+            gt_bboxes_ignore_list (list[Tensor]): 计算损失时可以指定忽略哪些gt box.
+            gt_labels_list (list[Tensor]): [[num_gts,],] * bs.
+            label_channels (int): 背景类.
+            unmap_outputs (bool): 是否将有效anchor的reg和cls目标映射回原始anchor上.
 
         Returns:
-            tuple: Usually returns a tuple containing learning targets.
+            tuple: 通常返回一个包含学习目标的元组.
 
-                - batch_labels (Tensor): Label of all images. Each element \
-                    of is a tensor of shape (batch, h * w * num_anchors)
-                - batch_label_weights (Tensor): Label weights of all images \
-                    of is a tensor of shape (batch, h * w * num_anchors)
-                - num_total_pos (int): Number of positive samples in all \
-                    images.
-                - num_total_neg (int): Number of negative samples in all \
-                    images.
-            additional_returns: This function enables user-defined returns from
-                `self._get_targets_single`. These returns are currently refined
-                to properties at each feature map (i.e. having HxW dimension).
-                The results will be concatenated after the end
+                - batch_labels (Tensor): 所有图像上的所有anchor的cls_target.
+                    [bs, h * w * na]
+                - batch_label_weights (Tensor): cls_target的权重(正负样本为1,其余为0)
+                    [bs, h * w * na]
+                - num_total_pos (int): 所有图像上的正样本数量.
+                - num_total_neg (int): 所有图像上的负样本数量..
+            additional_returns: 这块内容来自 `self._get_targets_single` 的用户定义返回.
+                将在函数末尾处与上面的元组结合到一起返回
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
 
-        # compute targets for each image
+        # 计算每张图片的拟合目标
         if gt_bboxes_ignore_list is None:
             gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
         if gt_labels_list is None:
@@ -292,10 +273,10 @@ class YOLOFHead(AnchorHead):
         (all_labels, all_label_weights, pos_inds_list, neg_inds_list,
          sampling_results_list) = results[:5]
         rest_results = list(results[5:])  # user-added return values
-        # no valid anchors
+        # 如果batch张图片中任意一张图片上没有有效的anchor都直接返回None
         if any([labels is None for labels in all_labels]):
             return None
-        # sampled anchors of all images
+        # 整个batch图片上采集到的样本
         num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
         num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
 
@@ -318,51 +299,39 @@ class YOLOFHead(AnchorHead):
                             img_meta,
                             label_channels=1,
                             unmap_outputs=True):
-        """Compute regression and classification targets for anchors in a
-        single image.
+        """计算单个图像中anchor的reg和cls的target.
 
         Args:
-            bbox_preds (Tensor): Bbox prediction of the image, which
-                shape is (h * w ,4)
-            flat_anchors (Tensor): Anchors of the image, which shape is
-                (h * w * num_anchors ,4)
-            valid_flags (Tensor): Valid flags of the image, which shape is
-                (h * w * num_anchors,).
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
-            img_meta (dict): Meta info of the image.
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            label_channels (int): Channel of label.
-            unmap_outputs (bool): Whether to map outputs back to the original
-                set of anchors.
+            bbox_preds (Tensor): head的reg输出, [h * w, na * 4]
+            flat_anchors (Tensor): 整张图像的anchor,[h * w * na ,4]
+            valid_flags (Tensor): flat_anchors对应的有效mask, [h * w * na,].
+            gt_bboxes (Tensor): [num_gts, 4].
+            gt_bboxes_ignore (Tensor): [num_ignored_gts, 4].
+            img_meta (dict): 图像元信息.
+            gt_labels (Tensor): [num_gts,].
+            label_channels (int): 背景类.
+            unmap_outputs (bool): 是否将有效anchor的reg和cls目标映射回原始anchor上.
 
         Returns:
             tuple:
-                labels (Tensor): Labels of image, which shape is
-                    (h * w * num_anchors, ).
-                label_weights (Tensor): Label weights of image, which shape is
-                    (h * w * num_anchors, ).
-                pos_inds (Tensor): Pos index of image.
-                neg_inds (Tensor): Neg index of image.
-                sampling_result (obj:`SamplingResult`): Sampling result.
-                pos_bbox_weights (Tensor): The Weight of using to calculate
-                    the bbox branch loss, which shape is (num, ).
-                pos_predicted_boxes (Tensor): boxes predicted value of
-                    using to calculate the bbox branch loss, which shape is
-                    (num, 4).
-                pos_target_boxes (Tensor): boxes target value of
-                    using to calculate the bbox branch loss, which shape is
-                    (num, 4).
+                labels (Tensor): anchor的cls_target, (h * w * na, ).
+                label_weights (Tensor): anchor的cls_weight, (h * w * na, ).
+                pos_inds (Tensor): 正样本索引.
+                neg_inds (Tensor): 负样本索引.
+                sampling_result (obj:`SamplingResult`): 采样结果.
+                pos_bbox_weights (Tensor): 用于计算box分支loss的权重,
+                    [self.match_times * 2 * num_gt,].
+                pos_predicted_boxes (Tensor): 用于计算box分支loss的boxes预测值,
+                    [self.match_times * 2 * num_gt, 4].
+                pos_target_boxes (Tensor): 用于计算box分支loss的boxes目标值,
+                    [self.match_times * 2 * num_gt, 4].
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
                                            self.train_cfg.allowed_border)
-        if not inside_flags.any():
+        if not inside_flags.any():  # 如果该张图像上没有一个有效anchor
             return (None, ) * 8
-        # assign gt and sample anchors
+        # 对anchors分配gt然后进行采样
         anchors = flat_anchors[inside_flags, :]
         bbox_preds = bbox_preds.reshape(-1, 4)
         bbox_preds = bbox_preds[inside_flags, :]
@@ -373,9 +342,16 @@ class YOLOFHead(AnchorHead):
             decoder_bbox_preds, anchors, gt_bboxes, gt_bboxes_ignore,
             None if self.sampling else gt_labels)
 
+        # 因为正样本(anchor+box)iou中可能有小于pos_ignore_thr的忽略样本存在,
+        # 该值就是构造一个正样本中"有效正样本"的mask.其中伪正样本为False,其余为True.
+        # shape为[match_times * 2 * num_gt,]
         pos_bbox_weights = assign_result.get_extra_property('pos_idx')
+        # 指bbox_pred[indexes],其中indexes为anchor与pred_box两者与gt box的
+        # L1距离最近的match_time * 2个索引cat到一起
+        # [self.match_times * 2 * num_gt, 4],此时还没过滤掉忽略样本
         pos_predicted_boxes = assign_result.get_extra_property(
             'pos_predicted_boxes')
+        # shape同上,值为gt_box[torch.arange(num_gt).repeat(2*match_time)]
         pos_target_boxes = assign_result.get_extra_property('target_boxes')
 
         sampling_result = self.sampler.sample(assign_result, anchors,
@@ -390,8 +366,7 @@ class YOLOFHead(AnchorHead):
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
             if gt_labels is None:
-                # Only rpn gives gt_labels as None
-                # Foreground is the first class since v2.5.0
+                # gt_labels只有在rpn阶段才为None,此时前景为0,背景为1
                 labels[pos_inds] = 0
             else:
                 labels[pos_inds] = gt_labels[
@@ -403,12 +378,12 @@ class YOLOFHead(AnchorHead):
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 
-        # map up to original set of anchors
+        # 映射回原始anchor上
         if unmap_outputs:
             num_total_anchors = flat_anchors.size(0)
             labels = unmap(
                 labels, num_total_anchors, inside_flags,
-                fill=self.num_classes)  # fill bg label
+                fill=self.num_classes)  # cls_target 默认为背景类
             label_weights = unmap(label_weights, num_total_anchors,
                                   inside_flags)
 

@@ -6,10 +6,10 @@ def images_to_levels(target, num_levels):
     """将target由图像级别转换为特征级别.
 
     [target_img0, target_img1] -> [target_level0, target_level1, ...]
-    以上为抽象表示,下面为具体表示. 注!feat_h/w随着level变化而变化
-    [num_level*feat_h*feat_w*A,] * B -> [B,num_level*feat_h*feat_w*A]
-    -> [B,feat_h*feat_w*A] * num_level
+    以上为抽象表示,下面为具体表示. 注意h和w随着level变化而变化
+    [[nl * h * w * na,], ] * bs -> [[bs, h * w * na], ] * nl
     """
+    # [bs, *target.shape] 注意下面的:操作,即获取所有bs维度相应层级上的数据
     target = torch.stack(target, 0)
     level_targets = []
     start = 0
@@ -31,7 +31,7 @@ def anchor_inside_flags(flat_anchors,
         flat_anchors (torch.Tensor): Flatten anchors, shape (n, 4).
         valid_flags (torch.Tensor): An existing valid flags of anchors.
         img_shape (tuple(int)): Shape of current image.
-        allowed_border (int, optional): 有效anchor的边界.
+        allowed_border (int, optional): 允许超出anchor边界的大小.负值表示不限制
 
     Returns:
         torch.Tensor: Flags indicating whether the anchors are inside a \

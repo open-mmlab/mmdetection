@@ -20,31 +20,21 @@ class SSDHead(AnchorHead):
     """SSD head used in https://arxiv.org/abs/1512.02325.
 
     Args:
-        num_classes (int): Number of categories excluding the background
-            category.
-        in_channels (int): Number of channels in the input feature map.
+        num_classes (int): 不包括背景类别的类别数.
+        in_channels (int): 输入特征图中的通道数.
         stacked_convs (int): Number of conv layers in cls and reg tower.
-            Default: 0.
-        feat_channels (int): Number of hidden channels when stacked_convs
-            > 0. Default: 256.
-        use_depthwise (bool): Whether to use DepthwiseSeparableConv.
-            Default: False.
-        conv_cfg (dict): Dictionary to construct and config conv layer.
-            Default: None.
-        norm_cfg (dict): Dictionary to construct and config norm layer.
-            Default: None.
-        act_cfg (dict): Dictionary to construct and config activation layer.
-            Default: None.
-        anchor_generator (dict): Config dict for anchor generator
-        bbox_coder (dict): Config of bounding box coder.
-        reg_decoded_bbox (bool): If true, the regression loss would be
-            applied directly on decoded bounding boxes, converting both
-            the predicted boxes and regression targets to absolute
-            coordinates format. Default False. It should be `True` when
-            using `IoULoss`, `GIoULoss`, or `DIoULoss` in the bbox head.
-        train_cfg (dict): Training config of anchor head.
-        test_cfg (dict): Testing config of anchor head.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        feat_channels (int): 当stacked_convs > 0 时的隐藏通道数.
+        use_depthwise (bool): 是否使用 DepthwiseSeparableConv.
+        conv_cfg (dict): 构造和配置conv层的字典.
+        norm_cfg (dict): 构造和配置norm层的字典.
+        act_cfg (dict): 构造和配置激活层的字典.
+        anchor_generator (dict): anchor生成器的配置字典
+        bbox_coder (dict): box编解码的配置.
+        reg_decoded_bbox (bool): 为True时,则将box的绝对坐标与gt的绝对坐标作为loss计算.
+            一般为IOU类loss时为True.
+        train_cfg (dict): anchor head的训练阶段配置.
+        test_cfg (dict): anchor head的测试阶段配置.
+        init_cfg (dict or list[dict], optional): 初始化配置字典.
     """  # noqa: W605
 
     def __init__(self,
@@ -77,7 +67,7 @@ class SSDHead(AnchorHead):
                      layer='Conv2d',
                      distribution='uniform',
                      bias=0)):
-        super(AnchorHead, self).__init__(init_cfg)
+        super(AnchorHead, self).__init__(init_cfg)  # 略过AnchorHead类的初始化
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.stacked_convs = stacked_convs
@@ -87,12 +77,11 @@ class SSDHead(AnchorHead):
         self.norm_cfg = norm_cfg
         self.act_cfg = act_cfg
 
-        self.cls_out_channels = num_classes + 1  # add background class
+        self.cls_out_channels = num_classes + 1  # 添加背景类
         self.prior_generator = build_prior_generator(anchor_generator)
 
-        # Usually the numbers of anchors for each level are the same
-        # except SSD detectors. So it is an int in the most dense
-        # heads but a list of int in SSDHead
+        # 通常大部分dense head每个层级的anchor数量是相同的,比如[n,]*num_level,
+        # 但是SSD则是[4, 6, 6, 6, 4, 4]代表各层级的基础anchor数量
         self.num_base_priors = self.prior_generator.num_base_priors
 
         self._init_layers()
@@ -103,33 +92,26 @@ class SSDHead(AnchorHead):
         self.cls_focal_loss = False
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        # set sampling=False for archor_target
+        # 初始化采样配置
         self.sampling = False
         if self.train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
-            # SSD sampling=False so use PseudoSampler
+            # 当sampling=False时,默认使用PseudoSampler
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
 
-    @property
-    def num_anchors(self):
-        """
-        Returns:
-            list[int]: Number of base_anchors on each point of each level.
-        """
-        warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
-                      'please use "num_base_priors" instead')
-        return self.num_base_priors
-
     def _init_layers(self):
-        """Initialize layers of the head."""
+        """初始化SSD head层权重."""
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
         # TODO: Use registry to choose ConvModule type
         conv = DepthwiseSeparableConvModule \
             if self.use_depthwise else ConvModule
 
+        # 理论上应生成 6, 10, 10, 10, 6, 6个anchor.实际为4, 6, 6, 6, 4, 4
+        # 根据六个特征图的输入通道数,以及每个特征图上特征点对应的anchor数量生成conv
+        # 一般情况下(SSD300),每个特征图对应一个3x3的回归与分类卷积
         for channel, num_base_priors in zip(self.in_channels,
                                             self.num_base_priors):
             cls_layers = []
@@ -194,20 +176,22 @@ class SSDHead(AnchorHead):
             self.reg_convs.append(nn.Sequential(*reg_layers))
 
     def forward(self, feats):
-        """Forward features from the upstream network.
-
+        """对来自上游的特征进行并行前向传播.SSD的Head权重在不同层级间独立.
+            SSD300,各层级特征上基础anchor个数为[4, 6, 6, 6, 4, 4]
         Args:
-            feats (tuple[Tensor]): Features from the upstream network, each is
-                a 4D-tensor.
-
+            feats (tuple[Tensor]): 来自上游网络的多层级特征.
+                SSD300:tuple(torch.Size([8, 512, 38, 38])
+                            torch.Size([8, 1024, 19, 19])
+                            torch.Size([8, 512, 10, 10])
+                            torch.Size([8, 256, 5, 5])
+                            torch.Size([8, 256, 3, 3])
+                            torch.Size([8, 256, 1, 1]))
         Returns:
             tuple:
-                cls_scores (list[Tensor]): Classification scores for all scale
-                    levels, each is a 4D-tensor, the channels number is
-                    num_anchors * num_classes.
-                bbox_preds (list[Tensor]): Box energies / deltas for all scale
-                    levels, each is a 4D-tensor, the channels number is
-                    num_anchors * 4.
+                cls_scores (list[Tensor]): 所有层级特征图的cls_score.
+                    [[bs, na*(nc+1)), h, w], ] * num_level
+                bbox_preds (list[Tensor]): 所有层级特征图的box_reg.
+                    [[bs, na*4, h, w], ] * num_level
         """
         cls_scores = []
         bbox_preds = []
@@ -219,52 +203,40 @@ class SSDHead(AnchorHead):
 
     def loss_single(self, cls_score, bbox_pred, anchor, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples):
-        """Compute loss of a single image.
+        """计算单个图像的loss.
 
         Args:
-            cls_score (Tensor): Box scores for eachimage
-                Has shape (num_total_anchors, num_classes).
-            bbox_pred (Tensor): Box energies / deltas for each image
-                level with shape (num_total_anchors, 4).
-            anchors (Tensor): Box reference for each scale level with shape
-                (num_total_anchors, 4).
-            labels (Tensor): Labels of each anchors with shape
-                (num_total_anchors,).
-            label_weights (Tensor): Label weights of each anchor with shape
-                (num_total_anchors,)
-            bbox_targets (Tensor): BBox regression targets of each anchor
-                weight shape (num_total_anchors, 4).
-            bbox_weights (Tensor): BBox regression loss weights of each anchor
-                with shape (num_total_anchors, 4).
-            num_total_samples (int): If sampling, num total samples equal to
-                the number of total anchors; Otherwise, it is the number of
-                positive anchors.
+            cls_score (Tensor): 单幅图像生成的box cls, [num_level*h*w*na, nc+1]
+            bbox_pred (Tensor): 单幅图像生成的box reg, [num_level*h*w*na,4]
+            anchor (Tensor): 单幅图像生成的anchor, [num_level*h*w*na,4]
+            labels (Tensor): 单幅图像上anchor对应的gt label [num_level*h*w*na,]
+            label_weights (Tensor): 每个anchor label的权重 [num_level*h*w*na,]
+            bbox_targets (Tensor): 单幅图像拟合的box reg,[num_level*h*w*na,4]
+            bbox_weights (Tensor): 每个box reg的权重 [num_level*h*w*na,4]
+            num_total_samples (int): SSD计算loss时作为分母的样本数量固定为正样本数量.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict[str, Tensor]: 计算得到的loss字典.
         """
 
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
-        # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-        pos_inds = ((labels >= 0) & (labels < self.num_classes)).nonzero(
-            as_tuple=False).reshape(-1)
-        neg_inds = (labels == self.num_classes).nonzero(
-            as_tuple=False).view(-1)
+        # 前景类: [0, num_classes -1], 背景类: num_classes
+        pos_inds = ((labels >= 0) & (labels < self.num_classes)).nonzero().reshape(-1)
+        neg_inds = (labels == self.num_classes).nonzero().view(-1)
 
         num_pos_samples = pos_inds.size(0)
         num_neg_samples = self.train_cfg.neg_pos_ratio * num_pos_samples
         if num_neg_samples > neg_inds.size(0):
             num_neg_samples = neg_inds.size(0)
+        # SSD在计算分类损失时,先计算出所有的负样本的loss.记 N=neg_pos_ratio * num_pos_samples
+        # 然后挑选前N个作为负样本的loss与正样本的loss一起当做分类总loss
         topk_loss_cls_neg, _ = loss_cls_all[neg_inds].topk(num_neg_samples)
         loss_cls_pos = loss_cls_all[pos_inds].sum()
         loss_cls_neg = topk_loss_cls_neg.sum()
         loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
 
-        if self.reg_decoded_bbox:
-            # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
-            # is applied directly on the decoded bounding boxes, it
-            # decodes the already encoded coordinates to absolute format.
+        if self.reg_decoded_bbox:  # 为True时计算绝对坐标的loss,否则计算修正系数的loss
             bbox_pred = self.bbox_coder.decode(anchor, bbox_pred)
 
         loss_bbox = smooth_l1_loss(
@@ -273,6 +245,7 @@ class SSDHead(AnchorHead):
             bbox_weights,
             beta=self.train_cfg.smoothl1_beta,
             avg_factor=num_total_samples)
+        # 不太明白此处[None]的意义
         return loss_cls[None], loss_bbox
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
@@ -283,29 +256,40 @@ class SSDHead(AnchorHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
-        """Compute losses of the head.
+        """计算head部分的损失.
 
         Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (N, num_anchors * num_classes, H, W)
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W)
-            gt_bboxes (list[Tensor]): each item are the truth boxes for each
-                image in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.
+            cls_scores (list[Tensor]): 所有层级的box score
+                 [(bs, na * (nc+1), h, w),] * num_level
+            bbox_preds (list[Tensor]): 所有层级的box reg
+                [(bs, na * 4, h, w),] * num_level
+            gt_bboxes (list[Tensor]): [[num_gt, 4], ] * bs, batch幅图像的gt box.
+            gt_labels (list[Tensor]): [[num_gt, ], ] * bs, batch幅图像的gt label.
+            img_metas (list[dict]): 每张图片的元信息. 以SSD300为例,参考如下
+                {'filename': 'd:/mmdetection/data/yexi/images/001061.jpg',  修改后的图片绝对路径
+                'ori_filename': '001061.jpg',   原始数据中的图片名称
+                'ori_shape': (600, 800, 3),     原始图片的尺寸
+                'img_shape': (300, 300, 3),     Resize后的图片尺寸
+                'pad_shape': (300, 300, 3),     Pad后的图片尺寸
+                'scale_factor': array([0.38659793, 0.75949365, 0.38659793, 0.75949365], dtype=float32),
+                 resize时,box各个边对应的缩放比例
+                'flip': False,                  图像是否翻转
+                'flip_direction': None,         如果翻转,那么翻转方式是什么
+                'img_norm_cfg': {               图像归一化的配置
+                                'mean': array([123.675, 116.28 , 103.53 ], dtype=float32),
+                                'std': array([1., 1., 1.], dtype=float32), 'to_rgb': True},
+                'batch_input_shape': (300, 300)}网络模型前向传播时的batch shape
+            gt_bboxes_ignore (None | list[Tensor]): 计算损失时可以指定忽略哪些gt box.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict[str, Tensor]: 计算出的各loss字典.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
 
+        # [[[h * w * na, 4], ] * num_levels,] * bs, [[[h * w * na, ], ] * num_levels, ] * bs
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
         cls_reg_targets = self.get_targets(
@@ -319,29 +303,30 @@ class SSDHead(AnchorHead):
             unmap_outputs=True)
         if cls_reg_targets is None:
             return None
+        # labels_list -> [[bs, h * w * na, ], ] * num_level. 其他同理
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_pos, num_total_neg) = cls_reg_targets
 
         num_images = len(img_metas)
+        # [bs,h*w*na,nc+1] * num_level -> [bs,num_level*h*w*na,nc+1]
         all_cls_scores = torch.cat([
+            # [bs,na*(nc+1),h,w] -> [bs,h,w,na*(nc+1)] -> [bs,h*w*na,nc+1]
             s.permute(0, 2, 3, 1).reshape(
                 num_images, -1, self.cls_out_channels) for s in cls_scores
         ], 1)
-        all_labels = torch.cat(labels_list, -1).view(num_images, -1)
-        all_label_weights = torch.cat(label_weights_list,
-                                      -1).view(num_images, -1)
-        all_bbox_preds = torch.cat([
+        # [[bs, h * w * na], ] * num_level -> [bs, num_level * h * w * na]
+        all_labels = torch.cat(labels_list, -1)
+        all_label_weights = torch.cat(label_weights_list, -1)
+        all_bbox_preds = torch.cat([  # 与 all_cls_scores 同理
             b.permute(0, 2, 3, 1).reshape(num_images, -1, 4)
             for b in bbox_preds
         ], -2)
-        all_bbox_targets = torch.cat(bbox_targets_list,
-                                     -2).view(num_images, -1, 4)
-        all_bbox_weights = torch.cat(bbox_weights_list,
-                                     -2).view(num_images, -1, 4)
+        # [[bs, h * w * na, 4], ] * num_level -> [bs, num_level * h * w * na, 4]
+        all_bbox_targets = torch.cat(bbox_targets_list, -2)
+        all_bbox_weights = torch.cat(bbox_weights_list, -2)
 
-        # concat all level anchors to a single tensor
-        all_anchors = []
-        for i in range(num_images):
+        all_anchors = []  # 最终为[[num_level*h*w*na, 4], ] * bs
+        for i in range(num_images):  # SSD300,每张图片上的anchor的shape都是[8732, 4].
             all_anchors.append(torch.cat(anchor_list[i]))
 
         losses_cls, losses_bbox = multi_apply(

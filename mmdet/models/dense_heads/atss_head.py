@@ -15,8 +15,8 @@ class ATSSHead(AnchorHead):
     """Bridging the Gap Between Anchor-based and Anchor-free Detection via
     Adaptive Training Sample Selection.
 
-    ATSS head structure is similar with FCOS, however ATSS use anchor boxes
-    and assign label by Adaptive Training Sample Selection instead max-iou.
+    需要注意的一点是,MMDetection中的ATSS是基于 RetinaNet 为例的.它的Head与FCOS相似,
+    但它是anchor-based的,并通过"自适应训练样本选择"分配正负样本,这点又与RetinaNet不同.
 
     https://arxiv.org/abs/1912.02424
     """
@@ -57,7 +57,7 @@ class ATSSHead(AnchorHead):
         self.sampling = False
         if self.train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
-            # SSD sampling=False so use PseudoSampler
+            # SSD sampling=False so use PseudoSampler 不太明白这句注释
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.loss_centerness = build_loss(loss_centerness)
@@ -90,7 +90,7 @@ class ATSSHead(AnchorHead):
         pred_pad_size = self.pred_kernel_size // 2
         self.atss_cls = nn.Conv2d(
             self.feat_channels,
-            self.num_anchors * self.cls_out_channels,
+            self.num_base_priors * self.cls_out_channels,
             self.pred_kernel_size,
             padding=pred_pad_size)
         self.atss_reg = nn.Conv2d(
@@ -107,39 +107,33 @@ class ATSSHead(AnchorHead):
             [Scale(1.0) for _ in self.prior_generator.strides])
 
     def forward(self, feats):
-        """Forward features from the upstream network.
+        """对来自上游网络的特征图进行前向传播.
 
         Args:
-            feats (tuple[Tensor]): Features from the upstream network, each is
-                a 4D-tensor.
+            feats (tuple[Tensor]): ([bs, 256, h, w], ) * num_level
+                注意,每次下采样如果输入为奇数则输出向上取整.h/w随着level不同而不同
 
         Returns:
-            tuple: Usually a tuple of classification scores and bbox prediction
-                cls_scores (list[Tensor]): Classification scores for all scale
-                    levels, each is a 4D-tensor, the channels number is
-                    num_anchors * num_classes.
-                bbox_preds (list[Tensor]): Box energies / deltas for all scale
-                    levels, each is a 4D-tensor, the channels number is
-                    num_anchors * 4.
+            tuple: tuple(cls_scores, reg_predict).
+                cls_scores (list[Tensor]): 所有层级的cls_scores,
+                    [bs,num_priors_lvl * num_classes,h,w],] * num_level
+                reg_predict (list[Tensor]): 所有层级的box_reg,
+                    [bs,num_priors_lvl * 4,h,w],] * num_level
         """
         return multi_apply(self.forward_single, feats, self.scales)
 
     def forward_single(self, x, scale):
-        """Forward feature of a single scale level.
+        """单层级上的前向传播.
 
         Args:
-            x (Tensor): Features of a single scale level.
-            scale (:obj: `mmcv.cnn.Scale`): Learnable scale module to resize
-                the bbox prediction.
+            x (Tensor): 指定stride的 FPN 特征图.
+            scale (:obj: `mmcv.cnn.Scale`): 用于调整回归大小的可学习比例模块.
 
         Returns:
             tuple:
-                cls_score (Tensor): Cls scores for a single scale level
-                    the channels number is num_anchors * num_classes.
-                bbox_pred (Tensor): Box energies / deltas for a single scale
-                    level, the channels number is num_anchors * 4.
-                centerness (Tensor): Centerness for a single scale level, the
-                    channel number is (N, num_anchors * 1, H, W).
+                cls_score (Tensor): [N, num_anchors * num_classes, H, W].
+                bbox_pred (Tensor): [N, num_anchors * 4, H, W].
+                centerness (Tensor): [N, num_anchors * 1, H, W].
         """
         cls_feat = x
         reg_feat = x
@@ -148,30 +142,24 @@ class ATSSHead(AnchorHead):
         for reg_conv in self.reg_convs:
             reg_feat = reg_conv(reg_feat)
         cls_score = self.atss_cls(cls_feat)
-        # we just follow atss, not apply exp in bbox_pred
+        # 我们只关心ATSS的实现,不会在reg上应用FCOS中的exp或者stride
         bbox_pred = scale(self.atss_reg(reg_feat)).float()
         centerness = self.atss_centerness(reg_feat)
         return cls_score, bbox_pred, centerness
 
     def loss_single(self, anchors, cls_score, bbox_pred, centerness, labels,
                     label_weights, bbox_targets, num_total_samples):
-        """Compute loss of a single scale level.
+        """计算单层级上的损失.
 
         Args:
-            cls_score (Tensor): Box scores for each scale level
-                Has shape (N, num_anchors * num_classes, H, W).
-            bbox_pred (Tensor): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W).
-            anchors (Tensor): Box reference for each scale level with shape
-                (N, num_total_anchors, 4).
-            labels (Tensor): Labels of each anchors with shape
-                (N, num_total_anchors).
-            label_weights (Tensor): Label weights of each anchor with shape
-                (N, num_total_anchors)
-            bbox_targets (Tensor): BBox regression targets of each anchor
-                weight shape (N, num_total_anchors, 4).
-            num_total_samples (int): Number os positive samples that is
-                reduced over all GPUs.
+            anchors (Tensor): 单层级上的anchor [bs, h * w * na, 4].
+            cls_score (Tensor): 单层级上box cls [bs, na * nc, h, w].
+            bbox_pred (Tensor): 单层级上box reg [bs, na * 4, h, w].
+            centerness (Tensor): 单层级上的centerness [bs, na, h, w].
+            labels (Tensor): 单层级上的cls_target [bs, h * w * na].
+            label_weights (Tensor): 单层级上的cls_weight [bs, h * w * na].
+            bbox_targets (Tensor): 单层级上的reg_target [bs, h * w * na, 4].
+            num_total_samples (int): 在所有GPU上的平均正样本数量.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -186,11 +174,11 @@ class ATSSHead(AnchorHead):
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
 
-        # classification loss
+        # cls loss
         loss_cls = self.loss_cls(
             cls_score, labels, label_weights, avg_factor=num_total_samples)
 
-        # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+        # 前景: [0, nc), 背景: nc
         bg_class_ind = self.num_classes
         pos_inds = ((labels >= 0)
                     & (labels < bg_class_ind)).nonzero().squeeze(1)
@@ -203,17 +191,20 @@ class ATSSHead(AnchorHead):
 
             centerness_targets = self.centerness_target(
                 pos_anchors, pos_bbox_targets)
+            # 因为self.centerness_target方法中形参gt格式为绝对坐标,
+            # 所以这里代码被写死了,固定为iou类loss, 即回归绝对坐标
             pos_decode_bbox_pred = self.bbox_coder.decode(
                 pos_anchors, pos_bbox_pred)
 
-            # regression loss
+            # reg loss,注意这里avg_factor固定为1,涉及到分布式训练,它后面先是计算出
+            # centerness在所有层级所有batch幅图像上的总和,再将各层级上的reg loss除以该值
             loss_bbox = self.loss_bbox(
                 pos_decode_bbox_pred,
                 pos_bbox_targets,
                 weight=centerness_targets,
                 avg_factor=1.0)
 
-            # centerness loss
+            # 它本质上是个obj loss
             loss_centerness = self.loss_centerness(
                 pos_centerness,
                 centerness_targets,
@@ -235,22 +226,21 @@ class ATSSHead(AnchorHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
-        """Compute losses of the head.
+        """
 
         Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (N, num_anchors * num_classes, H, W)
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W)
-            centernesses (list[Tensor]): Centerness for each scale
-                level with shape (N, num_anchors * 1, H, W)
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes_ignore (list[Tensor] | None): specify which bounding
-                boxes can be ignored when computing the loss.
+            cls_scores (list[Tensor]): 所有层级的cls_scores,
+                [[bs, na * nc, h, w],] * num_level
+            bbox_preds (list[Tensor]): 所有层级的box_reg,
+                [[bs, na * 4, h, w],] * num_level
+            centernesses (list[Tensor]): 所有层级的centernesses,
+                [[bs, na, h, w],] * num_level
+            gt_bboxes (list[Tensor]): batch张图像的gt box,格式为[x1, y1, x2, y2].
+                [(num_gts, 4), ] * bs.注num_gts取决于每张图片.而非定值
+            gt_labels (list[Tensor]): batch张图像上gt box对应的class.
+                [(num_gts,), ] * bs.同上
+            img_metas (list[dict]): batch张图片的元信息.
+            gt_bboxes_ignore (None | list[Tensor]): [[num_ignore, 4], ] * bs.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -259,8 +249,10 @@ class ATSSHead(AnchorHead):
         assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
+        # [[[[h * w * na, 4], ] * num_level], ] * bs  [[[[h*w*na, ], ] * num_level], ]*bs
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
+        # 该变量在后续没有使用到,暂时不明白它的意义
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
 
         cls_reg_targets = self.get_targets(
@@ -273,7 +265,7 @@ class ATSSHead(AnchorHead):
             label_channels=label_channels)
         if cls_reg_targets is None:
             return None
-
+        # [[bs,h * w * na, 4], ] * num_level
         (anchor_list, labels_list, label_weights_list, bbox_targets_list,
          bbox_weights_list, num_total_pos, num_total_neg) = cls_reg_targets
 
@@ -303,7 +295,8 @@ class ATSSHead(AnchorHead):
             loss_centerness=loss_centerness)
 
     def centerness_target(self, anchors, gts):
-        # only calculate pos centerness targets, otherwise there may be nan
+        # 只能计算正样本的centerness targets, 因为正样本在gt box 内部
+        # 而一旦超出gt box边界那么距离就会为负数,而torch.sqrt(负数)为nan
         anchors_cx = (anchors[:, 2] + anchors[:, 0]) / 2
         anchors_cy = (anchors[:, 3] + anchors[:, 1]) / 2
         l_ = anchors_cx - gts[:, 0]
@@ -328,26 +321,28 @@ class ATSSHead(AnchorHead):
                     gt_labels_list=None,
                     label_channels=1,
                     unmap_outputs=True):
-        """Get targets for ATSS head.
+        """计算head的cls_target, reg_target.
 
-        This method is almost the same as `AnchorHead.get_targets()`. Besides
-        returning the targets as the parent method does, it also returns the
-        anchors as the first element of the returned tuple.
+        anchor_list: [[[[h * w * na, 4], ] * num_level], ] * bs
+        valid_flag_list: [[[[h * w * na, ], ] * num_level,] ] * bs
+
+        该方法与`AnchorHead.get_targets()`几乎相同. 除了像父方法一样返回目标,
+        它还将anchor作为返回元组的第一个元素返回.
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
 
-        # anchor number of multi levels
+        # 各层级上anchor数量
         num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
         num_level_anchors_list = [num_level_anchors] * num_imgs
 
-        # concat all level anchors and flags to a single tensor
+        # anchor_list -> [[num_level*h*w*na, 4], ]*bs valid_flag_list同理
         for i in range(num_imgs):
             assert len(anchor_list[i]) == len(valid_flag_list[i])
             anchor_list[i] = torch.cat(anchor_list[i])
             valid_flag_list[i] = torch.cat(valid_flag_list[i])
 
-        # compute targets for each image
+        # 计算每幅图像的拟合目标
         if gt_bboxes_ignore_list is None:
             gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
         if gt_labels_list is None:
@@ -364,13 +359,13 @@ class ATSSHead(AnchorHead):
              img_metas,
              label_channels=label_channels,
              unmap_outputs=unmap_outputs)
-        # no valid anchors
+        # 没有有效anchor
         if any([labels is None for labels in all_labels]):
             return None
-        # sampled anchors of all images
+        # batch幅图像中经过采样的正负样本数
         num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
         num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
-        # split targets to a list w.r.t. multiple levels
+        # 将一系列值由[[num_level*h*w*na, 4], ] * bs转换为[[bs,h * w * na, 4], ] * num_level
         anchors_list = images_to_levels(all_anchors, num_level_anchors)
         labels_list = images_to_levels(all_labels, num_level_anchors)
         label_weights_list = images_to_levels(all_label_weights,
@@ -393,50 +388,38 @@ class ATSSHead(AnchorHead):
                            img_meta,
                            label_channels=1,
                            unmap_outputs=True):
-        """Compute regression, classification targets for anchors in a single
-        image.
+        """计算单幅图像上的reg_target与cls_target.
 
         Args:
-            flat_anchors (Tensor): Multi-level anchors of the image, which are
-                concatenated into a single tensor of shape (num_anchors ,4)
-            valid_flags (Tensor): Multi level valid flags of the image,
-                which are concatenated into a single tensor of
-                    shape (num_anchors,).
-            num_level_anchors Tensor): Number of anchors of each scale level.
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            img_meta (dict): Meta info of the image.
-            label_channels (int): Channel of label.
-            unmap_outputs (bool): Whether to map outputs back to the original
-                set of anchors.
+            flat_anchors (Tensor): [num_level*h*w*na, 4]
+            valid_flags (Tensor): [num_level*h*w*na, ]. 在非Padding区域的anchor mask
+            num_level_anchors (list[int]): [h*w*na, ] * num_level.
+            gt_bboxes (Tensor): [num_gts, 4].
+            gt_bboxes_ignore (Tensor): [num_ignored_gts, 4].
+            gt_labels (Tensor): [num_gts, ].
+            img_meta (dict): 图像元信息.
+            label_channels (int): 标签的类别数.
+            unmap_outputs (bool): 是否将输出映射回原始anchor.
 
         Returns:
-            tuple: N is the number of total anchors in the image.
-                labels (Tensor): Labels of all anchors in the image with shape
-                    (N,).
-                label_weights (Tensor): Label weights of all anchor in the
-                    image with shape (N,).
-                bbox_targets (Tensor): BBox targets of all anchors in the
-                    image with shape (N, 4).
-                bbox_weights (Tensor): BBox weights of all anchors in the
-                    image with shape (N, 4)
-                pos_inds (Tensor): Indices of positive anchor with shape
-                    (num_pos,).
-                neg_inds (Tensor): Indices of negative anchor with shape
-                    (num_neg,).
+            tuple:
+                anchors (Tensor): 所有层级的anchor [num_level*h*w*na, 4].
+                labels (Tensor): anchor的cls_target [num_level*h*w*na, ].
+                label_weights (Tensor): anchor的cls_weight [num_level*h*w*na, ].
+                bbox_targets (Tensor): anchor的reg_target [num_level*h*w*na, 4].
+                bbox_weights (Tensor): anchor的reg_weight [num_level*h*w*na, 4].
+                pos_inds (Tensor): 正样本的anchor索引 [num_pos, ].
+                neg_inds (Tensor): 负样本的anchor索引 [num_neg, ].
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
                                            self.train_cfg.allowed_border)
+        # 此时代表anchor设定完全不合理
         if not inside_flags.any():
             return (None, ) * 7
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
-
+        # 通过利用torch.split方法来获取每个层级上合格的anchor数量
         num_level_anchors_inside = self.get_num_level_anchors_inside(
             num_level_anchors, inside_flags)
         assign_result = self.assigner.assign(anchors, num_level_anchors_inside,
@@ -449,6 +432,7 @@ class ATSSHead(AnchorHead):
         num_valid_anchors = anchors.shape[0]
         bbox_targets = torch.zeros_like(anchors)
         bbox_weights = torch.zeros_like(anchors)
+        # 先初始化cls_label皆为背景
         labels = anchors.new_full((num_valid_anchors, ),
                                   self.num_classes,
                                   dtype=torch.long)
@@ -457,7 +441,7 @@ class ATSSHead(AnchorHead):
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
-            if self.reg_decoded_bbox:
+            if self.reg_decoded_bbox:  # 为True代表回归绝对坐标,否则回归修正系数
                 pos_bbox_targets = sampling_result.pos_gt_bboxes
             else:
                 pos_bbox_targets = self.bbox_coder.encode(
@@ -466,8 +450,7 @@ class ATSSHead(AnchorHead):
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
             if gt_labels is None:
-                # Only rpn gives gt_labels as None
-                # Foreground is the first class since v2.5.0
+                # 只有在RPN阶段gt_labels才为None,此时0为前景类别(v2.5.0开始)
                 labels[pos_inds] = 0
             else:
                 labels[pos_inds] = gt_labels[
@@ -479,7 +462,7 @@ class ATSSHead(AnchorHead):
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 
-        # map up to original set of anchors
+        # 映射回原始anchor上
         if unmap_outputs:
             num_total_anchors = flat_anchors.size(0)
             anchors = unmap(anchors, num_total_anchors, inside_flags)

@@ -23,12 +23,12 @@ class FPN(BaseModule):
             默认为0.即全部都使用
         end_level (int): 对应start_level的end_level,左闭右闭. 默认: -1, 意为n-1.
         add_extra_convs (bool | str): 如果是布尔值,是否添加额外的卷积层.
-            默认为False.
+            默认为False.使用max pool来进行下采样以得到更大尺寸的特征图.
             为True时, 它等价于 `add_extra_convs='on_input'`.
             如果是str,它指定额外convs的源特征图,不过只允许以下选项
 
-            - 'on_input': 输入neck的最上层特征图 (即in_channels中最上层的特征图).
-            - 'on_lateral': 横向转换后的最后一个特征图,即仅进行1x1卷积的最上层特征图.
+            - 'on_input': 输入neck的最上层特征图 (即backbone中最后输出的特征图).
+            - 'on_lateral': 横向转换后的最上面一个特征图,即仅进行1x1卷积的最上层特征图.
             - 'on_output': 进行3x3卷积后的最上层卷积.
         relu_before_extra_convs (bool): 是否在额外卷积之前应用relu. 默认为False.
         no_norm_on_lateral (bool): Whether to apply norm on lateral.
@@ -146,7 +146,7 @@ class FPN(BaseModule):
 
     @auto_fp16()
     def forward(self, inputs):
-        """Forward function."""
+        """前向传播."""
         assert len(inputs) == len(self.in_channels)
 
         # 1x1卷积过程
@@ -158,8 +158,8 @@ class FPN(BaseModule):
         # 从上到下下采样以及相加过程
         used_backbone_levels = len(laterals)
         for i in range(used_backbone_levels - 1, 0, -1):
-            # In some cases, fixing `scale factor` (e.g. 2) is preferred, but
-            #  it cannot co-exist with `size` in `F.interpolate`.
+            # 在某些情况下, 固定值`scale factor` (比如 2)是首选, 但它与
+            # `F.interpolate`中的`size`参数互斥.
             if 'scale_factor' in self.upsample_cfg:
                 # fix runtime error of "+=" inplace operation in PyTorch 1.10
                 laterals[i - 1] = laterals[i - 1] + F.interpolate(
@@ -194,7 +194,6 @@ class FPN(BaseModule):
                     raise NotImplementedError
                 # 由于不确定特征图来自哪里,所以这里需要单独添加进outs
                 outs.append(self.fpn_convs[used_backbone_levels](extra_source))
-                # 一般的模型,比如 RetinaNet ,Faster-RCNN等是不会再产生额外的特征图了
                 for i in range(used_backbone_levels + 1, self.num_outs):
                     if self.relu_before_extra_convs:
                         outs.append(self.fpn_convs[i](F.relu(outs[-1])))

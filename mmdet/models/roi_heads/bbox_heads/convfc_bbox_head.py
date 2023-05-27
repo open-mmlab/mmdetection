@@ -9,13 +9,13 @@ from .bbox_head import BBoxHead
 
 @HEADS.register_module()
 class ConvFCBBoxHead(BBoxHead):
-    r"""更通用的 box 头，具有共享的 conv 和 fc 层以及两个可选的分离分支.
+    r"""更通用的 box head,具有共享的 conv 和 fc 层以及两个可选的分离分支.
 
     .. 参考以下代码流程
 
-                                    /-> cls convs -> cls fcs -> cls
-        shared convs -> shared fcs
-                                    \-> reg convs -> reg fcs -> reg
+                                    /-> cls conv -> cls fcs -> cls
+        shared conv -> shared fcs
+                                    \-> reg conv -> reg fcs -> reg
     """  # noqa: W605
 
     def __init__(self,
@@ -36,6 +36,8 @@ class ConvFCBBoxHead(BBoxHead):
             *args, init_cfg=init_cfg, **kwargs)
         assert (num_shared_convs + num_shared_fcs + num_cls_convs +
                 num_cls_fcs + num_reg_convs + num_reg_fcs > 0)
+        # 根据上分示意图,如果shared_fcs存在,那么之后的tensor必然不是二维的特征图
+        # 也就无法与后续的cls/reg conv相结合.所以这里需要进行判断
         if num_cls_convs > 0 or num_reg_convs > 0:
             assert num_shared_fcs == 0
         if not self.with_cls:
@@ -60,12 +62,12 @@ class ConvFCBBoxHead(BBoxHead):
                 True)
         self.shared_out_channels = last_layer_dim
 
-        # 添加 cls 特定分支
+        # 添加 cls conv/fc
         self.cls_convs, self.cls_fcs, self.cls_last_dim = \
             self._add_conv_fc_branch(
                 self.num_cls_convs, self.num_cls_fcs, self.shared_out_channels)
 
-        # 添加 reg 特定分支
+        # 添加 reg conv/fc
         self.reg_convs, self.reg_fcs, self.reg_last_dim = \
             self._add_conv_fc_branch(
                 self.num_reg_convs, self.num_reg_fcs, self.shared_out_channels)
@@ -196,7 +198,24 @@ class ConvFCBBoxHead(BBoxHead):
 
 @HEADS.register_module()
 class Shared2FCBBoxHead(ConvFCBBoxHead):
-
+    """以faster_rcnn_r50_fpn.py中的box_head为例
+    Shared2FCBBoxHead(
+      (loss_cls): CrossEntropyLoss(avg_non_ignore=False)
+      (loss_bbox): SmoothL1Loss()
+      (fc_cls): Linear(in_features=1024, out_features=nc+1, bias=True)
+      (fc_reg): Linear(in_features=1024, out_features=nc*4, bias=True)
+      (shared_convs): ModuleList()
+      (shared_fcs): ModuleList(
+        (0): Linear(in_features=12544, out_features=1024, bias=True)
+        (1): Linear(in_features=1024, out_features=1024, bias=True)
+      )
+      (cls_convs): ModuleList()
+      (cls_fcs): ModuleList()
+      (reg_convs): ModuleList()
+      (reg_fcs): ModuleList()
+      (relu): ReLU(inplace=True)
+    )
+    """
     def __init__(self, fc_out_channels=1024, *args, **kwargs):
         super(Shared2FCBBoxHead, self).__init__(
             num_shared_convs=0,

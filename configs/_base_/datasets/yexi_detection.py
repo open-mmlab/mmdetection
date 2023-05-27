@@ -1,6 +1,6 @@
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'd:/mmdetection/data/yexi/'
+data_root = 'd:/data/yexi/'
 classes = (
     'RaggedBeggar', 'DwarfClown', 'LongLeggedClown', 'DartsClown', 'Truffe', 'LightDwarf',
     'BallClown', 'NakedElderly', 'ChangeClown', 'HostWhite', 'HostBlack', 'StormRider',
@@ -34,8 +34,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=4,
-    workers_per_gpu=4,
+    samples_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'yexi_train.json',

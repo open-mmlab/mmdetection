@@ -1,8 +1,7 @@
 _base_ = [
-    '../_base_/datasets/coco_detection.py',
+    '../_base_/datasets/beach_instance.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-# model settings
 model = dict(
     type='FCOS',
     backbone=dict(
@@ -14,9 +13,7 @@ model = dict(
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
         style='caffe',
-        init_cfg=dict(
-            type='Pretrained',
-            checkpoint='open-mmlab://detectron/resnet50_caffe')),
+        init_cfg=dict(type='Pretrained', checkpoint='open-mmlab://detectron/resnet50_caffe')),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
@@ -27,7 +24,7 @@ model = dict(
         relu_before_extra_convs=True),
     bbox_head=dict(
         type='FCOSHead',
-        num_classes=80,
+        num_classes=2,
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -41,7 +38,7 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
-    # training and testing settings
+    # 训练和测试配置,但是在FCOS中并未使用到test_cfg
     train_cfg=dict(
         assigner=dict(
             type='MaxIoUAssigner',

@@ -44,12 +44,12 @@ model = dict(
         loss_cls=dict(
             type='CrossEntropyLoss',
             use_sigmoid=False,
-            reduction='none',
+            reduction='none',  # yolact默认使用ohem,需要选取前pos_num*num_neg_samples个最大loss的负样本,所以不能使用默认参数mean
             loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.5),
         num_head_convs=1,
         num_protos=32,
-        use_ohem=True),
+        use_ohem=True),  # 为False时loss_cls(只有它)报维度不匹配的错误,这是因为loss_cls中reduction='none'
     mask_head=dict(
         type='YOLACTProtonet',
         in_channels=256,
@@ -73,7 +73,7 @@ model = dict(
             ignore_iof_thr=-1,
             gt_max_assign_all=False),
         # smoothl1_beta=1.,
-        allowed_border=-1,
+        allowed_border=1,
         pos_weight=-1,
         neg_pos_ratio=3,
         debug=False),
@@ -86,7 +86,7 @@ model = dict(
         max_per_img=100))
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+data_root = 'd:/data/coco/'
 img_norm_cfg = dict(
     mean=[123.68, 116.78, 103.94], std=[58.40, 57.12, 57.38], to_rgb=True)
 train_pipeline = [
@@ -128,8 +128,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=8,
-    workers_per_gpu=4,
+    samples_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_train2017.json',

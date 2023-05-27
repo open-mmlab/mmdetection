@@ -16,29 +16,27 @@ from .anchor_head import AnchorHead
 class YOLACTHead(AnchorHead):
     """YOLACT box head used in https://arxiv.org/abs/1904.02689.
 
-    Note that YOLACT head is a light version of RetinaNet head.
-    Four differences are described as follows:
+    注意, YOLACT head 是 RetinaNet head的轻量版本.
+    四个区别描述如下:
 
-    1. YOLACT box head has three-times fewer anchors.
-    2. YOLACT box head shares the convs for box and cls branches.
-    3. YOLACT box head uses OHEM instead of Focal loss.
-    4. YOLACT box head predicts a set of mask coefficients for each box.
+    1. YOLACT box head 在单个特征点上生成的anchor是RetinaNet的三分之一.
+    2. YOLACT box head 共享 box 和 cls 分支的卷积.
+    3. YOLACT box head 使用 OHEM 代替 Focal loss.
+    4. YOLACT box head 为每个box预测一组mask coefficients.
 
     Args:
-        num_classes (int): Number of categories excluding the background
-            category.
-        in_channels (int): Number of channels in the input feature map.
-        anchor_generator (dict): Config dict for anchor generator
-        loss_cls (dict): Config of classification loss.
-        loss_bbox (dict): Config of localization loss.
-        num_head_convs (int): Number of the conv layers shared by
-            box and cls branches.
-        num_protos (int): Number of the mask coefficients.
-        use_ohem (bool): If true, ``loss_single_OHEM`` will be used for
-            cls loss calculation. If false, ``loss_single`` will be used.
-        conv_cfg (dict): Dictionary to construct and config conv layer.
-        norm_cfg (dict): Dictionary to construct and config norm layer.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        num_classes (int): 分割类别数,不包含背景.
+        in_channels (int): 输入特征图的维度.
+        anchor_generator (dict): anchor生成策略的配置文件
+        loss_cls (dict): cls loss的配置文件.
+        loss_bbox (dict): reg loss的配置文件.
+        num_head_convs (int): box 和 cls 分支共享的卷积层数.
+        num_protos (int): mask coefficients的数量.
+        use_ohem (bool): 如果为true, 则使用``loss_single_OHEM``计算cls loss
+            否则使用``loss_single``.
+        conv_cfg (dict): 构建和配置conv层的字典.
+        norm_cfg (dict): 构建和配置norm层的字典.
+        init_cfg (dict or list[dict], optional): 模型权重初始化的配置字典.
     """
 
     def __init__(self,
@@ -87,7 +85,9 @@ class YOLACTHead(AnchorHead):
             self.sampling = False
 
     def _init_layers(self):
-        """Initialize layers of the head."""
+        """Initialize layers of the head.
+            conv3x3 * num_head_conv + conv_reg/cls/mask/
+        """
         self.relu = nn.ReLU(inplace=True)
         self.head_convs = ModuleList()
         for i in range(self.num_head_convs):
@@ -115,19 +115,16 @@ class YOLACTHead(AnchorHead):
             padding=1)
 
     def forward_single(self, x):
-        """Forward feature of a single scale level.
+        """单层级上的前向传播.
 
         Args:
-            x (Tensor): Features of a single scale level.
+            x (Tensor): 单层级特征图.
 
         Returns:
             tuple:
-                cls_score (Tensor): Cls scores for a single scale level \
-                    the channels number is num_anchors * num_classes.
-                bbox_pred (Tensor): Box energies / deltas for a single scale \
-                    level, the channels number is num_anchors * 4.
-                coeff_pred (Tensor): Mask coefficients for a single scale \
-                    level, the channels number is num_anchors * num_protos.
+                cls_score (Tensor): cls输出, [bs, na * nc, h, w]
+                bbox_pred (Tensor): reg输出, [bs, na * 4, h, w]
+                coeff_pred (Tensor): mask输出, [bs, na * num_protos, h, w]
         """
         for head_conv in self.head_convs:
             x = head_conv(x)
@@ -144,36 +141,30 @@ class YOLACTHead(AnchorHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
-        """A combination of the func:``AnchorHead.loss`` and
-        func:``SSDHead.loss``.
+        """实际上该loss就是``AnchorHead.loss`` 和 ``SSDHead.loss``的组合.
 
-        When ``self.use_ohem == True``, it functions like ``SSDHead.loss``,
-        otherwise, it follows ``AnchorHead.loss``. Besides, it additionally
-        returns ``sampling_results``.
+        当 use_ohem为True时, 类似于 ``SSDHead.loss``,否则类似于 ``AnchorHead.loss``.
+            此外,它还返回``sampling_results``.
 
         Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (N, num_anchors * num_classes, H, W)
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W)
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): Class indices corresponding to each box
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes_ignore (None | list[Tensor]): Specify which bounding
-                boxes can be ignored when computing the loss. Default: None
+            cls_scores (list[Tensor]): [[bs, na * nc, h, w],] * num_level
+            bbox_preds (list[Tensor]): [[bs, na * 4, h, w],] * num_level
+            gt_bboxes (list[Tensor]): [[num_gts, 4], ] * bs,格式为[x1, y1, x2, y2].
+            gt_labels (list[Tensor]): gt_bboxes对应的label, [[num_gts, ], ] * bs
+            img_metas (list[dict]): [dict(),] * bs dict为图片的元信息.
+            gt_bboxes_ignore (None | list[Tensor]): 计算损失时可以指定忽略哪些gt box.
 
         Returns:
             tuple:
-                dict[str, Tensor]: A dictionary of loss components.
-                List[:obj:``SamplingResult``]: Sampler results for each image.
+                dict[str, Tensor]: loss的计算结果.
+                List[:obj:``SamplingResult``]: [单张图像采样结果] * bs.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
 
+        # [[[h * w * na, 4], ] * num_levels,] * bs,  [[[h * w * na, ], ] * num_levels, ] * bs
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
@@ -185,75 +176,84 @@ class YOLACTHead(AnchorHead):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
+            # YOLACT中use_ohem默认为True,所以这里的cls_reg_target会基于valid_flag
+            # 但cls_socre仍然是全部anchor的cls_score,因此这里会在计算cls loss时造成
+            # 维度不匹配的错误,不过默认配置并不会触发该错误,但这仍然是一个待解决的问题. TODO
+            # 如果要彻底解决这个潜在问题需要在loss_single_OHEM中再生成一边valid_flag
+            # 及allowed_border再对pred_score与pred_reg替换.同时cls_reg_targets
+            # 前四个需要重写self.get_targets内部逻辑使得数据格式为[?, ] * bs.?表示
+            # 各维度数据在有效anchor上的target
             unmap_outputs=not self.use_ohem,
+            # unmap_outputs=True,
             return_sampling_results=True)
         if cls_reg_targets is None:
             return None
+        # [[bs, h * w * na], ] * num_level,  [[bs, h * w * na, 4],] * num_level
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_pos, num_total_neg, sampling_results) = cls_reg_targets
 
         if self.use_ohem:
             num_images = len(img_metas)
             all_cls_scores = torch.cat([
+                # [bs, na * nc, h, w] -> [bs, h, w, na*nc] -> [bs, h*w*na, nc]
                 s.permute(0, 2, 3, 1).reshape(
                     num_images, -1, self.cls_out_channels) for s in cls_scores
             ], 1)
-            all_labels = torch.cat(labels_list, -1).view(num_images, -1)
-            all_label_weights = torch.cat(label_weights_list,
-                                          -1).view(num_images, -1)
+            all_labels = torch.cat(labels_list, -1)
+            all_label_weights = torch.cat(label_weights_list, -1)
             all_bbox_preds = torch.cat([
                 b.permute(0, 2, 3, 1).reshape(num_images, -1, 4)
                 for b in bbox_preds
             ], -2)
-            all_bbox_targets = torch.cat(bbox_targets_list,
-                                         -2).view(num_images, -1, 4)
-            all_bbox_weights = torch.cat(bbox_weights_list,
-                                         -2).view(num_images, -1, 4)
+            all_bbox_targets = torch.cat(bbox_targets_list, -2)
+            all_bbox_weights = torch.cat(bbox_weights_list, -2)
 
-            # concat all level anchors to a single tensor
+            # 将所有层级上的anchor合并到单个Tensor上
             all_anchors = []
             for i in range(num_images):
                 all_anchors.append(torch.cat(anchor_list[i]))
 
-            # check NaN and Inf
+            # 检查是否存在INF和NaN
             assert torch.isfinite(all_cls_scores).all().item(), \
-                'classification scores become infinite or NaN!'
+                'cls score中存在INF 或 NaN!'
             assert torch.isfinite(all_bbox_preds).all().item(), \
-                'bbox predications become infinite or NaN!'
+                'box loc中存在INF 或 NaN!'
 
             losses_cls, losses_bbox = multi_apply(
                 self.loss_single_OHEM,
-                all_cls_scores,
-                all_bbox_preds,
-                all_anchors,
-                all_labels,
-                all_label_weights,
-                all_bbox_targets,
-                all_bbox_weights,
+                all_cls_scores,     # [bs, num_level*(h*w*na), nc]
+                all_bbox_preds,     # [bs, num_level*(h*w*na), 4]
+                all_anchors,        # [[num_level*(h*w*na), 4],] * bs
+                all_labels,         # [bs, num_level*(h*w*na)]
+                all_label_weights,  # [bs, num_level*(h*w*na)]
+                all_bbox_targets,   # [bs, num_level*(h*w*na), 4]
+                all_bbox_weights,   # [bs, num_level*(h*w*na), 4]
                 num_total_samples=num_total_pos)
         else:
             num_total_samples = (
                 num_total_pos +
                 num_total_neg if self.sampling else num_total_pos)
 
-            # anchor number of multi levels
+            # 各层级上的anchor数量 [num_anchor_per_level, ] * num_level
             num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
-            # concat all level anchors and flags to a single tensor
+            # [[num_level*h*w*na, 4], ] * bs -> [[bs, h*w*na, 4], ] * num_level
             concat_anchor_list = []
-            for i in range(len(anchor_list)):
+            for i in range(len(anchor_list)):  # range(bs)
                 concat_anchor_list.append(torch.cat(anchor_list[i]))
             all_anchor_list = images_to_levels(concat_anchor_list,
                                                num_level_anchors)
             losses_cls, losses_bbox = multi_apply(
                 self.loss_single,
-                cls_scores,
-                bbox_preds,
-                all_anchor_list,
-                labels_list,
-                label_weights_list,
-                bbox_targets_list,
-                bbox_weights_list,
+                cls_scores,          # [[bs, na * nc, h, w],] * num_level
+                bbox_preds,          # [[bs, na * 4, h, w],] * num_level
+                all_anchor_list,     # [[bs, h * w * na, 4], ] * num_level
+                labels_list,         # [[bs, h * w * na], ] * num_level
+                label_weights_list,  # [[bs, h * w * na], ] * num_level
+                bbox_targets_list,   # [[bs, h * w * na, 4],] * num_level
+                bbox_weights_list,   # [[bs, h * w * na, 4],] * num_level
                 num_total_samples=num_total_samples)
+            for i in range(len(losses_cls)):
+                losses_cls[i] = losses_cls[i].mean()
 
         return dict(
             loss_cls=losses_cls, loss_bbox=losses_bbox), sampling_results
@@ -261,10 +261,23 @@ class YOLACTHead(AnchorHead):
     def loss_single_OHEM(self, cls_score, bbox_pred, anchors, labels,
                          label_weights, bbox_targets, bbox_weights,
                          num_total_samples):
-        """"See func:``SSDHead.loss``."""
+        """"See func:``SSDHead.loss``.
+        Args:
+            cls_score (Tensor): [num_level*(h*w*na), nc], 所有层级上的特征点的cls输出
+            bbox_pred (Tensor): [num_level*(h*w*na), 4], 所有层级上的特征点的reg输出
+            anchors (Tensor): [num_level*(h*w*na), 4], 所有层级上的特征点生成的anchor
+            labels (Tensor): [num_level*(h*w*na),], 所有层级上的特征点的target_cls
+            label_weights (Tensor]): [num_level*(h*w*na),], 计算cls loss时该点的权重.
+            bbox_targets (Tensor): [num_level*(h*w*na), 4], 所有层级上的特征点的target_reg
+            bbox_weights (Tensor): [num_level*(h*w*na), 4], 计算reg loss时该点的权重.
+            num_total_samples (int): batch幅图像中的正样本数
+        """
+        # inside_flags = anchor_inside_flags(anchors, valid_flags,
+        #                                    img_meta['img_shape'][:2],
+        #                                    self.train_cfg.allowed_border)
         loss_cls_all = self.loss_cls(cls_score, labels, label_weights)
 
-        # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+        # 前景id: [0, num_classes -1], 背景id: num_classes
         pos_inds = ((labels >= 0) & (labels < self.num_classes)).nonzero(
             as_tuple=False).reshape(-1)
         neg_inds = (labels == self.num_classes).nonzero(
@@ -274,6 +287,7 @@ class YOLACTHead(AnchorHead):
         if num_pos_samples == 0:
             num_neg_samples = neg_inds.size(0)
         else:
+            # 控制正负样本比例
             num_neg_samples = self.train_cfg.neg_pos_ratio * num_pos_samples
             if num_neg_samples > neg_inds.size(0):
                 num_neg_samples = neg_inds.size(0)
@@ -282,9 +296,8 @@ class YOLACTHead(AnchorHead):
         loss_cls_neg = topk_loss_cls_neg.sum()
         loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
         if self.reg_decoded_bbox:
-            # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
-            # is applied directly on the decoded bounding boxes, it
-            # decodes the already encoded coordinates to absolute format.
+            # 当reg loss时IOU类 loss时,它计算predict_box与target_box之间的坐标差距
+            # 否则,它计算predict_loc与target_loc之间的差距,也即修正系数的差距
             bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
         loss_bbox = self.loss_bbox(
             bbox_pred,
@@ -301,39 +314,29 @@ class YOLACTHead(AnchorHead):
                    img_metas,
                    cfg=None,
                    rescale=False):
-        """"Similar to func:``AnchorHead.get_bboxes``, but additionally
-        processes coeff_preds.
+        """类似于:``AnchorHead.get_bboxes``, 但需要额外处理coeff_preds.
 
         Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                with shape (N, num_anchors * num_classes, H, W)
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W)
-            coeff_preds (list[Tensor]): Mask coefficients for each scale
-                level with shape (N, num_anchors * num_protos, H, W)
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            cfg (mmcv.Config | None): Test / postprocessing configuration,
-                if None, test_cfg would be used
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
+            cls_scores (list[Tensor]): 所有层级的box score,
+                [[bs, na * nc, h, w],] * num_level
+            bbox_preds (list[Tensor]): 所有层级的box reg,
+                [[bs, na * 4, h, w],] * num_level
+            coeff_preds (list[Tensor]): 所有层级的Mask coefficients
+                [[bs, na * num_protos, h, w],] * num_level
+            img_metas (list[dict]): [dict()] * bs, batch幅图像的元信息
+            cfg (mmcv.Config | None): 测试/后处理配置,如果没有,将使用 test_cfg
+            rescale (bool): 是否将box缩放回原始图像尺寸下.
 
         Returns:
-            list[tuple[Tensor, Tensor, Tensor]]: Each item in result_list is
-                a 3-tuple. The first item is an (n, 5) tensor, where the
-                first 4 columns are bounding box positions
-                (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
-                between 0 and 1. The second item is an (n,) tensor where each
-                item is the predicted class label of the corresponding box.
-                The third item is an (n, num_protos) tensor where each item
-                is the predicted mask coefficients of instance inside the
-                corresponding box.
+            list[tuple[Tensor, Tensor, Tensor]]: [(Tensor, Tensor, Tensor),] * bs.
+                [max_per_img, 5], [max_per_img,], [max_per_img, num_protos].
         """
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
 
         device = cls_scores[0].device
         featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
+        # 因为batch幅图像尺寸都一致,所以只要在一张特征图上生成一次anchor即可复用batch次.
         mlvl_anchors = self.prior_generator.grid_priors(
             featmap_sizes, device=device)
 
@@ -341,6 +344,8 @@ class YOLACTHead(AnchorHead):
         det_labels = []
         det_coeffs = []
         for img_id in range(len(img_metas)):
+            # 获取单幅图片的所有层级上的特征表示(score, reg等),
+            # [[na * (nc或4或num_protos), h, w],] * num_level.
             cls_score_list = select_single_mlvl(cls_scores, img_id)
             bbox_pred_list = select_single_mlvl(bbox_preds, img_id)
             coeff_pred_list = select_single_mlvl(coeff_preds, img_id)
@@ -364,36 +369,29 @@ class YOLACTHead(AnchorHead):
                            scale_factor,
                            cfg,
                            rescale=False):
-        """"Similar to func:``AnchorHead._get_bboxes_single``, but additionally
-        processes coeff_preds_list and uses fast NMS instead of traditional
-        NMS.
+        """类似于:``AnchorHead._get_bboxes_single``, 但需要额外处理 coeff_preds_list,
+         同时使用fast-NMS代替NMS.将单个图像的输出转换为 predict_bbox
 
         Args:
-            cls_score_list (list[Tensor]): Box scores for a single scale level
-                Has shape (num_anchors * num_classes, H, W).
-            bbox_pred_list (list[Tensor]): Box energies / deltas for a single
-                scale level with shape (num_anchors * 4, H, W).
-            coeff_preds_list (list[Tensor]): Mask coefficients for a single
-                scale level with shape (num_anchors * num_protos, H, W).
-            mlvl_anchors (list[Tensor]): Box reference for a single scale level
-                with shape (num_total_anchors, 4).
-            img_shape (tuple[int]): Shape of the input image,
-                (height, width, 3).
-            scale_factor (ndarray): Scale factor of the image arange as
-                (w_scale, h_scale, w_scale, h_scale).
-            cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used.
-            rescale (bool): If True, return boxes in original image space.
+            cls_score_list (list[Tensor]): 所有层级的box score,
+                [[na * nc, h, w],] * num_level.
+            bbox_pred_list (list[Tensor]): 所有层级的box reg,
+                [[na * 4, h, w],] * num_level
+            coeff_preds_list (list[Tensor]): 所有层级的Mask coefficients
+                [[na * num_protos, h, w],] * num_level
+            mlvl_anchors (list[Tensor]): 所有层级的anchor,
+                [[h * w * na, 4], ] * num_level.
+            img_shape (tuple[int]): batch幅图像对齐之前的尺寸,也即pipline中Resize后的尺寸,
+                [height, width, 3].
+            scale_factor (ndarray): pipline中Resize操作对图像宽高的缩放系数,
+                [w_scale, h_scale, w_scale, h_scale].
+            cfg (mmcv.Config): 测试/后处理配置,如果没有,将使用 test_cfg.
+            rescale (bool): 是否将box缩放回原始图像尺寸下.
 
         Returns:
-            tuple[Tensor, Tensor, Tensor]: The first item is an (n, 5) tensor,
-                where the first 4 columns are bounding box positions
-                (tl_x, tl_y, br_x, br_y) and the 5-th column is a score between
-                0 and 1. The second item is an (n,) tensor where each item is
-                the predicted class label of the corresponding box. The third
-                item is an (n, num_protos) tensor where each item is the
-                predicted mask coefficients of instance inside the
-                corresponding box.
+            tuple[Tensor, Tensor, Tensor]: det_bboxes, det_labels, det_coeffs
+                [max_per_img, 5], [max_per_img,], [max_per_img, num_protos]
+
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
@@ -416,33 +414,32 @@ class YOLACTHead(AnchorHead):
                                             0).reshape(-1, self.num_protos)
 
             if 0 < nms_pre < scores.shape[0]:
-                # Get maximum scores for foreground classes.
+                # 获得前景类的最高分.
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
                 else:
-                    # remind that we set FG labels to [0, num_class-1]
-                    # since mmdet v2.0
-                    # BG cat_id: num_class
+                    # 前景id: [0, num_class-1], 背景id: num_class
                     max_scores, _ = scores[:, :-1].max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
-                anchors = anchors[topk_inds, :]
-                bbox_pred = bbox_pred[topk_inds, :]
+                anchors = anchors[topk_inds, :]  # 最大为[nms_pre, 4],下同
+                bbox_pred = bbox_pred[topk_inds, :]  # [nms_pre, 4]
+                # [nms_pre, nc] YOLACT的配置文件中use_sigmoid默认为False
                 scores = scores[topk_inds, :]
-                coeff_pred = coeff_pred[topk_inds, :]
+                coeff_pred = coeff_pred[topk_inds, :]  # [nms_pre, num_protos]
             bboxes = self.bbox_coder.decode(
                 anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_coeffs.append(coeff_pred)
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
+        mlvl_bboxes = torch.cat(mlvl_bboxes)  # 最大为[num_level*nms_pre, 4],下同
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
-        mlvl_coeffs = torch.cat(mlvl_coeffs)
+        mlvl_scores = torch.cat(mlvl_scores)  # [num_level*nms_pre, nc]
+        mlvl_coeffs = torch.cat(mlvl_coeffs)  # [num_level*nms_pre, num_protos]
         if self.use_sigmoid_cls:
-            # Add a dummy background class to the backend when using sigmoid
-            # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-            # BG cat_id: num_class
+            # 网络cls分支输出的激活函数为sigmoid时额外添加一个背景类,YOLACT默认为softmax.
+            # 此处仅是为了格式上对齐的占位操作.
+            # 前景id: [0, num_class-1], 背景id: num_class
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
             mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
         det_bboxes, det_labels, det_coeffs = fast_nms(mlvl_bboxes, mlvl_scores,
@@ -457,16 +454,14 @@ class YOLACTHead(AnchorHead):
 class YOLACTSegmHead(BaseModule):
     """YOLACT segmentation head used in https://arxiv.org/abs/1904.02689.
 
-    Apply a semantic segmentation loss on feature space using layers that are
-    only evaluated during training to increase performance with no speed
-    penalty.
+    在特征空间上使用一个仅在训练期间评估的卷积层,然后对该层输出应用语义分割损失,
+    以提高性能而不会降低速度.
 
     Args:
-        in_channels (int): Number of channels in the input feature map.
-        num_classes (int): Number of categories excluding the background
-            category.
-        loss_segm (dict): Config of semantic segmentation loss.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        in_channels (int): 输入特征图的维度.一般为256,FPN各个输出特征图维度都是此值.
+        num_classes (int): 检测类别数,不包括背景类.
+        loss_segm (dict): seg loss的配置文件.
+        init_cfg (dict or list[dict], optional): 该部分初始化配置文件.
     """
 
     def __init__(self,
@@ -493,31 +488,27 @@ class YOLACTSegmHead(BaseModule):
             self.in_channels, self.num_classes, kernel_size=1)
 
     def forward(self, x):
-        """Forward feature from the upstream network.
+        """seg head的前向传播函数.
 
         Args:
-            x (Tensor): Feature from the upstream network, which is
-                a 4D-tensor.
+            x (Tensor): 输入特征图,[bs, in_channels, h, w]
 
         Returns:
-            Tensor: Predicted semantic segmentation map with shape
-                (N, num_classes, H, W).
+            Tensor: seg head预测的分割特征图, [bs, nc, h, w].
         """
         return self.segm_conv(x)
 
     @force_fp32(apply_to=('segm_pred', ))
     def loss(self, segm_pred, gt_masks, gt_labels):
-        """Compute loss of the head.
+        """Compute loss of the head.需要注意的是下面的//操作在PyTorch中是向上取整的.
 
         Args:
-            segm_pred (list[Tensor]): Predicted semantic segmentation map
-                with shape (N, num_classes, H, W).
-            gt_masks (list[Tensor]): Ground truth masks for each image with
-                the same shape of the input image.
-            gt_labels (list[Tensor]): Class indices corresponding to each box.
+            segm_pred (Tensor): 来自Seg Head的输出特征图, [bs, nc, H//8, W//8].
+            gt_masks (list[Tensor]): [[num_gt, H, W],] * bs
+            gt_labels (list[Tensor]): [[num_gt,],] * bs.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict[str, Tensor]: 计算的loss字典结果.
         """
         loss_segm = []
         num_imgs, num_classes, mask_h, mask_w = segm_pred.size()
@@ -540,18 +531,19 @@ class YOLACTSegmHead(BaseModule):
         return dict(loss_segm=loss_segm)
 
     def get_targets(self, segm_pred, gt_masks, gt_labels):
-        """Compute semantic segmentation targets for each image.
+        """计算单张图像上的seg target.简单来说就是生成一个shape和segm_pred
+            一致的全为0的特征图记为segm_targets,然后将gt mask缩放至segm_pred相同尺寸,
+            然后对缩放后的gt mask以0.5为阈值进行二值化.
+            最后把gt mask上对应cls的值复制到segm_targets的对应cls的特征图上去,
+            如果有两块mask区域重合,则取最大值.
 
         Args:
-            segm_pred (Tensor): Predicted semantic segmentation map
-                with shape (num_classes, H, W).
-            gt_masks (Tensor): Ground truth masks for each image with
-                the same shape of the input image.
-            gt_labels (Tensor): Class indices corresponding to each box.
+            segm_pred (Tensor): 预测的mask, [nc, H//8, W//8].
+            gt_masks (Tensor): [num_gt, H, W].
+            gt_labels (Tensor): [num_gt,].
 
         Returns:
-            Tensor: Semantic segmentation targets with shape
-                (num_classes, H, W).
+            Tensor: target mask, [nc, H//8, W//8].
         """
         if gt_masks.size(0) == 0:
             return None
@@ -583,17 +575,18 @@ class YOLACTProtonet(BaseModule):
     This head outputs the mask prototypes for YOLACT.
 
     Args:
-        in_channels (int): Number of channels in the input feature map.
-        proto_channels (tuple[int]): Output channels of protonet convs.
-        proto_kernel_sizes (tuple[int]): Kernel sizes of protonet convs.
-        include_last_relu (Bool): If keep the last relu of protonet.
-        num_protos (int): Number of prototypes.
-        num_classes (int): Number of categories excluding the background
-            category.
-        loss_mask_weight (float): Reweight the mask loss by this factor.
-        max_masks_to_train (int): Maximum number of masks to train for
-            each image.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        in_channels (int): 输入特征图的维度.
+        proto_channels (tuple[int]): protonet conv的输出维度.
+            需要注意的是,该参数最后一个是取决于配置文件中mask_head下面的
+            num_protos值,而非32.只是配置文件中num_protos默认值为32而已.
+            如果num_protos更改,那么该元组最后一个值也必须进行更改.
+        proto_kernel_sizes (tuple[int]): protonet conv的卷积核大小.
+        include_last_relu (Bool): 是否保留protonet的最后一个relu.
+        num_protos (int): prototypes的数量.
+        num_classes (int): 检测类别数.
+        loss_mask_weight (float): 通过这个参数重新对mask loss加权.
+        max_masks_to_train (int): 每张图像训练的最大mask数量.
+        init_cfg (dict or list[dict], optional): 该层权重初始化配置.
     """
 
     def __init__(self,
@@ -625,7 +618,7 @@ class YOLACTProtonet(BaseModule):
     def _init_layers(self):
         """A helper function to take a config setting and turn it into a
         network."""
-        # Possible patterns:
+        # 不同参数组合对应不同的算子操作:
         # ( 256, 3) -> conv
         # ( 256,-2) -> deconv
         # (None,-2) -> bilinear interpolate
@@ -664,46 +657,45 @@ class YOLACTProtonet(BaseModule):
         return prototypes
 
     def forward(self, x, coeff_pred, bboxes, img_meta, sampling_results=None):
-        """Forward feature from the upstream network to get prototypes and
-        linearly combine the prototypes, using masks coefficients, into
-        instance masks. Finally, crop the instance masks with given bboxes.
+        """对输入特征图进行前向传播以得到prototypes, 然后使用coeff_pred与其线性组合已得到分割结果.
+        最后对分割结果进行剪裁,bboxes内的保留,外部的全部为0.
 
         Args:
-            x (Tensor): Feature from the upstream network, which is
-                a 4D-tensor.
-            coeff_pred (list[Tensor]): Mask coefficients for each scale
-                level with shape (N, num_anchors * num_protos, H, W).
-            bboxes (list[Tensor]): Box used for cropping with shape
-                (N, num_anchors * 4, H, W). During training, they are
-                ground truth boxes. During testing, they are predicted
-                boxes.
-            img_meta (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            sampling_results (List[:obj:``SamplingResult``]): Sampler results
-                for each image.
+            x (Tensor): 输入特征图,如果含有FPN结构则为其中最大尺寸特征图, [bs, c, H//8, W//8]
+            coeff_pred (list[Tensor]): 后续以Train为例,此时为多层级的Mask coefficients
+                在Train时为predict_coeffs, [[bs, na * num_protos, h, w],] * num_level.
+                在Test时为det_coeffs, [[max_per_img, num_protos],] * bs.
+            bboxes (list[Tensor]): 后续以Train为例.
+                在Train时为gt box,[[num_gts, 4],] * bs.
+                在Test时为det_box.[[max_per_img, * 4],] * bs. Resize后的图像尺寸下的坐标
+            img_meta (list[dict]): [dict(),] * bs,batch幅图像的元信息.
+            sampling_results (List[:obj:``SamplingResult``]): batch幅图像的采样结果.
 
         Returns:
-            list[Tensor]: Predicted instance segmentation masks.
+            list[Tensor]: Predicted mask, [[?, H//4, W//4],] * bs.
+                ? 在Train/val时为num_pos,在Test时为max_per_img
         """
+        # [bs, c, H//8, W//8] -> [bs, 32, H//4, W//4] -> [bs, H//4, W//4, num_protos]
         prototypes = self.protonet(x)
         prototypes = prototypes.permute(0, 2, 3, 1).contiguous()
 
         num_imgs = x.size(0)
 
-        # The reason for not using self.training is that
-        # val workflow will have a dimension mismatch error.
-        # Note that this writing method is very tricky.
+        # 不使用self.training的原因是在val时会出现维度不匹配的错误.
+        # 值得注意的是,这个写法是非常具有技巧性的的.
         # Fix https://github.com/open-mmlab/mmdetection/issues/5978
         is_train_or_val_workflow = (coeff_pred[0].dim() == 4)
 
-        # Train or val workflow
+        # Train or val workflow  指的是default_runtime.py中的workflow
         if is_train_or_val_workflow:
             coeff_pred_list = []
             for coeff_pred_per_level in coeff_pred:
+                # [bs, h, w, na * num_protos] -> [bs, h*w*na, num_protos]
                 coeff_pred_per_level = \
                     coeff_pred_per_level.permute(
                         0, 2, 3, 1).reshape(num_imgs, -1, self.num_protos)
                 coeff_pred_list.append(coeff_pred_per_level)
+            # [bs, num_level*(h*w*na), num_protos]
             coeff_pred = torch.cat(coeff_pred_list, dim=1)
 
         mask_pred_list = []
@@ -718,13 +710,16 @@ class YOLACTProtonet(BaseModule):
                 bboxes_for_cropping = cur_bboxes
             else:
                 cur_sampling_results = sampling_results[idx]
+                # 这里可以使用cur_sampling_results.pos_gt_bboxes TODO 待替换
                 pos_assigned_gt_inds = \
                     cur_sampling_results.pos_assigned_gt_inds
                 bboxes_for_cropping = cur_bboxes[pos_assigned_gt_inds].clone()
                 pos_inds = cur_sampling_results.pos_inds
                 cur_coeff_pred = cur_coeff_pred[pos_inds]
 
-            # Linearly combine the prototypes with the mask coefficients
+            # ? 在Train/val时为num_pos,在Test时为max_per_img
+            # 将 prototypes 和 coeff_pred线性组合得到[H//4, W//4, ?]
+            # [H//4, W//4, num_protos] @ [num_protos, ?]
             mask_pred = cur_prototypes @ cur_coeff_pred.t()
             mask_pred = torch.sigmoid(mask_pred)
 
@@ -742,18 +737,15 @@ class YOLACTProtonet(BaseModule):
     @force_fp32(apply_to=('mask_pred', ))
     def loss(self, mask_pred, gt_masks, gt_bboxes, img_meta, sampling_results):
         """Compute loss of the head.
+        注意num_pos取决于prior与gt的分布,但其与num_gt的大小是不确定的,可大可小可等于.
+        小于是由于部分gt与prior的IOU小于pos_iou_thr所致.
 
         Args:
-            mask_pred (list[Tensor]): Predicted prototypes with shape
-                (num_classes, H, W).
-            gt_masks (list[Tensor]): Ground truth masks for each image with
-                the same shape of the input image.
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            img_meta (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            sampling_results (List[:obj:``SamplingResult``]): Sampler results
-                for each image.
+            mask_pred (list[Tensor]): [[num_pos, H//4, W//4], ] * bs
+            gt_masks (list[Tensor]): [[num_gt, H, W], ] * bs
+            gt_bboxes (list[Tensor]): [[num_gt, 4], ] * bs, [x1, y1, x2, y2]格式.
+            img_meta (list[dict]): [dict(),] * bs,batch幅图像的元信息.
+            sampling_results (List[:obj:``SamplingResult``]): batch幅图像的采样结果.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -770,9 +762,8 @@ class YOLACTProtonet(BaseModule):
 
             pos_assigned_gt_inds = cur_sampling_results.pos_assigned_gt_inds
             num_pos = pos_assigned_gt_inds.size(0)
-            # Since we're producing (near) full image masks,
-            # it'd take too much vram to backprop on every single mask.
-            # Thus we select only a subset.
+            # 如果我们在所有的正样本mask上进行反向传播需要较多的显存.因此如果正样本数量太多.
+            # 那么就随机选取其中一部分的正样本mask来进行反向传播
             if num_pos > self.max_masks_to_train:
                 perm = torch.randperm(num_pos)
                 select = perm[:self.max_masks_to_train]
@@ -783,6 +774,7 @@ class YOLACTProtonet(BaseModule):
 
             gt_bboxes_for_reweight = cur_gt_bboxes[pos_assigned_gt_inds]
 
+            # 获取正样本所对应的target_mask
             mask_targets = self.get_targets(cur_mask_pred, cur_gt_masks,
                                             pos_assigned_gt_inds)
             if num_pos == 0:
@@ -792,6 +784,8 @@ class YOLACTProtonet(BaseModule):
                                               torch.zeros_like(cur_mask_pred),
                                               torch.zeros_like(cur_mask_pred))
             else:
+                # cur_mask_pred是经过sigmoid输出的,理论上是∈(0, 1)的.
+                # 但sigmoid中有指数操作,可能会出现INF,所以这还是需要限制一下的.
                 cur_mask_pred = torch.clamp(cur_mask_pred, 0, 1)
                 loss = F.binary_cross_entropy(
                     cur_mask_pred, mask_targets,
@@ -802,30 +796,28 @@ class YOLACTProtonet(BaseModule):
                                    gt_bboxes_for_reweight[:, 0]) / w
                 gt_bboxes_height = (gt_bboxes_for_reweight[:, 3] -
                                     gt_bboxes_for_reweight[:, 1]) / h
+                # 这里对不同大小的gt的loss进行加权
                 loss = loss.mean(dim=(1,
                                       2)) / gt_bboxes_width / gt_bboxes_height
                 loss = torch.sum(loss)
             loss_mask.append(loss)
 
         if total_pos == 0:
-            total_pos += 1  # avoid nan
+            total_pos += 1  # 避免除数为0导致NaN
         loss_mask = [x / total_pos for x in loss_mask]
 
         return dict(loss_mask=loss_mask)
 
     def get_targets(self, mask_pred, gt_masks, pos_assigned_gt_inds):
-        """Compute instance segmentation targets for each image.
+        """计算每个图像的mask target.将gt mask长宽都缩放至mask_pred尺寸,然后大于0.5
+        的区域都置为1,否则为0.最后将正样本所对应的gt索引再对应的gt mask作为seg target返回.
 
         Args:
-            mask_pred (Tensor): Predicted prototypes with shape
-                (num_classes, H, W).
-            gt_masks (Tensor): Ground truth masks for each image with
-                the same shape of the input image.
-            pos_assigned_gt_inds (Tensor): GT indices of the corresponding
-                positive samples.
+            mask_pred (Tensor): [num_pos, H//4, W//4].
+            gt_masks (Tensor): [num_gt, H, W].
+            pos_assigned_gt_inds (Tensor): [num_pos,].正样本所对应的gt的索引
         Returns:
-            Tensor: Instance segmentation targets with shape
-                (num_instances, H, W).
+            mask_targets (Tensor): seg target,[num_pos, H//4, W//4].
         """
         if gt_masks.size(0) == 0:
             return None
@@ -839,20 +831,21 @@ class YOLACTProtonet(BaseModule):
         return mask_targets
 
     def get_seg_masks(self, mask_pred, label_pred, img_meta, rescale):
-        """Resize, binarize, and format the instance mask predictions.
+        """缩放回目标尺寸, 二值化, 格式化mask.
 
         Args:
-            mask_pred (Tensor): shape (N, H, W).
-            label_pred (Tensor): shape (N, ).
-            img_meta (dict): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            rescale (bool): If rescale is False, then returned masks will
-                fit the scale of imgs[0].
+            mask_pred (Tensor): [max_per_img, H//4, W//4].
+            label_pred (Tensor): [max_per_img, ].
+            img_meta (dict): [dict(),] * bs. dict()为图像元信息.
+            rescale (bool): 是否将mask缩放至原始图像尺寸下.
         Returns:
-            list[ndarray]: Mask predictions grouped by their predicted classes.
+            list[ndarray]: 按分割类别分组的predict mask. mask_h或mask_w取决于rescale.
+                [[[mask_h, mask_w], ] * num_seg_per_cls] * nc.
         """
         ori_shape = img_meta['ori_shape']
         scale_factor = img_meta['scale_factor']
+        # 如果需要缩放回Resize前尺寸,那么直接跳过[H,W],直接从[H//4,W//4] resize到[ori_h,ori_w]
+        # 否则就resize到网络输入尺寸[H, W]
         if rescale:
             img_h, img_w = ori_shape[:2]
         else:
@@ -874,16 +867,15 @@ class YOLACTProtonet(BaseModule):
         return cls_segms
 
     def crop(self, masks, boxes, padding=1):
-        """Crop predicted masks by zeroing out everything not in the predicted
-        bbox.
+        """box坐标本身是归一化的,先将其坐标放缩回mask尺寸下,
+            再将box中的所有mask区域归零.
 
         Args:
-            masks (Tensor): shape [H, W, N].
-            boxes (Tensor): bbox coords in relative point form with
-                shape [N, 4].
+            masks (Tensor): shape [h, batch_w//4, batch_h//4].
+            boxes (Tensor): [n, 4].相对坐标,∈[0, 1]
 
         Return:
-            Tensor: The cropped masks.
+            Tensor: 裁剪后的mask.
         """
         h, w, n = masks.size()
         x1, x2 = self.sanitize_coordinates(
@@ -908,19 +900,17 @@ class YOLACTProtonet(BaseModule):
         return masks * crop_mask.float()
 
     def sanitize_coordinates(self, x1, x2, img_size, padding=0, cast=True):
-        """Sanitizes the input coordinates so that x1 < x2, x1 != x2, x1 >= 0,
-        and x2 <= image_size. Also converts from relative to absolute
-        coordinates and casts the results to long tensors.
+        """清理及限制输入坐标,使 x1 < x2, x1 != x2, x1 >= 0 和 x2 <= image_size.
+        还将相对坐标转换为绝对坐标并将结果转换为长Long型Tensor.
 
-        Warning: this does things in-place behind the scenes so
-        copy if necessary.
+        Warning: 以下操作为in-place,因此如有必要.请复制.
 
         Args:
             _x1 (Tensor): shape (N, ).
             _x2 (Tensor): shape (N, ).
-            img_size (int): Size of the input image.
+            img_size (int): 输入图像的尺寸.
             padding (int): x1 >= padding, x2 <= image_size-padding.
-            cast (bool): If cast is false, the result won't be cast to longs.
+            cast (bool): 如果为False, 返回值将不会转为Long型Tensor.
 
         Returns:
             tuple:
@@ -945,29 +935,22 @@ class YOLACTProtonet(BaseModule):
                     det_coeffs,
                     img_metas,
                     rescale=False):
-        """Test function without test-time augmentation.
+        """非TTA模式.
 
         Args:
-            feats (tuple[torch.Tensor]): Multi-level features from the
-               upstream network, each is a 4D-tensor.
-            det_bboxes (list[Tensor]): BBox results of each image. each
-               element is (n, 5) tensor, where 5 represent
-               (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
-            det_labels (list[Tensor]): BBox results of each image. each
-               element is (n, ) tensor, each element represents the class
-               label of the corresponding box.
-            det_coeffs (list[Tensor]): BBox coefficient of each image. each
-               element is (n, m) tensor, m is vector length.
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
+            feats (tuple[torch.Tensor]): 所有层级的特征图.
+                [[bs, c, h, w], ] * num_level
+            det_bboxes (list[Tensor]): [[max_per_img, 5], ] * bs
+            det_labels (list[Tensor]): [[max_per_img, ], ] * bs.
+            det_coeffs (list[Tensor]): [[max_per_img, num_protos], ] * bs.
+            img_metas (list[dict]): [dict(),] * bs. dict()为图像元信息.
+            rescale (bool, optional): 是否将mask缩放回原始图像尺寸空间中.
 
         Returns:
-            list[list]: encoded masks. The c-th item in the outer list
-                corresponds to the c-th class. Given the c-th outer list, the
-                i-th item in that inner list is the mask for the i-th box with
-                class label c.
+            list[list]: 整个batch图像的分割结果,img_h或img_w取决于rescale.
+                rescale为True时, mask_h为图像Resize前高度, mask_w同理
+                rescale为False时, mask_h为图像Resize后高度, mask_w同理
+                [[[[mask_h, mask_w],] * num_seg_per_cls] * nc] * bs.
         """
         num_imgs = len(img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
@@ -975,8 +958,7 @@ class YOLACTProtonet(BaseModule):
             segm_results = [[[] for _ in range(self.num_classes)]
                             for _ in range(num_imgs)]
         else:
-            # if det_bboxes is rescaled to the original image size, we need to
-            # rescale it back to the testing scale to obtain RoIs.
+            # 如果box已经缩放回Resize前尺寸,则需将其重新放缩回Resize后尺寸以获得seg.
             if rescale and not isinstance(scale_factors[0], float):
                 scale_factors = [
                     torch.from_numpy(scale_factor).to(det_bboxes[0].device)
@@ -988,7 +970,7 @@ class YOLACTProtonet(BaseModule):
                 for i in range(len(det_bboxes))
             ]
             mask_preds = self.forward(feats[0], det_coeffs, _bboxes, img_metas)
-            # apply mask post-processing to each image individually
+            # 分别对每个图像应用mask后处理
             segm_results = []
             for i in range(num_imgs):
                 if det_bboxes[i].shape[0] == 0:

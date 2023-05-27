@@ -15,7 +15,6 @@ class QueryInst(SparseRCNN):
                  train_cfg,
                  test_cfg,
                  neck=None,
-                 pretrained=None,
                  init_cfg=None):
         super(QueryInst, self).__init__(
             backbone=backbone,
@@ -24,5 +23,4 @@ class QueryInst(SparseRCNN):
             roi_head=roi_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            pretrained=pretrained,
             init_cfg=init_cfg)

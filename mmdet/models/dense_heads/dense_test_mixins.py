@@ -20,7 +20,7 @@ class BBoxTestMixin(object):
         etc.
 
         Args:
-            feats (tuple[torch.Tensor]): 来自上游网络的多级特征,每个都是 4D 张量.
+            feats (tuple[torch.Tensor]): [[bs, c, h, w],] * num_level.
             img_metas (list[dict]): batch张图像信息.
             rescale (bool, optional): 是否缩放box.
 

@@ -8,19 +8,17 @@ from .base_roi_extractor import BaseRoIExtractor
 
 @ROI_EXTRACTORS.register_module()
 class SingleRoIExtractor(BaseRoIExtractor):
-    """Extract RoI features from a single level feature map.
+    """从单层特征图上提取ROI特征.
 
-    If there are multiple input feature levels, each RoI is mapped to a level
-    according to its scale. The mapping rule is proposed in
+    如果有多个层级特征图，则每个ROI根据其大小映射到其中之一. 映射规则参见
     `FPN <https://arxiv.org/abs/1612.03144>`_.
 
     Args:
-        roi_layer (dict): Specify RoI layer type and arguments.
-        out_channels (int): Output channels of RoI layers.
-        featmap_strides (List[int]): Strides of input feature maps.
-        finest_scale (int): Scale threshold of mapping to level 0. Default: 56.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
+        roi_layer (dict): 指定 RoI 层类型和参数.
+        out_channels (int): RoI 层的输出维度.
+        featmap_strides (List[int]): 输入特征图对应的stride.
+        finest_scale (int): 映射到最大特征图上的尺寸阈值.
+        init_cfg (dict or list[dict], optional): 初始化配置字典.
     """
 
     def __init__(self,
@@ -108,18 +106,15 @@ class SingleRoIExtractor(BaseRoIExtractor):
                 # 指定的roi层对指定的roi在其所属特征图上进行RoIPool/RoIAlign
                 # self.roi_layers[i] RoIAlign(output_size=(7, 7), spatial_scale=1/(4/8/16/32),
                 # sampling_ratio=0, pool_mode=avg, aligned=True, use_torchvision=False)
-                # feats[i].shape -> torch.Size([bs, self.out_channels, f_h, f_w])
-                # rois_ -> torch.Size([1935, 5]) 其中1935不具备普适性
-                # roi_feats_t.shape -> torch.Size([1935, self.out_channels, 7, 7])
+                # feats[i] -> [bs, self.out_channels, f_h, f_w]
+                # rois_ -> [1935, 5] 其中1935不具备普适性
+                # roi_feats_t -> [1935, self.out_channels, 7, 7]
                 roi_feats_t = self.roi_layers[i](feats[i], rois_)
                 roi_feats[inds] = roi_feats_t  # 逐层填充输出结果
             else:
-                # Sometimes some pyramid levels will not be used for RoI
-                # feature extraction and this will cause an incomplete
-                # computation graph in one GPU, which is different from those
-                # in other GPUs and will cause a hanging error.
-                # Therefore, we add it to ensure each feature pyramid is
-                # included in the computation graph to avoid runtime bugs.
+                # 有时一些层级上的特征图没有匹配到任何roi,这会导致一个GPU中的计算图不完整,
+                # 并与其他GPU中的计算图不同,会导致挂起错误
+                # 因此,我们添加以下部分代码以确保每个层级特征图都包含在计算图中以避免运行时错误
                 roi_feats = roi_feats + sum(
                     x.view(-1)[0]
                     for x in self.parameters()) * 0. + feats[i].sum() * 0.

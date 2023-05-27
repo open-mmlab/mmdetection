@@ -38,7 +38,7 @@ class BaseRoIExtractor(BaseModule, metaclass=ABCMeta):
         """构建 RoI 算子从每个级别的特征图中提取特征.
 
         Args:
-            layer_cfg (dict): 构造 RoI 层的配置字典. 选项是 "mmcvops" 下的模块,例如“RoIAlign”
+            layer_cfg (dict): 构造 RoI 层的配置字典. 选项是 "mmcv.ops" 下的模块,例如“RoIAlign”
                 Options are modules under ``mmcv/ops`` such as
                 ``RoIAlign``.
             featmap_strides (List[int]): The stride of input feature map w.r.t
@@ -47,8 +47,7 @@ class BaseRoIExtractor(BaseModule, metaclass=ABCMeta):
                 coordinate system.
 
         Returns:
-            nn.ModuleList: The RoI extractor modules for each level feature
-                map.
+            nn.ModuleList: 多层级上的RoI特征提取模块.
         """
 
         cfg = layer_cfg.copy()

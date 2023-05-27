@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
+    '../_base_/datasets/yexi_detection.py', '../_base_/default_runtime.py'
 ]
 model = dict(
     type='DETR',
@@ -7,7 +7,7 @@ model = dict(
         type='ResNet',
         depth=50,
         num_stages=4,
-        out_indices=(3, ),
+        out_indices=(3,),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
@@ -15,7 +15,7 @@ model = dict(
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     bbox_head=dict(
         type='DETRHead',
-        num_classes=80,
+        num_classes=15,
         in_channels=2048,
         transformer=dict(
             type='Transformer',
@@ -87,27 +87,27 @@ train_pipeline = [
                 multiscale_mode='value',
                 keep_ratio=True)
         ],
-                  [
-                      dict(
-                          type='Resize',
-                          img_scale=[(400, 1333), (500, 1333), (600, 1333)],
-                          multiscale_mode='value',
-                          keep_ratio=True),
-                      dict(
-                          type='RandomCrop',
-                          crop_type='absolute_range',
-                          crop_size=(384, 600),
-                          allow_negative_crop=True),
-                      dict(
-                          type='Resize',
-                          img_scale=[(480, 1333), (512, 1333), (544, 1333),
-                                     (576, 1333), (608, 1333), (640, 1333),
-                                     (672, 1333), (704, 1333), (736, 1333),
-                                     (768, 1333), (800, 1333)],
-                          multiscale_mode='value',
-                          override=True,
-                          keep_ratio=True)
-                  ]]),
+            [
+                dict(
+                    type='Resize',
+                    img_scale=[(400, 1333), (500, 1333), (600, 1333)],
+                    multiscale_mode='value',
+                    keep_ratio=True),
+                dict(
+                    type='RandomCrop',
+                    crop_type='absolute_range',
+                    crop_size=(384, 600),
+                    allow_negative_crop=True),
+                dict(
+                    type='Resize',
+                    img_scale=[(480, 1333), (512, 1333), (544, 1333),
+                               (576, 1333), (608, 1333), (640, 1333),
+                               (672, 1333), (704, 1333), (736, 1333),
+                               (768, 1333), (800, 1333)],
+                    multiscale_mode='value',
+                    override=True,
+                    keep_ratio=True)
+            ]]),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=1),
     dict(type='DefaultFormatBundle'),
