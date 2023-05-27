@@ -70,3 +70,4 @@ Import:
   - configs/yolo/metafile.yml
   - configs/yolof/metafile.yml
   - configs/yolox/metafile.yml
+  - configs/rfnext/metafile.yml

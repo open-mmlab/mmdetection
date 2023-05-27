@@ -114,7 +114,7 @@ def test_tpfp_openimages():
                            [10, 10, 25, 25, 0.98], [28, 28, 35, 35, 0.97],
                            [30, 30, 51, 51, 0.96], [100, 110, 120, 130, 0.15]])
     gt_bboxes = np.array([[10., 10., 30., 30.], [30., 30., 50., 50.]])
-    gt_groups_of = np.array([True, False], dtype=np.bool)
+    gt_groups_of = np.array([True, False], dtype=bool)
     gt_ignore = np.zeros((0, 4))
 
     # Open Images evaluation using group of.
@@ -158,7 +158,7 @@ def test_tpfp_openimages():
     assert cls_dets.shape == (6, 5)
 
     # Open Images evaluation using group of, and gt is all group of bboxes.
-    gt_groups_of = np.array([True, True], dtype=np.bool)
+    gt_groups_of = np.array([True, True], dtype=bool)
     result = tpfp_openimages(
         det_bboxes,
         gt_bboxes,

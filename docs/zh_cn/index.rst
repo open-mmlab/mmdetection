@@ -15,6 +15,7 @@ Welcome to MMDetection's documentation!
 
    1_exist_data_model.md
    2_new_data_model.md
+   3_exist_data_new_model.md
 
 .. toctree::
    :maxdepth: 2
@@ -46,6 +47,12 @@ Welcome to MMDetection's documentation!
    :caption: 接口文档（英文）
 
    api.rst
+
+.. toctree::
+   :maxdepth: 1
+   :caption: 设备支持
+
+   device/npu.md
 
 
 Indices and tables

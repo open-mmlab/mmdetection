@@ -464,7 +464,7 @@ Assuming that the checkpoints in the [model zoo](https://mmdetection.readthedocs
     configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
     checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
     8 \
-    -format-only \
+    --format-only \
     --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
 ```
 

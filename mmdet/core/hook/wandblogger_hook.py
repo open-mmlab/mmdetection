@@ -235,7 +235,8 @@ class MMDetWandbHook(WandbLoggerHook):
             # Log the table
             self._log_eval_table(runner.epoch + 1)
 
-    @master_only
+    # for the reason of this double-layered structure, refer to
+    # https://github.com/open-mmlab/mmdetection/issues/8145#issuecomment-1345343076
     def after_train_iter(self, runner):
         if self.get_mode(runner) == 'train':
             # An ugly patch. The iter-based eval hook will call the
@@ -245,7 +246,10 @@ class MMDetWandbHook(WandbLoggerHook):
             return super(MMDetWandbHook, self).after_train_iter(runner)
         else:
             super(MMDetWandbHook, self).after_train_iter(runner)
+        self._after_train_iter(runner)
 
+    @master_only
+    def _after_train_iter(self, runner):
         if self.by_epoch:
             return
 
@@ -566,10 +570,12 @@ class MMDetWandbHook(WandbLoggerHook):
         data_artifact = self.wandb.Artifact('val', type='dataset')
         data_artifact.add(self.data_table, 'val_data')
 
-        self.wandb.run.use_artifact(data_artifact)
-        data_artifact.wait()
-
-        self.data_table_ref = data_artifact.get('val_data')
+        if not self.wandb.run.offline:
+            self.wandb.run.use_artifact(data_artifact)
+            data_artifact.wait()
+            self.data_table_ref = data_artifact.get('val_data')
+        else:
+            self.data_table_ref = self.data_table
 
     def _log_eval_table(self, idx):
         """Log the W&B Tables for model evaluation.

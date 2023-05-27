@@ -500,3 +500,90 @@ python tools/analysis_tools/confusion_matrix.py ${CONFIG}  ${DETECTION_RESULTS} 
 And you will get a confusion matrix like this:
 
 ![confusion_matrix_example](https://user-images.githubusercontent.com/12907710/140513068-994cdbf4-3a4a-48f0-8fd8-2830d93fd963.png)
+
+## COCO Separated & Occluded Mask Metric
+
+Detecting occluded objects still remains a challenge for state-of-the-art object detectors.
+We implemented the metric presented in paper [A Tri-Layer Plugin to Improve Occluded Detection](https://arxiv.org/abs/2210.10046) to calculate the recall of separated and occluded masks.
+
+There are two ways to use this metric:
+
+### Offline evaluation
+
+We provide a script to calculate the metric with a dumped prediction file.
+
+First, use the `tools/test.py` script to dump the detection results:
+
+```shell
+python tools/test.py ${CONFIG} ${MODEL_PATH} --out results.pkl
+```
+
+Then, run the `tools/analysis_tools/coco_occluded_separated_recall.py` script to get the recall of separated and occluded masks:
+
+```shell
+python tools/analysis_tools/coco_occluded_separated_recall.py results.pkl --out occluded_separated_recall.json
+```
+
+The output should be like this:
+
+```
+loading annotations into memory...
+Done (t=0.51s)
+creating index...
+index created!
+processing detection results...
+[>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>] 5000/5000, 109.3 task/s, elapsed: 46s, ETA:     0s
+computing occluded mask recall...
+[>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>] 5550/5550, 780.5 task/s, elapsed: 7s, ETA:     0s
+COCO occluded mask recall: 58.79%
+COCO occluded mask success num: 3263
+computing separated mask recall...
+[>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>] 3522/3522, 778.3 task/s, elapsed: 5s, ETA:     0s
+COCO separated mask recall: 31.94%
+COCO separated mask success num: 1125
+
++-----------+--------+-------------+
+| mask type | recall | num correct |
++-----------+--------+-------------+
+| occluded  | 58.79% | 3263        |
+| separated | 31.94% | 1125        |
++-----------+--------+-------------+
+Evaluation results have been saved to occluded_separated_recall.json.
+```
+
+### Online evaluation
+
+We implement `OccludedSeparatedCocoDataset` which inherited from the `CocoDataset`.
+To evaluate the recall of separated and occluded masks during training, just replace the validation dataset type with `'OccludedSeparatedCocoDataset'` in your config:
+
+```python
+data = dict(
+    samples_per_gpu=2,
+    workers_per_gpu=2,
+    train=dict(
+        type=dataset_type,
+        ann_file=data_root + 'annotations/instances_train2017.json',
+        img_prefix=data_root + 'train2017/',
+        pipeline=train_pipeline),
+    val=dict(
+        type='OccludedSeparatedCocoDataset',  # modify this
+        ann_file=data_root + 'annotations/instances_val2017.json',
+        img_prefix=data_root + 'val2017/',
+        pipeline=test_pipeline),
+    test=dict(
+        type='OccludedSeparatedCocoDataset',  # modify this
+        ann_file=data_root + 'annotations/instances_val2017.json',
+        img_prefix=data_root + 'val2017/',
+        pipeline=test_pipeline))
+```
+
+Please cite the paper if you use this metric:
+
+```latex
+@article{zhan2022triocc,
+    title={A Tri-Layer Plugin to Improve Occluded Detection},
+    author={Zhan, Guanqi and Xie, Weidi and Zisserman, Andrew},
+    journal={British Machine Vision Conference},
+    year={2022}
+}
+```

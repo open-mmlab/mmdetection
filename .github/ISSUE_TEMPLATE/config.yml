@@ -1,9 +1,9 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 
 contact_links:
-  - name: Common Issues
-    url: https://mmdetection.readthedocs.io/en/latest/faq.html
-    about: Check if your issue already has solutions
-  - name: MMDetection Documentation
-    url: https://mmdetection.readthedocs.io/en/latest/
-    about: Check if your question is answered in docs
+  - name: 💬 Forum
+    url: https://github.com/open-mmlab/mmdetection/discussions
+    about: Ask general usage questions and discuss with other MMDetection community members
+  - name: 🌐 Explore OpenMMLab
+    url: https://openmmlab.com/
+    about: Get know more about OpenMMLab

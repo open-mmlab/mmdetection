@@ -44,6 +44,11 @@ def test_swin_transformer():
     model = SwinTransformer(pretrain_img_size=224, use_abs_pos_embed=True)
     model.init_weights()
     model(temp)
+    # Test different inputs when use absolute position embedding
+    temp = torch.randn((1, 3, 112, 112))
+    model(temp)
+    temp = torch.randn((1, 3, 256, 256))
+    model(temp)
 
     # Test patch norm
     model = SwinTransformer(patch_norm=False)

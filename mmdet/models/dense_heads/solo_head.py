@@ -9,6 +9,7 @@ from mmcv.cnn import ConvModule
 from mmdet.core import InstanceData, mask_matrix_nms, multi_apply
 from mmdet.core.utils import center_of_mass, generate_coordinate
 from mmdet.models.builder import HEADS, build_loss
+from mmdet.utils.misc import floordiv
 from .base_mask_head import BaseMaskHead
 
 
@@ -362,27 +363,41 @@ class SOLOHead(BaseMaskHead):
 
                 # 获取质心坐标在当前层级num_grid尺寸下的坐标
                 coord_w = int(
-                    (center_w / upsampled_size[1]) // (1. / num_grid))
+                    floordiv((center_w / upsampled_size[1]), (1. / num_grid),
+                             rounding_mode='trunc'))
                 coord_h = int(
-                    (center_h / upsampled_size[0]) // (1. / num_grid))
+                    floordiv((center_h / upsampled_size[0]), (1. / num_grid),
+                             rounding_mode='trunc'))
 
                 # 并计算其在num_grid尺寸下的四个边界,left, top, right, down
                 top_box = max(
                     0,
-                    int(((center_h - pos_h_range) / upsampled_size[0]) //
-                        (1. / num_grid)))
+                    int(
+                        floordiv(
+                            (center_h - pos_h_range) / upsampled_size[0],
+                            (1. / num_grid),
+                            rounding_mode='trunc')))
                 down_box = min(
                     num_grid - 1,
-                    int(((center_h + pos_h_range) / upsampled_size[0]) //
-                        (1. / num_grid)))
+                    int(
+                        floordiv(
+                            (center_h + pos_h_range) / upsampled_size[0],
+                            (1. / num_grid),
+                            rounding_mode='trunc')))
                 left_box = max(
                     0,
-                    int(((center_w - pos_w_range) / upsampled_size[1]) //
-                        (1. / num_grid)))
+                    int(
+                        floordiv(
+                            (center_w - pos_w_range) / upsampled_size[1],
+                            (1. / num_grid),
+                            rounding_mode='trunc')))
                 right_box = min(
                     num_grid - 1,
-                    int(((center_w + pos_w_range) / upsampled_size[1]) //
-                        (1. / num_grid)))
+                    int(
+                        floordiv(
+                            (center_w + pos_w_range) / upsampled_size[1],
+                            (1. / num_grid),
+                            rounding_mode='trunc')))
 
                 # 强制正样本区域在质心的外部
                 top = max(top_box, coord_h - 1)

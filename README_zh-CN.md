@@ -76,12 +76,9 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ### 💎 稳定版本
 
-最新的 **2.25.0** 版本已经在 2022.06.01 发布:
+最新的 **2.28.2** 版本已经在 2023.2.27 发布:
 
-- 支持功能更丰富的 `MMDetWandbHook`
-- 支持算法 [ConvNeXt](configs/convnext), [DDOD](configs/ddod) 和 [SOLOv2](configs/solov2)
-- [Mask2Former](configs/mask2former) 支持实例分割
-- 为了加入 Mask2Former 实例分割的模型，对 Mask2Former 原有的全景分割的配置文件进行了重命名
+- 修复了一些已知的文档、配置和链接错误问题
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/en/changelog.md)。
 
@@ -89,12 +86,32 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ### 🌟 3.x 预览版本
 
-全新的 **v3.0.0rc0** 版本已经在 2022.8.31 发布：
+#### 亮点
 
-- 基于 [MMEngine](https://github.com/open-mmlab/mmengine) 统一了各组件接口。
-- 全面支持混合精度，训练测试速度更快。
-- 提供了更强的基线模型，并支持了通用的半监督目标检测框架，详见[半监督目标检测教程](https://mmdetection.readthedocs.io/zh_CN/v3.0.0rc0/user_guides/semi_det.html)。
-- 支持使用任意单阶段检测器作为二阶段模型的 RPN，详见[教程](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/single_stage_as_rpn.html)。
+我们很高兴向大家介绍我们在实时目标识别任务方面的最新成果 RTMDet，包含了一系列的全卷积单阶段检测模型。 RTMDet 不仅在从 tiny 到 extra-large 尺寸的目标检测模型上实现了最佳的参数量和精度的平衡，而且在实时实例分割和旋转目标检测任务上取得了最先进的成果。 更多细节请参阅[技术报告](https://arxiv.org/abs/2212.07784)。 预训练模型可以在[这里](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet)找到。
+
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/real-time-instance-segmentation-on-mscoco)](https://paperswithcode.com/sota/real-time-instance-segmentation-on-mscoco?p=rtmdet-an-empirical-study-of-designing-real)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/object-detection-in-aerial-images-on-dota-1)](https://paperswithcode.com/sota/object-detection-in-aerial-images-on-dota-1?p=rtmdet-an-empirical-study-of-designing-real)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/object-detection-in-aerial-images-on-hrsc2016)](https://paperswithcode.com/sota/object-detection-in-aerial-images-on-hrsc2016?p=rtmdet-an-empirical-study-of-designing-real)
+
+| Task                     | Dataset | AP                                   | FPS(TRT FP16 BS1 3090) |
+| ------------------------ | ------- | ------------------------------------ | ---------------------- |
+| Object Detection         | COCO    | 52.8                                 | 322                    |
+| Instance Segmentation    | COCO    | 44.6                                 | 188                    |
+| Rotated Object Detection | DOTA    | 78.9(single-scale)/81.3(multi-scale) | 121                    |
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
+</div>
+
+全新的 **v3.0.0rc6** 版本已经在 2023.2.27 发布：
+
+- 支持了 [Boxinst](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/boxinst), [Objects365 Dataset](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/objects365) 和 [Separated and Occluded COCO metric](https://github.com/open-mmlab/mmdetection/tree/3.x/docs/zh_cn/user_guides/useful_tools.md#coco-分离和遮挡实例分割性能评估)
+- 在 `Projects` 中支持了 [ConvNeXt-V2](https://github.com/open-mmlab/mmdetection/tree/3.x/projects/ConvNeXt-V2), [DiffusionDet](https://github.com/open-mmlab/mmdetection/tree/3.x/projects/DiffusionDet) 和 [EfficientDet](https://github.com/open-mmlab/mmdetection/tree/3.x/projects/EfficientDet), [Detic](https://github.com/open-mmlab/mmdetection/tree/3.x/projects/Detic) 的推理
+- 重构了 [DETR](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/detr) 系列并支持了 [Conditional-DETR](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/conditional_detr), [DAB-DETR](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/dab_detr) 和 [DINO](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/dino)
+- 支持了 DetInferencer, Test Time Augmentation 以及从注册表 (registry) 自动导入模块
+- 支持了 RTMDet-Ins 的 ONNXRuntime 和 TensorRT [部署](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet/README.md#deployment-tutorial)
+- 支持了检测器[计算 FLOPS](https://github.com/open-mmlab/mmdetection/tree/3.x/docs/zh_cn/user_guides/useful_tools.md#模型复杂度)
 
 ## 安装
 
@@ -228,6 +245,13 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
         </ul>
         </ul>
       </ul>
+        <li><b>Receptive Field Search</b></li>
+      <ul>
+        <ul>
+          <li><a href="configs/rfnext">RF-Next (TPAMI'2022)</a></li>
+        </ul>
+        </ul>
+      </ul>
       </td>
     </tr>
 </td>
@@ -302,6 +326,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/pisa">Prime Sample Attention (CVPR'2020)</a></li>
           <li><a href="configs/strong_baselines">Strong Baselines (CVPR'2021)</a></li>
           <li><a href="configs/resnet_strikes_back">Resnet strikes back (NeurIPSW'2021)</a></li>
+          <li><a href="configs/rfnext">RF-Next (TPAMI'2022)</a></li>
         </ul>
       </td>
     </tr>
@@ -348,7 +373,9 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 
 ## OpenMMLab 的其他项目
 
+- [MMEngine](https://github.com/open-mmlab/mmengine): OpenMMLab 深度学习模型训练基础库
 - [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab 计算机视觉基础库
+- [MMEval](https://github.com/open-mmlab/mmeval): 统一开放的跨框架算法评测库
 - [MIM](https://github.com/open-mmlab/mim): MIM 是 OpenMMlab 项目、算法、模型的统一入口
 - [MMClassification](https://github.com/open-mmlab/mmclassification): OpenMMLab 图像分类工具箱
 - [MMDetection](https://github.com/open-mmlab/mmdetection): OpenMMLab 目标检测工具箱

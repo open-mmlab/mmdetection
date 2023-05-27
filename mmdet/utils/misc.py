@@ -5,7 +5,8 @@ import os.path as osp
 import warnings
 
 import mmcv
-from mmcv.utils import print_log
+import torch
+from mmcv.utils import TORCH_VERSION, digit_version, print_log
 
 
 def find_latest_checkpoint(path, suffix='pth'):
@@ -74,3 +75,15 @@ def update_data_root(cfg, logger=None):
 
     update(cfg.data, cfg.data_root, dst_root)
     cfg.data_root = dst_root
+
+
+_torch_version_div_indexing = (
+    'parrots' not in TORCH_VERSION
+    and digit_version(TORCH_VERSION) >= digit_version('1.8'))
+
+
+def floordiv(dividend, divisor, rounding_mode='trunc'):
+    if _torch_version_div_indexing:
+        return torch.div(dividend, divisor, rounding_mode=rounding_mode)
+    else:
+        return dividend // divisor

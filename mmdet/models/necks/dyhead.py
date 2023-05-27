@@ -44,7 +44,7 @@ class DyDCNv2(nn.Module):
 
     def forward(self, x, offset, mask):
         """Forward function."""
-        x = self.conv(x.contiguous(), offset, mask)
+        x = self.conv(x.contiguous(), offset.contiguous(), mask)
         if self.with_norm:
             x = self.norm(x)
         return x

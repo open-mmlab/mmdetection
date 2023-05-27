@@ -167,10 +167,14 @@ class ResultVisualizer:
         elif isinstance(results[0], list):
             good_samples, bad_samples = self.detection_evaluate(
                 dataset, results, topk=topk)
+        elif isinstance(results[0], tuple):
+            results_ = [result[0] for result in results]
+            good_samples, bad_samples = self.detection_evaluate(
+                dataset, results_, topk=topk)
         else:
             raise 'The format of result is not supported yet. ' \
                 'Current dict for panoptic segmentation and list ' \
-                'for object detection are supported.'
+                'or tuple for object detection are supported.'
 
         good_dir = osp.abspath(osp.join(show_dir, 'good'))
         bad_dir = osp.abspath(osp.join(show_dir, 'bad'))

@@ -12,6 +12,7 @@ from mmcv.runner import BaseModule, auto_fp16, force_fp32
 from mmdet.core import InstanceData, mask_matrix_nms, multi_apply
 from mmdet.core.utils import center_of_mass, generate_coordinate
 from mmdet.models.builder import HEADS
+from mmdet.utils.misc import floordiv
 from .solo_head import SOLOHead
 
 
@@ -368,27 +369,41 @@ class SOLOV2Head(SOLOHead):
                 center_h, center_w = center_of_mass(gt_mask)
 
                 coord_w = int(
-                    (center_w / upsampled_size[1]) // (1. / num_grid))
+                    floordiv((center_w / upsampled_size[1]), (1. / num_grid),
+                             rounding_mode='trunc'))
                 coord_h = int(
-                    (center_h / upsampled_size[0]) // (1. / num_grid))
+                    floordiv((center_h / upsampled_size[0]), (1. / num_grid),
+                             rounding_mode='trunc'))
 
                 # left, top, right, down
                 top_box = max(
                     0,
-                    int(((center_h - pos_h_range) / upsampled_size[0]) //
-                        (1. / num_grid)))
+                    int(
+                        floordiv(
+                            (center_h - pos_h_range) / upsampled_size[0],
+                            (1. / num_grid),
+                            rounding_mode='trunc')))
                 down_box = min(
                     num_grid - 1,
-                    int(((center_h + pos_h_range) / upsampled_size[0]) //
-                        (1. / num_grid)))
+                    int(
+                        floordiv(
+                            (center_h + pos_h_range) / upsampled_size[0],
+                            (1. / num_grid),
+                            rounding_mode='trunc')))
                 left_box = max(
                     0,
-                    int(((center_w - pos_w_range) / upsampled_size[1]) //
-                        (1. / num_grid)))
+                    int(
+                        floordiv(
+                            (center_w - pos_w_range) / upsampled_size[1],
+                            (1. / num_grid),
+                            rounding_mode='trunc')))
                 right_box = min(
                     num_grid - 1,
-                    int(((center_w + pos_w_range) / upsampled_size[1]) //
-                        (1. / num_grid)))
+                    int(
+                        floordiv(
+                            (center_w + pos_w_range) / upsampled_size[1],
+                            (1. / num_grid),
+                            rounding_mode='trunc')))
 
                 top = max(top_box, coord_h - 1)
                 down = min(down_box, coord_h + 1)
@@ -544,7 +559,7 @@ class SOLOV2Head(SOLOHead):
         if num_pos > 0:
             loss_mask = torch.cat(loss_mask).sum() / num_pos
         else:
-            loss_mask = torch.cat(loss_mask).mean()
+            loss_mask = mask_feats.sum() * 0
 
         # target_cls -> [[bs * num_grid**2, ], ] * nl
         flatten_labels = [

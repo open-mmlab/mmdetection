@@ -50,6 +50,12 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
     model.cfg = config  # 为方便起见,将配置保存在模型中
     model.to(device)
     model.eval()
+
+    if device == 'npu':
+        from mmcv.device.npu import NPUDataParallel
+        model = NPUDataParallel(model)
+        model.cfg = config
+
     return model
 
 

@@ -12,7 +12,7 @@ class RandomSampler(BaseSampler):
     Args:
         num (int): 样本总数
         pos_fraction (float): 正样本比例
-        neg_pos_up (int, optional): pos/neg的上限. 默认-1,即无上限.
+        neg_pos_ub (int, optional): pos/neg的上限. 默认-1,即无上限.
         add_gt_as_proposals (bool, optional): 是否将gt box添加进roi. 默认True.
     """
 

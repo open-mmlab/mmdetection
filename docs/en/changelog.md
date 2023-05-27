@@ -1,5 +1,190 @@
 ## Changelog
 
+### v2.28.2 (24/2/2023)
+
+#### New Features and Improvements
+
+- Add Twitter, Discord, Medium and YouTube link (#9774)
+- Update `customize_runtime.md` (#9797)
+
+#### Bug Fixes
+
+- Fix `WIDERFace SSD` loss for Nan problem (#9734)
+- Fix missing API documentation in Readthedoc (#9729)
+- Fix the configuration file and log path of CenterNet (#9791)
+
+#### Contributors
+
+A total of 4 developers contributed to this release.
+Thanks @co63oc, @Ginray, @vansin, @RangiLyu
+
+### v2.28.1 (1/2/2023)
+
+#### Bug Fixes
+
+- Enable to set float mlp_ratio in SwinTransformer (#8670)
+- Fix import error that causes training failure (#9694)
+- Fix isort version in lint (#9685)
+- Fix init_cfg of YOLOF (#8243)
+
+#### Contributors
+
+A total of 4 developers contributed to this release.
+Thanks @triple-Mu, @i-aki-y, @twmht, @RangiLyu
+
+### v2.28.0 (28/1/2023)
+
+#### Highlights
+
+- Support Objects365 Dataset and Separated and Occluded COCO metric
+- Support acceleration of RetinaNet and SSD on Ascend
+- Deprecate the support of Python 3.6
+
+#### New Features and Improvements
+
+- Support Objects365 Dataset (#7525)
+- Support [Separated and Occluded COCO metric](https://arxiv.org/abs/2210.10046) (#9574)
+- Support acceleration of RetinaNet and SSD on Ascend with documentation (#9648, #9614)
+- Added missing `-` to `--format-only` in documentation.
+
+#### Deprecations
+
+- Upgrade the minimum Python version to 3.7, the support of Python 3.6 is no longer guaranteed (#9604)
+
+#### Bug Fixes
+
+- Fix validation loss logging by (#9663)
+- Fix inconsistent float precision between mmdet and mmcv (#9570)
+- Fix argument name for fp32 in `DeformableDETRHead` (#9607)
+- Fix typo of all config file path in Metafile.yml (#9627)
+
+#### Contributors
+
+A total of 11 developers contributed to this release.
+Thanks @eantono, @akstt, @@lpizzinidev, @RangiLyu, @kbumsik, @tianleiSHI, @nijkah, @BIGWangYuDong, @wangjiangben-hw, @@jamiechoi1995, @ZwwWayne
+
+## New Contributors
+
+- @kbumsik made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9627
+- @akstt made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9614
+- @lpizzinidev made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9649
+- @eantono made their first contribution in https://github.com/open-mmlab/mmdetection/pull/9663
+
+### v2.27.0 (5/1/2023)
+
+#### Highlights
+
+- Support receptive field search of CNN models([TPAMI 2022: RF-Next](http://mftp.mmcheng.net/Papers/22TPAMI-ActionSeg.pdf)) (#8191)
+
+#### Bug Fixes
+
+- Fix deadlock issue related with MMDetWandbHook (#9476)
+
+#### Improvements
+
+- Add minimum GitHub token permissions for workflows (#8928)
+- Delete compatible code for parrots in roi extractor (#9503)
+- Deprecate np.bool Type Alias (#9498)
+- Replace numpy transpose with torch permute to speed-up data pre-processing (#9533)
+
+#### Documents
+
+- Fix typo in docs/zh_cn/tutorials/config.md (#9416)
+- Fix Faster RCNN FP16 config link in README (#9366)
+
+#### Contributors
+
+A total of 12 developers contributed to this release.
+Thanks @Min-Sheng, @gasvn, @lzyhha, @jbwang1997, @zachcoleman, @chenyuwang814, @MilkClouds, @Fizzez, @boahc077, @apatsekin, @zytx121, @DonggeunYu
+
+### v2.26.0 (23/11/2022)
+
+#### Highlights
+
+- Support training on [NPU](docs/en/device/npu.md) (#9267)
+
+#### Bug Fixes
+
+- Fix RPN visualization (#9151)
+- Fix readthedocs by freezing the dependency versions (#9154)
+- Fix device argument error in MMDet_Tutorial.ipynb (#9112)
+- Fix solov2 cannot dealing with empty gt image (#9185)
+- Fix random flipping ratio comparison of mixup image (#9336)
+
+#### Improvements
+
+- Complement necessary argument of seg_suffix of cityscapes (#9330)
+- Support copy paste based on bbox when there is no gt mask (#8905)
+- Make scipy as a default dependency in runtime (#9186)
+
+#### Documents
+
+- Delete redundant Chinese characters in docs (#9175)
+- Add MMEval in README (#9217)
+
+#### Contributors
+
+A total of 11 developers contributed to this release.
+Thanks @wangjiangben-hw, @motokimura, @AdorableJiang, @BainOuO, @JarvisKevin, @wanghonglie, @zytx121, @BIGWangYuDong, @hhaAndroid, @RangiLyu, @ZwwWayne
+
+### v2.25.3 (25/10/2022)
+
+#### Bug Fixes
+
+- Skip remote sync when wandb is offline (#8755)
+- Fix jpg to png bug when using seg maps (#9078)
+
+#### Improvements
+
+- Fix typo in warning (#8844)
+- Fix CI for timm, pycocotools, onnx (#9034)
+- Upgrade pre-commit hooks (#8964)
+
+#### Documents
+
+- Update BoundedIoULoss config in readme (#8808)
+- Fix Faster R-CNN Readme (#8803)
+- Update location of test_cfg and train_cfg (#8792)
+- Fix issue template (#8966)
+- Update random sampler docstring (#9033)
+- Fix wrong image link (#9054)
+- Fix FPG readme (#9041)
+
+#### Contributors
+
+A total of 13 developers contributed to this release.
+Thanks @Zheng-LinXiao, @i-aki-y, @fbagci, @sudoAimer, @Czm369, @DrRyanHuang, @RangiLyu, @wanghonglie, @shinya7y, @Ryoo72, @akshaygulabrao, @gy-7, @Neesky
+
+### v2.25.2 (15/9/2022)
+
+#### Bug Fixes
+
+- Fix DyDCNv2 RuntimeError (#8485)
+- Fix repeated import of CascadeRPNHead (#8578)
+- Fix absolute positional embedding of swin backbone (#8127)
+- Fix get train_pipeline method of val workflow (#8575)
+
+#### Improvements
+
+- Upgrade onnxsim to at least 0.4.0 (#8383)
+- Support tuple format in analyze_results script (#8549)
+- Fix floordiv warning (#8648)
+
+#### Documents
+
+- Fix typo in HTC link (#8487)
+- Fix docstring of `BboxOverlaps2D` (#8512)
+- Added missed Chinese tutorial link (#8564)
+- Fix mistakes in gaussian radius formula (#8607)
+- Update config documentation about how to Add WandB Hook (#8663)
+- Add mmengine link in readme (#8799)
+- Update issue template (#8802)
+
+#### Contributors
+
+A total of 16 developers contributed to this release.
+Thanks @daquexian, @lyq10085, @ZwwWayne, @fbagci, @BubblyYi, @fathomson, @ShunchiZhang, @ceasona, @Happylkx, @normster, @chhluo, @Lehsuby, @JiayuXu0, @Nourollah, @hewanru-bit, @RangiLyu
+
 ### v2.25.1 (29/7/2022)
 
 #### Bug Fixes
@@ -609,7 +794,7 @@ Thanks @Boyden, @onnkeat, @st9007a, @vealocia, @yhcao6, @DapangpangX, @yellowdol
 - Support [PVT](https://arxiv.org/abs/2102.12122) and [PVTv2](https://arxiv.org/abs/2106.13797) (#5780)
 - Support [SOLO](https://arxiv.org/abs/1912.04488) (#5832)
 - Support large scale jittering and New Mask R-CNN baselines (#6132)
-- Add a general data structrue for the results of models (#5508)
+- Add a general data structure for the results of models (#5508)
 - Added a base class for one-stage instance segmentation (#5904)
 - Speed up `YOLOv3` inference (#5991)
 - Release Swin Transformer pre-trained models (#6100)

@@ -263,8 +263,9 @@ class CityscapesDataset(CocoDataset):
             # create CocoDataset with CityscapesDataset annotation
             self_coco = CocoDataset(self.ann_file, self.pipeline.transforms,
                                     None, self.data_root, self.img_prefix,
-                                    self.seg_prefix, self.proposal_file,
-                                    self.test_mode, self.filter_empty_gt)
+                                    self.seg_prefix, self.seg_suffix,
+                                    self.proposal_file, self.test_mode,
+                                    self.filter_empty_gt)
             # TODO: remove this in the future
             # reload annotations of correct class
             self_coco.CLASSES = self.CLASSES

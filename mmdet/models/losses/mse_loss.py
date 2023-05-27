@@ -8,7 +8,7 @@ from .utils import weighted_loss
 
 @weighted_loss
 def mse_loss(pred, target):
-    """Warpper of mse loss."""
+    """Wrapper of mse loss."""
     return F.mse_loss(pred, target, reduction='none')
 
 

@@ -11,7 +11,7 @@ MMDet、MMCls、MMSeg 中的模型注册表都继承自 MMCV 中的根注册表�
 假设想将 `MobileNetV3-small` 作为 `RetinaNet` 的骨干网络，则配置文件如下。
 
 ```python
-通过 MMClassification 在 TIMM 中使用骨干网络_base_ = [
+_base_ = [
     '../_base_/models/retinanet_r50_fpn.py',
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'

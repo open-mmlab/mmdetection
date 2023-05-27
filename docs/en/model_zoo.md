@@ -259,6 +259,10 @@ Please refer to [Mask2Former](https://github.com/open-mmlab/mmdetection/blob/mas
 
 Please refer to [Efficientnet](https://github.com/open-mmlab/mmdetection/blob/master/configs/efficientnet) for details.
 
+### RF-Next
+
+Please refer to [RF-Next](https://github.com/open-mmlab/mmdetection/blob/master/configs/rfnext) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes), [OpenImages](https://github.com/open-mmlab/mmdetection/blob/master/configs/openimages) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).

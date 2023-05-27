@@ -444,13 +444,13 @@ def test_instance_segmentation_evaluation():
 
     # Here is the results for instance segmentation:
     # {
-    #     'segm_mAP': 0.5, 'segm_mAP_50': 0.626, 'segm_mAP_75': 0.5,
+    #     'segm_mAP': 0.5005, 'segm_mAP_50': 0.626, 'segm_mAP_75': 0.5,
     #     'segm_mAP_s': 0.5, 'segm_mAP_m': -1.0, 'segm_mAP_l': -1.0,
     #     'segm_mAP_copypaste': '0.500 0.626 0.500 0.500 -1.000 -1.000',
-    #     'bbox_mAP': 0.564, 'bbox_mAP_50': 0.626, 'bbox_mAP_75': 0.626,
+    #     'bbox_mAP': 0.5636, 'bbox_mAP_50': 0.626, 'bbox_mAP_75': 0.626,
     #     'bbox_mAP_s': 0.564, 'bbox_mAP_m': -1.0, 'bbox_mAP_l': -1.0,
     #     'bbox_mAP_copypaste': '0.564 0.626 0.626 0.564 -1.000 -1.000'
     # }
 
-    assert np.isclose(parsed_results['segm_mAP'], 0.5)
-    assert np.isclose(parsed_results['bbox_mAP'], 0.564)
+    assert np.isclose(parsed_results['segm_mAP'], 0.5005)
+    assert np.isclose(parsed_results['bbox_mAP'], 0.5636)
