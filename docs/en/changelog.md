@@ -1,5 +1,23 @@
 ## Changelog
 
+### v2.28.2 (24/2/2023)
+
+#### New Features and Improvements
+
+- Add Twitter, Discord, Medium and YouTube link (#9774)
+- Update `customize_runtime.md` (#9797)
+
+#### Bug Fixes
+
+- Fix `WIDERFace SSD` loss for Nan problem (#9734)
+- Fix missing API documentation in Readthedoc (#9729)
+- Fix the configuration file and log path of CenterNet (#9791)
+
+#### Contributors
+
+A total of 4 developers contributed to this release.
+Thanks @co63oc, @Ginray, @vansin, @RangiLyu
+
 ### v2.28.1 (1/2/2023)
 
 #### Bug Fixes
