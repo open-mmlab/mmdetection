@@ -151,6 +151,7 @@ When using Slurm, the port option needs to be set in one of the following ways:
    CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR} --cfg-options 'dist_params.port=29500'
    CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR} --cfg-options 'dist_params.port=29501'
    ```
+
 2. Modify the config files to set different communication ports.
 
    In `config1.py`, set
