@@ -125,7 +125,7 @@ class UniformAssigner(BaseAssigner):
         assign_result = AssignResult(
             num_gts,
             assigned_gt_inds,
-            anchor_max_overlaps,  # TODO 该值非单个anchor/box的最大IOU而是gt的
+            anchor_max_overlaps,  # 注意 该值非单个anchor/box的最大IOU而是gt的
             labels=assigned_labels)
         # pos_idx是一个[match_times*2*num_gt,]形状的mask,
         # 因为需要过滤掉iou小于pos_ignore_thr的部分,需要对pos_ignore_idx取反操作~

@@ -130,21 +130,22 @@ class CenterPrior(nn.Module):
                     center_prior_weights[:, gt_inds_no_points_inside].topk(
                                                              self.topk,
                                                              dim=0)[1]
-                # empty_gt_ind会由[n,]广播至[top_k, n].而下面两行代码比scatter更易读. TODO 待测试后替换
-                # empty_gt_ind = torch.arange(gt_inds_no_points_inside.numel(), dtype=torch.long)
-                # inside_gt_bbox_mask[topk_center_index, gt_inds_no_points_inside[empty_gt_ind]] = True
+                # empty_gt_ind会由[n,]广播至[top_k, n].而下面两行代码比scatter更易读.
+                empty_gt_ind = torch.arange(gt_inds_no_points_inside.numel(), dtype=torch.long)
+                inside_gt_bbox_mask[topk_center_index, gt_inds_no_points_inside[empty_gt_ind]] = True
+
                 # [nl * h * w, num_no_point_inside].代表内部没有point的point-gt矩阵.
-                temp_mask = inside_gt_bbox_mask[:, gt_inds_no_points_inside]
+                # temp_mask = inside_gt_bbox_mask[:, gt_inds_no_points_inside]
                 # scatter操作参考: https://zhuanlan.zhihu.com/p/339043454
                 # 这步操作的目的是为了在那些范围内没有point的point-gt矩阵切片上,
                 # 将前top_k个最近的point索引位置的值修改为True
-                inside_gt_bbox_mask[:, gt_inds_no_points_inside] = \
-                    torch.scatter(temp_mask,
-                                  dim=0,
-                                  index=topk_center_index,
-                                  src=torch.ones_like(
-                                    topk_center_index,
-                                    dtype=torch.bool))
+                # inside_gt_bbox_mask[:, gt_inds_no_points_inside] = \
+                #     torch.scatter(temp_mask,
+                #                   dim=0,
+                #                   index=topk_center_index,
+                #                   src=torch.ones_like(
+                #                     topk_center_index,
+                #                     dtype=torch.bool))
         # 将gt外部的point权重值为0
         center_prior_weights[~inside_gt_bbox_mask] = 0
         return center_prior_weights, inside_gt_bbox_mask
