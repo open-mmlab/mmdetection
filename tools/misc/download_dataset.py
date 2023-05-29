@@ -176,6 +176,16 @@ def main():
             'https://dorc.ks3-cn-beijing.ksyun.com/data-set/2020Objects365%E6%95%B0%E6%8D%AE%E9%9B%86/val/images/v1/',  # noqa
             # validation url root_2
             'https://dorc.ks3-cn-beijing.ksyun.com/data-set/2020Objects365%E6%95%B0%E6%8D%AE%E9%9B%86/val/images/v2/'  # noqa
+        ],
+        ade20k_2016=[
+            # training images and semantic segmentation annotations
+            'http://data.csail.mit.edu/places/ADEchallenge/ADEChallengeData2016.zip',  # noqa
+            # instance segmentation annotations
+            'http://sceneparsing.csail.mit.edu/data/ChallengeData2017/annotations_instance.tar'  # noqa
+            # img categories ids
+            'https://raw.githubusercontent.com/CSAILVision/placeschallenge/master/instancesegmentation/imgCatIds.json',  # noqa
+            # category mapping
+            'https://raw.githubusercontent.com/CSAILVision/placeschallenge/master/instancesegmentation/categoryMapping.txt'  # noqa
         ])
     url = data2url.get(args.dataset_name, None)
     if url is None:
