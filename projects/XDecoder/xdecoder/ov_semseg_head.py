@@ -30,9 +30,9 @@ class XDecoderOVSemSegHead(nn.Module):
             task=task)
         self.predictor = MODELS.build(transformer_decoder_)
 
-    def predict(self, features, batch_data_samples, text_prompts, rescale=True):
-        extra = {}
-        if self.task == 'semseg' or self.task == 'instance':
+    def predict(self, features, batch_data_samples, text_prompts=None, extra={}, rescale=True):
+        inter_extra = {}
+        if self.task in ['semseg', 'instance', 'panoptic']:
             self.predictor.lang_encoder.get_text_embeddings(text_prompts + ["background"], is_eval=True)
         elif self.task == 'ref-semseg':
             token_info = self.predictor.lang_encoder.get_text_token_embeddings(text_prompts, name='grounding',
@@ -40,9 +40,10 @@ class XDecoderOVSemSegHead(nn.Module):
             token_emb = token_info['token_emb']
             tokens = token_info['tokens']
             query_emb = token_emb[tokens['attention_mask'].bool()]
-            extra['grounding_tokens'] = query_emb[:, None]
-            extra['class_emb'] = token_info['class_emb']
+            inter_extra['grounding_tokens'] = query_emb[:, None]
+            inter_extra['class_emb'] = token_info['class_emb']
+        inter_extra.update(extra)
 
         mask_features, multi_scale_features = self.pixel_decoder(features)
-        predictions = self.predictor(multi_scale_features, mask_features, extra=extra)
+        predictions = self.predictor(multi_scale_features, mask_features, extra=inter_extra)
         return predictions

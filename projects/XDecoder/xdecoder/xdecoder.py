@@ -9,6 +9,7 @@ from .utils import retry_if_cuda_oom, sem_seg_postprocess
 from mmengine.structures import PixelData
 from mmengine.structures import InstanceData
 
+
 @MODELS.register_module()
 class XDecoder(SingleStageDetector):
     def __init__(self,
@@ -46,6 +47,13 @@ class XDecoder(SingleStageDetector):
         visual_features = self.extract_feat(batch_inputs)
 
         if self.sem_seg_head:
+            if self.task == 'captioning':
+                if not hasattr(self, 'start_token'):
+                    self.start_token = torch.tensor([[49406] * 77], device=batch_inputs.device)
+                outputs = self.sem_seg_head.predict(visual_features, batch_data_samples, extra={'start_token': self.start_token})
+                print(outputs)
+                return outputs
+
             text_prompts = []
             for data_samples in batch_data_samples:
                 original_caption = data_samples.caption.split('.')
@@ -62,7 +70,7 @@ class XDecoder(SingleStageDetector):
                 text_prompts,
                 rescale=rescale)
 
-            if self.task == 'semseg' or self.task == 'instance':
+            if self.task in ['semseg', 'instance', 'panoptic']:
                 mask_cls_results = outputs["pred_logits"]
                 mask_pred_results = outputs["pred_masks"]
                 # upsample masks
@@ -98,10 +106,14 @@ class XDecoder(SingleStageDetector):
                         # pred_sem_seg = PixelData(metainfo={'bg_value': 0}, data=sem_seg)
                         pred_sem_seg = PixelData(data=sem_seg)
                         data_samples.pred_sem_seg = pred_sem_seg
-                    else:
+                    elif self.task == 'instance':
                         pred_instances = retry_if_cuda_oom(self.instance_inference)(mask_cls_result, mask_pred_result,
-                                                                                len(text_prompts))
+                                                                                    len(text_prompts))
                         data_samples.pred_instances = pred_instances
+                    elif self.task == 'panoptic':
+
+                        data_samples.pred_panoptic_seg = pred_panoptic_seg
+
             elif self.task == 'ref-semseg':
                 mask_pred_results = outputs["pred_masks"]
                 for mask_pred_result, img_metas, data_samples in zip(
@@ -179,3 +191,61 @@ class XDecoder(SingleStageDetector):
         mask_pred = mask_pred.sigmoid()
         semseg = torch.einsum("qc,qhw->chw", mask_cls, mask_pred)
         return semseg
+
+    def panoptic_inference(self, mask_cls, mask_pred):
+        scores, labels = F.softmax(mask_cls, dim=-1).max(-1)
+        mask_pred = mask_pred.sigmoid()
+
+        keep = labels.ne(self.sem_seg_head.num_classes) & (scores > self.object_mask_threshold)
+        cur_scores = scores[keep]
+        cur_classes = labels[keep]
+        cur_masks = mask_pred[keep]
+        cur_mask_cls = mask_cls[keep]
+        cur_mask_cls = cur_mask_cls[:, :-1]
+        cur_prob_masks = cur_scores.view(-1, 1, 1) * cur_masks
+
+        h, w = cur_masks.shape[-2:]
+        panoptic_seg = torch.zeros((h, w), dtype=torch.int32, device=cur_masks.device)
+        segments_info = []
+
+        current_segment_id = 0
+
+        if cur_masks.shape[0] == 0:
+            # We didn't detect any mask :(
+            return panoptic_seg, segments_info
+        else:
+            # take argmax
+            cur_mask_ids = cur_prob_masks.argmax(0)
+            stuff_memory_list = {}
+            thing_dataset_id_to_contiguous_id = self.metadata.thing_dataset_id_to_contiguous_id if hasattr(
+                self.metadata, 'thing_dataset_id_to_contiguous_id') else {}
+            for k in range(cur_classes.shape[0]):
+                pred_class = cur_classes[k].item()
+                isthing = pred_class in thing_dataset_id_to_contiguous_id.values()
+                mask_area = (cur_mask_ids == k).sum().item()
+                original_area = (cur_masks[k] >= 0.5).sum().item()
+                mask = (cur_mask_ids == k) & (cur_masks[k] >= 0.5)
+
+                if mask_area > 0 and original_area > 0 and mask.sum().item() > 0:
+                    if mask_area / original_area < self.overlap_threshold:
+                        continue
+
+                    # merge stuff regions
+                    if not isthing:
+                        if int(pred_class) in stuff_memory_list.keys():
+                            panoptic_seg[mask] = stuff_memory_list[int(pred_class)]
+                            continue
+                        else:
+                            stuff_memory_list[int(pred_class)] = current_segment_id + 1
+
+                    current_segment_id += 1
+                    panoptic_seg[mask] = current_segment_id
+
+                    segments_info.append(
+                        {
+                            "id": current_segment_id,
+                            "isthing": bool(isthing),
+                            "category_id": int(pred_class),
+                        }
+                    )
+            return panoptic_seg, segments_info

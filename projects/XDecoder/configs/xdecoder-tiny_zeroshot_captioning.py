@@ -1,18 +1,11 @@
 _base_ = 'xdecoder-tiny_zeroshot_open-vocab-semseg.py'
 
-model = dict(task='instance',
-             test_cfg=dict(
-                 nms_pre=1000,
-                 min_bbox_size=0,
-                 score_thr=0.05,
-                 nms=dict(type='nms', iou_threshold=0.5),
-                 max_per_img=100)
-             )
+model = dict(task='captioning')
 
 test_pipeline = [
     dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
     dict(type='FixScaleResize',
-         scale=800,
+         scale=224,
          keep_ratio=True,
          short_side_mode=True,
          backend='pillow',
