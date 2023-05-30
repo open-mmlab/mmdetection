@@ -1,6 +1,8 @@
+import torch
 from torch import nn
 from mmdet.registry import MODELS
 import copy
+from torch.nn import functional as F
 
 
 @MODELS.register_module()
@@ -42,8 +44,20 @@ class XDecoderOVSemSegHead(nn.Module):
             query_emb = token_emb[tokens['attention_mask'].bool()]
             inter_extra['grounding_tokens'] = query_emb[:, None]
             inter_extra['class_emb'] = token_info['class_emb']
+        elif self.task == 'retrieval':
+            token_info = self.predictor.lang_encoder.get_text_token_embeddings(text_prompts, name='grounding',
+                                                                               token=False, norm=True)
+            inter_extra['class_emb'] = token_info['class_emb']
         inter_extra.update(extra)
 
         mask_features, multi_scale_features = self.pixel_decoder(features)
+
+        if 'pred_sem_seg' in batch_data_samples[0]:
+            batch_input_shape = batch_data_samples[0].metainfo['batch_input_shape']
+            pred_sem_segs = [data_samples.pred_sem_seg.data for data_samples in batch_data_samples]
+            pred_sem_segs = torch.stack(pred_sem_segs, dim=0)
+            grounding_mask = (pred_sem_segs > 0).float()
+            grounding_mask = (1 - F.interpolate(grounding_mask, batch_input_shape, mode='nearest')).bool()
+            inter_extra['grounding_mask'] = grounding_mask
         predictions = self.predictor(multi_scale_features, mask_features, extra=inter_extra)
         return predictions

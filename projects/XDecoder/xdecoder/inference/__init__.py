@@ -1,5 +1,2 @@
-from .open_semseg_inferencer import OpenSemsegInferencer
-from .open_instance_inferencer import OpenInstanceInferencer
-from .open_panoptic_inferencer import OpenPanopticInferencer
 from .texttoimage_regionretrieval_inferencer import TextToImageRegionRetrievalInferencer
 from .image_caption import ImageCaptionInferencer, RefImageCaptionInferencer

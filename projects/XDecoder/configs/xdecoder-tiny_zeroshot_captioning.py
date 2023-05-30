@@ -3,7 +3,7 @@ _base_ = 'xdecoder-tiny_zeroshot_open-vocab-semseg.py'
 model = dict(task='captioning')
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
+    dict(type='LoadImageFromFile', imdecode_backend='pillow', backend_args=_base_.backend_args),
     dict(type='FixScaleResize',
          scale=224,
          keep_ratio=True,
@@ -13,7 +13,7 @@ test_pipeline = [
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor', 'caption'))
+                   'scale_factor'))
 ]
 
 val_dataloader = dict(dataset=dict(pipeline=test_pipeline))

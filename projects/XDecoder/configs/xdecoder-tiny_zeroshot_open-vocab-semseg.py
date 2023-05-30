@@ -38,7 +38,7 @@ model = dict(
 backend_args = None
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', backend_args=backend_args),
+    dict(type='LoadImageFromFile', imdecode_backend='pillow', backend_args=backend_args),
     dict(type='FixScaleResize',
          scale=512,
          keep_ratio=True,

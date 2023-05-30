@@ -1,9 +1,9 @@
 from torch import nn
 import torch
 from .transformer_blocks import PositionEmbeddingSine, SelfAttentionLayer, CrossAttentionLayer, FFNLayer, Conv2d, MLP
-from torch.nn import functional as F
 from mmdet.registry import MODELS
 from .language_model import LanguageEncoder
+from torch.nn import functional as F
 
 
 def vl_similarity(image_feat, text_feat, temperature=1):
@@ -98,10 +98,10 @@ class XDecoderTransformerDecoder(nn.Module):
 
         # output FFNs
         self.lang_encoder = LanguageEncoder()
-        if self.task in ['semseg', 'ref-semseg', 'instance', 'captioning']:
+        if self.task in ['semseg', 'ref-semseg', 'instance', 'captioning', 'ref-captioning', 'retrieval', 'panoptic']:
             self.mask_embed = MLP(hidden_dim, hidden_dim, mask_dim, 3)
 
-        if self.task == 'captioning':
+        if self.task == 'captioning' or self.task == 'ref-captioning':
             self.caping_embed = nn.Parameter(torch.empty(hidden_dim, dim_proj))
             # trunc_normal_(self.caping_embed, std=.02)
             self.pos_embed_caping = nn.Embedding(contxt_len, hidden_dim)
@@ -158,10 +158,10 @@ class XDecoderTransformerDecoder(nn.Module):
         predictions_caption = []
         predictions_captioning = []
 
-        if self.task == 'semseg' or self.task == 'instance':
+        if self.task == 'semseg' or self.task == 'instance' or self.task == 'retrieval' or self.task == 'panoptic':
             self_tgt_mask = self.self_attn_mask[:, :self.num_queries, :self.num_queries].repeat(
                 output.shape[1] * self.num_heads, 1, 1)  # 8,101,101
-        elif self.task == 'ref-semseg':
+        elif self.task == 'ref-semseg' or self.task == 'ref-captioning':
             self_tgt_mask = self.self_attn_mask[:, :self.num_queries, :self.num_queries].repeat(
                 output.shape[1] * self.num_heads, 1, 1)
             grounding_tokens = extra['grounding_tokens']
@@ -183,9 +183,6 @@ class XDecoderTransformerDecoder(nn.Module):
         predictions_class.append(results["outputs_class"])
         predictions_class_embed.append(results["class_embed"])
         predictions_mask.append(results["outputs_mask"])
-        # predictions_bbox.append(results["outputs_bbox"])
-        # predictions_caption.append(results["outputs_caption"])
-        # predictions_captioning.append(results["outputs_captionting"])
 
         for i in range(self.num_layers):
             level_index = i % self.num_feature_levels
@@ -232,8 +229,7 @@ class XDecoderTransformerDecoder(nn.Module):
         out = {
             'pred_logits': predictions_class[-1],
             'pred_masks': predictions_mask[-1],
-            # 'pred_boxes': predictions_bbox[-1],
-            # 'pred_captions': predictions_caption[-1],
+            'pred_class_embed': predictions_class_embed[-1],
         }
 
         if self.task == 'ref-semseg':
@@ -253,6 +249,13 @@ class XDecoderTransformerDecoder(nn.Module):
                 mask_pred_results += [pred_gmasks[matched_id, :, :]]
             out['pred_masks'] = mask_pred_results
             out.pop('pred_logits')
+        elif self.task == 'retrieval':
+            t_emb = extra['class_emb']
+            temperature = self.lang_encoder.logit_scale
+            v_emb = out['pred_class_embed'][:, -1, :]
+            v_emb = v_emb / (v_emb.norm(dim=-1, keepdim=True) + 1e-7)
+            logits = vl_similarity(v_emb, t_emb, temperature)
+            out['pred_logits'] = logits
         return out
 
     def _captioning_forward(self, x, mask_features, extra={}):
@@ -300,12 +303,12 @@ class XDecoderTransformerDecoder(nn.Module):
                 attn_mask = torch.cat((attn_mask, torch.zeros_like(attn_mask[:, :self.contxt_len, :])), dim=1)
                 self_tgt_mask = self.self_attn_mask.repeat(output.shape[1] * self.num_heads, 1, 1)
 
-                if 'captioning_mask' in extra:
+                if 'grounding_mask' in extra:
                     bs, nq, wh = attn_mask.shape
                     assert bs == self.num_heads, "Only support single image referring captioning."
-                    cap_mask = extra['captioning_mask']
+                    cap_mask = extra['grounding_mask']
                     attn_mask = attn_mask.reshape(bs, nq, size_list[i % 3][0], size_list[i % 3][1])
-                    cap_mask = F.interpolate(cap_mask[None, ].float(), size_list[i % 3], mode='nearest').bool()[0, 0]
+                    cap_mask = F.interpolate(cap_mask.float(), size_list[i % 3], mode='nearest').bool()[0, 0]
                     attn_mask[:, self.num_queries:, cap_mask] = True
                     attn_mask = attn_mask.reshape(bs, nq, wh)
 
@@ -347,7 +350,7 @@ class XDecoderTransformerDecoder(nn.Module):
             x = x.strip()
             texts_new.append(x)
 
-        out = {'pred_texts': texts_new}
+        out = {'pred_caption': texts_new}
         return out
 
     def forward_prediction_heads(self, output, mask_features, attn_mask_target_size):
@@ -365,7 +368,7 @@ class XDecoderTransformerDecoder(nn.Module):
         sim = (cls_token @ obj_token.transpose(1, 2)).softmax(-1)[:, 0, :, None]  # TODO include class token.
         cls_token = (sim * decoder_output[:, :self.num_queries - 1]).sum(dim=1, keepdim=True)  # 1 1 512
 
-        if self.task in ['semseg', 'instance', 'panoptic', 'captioning']:
+        if self.task in ['semseg', 'instance', 'panoptic', 'captioning', 'retrieval']:
             decoder_output = torch.cat((decoder_output[:, :self.num_queries - 1], cls_token), dim=1)
         elif self.task == 'ref-semseg':
             decoder_output = torch.cat((decoder_output[:, :self.num_queries - 1], cls_token,
@@ -378,7 +381,7 @@ class XDecoderTransformerDecoder(nn.Module):
         if self.task in ['semseg', 'instance', 'panoptic']:
             outputs_class = self.lang_encoder.compute_similarity(class_embed, fake=False)  # 1 101, 10
 
-        if self.task in ['semseg', 'instance', 'panoptic', 'ref-semseg', 'captioning']:
+        if self.task in ['semseg', 'instance', 'panoptic', 'ref-semseg', 'captioning', 'retrieval']:
             mask_embed = self.mask_embed(decoder_output)
             outputs_mask = torch.einsum("bqc,bchw->bqhw", mask_embed, mask_features)  # 1,101,h,w
 

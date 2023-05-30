@@ -2,25 +2,21 @@
 from argparse import ArgumentParser
 
 from mmengine.logging import print_log
-
+from mmengine.config import Config
 from mmdet.apis import DetInferencer
 
-from projects.XDecoder.xdecoder.inference import OpenSemsegInferencer,\
-    OpenInstanceInferencer,\
-    OpenPanopticInferencer,\
-    ImageCaptionInferencer,\
-    RefImageCaptionInferencer,\
+from projects.XDecoder.xdecoder.inference import ImageCaptionInferencer, \
+    RefImageCaptionInferencer, \
     TextToImageRegionRetrievalInferencer
 
-
 TASKINFOS = {
-'semseg': OpenSemsegInferencer,
-'ref-semseg': OpenSemsegInferencer,
-'instance': OpenInstanceInferencer,
-'panoptic': OpenPanopticInferencer,
-'captioning': ImageCaptionInferencer,
-'ref-captioning': RefImageCaptionInferencer,
-'region-retrieval': TextToImageRegionRetrievalInferencer,
+    'semseg': DetInferencer,
+    'ref-semseg': DetInferencer,
+    'instance': DetInferencer,
+    'panoptic': DetInferencer,
+    'captioning': ImageCaptionInferencer,
+    'ref-captioning': RefImageCaptionInferencer,
+    'retrieval': TextToImageRegionRetrievalInferencer,
 }
 
 
@@ -32,8 +28,8 @@ def parse_args():
         'model',
         type=str,
         help='Config file name')
-    parser.add_argument('--weights',  help='Checkpoint file')
-    parser.add_argument('--text', help='text prompt')
+    parser.add_argument('--weights', help='Checkpoint file')
+    parser.add_argument('--texts', help='text prompt')
     parser.add_argument(
         '--out-dir',
         type=str,
@@ -57,16 +53,13 @@ def parse_args():
     parser.add_argument(
         '--palette',
         default='none',
-        choices=['ade20k','coco', 'voc', 'citys', 'random', 'none'],
+        choices=['ade20k', 'coco', 'voc', 'citys', 'random', 'none'],
         help='Color palette used for visualization')
 
     # only for panoptic segmentation
-    parser.add_argument('--stuff-text', help='text prompt for stuff name in panoptic segmentation')
-    # only for image retrieval
-    parser.add_argument('--ref-inputs', help='Reference images path in image retrieval task')
+    parser.add_argument('--stuff-texts', help='text prompt for stuff name in panoptic segmentation')
 
     call_args = vars(parser.parse_args())
-
     if call_args['no_save_vis']:
         call_args['out_dir'] = ''
 
@@ -77,24 +70,31 @@ def parse_args():
 
     return init_args, call_args
 
+
 def main():
     init_args, call_args = parse_args()
 
     cfg = Config.fromfile(init_args['model'])
-    task= cfg.model.task
+    task = cfg.model.task
     assert task in TASKINFOS
 
     inferencer = TASKINFOS[task](**init_args)
 
-    if task !='captioning':
-        assert call_args['text'] is not None, f'text prompt is required for {task}'
-        if task =='region-retrieval':
+    if task != 'captioning':
+        assert call_args['texts'] is not None, f'text prompts is required for {task}'
+        if task == 'region-retrieval':
             assert call_args['ref_inputs'] is not None, f'ref inputs is required for {task}'
+        else:
+            if task != 'panoptic':
+                call_args.pop('stuff_texts')
+    else:
+        call_args.pop('stuff_texts')
 
-    results = inferencer(**call_args)
+    inferencer(**call_args)
 
     if call_args['out_dir'] != '' and not call_args['no_save_vis']:
         print_log(f'results have been saved at {call_args["out_dir"]}')
+
 
 if __name__ == '__main__':
     main()

@@ -293,6 +293,9 @@ class DetInferencer(BaseInferencer):
                  print_result: bool = False,
                  no_save_pred: bool = True,
                  out_dir: str = '',
+                 texts: Optional[Union[str, list]] = None,
+                 stuff_texts: Optional[Union[str, list]] = None,  # by open panoptic task
+                 custom_entities: bool = False,  # by GLIP
                  **kwargs) -> dict:
         """Call the inferencer.
 
@@ -335,12 +338,31 @@ class DetInferencer(BaseInferencer):
         ) = self._dispatch_kwargs(**kwargs)
 
         ori_inputs = self._inputs_to_list(inputs)
+
+        if texts is not None and isinstance(texts, str):
+            texts = [texts] * len(ori_inputs)
+        if stuff_texts is not None and isinstance(stuff_texts, str):
+            stuff_texts = [stuff_texts] * len(ori_inputs)
+        if texts is not None:
+            assert len(texts) == len(ori_inputs)
+            for i in range(len(texts)):
+                ori_inputs[i] = {'img_path': ori_inputs[i],
+                                 'caption': texts[i],  # TODO： rename to text
+                                 'custom_entities': custom_entities}
+        if stuff_texts is not None:
+            assert len(stuff_texts) == len(ori_inputs)
+            for i in range(len(stuff_texts)):
+                ori_inputs[i]['stuff_text'] = stuff_texts[i]
+
         inputs = self.preprocess(
             ori_inputs, batch_size=batch_size, **preprocess_kwargs)
 
         results_dict = {'predictions': [], 'visualization': []}
         for ori_inputs, data in track(inputs, description='Inference'):
             preds = self.forward(data, **forward_kwargs)
+            # TODO: Not Robust
+            if isinstance(ori_inputs, dict):
+                ori_inputs = ori_inputs['img_path']
             visualization = self.visualize(
                 ori_inputs,
                 preds,
@@ -445,14 +467,14 @@ class DetInferencer(BaseInferencer):
         return results
 
     def postprocess(
-        self,
-        preds: PredType,
-        visualization: Optional[List[np.ndarray]] = None,
-        return_datasample: bool = False,
-        print_result: bool = False,
-        no_save_pred: bool = False,
-        pred_out_dir: str = '',
-        **kwargs,
+            self,
+            preds: PredType,
+            visualization: Optional[List[np.ndarray]] = None,
+            return_datasample: bool = False,
+            print_result: bool = False,
+            no_save_pred: bool = False,
+            pred_out_dir: str = '',
+            **kwargs,
     ) -> Dict:
         """Process the predictions and visualization results from ``forward``
         and ``visualize``.
@@ -551,12 +573,13 @@ class DetInferencer(BaseInferencer):
             masks = data_sample.pred_instances.get('masks')
             pred_instances = data_sample.pred_instances.numpy()
             result = {
-                'bboxes': pred_instances.bboxes.tolist(),
                 'labels': pred_instances.labels.tolist(),
                 'scores': pred_instances.scores.tolist()
             }
+            if 'bboxes' in pred_instances:
+                result['bboxes'] = pred_instances.bboxes.tolist()
             if masks is not None:
-                if pred_instances.bboxes.sum() == 0:
+                if 'bboxes' not in pred_instances or pred_instances.bboxes.sum() == 0:
                     # Fake bbox, such as the SOLO.
                     bboxes = mask2bbox(masks.cpu()).numpy().tolist()
                     result['bboxes'] = bboxes
