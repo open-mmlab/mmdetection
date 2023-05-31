@@ -20,6 +20,8 @@ model = dict(
                      pixel_decoder=dict(type='TransformerEncoderPixelDecoder'),
                      transformer_decoder=dict(type='XDecoderTransformerDecoder'),
                      ),
+    test_cfg=dict(mask_thr=0.5,
+                  keep_bg=True)
 )
 
 # Example to use different file client
@@ -48,7 +50,7 @@ test_pipeline = [
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor', 'caption'))
+                   'scale_factor', 'text'))
 ]
 
 dataset_type = 'CocoDataset'

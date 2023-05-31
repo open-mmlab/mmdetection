@@ -62,28 +62,40 @@ class XDecoder(SingleStageDetector):
 
                 if 'pred_sem_seg' in batch_data_samples[0]:
                     for img_metas, data_samples in zip(batch_img_metas, batch_data_samples):
+                        original_caption = data_samples.text.split('.')
+                        text_prompts = list(
+                            filter(lambda x: len(x) > 0, original_caption))
+
                         height = img_metas["ori_shape"][0]
                         width = img_metas["ori_shape"][1]
                         image_size = img_metas["grounding_img_shape"][:2]
-                        mask_pred_result = retry_if_cuda_oom(sem_seg_postprocess)(
+                        sem_seg = retry_if_cuda_oom(sem_seg_postprocess)(
                             data_samples.pred_sem_seg.data.float(), image_size, height, width
                         )
-                        if mask_pred_result.shape[0] == 1:
-                            sem_seg = mask_pred_result > 0
-                            pred_sem_seg = PixelData(metainfo={'bg_value': 0}, data=sem_seg)
+
+                        if sem_seg.shape[0] == 1:
+                            sem_seg = sem_seg.squeeze(0) > self.test_cfg.mask_thr
+                            label_names = ['background', text_prompts[0]]
                         else:
-                            # flag = mask_pred_result > 0
-                            # sem_seg = mask_pred_result.max(0)[1]+1
-                            sem_seg = mask_pred_result.max(0)[1]
-                            # sem_seg[flag.sum(0) == 0] = 0
-                            pred_sem_seg = PixelData(data=sem_seg)
+                            if not self.test_cfg.keep_bg:
+                                sem_seg = sem_seg.max(0)[1]
+                                label_names = [text_prompts[id] for id in torch.unique(sem_seg)]
+                            else:
+                                flag = sem_seg > self.test_cfg.mask_thr
+                                sem_seg = sem_seg.max(0)[1] + 1
+                                label_names = [text_prompts[id] for id in torch.unique(sem_seg) - 1]
+                                sem_seg[flag.sum(0) == 0] = 0
+                                label_names.insert(0, 'background')
+
+                        pred_sem_seg = PixelData(data=sem_seg, metainfo={'label_names': label_names})
                         data_samples.pred_sem_seg = pred_sem_seg
+
                 return batch_data_samples
 
             text_prompts = []
             stuff_text_prompts = []
             for data_samples in batch_data_samples:
-                original_caption = data_samples.caption.split('.')
+                original_caption = data_samples.text.split('.')
                 original_caption = list(
                     filter(lambda x: len(x) > 0, original_caption))
                 text_prompts.append(original_caption)
@@ -131,18 +143,24 @@ class XDecoder(SingleStageDetector):
                     if self.task == 'semseg':
                         sem_seg = retry_if_cuda_oom(self.semantic_inference)(mask_cls_result, mask_pred_result, False)
                         if sem_seg.shape[0] == 1:
-                            sem_seg = sem_seg.squeeze(0) > 0.5
+                            sem_seg = sem_seg.squeeze(0) > self.test_cfg.mask_thr
+                            label_names = ['background', text_prompts[0]]
                         else:
-                            # flag = sem_seg > 0.5
-                            # sem_seg = sem_seg.max(0)[1] + 1
-                            # sem_seg[flag.sum(0) == 0] = 0
-                            sem_seg = sem_seg.max(0)[1]
-                        # pred_sem_seg = PixelData(metainfo={'bg_value': 0}, data=sem_seg)
-                        pred_sem_seg = PixelData(data=sem_seg)
+                            if not self.test_cfg.keep_bg:
+                                sem_seg = sem_seg.max(0)[1]
+                                label_names = [text_prompts[id] for id in torch.unique(sem_seg)]
+                            else:
+                                flag = sem_seg > self.test_cfg.mask_thr
+                                sem_seg = sem_seg.max(0)[1] + 1
+                                label_names = [text_prompts[id] for id in torch.unique(sem_seg) - 1]
+                                sem_seg[flag.sum(0) == 0] = 0
+                                label_names.insert(0, 'background')
+
+                        pred_sem_seg = PixelData(data=sem_seg, metainfo={'label_names': label_names})
                         data_samples.pred_sem_seg = pred_sem_seg
                     elif self.task == 'instance':
                         pred_instances = retry_if_cuda_oom(self.instance_inference)(mask_cls_result, mask_pred_result,
-                                                                                    len(text_prompts))
+                                                                                    text_prompts)
                         data_samples.pred_instances = pred_instances
                     elif self.task == 'panoptic':
                         stuff_text_prompts = stuff_text_prompts[0]
@@ -151,7 +169,7 @@ class XDecoder(SingleStageDetector):
                                                                                        mask_pred_result,
                                                                                        thing_text_prompts,
                                                                                        stuff_text_prompts)
-                        data_samples.pred_panoptic_seg = PixelData(sem_seg=pred_panoptic_seg.int())
+                        data_samples.pred_panoptic_seg =pred_panoptic_seg
 
             elif self.task == 'ref-semseg':
                 mask_pred_results = outputs["pred_masks"]
@@ -176,48 +194,39 @@ class XDecoder(SingleStageDetector):
                     height = img_metas["ori_shape"][0]
                     width = img_metas["ori_shape"][1]
                     image_size = img_metas["img_shape"][:2]
-                    mask_pred_result = retry_if_cuda_oom(sem_seg_postprocess)(
+                    sem_seg = retry_if_cuda_oom(sem_seg_postprocess)(
                         mask_pred_result, image_size, height, width
                     )
-                    if mask_pred_result.shape[0] == 1:
-                        sem_seg = mask_pred_result > 0
+                    if sem_seg.shape[0] == 1:
+                        sem_seg = sem_seg.squeeze(0) > self.test_cfg.mask_thr
+                        label_names = ['background', text_prompts[0]]
                     else:
-                        # flag = mask_pred_result > 0
-                        # sem_seg = mask_pred_result.max(0)[1]+1
-                        sem_seg = mask_pred_result.max(0)[1]
-                        # sem_seg[flag.sum(0) == 0] = 0
-                    pred_sem_seg = PixelData(metainfo={'bg_value': 0}, data=sem_seg)
-                    # pred_sem_seg = PixelData(data=sem_seg)
+                        if not self.test_cfg.keep_bg:
+                            sem_seg = sem_seg.max(0)[1]
+                            label_names = [text_prompts[id] for id in torch.unique(sem_seg)]
+                        else:
+                            flag = sem_seg > self.test_cfg.mask_thr
+                            sem_seg = sem_seg.max(0)[1] + 1
+                            label_names = [text_prompts[id] for id in torch.unique(sem_seg) - 1]
+                            sem_seg[flag.sum(0) == 0] = 0
+                            label_names.insert(0, 'background')
+
+                    pred_sem_seg = PixelData(data=sem_seg, metainfo={'label_names': label_names})
                     data_samples.pred_sem_seg = pred_sem_seg
             elif self.task == 'retrieval':
                 batch_data_samples[0].pred_score = outputs['pred_logits']
         return batch_data_samples
 
-    def instance_inference(self, mask_cls, mask_pred, num_class):
-        # mask_pred is already processed to have the same shape as original input
-        image_size = mask_pred.shape[-2:]
-
+    def instance_inference(self, mask_cls, mask_pred, text_prompts):
         # [Q, K]
+        num_class = len(text_prompts)
         scores = F.softmax(mask_cls, dim=-1)[:, :-1]
         labels = torch.arange(num_class, device=scores.device).unsqueeze(0).repeat(scores.shape[0], 1).flatten(0, 1)
-        # scores_per_image, topk_indices = scores.flatten(0, 1).topk(self.num_queries, sorted=False)
         scores_per_image, topk_indices = scores.flatten(0, 1).topk(self.test_cfg.max_per_img, sorted=False)
 
         labels_per_image = labels[topk_indices]
         topk_indices = (topk_indices // num_class)
         mask_pred = mask_pred[topk_indices]
-
-        # if this is panoptic segmentation, we only keep the "thing" classes
-        # if self.panoptic_on:
-        #     thing_dataset_id_to_contiguous_id = self.metadata.thing_dataset_id_to_contiguous_id if hasattr(
-        #         self.metadata, 'thing_dataset_id_to_contiguous_id') else {}
-        #     keep = torch.zeros_like(scores_per_image).bool()
-        #     for i, lab in enumerate(labels_per_image):
-        #         keep[i] = lab in thing_dataset_id_to_contiguous_id.values()
-        #
-        #     scores_per_image = scores_per_image[keep]
-        #     labels_per_image = labels_per_image[keep]
-        #     mask_pred = mask_pred[keep]
 
         result = InstanceData()
         # mask (before sigmoid)
@@ -228,7 +237,7 @@ class XDecoder(SingleStageDetector):
                 result.masks.flatten(1).sum(1) + 1e-6)
         result.scores = scores_per_image * mask_scores_per_image
         result.labels = labels_per_image
-
+        result.label_names = [text_prompts[label] for label in labels_per_image]
         return result
 
     def semantic_inference(self, mask_cls, mask_pred, keep_sem_bgd=False):
@@ -244,7 +253,7 @@ class XDecoder(SingleStageDetector):
         scores, labels = F.softmax(mask_cls, dim=-1).max(-1)
         mask_pred = mask_pred.sigmoid()
 
-        keep = labels.ne(len(thing_text)+len(stuff_text)) & (scores > self.test_cfg.mask_thr)
+        keep = labels.ne(len(thing_text) + len(stuff_text)) & (scores > self.test_cfg.mask_thr)
         cur_scores = scores[keep]
         cur_classes = labels[keep]
         cur_masks = mask_pred[keep]
@@ -252,7 +261,7 @@ class XDecoder(SingleStageDetector):
 
         h, w = cur_masks.shape[-2:]
         panoptic_seg = torch.zeros((h, w), dtype=torch.int32, device=cur_masks.device)
-        segments_info = []
+        label_names = []
 
         current_segment_id = 1
 
@@ -278,11 +287,17 @@ class XDecoder(SingleStageDetector):
                     if not isthing:
                         if int(pred_class) in stuff_memory_list.keys():
                             panoptic_seg[mask] = stuff_memory_list[int(pred_class)]
-                            continue
                         else:
                             stuff_memory_list[int(pred_class)] = int(pred_class)
+                            panoptic_seg[mask] = int(pred_class) + 1  # 0 is background
+                            label_names.append({int(pred_class)+1: stuff_text[int(pred_class) - len(thing_text)]})
+                        continue
 
-                    segment_id = int(pred_class) + current_segment_id * INSTANCE_OFFSET
+                    segment_id = int(pred_class) + 1 + current_segment_id * INSTANCE_OFFSET # 0 is background
                     current_segment_id += 1
                     panoptic_seg[mask] = segment_id
+                    label_names.append({segment_id: thing_text[int(pred_class)]})
+
+            label_names.insert(0, {0: 'background'})
+            panoptic_seg = PixelData(sem_seg=panoptic_seg.int(), metainfo={'label_names': label_names})
             return panoptic_seg

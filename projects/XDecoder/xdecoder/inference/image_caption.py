@@ -231,7 +231,7 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
 
         for i in range(len(texts)):
             ori_inputs[i] = {'img_path': ori_inputs[i],
-                             'caption': texts[i],  # TODO： rename to text
+                             'text': texts[i],  # TODO： rename to text
                              'custom_entities': False}
         inputs = self.preprocess(
             ori_inputs, batch_size=batch_size, **preprocess_kwargs)

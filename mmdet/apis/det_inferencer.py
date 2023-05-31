@@ -347,7 +347,7 @@ class DetInferencer(BaseInferencer):
             assert len(texts) == len(ori_inputs)
             for i in range(len(texts)):
                 ori_inputs[i] = {'img_path': ori_inputs[i],
-                                 'caption': texts[i],  # TODO： rename to text
+                                 'text': texts[i],
                                  'custom_entities': custom_entities}
         if stuff_texts is not None:
             assert len(stuff_texts) == len(ori_inputs)
