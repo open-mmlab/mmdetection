@@ -25,7 +25,7 @@ test_pipeline = [
         backend_args=backend_args),
     dict(
         type='Resize',
-        scale=(224, 223),
+        scale=(224, 224),
         interpolation='bicubic',
         backend='pillow'),
     dict(type='PackInputs', meta_keys=['image_id']),
