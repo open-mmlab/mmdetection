@@ -10,7 +10,7 @@ from mmdet.registry import DATASETS
 
 
 @DATASETS.register_module()
-class COCOCaption(BaseDataset):
+class COCOCaptionDataset(BaseDataset):
     """COCO Caption dataset.
 
     Args:

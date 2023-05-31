@@ -1,6 +1,6 @@
 # data settings
 
-dataset_type = 'COCOCaption'
+dataset_type = 'COCOCaptionDataset'
 data_root = 'data/coco/'
 
 # Example to use different file client

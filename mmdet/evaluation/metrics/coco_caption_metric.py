@@ -6,10 +6,9 @@ from typing import List, Optional
 
 from mmengine.evaluator import BaseMetric
 from mmengine.utils import track_iter_progress
-
-from mmpretrain.registry import METRICS
-from mmpretrain.utils import require
 from pycocotools.coco import COCO
+
+from mmdet.registry import METRICS
 
 try:
     from pycocoevalcap.eval import COCOEvalCap
@@ -63,7 +62,7 @@ class COCOCaptionMetric(BaseMetric):
         for data_sample in data_samples:
             result = dict()
 
-            result['caption'] = data_sample.pred_caption
+            result['caption'] = data_sample['pred_caption']
             result['image_id'] = data_sample['img_id']
 
             # Save the result to `self.results`.
@@ -97,10 +96,7 @@ class COCOCaptionMetric(BaseMetric):
 
 def save_result(result, result_dir, filename, remove_duplicate=''):
     """Saving predictions as json file for evaluation."""
-
     # combine results from all processes
-    result_new = []
-
     if remove_duplicate:
         result_new = []
         id_list = []
