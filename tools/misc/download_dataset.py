@@ -193,6 +193,16 @@ def main():
             'https://raw.githubusercontent.com/CSAILVision/placeschallenge/master/instancesegmentation/imgCatIds.json',  # noqa
             # category mapping
             'https://raw.githubusercontent.com/CSAILVision/placeschallenge/master/instancesegmentation/categoryMapping.txt'  # noqa
+        ],
+        refcoco=[
+            # images
+            'http://images.cocodataset.org/zips/train2014.zip',
+            # refcoco annotations
+            'https://bvisionweb1.cs.unc.edu/licheng/referit/data/refcoco.zip',
+            # refcoco+ annotations
+            'https://bvisionweb1.cs.unc.edu/licheng/referit/data/refcoco+.zip',
+            # refcocog annotations
+            'https://bvisionweb1.cs.unc.edu/licheng/referit/data/refcocog.zip'
         ])
     url = data2url.get(args.dataset_name, None)
     if url is None:
