@@ -294,7 +294,8 @@ class DetInferencer(BaseInferencer):
                  no_save_pred: bool = True,
                  out_dir: str = '',
                  texts: Optional[Union[str, list]] = None,
-                 stuff_texts: Optional[Union[str, list]] = None,  # by open panoptic task
+                 # by open panoptic task
+                 stuff_texts: Optional[Union[str, list]] = None,
                  custom_entities: bool = False,  # by GLIP
                  **kwargs) -> dict:
         """Call the inferencer.
@@ -360,9 +361,11 @@ class DetInferencer(BaseInferencer):
         results_dict = {'predictions': [], 'visualization': []}
         for ori_inputs, data in track(inputs, description='Inference'):
             preds = self.forward(data, **forward_kwargs)
-            # TODO: Not Robust
+
+            # TODO: need more robust
             if isinstance(ori_inputs, dict):
                 ori_inputs = ori_inputs['img_path']
+
             visualization = self.visualize(
                 ori_inputs,
                 preds,
