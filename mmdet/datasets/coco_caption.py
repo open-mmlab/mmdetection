@@ -32,7 +32,7 @@ class COCOCaption(BaseDataset):
         data_list = []
         for ann in annotations:
             data_info = {
-                'image_id': Path(ann['image']).stem.split('_')[-1],
+                'img_id': Path(ann['image']).stem.split('_')[-1],
                 'img_path': file_backend.join_path(img_prefix, ann['image']),
                 'gt_caption': ann['caption'],
             }
