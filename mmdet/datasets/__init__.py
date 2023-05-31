@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from .ade20k import ADE20KPanopticDataset
 from .base_det_dataset import BaseDetDataset
 from .base_video_dataset import BaseVideoDataset
 from .cityscapes import CityscapesDataset
@@ -31,5 +32,6 @@ __all__ = [
     'GroupMultiSourceSampler', 'BaseDetDataset', 'CrowdHumanDataset',
     'Objects365V1Dataset', 'Objects365V2Dataset', 'DSDLDetDataset',
     'BaseVideoDataset', 'MOTChallengeDataset', 'TrackImgSampler',
-    'ReIDDataset', 'YouTubeVISDataset', 'TrackAspectRatioBatchSampler'
+    'ReIDDataset', 'YouTubeVISDataset', 'TrackAspectRatioBatchSampler',
+    'ADE20KPanopticDataset'
 ]
