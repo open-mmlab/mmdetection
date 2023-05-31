@@ -14,7 +14,7 @@ TASKINFOS = {
     'ref-semseg': DetInferencer,
     'instance': DetInferencer,
     'panoptic': DetInferencer,
-    'captioning': ImageCaptionInferencer,
+    'caption': ImageCaptionInferencer,
     'ref-captioning': RefImageCaptionInferencer,
     'retrieval': TextToImageRegionRetrievalInferencer,
 }
@@ -80,7 +80,7 @@ def main():
 
     inferencer = TASKINFOS[task](**init_args)
 
-    if task != 'captioning':
+    if task != 'caption':
         assert call_args['texts'] is not None, f'text prompts is required for {task}'
         if task == 'region-retrieval':
             assert call_args['ref_inputs'] is not None, f'ref inputs is required for {task}'

@@ -52,7 +52,7 @@ class XDecoder(SingleStageDetector):
         visual_features = self.extract_feat(batch_inputs)
 
         if self.sem_seg_head:
-            if self.task == 'captioning':
+            if self.task == 'caption':
                 if not hasattr(self, 'start_token'):
                     self.start_token = torch.tensor([[49406] * 77], device=batch_inputs.device)
                 outputs = self.sem_seg_head.predict(visual_features, batch_data_samples,

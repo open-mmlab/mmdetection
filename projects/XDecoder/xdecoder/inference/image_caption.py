@@ -248,9 +248,9 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
                 data_sample.pred_sem_seg = pred_datasmaple.pred_sem_seg
                 data_sample.set_metainfo({'grounding_img_shape': pred_datasmaple.metainfo['img_shape']})
 
-            self.model.task = 'captioning'
-            self.model.sem_seg_head.task = 'captioning'
-            self.model.sem_seg_head.predictor.task = 'captioning'
+            self.model.task = 'caption'
+            self.model.sem_seg_head.task = 'caption'
+            self.model.sem_seg_head.predictor.task = 'caption'
 
             preds = self.forward(caption_data, **forward_kwargs)
 
