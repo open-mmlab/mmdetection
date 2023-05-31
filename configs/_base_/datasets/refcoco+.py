@@ -1,6 +1,6 @@
 # dataset settings
 dataset_type = 'RefCOCODataset'
-data_root = 'data/refcoco+/'
+data_root = 'data/refcoco/'
 
 backend_args = None
 
