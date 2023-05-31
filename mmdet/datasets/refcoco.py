@@ -14,6 +14,14 @@ from mmdet.registry import DATASETS
 class RefCOCODataset(BaseDataset):
     """RefCOCO dataset.
 
+    The `Refcoco` and `Refcoco+` dataset is based on
+    `ReferItGame: Referring to Objects in Photographs of Natural Scenes
+    <http://tamaraberg.com/papers/referit.pdf>`_.
+
+    The `Refcocog` dataset is based on
+    `Generation and Comprehension of Unambiguous Object Descriptions
+    <https://arxiv.org/abs/1511.02283>`_.
+
     Args:
         ann_file (str): Annotation file path.
         data_root (str): The root directory for ``data_prefix`` and
@@ -36,7 +44,7 @@ class RefCOCODataset(BaseDataset):
 
         super().__init__(
             data_root=data_root,
-            data_prefix=dict(img_path=data_prefix),
+            data_prefix=data_prefix,
             ann_file=ann_file,
             **kwargs,
         )
@@ -65,6 +73,7 @@ class RefCOCODataset(BaseDataset):
             sentences = refer['sentences']
             bbox = np.array(ann['bbox'], dtype=np.float32)
             bbox[2:4] = bbox[0:2] + bbox[2:4]  # XYWH -> XYXY
+            mask = np.array(ann['segmentation'], dtype=np.float32)
 
             for sent in sentences:
                 data_info = {
@@ -73,6 +82,7 @@ class RefCOCODataset(BaseDataset):
                     'ann_id': ann['id'],
                     'text': sent['sent'],
                     'gt_bboxes': bbox[None, :],
+                    'gt_masks': mask[None, :],
                 }
                 data_list.append(data_info)
 

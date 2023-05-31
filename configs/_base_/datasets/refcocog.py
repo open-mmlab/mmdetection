@@ -32,6 +32,7 @@ train_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
+        data_prefix=dict(img='train2014/'),
         ann_file='refcocog/instances.json',
         split_file='refcocog/refs(umd).p',
         split='train',
@@ -47,8 +48,9 @@ val_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='refcoco/instances.json',
-        split_file='refcoco/refs(unc).p',
+        data_prefix=dict(img='train2014/'),
+        ann_file='refcocog/instances.json',
+        split_file='refcocog/refs(umd).p',
         split='val',
         pipeline=test_pipeline,
         backend_args=backend_args))
@@ -62,8 +64,9 @@ test_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='refcoco/instances.json',
-        split_file='refcoco/refs(unc).p',
+        data_prefix=dict(img='train2014/'),
+        ann_file='refcocog/instances.json',
+        split_file='refcocog/refs(umd).p',
         split='test',
         pipeline=test_pipeline,
         backend_args=backend_args))

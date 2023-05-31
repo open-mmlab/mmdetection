@@ -32,6 +32,7 @@ train_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
+        data_prefix=dict(img='train2014/'),
         ann_file='refcoco+/instances.json',
         split_file='refcoco+/refs(unc).p',
         split='train',
@@ -47,6 +48,7 @@ val_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
+        data_prefix=dict(img='train2014/'),
         ann_file='refcoco+/instances.json',
         split_file='refcoco+/refs(unc).p',
         split='val',
@@ -62,6 +64,7 @@ test_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
+        data_prefix=dict(img='train2014/'),
         ann_file='refcoco+/instances.json',
         split_file='refcoco+/refs(unc).p',
         split='testA',  # or 'testB'
