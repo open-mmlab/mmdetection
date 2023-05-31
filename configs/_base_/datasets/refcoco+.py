@@ -53,4 +53,19 @@ val_dataloader = dict(
         pipeline=test_pipeline,
         backend_args=backend_args))
 
-test_dataloader = val_dataloader
+test_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        ann_file='refcoco+/instances.json',
+        split_file='refcoco+/refs(unc).p',
+        split='testA',  # or 'testB'
+        pipeline=test_pipeline,
+        backend_args=backend_args))
+
+# TODO: set the metrics
