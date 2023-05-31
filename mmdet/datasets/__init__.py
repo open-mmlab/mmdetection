@@ -13,6 +13,7 @@ from .lvis import LVISDataset, LVISV1Dataset, LVISV05Dataset
 from .mot_challenge_dataset import MOTChallengeDataset
 from .objects365 import Objects365V1Dataset, Objects365V2Dataset
 from .openimages import OpenImagesChallengeDataset, OpenImagesDataset
+from .refcoco import RefCOCODataset
 from .reid_dataset import ReIDDataset
 from .samplers import (AspectRatioBatchSampler, ClassAwareSampler,
                        GroupMultiSourceSampler, MultiSourceSampler,
@@ -33,5 +34,5 @@ __all__ = [
     'Objects365V1Dataset', 'Objects365V2Dataset', 'DSDLDetDataset',
     'BaseVideoDataset', 'MOTChallengeDataset', 'TrackImgSampler',
     'ReIDDataset', 'YouTubeVISDataset', 'TrackAspectRatioBatchSampler',
-    'ADE20KPanopticDataset'
+    'ADE20KPanopticDataset', 'RefCOCODataset'
 ]
