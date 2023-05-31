@@ -4,6 +4,7 @@ from .base_det_dataset import BaseDetDataset
 from .base_video_dataset import BaseVideoDataset
 from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
+from .coco_caption import COCOCaptionDataset
 from .coco_panoptic import CocoPanopticDataset
 from .crowdhuman import CrowdHumanDataset
 from .dataset_wrappers import MultiImageMixDataset
@@ -33,5 +34,5 @@ __all__ = [
     'Objects365V1Dataset', 'Objects365V2Dataset', 'DSDLDetDataset',
     'BaseVideoDataset', 'MOTChallengeDataset', 'TrackImgSampler',
     'ReIDDataset', 'YouTubeVISDataset', 'TrackAspectRatioBatchSampler',
-    'ADE20KPanopticDataset'
+    'ADE20KPanopticDataset', 'COCOCaptionDataset'
 ]
