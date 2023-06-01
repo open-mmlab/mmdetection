@@ -36,29 +36,29 @@ test_pipeline = [
 ]
 train_dataloader = dict(
     batch_size=2,
-    num_workers=2,
-    persistent_workers=True,
+    num_workers=0,
+    persistent_workers=False,
     sampler=dict(type='DefaultSampler', shuffle=True),
     batch_sampler=dict(type='AspectRatioBatchSampler'),
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
         ann_file='annotations/instances_train2017.json',
-        data_prefix=dict(img='train2017/'),
+        data_prefix=dict(img='/mnt/lustre/share_data/PAT/datasets/mscoco2017/train2017/'),
         filter_cfg=dict(filter_empty_gt=True, min_size=32),
         pipeline=train_pipeline,
         backend_args=backend_args))
 val_dataloader = dict(
     batch_size=1,
-    num_workers=2,
-    persistent_workers=True,
+    num_workers=0,
+    persistent_workers=False,
     drop_last=False,
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
         ann_file='annotations/instances_val2017.json',
-        data_prefix=dict(img='val2017/'),
+        data_prefix=dict(img='/mnt/lustre/share_data/PAT/datasets/mscoco2017/val2017/'),
         test_mode=True,
         pipeline=test_pipeline,
         backend_args=backend_args))
@@ -71,6 +71,7 @@ val_evaluator = dict(
     format_only=False,
     backend_args=backend_args)
 test_evaluator = val_evaluator
+
 
 # inference on test dataset and
 # format the output results for submission.

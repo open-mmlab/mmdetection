@@ -118,7 +118,7 @@ train_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         ann_file='annotations/instances_train2017.json',
-        data_prefix=dict(img='train2017/'),
+        data_prefix=dict(img='/mnt/lustre/share_data/PAT/datasets/mscoco2017/train2017/'),
         filter_cfg=dict(filter_empty_gt=True, min_size=32),
         pipeline=train_pipeline,
         backend_args=backend_args))
@@ -132,7 +132,7 @@ val_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         ann_file='annotations/instances_val2017.json',
-        data_prefix=dict(img='val2017/'),
+        data_prefix=dict(img='/mnt/lustre/share_data/PAT/datasets/mscoco2017/val2017/'),
         test_mode=True,
         pipeline=test_pipeline,
         backend_args=backend_args))
@@ -150,7 +150,7 @@ train_cfg = dict(max_epochs=273, val_interval=7)
 # optimizer
 optim_wrapper = dict(
     type='OptimWrapper',
-    optimizer=dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005),
+    optimizer=dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005, foreach=False),
     clip_grad=dict(max_norm=35, norm_type=2))
 
 # learning policy
