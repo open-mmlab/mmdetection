@@ -79,7 +79,7 @@ class MIoUMetric(BaseMetric):
             pred_label = data_sample['pred_sem_seg']['data'].squeeze()
             # format_only always for test dataset without ground truth
             if not self.format_only:
-                label = data_sample['gt_sem_seg']['data'].squeeze().to(
+                label = data_sample['gt_sem_seg']['sem_seg'].squeeze().to(
                     pred_label)
                 self.results.append(
                     self.intersect_and_union(pred_label, label, num_classes,
