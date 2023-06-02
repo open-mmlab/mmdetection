@@ -3,8 +3,8 @@ import math
 
 from mmcv.cnn import build_conv_layer, build_norm_layer
 
-from mmdet.registry import MODELS
-from ..layers import ResLayer
+from ..builder import BACKBONES
+from ..utils import ResLayer
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet
 
@@ -106,7 +106,7 @@ class Bottleneck(_Bottleneck):
             del self._modules[plugin_name]
 
 
-@MODELS.register_module()
+@BACKBONES.register_module()
 class ResNeXt(ResNet):
     """ResNeXt backbone.
 

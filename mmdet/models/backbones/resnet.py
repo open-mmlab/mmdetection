@@ -4,11 +4,11 @@ import warnings
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn import build_conv_layer, build_norm_layer, build_plugin_layer
-from mmengine.model import BaseModule
+from mmcv.runner import BaseModule
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.registry import MODELS
-from ..layers import ResLayer
+from ..builder import BACKBONES
+from ..utils import ResLayer
 
 
 class BasicBlock(BaseModule):
@@ -302,7 +302,7 @@ class Bottleneck(BaseModule):
         return out
 
 
-@MODELS.register_module()
+@BACKBONES.register_module()
 class ResNet(BaseModule):
     """ResNet backbone.
 
@@ -650,7 +650,7 @@ class ResNet(BaseModule):
                     m.eval()
 
 
-@MODELS.register_module()
+@BACKBONES.register_module()
 class ResNetV1d(ResNet):
     r"""ResNetV1d variant described in `Bag of Tricks
     <https://arxiv.org/pdf/1812.01187.pdf>`_.

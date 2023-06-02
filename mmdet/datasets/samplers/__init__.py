@@ -1,9 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .batch_sampler import AspectRatioBatchSampler
 from .class_aware_sampler import ClassAwareSampler
-from .multi_source_sampler import GroupMultiSourceSampler, MultiSourceSampler
+from .distributed_sampler import DistributedSampler
+from .group_sampler import DistributedGroupSampler, GroupSampler
+from .infinite_sampler import InfiniteBatchSampler, InfiniteGroupBatchSampler
 
 __all__ = [
-    'ClassAwareSampler', 'AspectRatioBatchSampler', 'MultiSourceSampler',
-    'GroupMultiSourceSampler'
+    'DistributedSampler', 'DistributedGroupSampler', 'GroupSampler',
+    'InfiniteGroupBatchSampler', 'InfiniteBatchSampler', 'ClassAwareSampler'
 ]

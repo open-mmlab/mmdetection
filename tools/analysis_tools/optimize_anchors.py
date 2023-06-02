@@ -21,19 +21,15 @@ Example:
 import argparse
 import os.path as osp
 
+import mmcv
 import numpy as np
 import torch
-from mmengine.config import Config
-from mmengine.fileio import dump
-from mmengine.logging import MMLogger
-from mmengine.registry import init_default_scope
-from mmengine.utils import ProgressBar
+from mmcv import Config
 from scipy.optimize import differential_evolution
 
-from mmdet.registry import DATASETS
-from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_overlaps,
-                                   bbox_xyxy_to_cxcywh)
-from mmdet.utils import replace_cfg_vals, update_data_root
+from mmdet.core import bbox_cxcywh_to_xyxy, bbox_overlaps, bbox_xyxy_to_cxcywh
+from mmdet.datasets import build_dataset
+from mmdet.utils import get_root_logger, replace_cfg_vals, update_data_root
 
 
 def parse_args():
@@ -108,17 +104,16 @@ class BaseAnchorOptimizer:
         self.logger.info('Collecting bboxes from annotation...')
         bbox_whs = []
         img_shapes = []
-        prog_bar = ProgressBar(len(self.dataset))
+        prog_bar = mmcv.ProgressBar(len(self.dataset))
         for idx in range(len(self.dataset)):
-            data_info = self.dataset.get_data_info(idx)
+            ann = self.dataset.get_ann_info(idx)
+            data_info = self.dataset.data_infos[idx]
             img_shape = np.array([data_info['width'], data_info['height']])
-            gt_instances = data_info['instances']
-            for instance in gt_instances:
-                bbox = np.array(instance['bbox'])
+            gt_bboxes = ann['bboxes']
+            for bbox in gt_bboxes:
                 wh = bbox[2:4] - bbox[0:2]
                 img_shapes.append(img_shape)
                 bbox_whs.append(wh)
-
             prog_bar.update()
         print('\n')
         bbox_whs = np.array(bbox_whs)
@@ -149,7 +144,7 @@ class BaseAnchorOptimizer:
         self.logger.info(f'Anchor optimize result:{anchor_results}')
         if path:
             json_path = osp.join(path, 'anchor_optimize_result.json')
-            dump(anchor_results, json_path)
+            mmcv.dump(anchor_results, json_path)
             self.logger.info(f'Result saved in {json_path}')
 
 
@@ -188,7 +183,7 @@ class YOLOKMeansAnchorOptimizer(BaseAnchorOptimizer):
             anchors = sorted(anchors, key=lambda x: x[0] * x[1])
             return anchors
 
-        prog_bar = ProgressBar(self.iters)
+        prog_bar = mmcv.ProgressBar(self.iters)
         for i in range(self.iters):
             converged, assignments = self.kmeans_expectation(
                 bboxes, assignments, cluster_centers)
@@ -325,11 +320,10 @@ class YOLODEAnchorOptimizer(BaseAnchorOptimizer):
 
 
 def main():
-    logger = MMLogger.get_current_instance()
+    logger = get_root_logger()
     args = parse_args()
     cfg = args.config
     cfg = Config.fromfile(cfg)
-    init_default_scope(cfg.get('default_scope', 'mmdet'))
 
     # replace the ${key} with the value of cfg.key
     cfg = replace_cfg_vals(cfg)
@@ -347,10 +341,10 @@ def main():
     base_sizes = cfg.model.bbox_head.anchor_generator.base_sizes
     num_anchors = sum([len(sizes) for sizes in base_sizes])
 
-    train_data_cfg = cfg.train_dataloader
+    train_data_cfg = cfg.data.train
     while 'dataset' in train_data_cfg:
         train_data_cfg = train_data_cfg['dataset']
-    dataset = DATASETS.build(train_data_cfg)
+    dataset = build_dataset(train_data_cfg)
 
     if args.algorithm == 'k-means':
         optimizer = YOLOKMeansAnchorOptimizer(

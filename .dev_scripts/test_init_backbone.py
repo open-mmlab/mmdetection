@@ -5,11 +5,10 @@ import os
 from os.path import dirname, exists, join
 
 import pytest
-from mmengine.config import Config
-from mmengine.runner import CheckpointLoader
-from mmengine.utils import ProgressBar
+from mmcv import Config, ProgressBar
+from mmcv.runner import _load_checkpoint
 
-from mmdet.registry import MODELS
+from mmdet.models import build_detector
 
 
 def _get_config_directory():
@@ -29,6 +28,7 @@ def _get_config_directory():
 
 def _get_config_module(fname):
     """Load a configuration as a python module."""
+    from mmcv import Config
     config_dpath = _get_config_directory()
     config_fpath = join(config_dpath, fname)
     config_mod = Config.fromfile(config_fpath)
@@ -91,9 +91,9 @@ def _check_backbone(config, print_cfg=True):
     """Check out backbone whether successfully load pretrained model, by using
     `backbone.init_cfg`.
 
-    First, using `CheckpointLoader.load_checkpoint` to load the checkpoint
-        without loading models.
-    Then, using `MODELS.build` to build models, and using
+    First, using `mmcv._load_checkpoint` to load the checkpoint without
+        loading models.
+    Then, using `build_detector` to build models, and using
         `model.init_weights()` to initialize the parameters.
     Finally, assert weights and bias of each layer loaded from pretrained
         checkpoint are equal to the weights and bias of original checkpoint.
@@ -120,13 +120,16 @@ def _check_backbone(config, print_cfg=True):
     if init_cfg is None or init_cfg.get('type') != 'Pretrained':
         init_flag = False
     if init_flag:
-        checkpoint = CheckpointLoader.load_checkpoint(init_cfg.checkpoint)
+        checkpoint = _load_checkpoint(init_cfg.checkpoint)
         if 'state_dict' in checkpoint:
             state_dict = checkpoint['state_dict']
         else:
             state_dict = checkpoint
 
-        model = MODELS.build(cfg.model)
+        model = build_detector(
+            cfg.model,
+            train_cfg=cfg.get('train_cfg'),
+            test_cfg=cfg.get('test_cfg'))
         model.init_weights()
 
         checkpoint_layers = state_dict.keys()

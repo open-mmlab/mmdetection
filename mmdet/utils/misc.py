@@ -3,10 +3,10 @@ import glob
 import os
 import os.path as osp
 import warnings
-from typing import Union
 
-from mmengine.config import Config, ConfigDict
-from mmengine.logging import print_log
+import mmcv
+import torch
+from mmcv.utils import TORCH_VERSION, digit_version, print_log
 
 
 def find_latest_checkpoint(path, suffix='pth'):
@@ -50,11 +50,11 @@ def update_data_root(cfg, logger=None):
     MMDET_DATASETS. Otherwise, using cfg.data_root as default.
 
     Args:
-        cfg (:obj:`Config`): The model config need to modify
+        cfg (mmcv.Config): The model config need to modify
         logger (logging.Logger | str | None): the way to print msg
     """
-    assert isinstance(cfg, Config), \
-        f'cfg got wrong type: {type(cfg)}, expected mmengine.Config'
+    assert isinstance(cfg, mmcv.Config), \
+        f'cfg got wrong type: {type(cfg)}, expected mmcv.Config'
 
     if 'MMDET_DATASETS' in os.environ:
         dst_root = os.environ['MMDET_DATASETS']
@@ -63,12 +63,12 @@ def update_data_root(cfg, logger=None):
     else:
         return
 
-    assert isinstance(cfg, Config), \
-        f'cfg got wrong type: {type(cfg)}, expected mmengine.Config'
+    assert isinstance(cfg, mmcv.Config), \
+        f'cfg got wrong type: {type(cfg)}, expected mmcv.Config'
 
     def update(cfg, src_str, dst_str):
         for k, v in cfg.items():
-            if isinstance(v, ConfigDict):
+            if isinstance(v, mmcv.ConfigDict):
                 update(cfg[k], src_str, dst_str)
             if isinstance(v, str) and src_str in v:
                 cfg[k] = v.replace(src_str, dst_str)
@@ -77,29 +77,13 @@ def update_data_root(cfg, logger=None):
     cfg.data_root = dst_root
 
 
-def get_test_pipeline_cfg(cfg: Union[str, ConfigDict]) -> ConfigDict:
-    """Get the test dataset pipeline from entire config.
+_torch_version_div_indexing = (
+    'parrots' not in TORCH_VERSION
+    and digit_version(TORCH_VERSION) >= digit_version('1.8'))
 
-    Args:
-        cfg (str or :obj:`ConfigDict`): the entire config. Can be a config
-            file or a ``ConfigDict``.
 
-    Returns:
-        :obj:`ConfigDict`: the config of test dataset.
-    """
-    if isinstance(cfg, str):
-        cfg = Config.fromfile(cfg)
-
-    def _get_test_pipeline_cfg(dataset_cfg):
-        if 'pipeline' in dataset_cfg:
-            return dataset_cfg.pipeline
-        # handle dataset wrapper
-        elif 'dataset' in dataset_cfg:
-            return _get_test_pipeline_cfg(dataset_cfg.dataset)
-        # handle dataset wrappers like ConcatDataset
-        elif 'datasets' in dataset_cfg:
-            return _get_test_pipeline_cfg(dataset_cfg.datasets[0])
-
-        raise RuntimeError('Cannot find `pipeline` in `test_dataloader`')
-
-    return _get_test_pipeline_cfg(cfg.test_dataloader.dataset)
+def floordiv(dividend, divisor, rounding_mode='trunc'):
+    if _torch_version_div_indexing:
+        return torch.div(dividend, divisor, rounding_mode=rounding_mode)
+    else:
+        return dividend // divisor

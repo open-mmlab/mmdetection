@@ -1,48 +1,66 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Optional, Tuple
-
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, is_norm
-from mmengine.model import bias_init_with_prob, constant_init, normal_init
-from mmengine.structures import InstanceData
-from torch import Tensor
+from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
+                      normal_init)
+from mmcv.runner import force_fp32
 
-from mmdet.registry import MODELS
-from mmdet.utils import ConfigType, InstanceList, OptInstanceList, reduce_mean
-from ..task_modules.prior_generators import anchor_inside_flags
-from ..utils import levels_to_images, multi_apply, unmap
+from mmdet.core import anchor_inside_flags, multi_apply, reduce_mean, unmap
+from ..builder import HEADS
 from .anchor_head import AnchorHead
 
 INF = 1e8
 
 
-@MODELS.register_module()
+def levels_to_images(mlvl_tensor):
+    """将一张图像的多层级特征图cat到一起.
+
+    [feature_level0, feature_level1...] -> [feature_image0, feature_image1...]
+    将 mlvl_tensor 中每个张量的形状从 (B, C, H, W) 转换为 (B, H*W , C), 再转换为
+    [(H*W, C),] * B, 并将同一图像中所有级别上的特征图cat到一起.
+
+    Args:
+        mlvl_tensor (list[torch.Tensor]): [(B, C, H, W),] * num_level
+
+    Returns:
+        list[torch.Tensor]: [(num_level * H * W, C),] * B
+    """
+    batch_size = mlvl_tensor[0].size(0)
+    batch_list = [[] for _ in range(batch_size)]
+    channels = mlvl_tensor[0].size(1)
+    for t in mlvl_tensor:  # [[bs, na * nc/4, h, w],] * num_level
+        t = t.permute(0, 2, 3, 1)
+        t = t.view(batch_size, -1, channels).contiguous()
+        for img in range(batch_size):
+            batch_list[img].append(t[img])
+    return [torch.cat(item, 0) for item in batch_list]
+
+
+@HEADS.register_module()
 class YOLOFHead(AnchorHead):
-    """Detection Head of `YOLOF <https://arxiv.org/abs/2103.09460>`_
+    """YOLOFHead Paper link: https://arxiv.org/abs/2103.09460.
 
     Args:
         num_classes (int): 检测类别数量
-        in_channels (list[int]): 每个scale的输入通道数量.
+        in_channels (List[int]): 每个scale的输入通道数量.
         cls_num_convs (int): cls分支的卷积数量.默认为2.
         reg_num_convs (int): reg分支的卷积数量.默认为4.
-        norm_cfg (:obj:`ConfigDict` or dict): 构造和配置norm层的字典.
+        norm_cfg (dict): 构造和配置norm层的字典.
     """
 
     def __init__(self,
-                 num_classes: int,
-                 in_channels: List[int],
-                 num_cls_convs: int = 2,
-                 num_reg_convs: int = 4,
-                 norm_cfg: ConfigType = dict(type='BN', requires_grad=True),
-                 **kwargs) -> None:
+                 num_classes,
+                 in_channels,
+                 num_cls_convs=2,
+                 num_reg_convs=4,
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 **kwargs):
         self.num_cls_convs = num_cls_convs
         self.num_reg_convs = num_reg_convs
         self.norm_cfg = norm_cfg
-        super().__init__(
-            num_classes=num_classes, in_channels=in_channels, **kwargs)
+        super(YOLOFHead, self).__init__(num_classes, in_channels, **kwargs)
 
-    def _init_layers(self) -> None:
+    def _init_layers(self):
         cls_subnet = []
         bbox_subnet = []
         for i in range(self.num_cls_convs):
@@ -82,7 +100,7 @@ class YOLOFHead(AnchorHead):
             stride=1,
             padding=1)
 
-    def init_weights(self) -> None:
+    def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 normal_init(m, mean=0, std=0.01)
@@ -93,29 +111,16 @@ class YOLOFHead(AnchorHead):
         bias_cls = bias_init_with_prob(0.01)
         torch.nn.init.constant_(self.cls_score.bias, bias_cls)
 
-    def forward_single(self, x: Tensor) -> Tuple[Tensor, Tensor]:
-        """Forward feature of a single scale level.
-
-        Args:
-            x (Tensor): Features of a single scale level.
-
-        Returns:
-            tuple:
-                normalized_cls_score (Tensor): Normalized Cls scores for a \
-                    single scale level, the channels number is \
-                    num_base_priors * num_classes.
-                bbox_reg (Tensor): Box energies / deltas for a single scale \
-                    level, the channels number is num_base_priors * 4.
-        """
-        cls_score = self.cls_score(self.cls_subnet(x))
+    def forward_single(self, feature):
+        cls_score = self.cls_score(self.cls_subnet(feature))
         N, _, H, W = cls_score.shape
         cls_score = cls_score.view(N, -1, self.num_classes, H, W)
 
-        reg_feat = self.bbox_subnet(x)
+        reg_feat = self.bbox_subnet(feature)
         bbox_reg = self.bbox_pred(reg_feat)
         objectness = self.object_pred(reg_feat)
 
-        # 这里是为了方便后续使用sigmoid而进行的操作,
+        # 这里是为了方便使用sigmoid而进行的操作,
         # 即sigmoid(normalized_cls_score) = sigmoid(cls)*sigmoid(obj)
         objectness = objectness.view(N, -1, 1, H, W)
         normalized_cls_score = cls_score + objectness - torch.log(
@@ -124,75 +129,77 @@ class YOLOFHead(AnchorHead):
         normalized_cls_score = normalized_cls_score.view(N, -1, H, W)
         return normalized_cls_score, bbox_reg
 
-    def loss_by_feat(
-            self,
-            cls_scores: List[Tensor],
-            bbox_preds: List[Tensor],
-            batch_gt_instances: InstanceList,
-            batch_img_metas: List[dict],
-            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
-        """Calculate the loss based on the features extracted by the detection
-        head.
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
+    def loss(self,
+             cls_scores,
+             bbox_preds,
+             gt_bboxes,
+             gt_labels,
+             img_metas,
+             gt_bboxes_ignore=None):
+        """计算Head的损失.
 
         Args:
-            cls_scores (list[Tensor]): [[bs, na * nc, h, w],] * nl
-            bbox_preds (list[Tensor]): [[bs, na * 4, h, w],] * nl
-            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
-                gt_instance. It usually includes ``bboxes`` and ``labels``
-                attributes.
-            batch_img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
-                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
-                data that is ignored during training and testing.
-                Defaults to None.
+            cls_scores (list[Tensor]): [[bs, na * nc, h, w],] * num_level
+            bbox_preds (list[Tensor]): [[bs, na * 4, h, w],] * num_level
+            gt_bboxes (list[Tensor]): [[num_gts, 4],] * bs.
+            gt_labels (list[Tensor]): [[num_gts,],] * bs.
+            img_metas (list[dict]): [{img_meta},] * bs.
+            gt_bboxes_ignore (None | list[Tensor]): 计算损失时可以指定忽略哪些gt box.
 
         Returns:
-            dict: A dictionary of loss components.
+            dict[str, Tensor]: A dictionary of loss components.
         """
         assert len(cls_scores) == 1
         assert self.prior_generator.num_levels == 1
 
         device = cls_scores[0].device
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        # [[[h * w * na, 4], ] * nl,] * bs
+        # [[[h * w * na, 4], ] * num_levels,] * bs
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, batch_img_metas, device=device)
+            featmap_sizes, img_metas, device=device)
 
         # 因为YOLOF是单个特征图,所以输出的anchor层级始终为第一个
         anchor_list = [anchors[0] for anchors in anchor_list]
         valid_flag_list = [valid_flags[0] for valid_flags in valid_flag_list]
 
+        # [[bs, c, h, w],] * num_level -> [[num_level * h * w, c],] * bs
         cls_scores_list = levels_to_images(cls_scores)
         bbox_preds_list = levels_to_images(bbox_preds)
 
+        label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
         cls_reg_targets = self.get_targets(
             cls_scores_list,
             bbox_preds_list,
             anchor_list,
             valid_flag_list,
-            batch_gt_instances,
-            batch_img_metas,
-            batch_gt_instances_ignore=batch_gt_instances_ignore)
-        if cls_reg_targets is None:  # bs幅图像中存在没有有效anchor的图像
+            gt_bboxes,
+            img_metas,
+            gt_bboxes_ignore_list=gt_bboxes_ignore,
+            gt_labels_list=gt_labels,
+            label_channels=label_channels)
+        if cls_reg_targets is None:  # batch幅图像中任意一个没有有效anchor
             return None
-        (batch_labels, batch_label_weights, avg_factor, batch_bbox_weights,
-         batch_pos_predicted_boxes, batch_target_boxes) = cls_reg_targets
+        (batch_labels, batch_label_weights, num_total_pos, num_total_neg,
+         batch_bbox_weights, batch_pos_predicted_boxes,
+         batch_target_boxes) = cls_reg_targets
 
         flatten_labels = batch_labels.reshape(-1)
         batch_label_weights = batch_label_weights.reshape(-1)
         cls_score = cls_scores[0].permute(0, 2, 3,
                                           1).reshape(-1, self.cls_out_channels)
 
-        avg_factor = reduce_mean(
-            torch.tensor(avg_factor, dtype=torch.float, device=device)).item()
+        num_total_samples = (num_total_pos +
+                             num_total_neg) if self.sampling else num_total_pos
+        num_total_samples = reduce_mean(
+            cls_score.new_tensor(num_total_samples)).clamp_(1.0).item()
 
         # cls loss
         loss_cls = self.loss_cls(
             cls_score,
             flatten_labels,
             batch_label_weights,  # 仅仅包括正负样本的权重,不计算忽略样本的权重
-            avg_factor=avg_factor)
+            avg_factor=num_total_samples)
 
         # reg loss
         if batch_pos_predicted_boxes.shape[0] == 0:
@@ -203,19 +210,21 @@ class YOLOFHead(AnchorHead):
                 batch_pos_predicted_boxes,
                 batch_target_boxes,
                 batch_bbox_weights.float(),  # 没有被pos_ignore_thr阈值忽略掉的正样本
-                avg_factor=avg_factor)
+                avg_factor=num_total_samples)
 
         return dict(loss_cls=loss_cls, loss_bbox=loss_bbox)
 
     def get_targets(self,
-                    cls_scores_list: List[Tensor],
-                    bbox_preds_list: List[Tensor],
-                    anchor_list: List[Tensor],
-                    valid_flag_list: List[Tensor],
-                    batch_gt_instances: InstanceList,
-                    batch_img_metas: List[dict],
-                    batch_gt_instances_ignore: OptInstanceList = None,
-                    unmap_outputs: bool = True):
+                    cls_scores_list,
+                    bbox_preds_list,
+                    anchor_list,
+                    valid_flag_list,
+                    gt_bboxes_list,
+                    img_metas,
+                    gt_bboxes_ignore_list=None,
+                    gt_labels_list=None,
+                    label_channels=1,
+                    unmap_outputs=True):
         """计算batch张图像中anchor的reg和cls的target.
 
         Args:
@@ -223,15 +232,11 @@ class YOLOFHead(AnchorHead):
             bbox_preds_list (list[Tensor])： [[h * w, na * 4], ] * bs
             anchor_list (list[Tensor]): [[h * w * na, 4],] * bs.
             valid_flag_list (list[Tensor]): [[h * w * na, ], ] * bs.
-            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
-                gt_instance. It usually includes ``bboxes`` and ``labels``
-                attributes.
-            batch_img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
-                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
-                data that is ignored during training and testing.
-                Defaults to None.
+            gt_bboxes_list (list[Tensor]): [[num_gts, 4], ] * bs.
+            img_metas (list[dict]): [{img_meta},] * bs.
+            gt_bboxes_ignore_list (list[Tensor]): 计算损失时可以指定忽略哪些gt box.
+            gt_labels_list (list[Tensor]): [[num_gts,],] * bs.
+            label_channels (int): 背景类.
             unmap_outputs (bool): 是否将有效anchor的reg和cls目标映射回原始anchor上.
 
         Returns:
@@ -242,48 +247,58 @@ class YOLOFHead(AnchorHead):
                 - batch_label_weights (Tensor): cls_target的权重(正负样本为1,其余为0)
                     [bs, h * w * na]
                 - num_total_pos (int): 所有图像上的正样本数量.
-                - num_total_neg (int): 所有图像上的负样本数量.
+                - num_total_neg (int): 所有图像上的负样本数量..
             additional_returns: 这块内容来自 `self._get_targets_single` 的用户定义返回.
                 将在函数末尾处与上面的元组结合到一起返回
         """
-        num_imgs = len(batch_img_metas)
+        num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
 
         # 计算每张图片的拟合目标
-        if batch_gt_instances_ignore is None:
-            batch_gt_instances_ignore = [None] * num_imgs
+        if gt_bboxes_ignore_list is None:
+            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
+        if gt_labels_list is None:
+            gt_labels_list = [None for _ in range(num_imgs)]
         results = multi_apply(
             self._get_targets_single,
             bbox_preds_list,
             anchor_list,
             valid_flag_list,
-            batch_gt_instances,
-            batch_img_metas,
-            batch_gt_instances_ignore,
+            gt_bboxes_list,
+            gt_bboxes_ignore_list,
+            gt_labels_list,
+            img_metas,
+            label_channels=label_channels,
             unmap_outputs=unmap_outputs)
-        (all_labels, all_label_weights, pos_inds, neg_inds,
+        (all_labels, all_label_weights, pos_inds_list, neg_inds_list,
          sampling_results_list) = results[:5]
-        avg_factor = sum(
-            [results.avg_factor for results in sampling_results_list])
         rest_results = list(results[5:])  # user-added return values
+        # 如果batch张图片中任意一张图片上没有有效的anchor都直接返回None
+        if any([labels is None for labels in all_labels]):
+            return None
+        # 整个batch图片上采集到的样本
+        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
+        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
 
         batch_labels = torch.stack(all_labels, 0)
         batch_label_weights = torch.stack(all_label_weights, 0)
 
-        res = (batch_labels, batch_label_weights, avg_factor)
+        res = (batch_labels, batch_label_weights, num_total_pos, num_total_neg)
         for i, rests in enumerate(rest_results):  # user-added return values
             rest_results[i] = torch.cat(rests, 0)
 
         return res + tuple(rest_results)
 
     def _get_targets_single(self,
-                            bbox_preds: Tensor,
-                            flat_anchors: Tensor,
-                            valid_flags: Tensor,
-                            gt_instances: InstanceData,
-                            img_meta: dict,
-                            gt_instances_ignore: Optional[InstanceData] = None,
-                            unmap_outputs: bool = True) -> tuple:
+                            bbox_preds,
+                            flat_anchors,
+                            valid_flags,
+                            gt_bboxes,
+                            gt_bboxes_ignore,
+                            gt_labels,
+                            img_meta,
+                            label_channels=1,
+                            unmap_outputs=True):
         """计算单个图像中anchor的reg和cls的target.
 
         Args:
@@ -291,14 +306,10 @@ class YOLOFHead(AnchorHead):
             flat_anchors (Tensor): 整张图像的anchor,[h * w * na ,4]
             valid_flags (Tensor): flat_anchors对应的有效mask, [h * w * na,].
             gt_bboxes (Tensor): [num_gts, 4].
-            gt_instances (:obj:`InstanceData`): Ground truth of instance
-                annotations. It should includes ``bboxes`` and ``labels``
-                attributes.
-            img_meta (dict): Meta information for current image.
-            gt_instances_ignore (:obj:`InstanceData`, optional): Instances
-                to be ignored during training. It includes ``bboxes`` attribute
-                data that is ignored during training and testing.
-                Defaults to None.
+            gt_bboxes_ignore (Tensor): [num_ignored_gts, 4].
+            img_meta (dict): 图像元信息.
+            gt_labels (Tensor): [num_gts,].
+            label_channels (int): 背景类.
             unmap_outputs (bool): 是否将有效anchor的reg和cls目标映射回原始anchor上.
 
         Returns:
@@ -312,28 +323,24 @@ class YOLOFHead(AnchorHead):
                     [self.match_times * 2 * num_gt,].
                 pos_predicted_boxes (Tensor): 用于计算box分支loss的boxes预测值,
                     [self.match_times * 2 * num_gt, 4].
-                pos_target_boxes (Tensor): 于计算box分支loss的boxes目标值,
+                pos_target_boxes (Tensor): 用于计算box分支loss的boxes目标值,
                     [self.match_times * 2 * num_gt, 4].
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
-                                           self.train_cfg['allowed_border'])
-        if not inside_flags.any():
-            raise ValueError(
-                '如果该张图像上没有一个有效anchor. 请检查图像尺寸和anchor尺寸,'
-                '或设置``allowed_border``为 -1以忽略anchor边界限制.')
-
-        # assign gt and sample anchors
+                                           self.train_cfg.allowed_border)
+        if not inside_flags.any():  # 如果该张图像上没有一个有效anchor
+            return (None, ) * 8
+        # 对anchors分配gt然后进行采样
         anchors = flat_anchors[inside_flags, :]
         bbox_preds = bbox_preds.reshape(-1, 4)
         bbox_preds = bbox_preds[inside_flags, :]
 
         # decoded bbox
         decoder_bbox_preds = self.bbox_coder.decode(anchors, bbox_preds)
-        pred_instances = InstanceData(
-            priors=anchors, decoder_priors=decoder_bbox_preds)
-        assign_result = self.assigner.assign(pred_instances, gt_instances,
-                                             gt_instances_ignore)
+        assign_result = self.assigner.assign(
+            decoder_bbox_preds, anchors, gt_bboxes, gt_bboxes_ignore,
+            None if self.sampling else gt_labels)
 
         # 因为正样本(anchor+box)iou中可能有小于pos_ignore_thr的忽略样本存在,
         # 该值就是构造一个正样本中"有效正样本"的mask.其中伪正样本为False,其余为True.
@@ -347,8 +354,8 @@ class YOLOFHead(AnchorHead):
         # shape同上,值为gt_box[torch.arange(num_gt).repeat(2*match_time)]
         pos_target_boxes = assign_result.get_extra_property('target_boxes')
 
-        sampling_result = self.sampler.sample(assign_result, pred_instances,
-                                              gt_instances)
+        sampling_result = self.sampler.sample(assign_result, anchors,
+                                              gt_bboxes)
         num_valid_anchors = anchors.shape[0]
         labels = anchors.new_full((num_valid_anchors, ),
                                   self.num_classes,
@@ -358,11 +365,16 @@ class YOLOFHead(AnchorHead):
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
-            labels[pos_inds] = sampling_result.pos_gt_labels
-            if self.train_cfg['pos_weight'] <= 0:
+            if gt_labels is None:
+                # gt_labels只有在rpn阶段才为None,此时前景为0,背景为1
+                labels[pos_inds] = 0
+            else:
+                labels[pos_inds] = gt_labels[
+                    sampling_result.pos_assigned_gt_inds]
+            if self.train_cfg.pos_weight <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = self.train_cfg['pos_weight']
+                label_weights[pos_inds] = self.train_cfg.pos_weight
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 

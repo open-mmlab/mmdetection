@@ -1,10 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet.registry import MODELS
-from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
+import torch
+
+from mmdet.core import bbox2result
+from mmdet.models.builder import DETECTORS
+from ...core.utils import flip_tensor
 from .single_stage import SingleStageDetector
 
 
-@MODELS.register_module()
+@DETECTORS.register_module()
 class CenterNet(SingleStageDetector):
     """Implementation of CenterNet(Objects as Points)
 
@@ -12,7 +15,6 @@ class CenterNet(SingleStageDetector):
     """
 
     def __init__(self,
-<<<<<<< HEAD
                  backbone,
                  neck,
                  bbox_head,
@@ -117,20 +119,3 @@ class CenterNet(SingleStageDetector):
             for det_bboxes, det_labels in bbox_list
         ]
         return bbox_results
-=======
-                 backbone: ConfigType,
-                 neck: ConfigType,
-                 bbox_head: ConfigType,
-                 train_cfg: OptConfigType = None,
-                 test_cfg: OptConfigType = None,
-                 data_preprocessor: OptConfigType = None,
-                 init_cfg: OptMultiConfig = None) -> None:
-        super().__init__(
-            backbone=backbone,
-            neck=neck,
-            bbox_head=bbox_head,
-            train_cfg=train_cfg,
-            test_cfg=test_cfg,
-            data_preprocessor=data_preprocessor,
-            init_cfg=init_cfg)
->>>>>>> mmdetection/main

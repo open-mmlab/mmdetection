@@ -1,28 +1,24 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Tuple
-
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.ops import MaskedConv2d
-from torch import Tensor
 
-from mmdet.registry import MODELS
-from mmdet.utils import OptConfigType, OptMultiConfig
+from ..builder import HEADS
 from .guided_anchor_head import FeatureAdaption, GuidedAnchorHead
 
 
-@MODELS.register_module()
+@HEADS.register_module()
 class GARetinaHead(GuidedAnchorHead):
     """Guided-Anchor-based RetinaNet head."""
 
     def __init__(self,
-                 num_classes: int,
-                 in_channels: int,
-                 stacked_convs: int = 4,
-                 conv_cfg: OptConfigType = None,
-                 norm_cfg: OptConfigType = None,
-                 init_cfg: OptMultiConfig = None,
-                 **kwargs) -> None:
+                 num_classes,
+                 in_channels,
+                 stacked_convs=4,
+                 conv_cfg=None,
+                 norm_cfg=None,
+                 init_cfg=None,
+                 **kwargs):
         if init_cfg is None:
             init_cfg = dict(
                 type='Normal',
@@ -43,13 +39,10 @@ class GARetinaHead(GuidedAnchorHead):
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        super().__init__(
-            num_classes=num_classes,
-            in_channels=in_channels,
-            init_cfg=init_cfg,
-            **kwargs)
+        super(GARetinaHead, self).__init__(
+            num_classes, in_channels, init_cfg=init_cfg, **kwargs)
 
-    def _init_layers(self) -> None:
+    def _init_layers(self):
         """Initialize layers of the head."""
         self.relu = nn.ReLU(inplace=True)
         self.cls_convs = nn.ModuleList()
@@ -76,8 +69,8 @@ class GARetinaHead(GuidedAnchorHead):
                     norm_cfg=self.norm_cfg))
 
         self.conv_loc = nn.Conv2d(self.feat_channels, 1, 1)
-        num_anchors = self.square_anchor_generator.num_base_priors[0]
-        self.conv_shape = nn.Conv2d(self.feat_channels, num_anchors * 2, 1)
+        self.conv_shape = nn.Conv2d(self.feat_channels, self.num_anchors * 2,
+                                    1)
         self.feature_adaption_cls = FeatureAdaption(
             self.feat_channels,
             self.feat_channels,
@@ -96,7 +89,7 @@ class GARetinaHead(GuidedAnchorHead):
         self.retina_reg = MaskedConv2d(
             self.feat_channels, self.num_base_priors * 4, 3, padding=1)
 
-    def forward_single(self, x: Tensor) -> Tuple[Tensor]:
+    def forward_single(self, x):
         """Forward feature map of a single scale level."""
         cls_feat = x
         reg_feat = x

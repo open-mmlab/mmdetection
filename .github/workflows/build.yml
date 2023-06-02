@@ -1,0 +1,286 @@
+name: build
+
+on:
+  push:
+    paths-ignore:
+      - ".dev_scripts/**"
+      - ".github/**.md"
+      - "demo/**"
+      - "docker/**"
+      - "tools/**"
+      - "README.md"
+      - "README_zh-CN.md"
+
+  pull_request:
+    paths-ignore:
+      - ".dev_scripts/**"
+      - ".github/**.md"
+      - "demo/**"
+      - "docker/**"
+      - "docs/**"
+      - "docs_zh-CN/**"
+      - "tools/**"
+      - "README.md"
+      - "README_zh-CN.md"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build_cpu:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        python-version: [3.7]
+        torch: [1.5.1, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.1]
+        include:
+          - torch: 1.5.1
+            torchvision: 0.6.1
+            mmcv: 1.5
+          - torch: 1.6.0
+            torchvision: 0.7.0
+            mmcv: 1.6
+          - torch: 1.7.0
+            torchvision: 0.8.1
+            mmcv: 1.7
+          - torch: 1.8.0
+            torchvision: 0.9.0
+            mmcv: 1.8
+          - torch: 1.9.0
+            torchvision: 0.10.0
+            mmcv: 1.9
+          - torch: 1.10.1
+            torchvision: 0.11.2
+            mmcv: "1.10"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install PyTorch
+        run: pip install torch==${{matrix.torch}}+cpu torchvision==${{matrix.torchvision}}+cpu -f https://download.pytorch.org/whl/torch_stable.html
+      - name: Install MMCV
+        run: |
+          pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cpu/torch${{matrix.mmcv}}/index.html
+          python -c 'import mmcv; print(mmcv.__version__)'
+      - name: Install unittest dependencies
+        run: |
+          pip install -r requirements/tests.txt -r requirements/optional.txt
+          pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+          pip install git+https://github.com/cocodataset/panopticapi.git
+      - name: Build and install
+        run: rm -rf .eggs && pip install -e .
+      - name: Run unittests and generate coverage report
+        run: |
+          coverage run --branch --source mmdet -m pytest tests/
+          coverage xml
+          coverage report -m
+
+  build_cuda101:
+    runs-on: ubuntu-18.04
+    container:
+      image: pytorch/pytorch:1.6.0-cuda10.1-cudnn7-devel
+
+    strategy:
+      matrix:
+        python-version: [3.7]
+        torch: [1.5.1+cu101, 1.6.0+cu101, 1.7.0+cu101, 1.8.0+cu101]
+        include:
+          - torch: 1.5.1+cu101
+            torch_version: torch1.5.1
+            torchvision: 0.6.1+cu101
+            mmcv: 1.5
+          - torch: 1.6.0+cu101
+            torch_version: torch1.6.0
+            torchvision: 0.7.0+cu101
+            mmcv: 1.6
+          - torch: 1.7.0+cu101
+            torch_version: torch1.7.0
+            torchvision: 0.8.1+cu101
+            mmcv: 1.7
+          - torch: 1.8.0+cu101
+            torch_version: torch1.8.0
+            torchvision: 0.9.0+cu101
+            mmcv: 1.8
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Fetch GPG keys
+        run: |
+          apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub
+          apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/7fa2af80.pub
+      - name: Install system dependencies
+        run: |
+          apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 python${{matrix.python-version}}-dev
+          apt-get clean
+          rm -rf /var/lib/apt/lists/*
+      - name: Install PyTorch
+        run: python -m pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}} -f https://download.pytorch.org/whl/torch_stable.html
+      - name: Install dependencies for compiling onnx when python=3.9
+        run: python -m pip install "protobuf <= 3.20.1" && apt-get install libprotobuf-dev protobuf-compiler
+        if: ${{matrix.python-version == '3.9'}}
+      - name: Install mmdet dependencies
+        run: |
+          python -V
+          export CFLAGS=`python -c 'import sysconfig;print("-I"+sysconfig.get_paths()["include"])'`
+          export CXXFLAGS="${CFLAGS}"
+          python -m pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/torch${{matrix.mmcv}}/index.html
+          python -m pip install pycocotools
+          python -m pip install -r requirements/tests.txt -r requirements/optional.txt
+          python -m pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+          python -m pip install git+https://github.com/cocodataset/panopticapi.git
+          python -c 'import mmcv; print(mmcv.__version__)'
+      - name: Build and install
+        run: |
+          rm -rf .eggs
+          python setup.py check -m -s
+          TORCH_CUDA_ARCH_LIST=7.0 pip install .
+      - name: Run unittests and generate coverage report
+        run: |
+          coverage run --branch --source mmdet -m pytest tests/
+          coverage xml
+          coverage report -m
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1.0.10
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          env_vars: OS,PYTHON
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  build_cuda102:
+    runs-on: ubuntu-18.04
+    container:
+      image: pytorch/pytorch:1.9.0-cuda10.2-cudnn7-devel
+
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8, 3.9]
+        torch: [1.9.0+cu102, 1.10.1+cu102]
+        include:
+          - torch: 1.9.0+cu102
+            torch_version: torch1.9.0
+            torchvision: 0.10.0+cu102
+            mmcv: 1.9
+          - torch: 1.10.1+cu102
+            torch_version: torch1.10.1
+            torchvision: 0.11.2+cu102
+            mmcv: "1.10"
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Fetch GPG keys
+        run: |
+          apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub
+          apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/7fa2af80.pub
+      # Add ppa source repo for python3.9.
+      - name: Add python3.9 source
+        run: |
+          apt-get update && apt-get install -y software-properties-common
+          add-apt-repository -y ppa:deadsnakes/ppa
+        if: ${{matrix.python-version == '3.9'}}
+      # Install python-dev for some packages which require libpython3.Xm.
+      # Github's setup-python cannot install python3.9-dev, so we have to use apt install.
+      # Set DEBIAN_FRONTEND=noninteractive to avoid some interactions.
+      - name: Install python-dev
+        run: apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python${{matrix.python-version}}-dev
+      - name: Install system dependencies
+        run: |
+          apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6
+          apt-get clean
+          rm -rf /var/lib/apt/lists/*
+      - name: Install PyTorch
+        run: python -m pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}} -f https://download.pytorch.org/whl/torch_stable.html
+      - name: Install dependencies for compiling onnx when python=3.9
+        run: python -m pip install "protobuf <= 3.20.1" && apt-get update && apt-get -y install libprotobuf-dev protobuf-compiler cmake
+        if: ${{matrix.python-version == '3.9'}}
+      - name: Install mmdet dependencies
+        run: |
+          python -V
+          export CFLAGS=`python -c 'import sysconfig;print("-I"+sysconfig.get_paths()["include"])'`
+          export CXXFLAGS="${CFLAGS}"
+          python -m pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu102/torch${{matrix.mmcv}}/index.html
+          python -m pip install pycocotools
+          python -m pip install -r requirements/tests.txt -r requirements/optional.txt
+          python -m pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+          python -m pip install git+https://github.com/cocodataset/panopticapi.git
+          python -c 'import mmcv; print(mmcv.__version__)'
+      - name: Build and install
+        run: |
+          rm -rf .eggs
+          python setup.py check -m -s
+          TORCH_CUDA_ARCH_LIST=7.0 pip install .
+      - name: Run unittests and generate coverage report
+        run: |
+          coverage run --branch --source mmdet -m pytest tests/
+          coverage xml
+          coverage report -m
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          env_vars: OS,PYTHON
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  build_windows:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2022]
+        python: [3.8]
+        platform: [cpu, cu111]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Upgrade pip
+        run: python -m pip install pip --upgrade --user
+      - name: Install PyTorch
+        # As a complement to Linux CI, we test on PyTorch LTS version
+        run: pip install torch==1.8.2+${{ matrix.platform }} torchvision==0.9.2+${{ matrix.platform }} -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
+      - name: Install MMCV
+        run: pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cpu/torch1.8/index.html --only-binary mmcv-full
+      - name: Install unittest dependencies
+        run: |
+          python -V
+          python -m pip install pycocotools
+          python -m pip install -r requirements/tests.txt -r requirements/optional.txt
+          python -m pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+          python -m pip install git+https://github.com/cocodataset/panopticapi.git
+          python -c 'import mmcv; print(mmcv.__version__)'
+      - name: Show pip list
+        run: pip list
+      - name: Build and install
+        run: pip install -e .
+      - name: Run unittests
+        run: coverage run --branch --source mmdet -m pytest tests
+      - name: Generate coverage report
+        run: |
+          coverage xml
+          coverage report -m
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          env_vars: OS,PYTHON
+          name: codecov-umbrella
+          fail_ci_if_error: false

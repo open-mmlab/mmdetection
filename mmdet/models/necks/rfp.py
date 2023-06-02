@@ -2,9 +2,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmengine.model import BaseModule, ModuleList, constant_init, xavier_init
+from mmcv.cnn import constant_init, xavier_init
+from mmcv.runner import BaseModule, ModuleList
 
-from mmdet.registry import MODELS
+from ..builder import NECKS, build_backbone
 from .fpn import FPN
 
 
@@ -55,7 +56,7 @@ class ASPP(BaseModule):
         return out
 
 
-@MODELS.register_module()
+@NECKS.register_module()
 class RFP(FPN):
     """RFP (Recursive Feature Pyramid)
 
@@ -89,7 +90,7 @@ class RFP(FPN):
         # nn.ModuleList
         self.rfp_modules = ModuleList()
         for rfp_idx in range(1, rfp_steps):
-            rfp_module = MODELS.build(rfp_backbone)
+            rfp_module = build_backbone(rfp_backbone)
             self.rfp_modules.append(rfp_module)
         self.rfp_aspp = ASPP(self.out_channels, aspp_out_channels,
                              aspp_dilations)

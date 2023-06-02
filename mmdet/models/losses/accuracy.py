@@ -1,7 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import mmcv
 import torch.nn as nn
 
 
+@mmcv.jit(coderize=True)
 def accuracy(pred, target, topk=1, thresh=None):
     """Calculate accuracy according to the prediction and target.
 

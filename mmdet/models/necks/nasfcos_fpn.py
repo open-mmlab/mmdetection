@@ -1,14 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule
+from mmcv.cnn import ConvModule, caffe2_xavier_init
 from mmcv.ops.merge_cells import ConcatCell
-from mmengine.model import BaseModule, caffe2_xavier_init
+from mmcv.runner import BaseModule
 
-from mmdet.registry import MODELS
+from ..builder import NECKS
 
 
-@MODELS.register_module()
+@NECKS.register_module()
 class NASFCOS_FPN(BaseModule):
     """FPN structure in NASFPN.
 

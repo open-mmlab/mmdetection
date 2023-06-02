@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 
-from mmdet.registry import MODELS
+from ..builder import LOSSES
 from .utils import weight_reduce_loss
 
 
@@ -62,7 +62,7 @@ def dice_loss(pred,
     return loss
 
 
-@MODELS.register_module()
+@LOSSES.register_module()
 class DiceLoss(nn.Module):
 
     def __init__(self,

@@ -1,30 +1,29 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional
-
+import mmcv
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import Tensor
 
-from mmdet.registry import MODELS
+from ..builder import LOSSES
 from .utils import weight_reduce_loss
 
 
-def varifocal_loss(pred: Tensor,
-                   target: Tensor,
-                   weight: Optional[Tensor] = None,
-                   alpha: float = 0.75,
-                   gamma: float = 2.0,
-                   iou_weighted: bool = True,
-                   reduction: str = 'mean',
-                   avg_factor: Optional[int] = None) -> Tensor:
+@mmcv.jit(derivate=True, coderize=True)
+def varifocal_loss(pred,
+                   target,
+                   weight=None,
+                   alpha=0.75,
+                   gamma=2.0,
+                   iou_weighted=True,
+                   reduction='mean',
+                   avg_factor=None):
     """`Varifocal Loss <https://arxiv.org/abs/2008.13367>`_
 
     Args:
-        pred (Tensor): The prediction with shape (N, C), C is the
-            number of classes.
-        target (Tensor): The learning target of the iou-aware
+        pred (torch.Tensor): The prediction with shape (N, C), C is the
+            number of classes
+        target (torch.Tensor): The learning target of the iou-aware
             classification score with shape (N, C), C is the number of classes.
-        weight (Tensor, optional): The weight of loss for each
+        weight (torch.Tensor, optional): The weight of loss for each
             prediction. Defaults to None.
         alpha (float, optional): A balance factor for the negative part of
             Varifocal Loss, which is different from the alpha of Focal Loss.
@@ -38,9 +37,6 @@ def varifocal_loss(pred: Tensor,
             "sum".
         avg_factor (int, optional): Average factor that is used to average
             the loss. Defaults to None.
-
-    Returns:
-        Tensor: Loss tensor.
     """
     # pred and target should be of the same size
     assert pred.size() == target.size()
@@ -60,16 +56,16 @@ def varifocal_loss(pred: Tensor,
     return loss
 
 
-@MODELS.register_module()
+@LOSSES.register_module()
 class VarifocalLoss(nn.Module):
 
     def __init__(self,
-                 use_sigmoid: bool = True,
-                 alpha: float = 0.75,
-                 gamma: float = 2.0,
-                 iou_weighted: bool = True,
-                 reduction: str = 'mean',
-                 loss_weight: float = 1.0) -> None:
+                 use_sigmoid=True,
+                 alpha=0.75,
+                 gamma=2.0,
+                 iou_weighted=True,
+                 reduction='mean',
+                 loss_weight=1.0):
         """`Varifocal Loss <https://arxiv.org/abs/2008.13367>`_
 
         Args:
@@ -87,7 +83,7 @@ class VarifocalLoss(nn.Module):
                 "sum".
             loss_weight (float, optional): Weight of loss. Defaults to 1.0.
         """
-        super().__init__()
+        super(VarifocalLoss, self).__init__()
         assert use_sigmoid is True, \
             'Only sigmoid varifocal loss supported now.'
         assert alpha >= 0.0
@@ -99,20 +95,17 @@ class VarifocalLoss(nn.Module):
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred: Tensor,
-                target: Tensor,
-                weight: Optional[Tensor] = None,
-                avg_factor: Optional[int] = None,
-                reduction_override: Optional[str] = None) -> Tensor:
+                pred,
+                target,
+                weight=None,
+                avg_factor=None,
+                reduction_override=None):
         """Forward function.
 
         Args:
-            pred (Tensor): The prediction with shape (N, C), C is the
-                number of classes.
-            target (Tensor): The learning target of the iou-aware
-                classification score with shape (N, C), C is
-                the number of classes.
-            weight (Tensor, optional): The weight of loss for each
+            pred (torch.Tensor): The prediction.
+            target (torch.Tensor): The learning target of the prediction.
+            weight (torch.Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
@@ -121,7 +114,7 @@ class VarifocalLoss(nn.Module):
                 Options are "none", "mean" and "sum".
 
         Returns:
-            Tensor: The calculated loss
+            torch.Tensor: The calculated loss
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (

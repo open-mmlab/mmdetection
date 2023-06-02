@@ -5,12 +5,12 @@ import numpy as np
 import torch.nn as nn
 from mmcv.cnn import build_conv_layer, build_norm_layer
 
-from mmdet.registry import MODELS
+from ..builder import BACKBONES
 from .resnet import ResNet
 from .resnext import Bottleneck
 
 
-@MODELS.register_module()
+@BACKBONES.register_module()
 class RegNet(ResNet):
     """RegNet backbone.
 

@@ -5,7 +5,7 @@ import tempfile
 from collections import OrderedDict
 
 import torch
-from mmengine import Config
+from mmcv import Config
 
 
 def is_head(key):

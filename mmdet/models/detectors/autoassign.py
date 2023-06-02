@@ -1,43 +1,18 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet.registry import MODELS
-from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
+from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 
 
-@MODELS.register_module()
+@DETECTORS.register_module()
 class AutoAssign(SingleStageDetector):
     """Implementation of `AutoAssign: Differentiable Label Assignment for Dense
-    Object Detection <https://arxiv.org/abs/2007.03496>`_
-
-    Args:
-        backbone (:obj:`ConfigDict` or dict): The backbone config.
-        neck (:obj:`ConfigDict` or dict): The neck config.
-        bbox_head (:obj:`ConfigDict` or dict): The bbox head config.
-        train_cfg (:obj:`ConfigDict` or dict, optional): The training config
-            of AutoAssign. Defaults to None.
-        test_cfg (:obj:`ConfigDict` or dict, optional): The testing config
-            of AutoAssign. Defaults to None.
-        data_preprocessor (:obj:`ConfigDict` or dict, optional): Config of
-            :class:`DetDataPreprocessor` to process the input data.
-            Defaults to None.
-        init_cfg (:obj:`ConfigDict` or list[:obj:`ConfigDict`] or dict or
-            list[dict], optional): Initialization config dict.
-            Defaults to None.
-    """
+    Object Detection <https://arxiv.org/abs/2007.03496>`_."""
 
     def __init__(self,
-                 backbone: ConfigType,
-                 neck: ConfigType,
-                 bbox_head: ConfigType,
-                 train_cfg: OptConfigType = None,
-                 test_cfg: OptConfigType = None,
-                 data_preprocessor: OptConfigType = None,
-                 init_cfg: OptMultiConfig = None):
-        super().__init__(
-            backbone=backbone,
-            neck=neck,
-            bbox_head=bbox_head,
-            train_cfg=train_cfg,
-            test_cfg=test_cfg,
-            data_preprocessor=data_preprocessor,
-            init_cfg=init_cfg)
+                 backbone,
+                 neck,
+                 bbox_head,
+                 train_cfg=None,
+                 test_cfg=None):
+        super(AutoAssign, self).__init__(backbone, neck, bbox_head, train_cfg,
+                                         test_cfg)

@@ -2,8 +2,8 @@
 import os.path as osp
 from argparse import ArgumentParser
 
+import mmcv
 import numpy as np
-from mmengine.fileio import load
 
 
 def print_coco_results(results):
@@ -24,15 +24,12 @@ def print_coco_results(results):
     stats[3] = _print(results[3], 1, areaRng='small')
     stats[4] = _print(results[4], 1, areaRng='medium')
     stats[5] = _print(results[5], 1, areaRng='large')
-    # TODO support recall metric
-    '''
     stats[6] = _print(results[6], 0, maxDets=1)
     stats[7] = _print(results[7], 0, maxDets=10)
     stats[8] = _print(results[8], 0)
     stats[9] = _print(results[9], 0, areaRng='small')
     stats[10] = _print(results[10], 0, areaRng='medium')
     stats[11] = _print(results[11], 0, areaRng='large')
-    '''
 
 
 def get_coco_style_results(filename,
@@ -52,12 +49,8 @@ def get_coco_style_results(filename,
 
     if metric is None:
         metrics = [
-            'mAP',
-            'mAP_50',
-            'mAP_75',
-            'mAP_s',
-            'mAP_m',
-            'mAP_l',
+            'AP', 'AP50', 'AP75', 'APs', 'APm', 'APl', 'AR1', 'AR10', 'AR100',
+            'ARs', 'ARm', 'ARl'
         ]
     elif isinstance(metric, list):
         metrics = metric
@@ -66,10 +59,11 @@ def get_coco_style_results(filename,
 
     for metric_name in metrics:
         assert metric_name in [
-            'mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l'
+            'AP', 'AP50', 'AP75', 'APs', 'APm', 'APl', 'AR1', 'AR10', 'AR100',
+            'ARs', 'ARm', 'ARl'
         ]
 
-    eval_output = load(filename)
+    eval_output = mmcv.load(filename)
 
     num_distortions = len(list(eval_output.keys()))
     results = np.zeros((num_distortions, 6, len(metrics)), dtype='float32')
@@ -77,13 +71,7 @@ def get_coco_style_results(filename,
     for corr_i, distortion in enumerate(eval_output):
         for severity in eval_output[distortion]:
             for metric_j, metric_name in enumerate(metrics):
-                metric_dict = eval_output[distortion][severity]
-
-                new_metric_dict = {}
-                for k, v in metric_dict.items():
-                    if '/' in k:
-                        new_metric_dict[k.split('/')[-1]] = v
-                mAP = new_metric_dict['_'.join((task, metric_name))]
+                mAP = eval_output[distortion][severity][task][metric_name]
                 results[corr_i, severity, metric_j] = mAP
 
     P = results[0, 0, :]
@@ -132,7 +120,7 @@ def get_voc_style_results(filename, prints='mPC', aggregate='benchmark'):
     for p in prints:
         assert p in ['P', 'mPC', 'rPC']
 
-    eval_output = load(filename)
+    eval_output = mmcv.load(filename)
 
     num_distortions = len(list(eval_output.keys()))
     results = np.zeros((num_distortions, 6, 20), dtype='float32')
@@ -195,7 +183,7 @@ def get_results(filename,
 
 def get_distortions_from_file(filename):
 
-    eval_output = load(filename)
+    eval_output = mmcv.load(filename)
 
     return get_distortions_from_results(eval_output)
 

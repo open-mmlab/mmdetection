@@ -1,16 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet.registry import MODELS
-from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
+from ..builder import DETECTORS
 from .two_stage import TwoStageDetector
 
 
-@MODELS.register_module()
+@DETECTORS.register_module()
 class CascadeRCNN(TwoStageDetector):
     r"""Implementation of `Cascade R-CNN: Delving into High Quality Object
     Detection <https://arxiv.org/abs/1906.09756>`_"""
 
     def __init__(self,
-<<<<<<< HEAD
                  backbone,
                  neck=None,
                  rpn_head=None,
@@ -19,24 +17,12 @@ class CascadeRCNN(TwoStageDetector):
                  test_cfg=None,
                  init_cfg=None):
         super(CascadeRCNN, self).__init__(
-=======
-                 backbone: ConfigType,
-                 neck: OptConfigType = None,
-                 rpn_head: OptConfigType = None,
-                 roi_head: OptConfigType = None,
-                 train_cfg: OptConfigType = None,
-                 test_cfg: OptConfigType = None,
-                 data_preprocessor: OptConfigType = None,
-                 init_cfg: OptMultiConfig = None) -> None:
-        super().__init__(
->>>>>>> mmdetection/main
             backbone=backbone,
             neck=neck,
             rpn_head=rpn_head,
             roi_head=roi_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-<<<<<<< HEAD
             init_cfg=init_cfg)
 
     def show_result(self, data, result, **kwargs):
@@ -59,7 +45,3 @@ class CascadeRCNN(TwoStageDetector):
             if isinstance(result, dict):
                 result = result['ensemble']
         return super(CascadeRCNN, self).show_result(data, result, **kwargs)
-=======
-            data_preprocessor=data_preprocessor,
-            init_cfg=init_cfg)
->>>>>>> mmdetection/main

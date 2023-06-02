@@ -3,9 +3,8 @@ import argparse
 import glob
 import os.path as osp
 
-from mmengine.config import Config
-from mmengine.fileio import dump, load
-from mmengine.utils import mkdir_or_exist
+import mmcv
+from mmcv import Config
 
 
 def parse_args():
@@ -50,7 +49,7 @@ if __name__ == '__main__':
                 if len(json_list) > 0:
                     log_json_path = list(sorted(json_list))[-1]
 
-                    metric = load(log_json_path)
+                    metric = mmcv.load(log_json_path)
                     if config in metric.get('config', {}):
 
                         new_metrics = dict()
@@ -87,8 +86,9 @@ if __name__ == '__main__':
                 print(f'{config} not exist dir: {metric_json_dir}')
 
     if metrics_out:
-        mkdir_or_exist(metrics_out)
-        dump(result_dict, osp.join(metrics_out, 'batch_test_metric_info.json'))
+        mmcv.mkdir_or_exist(metrics_out)
+        mmcv.dump(result_dict,
+                  osp.join(metrics_out, 'batch_test_metric_info.json'))
     if not args.not_show:
         print('===================================')
         for config_name, metrics in result_dict.items():

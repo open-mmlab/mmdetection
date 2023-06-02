@@ -1,13 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import functools
-from typing import Callable, Optional
 
+import mmcv
 import torch
 import torch.nn.functional as F
-from torch import Tensor
 
 
-def reduce_loss(loss: Tensor, reduction: str) -> Tensor:
+def reduce_loss(loss, reduction):
     """Reduce loss as specified.
 
     Args:
@@ -27,20 +26,15 @@ def reduce_loss(loss: Tensor, reduction: str) -> Tensor:
         return loss.sum()
 
 
-def weight_reduce_loss(loss: Tensor,
-                       weight: Optional[Tensor] = None,
-                       reduction: str = 'mean',
-                       avg_factor: Optional[float] = None) -> Tensor:
+@mmcv.jit(derivate=True, coderize=True)
+def weight_reduce_loss(loss, weight=None, reduction='mean', avg_factor=None):
     """Apply element-wise weight and reduce loss.
 
     Args:
         loss (Tensor): Element-wise loss.
-        weight (Optional[Tensor], optional): Element-wise weights.
-            Defaults to None.
-        reduction (str, optional): Same as built-in losses of PyTorch.
-            Defaults to 'mean'.
-        avg_factor (Optional[float], optional): Average factor when
-            computing the mean of losses. Defaults to None.
+        weight (Tensor): Element-wise weights.
+        reduction (str): Same as built-in losses of PyTorch.
+        avg_factor (float): Average factor when computing the mean of losses.
 
     Returns:
         Tensor: Processed loss values.
@@ -65,7 +59,7 @@ def weight_reduce_loss(loss: Tensor,
     return loss
 
 
-def weighted_loss(loss_func: Callable) -> Callable:
+def weighted_loss(loss_func):
     """Create a weighted version of a given loss function.
 
     To use this decorator, the loss function must have the signature like
@@ -97,26 +91,12 @@ def weighted_loss(loss_func: Callable) -> Callable:
     """
 
     @functools.wraps(loss_func)
-    def wrapper(pred: Tensor,
-                target: Tensor,
-                weight: Optional[Tensor] = None,
-                reduction: str = 'mean',
-                avg_factor: Optional[int] = None,
-                **kwargs) -> Tensor:
-        """
-        Args:
-            pred (Tensor): The prediction.
-            target (Tensor): Target bboxes.
-            weight (Optional[Tensor], optional): The weight of loss for each
-                prediction. Defaults to None.
-            reduction (str, optional): Options are "none", "mean" and "sum".
-                Defaults to 'mean'.
-            avg_factor (Optional[int], optional): Average factor that is used
-                to average the loss. Defaults to None.
-
-        Returns:
-            Tensor: Loss tensor.
-        """
+    def wrapper(pred,
+                target,
+                weight=None,
+                reduction='mean',
+                avg_factor=None,
+                **kwargs):
         # get element-wise loss
         loss = loss_func(pred, target, **kwargs)
         loss = weight_reduce_loss(loss, weight, reduction, avg_factor)

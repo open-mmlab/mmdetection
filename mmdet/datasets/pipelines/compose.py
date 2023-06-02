@@ -1,0 +1,54 @@
+# Copyright (c) OpenMMLab. All rights reserved.
+import collections
+
+from mmcv.utils import build_from_cfg
+
+from ..builder import PIPELINES
+
+
+@PIPELINES.register_module()
+class Compose:
+    """按顺序组合多个变换.
+
+    Args:
+        transforms (Sequence[dict | callable]): 要组合的变换对象或配置字典的序列.
+    """
+
+    def __init__(self, transforms):
+        assert isinstance(transforms, collections.abc.Sequence)
+        self.transforms = []
+        for transform in transforms:
+            if isinstance(transform, dict):
+                transform = build_from_cfg(transform, PIPELINES)
+                self.transforms.append(transform)
+            elif callable(transform):
+                self.transforms.append(transform)
+            else:
+                raise TypeError('transform must be callable or a dict')
+
+    def __call__(self, data):
+        """根据顺序调用transforms中各个数据操作.
+
+        Args:
+            data (dict): A result dict contains the data to transform.
+
+        Returns:
+           dict: Transformed data.
+        """
+
+        for t in self.transforms:
+            data = t(data)
+            if data is None:
+                return None
+        return data
+
+    def __repr__(self):
+        format_string = self.__class__.__name__ + '('
+        for t in self.transforms:
+            str_ = t.__repr__()
+            if 'Compose(' in str_:
+                str_ = str_.replace('\n', '\n    ')
+            format_string += '\n'
+            format_string += f'    {str_}'
+        format_string += '\n)'
+        return format_string

@@ -1,10 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet.registry import MODELS
-from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
+from ..builder import DETECTORS
 from .single_stage_instance_seg import SingleStageInstanceSegmentor
 
 
-@MODELS.register_module()
+@DETECTORS.register_module()
 class SOLOv2(SingleStageInstanceSegmentor):
     """`SOLOv2: Dynamic and Fast Instance Segmentation
     <https://arxiv.org/abs/2003.10152>`_
@@ -12,14 +11,13 @@ class SOLOv2(SingleStageInstanceSegmentor):
     """
 
     def __init__(self,
-                 backbone: ConfigType,
-                 neck: OptConfigType = None,
-                 bbox_head: OptConfigType = None,
-                 mask_head: OptConfigType = None,
-                 train_cfg: OptConfigType = None,
-                 test_cfg: OptConfigType = None,
-                 data_preprocessor: OptConfigType = None,
-                 init_cfg: OptMultiConfig = None):
+                 backbone,
+                 neck=None,
+                 bbox_head=None,
+                 mask_head=None,
+                 train_cfg=None,
+                 test_cfg=None,
+                 init_cfg=None):
         super().__init__(
             backbone=backbone,
             neck=neck,
@@ -27,5 +25,4 @@ class SOLOv2(SingleStageInstanceSegmentor):
             mask_head=mask_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            data_preprocessor=data_preprocessor,
             init_cfg=init_cfg)

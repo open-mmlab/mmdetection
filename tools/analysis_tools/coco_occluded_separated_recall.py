@@ -1,11 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from argparse import ArgumentParser
 
-import mmengine
-from mmengine.logging import print_log
+import mmcv
+from mmcv.utils import print_log
 
-from mmdet.datasets import CocoDataset
-from mmdet.evaluation import CocoOccludedSeparatedMetric
+from mmdet.datasets import OccludedSeparatedCocoDataset
 
 
 def main():
@@ -30,17 +29,14 @@ def main():
         help='coco annotation file path')
     args = parser.parse_args()
 
-    results = mmengine.load(args.result)
-    assert 'masks' in results[0]['pred_instances'], \
+    results = mmcv.load(args.result)
+    assert isinstance(results[0], tuple), \
         'The results must be predicted by instance segmentation model.'
-    metric = CocoOccludedSeparatedMetric(
-        ann_file=args.ann, iou_thr=args.iou_thr, score_thr=args.score_thr)
-    metric.dataset_meta = CocoDataset.METAINFO
-    for datasample in results:
-        metric.process(data_batch=None, data_samples=[datasample])
-    metric_res = metric.compute_metrics(metric.results)
+    dataset = OccludedSeparatedCocoDataset(
+        ann_file=args.ann, pipeline=[], test_mode=True)
+    metric_res = dataset.evaluate(results)
     if args.out is not None:
-        mmengine.dump(metric_res, args.out)
+        mmcv.dump(metric_res, args.out)
         print_log(f'Evaluation results have been saved to {args.out}.')
 
 

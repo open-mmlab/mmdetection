@@ -1,6 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
-from typing import List, Optional, Tuple
 
 import mmcv
 import numpy as np
@@ -8,15 +7,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmengine.model import BaseModule
-from mmengine.structures import InstanceData
-from torch import Tensor
+from mmcv.runner import BaseModule, auto_fp16, force_fp32
 
-from mmdet.models.utils.misc import floordiv
-from mmdet.registry import MODELS
-from mmdet.utils import ConfigType, InstanceList, MultiConfig, OptConfigType
-from ..layers import mask_matrix_nms
-from ..utils import center_of_mass, generate_coordinate, multi_apply
+from mmdet.core import InstanceData, mask_matrix_nms, multi_apply
+from mmdet.core.utils import center_of_mass, generate_coordinate
+from mmdet.models.builder import HEADS
+from mmdet.utils.misc import floordiv
 from .solo_head import SOLOHead
 
 
@@ -38,21 +34,18 @@ class MaskFeatModule(BaseModule):
         init_cfg (dict or list[dict], optional): 权重的初始化配置.
     """
 
-    def __init__(
-        self,
-        in_channels: int,
-        feat_channels: int,
-        start_level: int,
-        end_level: int,
-        out_channels: int,
-        mask_stride: int = 4,
-        conv_cfg: OptConfigType = None,
-        norm_cfg: OptConfigType = None,
-        init_cfg: MultiConfig = [
-            dict(type='Normal', layer='Conv2d', std=0.01)
-        ]
-    ) -> None:
+    def __init__(self,
+                 in_channels,
+                 feat_channels,
+                 start_level,
+                 end_level,
+                 out_channels,
+                 mask_stride=4,
+                 conv_cfg=None,
+                 norm_cfg=None,
+                 init_cfg=[dict(type='Normal', layer='Conv2d', std=0.01)]):
         super().__init__(init_cfg=init_cfg)
+
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.start_level = start_level
@@ -65,8 +58,7 @@ class MaskFeatModule(BaseModule):
         self._init_layers()
         self.fp16_enabled = False
 
-    def _init_layers(self) -> None:
-        """Initialize layers of the head."""
+    def _init_layers(self):
         self.convs_all_levels = nn.ModuleList()
         for i in range(self.start_level, self.end_level + 1):
             convs_per_level = nn.Sequential()
@@ -133,17 +125,9 @@ class MaskFeatModule(BaseModule):
             conv_cfg=self.conv_cfg,
             norm_cfg=self.norm_cfg)
 
-    def forward(self, x: Tuple[Tensor]) -> Tensor:
-        """Forward features from the upstream network.
-
-        Args:
-            x (tuple[Tensor]): Features from the upstream network, each is
-                a 4D-tensor.
-
-        Returns:
-            Tensor: The predicted mask feature map.
-        """
-        inputs = x[self.start_level:self.end_level + 1]
+    @auto_fp16()
+    def forward(self, feats):
+        inputs = feats[self.start_level:self.end_level + 1]
         assert len(inputs) == (self.end_level - self.start_level + 1)
         feature_add_all_level = self.convs_all_levels[0](inputs[0])
         for i in range(1, len(inputs)):
@@ -153,6 +137,7 @@ class MaskFeatModule(BaseModule):
                                                  input_p.device)
                 input_p = torch.cat([input_p, coord_feat], 1)
 
+            # fix runtime error of "+=" inplace operation in PyTorch 1.10
             feature_add_all_level = feature_add_all_level + \
                 self.convs_all_levels[i](input_p)
 
@@ -160,14 +145,14 @@ class MaskFeatModule(BaseModule):
         return feature_pred
 
 
-@MODELS.register_module()
+@HEADS.register_module()
 class SOLOV2Head(SOLOHead):
     """SOLOv2 mask head used in `SOLOv2: Dynamic and Fast Instance
     Segmentation. <https://arxiv.org/pdf/2003.10152>`_
 
     Args:
         mask_feature_head (dict): SOLOv2MaskFeatHead的配置项.
-        dynamic_conv_size (int): Dynamic Conv kernel size. 默认: 1.
+        dynamic_conv_size (int): Dynamic Conv kernel size. Default: 1.
         dcn_cfg (dict): kernel_conv 和 cls_conv中的DCN配置项.默认: None.
         dcn_apply_to_all_conv (bool): 在kernel_conv和cls_conv的每一层都使用dcn,
             还是只在最后一层使用,在SOLOv2-Light上为False. 默认: True.
@@ -176,11 +161,11 @@ class SOLOV2Head(SOLOHead):
 
     def __init__(self,
                  *args,
-                 mask_feature_head: ConfigType,
-                 dynamic_conv_size: int = 1,
-                 dcn_cfg: OptConfigType = None,
-                 dcn_apply_to_all_conv: bool = True,
-                 init_cfg: MultiConfig = [
+                 mask_feature_head,
+                 dynamic_conv_size=1,
+                 dcn_cfg=None,
+                 dcn_apply_to_all_conv=True,
+                 init_cfg=[
                      dict(type='Normal', layer='Conv2d', std=0.01),
                      dict(
                          type='Normal',
@@ -188,7 +173,7 @@ class SOLOV2Head(SOLOHead):
                          bias_prob=0.01,
                          override=dict(name='conv_cls'))
                  ],
-                 **kwargs) -> None:
+                 **kwargs):
         assert dcn_cfg is None or isinstance(dcn_cfg, dict)
         self.dcn_cfg = dcn_cfg
         self.with_dcn = dcn_cfg is not None
@@ -200,7 +185,7 @@ class SOLOV2Head(SOLOHead):
 
         super().__init__(*args, init_cfg=init_cfg, **kwargs)
 
-        # 确保SOLOv2MaskFeatHead.in_channels与SOLOv2Head.in_channels保持一致
+        # 更新mask_feature_head的in_channels, 不理解这段代码有何意义
         if mask_feature_head.get('in_channels', None) is not None:
             if mask_feature_head.in_channels != self.in_channels:
                 warnings.warn('The `in_channels` of SOLOv2MaskFeatHead and '
@@ -215,8 +200,7 @@ class SOLOV2Head(SOLOHead):
         self.mask_stride = self.mask_feature_head.mask_stride
         self.fp16_enabled = False
 
-    def _init_layers(self) -> None:
-        """Initialize layers of the head."""
+    def _init_layers(self):
         self.cls_convs = nn.ModuleList()
         self.kernel_convs = nn.ModuleList()
         conv_cfg = None
@@ -259,37 +243,16 @@ class SOLOV2Head(SOLOHead):
         self.conv_kernel = nn.Conv2d(
             self.feat_channels, self.kernel_out_channels, 3, padding=1)
 
-    def forward(self, x):
-        """Forward features from the upstream network.
-
-        Args:
-            x (tuple[Tensor]): Features from the upstream network, each is
-                a 4D-tensor.
-
-        Returns:
-            tuple: A tuple of classification scores, mask prediction,
-            and mask features.
-
-                - mlvl_kernel_preds (list[Tensor]): Multi-level dynamic kernel
-                  prediction. The kernel is used to generate instance
-                  segmentation masks by dynamic convolution. Each element in
-                  the list has shape
-                  (batch_size, kernel_out_channels, num_grids, num_grids).
-                - mlvl_cls_preds (list[Tensor]): Multi-level scores. Each
-                  element in the list has shape
-                  (batch_size, num_classes, num_grids, num_grids).
-                - mask_feats (Tensor): Unified mask feature map used to
-                  generate instance segmentation masks by dynamic convolution.
-                  Has shape (batch_size, mask_out_channels, h, w).
-        """
-        assert len(x) == self.num_levels
+    @auto_fp16()
+    def forward(self, feats):
+        assert len(feats) == self.num_levels
         # mask_feature_head默认配置下仅利用了前四层,[bs, out_c, batch_h//4, batch_w//4]
-        mask_feats = self.mask_feature_head(x)
-        ins_kernel_feats = self.resize_feats(x)
+        mask_feats = self.mask_feature_head(feats)
+        feats = self.resize_feats(feats)
         mlvl_kernel_preds = []
         mlvl_cls_preds = []
         for i in range(self.num_levels):
-            ins_kernel_feat = ins_kernel_feats[i]
+            ins_kernel_feat = feats[i]
             # ins branch
             # concat coord
             coord_feat = generate_coordinate(ins_kernel_feat.size(),
@@ -323,18 +286,20 @@ class SOLOV2Head(SOLOHead):
         return mlvl_kernel_preds, mlvl_cls_preds, mask_feats
 
     def _get_targets_single(self,
-                            gt_instances: InstanceData,
-                            featmap_sizes: Optional[list] = None) -> tuple:
+                            gt_bboxes,
+                            gt_labels,
+                            gt_masks,
+                            featmap_size=None):
         """计算单张图像的拟合目标.
 
         Args:
-            gt_instances (:obj:`InstanceData`): Ground truth of instance
-                annotations. It should includes ``bboxes``, ``labels``,
-                and ``masks`` attributes.
-            featmap_sizes (list[:obj:`torch.size`]): [batch_h//4, batch_w//4]. 默认: None.
+            gt_bboxes (Tensor): [num_gts, 4].
+            gt_labels (Tensor): [num_gts, ].
+            gt_masks (Tensor): [num_gts, pad_h, pad_w].
+            featmap_size (:obj:`torch.size`): [batch_h//4, batch_w//4]. 默认: None.
                 注意SOLOv1中,该参数是[[h, w], ] * nl.即v1中不同层级的mask_target尺寸是不同的
                 而v2中是固定为[batch_h//4, batch_w//4],因为Head部分的mask输出是将2~4层级
-                分别上采样至第1层级尺寸[batch_h//4, batch_w//4]再相加到一起.再通过
+                分别上采样至第1层级尺寸[batch_h//4, batch_w//4]再相加到一起的再通过
                 conv1x1_GN_ReLU得到的.所以各层上生成的target_mask尺寸都是一致的.
 
         Returns:
@@ -349,14 +314,10 @@ class SOLOV2Head(SOLOHead):
                 - mlvl_pos_indexes  (list[list]): 所有层级上正样本区域的一维索引
                   [[num_pos_per_img_lvl, ], ] * nl.
         """
-        gt_labels = gt_instances.labels
-        device = gt_labels.device
 
-        gt_bboxes = gt_instances.bboxes
+        device = gt_labels.device
         gt_areas = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
                               (gt_bboxes[:, 3] - gt_bboxes[:, 1]))
-        gt_masks = gt_instances.masks.to_tensor(
-            dtype=torch.bool, device=device)
 
         mlvl_pos_mask_targets = []
         mlvl_pos_indexes = []
@@ -378,7 +339,7 @@ class SOLOV2Head(SOLOHead):
                        (gt_areas <= upper_bound)).nonzero().flatten()
             if len(gt_inds) == 0:
                 mlvl_pos_mask_targets.append(
-                    torch.zeros([0, featmap_sizes[0], featmap_sizes[1]],
+                    torch.zeros([0, featmap_size[0], featmap_size[1]],
                                 dtype=torch.uint8,
                                 device=device))
                 mlvl_labels.append(labels)
@@ -403,8 +364,8 @@ class SOLOV2Head(SOLOHead):
                         pos_w_ranges, valid_mask_flags):
                 if not valid_mask_flag:
                     continue
-                upsampled_size = (featmap_sizes[0] * self.mask_stride,
-                                  featmap_sizes[1] * self.mask_stride)
+                upsampled_size = (featmap_size[0] * self.mask_stride,
+                                  featmap_size[1] * self.mask_stride)
                 center_h, center_w = center_of_mass(gt_mask)
 
                 coord_w = int(
@@ -461,7 +422,7 @@ class SOLOV2Head(SOLOHead):
                     for j in range(left, right + 1):
                         index = int(i * num_grid + j)
                         this_mask_target = torch.zeros(
-                            [featmap_sizes[0], featmap_sizes[1]],
+                            [featmap_size[0], featmap_size[1]],
                             dtype=torch.uint8,
                             device=device)
                         this_mask_target[:gt_mask.shape[0], :gt_mask.
@@ -471,7 +432,7 @@ class SOLOV2Head(SOLOHead):
                         pos_index.append(index)
             if len(mask_target) == 0:
                 mask_target = torch.zeros(
-                    [0, featmap_sizes[0], featmap_sizes[1]],
+                    [0, featmap_size[0], featmap_size[1]],
                     dtype=torch.uint8,
                     device=device)
             else:
@@ -483,38 +444,46 @@ class SOLOV2Head(SOLOHead):
         return (mlvl_pos_mask_targets, mlvl_labels, mlvl_pos_masks,
                 mlvl_pos_indexes)
 
-    def loss_by_feat(self, mlvl_kernel_preds: List[Tensor],
-                     mlvl_cls_preds: List[Tensor], mask_feats: Tensor,
-                     batch_gt_instances: InstanceList,
-                     batch_img_metas: List[dict], **kwargs) -> dict:
-        """Calculate the loss based on the features extracted by the mask head.
+    @force_fp32(apply_to=('mlvl_kernel_preds', 'mlvl_cls_preds', 'mask_feats'))
+    def loss(self,
+             mlvl_kernel_preds,
+             mlvl_cls_preds,
+             mask_feats,
+             gt_labels,
+             gt_masks,
+             img_metas,
+             gt_bboxes=None,
+             **kwargs):
+        """Calculate the loss of total batch.
 
         Args:
-            mlvl_kernel_preds (list[Tensor]): 层级的动态卷积输出.
+            mlvl_kernel_preds (list[Tensor]): 多层级的动态卷积输出.
                 [[bs, kernel_c, num_grid, num_grid], ] * nl, 其中kernel_c为
                 mask_out_c * dynamic_conv_size**2
             mlvl_cls_preds (list[Tensor]): 多层级的cls输出.
                 [[bs, nc, num_grid, num_grid], ] * nl
             mask_feats (Tensor): 该值结合正样本对应的pred_kernel生成最终的pred_mask
                 [bs, mask_out_c, batch_h//4, batch_w//4].
-            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
-                gt_instance. It usually includes ``bboxes``, ``masks``,
-                and ``labels`` attributes.
-            batch_img_metas (list[dict]): Meta information of multiple images.
+            gt_labels (list[Tensor]): [[num_gt, ], ] * bs
+            gt_masks (list[Tensor]): [[num_gt, pad_h, pad_w], ] * bs.
+            img_metas (list[dict]): [dict(), ] * bs.
+            gt_bboxes (list[Tensor]): [[num_gt, 4], ] * bs. 默认: None.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        featmap_sizes = mask_feats.size()[-2:]
+        featmap_size = mask_feats.size()[-2:]
         # [[[num_pos_per_img_lvl, batch_h//4, batch_w//4], ] * nl], ] * bs. 正样本的target_mask
         # [[[num_grid, num_grid], ] * nl], ] * bs. 样本的target_cls(默认值为nc)
         # [[[num_grid**2, ], ] * nl], ] * bs. bool值,正样本区域为True(0.2倍gt范围)
         # [[[num_pos_per_img_lvl, ], ] * nl], ] * bs. 正样本区域的一维索引, ∈[0,h*w)
         pos_mask_targets, labels, pos_masks, pos_indexes = multi_apply(
             self._get_targets_single,
-            batch_gt_instances,
-            featmap_sizes=featmap_sizes)
-
+            gt_bboxes,
+            gt_labels,
+            gt_masks,
+            featmap_size=featmap_size)
+        # -> [[bs * num_pos_per_img_lvl, batch_h//4, batch_w//4], ] * nl
         mlvl_mask_targets = [
             torch.cat(lvl_mask_targets, 0)
             for lvl_mask_targets in zip(*pos_mask_targets)
@@ -574,10 +543,8 @@ class SOLOV2Head(SOLOHead):
         num_pos = 0
         for img_pos_masks in pos_masks:
             for lvl_img_pos_masks in img_pos_masks:
-                # Fix `Tensor` object has no attribute `count_nonzero()`
-                # in PyTorch 1.6, the type of `lvl_img_pos_masks`
-                # should be `torch.bool`.
-                num_pos += lvl_img_pos_masks.nonzero().numel()
+                num_pos += lvl_img_pos_masks.count_nonzero()
+
         loss_mask = []
         # mlvl_mask_targets: [[bs*num_pos_per_img_lvl, batch_h//4, batch_w//4], ] * nl
         for lvl_mask_preds, lvl_mask_targets in zip(mlvl_mask_preds,
@@ -612,11 +579,11 @@ class SOLOV2Head(SOLOHead):
             flatten_cls_preds, flatten_labels, avg_factor=num_pos + 1)
         return dict(loss_mask=loss_mask, loss_cls=loss_cls)
 
-    def predict_by_feat(self, mlvl_kernel_preds: List[Tensor],
-                        mlvl_cls_scores: List[Tensor], mask_feats: Tensor,
-                        batch_img_metas: List[dict], **kwargs) -> InstanceList:
-        """Transform a batch of output features extracted from the head into
-        mask results.
+    @force_fp32(
+        apply_to=('mlvl_kernel_preds', 'mlvl_cls_scores', 'mask_feats'))
+    def get_results(self, mlvl_kernel_preds, mlvl_cls_scores, mask_feats,
+                    img_metas, **kwargs):
+        """Get multi-image mask results.
 
         Args:
             mlvl_kernel_preds (list[Tensor]): 多层级的动态卷积输出.利用它与mask_feat
@@ -626,7 +593,7 @@ class SOLOV2Head(SOLOHead):
                 [[bs, nc, num_grid, num_grid], ] * nl
             mask_feats (Tensor): 该值结合mlvl_kernel_preds生成最终的pred_mask
                 [bs, mask_out_c, batch_h//4, batch_w//4].
-            batch_img_metas (list[dict]): Meta information of all images.
+            img_metas (list[dict]): [dict(), ] * bs. batch幅图像元信息.
 
         Returns:
             list[:obj:`InstanceData`]: 处理后的batch幅图像分割结果.
@@ -648,7 +615,7 @@ class SOLOV2Head(SOLOHead):
             mlvl_cls_scores[lvl] = cls_scores.permute(0, 2, 3, 1)
 
         result_list = []
-        for img_id in range(len(batch_img_metas)):
+        for img_id in range(len(img_metas)):
             img_cls_pred = [
                 mlvl_cls_scores[lvl][img_id].view(-1, self.cls_out_channels)
                 for lvl in range(num_levels)
@@ -660,20 +627,20 @@ class SOLOV2Head(SOLOHead):
             ]
             img_cls_pred = torch.cat(img_cls_pred, dim=0)
             img_kernel_pred = torch.cat(img_kernel_pred, dim=0)
-            result = self._predict_by_feat_single(
+            result = self._get_results_single(
                 img_kernel_pred,
                 img_cls_pred,
                 img_mask_feats,
-                img_meta=batch_img_metas[img_id])
+                img_meta=img_metas[img_id])
             result_list.append(result)
         return result_list
 
-    def _predict_by_feat_single(self,
-                                kernel_preds: Tensor,
-                                cls_scores: Tensor,
-                                mask_feats: Tensor,
-                                img_meta: dict,
-                                cfg: OptConfigType = None) -> InstanceData:
+    def _get_results_single(self,
+                            kernel_preds,
+                            cls_scores,
+                            mask_feats,
+                            img_meta,
+                            cfg=None):
         """获取单张图像上处理过的mask预测结果.
 
         Args:
@@ -681,35 +648,35 @@ class SOLOV2Head(SOLOHead):
                 [nl * num_grid**2, kernel_c]
             cls_scores (Tensor): 所有层级所有位置上的cls输出,[nl * num_grids**2, nc].
             mask_feats (Tensor): [1, mask_out_c, batch_h//4, batch_w//4].
-            img_meta (dict): Meta information of corresponding image.
-            cfg (dict, optional): Config used in test phase.
-                Defaults to None.
+            img_meta (dict): 当前图片元信息.
+            cfg (dict, optional): 测试阶段使用的配置.默认: None.
 
         Returns:
             :obj:`InstanceData`: 单张图像的处理结果.一种储存分割结果的特殊数据结构
              通常包含以下键.
-
                 - scores (Tensor): pred_cls_score, [num_instance,].
                 - labels (Tensor): pred_cls_ind, [num_instance,].
                 - masks (Tensor): pred_mask, [num_instances, H, W], 原始图像尺寸.
         """
 
-        def empty_results(cls_scores, ori_shape):
+        def empty_results(results, cls_scores):
             """Generate a empty results."""
-            results = InstanceData()
             results.scores = cls_scores.new_ones(0)
-            results.masks = cls_scores.new_zeros(0, *ori_shape)
+            results.masks = cls_scores.new_zeros(0, *results.ori_shape[:2])
             results.labels = cls_scores.new_ones(0)
-            results.bboxes = cls_scores.new_zeros(0, 4)
             return results
 
         cfg = self.test_cfg if cfg is None else cfg
         assert len(kernel_preds) == len(cls_scores)
+        results = InstanceData(img_meta)
 
         featmap_size = mask_feats.size()[-2:]
 
+        img_shape = results.img_shape
+        ori_shape = results.ori_shape
+
         # overall info
-        h, w = img_meta['img_shape'][:2]
+        h, w, _ = img_shape
         upsampled_size = (featmap_size[0] * self.mask_stride,
                           featmap_size[1] * self.mask_stride)
 
@@ -717,7 +684,7 @@ class SOLOV2Head(SOLOHead):
         score_mask = (cls_scores > cfg.score_thr)
         cls_scores = cls_scores[score_mask]
         if len(cls_scores) == 0:
-            return empty_results(cls_scores, img_meta['ori_shape'][:2])
+            return empty_results(results, cls_scores)
 
         # cate_labels & kernel_preds
         inds = score_mask.nonzero()
@@ -745,7 +712,7 @@ class SOLOV2Head(SOLOHead):
         sum_masks = masks.sum((1, 2)).float()
         keep = sum_masks > strides
         if keep.sum() == 0:
-            return empty_results(cls_scores, img_meta['ori_shape'][:2])
+            return empty_results(results, cls_scores)
         masks = masks[keep]
         mask_preds = mask_preds[keep]
         sum_masks = sum_masks[keep]
@@ -766,8 +733,6 @@ class SOLOV2Head(SOLOHead):
             kernel=cfg.kernel,
             sigma=cfg.sigma,
             filter_thr=cfg.filter_thr)
-        if len(keep_inds) == 0:
-            return empty_results(cls_scores, img_meta['ori_shape'][:2])
         mask_preds = mask_preds[keep_inds]
         mask_preds = F.interpolate(
             mask_preds.unsqueeze(0),
@@ -776,17 +741,13 @@ class SOLOV2Head(SOLOHead):
             align_corners=False)[:, :, :h, :w]
         mask_preds = F.interpolate(
             mask_preds,
-            size=img_meta['ori_shape'][:2],
+            size=ori_shape[:2],
             mode='bilinear',
             align_corners=False).squeeze(0)
         masks = mask_preds > cfg.mask_thr
 
-        results = InstanceData()
         results.masks = masks
         results.labels = labels
         results.scores = scores
-        # create an empty bbox in InstanceData to avoid bugs when
-        # calculating metrics.
-        results.bboxes = results.scores.new_zeros(len(scores), 4)
 
         return results

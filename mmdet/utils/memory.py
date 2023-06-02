@@ -5,7 +5,8 @@ from contextlib import contextmanager
 from functools import wraps
 
 import torch
-from mmengine.logging import MMLogger
+
+from mmdet.utils import get_root_logger
 
 
 def cast_tensor_type(inputs, src_type=None, dst_type=None):
@@ -162,7 +163,7 @@ class AvoidOOM:
             # Convert to FP16
             fp16_args = cast_tensor_type(args, dst_type=torch.half)
             fp16_kwargs = cast_tensor_type(kwargs, dst_type=torch.half)
-            logger = MMLogger.get_current_instance()
+            logger = get_root_logger()
             logger.warning(f'Attempting to copy inputs of {str(func)} '
                            'to FP16 due to CUDA OOM')
 

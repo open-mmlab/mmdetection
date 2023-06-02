@@ -2,12 +2,12 @@
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
-from mmengine.model import BaseModule
+from mmcv.runner import BaseModule
 
-from mmdet.registry import MODELS
+from ..builder import NECKS
 
 
-@MODELS.register_module()
+@NECKS.register_module()
 class SSDNeck(BaseModule):
     """SSD 主干的额外卷积层以生成多尺度特征图.
 

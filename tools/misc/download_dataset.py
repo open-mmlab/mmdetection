@@ -7,7 +7,7 @@ from tarfile import TarFile
 from zipfile import ZipFile
 
 import torch
-from mmengine.utils.path import mkdir_or_exist
+from mmcv.utils.path import mkdir_or_exist
 
 
 def parse_args():
@@ -139,12 +139,8 @@ def main():
             'http://images.cocodataset.org/zips/train2017.zip',
             'http://images.cocodataset.org/zips/val2017.zip',
             'http://images.cocodataset.org/zips/test2017.zip',
-            'http://images.cocodataset.org/zips/unlabeled2017.zip',
-            'http://images.cocodataset.org/annotations/annotations_trainval2017.zip',  # noqa
-            'http://images.cocodataset.org/annotations/stuff_annotations_trainval2017.zip',  # noqa
-            'http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip',  # noqa
-            'http://images.cocodataset.org/annotations/image_info_test2017.zip',  # noqa
-            'http://images.cocodataset.org/annotations/image_info_unlabeled2017.zip',  # noqa
+            'http://images.cocodataset.org/annotations/' +
+            'annotations_trainval2017.zip'
         ],
         lvis=[
             'https://s3-us-west-2.amazonaws.com/dl.fbaipublicfiles.com/LVIS/lvis_v1_train.json.zip',  # noqa

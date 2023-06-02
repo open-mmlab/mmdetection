@@ -4,13 +4,13 @@ import math
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
-from mmengine.model import BaseModule
+from mmcv.runner import BaseModule
 
-from mmdet.registry import MODELS
-from ..layers import CSPLayer
+from ..builder import NECKS
+from ..utils import CSPLayer
 
 
-@MODELS.register_module()
+@NECKS.register_module()
 class YOLOXPAFPN(BaseModule):
     """Path Aggregation Network used in YOLOX.
 

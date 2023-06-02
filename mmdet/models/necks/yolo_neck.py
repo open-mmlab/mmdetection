@@ -1,15 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Copyright (c) 2019 Western Digital Corporation or its affiliates.
-from typing import List, Tuple
 
 import torch
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmengine.model import BaseModule
-from torch import Tensor
+from mmcv.runner import BaseModule
 
-from mmdet.registry import MODELS
-from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
+from ..builder import NECKS
 
 
 class DetectionBlock(BaseModule):
@@ -36,13 +33,12 @@ class DetectionBlock(BaseModule):
     """
 
     def __init__(self,
-                 in_channels: int,
-                 out_channels: int,
-                 conv_cfg: OptConfigType = None,
-                 norm_cfg: ConfigType = dict(type='BN', requires_grad=True),
-                 act_cfg: ConfigType = dict(
-                     type='LeakyReLU', negative_slope=0.1),
-                 init_cfg: OptMultiConfig = None) -> None:
+                 in_channels,
+                 out_channels,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
+                 init_cfg=None):
         super(DetectionBlock, self).__init__(init_cfg)
         double_out_channels = out_channels * 2
 
@@ -56,7 +52,7 @@ class DetectionBlock(BaseModule):
             out_channels, double_out_channels, 3, padding=1, **cfg)
         self.conv5 = ConvModule(double_out_channels, out_channels, 1, **cfg)
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x):
         tmp = self.conv1(x)
         tmp = self.conv2(tmp)
         tmp = self.conv3(tmp)
@@ -65,7 +61,7 @@ class DetectionBlock(BaseModule):
         return out
 
 
-@MODELS.register_module()
+@NECKS.register_module()
 class YOLOV3Neck(BaseModule):
     """The neck of YOLOV3.
 
@@ -94,14 +90,13 @@ class YOLOV3Neck(BaseModule):
     """
 
     def __init__(self,
-                 num_scales: int,
-                 in_channels: List[int],
-                 out_channels: List[int],
-                 conv_cfg: OptConfigType = None,
-                 norm_cfg: ConfigType = dict(type='BN', requires_grad=True),
-                 act_cfg: ConfigType = dict(
-                     type='LeakyReLU', negative_slope=0.1),
-                 init_cfg: OptMultiConfig = None) -> None:
+                 num_scales,
+                 in_channels,
+                 out_channels,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
+                 init_cfg=None):
         super(YOLOV3Neck, self).__init__(init_cfg)
         assert (num_scales == len(in_channels) == len(out_channels))
         self.num_scales = num_scales
@@ -122,7 +117,7 @@ class YOLOV3Neck(BaseModule):
             self.add_module(f'detect{i+1}',
                             DetectionBlock(in_c + out_c, out_c, **cfg))
 
-    def forward(self, feats=Tuple[Tensor]) -> Tuple[Tensor]:
+    def forward(self, feats):
         assert len(feats) == self.num_scales
 
         # processed from bottom (high-lvl) to top (low-lvl)

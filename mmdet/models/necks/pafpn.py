@@ -2,12 +2,13 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
+from mmcv.runner import auto_fp16
 
-from mmdet.registry import MODELS
+from ..builder import NECKS
 from .fpn import FPN
 
 
-@MODELS.register_module()
+@NECKS.register_module()
 class PAFPN(FPN):
     """Path Aggregation Network for Instance Segmentation.
 
@@ -95,6 +96,7 @@ class PAFPN(FPN):
             self.downsample_convs.append(d_conv)
             self.pafpn_convs.append(pafpn_conv)
 
+    @auto_fp16()
     def forward(self, inputs):
         """Forward function."""
         assert len(inputs) == len(self.in_channels)
@@ -109,6 +111,7 @@ class PAFPN(FPN):
         used_backbone_levels = len(laterals)
         for i in range(used_backbone_levels - 1, 0, -1):
             prev_shape = laterals[i - 1].shape[2:]
+            # fix runtime error of "+=" inplace operation in PyTorch 1.10
             laterals[i - 1] = laterals[i - 1] + F.interpolate(
                 laterals[i], size=prev_shape, mode='nearest')
 
@@ -120,8 +123,7 @@ class PAFPN(FPN):
 
         # part 2: add bottom-up path
         for i in range(0, used_backbone_levels - 1):
-            inter_outs[i + 1] = inter_outs[i + 1] + \
-                                self.downsample_convs[i](inter_outs[i])
+            inter_outs[i + 1] += self.downsample_convs[i](inter_outs[i])
 
         outs = []
         outs.append(inter_outs[0])

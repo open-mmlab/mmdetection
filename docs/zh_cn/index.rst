@@ -2,29 +2,45 @@ Welcome to MMDetection's documentation!
 =======================================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: 开始你的第一步
 
-   overview.md
    get_started.md
+   model_zoo.md
+   article.md
 
 .. toctree::
    :maxdepth: 2
-   :caption: 使用指南
+   :caption: 快速启动
 
-   user_guides/index.rst
+   1_exist_data_model.md
+   2_new_data_model.md
+   3_exist_data_new_model.md
 
 .. toctree::
    :maxdepth: 2
-   :caption: 进阶教程
+   :caption: 教程
 
-   advanced_guides/index.rst
+   tutorials/index.rst
 
 .. toctree::
-   :maxdepth: 1
-   :caption: 迁移版本
+   :maxdepth: 2
+   :caption: 实用工具与脚本
 
-   migration/migration.md
+   useful_tools.md
+
+.. toctree::
+   :maxdepth: 2
+   :caption: 说明
+
+   conventions.md
+   compatibility.md
+   faq.md
+
+.. toctree::
+   :caption: 语言切换
+
+   switch_language.md
 
 .. toctree::
    :maxdepth: 1
@@ -34,30 +50,9 @@ Welcome to MMDetection's documentation!
 
 .. toctree::
    :maxdepth: 1
-   :caption: 模型仓库
+   :caption: 设备支持
 
-   model_zoo.md
-
-.. toctree::
-   :maxdepth: 1
-   :caption: 说明
-
-   notes/contribution_guide.md
-   notes/projects.md
-   notes/faq.md
-   notes/compatibility.md
-
-.. toctree::
-   :maxdepth: 1
-   :caption: 文章
-
-   article.md
-
-.. toctree::
-   :caption: 语言切换
-
-   switch_language.md
-
+   device/npu.md
 
 
 Indices and tables

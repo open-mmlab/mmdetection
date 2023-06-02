@@ -1,53 +1,43 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Tuple
-
 import torch.nn as nn
 from mmcv.cnn import ConvModule
-from mmengine.model import BaseModule
-from torch import Tensor
+from mmcv.runner import BaseModule, auto_fp16, force_fp32
 
-from mmdet.models.layers import ResLayer, SimplifiedBasicBlock
-from mmdet.registry import MODELS
-from mmdet.utils import MultiConfig, OptConfigType
+from mmdet.models.builder import HEADS
+from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
 
 
-@MODELS.register_module()
+@HEADS.register_module()
 class GlobalContextHead(BaseModule):
     """Global context head used in `SCNet <https://arxiv.org/abs/2012.10150>`_.
 
     Args:
         num_convs (int, optional): number of convolutional layer in GlbCtxHead.
-            Defaults to 4.
-        in_channels (int, optional): number of input channels. Defaults to 256.
+            Default: 4.
+        in_channels (int, optional): number of input channels. Default: 256.
         conv_out_channels (int, optional): number of output channels before
-            classification layer. Defaults to 256.
-        num_classes (int, optional): number of classes. Defaults to 80.
-        loss_weight (float, optional): global context loss weight.
-            Defaults to 1.
-        conv_cfg (dict, optional): config to init conv layer. Defaults to None.
-        norm_cfg (dict, optional): config to init norm layer. Defaults to None.
+            classification layer. Default: 256.
+        num_classes (int, optional): number of classes. Default: 80.
+        loss_weight (float, optional): global context loss weight. Default: 1.
+        conv_cfg (dict, optional): config to init conv layer. Default: None.
+        norm_cfg (dict, optional): config to init norm layer. Default: None.
         conv_to_res (bool, optional): if True, 2 convs will be grouped into
-            1 `SimplifiedBasicBlock` using a skip connection.
-            Defaults to False.
-        init_cfg (:obj:`ConfigDict` or dict or list[dict] or
-            list[:obj:`ConfigDict`]): Initialization config dict. Defaults to
-            dict(type='Normal', std=0.01, override=dict(name='fc')).
+            1 `SimplifiedBasicBlock` using a skip connection. Default: False.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
-    def __init__(
-        self,
-        num_convs: int = 4,
-        in_channels: int = 256,
-        conv_out_channels: int = 256,
-        num_classes: int = 80,
-        loss_weight: float = 1.0,
-        conv_cfg: OptConfigType = None,
-        norm_cfg: OptConfigType = None,
-        conv_to_res: bool = False,
-        init_cfg: MultiConfig = dict(
-            type='Normal', std=0.01, override=dict(name='fc'))
-    ) -> None:
-        super().__init__(init_cfg=init_cfg)
+    def __init__(self,
+                 num_convs=4,
+                 in_channels=256,
+                 conv_out_channels=256,
+                 num_classes=80,
+                 loss_weight=1.0,
+                 conv_cfg=None,
+                 norm_cfg=None,
+                 conv_to_res=False,
+                 init_cfg=dict(
+                     type='Normal', std=0.01, override=dict(name='fc'))):
+        super(GlobalContextHead, self).__init__(init_cfg)
         self.num_convs = num_convs
         self.in_channels = in_channels
         self.conv_out_channels = conv_out_channels
@@ -86,18 +76,9 @@ class GlobalContextHead(BaseModule):
 
         self.criterion = nn.BCEWithLogitsLoss()
 
-    def forward(self, feats: Tuple[Tensor]) -> Tuple[Tensor]:
-        """Forward function.
-
-        Args:
-            feats (Tuple[Tensor]): Multi-scale feature maps.
-
-        Returns:
-            Tuple[Tensor]:
-
-                - mc_pred (Tensor): Multi-class prediction.
-                - x (Tensor): Global context feature.
-        """
+    @auto_fp16()
+    def forward(self, feats):
+        """Forward function."""
         x = feats[-1]
         for i in range(self.num_convs):
             x = self.convs[i](x)
@@ -109,16 +90,9 @@ class GlobalContextHead(BaseModule):
 
         return mc_pred, x
 
-    def loss(self, pred: Tensor, labels: List[Tensor]) -> Tensor:
-        """Loss function.
-
-        Args:
-            pred (Tensor): Logits.
-            labels (list[Tensor]): Grouth truths.
-
-        Returns:
-            Tensor: Loss.
-        """
+    @force_fp32(apply_to=('pred', ))
+    def loss(self, pred, labels):
+        """Loss function."""
         labels = [lbl.unique() for lbl in labels]
         targets = pred.new_zeros(pred.size())
         for i, label in enumerate(labels):

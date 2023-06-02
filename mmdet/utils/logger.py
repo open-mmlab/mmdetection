@@ -1,7 +1,24 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import inspect
+import logging
 
-from mmengine.logging import print_log
+from mmcv.utils import get_logger
+
+
+def get_root_logger(log_file=None, log_level=logging.INFO):
+    """Get root logger.
+
+    Args:
+        log_file (str, optional): File path of log. Defaults to None.
+        log_level (int, optional): The level of logger.
+            Defaults to logging.INFO.
+
+    Returns:
+        :obj:`logging.Logger`: The obtained logger
+    """
+    logger = get_logger(name='mmdet', log_file=log_file, log_level=log_level)
+
+    return logger
 
 
 def get_caller_name():
@@ -41,9 +58,8 @@ def log_img_scale(img_scale, shape_order='hw', skip_square=False):
     if skip_square and (height == width):
         return False
 
+    logger = get_root_logger()
     caller = get_caller_name()
-    print_log(
-        f'image shape: height={height}, width={width} in {caller}',
-        logger='current')
+    logger.info(f'image shape: height={height}, width={width} in {caller}')
 
     return True

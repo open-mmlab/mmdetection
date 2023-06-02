@@ -7,9 +7,6 @@ import cityscapesscripts.helpers.labels as CSLabels
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
-from mmengine.fileio import dump
-from mmengine.utils import (Timer, mkdir_or_exist, track_parallel_progress,
-                            track_progress)
 
 
 def collect_files(img_dir, gt_dir):
@@ -32,9 +29,10 @@ def collect_files(img_dir, gt_dir):
 def collect_annotations(files, nproc=1):
     print('Loading annotation images')
     if nproc > 1:
-        images = track_parallel_progress(load_img_info, files, nproc=nproc)
+        images = mmcv.track_parallel_progress(
+            load_img_info, files, nproc=nproc)
     else:
-        images = track_progress(load_img_info, files)
+        images = mmcv.track_progress(load_img_info, files)
 
     return images
 
@@ -109,7 +107,7 @@ def cvt_annotations(image_infos, out_json_name):
     if len(out_json['annotations']) == 0:
         out_json.pop('annotations')
 
-    dump(out_json, out_json_name)
+    mmcv.dump(out_json, out_json_name)
     return out_json
 
 
@@ -130,7 +128,7 @@ def main():
     args = parse_args()
     cityscapes_path = args.cityscapes_path
     out_dir = args.out_dir if args.out_dir else cityscapes_path
-    mkdir_or_exist(out_dir)
+    mmcv.mkdir_or_exist(out_dir)
 
     img_dir = osp.join(cityscapes_path, args.img_dir)
     gt_dir = osp.join(cityscapes_path, args.gt_dir)
@@ -142,7 +140,8 @@ def main():
 
     for split, json_name in set_name.items():
         print(f'Converting {split} into {json_name}')
-        with Timer(print_tmpl='It took {}s to convert Cityscapes annotation'):
+        with mmcv.Timer(
+                print_tmpl='It took {}s to convert Cityscapes annotation'):
             files = collect_files(
                 osp.join(img_dir, split), osp.join(gt_dir, split))
             image_infos = collect_annotations(files, nproc=args.nproc)

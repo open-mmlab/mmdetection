@@ -2,8 +2,7 @@
 import argparse
 import os
 
-from mmengine.fileio import dump, list_from_file
-from mmengine.utils import mkdir_or_exist, scandir, track_iter_progress
+import mmcv
 from PIL import Image
 
 
@@ -31,8 +30,8 @@ def parse_args():
 def collect_image_infos(path, exclude_extensions=None):
     img_infos = []
 
-    images_generator = scandir(path, recursive=True)
-    for image_path in track_iter_progress(list(images_generator)):
+    images_generator = mmcv.scandir(path, recursive=True)
+    for image_path in mmcv.track_iter_progress(list(images_generator)):
         if exclude_extensions is None or (
                 exclude_extensions is not None
                 and not image_path.lower().endswith(exclude_extensions)):
@@ -87,14 +86,14 @@ def main():
     img_infos = collect_image_infos(args.img_path, args.exclude_extensions)
 
     # 2 convert to coco format data
-    classes = list_from_file(args.classes)
+    classes = mmcv.list_from_file(args.classes)
     coco_info = cvt_to_coco_json(img_infos, classes)
 
     # 3 dump
     save_dir = os.path.join(args.img_path, '..', 'annotations')
-    mkdir_or_exist(save_dir)
+    mmcv.mkdir_or_exist(save_dir)
     save_path = os.path.join(save_dir, args.out)
-    dump(coco_info, save_path)
+    mmcv.dump(coco_info, save_path)
     print(f'save json file: {save_path}')
 
 

@@ -1,12 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import mmcv
 import numpy as np
 import torch
 import torch.nn as nn
 
-from mmdet.registry import MODELS
+from ..builder import LOSSES
 from .utils import weighted_loss
 
 
+@mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
 def balanced_l1_loss(pred,
                      target,
@@ -51,7 +53,7 @@ def balanced_l1_loss(pred,
     return loss
 
 
-@MODELS.register_module()
+@LOSSES.register_module()
 class BalancedL1Loss(nn.Module):
     """Balanced L1 Loss.
 

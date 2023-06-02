@@ -2,9 +2,9 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmengine.model import BaseModule
+from mmcv.runner import BaseModule
 
-from mmdet.registry import MODELS
+from ..builder import NECKS
 
 
 class Transition(BaseModule):
@@ -101,7 +101,7 @@ class LastConv(Transition):
         return self.conv_out(inputs[-1])
 
 
-@MODELS.register_module()
+@NECKS.register_module()
 class FPG(BaseModule):
     """FPG.
 

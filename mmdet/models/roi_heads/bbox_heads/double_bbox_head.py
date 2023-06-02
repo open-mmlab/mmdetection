@@ -1,14 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Tuple
-
 import torch.nn as nn
 from mmcv.cnn import ConvModule
-from mmengine.model import BaseModule, ModuleList
-from torch import Tensor
+from mmcv.runner import BaseModule, ModuleList
 
 from mmdet.models.backbones.resnet import Bottleneck
-from mmdet.registry import MODELS
-from mmdet.utils import ConfigType, MultiConfig, OptConfigType, OptMultiConfig
+from mmdet.models.builder import HEADS
 from .bbox_head import BBoxHead
 
 
@@ -21,21 +17,19 @@ class BasicResBlock(BaseModule):
     Args:
         in_channels (int): Channels of the input feature map.
         out_channels (int): Channels of the output feature map.
-        conv_cfg (:obj:`ConfigDict` or dict, optional): The config dict
-            for convolution layers.
-        norm_cfg (:obj:`ConfigDict` or dict): The config dict for
-            normalization layers.
-        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
-            dict], optional): Initialization config dict. Defaults to None
+        conv_cfg (dict): The config dict for convolution layers.
+        norm_cfg (dict): The config dict for normalization layers.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
-                 in_channels: int,
-                 out_channels: int,
-                 conv_cfg: OptConfigType = None,
-                 norm_cfg: ConfigType = dict(type='BN'),
-                 init_cfg: OptMultiConfig = None) -> None:
-        super().__init__(init_cfg=init_cfg)
+                 in_channels,
+                 out_channels,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN'),
+                 init_cfg=None):
+        super(BasicResBlock, self).__init__(init_cfg)
 
         # main path
         self.conv1 = ConvModule(
@@ -66,8 +60,7 @@ class BasicResBlock(BaseModule):
 
         self.relu = nn.ReLU(inplace=True)
 
-    def forward(self, x: Tensor) -> Tensor:
-        """Forward function."""
+    def forward(self, x):
         identity = x
 
         x = self.conv1(x)
@@ -80,7 +73,7 @@ class BasicResBlock(BaseModule):
         return out
 
 
-@MODELS.register_module()
+@HEADS.register_module()
 class DoubleConvFCBBoxHead(BBoxHead):
     r"""Bbox head used in Double-Head R-CNN
 
@@ -96,13 +89,13 @@ class DoubleConvFCBBoxHead(BBoxHead):
     """  # noqa: W605
 
     def __init__(self,
-                 num_convs: int = 0,
-                 num_fcs: int = 0,
-                 conv_out_channels: int = 1024,
-                 fc_out_channels: int = 1024,
-                 conv_cfg: OptConfigType = None,
-                 norm_cfg: ConfigType = dict(type='BN'),
-                 init_cfg: MultiConfig = dict(
+                 num_convs=0,
+                 num_fcs=0,
+                 conv_out_channels=1024,
+                 fc_out_channels=1024,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN'),
+                 init_cfg=dict(
                      type='Normal',
                      override=[
                          dict(type='Normal', name='fc_cls', std=0.01),
@@ -112,9 +105,9 @@ class DoubleConvFCBBoxHead(BBoxHead):
                              name='fc_branch',
                              distribution='uniform')
                      ]),
-                 **kwargs) -> None:
+                 **kwargs):
         kwargs.setdefault('with_avg_pool', True)
-        super().__init__(init_cfg=init_cfg, **kwargs)
+        super(DoubleConvFCBBoxHead, self).__init__(init_cfg=init_cfg, **kwargs)
         assert self.with_avg_pool
         assert num_convs > 0
         assert num_fcs > 0
@@ -138,9 +131,9 @@ class DoubleConvFCBBoxHead(BBoxHead):
         self.fc_reg = nn.Linear(self.conv_out_channels, out_dim_reg)
 
         self.fc_cls = nn.Linear(self.fc_out_channels, self.num_classes + 1)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(inplace=True)
 
-    def _add_conv_branch(self) -> None:
+    def _add_conv_branch(self):
         """Add the fc branch which consists of a sequential of conv layers."""
         branch_convs = ModuleList()
         for i in range(self.num_convs):
@@ -152,7 +145,7 @@ class DoubleConvFCBBoxHead(BBoxHead):
                     norm_cfg=self.norm_cfg))
         return branch_convs
 
-    def _add_fc_branch(self) -> None:
+    def _add_fc_branch(self):
         """Add the fc branch which consists of a sequential of fc layers."""
         branch_fcs = ModuleList()
         for i in range(self.num_fcs):
@@ -162,21 +155,7 @@ class DoubleConvFCBBoxHead(BBoxHead):
             branch_fcs.append(nn.Linear(fc_in_channels, self.fc_out_channels))
         return branch_fcs
 
-    def forward(self, x_cls: Tensor, x_reg: Tensor) -> Tuple[Tensor]:
-        """Forward features from the upstream network.
-
-        Args:
-            x_cls (Tensor): Classification features of rois
-            x_reg (Tensor): Regression features from the upstream network.
-
-        Returns:
-            tuple: A tuple of classification scores and bbox prediction.
-
-                - cls_score (Tensor): Classification score predictions of rois.
-                  each roi predicts num_classes + 1 channels.
-                - bbox_pred (Tensor): BBox deltas predictions of rois. each roi
-                  predicts 4 * num_classes channels.
-        """
+    def forward(self, x_cls, x_reg):
         # conv head
         x_conv = self.res_block(x_reg)
 

@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.ops import sigmoid_focal_loss as _sigmoid_focal_loss
 
-from mmdet.registry import MODELS
+from ..builder import LOSSES
 from .utils import weight_reduce_loss
 
 
@@ -70,7 +70,6 @@ def py_focal_loss_with_prob(pred,
         pred (torch.Tensor): The prediction probability with shape (N, C),
             C is the number of classes.
         target (torch.Tensor): The learning label of the prediction.
-            The target shape support (N,C) or (N,), (N,C) means one-hot form.
         weight (torch.Tensor, optional): Sample-wise loss weight.
         gamma (float, optional): The gamma for calculating the modulating
             factor. Defaults to 2.0.
@@ -81,10 +80,9 @@ def py_focal_loss_with_prob(pred,
         avg_factor (int, optional): Average factor that is used to average
             the loss. Defaults to None.
     """
-    if pred.dim() != target.dim():
-        num_classes = pred.size(1)
-        target = F.one_hot(target, num_classes=num_classes + 1)
-        target = target[:, :num_classes]
+    num_classes = pred.size(1)
+    target = F.one_hot(target, num_classes=num_classes + 1)
+    target = target[:, :num_classes]
 
     target = target.type_as(pred)
     pt = (1 - pred) * target + pred * (1 - target)
@@ -148,7 +146,7 @@ def sigmoid_focal_loss(pred,
     return loss
 
 
-@MODELS.register_module()
+@LOSSES.register_module()
 class FocalLoss(nn.Module):
 
     def __init__(self,
@@ -188,26 +186,12 @@ class FocalLoss(nn.Module):
         """Forward function.
 
         Args:
-<<<<<<< HEAD
             pred (torch.Tensor): 输入.
             target (torch.Tensor): 输入要拟合的目标.
             weight (torch.Tensor, optional): 输入的权重.shape与输入一致
             avg_factor (int, optional): 用于平均损失的平均因子.一般为正样本或正负样本总数
             reduction_override (str, optional): 用于覆盖初始化方法中的self.reduction.
                 可选 "none", "mean" and "sum".
-=======
-            pred (torch.Tensor): The prediction.
-            target (torch.Tensor): The learning label of the prediction.
-                The target shape support (N,C) or (N,), (N,C) means
-                one-hot form.
-            weight (torch.Tensor, optional): The weight of loss for each
-                prediction. Defaults to None.
-            avg_factor (int, optional): Average factor that is used to average
-                the loss. Defaults to None.
-            reduction_override (str, optional): The reduction method used to
-                override the original reduction method of the loss.
-                Options are "none", "mean" and "sum".
->>>>>>> mmdetection/main
 
         Returns:
             torch.Tensor: 计算的损失
@@ -219,10 +203,7 @@ class FocalLoss(nn.Module):
             if self.activated:
                 calculate_loss_func = py_focal_loss_with_prob
             else:
-                if pred.dim() == target.dim():
-                    # this means that target is already in One-Hot form.
-                    calculate_loss_func = py_sigmoid_focal_loss
-                elif torch.cuda.is_available() and pred.is_cuda:
+                if torch.cuda.is_available() and pred.is_cuda:
                     calculate_loss_func = sigmoid_focal_loss
                 else:
                     num_classes = pred.size(1)

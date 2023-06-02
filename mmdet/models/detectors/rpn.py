@@ -1,37 +1,21 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import copy
 import warnings
 from inspect import signature
 
+import mmcv
 import torch
-from torch import Tensor
+from mmcv.image import tensor2imgs
 
-from mmdet.registry import MODELS
-from mmdet.structures import SampleList
-from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
-from .single_stage import SingleStageDetector
+from mmdet.core import bbox_mapping
+from ..builder import DETECTORS, build_backbone, build_head, build_neck
+from .base import BaseDetector
 
 
-@MODELS.register_module()
-class RPN(SingleStageDetector):
-    """Implementation of Region Proposal Network.
-
-    Args:
-        backbone (:obj:`ConfigDict` or dict): The backbone config.
-        neck (:obj:`ConfigDict` or dict): The neck config.
-        bbox_head (:obj:`ConfigDict` or dict): The bbox head config.
-        train_cfg (:obj:`ConfigDict` or dict, optional): The training config.
-        test_cfg (:obj:`ConfigDict` or dict, optional): The testing config.
-        data_preprocessor (:obj:`ConfigDict` or dict, optional): Config of
-            :class:`DetDataPreprocessor` to process the input data.
-            Defaults to None.
-        init_cfg (:obj:`ConfigDict` or list[:obj:`ConfigDict`] or dict or
-            list[dict], optional): Initialization config dict.
-            Defaults to None.
-    """
+@DETECTORS.register_module()
+class RPN(BaseDetector):
+    """Implementation of Region Proposal Network."""
 
     def __init__(self,
-<<<<<<< HEAD
                  backbone,
                  neck,
                  rpn_head,
@@ -42,58 +26,63 @@ class RPN(SingleStageDetector):
         self.backbone = build_backbone(backbone)
         self.neck = build_neck(neck) if neck is not None else None
         rpn_train_cfg = train_cfg.rpn if train_cfg is not None else None
-=======
-                 backbone: ConfigType,
-                 neck: ConfigType,
-                 rpn_head: ConfigType,
-                 train_cfg: ConfigType,
-                 test_cfg: ConfigType,
-                 data_preprocessor: OptConfigType = None,
-                 init_cfg: OptMultiConfig = None,
-                 **kwargs) -> None:
-        super(SingleStageDetector, self).__init__(
-            data_preprocessor=data_preprocessor, init_cfg=init_cfg)
-        self.backbone = MODELS.build(backbone)
-        self.neck = MODELS.build(neck) if neck is not None else None
-        rpn_train_cfg = train_cfg['rpn'] if train_cfg is not None else None
-        rpn_head_num_classes = rpn_head.get('num_classes', 1)
-        if rpn_head_num_classes != 1:
-            warnings.warn('The `num_classes` should be 1 in RPN, but get '
-                          f'{rpn_head_num_classes}, please set '
-                          'rpn_head.num_classes = 1 in your config file.')
-            rpn_head.update(num_classes=1)
->>>>>>> mmdetection/main
         rpn_head.update(train_cfg=rpn_train_cfg)
-        rpn_head.update(test_cfg=test_cfg['rpn'])
-        self.bbox_head = MODELS.build(rpn_head)
+        rpn_head.update(test_cfg=test_cfg.rpn)
+        self.rpn_head = build_head(rpn_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-    def loss(self, batch_inputs: Tensor,
-             batch_data_samples: SampleList) -> dict:
-        """Calculate losses from a batch of inputs and data samples.
+    def extract_feat(self, img):
+        """Extract features.
 
         Args:
-            batch_inputs (Tensor): Input images of shape (N, C, H, W).
-                These should usually be mean centered and std scaled.
-            batch_data_samples (list[:obj:`DetDataSample`]): The batch
-                data samples. It usually includes information such
-                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+            img (torch.Tensor): Image tensor with shape (n, c, h ,w).
+
+        Returns:
+            list[torch.Tensor]: Multi-level features that may have
+                different resolutions.
+        """
+        x = self.backbone(img)
+        if self.with_neck:
+            x = self.neck(x)
+        return x
+
+    def forward_dummy(self, img):
+        """Dummy forward function."""
+        x = self.extract_feat(img)
+        rpn_outs = self.rpn_head(x)
+        return rpn_outs
+
+    def forward_train(self,
+                      img,
+                      img_metas,
+                      gt_bboxes=None,
+                      gt_bboxes_ignore=None):
+        """
+        Args:
+            img (Tensor): Input images of shape (N, C, H, W).
+                Typically these should be mean centered and std scaled.
+            img_metas (list[dict]): A List of image info dict where each dict
+                has: 'img_shape', 'scale_factor', 'flip', and may also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                :class:`mmdet.datasets.pipelines.Collect`.
+            gt_bboxes (list[Tensor]): Each item are the truth boxes for each
+                image in [tl_x, tl_y, br_x, br_y] format.
+            gt_bboxes_ignore (None | list[Tensor]): Specify which bounding
+                boxes can be ignored when computing the loss.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        x = self.extract_feat(batch_inputs)
+        if (isinstance(self.train_cfg.rpn, dict)
+                and self.train_cfg.rpn.get('debug', False)):
+            self.rpn_head.debug_imgs = tensor2imgs(img)
 
-        # set cat_id of gt_labels to 0 in RPN
-        rpn_data_samples = copy.deepcopy(batch_data_samples)
-        for data_sample in rpn_data_samples:
-            data_sample.gt_instances.labels = \
-                torch.zeros_like(data_sample.gt_instances.labels)
-
-        losses = self.bbox_head.loss(x, rpn_data_samples)
+        x = self.extract_feat(img)
+        losses = self.rpn_head.forward_train(x, img_metas, gt_bboxes, None,
+                                             gt_bboxes_ignore)
         return losses
-<<<<<<< HEAD
 
     def simple_test(self, img, img_metas, rescale=False):
         """Test function without test time augmentation.
@@ -166,5 +155,3 @@ class RPN(SingleStageDetector):
                 if k not in sig.parameters:
                     kwargs.pop(k)
         mmcv.imshow_bboxes(data, result, top_k=top_k, **kwargs)
-=======
->>>>>>> mmdetection/main

@@ -2,14 +2,14 @@
 import warnings
 
 import torch.nn as nn
-from mmengine.model import BaseModule
+from mmcv.runner import BaseModule, auto_fp16
 
 from mmdet.models.backbones import ResNet
-from mmdet.models.layers import ResLayer as _ResLayer
-from mmdet.registry import MODELS
+from mmdet.models.builder import SHARED_HEADS
+from mmdet.models.utils import ResLayer as _ResLayer
 
 
-@MODELS.register_module()
+@SHARED_HEADS.register_module()
 class ResLayer(BaseModule):
 
     def __init__(self,
@@ -66,6 +66,7 @@ class ResLayer(BaseModule):
         else:
             raise TypeError('pretrained must be a str or None')
 
+    @auto_fp16()
     def forward(self, x):
         res_layer = getattr(self, f'layer{self.stage + 1}')
         out = res_layer(x)

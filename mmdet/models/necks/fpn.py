@@ -1,17 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Tuple, Union
-
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmengine.model import BaseModule
-from torch import Tensor
+from mmcv.runner import BaseModule, auto_fp16
 
-from mmdet.registry import MODELS
-from mmdet.utils import ConfigType, MultiConfig, OptConfigType
+from ..builder import NECKS
 
 
-@MODELS.register_module()
+@NECKS.register_module()
 class FPN(BaseModule):
     r"""Feature Pyramid Network.
 
@@ -19,7 +15,6 @@ class FPN(BaseModule):
     Detection <https://arxiv.org/abs/1612.03144>`_.
 
     Args:
-<<<<<<< HEAD
         in_channels (list[int]): 长度为n,每种尺度的输入通道数.该参数对下面部分参数影响重大!
         out_channels (int): 输出通道数(用于统一每种尺度).
         num_outs (int): FPN网络输出的层级数量.
@@ -43,39 +38,6 @@ class FPN(BaseModule):
         act_cfg (dict): 激活层的配置字典. Default: None.
         upsample_cfg (dict): 插值(上采样)层的配置字典. Default: dict(mode='nearest').
         init_cfg (dict or list[dict], optional): 初始化配置字典.
-=======
-        in_channels (list[int]): Number of input channels per scale.
-        out_channels (int): Number of output channels (used at each scale).
-        num_outs (int): Number of output scales.
-        start_level (int): Index of the start input backbone level used to
-            build the feature pyramid. Defaults to 0.
-        end_level (int): Index of the end input backbone level (exclusive) to
-            build the feature pyramid. Defaults to -1, which means the
-            last level.
-        add_extra_convs (bool | str): If bool, it decides whether to add conv
-            layers on top of the original feature maps. Defaults to False.
-            If True, it is equivalent to `add_extra_convs='on_input'`.
-            If str, it specifies the source feature map of the extra convs.
-            Only the following options are allowed
-
-            - 'on_input': Last feat map of neck inputs (i.e. backbone feature).
-            - 'on_lateral': Last feature map after lateral convs.
-            - 'on_output': The last output feature map after fpn convs.
-        relu_before_extra_convs (bool): Whether to apply relu before the extra
-            conv. Defaults to False.
-        no_norm_on_lateral (bool): Whether to apply norm on lateral.
-            Defaults to False.
-        conv_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
-            convolution layer. Defaults to None.
-        norm_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
-            normalization layer. Defaults to None.
-        act_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
-            activation layer in ConvModule. Defaults to None.
-        upsample_cfg (:obj:`ConfigDict` or dict, optional): Config dict
-            for interpolate layer. Defaults to dict(mode='nearest').
-        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
-            dict]): Initialization config dict.
->>>>>>> mmdetection/main
 
     Example:
         >>> import torch
@@ -93,24 +55,22 @@ class FPN(BaseModule):
         outputs[3].shape = torch.Size([1, 11, 43, 43])
     """
 
-    def __init__(
-        self,
-        in_channels: List[int],
-        out_channels: int,
-        num_outs: int,
-        start_level: int = 0,
-        end_level: int = -1,
-        add_extra_convs: Union[bool, str] = False,
-        relu_before_extra_convs: bool = False,
-        no_norm_on_lateral: bool = False,
-        conv_cfg: OptConfigType = None,
-        norm_cfg: OptConfigType = None,
-        act_cfg: OptConfigType = None,
-        upsample_cfg: ConfigType = dict(mode='nearest'),
-        init_cfg: MultiConfig = dict(
-            type='Xavier', layer='Conv2d', distribution='uniform')
-    ) -> None:
-        super().__init__(init_cfg=init_cfg)
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 num_outs,
+                 start_level=0,
+                 end_level=-1,
+                 add_extra_convs=False,
+                 relu_before_extra_convs=False,
+                 no_norm_on_lateral=False,
+                 conv_cfg=None,
+                 norm_cfg=None,
+                 act_cfg=None,
+                 upsample_cfg=dict(mode='nearest'),
+                 init_cfg=dict(
+                     type='Xavier', layer='Conv2d', distribution='uniform')):
+        super(FPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -184,22 +144,9 @@ class FPN(BaseModule):
                     inplace=False)
                 self.fpn_convs.append(extra_fpn_conv)
 
-<<<<<<< HEAD
     @auto_fp16()
     def forward(self, inputs):
         """前向传播."""
-=======
-    def forward(self, inputs: Tuple[Tensor]) -> tuple:
-        """Forward function.
-
-        Args:
-            inputs (tuple[Tensor]): Features from the upstream network, each
-                is a 4D-tensor.
-
-        Returns:
-            tuple: Feature maps, each is a 4D-tensor.
-        """
->>>>>>> mmdetection/main
         assert len(inputs) == len(self.in_channels)
 
         # 1x1卷积过程

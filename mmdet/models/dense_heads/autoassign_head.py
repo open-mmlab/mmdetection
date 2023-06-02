@@ -1,20 +1,19 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, List, Sequence, Tuple
+import warnings
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import Scale
-from mmengine.model import bias_init_with_prob, normal_init
-from mmengine.structures import InstanceData
-from torch import Tensor
+from mmcv.cnn import bias_init_with_prob, normal_init
+from mmcv.runner import force_fp32
 
-from mmdet.registry import MODELS
-from mmdet.structures.bbox import bbox_overlaps
-from mmdet.utils import InstanceList, OptInstanceList, reduce_mean
-from ..task_modules.prior_generators import MlvlPointGenerator
-from ..utils import levels_to_images, multi_apply
-from .fcos_head import FCOSHead
+from mmdet.core import multi_apply
+from mmdet.core.anchor.point_generator import MlvlPointGenerator
+from mmdet.core.bbox import bbox_overlaps
+from mmdet.models import HEADS
+from mmdet.models.dense_heads.atss_head import reduce_mean
+from mmdet.models.dense_heads.fcos_head import FCOSHead
+from mmdet.models.dense_heads.paa_head import levels_to_images
 
 EPS = 1e-12
 
@@ -24,21 +23,19 @@ class CenterPrior(nn.Module):
     distributions.
 
     Args:
-        force_topk (bool): 是否执行tok_k操作.
+        force_topk (bool): 是否执行tok_k操作. 默认值: False.
         topk (int): 当gt范围内不存在point时,强制选择离gt中心最近的k个point
-            作为匹配的point.
-        num_classes (int): 数据集类别数.
-        strides (Sequence[int]): 各层级的下采样倍数.
+            作为匹配的point. 默认值: 9.
+        num_classes (int): 数据集类别数, 默认值: 80.
+        strides (tuple[int]): 各输入特征的下采样倍数. 默认值: (8, 16, 32, 64, 128).
     """
 
-    def __init__(
-        self,
-        force_topk: bool = False,
-        topk: int = 9,
-        num_classes: int = 80,
-        strides: Sequence[int] = (8, 16, 32, 64, 128)
-    ) -> None:
-        super().__init__()
+    def __init__(self,
+                 force_topk=False,
+                 topk=9,
+                 num_classes=80,
+                 strides=(8, 16, 32, 64, 128)):
+        super(CenterPrior, self).__init__()
         # 均值和标准差是可学习的,目的是需要通过这两个参数学习到和类别相关的特定先验分布
         self.mean = nn.Parameter(torch.zeros(num_classes, 2))
         self.sigma = nn.Parameter(torch.ones(num_classes, 2))
@@ -46,36 +43,28 @@ class CenterPrior(nn.Module):
         self.force_topk = force_topk
         self.topk = topk
 
-    def forward(self, anchor_points_list: List[Tensor],
-                gt_instances: InstanceData,
-                inside_gt_bbox_mask: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, anchor_points_list, gt_bboxes, labels,
+                inside_gt_bbox_mask):
         """计算point-gt的距离高斯矩阵,以及point-gt的匹配矩阵.
 
         Args:
             anchor_points_list (list[Tensor]): [[h * w, 2], ] * nl.
-            gt_instances (:obj:`InstanceData`): Ground truth of instance
-                annotations. It should includes ``bboxes`` and ``labels``
-                attributes.
-            inside_gt_bbox_mask (Tensor): Tensor of bool type,
-                with shape of (num_points, num_gt), each
-                value is used to mark whether this point falls
-                within a certain gt.
+            gt_bboxes (Tensor): [num_gt, 4].
+            labels (Tensor): [num_gt, ].
+            inside_gt_bbox_mask (Tensor): [nl * h * w, num_gt].bool型数据.
 
         Returns:
-            tuple[Tensor, Tensor]:
+            tuple(Tensor):
 
-            - center_prior_weights(Tensor): [nl * h * w, num_gt].
+                - center_prior_weights(Tensor): [nl * h * w, num_gt].
                     表示point到gt中心的距离高斯权重矩阵,当point与gt不存在匹配
                     关系时,两者距离越近值越大,∈(0, 1].凡是没匹配到一律为0.
-            - inside_gt_bbox_mask (Tensor): [nl * h * w, num_gt].
+                - inside_gt_bbox_mask (Tensor): [nl * h * w, num_gt].
                     bool型数据,表示该位置的point与gt是否匹配,匹配规则如下:
                     1.当gt内部存在point时,其内部所有point值都为True.
                     2.当gt内部不存在point时,与其最近的top_k个point值都为True.
                     规则2需要self.force_topk为True,不过该参数默认为False.
         """
-        gt_bboxes = gt_instances.bboxes
-        labels = gt_instances.labels
-
         inside_gt_bbox_mask = inside_gt_bbox_mask.clone()
         num_gts = len(labels)
         num_points = sum([len(item) for item in anchor_points_list])
@@ -106,8 +95,7 @@ class CenterPrior(nn.Module):
         #                          (2 * instance_sigma ** 2)).prod(dim=-1)
         center_prior_list = []
         for slvl_points, stride in zip(anchor_points_list, self.strides):
-            # slvl_points: points from single level in FPN, has shape (h*w, 2)
-            # single_level_points has shape (h*w, num_gt, 2)
+            # [h*w, 2] -> [h*w, 1, 2] -> [h*w, num_gt, 2]
             single_level_points = slvl_points[:, None, :].expand(
                 (slvl_points.size(0), len(gt_bboxes), 2))
             gt_center_x = ((gt_bboxes[:, 0] + gt_bboxes[:, 2]) / 2)
@@ -163,7 +151,7 @@ class CenterPrior(nn.Module):
         return center_prior_weights, inside_gt_bbox_mask
 
 
-@MODELS.register_module()
+@HEADS.register_module()
 class AutoAssignHead(FCOSHead):
     """AutoAssignHead head used in AutoAssign.
 
@@ -186,12 +174,12 @@ class AutoAssignHead(FCOSHead):
 
     def __init__(self,
                  *args,
-                 force_topk: bool = False,
-                 topk: int = 9,
-                 pos_loss_weight: float = 0.25,
-                 neg_loss_weight: float = 0.75,
-                 center_loss_weight: float = 0.75,
-                 **kwargs) -> None:
+                 force_topk=False,
+                 topk=9,
+                 pos_loss_weight=0.25,
+                 neg_loss_weight=0.75,
+                 center_loss_weight=0.75,
+                 **kwargs):
         super().__init__(*args, conv_bias=True, **kwargs)
         self.center_prior = CenterPrior(
             force_topk=force_topk,
@@ -203,27 +191,23 @@ class AutoAssignHead(FCOSHead):
         self.center_loss_weight = center_loss_weight
         self.prior_generator = MlvlPointGenerator(self.strides, offset=0)
 
-    def init_weights(self) -> None:
+    def init_weights(self):
         """head部分的权重初始化.注意,cls conv和reg conv的bias进行了特殊初始化"""
-
         super(AutoAssignHead, self).init_weights()
         bias_cls = bias_init_with_prob(0.02)
         normal_init(self.conv_cls, std=0.01, bias=bias_cls)
         normal_init(self.conv_reg, std=0.01, bias=4.0)
 
-    def forward_single(self, x: Tensor, scale: Scale,
-                       stride: int) -> Tuple[Tensor, Tensor, Tensor]:
-        """Forward features of a single scale level.
+    def forward_single(self, x, scale, stride):
+        """单层级上的前向传播.
 
         Args:
-            x (Tensor): FPN feature maps of the specified stride.
-            scale (:obj:`mmcv.cnn.Scale`): 用于放缩reg值的可学习参数
-            stride (int): 当前输入x对应的下采样倍数.
-                用于对reg进行标准化.如果self.norm_on_bbox为True时.
+            x (Tensor): [bs, c, h, w].
+            scale (:obj: `mmcv.cnn.Scale`): 用于放缩reg值的可学习参数
+            stride (int): 当前输入x对应的下采样倍数, 用于对reg进行标准化.
 
         Returns:
-            tuple[Tensor, Tensor, Tensor]: 基于输入x生成的
-            cls score, box reg, obj score.
+            tuple: 基于输入x生成的cls score, box reg, obj score.
         """
         cls_score, bbox_pred, cls_feat, reg_feat = super(
             FCOSHead, self).forward_single(x)
@@ -236,31 +220,26 @@ class AutoAssignHead(FCOSHead):
         bbox_pred *= stride
         return cls_score, bbox_pred, centerness
 
-    def get_pos_loss_single(self, cls_score: Tensor, objectness: Tensor,
-                            reg_loss: Tensor, gt_instances: InstanceData,
-                            center_prior_weights: Tensor) -> Tuple[Tensor]:
+    def get_pos_loss_single(self, cls_score, objectness, reg_loss, gt_labels,
+                            center_prior_weights):
         """计算所有层级特征图中的正样本loss. 以下两个概念是比较重要的.
             正样本区域置信度:用于衡量属于正样本的概率,值越大越可能是正样本,需要同时考虑三个分支的输出.
             正样本区域权重:用于对正样本区域 loss 进行加权,需要同时考虑中心先验分布和正样本区域置信度,
             且仅仅考虑 gt bbox 内部区域,因为 gt bbox 外部肯定不是正样本
             参考:https://zhuanlan.zhihu.com/p/378581552
-
         Args:
             cls_score (Tensor): [nl * h * w, nc].
             objectness (Tensor): [nl * h * w, 1].
             reg_loss (Tensor): [nl * h * w, num_gt].
-            gt_instances (:obj:`InstanceData`): Ground truth of instance
-                annotations. It should includes ``bboxes`` and ``labels``
-                attributes.
+            gt_labels (Tensor): [num_gt, ].
             center_prior_weights (Tensor): [nl * h * w, num_gt].
                 point-gt的距离高斯权重矩阵,∈[0, 1],point与gt不匹配时为0.否则越接近越大.
 
         Returns:
             tuple[Tensor]:
 
-            - pos_loss (Tensor): 单张图像上,所有gt内部的正样本loss加权总和.
+                - pos_loss (Tensor): 单张图像上,所有gt内部的正样本loss加权总和.
         """
-        gt_labels = gt_instances.labels
         # pos_reg_score,从正样本loss定义上来看.
         # 因为pos_loss = pos_cls_loss + pos_reg_loss
         #             = -log(pos_cls_score) + pos_reg_loss
@@ -268,7 +247,7 @@ class AutoAssignHead(FCOSHead):
         p_loc = torch.exp(-reg_loss)
         # 先将cls_score与obj_score相乘,再获取它在gt类别上的值(正样本gt上预测的score)
         p_cls = (cls_score * objectness)[:, gt_labels]
-        # 直接上来看.正样本的概率值由以下几个值决定.
+        # 从直接上来看.正样本的概率值由以下几个值决定.
         # 即pos_score取决于obj_score * cls_score * reg_score(通过iou_loss反映).
         # 即目标置信度*分类置信度*定位置信度(iou loss越小,定位置信度越高,box与gt越接近)
         p_pos = p_cls * p_loc
@@ -288,19 +267,15 @@ class AutoAssignHead(FCOSHead):
         pos_loss = pos_loss.sum() * self.pos_loss_weight
         return pos_loss,
 
-    def get_neg_loss_single(self, cls_score: Tensor, objectness: Tensor,
-                            gt_instances: InstanceData, ious: Tensor,
-                            inside_gt_bbox_mask: Tensor) -> Tuple[Tensor]:
+    def get_neg_loss_single(self, cls_score, objectness, gt_labels, ious,
+                            inside_gt_bbox_mask):
         """计算所有层级特征图中的负样本loss.
             负样本区域置信度:用于衡量属于负样本的概率,值越大越可能是负样本,同时考虑了cls与obj分支.
             负样本区域权重:用于对负样本区域 loss 进行加权,仅考虑gt内部各box的iou大小,越大权重越小.
-
         Args:
             cls_score (Tensor): [nl * h * w, nc].
             objectness (Tensor): [nl * h * w, 1].
-            gt_instances (:obj:`InstanceData`): Ground truth of instance
-                annotations. It should includes ``bboxes`` and ``labels``
-                attributes.
+            gt_labels (Tensor): [num_gt, ].
             ious (Tensor): [nl * h * w, num_gt],box-gt的IOU矩阵.
             inside_gt_bbox_mask (Tensor): [nl * h * w, num_gt],
                 表示point是否与gt匹配.
@@ -308,9 +283,8 @@ class AutoAssignHead(FCOSHead):
         Returns:
             tuple[Tensor]:
 
-            - neg_loss (Tensor): 单张图像上所有负样本loss加权总和.
+                - neg_loss (Tensor): 单张图像上,所有负样本loss加权总和.
         """
-        gt_labels = gt_instances.labels
         num_gts = len(gt_labels)
         joint_conf = (cls_score * objectness)
         # 默认特征图上全是背景,如果存在gt则在gt范围内重新根据IOU大小赋予权重
@@ -339,22 +313,22 @@ class AutoAssignHead(FCOSHead):
                          gt_labels[foreground_idxs[0]]] = 1 - temp_weight
 
         logits = (joint_conf * p_neg_weight)
-        # logits**2 控制gt内外的负样本loss差异,与正样本loss中的exp^(p_pos*3)类似
+        # logits**2 控制gt内外的负样本loss差异,与正样本loss中的3类似?
         neg_loss = (
             logits**2 * F.binary_cross_entropy(
                 logits, torch.zeros_like(logits), reduction='none'))
         neg_loss = neg_loss.sum() * self.neg_loss_weight
         return neg_loss,
 
-    def loss_by_feat(
-        self,
-        cls_scores: List[Tensor],
-        bbox_preds: List[Tensor],
-        objectnesses: List[Tensor],
-        batch_gt_instances: InstanceList,
-        batch_img_metas: List[dict],
-        batch_gt_instances_ignore: OptInstanceList = None
-    ) -> Dict[str, Tensor]:
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'objectnesses'))
+    def loss(self,
+             cls_scores,
+             bbox_preds,
+             objectnesses,
+             gt_bboxes,
+             gt_labels,
+             img_metas,
+             gt_bboxes_ignore=None):
         """计算head部分的loss.
             在AutoAssign之前的模型中,计算loss部分往往分为3个分支,cls,reg,obj(有些没有)
             cls:考虑正负样本,其中负样本区域的权重一般为1,正样本区域为可调节参数pos_weight.
@@ -366,27 +340,21 @@ class AutoAssignHead(FCOSHead):
             obj:仅考虑正样本,权重是gt范围所在的grid区域皆为1,其余grid为0.
             而在AutoAssign中,仅区分正负样本loss.
             在计算正样本loss时将reg, cls, obj都揉到一起.在计算负样本loss时仅计算cls.
-
         Args:
             cls_scores (list[Tensor]): [[bs, nc, h, w], ] * nl.
             bbox_preds (list[Tensor]): [[bs, 4, h, w], ] * nl.
             objectnesses (list[Tensor]): [[bs, 1, h, w], ] * nl.
-            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
-                gt_instance. It usually includes ``bboxes`` and ``labels``
-                attributes.
-            batch_img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
-                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
-                data that is ignored during training and testing.
-                Defaults to None.
+            gt_bboxes (list[Tensor]): [[num_gt, 4], ] * bs, xyxy格式.
+            gt_labels (list[Tensor]): [[num_gt, ], ] * bs.
+            img_metas (list[dict]): [dict(), ] * bs.
+            gt_bboxes_ignore (None | list[Tensor]): [[num_gt_ignore, ], ] * bs.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
 
         assert len(cls_scores) == len(bbox_preds) == len(objectnesses)
-        all_num_gt = sum([len(item) for item in batch_gt_instances])
+        all_num_gt = sum([len(item) for item in gt_bboxes])
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         # [[h * w, 2], ] * nl, 以grid左上角为中心.
         all_level_points = self.prior_generator.grid_priors(
@@ -395,16 +363,16 @@ class AutoAssignHead(FCOSHead):
             device=bbox_preds[0].device)
         # [[nl * h * w, num_gt], ] * bs, [[nl * h * w, num_gt, 4], ] * bs
         inside_gt_bbox_mask_list, bbox_targets_list = self.get_targets(
-            all_level_points, batch_gt_instances)
+            all_level_points, gt_bboxes)
 
         center_prior_weight_list = []
         temp_inside_gt_bbox_mask_list = []
-        for gt_instances, inside_gt_bbox_mask in zip(batch_gt_instances,
-                                                     inside_gt_bbox_mask_list):
+        for gt_bboxe, gt_label, inside_gt_bbox_mask in zip(
+                gt_bboxes, gt_labels, inside_gt_bbox_mask_list):
             # 二者都是[nl * h * w, num_gt].前者是point-gt的距离高斯矩阵
             # 后者是匹配矩阵,force_topk为True时会改变范围内没有point的point-gt值.
             center_prior_weight, inside_gt_bbox_mask = \
-                self.center_prior(all_level_points, gt_instances,
+                self.center_prior(all_level_points, gt_bboxe, gt_label,
                                   inside_gt_bbox_mask)
             center_prior_weight_list.append(center_prior_weight)
             temp_inside_gt_bbox_mask_list.append(inside_gt_bbox_mask)
@@ -461,30 +429,29 @@ class AutoAssignHead(FCOSHead):
         cls_scores = [item.sigmoid() for item in cls_scores]
         objectnesses = [item.sigmoid() for item in objectnesses]
         pos_loss_list, = multi_apply(self.get_pos_loss_single, cls_scores,
-                                     objectnesses, reg_loss_list,
-                                     batch_gt_instances,
+                                     objectnesses, reg_loss_list, gt_labels,
                                      center_prior_weight_list)
         pos_avg_factor = reduce_mean(
             bbox_pred.new_tensor(all_num_gt)).clamp_(min=1)
         pos_loss = sum(pos_loss_list) / pos_avg_factor
 
         neg_loss_list, = multi_apply(self.get_neg_loss_single, cls_scores,
-                                     objectnesses, batch_gt_instances,
-                                     ious_list, inside_gt_bbox_mask_list)
+                                     objectnesses, gt_labels, ious_list,
+                                     inside_gt_bbox_mask_list)
         neg_avg_factor = sum(item.data.sum()
                              for item in center_prior_weight_list)
         neg_avg_factor = reduce_mean(neg_avg_factor).clamp_(min=1)
         neg_loss = sum(neg_loss_list) / neg_avg_factor
 
         center_loss = []
-        for i in range(len(batch_img_metas)):
+        for i in range(len(img_metas)):
 
             if inside_gt_bbox_mask_list[i].any():
                 # 为了能够锐化可学习类别先验距离高斯分布,使得各个类别gt的正样本中心权重变大,
                 # 而周围值变小,注意并非gt中心,而是"类别正样本中心",
                 # 不同的类别可能距离gt中心有不同的偏移.
                 center_loss.append(
-                    len(batch_gt_instances[i]) /
+                    len(gt_bboxes[i]) /
                     center_prior_weight_list[i].sum().clamp_(min=EPS))
             # 当 gt_bbox 的宽度或高度小于p3层下采样倍数时,如果force_tok_k还为False
             # 那么是有可能所有特征图是不存在正样本区域的.
@@ -505,51 +472,41 @@ class AutoAssignHead(FCOSHead):
 
         return loss
 
-    def get_targets(
-            self, points: List[Tensor], batch_gt_instances: InstanceList
-    ) -> Tuple[List[Tensor], List[Tensor]]:
+    def get_targets(self, points, gt_bboxes_list):
         """计算batch张图像的target_reg,以及point是否在gt内部的Bool类型的mask.
 
         Args:
             points (list[Tensor]): [[h * w, 2], ] * nl.
-            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
-                gt_instance. It usually includes ``bboxes`` and ``labels``
-                attributes.
+            gt_bboxes_list (list[Tensor]): [[num_gt, 4], ] * bs.
 
         Returns:
-            tuple(list[Tensor], list[Tensor]):
-
-            - inside_gt_bbox_mask_list (list[Tensor]): point是否
+            tuple(list[Tensor]):
+                - inside_gt_bbox_mask_list (list[Tensor]): point是否
                     在gt内部的Bool类型的mask, [[nl * h * w, num_gt], ] * bs
-            - concat_lvl_bbox_targets (list[Tensor]): point到gt四条边的距离.
+                - concat_lvl_bbox_targets (list[Tensor]): point到gt四条边的距离.
                     [[nl * h * w, num_gt, 4], ] * bs
         """
 
         concat_points = torch.cat(points, dim=0)
-        # the number of points per img, per lvl
         inside_gt_bbox_mask_list, bbox_targets_list = multi_apply(
-            self._get_targets_single, batch_gt_instances, points=concat_points)
+            self._get_target_single, gt_bboxes_list, points=concat_points)
         return inside_gt_bbox_mask_list, bbox_targets_list
 
-    def _get_targets_single(self, gt_instances: InstanceData,
-                            points: Tensor) -> Tuple[Tensor, Tensor]:
+    def _get_target_single(self, gt_bboxes, points):
         """计算单张图像的target_reg,以及point是否在gt内部的Bool类型的mask.
 
         Args:
-            gt_instances (:obj:`InstanceData`): Ground truth of instance
-                annotations. It should includes ``bboxes`` and ``labels``
-                attributes.
+            gt_bboxes (Tensor): [num_gt, 4].
             points (Tensor): [nl * h * w, 2].
 
         Returns:
-            tuple[Tensor, Tensor]: Containing the following Tensors:
+            tuple[Tensor]: Containing the following Tensors:
 
-            - inside_gt_bbox_mask (Tensor): [nl * h * w, num_gt].
+                - inside_gt_bbox_mask (Tensor): [nl * h * w, num_gt].
                     Bool类型值,表示point是否在gt内部.
-            - bbox_targets (Tensor): [nl * h * w, num_gt, 4].
+                - bbox_targets (Tensor): [nl * h * w, num_gt, 4].
                     表示point到gt四条边的距离.
         """
-        gt_bboxes = gt_instances.bboxes
         num_points = points.size(0)
         num_gts = gt_bboxes.size(0)
         gt_bboxes = gt_bboxes[None].expand(num_points, num_gts, 4)
@@ -570,3 +527,26 @@ class AutoAssignHead(FCOSHead):
                                                          dtype=torch.bool)
 
         return inside_gt_bbox_mask, bbox_targets
+
+    def _get_points_single(self,
+                           featmap_size,
+                           stride,
+                           dtype,
+                           device,
+                           flatten=False):
+        """Almost the same as the implementation in fcos, we remove half stride
+        offset to align with the original implementation.
+
+        This function will be deprecated soon.
+        """
+        warnings.warn(
+            '`_get_points_single` in `AutoAssignHead` will be '
+            'deprecated soon, we support a multi level point generator now'
+            'you can get points of a single level feature map '
+            'with `self.prior_generator.single_level_grid_priors` ')
+        y, x = super(FCOSHead,
+                     self)._get_points_single(featmap_size, stride, dtype,
+                                              device)
+        points = torch.stack((x.reshape(-1) * stride, y.reshape(-1) * stride),
+                             dim=-1)
+        return points

@@ -1,15 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Tuple, Union
+import warnings
 
-from torch import Tensor
+import torch
 
-from mmdet.registry import MODELS
-from mmdet.structures import OptSampleList, SampleList
-from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
+from mmdet.core import bbox2result
+from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
 
-@MODELS.register_module()
+@DETECTORS.register_module()
 class SingleStageDetector(BaseDetector):
     """one-stage检测器的基类.
 
@@ -17,135 +16,149 @@ class SingleStageDetector(BaseDetector):
     """
 
     def __init__(self,
-                 backbone: ConfigType,
-                 neck: OptConfigType = None,
-                 bbox_head: OptConfigType = None,
-                 train_cfg: OptConfigType = None,
-                 test_cfg: OptConfigType = None,
-                 data_preprocessor: OptConfigType = None,
-                 init_cfg: OptMultiConfig = None) -> None:
-        super().__init__(
-            data_preprocessor=data_preprocessor, init_cfg=init_cfg)
-        self.backbone = MODELS.build(backbone)
+                 backbone,
+                 neck=None,
+                 bbox_head=None,
+                 train_cfg=None,
+                 test_cfg=None,
+                 init_cfg=None):
+        super(SingleStageDetector, self).__init__(init_cfg)
+        self.backbone = build_backbone(backbone)
         if neck is not None:
-            self.neck = MODELS.build(neck)
+            self.neck = build_neck(neck)
         bbox_head.update(train_cfg=train_cfg)
         bbox_head.update(test_cfg=test_cfg)
-        self.bbox_head = MODELS.build(bbox_head)
+        self.bbox_head = build_head(bbox_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-    def _load_from_state_dict(self, state_dict: dict, prefix: str,
-                              local_metadata: dict, strict: bool,
-                              missing_keys: Union[List[str], str],
-                              unexpected_keys: Union[List[str], str],
-                              error_msgs: Union[List[str], str]) -> None:
-        """Exchange bbox_head key to rpn_head key when loading two-stage
-        weights into single-stage model."""
-        bbox_head_prefix = prefix + '.bbox_head' if prefix else 'bbox_head'
-        bbox_head_keys = [
-            k for k in state_dict.keys() if k.startswith(bbox_head_prefix)
-        ]
-        rpn_head_prefix = prefix + '.rpn_head' if prefix else 'rpn_head'
-        rpn_head_keys = [
-            k for k in state_dict.keys() if k.startswith(rpn_head_prefix)
-        ]
-        if len(bbox_head_keys) == 0 and len(rpn_head_keys) != 0:
-            for rpn_head_key in rpn_head_keys:
-                bbox_head_key = bbox_head_prefix + \
-                                rpn_head_key[len(rpn_head_prefix):]
-                state_dict[bbox_head_key] = state_dict.pop(rpn_head_key)
-        super()._load_from_state_dict(state_dict, prefix, local_metadata,
-                                      strict, missing_keys, unexpected_keys,
-                                      error_msgs)
-
-    def loss(self, batch_inputs: Tensor,
-             batch_data_samples: SampleList) -> Union[dict, list]:
-        """Calculate losses from a batch of inputs and data samples.
-
-        Args:
-            batch_inputs 输入图像数据.[bs, c, batch_h, batch_w]
-                通常这些数据应该是经过归一化的(减均值除以方差).
-            batch_data_samples (list[:obj:`DetDataSample`]): The batch
-                data samples. It usually includes information such
-                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
-
-        Returns:
-            dict: A dictionary of loss components.
-        """
-        x = self.extract_feat(batch_inputs)
-        losses = self.bbox_head.loss(x, batch_data_samples)
-        return losses
-
-    def predict(self,
-                batch_inputs: Tensor,
-                batch_data_samples: SampleList,
-                rescale: bool = True) -> SampleList:
-        """Predict results from a batch of inputs and data samples with post-
-        processing.
-
-        Args:
-            batch_inputs (Tensor): [bs, c, batch_h, batch_w].
-            batch_data_samples (List[:obj:`DetDataSample`]): The Data
-                Samples. It usually includes information such as
-                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
-            rescale (bool): Whether to rescale the results.
-                Defaults to True.
-
-        Returns:
-            list[:obj:`DetDataSample`]: Detection results of the
-            input images. Each DetDataSample usually contain
-            'pred_instances'. And the ``pred_instances`` usually
-            contains following keys.
-
-                - scores (Tensor): Classification scores, has a shape
-                    (num_instance, )
-                - labels (Tensor): Labels of bboxes, has a shape
-                    (num_instances, ).
-                - bboxes (Tensor): Has a shape (num_instances, 4),
-                    the last dimension 4 arrange as (x1, y1, x2, y2).
-        """
-        x = self.extract_feat(batch_inputs)
-        # results_list为一个batch的结果,[(box,label)]*batch
-        results_list = self.bbox_head.predict(
-            x, batch_data_samples, rescale=rescale)
-        # bbox_results为一个转换后的结果[[box]*num_class]*batch
-        # 当不存在某个class的box时,该box的shape为(0, 5)
-        batch_data_samples = self.add_pred_to_datasample(
-            batch_data_samples, results_list)
-        return batch_data_samples
-
-    def _forward(
-            self,
-            batch_inputs: Tensor,
-            batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
-        """Network forward process. Usually includes backbone, neck and head
-        forward without any post-processing.
-
-         Args:
-            batch_inputs (Tensor): Inputs with shape (N, C, H, W).
-            batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
-                the meta information of each image and corresponding
-                annotations.
-
-        Returns:
-            tuple[list]: A tuple of features from ``bbox_head`` forward.
-        """
-        x = self.extract_feat(batch_inputs)
-        results = self.bbox_head.forward(x)
-        return results
-
-    def extract_feat(self, batch_inputs: Tensor) -> Tuple[Tensor]:
-        """Extract features.
-
-        Args:
-            batch_inputs (Tensor): Image tensor with shape (N, C, H ,W).
-
-        Returns:
-            tuple[Tensor]: Multi-level features that may have
-            different resolutions.
-        """
-        x = self.backbone(batch_inputs)
+    def extract_feat(self, img):
+        """Directly extract features from the backbone+neck."""
+        x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
         return x
+
+    def forward_dummy(self, img):
+        """Used for computing network flops.
+
+        See `mmdetection/tools/analysis_tools/get_flops.py`
+        """
+        x = self.extract_feat(img)
+        outs = self.bbox_head(x)
+        return outs
+
+    def forward_train(self,
+                      img,
+                      img_metas,
+                      gt_bboxes,
+                      gt_labels,
+                      gt_bboxes_ignore=None):
+        """
+        Args:
+            img (Tensor): shape为 (N, C, H, W) 的输入图像数据.
+                通常这些数据应该是经过归一化的(减均值除以方差).
+            img_metas (list[dict]): 图像信息字典列表,其中每一个字典 含有键: 'img_shape',
+                'scale_factor', 'flip', and may also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                有关这些键值的详细信息, 请参见
+                `mmdet/datasets/pipelines/formatting.py:Collect`.
+            gt_bboxes (list[Tensor]):  batch张图片的gt box, [[num_gts, 4],] * bs
+                其中4代表 [x1, y1, x2, y2].
+            gt_labels (list[Tensor]): gt box对应的label, [[num_gts,],] * bs
+            gt_bboxes_ignore (None | list[Tensor]): 计算损失时可以忽略的标注类别列表.
+
+        Returns:
+            dict[str, Tensor]: loss的结构字典.
+        """
+        super(SingleStageDetector, self).forward_train(img, img_metas)
+        x = self.extract_feat(img)
+        losses = self.bbox_head.forward_train(x, img_metas, gt_bboxes,
+                                              gt_labels, gt_bboxes_ignore)
+        return losses
+
+    def simple_test(self, img, img_metas, rescale=False):
+        """没有TTA的测试方法,len(TTA)=1.
+
+        Args:
+            img (torch.Tensor): 输入shape [bs, 3, H, W].
+            img_metas (list[dict]): batch张图像信息.
+            rescale (bool, optional): 是否缩放box.
+
+        Returns:
+            list[list[np.ndarray]]: 每张图像的检测结果.
+                外层列表对应每张图片. 内部列表对应每个类.
+        """
+        feat = self.extract_feat(img)
+        # results_list为一个batch的结果,[(box,label)]*batch
+        results_list = self.bbox_head.simple_test(
+            feat, img_metas, rescale=rescale)
+        # bbox_results为一个转换后的结果[[box]*num_class]*batch
+        # 当不存在某个class的box时,该box的shape为(0, 5)
+        bbox_results = [
+            bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
+            for det_bboxes, det_labels in results_list
+        ]
+        return bbox_results
+
+    def aug_test(self, imgs, img_metas, rescale=False):
+        """Test function with test time augmentation.
+
+        Args:
+            imgs (list[Tensor]): the outer list indicates test-time
+                augmentations and inner Tensor should have a shape NxCxHxW,
+                which contains all images in the batch.
+                img_metas (list[list[dict]]): 外部列表表示TTA列表(多尺度、翻转等)
+                内部列表表示batch张图像,其中每个字典都有图像信息.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[list[np.ndarray]]: BBox results of each image and classes.
+                The outer list corresponds to each image. The inner list
+                corresponds to each class.
+        """
+        assert hasattr(self.bbox_head, 'aug_test'), \
+            f'{self.bbox_head.__class__.__name__}' \
+            ' does not support test-time augmentation'
+
+        feats = self.extract_feats(imgs)
+        results_list = self.bbox_head.aug_test(
+            feats, img_metas, rescale=rescale)
+        bbox_results = [
+            bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
+            for det_bboxes, det_labels in results_list
+        ]
+        return bbox_results
+
+    def onnx_export(self, img, img_metas, with_nms=True):
+        """Test function without test time augmentation.
+
+        Args:
+            img (torch.Tensor): input images.
+            img_metas (list[dict]): List of image information.
+
+        Returns:
+            tuple[Tensor, Tensor]: dets of shape [N, num_det, 5]
+                and class labels of shape [N, num_det].
+        """
+        x = self.extract_feat(img)
+        outs = self.bbox_head(x)
+        # get origin input shape to support onnx dynamic shape
+
+        # get shape as tensor
+        img_shape = torch._shape_as_tensor(img)[2:]
+        img_metas[0]['img_shape_for_onnx'] = img_shape
+        # get pad input shape to support onnx dynamic shape for exporting
+        # `CornerNet` and `CentripetalNet`, which 'pad_shape' is used
+        # for inference
+        img_metas[0]['pad_shape_for_onnx'] = img_shape
+
+        if len(outs) == 2:
+            # add dummy score_factor
+            outs = (*outs, None)
+        # TODO Can we change to `get_bboxes` when `onnx_export` fail
+        det_bboxes, det_labels = self.bbox_head.onnx_export(
+            *outs, img_metas, with_nms=with_nms)
+
+        return det_bboxes, det_labels
