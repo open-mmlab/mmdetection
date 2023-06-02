@@ -1,6 +1,5 @@
 matplotlib
 numpy
-prettytable
 pycocotools
 scipy
 shapely
