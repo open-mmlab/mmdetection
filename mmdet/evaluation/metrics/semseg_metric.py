@@ -130,7 +130,7 @@ class SemSegMetric(BaseMetric):
             logger.info(f'results are saved to {osp.dirname(self.output_dir)}')
             return OrderedDict()
 
-        ret_metrics = self.get_return_metrics()
+        ret_metrics = self.get_return_metrics(results)
 
         # summary table
         ret_metrics_summary = OrderedDict({
@@ -144,12 +144,13 @@ class SemSegMetric(BaseMetric):
             else:
                 metrics['m' + key] = val
 
-        print(ret_metrics, self.dataset_meta['classes'], logger)
+        print_semantic_table(ret_metrics, self.dataset_meta['classes'], logger)
 
         return metrics
 
-    def _compute_pred_stats(pred_label: torch.tensor, label: torch.tensor,
-                            num_classes: int, ignore_index: int):
+    def _compute_pred_stats(self, pred_label: torch.tensor,
+                            label: torch.tensor, num_classes: int,
+                            ignore_index: int):
         """Parse semantic segmentation predictions.
 
         Args:
@@ -188,8 +189,11 @@ class SemSegMetric(BaseMetric):
             area_label=area_label)
         return result
 
-    def get_return_metrics(self) -> dict:
+    def get_return_metrics(self, results: list) -> dict:
         """Calculate evaluation metrics.
+
+        Args:
+            results (list): The processed results of each batch.
 
         Returns:
             Dict[str, np.ndarray]: per category evaluation metrics,
@@ -212,16 +216,12 @@ class SemSegMetric(BaseMetric):
                 (beta**2 * precision) + recall)
             return score
 
-        total_area_intersect = torch.stack(
-            [rs['area_intersect'] for rs in self.results])
-        total_area_union = torch.stack(
-            [rs['area_union'] for rs in self.results])
-        total_area_pred_label = torch.stack(
-            [rs['area_pred_label'] for rs in self.results])
-        total_area_label = torch.stack(
-            [rs['area_label'] for rs in self.results])
+        total_area_intersect = sum([r['area_intersect'] for r in results])
+        total_area_union = sum([r['area_union'] for r in results])
+        total_area_pred_label = sum([r['area_pred_label'] for r in results])
+        total_area_label = sum([r['area_label'] for r in results])
 
-        all_acc = total_area_intersect.sum() / total_area_label.sum()
+        all_acc = total_area_intersect / total_area_label
         ret_metrics = OrderedDict({'aAcc': all_acc})
         for metric in self.metrics:
             if metric == 'mIoU':
@@ -276,11 +276,11 @@ def print_semantic_table(
         ret_metric: np.round(ret_metric_value * 100, 2)
         for ret_metric, ret_metric_value in results.items()
     })
-    ret_metrics_class.update({'Class': class_names})
-    ret_metrics_class.move_to_end('Class', last=False)
     print_log('per class results:', logger)
     if PrettyTable:
         class_table_data = PrettyTable()
+        ret_metrics_class.update({'Class': class_names})
+        ret_metrics_class.move_to_end('Class', last=False)
         for key, val in ret_metrics_class.items():
             class_table_data.add_column(key, val)
         print_log('\n' + class_table_data.get_string(), logger=logger)
@@ -288,4 +288,8 @@ def print_semantic_table(
         logger.warning(
             '`prettytable` is not installed, for better table format, '
             'please consider installing it with "pip install prettytable"')
-        print_log('\n' + str(ret_metrics_class), logger=logger)
+        print_result = {}
+        for class_name, iou, acc in zip(class_names, ret_metrics_class['IoU'],
+                                        ret_metrics_class['Acc']):
+            print_result[class_name] = {'IoU': iou, 'Acc': acc}
+        print_log(print_result, logger)
