@@ -27,9 +27,9 @@ Models:
           mask AP: 34.8
     Weights: https://download.openmmlab.com/mmdetection/v2.0/solov2/solov2_r50_fpn_1x_coco/solov2_r50_fpn_1x_coco_20220512_125858-a357fa23.pth
 
-  - Name: solov2_r50_fpn_3x_coco
+  - Name: solov2_r50_fpn_ms-3x_coco
     In Collection: SOLOv2
-    Config: configs/solov2/solov2_r50_fpn_3x_coco.py
+    Config: configs/solov2/solov2_r50_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 5.1
       Epochs: 36
@@ -40,22 +40,9 @@ Models:
           mask AP: 37.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/solov2/solov2_r50_fpn_3x_coco/solov2_r50_fpn_3x_coco_20220512_125856-fed092d4.pth
 
-  - Name: solov2_r101_fpn_3x_coco
+  - Name: solov2_r101-dcn_fpn_ms-3x_coco
     In Collection: SOLOv2
-    Config: configs/solov2/solov2_r101_fpn_3x_coco.py
-    Metadata:
-      Training Memory (GB): 6.9
-      Epochs: 36
-    Results:
-      - Task: Instance Segmentation
-        Dataset: COCO
-        Metrics:
-          mask AP: 39.1
-    Weights: https://download.openmmlab.com/mmdetection/v2.0/solov2/solov2_r101_fpn_3x_coco/solov2_r101_fpn_3x_coco_20220511_095119-c559a076.pth
-
-  - Name: solov2_r101_dcn_fpn_3x_coco
-    In Collection: SOLOv2
-    Config: configs/solov2/solov2_r101_dcn_fpn_3x_coco.py
+    Config: configs/solov2/solov2_r101-dcn_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 7.1
       Epochs: 36
@@ -66,9 +53,9 @@ Models:
           mask AP: 41.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/solov2/solov2_r101_dcn_fpn_3x_coco/solov2_r101_dcn_fpn_3x_coco_20220513_214734-16c966cb.pth
 
-  - Name: solov2_x101_dcn_fpn_3x_coco
+  - Name: solov2_x101-dcn_fpn_ms-3x_coco
     In Collection: SOLOv2
-    Config: configs/solov2/solov2_x101_dcn_fpn_3x_coco.py
+    Config: configs/solov2/solov2_x101-dcn_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 11.3
       Epochs: 36
@@ -79,9 +66,9 @@ Models:
           mask AP: 42.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/solov2/solov2_x101_dcn_fpn_3x_coco/solov2_x101_dcn_fpn_3x_coco_20220513_214337-aef41095.pth
 
-  - Name: solov2_light_r18_fpn_3x_coco
+  - Name: solov2-light_r18_fpn_ms-3x_coco
     In Collection: SOLOv2
-    Config: configs/solov2/solov2_light_r18_fpn_3x_coco.py
+    Config: configs/solov2/solov2-light_r18_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 9.1
       Epochs: 36
@@ -92,22 +79,9 @@ Models:
           mask AP: 29.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/solov2/solov2_light_r18_fpn_3x_coco/solov2_light_r18_fpn_3x_coco_20220511_083717-75fa355b.pth
 
-  - Name: solov2_light_r34_fpn_3x_coco
+  - Name: solov2-light_r50_fpn_ms-3x_coco
     In Collection: SOLOv2
-    Config: configs/solov2/solov2_light_r34_fpn_3x_coco.py
-    Metadata:
-      Training Memory (GB): 9.3
-      Epochs: 36
-    Results:
-      - Task: Instance Segmentation
-        Dataset: COCO
-        Metrics:
-          mask AP: 31.9
-    Weights: https://download.openmmlab.com/mmdetection/v2.0/solov2/solov2_light_r34_fpn_3x_coco/solov2_light_r34_fpn_3x_coco_20220511_091839-e51659d3.pth
-
-  - Name: solov2_light_r50_fpn_3x_coco
-    In Collection: SOLOv2
-    Config: configs/solov2/solov2_light_r50_fpn_3x_coco.py
+    Config: configs/solov2/solov2-light_r50_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 9.9
       Epochs: 36

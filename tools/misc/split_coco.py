@@ -2,8 +2,9 @@
 import argparse
 import os.path as osp
 
-import mmcv
 import numpy as np
+from mmengine.fileio import dump, load
+from mmengine.utils import mkdir_or_exist, track_parallel_progress
 
 prog_description = '''K-Fold coco split.
 
@@ -23,7 +24,7 @@ def parse_args():
         '--out-dir',
         type=str,
         help='The output directory of coco semi-supervised annotations.',
-        default='./data/coco_semi_annos/')
+        default='./data/coco/semi_anns/')
     parser.add_argument(
         '--labeled-percent',
         type=float,
@@ -58,13 +59,13 @@ def split_coco(data_root, out_dir, percent, fold):
         sub_anns['categories'] = anns['categories']
         sub_anns['info'] = anns['info']
 
-        mmcv.mkdir_or_exist(out_dir)
-        mmcv.dump(sub_anns, f'{out_dir}/{name}.json')
+        mkdir_or_exist(out_dir)
+        dump(sub_anns, f'{out_dir}/{name}.json')
 
     # set random seed with the fold
     np.random.seed(fold)
     ann_file = osp.join(data_root, 'annotations/instances_train2017.json')
-    anns = mmcv.load(ann_file)
+    anns = load(ann_file)
 
     image_list = anns['images']
     labeled_total = int(percent / 100. * len(image_list))
@@ -106,4 +107,4 @@ if __name__ == '__main__':
     arguments_list = [(args.data_root, args.out_dir, p, f)
                       for f in range(1, args.fold + 1)
                       for p in args.labeled_percent]
-    mmcv.track_parallel_progress(multi_wrapper, arguments_list, args.fold)
+    track_parallel_progress(multi_wrapper, arguments_list, args.fold)

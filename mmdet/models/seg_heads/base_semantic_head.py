@@ -1,86 +1,113 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from abc import ABCMeta, abstractmethod
+from typing import Dict, List, Tuple, Union
 
 import torch.nn.functional as F
-from mmcv.runner import BaseModule, force_fp32
+from mmengine.model import BaseModule
+from torch import Tensor
 
-from ..builder import build_loss
-from ..utils import interpolate_as
+from mmdet.registry import MODELS
+from mmdet.structures import SampleList
+from mmdet.utils import ConfigType, OptMultiConfig
 
 
+@MODELS.register_module()
 class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
     """Base module of Semantic Head.
 
     Args:
         num_classes (int): the number of classes.
-        init_cfg (dict): the initialization config.
-        loss_seg (dict): the loss of the semantic head.
+        seg_rescale_factor (float): the rescale factor for ``gt_sem_seg``,
+            which equals to ``1 / output_strides``. The output_strides is
+            for ``seg_preds``. Defaults to  1 / 4.
+        init_cfg (Optional[Union[:obj:`ConfigDict`, dict]]): the initialization
+            config.
+        loss_seg (Union[:obj:`ConfigDict`, dict]): the loss of the semantic
+            head.
     """
 
     def __init__(self,
-                 num_classes,
-                 init_cfg=None,
-                 loss_seg=dict(
+                 num_classes: int,
+                 seg_rescale_factor: float = 1 / 4.,
+                 loss_seg: ConfigType = dict(
                      type='CrossEntropyLoss',
                      ignore_index=255,
-                     loss_weight=1.0)):
-        super(BaseSemanticHead, self).__init__(init_cfg)
-        self.loss_seg = build_loss(loss_seg)
+                     loss_weight=1.0),
+                 init_cfg: OptMultiConfig = None) -> None:
+        super().__init__(init_cfg=init_cfg)
+        self.loss_seg = MODELS.build(loss_seg)
         self.num_classes = num_classes
-
-    @force_fp32(apply_to=('seg_preds', ))
-    def loss(self, seg_preds, gt_semantic_seg):
-        """Get the loss of semantic head.
-
-        Args:
-            seg_preds (Tensor): The input logits with the shape (N, C, H, W).
-            gt_semantic_seg: The ground truth of semantic segmentation with
-                the shape (N, H, W).
-            label_bias: The starting number of the semantic label.
-                Default: 1.
-
-        Returns:
-            dict: the loss of semantic head.
-        """
-        if seg_preds.shape[-2:] != gt_semantic_seg.shape[-2:]:
-            seg_preds = interpolate_as(seg_preds, gt_semantic_seg)
-        seg_preds = seg_preds.permute((0, 2, 3, 1))
-
-        loss_seg = self.loss_seg(
-            seg_preds.reshape(-1, self.num_classes),  # => [NxHxW, C]
-            gt_semantic_seg.reshape(-1).long())
-        return dict(loss_seg=loss_seg)
+        self.seg_rescale_factor = seg_rescale_factor
 
     @abstractmethod
-    def forward(self, x):
+    def forward(self, x: Union[Tensor, Tuple[Tensor]]) -> Dict[str, Tensor]:
         """Placeholder of forward function.
 
+        Args:
+            x (Tensor): Feature maps.
+
         Returns:
-            dict[str, Tensor]: A dictionary, including features
+            Dict[str, Tensor]: A dictionary, including features
                 and predicted scores. Required keys: 'seg_preds'
                 and 'feats'.
         """
         pass
 
-    def forward_train(self, x, gt_semantic_seg):
-        output = self.forward(x)
-        seg_preds = output['seg_preds']
-        return self.loss(seg_preds, gt_semantic_seg)
+    @abstractmethod
+    def loss(self, x: Union[Tensor, Tuple[Tensor]],
+             batch_data_samples: SampleList) -> Dict[str, Tensor]:
+        """
+        Args:
+            x (Union[Tensor, Tuple[Tensor]]): Feature maps.
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
 
-    def simple_test(self, x, img_metas, rescale=False):
-        output = self.forward(x)
-        seg_preds = output['seg_preds']
+        Args:
+            x (Tensor): Feature maps.
+
+        Returns:
+            Dict[str, Tensor]: The loss of semantic head.
+        """
+        pass
+
+    def predict(self,
+                x: Union[Tensor, Tuple[Tensor]],
+                batch_img_metas: List[dict],
+                rescale: bool = False) -> List[Tensor]:
+        """Test without Augmentation.
+
+        Args:
+            x (Union[Tensor, Tuple[Tensor]]): Feature maps.
+            batch_img_metas (List[dict]): List of image information.
+            rescale (bool): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[Tensor]: semantic segmentation logits.
+        """
+        seg_preds = self.forward(x)['seg_preds']
         seg_preds = F.interpolate(
             seg_preds,
-            size=img_metas[0]['pad_shape'][:2],
+            size=batch_img_metas[0]['batch_input_shape'],
             mode='bilinear',
             align_corners=False)
+        seg_preds = [seg_preds[i] for i in range(len(batch_img_metas))]
 
         if rescale:
-            h, w, _ = img_metas[0]['img_shape']
-            seg_preds = seg_preds[:, :, :h, :w]
+            seg_pred_list = []
+            for i in range(len(batch_img_metas)):
+                h, w = batch_img_metas[i]['img_shape']
+                seg_pred = seg_preds[i][:, :h, :w]
 
-            h, w, _ = img_metas[0]['ori_shape']
-            seg_preds = F.interpolate(
-                seg_preds, size=(h, w), mode='bilinear', align_corners=False)
-        return seg_preds
+                h, w = batch_img_metas[i]['ori_shape']
+                seg_pred = F.interpolate(
+                    seg_pred[None],
+                    size=(h, w),
+                    mode='bilinear',
+                    align_corners=False)[0]
+                seg_pred_list.append(seg_pred)
+        else:
+            seg_pred_list = seg_preds
+
+        return seg_pred_list

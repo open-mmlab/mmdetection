@@ -24,6 +24,7 @@ Models:
     Config: configs/paa/paa_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 3.7
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -36,6 +37,7 @@ Models:
     Config: configs/paa/paa_r50_fpn_1.5x_coco.py
     Metadata:
       Training Memory (GB): 3.7
+      Epochs: 18
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -48,6 +50,7 @@ Models:
     Config: configs/paa/paa_r50_fpn_2x_coco.py
     Metadata:
       Training Memory (GB): 3.7
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -57,9 +60,10 @@ Models:
 
   - Name: paa_r50_fpn_mstrain_3x_coco
     In Collection: PAA
-    Config: configs/paa/paa_r50_fpn_mstrain_3x_coco.py
+    Config: configs/paa/paa_r50_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 3.7
+      Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -72,6 +76,7 @@ Models:
     Config: configs/paa/paa_r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.2
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -84,6 +89,7 @@ Models:
     Config: configs/paa/paa_r101_fpn_2x_coco.py
     Metadata:
       Training Memory (GB): 6.2
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -93,9 +99,10 @@ Models:
 
   - Name: paa_r101_fpn_mstrain_3x_coco
     In Collection: PAA
-    Config: configs/paa/paa_r101_fpn_mstrain_3x_coco.py
+    Config: configs/paa/paa_r101_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 6.2
+      Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO

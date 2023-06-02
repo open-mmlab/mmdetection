@@ -18,9 +18,9 @@ Collections:
       Version: v2.8.0
 
 Models:
-  - Name: tridentnet_r50_caffe_1x_coco
+  - Name: tridentnet_r50-caffe_1x_coco
     In Collection: TridentNet
-    Config: configs/tridentnet/tridentnet_r50_caffe_1x_coco.py
+    Config: configs/tridentnet/tridentnet_r50-caffe_1x_coco.py
     Metadata:
       Epochs: 12
     Results:
@@ -30,9 +30,9 @@ Models:
           box AP: 37.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/tridentnet/tridentnet_r50_caffe_1x_coco/tridentnet_r50_caffe_1x_coco_20201230_141838-2ec0b530.pth
 
-  - Name: tridentnet_r50_caffe_mstrain_1x_coco
+  - Name: tridentnet_r50-caffe_ms-1x_coco
     In Collection: TridentNet
-    Config: configs/tridentnet/tridentnet_r50_caffe_mstrain_1x_coco.py
+    Config: configs/tridentnet/tridentnet_r50-caffe_ms-1x_coco.py
     Metadata:
       Epochs: 12
     Results:
@@ -42,9 +42,9 @@ Models:
           box AP: 37.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/tridentnet/tridentnet_r50_caffe_mstrain_1x_coco/tridentnet_r50_caffe_mstrain_1x_coco_20201230_141839-6ce55ccb.pth
 
-  - Name: tridentnet_r50_caffe_mstrain_3x_coco
+  - Name: tridentnet_r50-caffe_ms-3x_coco
     In Collection: TridentNet
-    Config: configs/tridentnet/tridentnet_r50_caffe_mstrain_3x_coco.py
+    Config: configs/tridentnet/tridentnet_r50-caffe_ms-3x_coco.py
     Metadata:
       Epochs: 36
     Results:

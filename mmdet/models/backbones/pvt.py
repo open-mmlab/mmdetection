@@ -1,23 +1,24 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
 import warnings
+from collections import OrderedDict
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import (Conv2d, build_activation_layer, build_norm_layer,
-                      constant_init, normal_init, trunc_normal_init)
+from mmcv.cnn import Conv2d, build_activation_layer, build_norm_layer
 from mmcv.cnn.bricks.drop import build_dropout
 from mmcv.cnn.bricks.transformer import MultiheadAttention
-from mmcv.cnn.utils.weight_init import trunc_normal_
-from mmcv.runner import (BaseModule, ModuleList, Sequential, _load_checkpoint,
-                         load_state_dict)
+from mmengine.logging import MMLogger
+from mmengine.model import (BaseModule, ModuleList, Sequential, constant_init,
+                            normal_init, trunc_normal_init)
+from mmengine.model.weight_init import trunc_normal_
+from mmengine.runner.checkpoint import CheckpointLoader, load_state_dict
 from torch.nn.modules.utils import _pair as to_2tuple
 
-from ...utils import get_root_logger
-from ..builder import BACKBONES
-from ..utils import PatchEmbed, nchw_to_nlc, nlc_to_nchw, pvt_convert
+from mmdet.registry import MODELS
+from ..layers import PatchEmbed, nchw_to_nlc, nlc_to_nchw
 
 
 class MixFFN(BaseModule):
@@ -40,7 +41,7 @@ class MixFFN(BaseModule):
             Default: None.
         use_conv (bool): If True, add 3x3 DWConv between two Linear layers.
             Defaults: False.
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+        init_cfg (obj:`mmengine.ConfigDict`): The Config for initialization.
             Default: None.
     """
 
@@ -122,7 +123,7 @@ class SpatialReductionAttention(MultiheadAttention):
             Default: dict(type='LN').
         sr_ratio (int): The ratio of spatial reduction of Spatial Reduction
             Attention of PVT. Default: 1.
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+        init_cfg (obj:`mmengine.ConfigDict`): The Config for initialization.
             Default: None.
     """
 
@@ -181,11 +182,11 @@ class SpatialReductionAttention(MultiheadAttention):
             identity = x_q
 
         # Because the dataflow('key', 'query', 'value') of
-        # ``torch.nn.MultiheadAttention`` is (num_query, batch,
+        # ``torch.nn.MultiheadAttention`` is (num_queries, batch,
         # embed_dims), We should adjust the shape of dataflow from
-        # batch_first (batch, num_query, embed_dims) to num_query_first
-        # (num_query ,batch, embed_dims), and recover ``attn_output``
-        # from num_query_first to batch_first.
+        # batch_first (batch, num_queries, embed_dims) to num_queries_first
+        # (num_queries ,batch, embed_dims), and recover ``attn_output``
+        # from num_queries_first to batch_first.
         if self.batch_first:
             x_q = x_q.transpose(0, 1)
             x_kv = x_kv.transpose(0, 1)
@@ -353,7 +354,7 @@ class AbsolutePositionEmbedding(BaseModule):
         return self.drop(x + pos_embed)
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class PyramidVisionTransformer(BaseModule):
     """Pyramid Vision Transformer (PVT)
 
@@ -521,7 +522,7 @@ class PyramidVisionTransformer(BaseModule):
             cur += num_layer
 
     def init_weights(self):
-        logger = get_root_logger()
+        logger = MMLogger.get_current_instance()
         if self.init_cfg is None:
             logger.warn(f'No pre-trained weights for '
                         f'{self.__class__.__name__}, '
@@ -543,7 +544,7 @@ class PyramidVisionTransformer(BaseModule):
                                                   f'specify `Pretrained` in ' \
                                                   f'`init_cfg` in ' \
                                                   f'{self.__class__.__name__} '
-            checkpoint = _load_checkpoint(
+            checkpoint = CheckpointLoader.load_checkpoint(
                 self.init_cfg.checkpoint, logger=logger, map_location='cpu')
             logger.warn(f'Load pre-trained model for '
                         f'{self.__class__.__name__} from original repo')
@@ -576,7 +577,7 @@ class PyramidVisionTransformer(BaseModule):
         return outs
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class PyramidVisionTransformerV2(PyramidVisionTransformer):
     """Implementation of `PVTv2: Improved Baselines with Pyramid Vision
     Transformer <https://arxiv.org/pdf/2106.13797.pdf>`_."""
@@ -589,3 +590,76 @@ class PyramidVisionTransformerV2(PyramidVisionTransformer):
             norm_after_stage=True,
             use_conv_ffn=True,
             **kwargs)
+
+
+def pvt_convert(ckpt):
+    new_ckpt = OrderedDict()
+    # Process the concat between q linear weights and kv linear weights
+    use_abs_pos_embed = False
+    use_conv_ffn = False
+    for k in ckpt.keys():
+        if k.startswith('pos_embed'):
+            use_abs_pos_embed = True
+        if k.find('dwconv') >= 0:
+            use_conv_ffn = True
+    for k, v in ckpt.items():
+        if k.startswith('head'):
+            continue
+        if k.startswith('norm.'):
+            continue
+        if k.startswith('cls_token'):
+            continue
+        if k.startswith('pos_embed'):
+            stage_i = int(k.replace('pos_embed', ''))
+            new_k = k.replace(f'pos_embed{stage_i}',
+                              f'layers.{stage_i - 1}.1.0.pos_embed')
+            if stage_i == 4 and v.size(1) == 50:  # 1 (cls token) + 7 * 7
+                new_v = v[:, 1:, :]  # remove cls token
+            else:
+                new_v = v
+        elif k.startswith('patch_embed'):
+            stage_i = int(k.split('.')[0].replace('patch_embed', ''))
+            new_k = k.replace(f'patch_embed{stage_i}',
+                              f'layers.{stage_i - 1}.0')
+            new_v = v
+            if 'proj.' in new_k:
+                new_k = new_k.replace('proj.', 'projection.')
+        elif k.startswith('block'):
+            stage_i = int(k.split('.')[0].replace('block', ''))
+            layer_i = int(k.split('.')[1])
+            new_layer_i = layer_i + use_abs_pos_embed
+            new_k = k.replace(f'block{stage_i}.{layer_i}',
+                              f'layers.{stage_i - 1}.1.{new_layer_i}')
+            new_v = v
+            if 'attn.q.' in new_k:
+                sub_item_k = k.replace('q.', 'kv.')
+                new_k = new_k.replace('q.', 'attn.in_proj_')
+                new_v = torch.cat([v, ckpt[sub_item_k]], dim=0)
+            elif 'attn.kv.' in new_k:
+                continue
+            elif 'attn.proj.' in new_k:
+                new_k = new_k.replace('proj.', 'attn.out_proj.')
+            elif 'attn.sr.' in new_k:
+                new_k = new_k.replace('sr.', 'sr.')
+            elif 'mlp.' in new_k:
+                string = f'{new_k}-'
+                new_k = new_k.replace('mlp.', 'ffn.layers.')
+                if 'fc1.weight' in new_k or 'fc2.weight' in new_k:
+                    new_v = v.reshape((*v.shape, 1, 1))
+                new_k = new_k.replace('fc1.', '0.')
+                new_k = new_k.replace('dwconv.dwconv.', '1.')
+                if use_conv_ffn:
+                    new_k = new_k.replace('fc2.', '4.')
+                else:
+                    new_k = new_k.replace('fc2.', '3.')
+                string += f'{new_k} {v.shape}-{new_v.shape}'
+        elif k.startswith('norm'):
+            stage_i = int(k[4])
+            new_k = k.replace(f'norm{stage_i}', f'layers.{stage_i - 1}.2')
+            new_v = v
+        else:
+            new_k = k
+            new_v = v
+        new_ckpt[new_k] = new_v
+
+    return new_ckpt

@@ -1,9 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet.models.builder import HEADS
+from typing import Tuple, Union
+
+from torch import Tensor
+
+from mmdet.registry import MODELS
 from .convfc_bbox_head import ConvFCBBoxHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class SCNetBBoxHead(ConvFCBBoxHead):
     """BBox head for `SCNet <https://arxiv.org/abs/2012.10150>`_.
 
@@ -11,8 +15,15 @@ class SCNetBBoxHead(ConvFCBBoxHead):
     to get intermediate shared feature.
     """
 
-    def _forward_shared(self, x):
-        """Forward function for shared part."""
+    def _forward_shared(self, x: Tensor) -> Tensor:
+        """Forward function for shared part.
+
+        Args:
+            x (Tensor): Input feature.
+
+        Returns:
+            Tensor: Shared feature.
+        """
         if self.num_shared_convs > 0:
             for conv in self.shared_convs:
                 x = conv(x)
@@ -28,8 +39,18 @@ class SCNetBBoxHead(ConvFCBBoxHead):
 
         return x
 
-    def _forward_cls_reg(self, x):
-        """Forward function for classification and regression parts."""
+    def _forward_cls_reg(self, x: Tensor) -> Tuple[Tensor]:
+        """Forward function for classification and regression parts.
+
+        Args:
+            x (Tensor): Input feature.
+
+        Returns:
+            tuple[Tensor]:
+
+                - cls_score (Tensor): classification prediction.
+                - bbox_pred (Tensor): bbox prediction.
+        """
         x_cls = x
         x_reg = x
 
@@ -56,7 +77,10 @@ class SCNetBBoxHead(ConvFCBBoxHead):
 
         return cls_score, bbox_pred
 
-    def forward(self, x, return_shared_feat=False):
+    def forward(
+            self,
+            x: Tensor,
+            return_shared_feat: bool = False) -> Union[Tensor, Tuple[Tensor]]:
         """Forward function.
 
         Args:

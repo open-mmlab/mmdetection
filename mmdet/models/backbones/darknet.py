@@ -5,10 +5,10 @@ import warnings
 
 import torch.nn as nn
 from mmcv.cnn import ConvModule
-from mmcv.runner import BaseModule
+from mmengine.model import BaseModule
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from ..builder import BACKBONES
+from mmdet.registry import MODELS
 
 
 class ResBlock(BaseModule):
@@ -56,7 +56,7 @@ class ResBlock(BaseModule):
         return out
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class Darknet(BaseModule):
     """Darknet backbone.
 

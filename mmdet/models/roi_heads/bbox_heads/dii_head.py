@@ -1,20 +1,23 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List
+
 import torch
 import torch.nn as nn
-from mmcv.cnn import (bias_init_with_prob, build_activation_layer,
-                      build_norm_layer)
+from mmcv.cnn import build_activation_layer, build_norm_layer
 from mmcv.cnn.bricks.transformer import FFN, MultiheadAttention
-from mmcv.runner import auto_fp16, force_fp32
+from mmengine.config import ConfigDict
+from mmengine.model import bias_init_with_prob
+from torch import Tensor
 
-from mmdet.core import multi_apply
-from mmdet.models.builder import HEADS, build_loss
-from mmdet.models.dense_heads.atss_head import reduce_mean
 from mmdet.models.losses import accuracy
-from mmdet.models.utils import build_transformer
+from mmdet.models.task_modules import SamplingResult
+from mmdet.models.utils import multi_apply
+from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, OptConfigType, reduce_mean
 from .bbox_head import BBoxHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class DIIHead(BBoxHead):
     r"""Dynamic Instance Interactive Head for `Sparse R-CNN: End-to-End Object
     Detection with Learnable Proposals <https://arxiv.org/abs/2011.12450>`_
@@ -36,24 +39,27 @@ class DIIHead(BBoxHead):
             Defaults to 256.
         dropout (float): Probability of drop the channel.
             Defaults to 0.0
-        ffn_act_cfg (dict): The activation config for FFNs.
-        dynamic_conv_cfg (dict): The convolution config
-            for DynamicConv.
-        loss_iou (dict): The config for iou or giou loss.
-
+        ffn_act_cfg (:obj:`ConfigDict` or dict): The activation config
+            for FFNs.
+        dynamic_conv_cfg (:obj:`ConfigDict` or dict): The convolution
+            config for DynamicConv.
+        loss_iou (:obj:`ConfigDict` or dict): The config for iou or
+            giou loss.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict]): Initialization config dict. Defaults to None.
     """
 
     def __init__(self,
-                 num_classes=80,
-                 num_ffn_fcs=2,
-                 num_heads=8,
-                 num_cls_fcs=1,
-                 num_reg_fcs=3,
-                 feedforward_channels=2048,
-                 in_channels=256,
-                 dropout=0.0,
-                 ffn_act_cfg=dict(type='ReLU', inplace=True),
-                 dynamic_conv_cfg=dict(
+                 num_classes: int = 80,
+                 num_ffn_fcs: int = 2,
+                 num_heads: int = 8,
+                 num_cls_fcs: int = 1,
+                 num_reg_fcs: int = 3,
+                 feedforward_channels: int = 2048,
+                 in_channels: int = 256,
+                 dropout: float = 0.0,
+                 ffn_act_cfg: ConfigType = dict(type='ReLU', inplace=True),
+                 dynamic_conv_cfg: ConfigType = dict(
                      type='DynamicConv',
                      in_channels=256,
                      feat_channels=64,
@@ -61,24 +67,24 @@ class DIIHead(BBoxHead):
                      input_feat_shape=7,
                      act_cfg=dict(type='ReLU', inplace=True),
                      norm_cfg=dict(type='LN')),
-                 loss_iou=dict(type='GIoULoss', loss_weight=2.0),
-                 init_cfg=None,
-                 **kwargs):
+                 loss_iou: ConfigType = dict(type='GIoULoss', loss_weight=2.0),
+                 init_cfg: OptConfigType = None,
+                 **kwargs) -> None:
         assert init_cfg is None, 'To prevent abnormal initialization ' \
                                  'behavior, init_cfg is not allowed to be set'
-        super(DIIHead, self).__init__(
+        super().__init__(
             num_classes=num_classes,
             reg_decoded_bbox=True,
             reg_class_agnostic=True,
             init_cfg=init_cfg,
             **kwargs)
-        self.loss_iou = build_loss(loss_iou)
+        self.loss_iou = MODELS.build(loss_iou)
         self.in_channels = in_channels
         self.fp16_enabled = False
         self.attention = MultiheadAttention(in_channels, num_heads, dropout)
         self.attention_norm = build_norm_layer(dict(type='LN'), in_channels)[1]
 
-        self.instance_interactive_conv = build_transformer(dynamic_conv_cfg)
+        self.instance_interactive_conv = MODELS.build(dynamic_conv_cfg)
         self.instance_interactive_conv_dropout = nn.Dropout(dropout)
         self.instance_interactive_conv_norm = build_norm_layer(
             dict(type='LN'), in_channels)[1]
@@ -122,10 +128,10 @@ class DIIHead(BBoxHead):
         assert self.reg_decoded_bbox, 'DIIHead only ' \
             'suppport `reg_decoded_bbox=True`'
 
-    def init_weights(self):
+    def init_weights(self) -> None:
         """Use xavier initialization for all weight parameter and set
         classification head bias as a specific value when use focal loss."""
-        super(DIIHead, self).init_weights()
+        super().init_weights()
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
@@ -137,8 +143,7 @@ class DIIHead(BBoxHead):
             bias_init = bias_init_with_prob(0.01)
             nn.init.constant_(self.fc_cls.bias, bias_init)
 
-    @auto_fp16()
-    def forward(self, roi_feat, proposal_feat):
+    def forward(self, roi_feat: Tensor, proposal_feat: Tensor) -> tuple:
         """Forward function of Dynamic Instance Interactive Head.
 
         Args:
@@ -149,19 +154,20 @@ class DIIHead(BBoxHead):
                 diihead in last stage, has shape
                 (batch_size, num_proposals, feature_dimensions)
 
-          Returns:
-                tuple[Tensor]: Usually a tuple of classification scores
-                and bbox prediction and a intermediate feature.
+        Returns:
+            tuple[Tensor]: Usually a tuple of classification scores
+            and bbox prediction and a intermediate feature.
 
-                    - cls_scores (Tensor): Classification scores for
-                      all proposals, has shape
-                      (batch_size, num_proposals, num_classes).
-                    - bbox_preds (Tensor): Box energies / deltas for
-                      all proposals, has shape
-                      (batch_size, num_proposals, 4).
-                    - obj_feat (Tensor): Object feature before classification
-                      and regression subnet, has shape
-                      (batch_size, num_proposal, feature_dimensions).
+            - cls_scores (Tensor): Classification scores for
+              all proposals, has shape
+              (batch_size, num_proposals, num_classes).
+            - bbox_preds (Tensor): Box energies / deltas for
+              all proposals, has shape
+              (batch_size, num_proposals, 4).
+            - obj_feat (Tensor): Object feature before classification
+              and regression subnet, has shape
+              (batch_size, num_proposal, feature_dimensions).
+            - attn_feats (Tensor): Intermediate feature.
         """
         N, num_proposals = proposal_feat.shape[:2]
 
@@ -197,52 +203,47 @@ class DIIHead(BBoxHead):
         return cls_score, bbox_delta, obj_feat.view(
             N, num_proposals, self.in_channels), attn_feats
 
-    @force_fp32(apply_to=('cls_score', 'bbox_pred'))
-    def loss(self,
-             cls_score,
-             bbox_pred,
-             labels,
-             label_weights,
-             bbox_targets,
-             bbox_weights,
-             imgs_whwh=None,
-             reduction_override=None,
-             **kwargs):
-        """"Loss function of DIIHead, get loss of all images.
+    def loss_and_target(self,
+                        cls_score: Tensor,
+                        bbox_pred: Tensor,
+                        sampling_results: List[SamplingResult],
+                        rcnn_train_cfg: ConfigType,
+                        imgs_whwh: Tensor,
+                        concat: bool = True,
+                        reduction_override: str = None) -> dict:
+        """Calculate the loss based on the features extracted by the DIIHead.
 
         Args:
             cls_score (Tensor): Classification prediction
                 results of all class, has shape
                 (batch_size * num_proposals_single_image, num_classes)
-            bbox_pred (Tensor): Regression prediction results,
-                has shape
+            bbox_pred (Tensor): Regression prediction results, has shape
                 (batch_size * num_proposals_single_image, 4), the last
                 dimension 4 represents [tl_x, tl_y, br_x, br_y].
-            labels (Tensor): Label of each proposals, has shape
-                (batch_size * num_proposals_single_image
-            label_weights (Tensor): Classification loss
-                weight of each proposals, has shape
-                (batch_size * num_proposals_single_image
-            bbox_targets (Tensor): Regression targets of each
-                proposals, has shape
-                (batch_size * num_proposals_single_image, 4),
-                the last dimension 4 represents
-                [tl_x, tl_y, br_x, br_y].
-            bbox_weights (Tensor): Regression loss weight of each
-                proposals's coordinate, has shape
-                (batch_size * num_proposals_single_image, 4),
+            sampling_results (List[obj:SamplingResult]): Assign results of
+                all images in a batch after sampling.
+            rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
             imgs_whwh (Tensor): imgs_whwh (Tensor): Tensor with\
                 shape (batch_size, num_proposals, 4), the last
                 dimension means
                 [img_width,img_height, img_width, img_height].
+            concat (bool): Whether to concatenate the results of all
+                the images in a single batch. Defaults to True.
             reduction_override (str, optional): The reduction
                 method used to override the original reduction
                 method of the loss. Options are "none",
-                "mean" and "sum". Defaults to None,
+                "mean" and "sum". Defaults to None.
 
-            Returns:
-                dict[str, Tensor]: Dictionary of loss components
+        Returns:
+            dict: A dictionary of loss and targets components.
+            The targets are only used for cascade rcnn.
         """
+        cls_reg_targets = self.get_targets(
+            sampling_results=sampling_results,
+            rcnn_train_cfg=rcnn_train_cfg,
+            concat=concat)
+        (labels, label_weights, bbox_targets, bbox_weights) = cls_reg_targets
+
         losses = dict()
         bg_class_ind = self.num_classes
         # note in spare rcnn num_gt == num_pos
@@ -280,10 +281,12 @@ class DIIHead(BBoxHead):
             else:
                 losses['loss_bbox'] = bbox_pred.sum() * 0
                 losses['loss_iou'] = bbox_pred.sum() * 0
-        return losses
+        return dict(loss_bbox=losses, bbox_targets=cls_reg_targets)
 
-    def _get_target_single(self, pos_inds, neg_inds, pos_bboxes, neg_bboxes,
-                           pos_gt_bboxes, pos_gt_labels, cfg):
+    def _get_targets_single(self, pos_inds: Tensor, neg_inds: Tensor,
+                            pos_priors: Tensor, neg_priors: Tensor,
+                            pos_gt_bboxes: Tensor, pos_gt_labels: Tensor,
+                            cfg: ConfigDict) -> tuple:
         """Calculate the ground truth for proposals in the single image
         according to the sampling results.
 
@@ -299,10 +302,10 @@ class DIIHead(BBoxHead):
             neg_inds (Tensor): The length is equal to the
                 negative sample numbers contain all index
                 of the negative sample in the origin proposal set.
-            pos_bboxes (Tensor): Contains all the positive boxes,
+            pos_priors (Tensor): Contains all the positive boxes,
                 has shape (num_pos, 4), the last dimension 4
                 represents [tl_x, tl_y, br_x, br_y].
-            neg_bboxes (Tensor): Contains all the negative boxes,
+            neg_priors (Tensor): Contains all the negative boxes,
                 has shape (num_neg, 4), the last dimension 4
                 represents [tl_x, tl_y, br_x, br_y].
             pos_gt_bboxes (Tensor): Contains gt_boxes for
@@ -317,36 +320,36 @@ class DIIHead(BBoxHead):
             Tuple[Tensor]: Ground truth for proposals in a single image.
             Containing the following Tensors:
 
-                - labels(Tensor): Gt_labels for all proposals, has
-                  shape (num_proposals,).
-                - label_weights(Tensor): Labels_weights for all proposals, has
-                  shape (num_proposals,).
-                - bbox_targets(Tensor):Regression target for all proposals, has
-                  shape (num_proposals, 4), the last dimension 4
-                  represents [tl_x, tl_y, br_x, br_y].
-                - bbox_weights(Tensor):Regression weights for all proposals,
-                  has shape (num_proposals, 4).
+            - labels(Tensor): Gt_labels for all proposals, has
+              shape (num_proposals,).
+            - label_weights(Tensor): Labels_weights for all proposals, has
+              shape (num_proposals,).
+            - bbox_targets(Tensor):Regression target for all proposals, has
+              shape (num_proposals, 4), the last dimension 4
+              represents [tl_x, tl_y, br_x, br_y].
+            - bbox_weights(Tensor):Regression weights for all proposals,
+              has shape (num_proposals, 4).
         """
-        num_pos = pos_bboxes.size(0)
-        num_neg = neg_bboxes.size(0)
+        num_pos = pos_priors.size(0)
+        num_neg = neg_priors.size(0)
         num_samples = num_pos + num_neg
 
         # original implementation uses new_zeros since BG are set to be 0
         # now use empty & fill because BG cat_id = num_classes,
         # FG cat_id = [0, num_classes-1]
-        labels = pos_bboxes.new_full((num_samples, ),
+        labels = pos_priors.new_full((num_samples, ),
                                      self.num_classes,
                                      dtype=torch.long)
-        label_weights = pos_bboxes.new_zeros(num_samples)
-        bbox_targets = pos_bboxes.new_zeros(num_samples, 4)
-        bbox_weights = pos_bboxes.new_zeros(num_samples, 4)
+        label_weights = pos_priors.new_zeros(num_samples)
+        bbox_targets = pos_priors.new_zeros(num_samples, 4)
+        bbox_weights = pos_priors.new_zeros(num_samples, 4)
         if num_pos > 0:
             labels[pos_inds] = pos_gt_labels
             pos_weight = 1.0 if cfg.pos_weight <= 0 else cfg.pos_weight
             label_weights[pos_inds] = pos_weight
             if not self.reg_decoded_bbox:
                 pos_bbox_targets = self.bbox_coder.encode(
-                    pos_bboxes, pos_gt_bboxes)
+                    pos_priors, pos_gt_bboxes)
             else:
                 pos_bbox_targets = pos_gt_bboxes
             bbox_targets[pos_inds, :] = pos_bbox_targets
@@ -357,27 +360,20 @@ class DIIHead(BBoxHead):
         return labels, label_weights, bbox_targets, bbox_weights
 
     def get_targets(self,
-                    sampling_results,
-                    gt_bboxes,
-                    gt_labels,
-                    rcnn_train_cfg,
-                    concat=True):
+                    sampling_results: List[SamplingResult],
+                    rcnn_train_cfg: ConfigDict,
+                    concat: bool = True) -> tuple:
         """Calculate the ground truth for all samples in a batch according to
         the sampling_results.
 
         Almost the same as the implementation in bbox_head, we passed
         additional parameters pos_inds_list and neg_inds_list to
-        `_get_target_single` function.
+        `_get_targets_single` function.
 
         Args:
-            sampling_results (List[obj:SamplingResults]): Assign results of
+            sampling_results (List[obj:SamplingResult]): Assign results of
                 all images in a batch after sampling.
-            gt_bboxes (list[Tensor]): Gt_bboxes of all images in a batch,
-                each tensor has shape (num_gt, 4),  the last dimension 4
-                represents [tl_x, tl_y, br_x, br_y].
-            gt_labels (list[Tensor]): Gt_labels of all images in a batch,
-                each tensor has shape (num_gt,).
-            rcnn_train_cfg (obj:`ConfigDict`): `train_cfg` of RCNN.
+            rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
             concat (bool): Whether to concatenate the results of all
                 the images in a single batch.
 
@@ -385,36 +381,36 @@ class DIIHead(BBoxHead):
             Tuple[Tensor]: Ground truth for proposals in a single image.
             Containing the following list of Tensors:
 
-                - labels (list[Tensor],Tensor): Gt_labels for all
-                  proposals in a batch, each tensor in list has
-                  shape (num_proposals,) when `concat=False`, otherwise just
-                  a single tensor has shape (num_all_proposals,).
-                - label_weights (list[Tensor]): Labels_weights for
-                  all proposals in a batch, each tensor in list has shape
-                  (num_proposals,) when `concat=False`, otherwise just a
-                  single tensor has shape (num_all_proposals,).
-                - bbox_targets (list[Tensor],Tensor): Regression target
-                  for all proposals in a batch, each tensor in list has
-                  shape (num_proposals, 4) when `concat=False`, otherwise
-                  just a single tensor has shape (num_all_proposals, 4),
-                  the last dimension 4 represents [tl_x, tl_y, br_x, br_y].
-                - bbox_weights (list[tensor],Tensor): Regression weights for
-                  all proposals in a batch, each tensor in list has shape
-                  (num_proposals, 4) when `concat=False`, otherwise just a
-                  single tensor has shape (num_all_proposals, 4).
+            - labels (list[Tensor],Tensor): Gt_labels for all
+              proposals in a batch, each tensor in list has
+              shape (num_proposals,) when `concat=False`, otherwise just
+              a single tensor has shape (num_all_proposals,).
+            - label_weights (list[Tensor]): Labels_weights for
+              all proposals in a batch, each tensor in list has shape
+              (num_proposals,) when `concat=False`, otherwise just a
+              single tensor has shape (num_all_proposals,).
+            - bbox_targets (list[Tensor],Tensor): Regression target
+              for all proposals in a batch, each tensor in list has
+              shape (num_proposals, 4) when `concat=False`, otherwise
+              just a single tensor has shape (num_all_proposals, 4),
+              the last dimension 4 represents [tl_x, tl_y, br_x, br_y].
+            - bbox_weights (list[tensor],Tensor): Regression weights for
+              all proposals in a batch, each tensor in list has shape
+              (num_proposals, 4) when `concat=False`, otherwise just a
+              single tensor has shape (num_all_proposals, 4).
         """
         pos_inds_list = [res.pos_inds for res in sampling_results]
         neg_inds_list = [res.neg_inds for res in sampling_results]
-        pos_bboxes_list = [res.pos_bboxes for res in sampling_results]
-        neg_bboxes_list = [res.neg_bboxes for res in sampling_results]
+        pos_priors_list = [res.pos_priors for res in sampling_results]
+        neg_priors_list = [res.neg_priors for res in sampling_results]
         pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
         pos_gt_labels_list = [res.pos_gt_labels for res in sampling_results]
         labels, label_weights, bbox_targets, bbox_weights = multi_apply(
-            self._get_target_single,
+            self._get_targets_single,
             pos_inds_list,
             neg_inds_list,
-            pos_bboxes_list,
-            neg_bboxes_list,
+            pos_priors_list,
+            neg_priors_list,
             pos_gt_bboxes_list,
             pos_gt_labels_list,
             cfg=rcnn_train_cfg)

@@ -1,14 +1,20 @@
 asynctest
+cityscapesscripts
 codecov
 flake8
+imagecorruptions
+instaboostfast
 interrogate
 isort==4.3.21
 # Note: used for kwarray.group_items, this may be ported to mmcv in the future.
 kwarray
--e git+https://github.com/open-mmlab/mmtracking#egg=mmtrack
+memory_profiler
+-e git+https://github.com/open-mmlab/mmtracking@dev-1.x#egg=mmtrack
 onnx==1.7.0
 onnxruntime>=1.8.0
+parameterized
 protobuf<=3.20.1
+psutil
 pytest
 ubelt
 xdoctest>=0.10.0

@@ -1,18 +1,19 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import mmcv
+from typing import Optional
+
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
 
-from ..builder import LOSSES
+from mmdet.registry import MODELS
 from .utils import weighted_loss
 
 
-@mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
-def knowledge_distillation_kl_div_loss(pred,
-                                       soft_label,
-                                       T,
-                                       detach_target=True):
+def knowledge_distillation_kl_div_loss(pred: Tensor,
+                                       soft_label: Tensor,
+                                       T: int,
+                                       detach_target: bool = True) -> Tensor:
     r"""Loss function for knowledge distilling using KL divergence.
 
     Args:
@@ -22,7 +23,7 @@ def knowledge_distillation_kl_div_loss(pred,
         detach_target (bool): Remove soft_label from automatic differentiation
 
     Returns:
-        torch.Tensor: Loss tensor with shape (N,).
+        Tensor: Loss tensor with shape (N,).
     """
     assert pred.size() == soft_label.size()
     target = F.softmax(soft_label / T, dim=1)
@@ -36,7 +37,7 @@ def knowledge_distillation_kl_div_loss(pred,
     return kd_loss
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class KnowledgeDistillationKLDivLoss(nn.Module):
     """Loss function for knowledge distilling using KL divergence.
 
@@ -46,31 +47,37 @@ class KnowledgeDistillationKLDivLoss(nn.Module):
         T (int): Temperature for distillation.
     """
 
-    def __init__(self, reduction='mean', loss_weight=1.0, T=10):
-        super(KnowledgeDistillationKLDivLoss, self).__init__()
+    def __init__(self,
+                 reduction: str = 'mean',
+                 loss_weight: float = 1.0,
+                 T: int = 10) -> None:
+        super().__init__()
         assert T >= 1
         self.reduction = reduction
         self.loss_weight = loss_weight
         self.T = T
 
     def forward(self,
-                pred,
-                soft_label,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None):
+                pred: Tensor,
+                soft_label: Tensor,
+                weight: Optional[Tensor] = None,
+                avg_factor: Optional[int] = None,
+                reduction_override: Optional[str] = None) -> Tensor:
         """Forward function.
 
         Args:
             pred (Tensor): Predicted logits with shape (N, n + 1).
             soft_label (Tensor): Target logits with shape (N, N + 1).
-            weight (torch.Tensor, optional): The weight of loss for each
+            weight (Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
             reduction_override (str, optional): The reduction method used to
                 override the original reduction method of the loss.
                 Defaults to None.
+
+        Returns:
+            Tensor: Loss tensor.
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
 

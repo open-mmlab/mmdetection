@@ -1,21 +1,40 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from ..builder import HEADS
+from typing import Tuple
+
+from torch import Tensor
+
+from mmdet.registry import MODELS
 from .standard_roi_head import StandardRoIHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class DoubleHeadRoIHead(StandardRoIHead):
-    """RoI head for Double Head RCNN.
+    """RoI head for `Double Head RCNN <https://arxiv.org/abs/1904.06493>`_.
 
-    https://arxiv.org/abs/1904.06493
+    Args:
+        reg_roi_scale_factor (float): The scale factor to extend the rois
+            used to extract the regression features.
     """
 
-    def __init__(self, reg_roi_scale_factor, **kwargs):
-        super(DoubleHeadRoIHead, self).__init__(**kwargs)
+    def __init__(self, reg_roi_scale_factor: float, **kwargs):
+        super().__init__(**kwargs)
         self.reg_roi_scale_factor = reg_roi_scale_factor
 
-    def _bbox_forward(self, x, rois):
-        """Box head forward function used in both training and testing time."""
+    def _bbox_forward(self, x: Tuple[Tensor], rois: Tensor) -> dict:
+        """Box head forward function used in both training and testing.
+
+        Args:
+            x (tuple[Tensor]): List of multi-level img features.
+            rois (Tensor): RoIs with the shape (n, 5) where the first
+                column indicates batch id of each RoI.
+
+        Returns:
+             dict[str, Tensor]: Usually returns a dictionary with keys:
+
+                - `cls_score` (Tensor): Classification scores.
+                - `bbox_pred` (Tensor): Box energies / deltas.
+                - `bbox_feats` (Tensor): Extract bbox RoI features.
+        """
         bbox_cls_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], rois)
         bbox_reg_feats = self.bbox_roi_extractor(

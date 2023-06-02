@@ -1,7 +1,7 @@
 Models:
-  - Name: mask_rcnn_swin-s-p4-w7_fpn_fp16_ms-crop-3x_coco
+  - Name: mask-rcnn_swin-s-p4-w7_fpn_amp-ms-crop-3x_coco
     In Collection: Mask R-CNN
-    Config: configs/swin/mask_rcnn_swin-s-p4-w7_fpn_fp16_ms-crop-3x_coco.py
+    Config: configs/swin/mask-rcnn_swin-s-p4-w7_fpn_amp-ms-crop-3x_coco.py
     Metadata:
       Training Memory (GB): 11.9
       Epochs: 36
@@ -29,9 +29,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.16.0/mmdet/models/backbones/swin.py#L465
       Version: v2.16.0
 
-  - Name: mask_rcnn_swin-t-p4-w7_fpn_ms-crop-3x_coco
+  - Name: mask-rcnn_swin-t-p4-w7_fpn_ms-crop-3x_coco
     In Collection: Mask R-CNN
-    Config: configs/swin/mask_rcnn_swin-t-p4-w7_fpn_ms-crop-3x_coco.py
+    Config: configs/swin/mask-rcnn_swin-t-p4-w7_fpn_ms-crop-3x_coco.py
     Metadata:
       Training Memory (GB): 10.2
       Epochs: 36
@@ -59,9 +59,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.16.0/mmdet/models/backbones/swin.py#L465
       Version: v2.16.0
 
-  - Name: mask_rcnn_swin-t-p4-w7_fpn_1x_coco
+  - Name: mask-rcnn_swin-t-p4-w7_fpn_1x_coco
     In Collection: Mask R-CNN
-    Config: configs/swin/mask_rcnn_swin-t-p4-w7_fpn_1x_coco.py
+    Config: configs/swin/mask-rcnn_swin-t-p4-w7_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.6
       Epochs: 12
@@ -89,9 +89,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.16.0/mmdet/models/backbones/swin.py#L465
       Version: v2.16.0
 
-  - Name: mask_rcnn_swin-t-p4-w7_fpn_fp16_ms-crop-3x_coco
+  - Name: mask-rcnn_swin-t-p4-w7_fpn_amp-ms-crop-3x_coco
     In Collection: Mask R-CNN
-    Config: configs/swin/mask_rcnn_swin-t-p4-w7_fpn_fp16_ms-crop-3x_coco.py
+    Config: configs/swin/mask-rcnn_swin-t-p4-w7_fpn_amp-ms-crop-3x_coco.py
     Metadata:
       Training Memory (GB): 7.8
       Epochs: 36

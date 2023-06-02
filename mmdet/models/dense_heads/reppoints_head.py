@@ -1,61 +1,74 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Dict, List, Sequence, Tuple
+
 import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.ops import DeformConv2d
+from mmengine.config import ConfigDict
+from mmengine.structures import InstanceData
+from torch import Tensor
 
-from mmdet.core import (build_assigner, build_sampler, images_to_levels,
-                        multi_apply, unmap)
-from mmdet.core.anchor.point_generator import MlvlPointGenerator
-from mmdet.core.utils import filter_scores_and_topk
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import ConfigType, InstanceList, MultiConfig, OptInstanceList
+from ..task_modules.prior_generators import MlvlPointGenerator
+from ..task_modules.samplers import PseudoSampler
+from ..utils import (filter_scores_and_topk, images_to_levels, multi_apply,
+                     unmap)
 from .anchor_free_head import AnchorFreeHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class RepPointsHead(AnchorFreeHead):
     """RepPoint head.
 
     Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
         point_feat_channels (int): Number of channels of points features.
+        num_points (int): Number of points.
         gradient_mul (float): The multiplier to gradients from
             points refinement and recognition.
-        point_strides (Iterable): points strides.
+        point_strides (Sequence[int]): points strides.
         point_base_scale (int): bbox scale for assigning labels.
-        loss_cls (dict): Config of classification loss.
-        loss_bbox_init (dict): Config of initial points loss.
-        loss_bbox_refine (dict): Config of points loss in refinement.
+        loss_cls (:obj:`ConfigDict` or dict): Config of classification loss.
+        loss_bbox_init (:obj:`ConfigDict` or dict): Config of initial points
+            loss.
+        loss_bbox_refine (:obj:`ConfigDict` or dict): Config of points loss in
+            refinement.
         use_grid_points (bool): If we use bounding box representation, the
         reppoints is represented as grid points on the bounding box.
         center_init (bool): Whether to use center point assignment.
         transform_method (str): The methods to transform RepPoints to bbox.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict]): Initialization config dict.
     """  # noqa: W605
 
     def __init__(self,
-                 num_classes,
-                 in_channels,
-                 point_feat_channels=256,
-                 num_points=9,
-                 gradient_mul=0.1,
-                 point_strides=[8, 16, 32, 64, 128],
-                 point_base_scale=4,
-                 loss_cls=dict(
+                 num_classes: int,
+                 in_channels: int,
+                 point_feat_channels: int = 256,
+                 num_points: int = 9,
+                 gradient_mul: float = 0.1,
+                 point_strides: Sequence[int] = [8, 16, 32, 64, 128],
+                 point_base_scale: int = 4,
+                 loss_cls: ConfigType = dict(
                      type='FocalLoss',
                      use_sigmoid=True,
                      gamma=2.0,
                      alpha=0.25,
                      loss_weight=1.0),
-                 loss_bbox_init=dict(
+                 loss_bbox_init: ConfigType = dict(
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=0.5),
-                 loss_bbox_refine=dict(
+                 loss_bbox_refine: ConfigType = dict(
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
-                 use_grid_points=False,
-                 center_init=True,
-                 transform_method='moment',
-                 moment_mul=0.01,
-                 init_cfg=dict(
+                 use_grid_points: bool = False,
+                 center_init: bool = True,
+                 transform_method: str = 'moment',
+                 moment_mul: float = 0.01,
+                 init_cfg: MultiConfig = dict(
                      type='Normal',
                      layer='Conv2d',
                      std=0.01,
@@ -64,7 +77,7 @@ class RepPointsHead(AnchorFreeHead):
                          name='reppoints_cls_out',
                          std=0.01,
                          bias_prob=0.01)),
-                 **kwargs):
+                 **kwargs) -> None:
         self.num_points = num_points
         self.point_feat_channels = point_feat_channels
         self.use_grid_points = use_grid_points
@@ -86,8 +99,8 @@ class RepPointsHead(AnchorFreeHead):
         self.dcn_base_offset = torch.tensor(dcn_base_offset).view(1, -1, 1, 1)
 
         super().__init__(
-            num_classes,
-            in_channels,
+            num_classes=num_classes,
+            in_channels=in_channels,
             loss_cls=loss_cls,
             init_cfg=init_cfg,
             **kwargs)
@@ -98,17 +111,18 @@ class RepPointsHead(AnchorFreeHead):
         self.prior_generator = MlvlPointGenerator(
             self.point_strides, offset=0.)
 
-        self.sampling = loss_cls['type'] not in ['FocalLoss']
         if self.train_cfg:
-            self.init_assigner = build_assigner(self.train_cfg.init.assigner)
-            self.refine_assigner = build_assigner(
-                self.train_cfg.refine.assigner)
-            # use PseudoSampler when sampling is False
-            if self.sampling and hasattr(self.train_cfg, 'sampler'):
-                sampler_cfg = self.train_cfg.sampler
+            self.init_assigner = TASK_UTILS.build(
+                self.train_cfg['init']['assigner'])
+            self.refine_assigner = TASK_UTILS.build(
+                self.train_cfg['refine']['assigner'])
+
+            if self.train_cfg.get('sampler', None) is not None:
+                self.sampler = TASK_UTILS.build(
+                    self.train_cfg['sampler'], default_args=dict(context=self))
             else:
-                sampler_cfg = dict(type='PseudoSampler')
-            self.sampler = build_sampler(sampler_cfg, context=self)
+                self.sampler = PseudoSampler(context=self)
+
         self.transform_method = transform_method
         if self.transform_method == 'moment':
             self.moment_transfer = nn.Parameter(
@@ -120,10 +134,10 @@ class RepPointsHead(AnchorFreeHead):
             self.cls_out_channels = self.num_classes
         else:
             self.cls_out_channels = self.num_classes + 1
-        self.loss_bbox_init = build_loss(loss_bbox_init)
-        self.loss_bbox_refine = build_loss(loss_bbox_refine)
+        self.loss_bbox_init = MODELS.build(loss_bbox_init)
+        self.loss_bbox_refine = MODELS.build(loss_bbox_refine)
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         """Initialize layers of the head."""
         self.relu = nn.ReLU(inplace=True)
         self.cls_convs = nn.ModuleList()
@@ -167,15 +181,19 @@ class RepPointsHead(AnchorFreeHead):
         self.reppoints_pts_refine_out = nn.Conv2d(self.point_feat_channels,
                                                   pts_out_dim, 1, 1, 0)
 
-    def points2bbox(self, pts, y_first=True):
+    def points2bbox(self, pts: Tensor, y_first: bool = True) -> Tensor:
         """Converting the points set into bounding box.
 
-        :param pts: the input points sets (fields), each points
-            set (fields) is represented as 2n scalar.
-        :param y_first: if y_first=True, the point set is represented as
-            [y1, x1, y2, x2 ... yn, xn], otherwise the point set is
-            represented as [x1, y1, x2, y2 ... xn, yn].
-        :return: each points set is converting to a bbox [x1, y1, x2, y2].
+        Args:
+            pts (Tensor): the input points sets (fields), each points
+                set (fields) is represented as 2n scalar.
+            y_first (bool): if y_first=True, the point set is
+                represented as [y1, x1, y2, x2 ... yn, xn], otherwise
+                the point set is represented as
+                [x1, y1, x2, y2 ... xn, yn]. Defaults to True.
+
+        Returns:
+            Tensor: each points set is converting to a bbox [x1, y1, x2, y2].
         """
         pts_reshape = pts.view(pts.shape[0], -1, 2, *pts.shape[2:])
         pts_y = pts_reshape[:, :, 0, ...] if y_first else pts_reshape[:, :, 1,
@@ -218,13 +236,17 @@ class RepPointsHead(AnchorFreeHead):
             raise NotImplementedError
         return bbox
 
-    def gen_grid_from_reg(self, reg, previous_boxes):
+    def gen_grid_from_reg(self, reg: Tensor,
+                          previous_boxes: Tensor) -> Tuple[Tensor]:
         """Base on the previous bboxes and regression values, we compute the
         regressed bboxes and generate the grids on the bboxes.
 
-        :param reg: the regression value to previous bboxes.
-        :param previous_boxes: previous bboxes.
-        :return: generate grids on the regressed bboxes.
+        Args:
+            reg (Tensor): the regression value to previous bboxes.
+            previous_boxes (Tensor): previous bboxes.
+
+        Returns:
+            Tuple[Tensor]: generate grids on the regressed bboxes.
         """
         b, _, h, w = reg.shape
         bxy = (previous_boxes[:, :2, ...] + previous_boxes[:, 2:, ...]) / 2.
@@ -252,10 +274,10 @@ class RepPointsHead(AnchorFreeHead):
         ], 1)
         return grid_yx, regressed_bbox
 
-    def forward(self, feats):
+    def forward(self, feats: Tuple[Tensor]) -> Tuple[Tensor]:
         return multi_apply(self.forward_single, feats)
 
-    def forward_single(self, x):
+    def forward_single(self, x: Tensor) -> Tuple[Tensor]:
         """Forward feature map of a single FPN level."""
         dcn_base_offset = self.dcn_base_offset.type_as(x)
         # If we use center_init, the initial reppoints is from center points.
@@ -301,17 +323,18 @@ class RepPointsHead(AnchorFreeHead):
         else:
             return cls_out, self.points2bbox(pts_out_refine)
 
-    def get_points(self, featmap_sizes, img_metas, device):
+    def get_points(self, featmap_sizes: List[Tuple[int]],
+                   batch_img_metas: List[dict], device: str) -> tuple:
         """Get points according to feature map sizes.
 
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
-            img_metas (list[dict]): Image meta info.
+            batch_img_metas (list[dict]): Image meta info.
 
         Returns:
             tuple: points of each image, valid flags of each image
         """
-        num_imgs = len(img_metas)
+        num_imgs = len(batch_img_metas)
 
         # since feature map sizes of all images are the same, we only compute
         # points center for one time
@@ -322,14 +345,14 @@ class RepPointsHead(AnchorFreeHead):
 
         # for each image, we compute valid flags of multi level grids
         valid_flag_list = []
-        for img_id, img_meta in enumerate(img_metas):
+        for img_id, img_meta in enumerate(batch_img_metas):
             multi_level_flags = self.prior_generator.valid_flags(
-                featmap_sizes, img_meta['pad_shape'])
+                featmap_sizes, img_meta['pad_shape'], device=device)
             valid_flag_list.append(multi_level_flags)
 
         return points_list, valid_flag_list
 
-    def centers_to_bboxes(self, point_list):
+    def centers_to_bboxes(self, point_list: List[Tensor]) -> List[Tensor]:
         """Get bboxes according to center points.
 
         Only used in :class:`MaxIoUAssigner`.
@@ -347,7 +370,8 @@ class RepPointsHead(AnchorFreeHead):
             bbox_list.append(bbox)
         return bbox_list
 
-    def offset_to_pts(self, center_list, pred_list):
+    def offset_to_pts(self, center_list: List[Tensor],
+                      pred_list: List[Tensor]) -> List[Tensor]:
         """Change from point offset to point coordinate."""
         pts_list = []
         for i_lvl in range(len(self.point_strides)):
@@ -368,30 +392,59 @@ class RepPointsHead(AnchorFreeHead):
             pts_list.append(pts_lvl)
         return pts_list
 
-    def _point_target_single(self,
-                             flat_proposals,
-                             valid_flags,
-                             gt_bboxes,
-                             gt_bboxes_ignore,
-                             gt_labels,
-                             stage='init',
-                             unmap_outputs=True):
+    def _get_targets_single(self,
+                            flat_proposals: Tensor,
+                            valid_flags: Tensor,
+                            gt_instances: InstanceData,
+                            gt_instances_ignore: InstanceData,
+                            stage: str = 'init',
+                            unmap_outputs: bool = True) -> tuple:
+        """Compute corresponding GT box and classification targets for
+        proposals.
+
+        Args:
+            flat_proposals (Tensor): Multi level points of a image.
+            valid_flags (Tensor): Multi level valid flags of a image.
+            gt_instances (InstanceData): It usually includes ``bboxes`` and
+                ``labels`` attributes.
+            gt_instances_ignore (InstanceData): It includes ``bboxes``
+                attribute data that is ignored during training and testing.
+            stage (str): 'init' or 'refine'. Generate target for
+                init stage or refine stage. Defaults to 'init'.
+            unmap_outputs (bool): Whether to map outputs back to
+                the original set of anchors. Defaults to True.
+
+        Returns:
+            tuple:
+
+                - labels (Tensor): Labels of each level.
+                - label_weights (Tensor): Label weights of each level.
+                - bbox_targets (Tensor): BBox targets of each level.
+                - bbox_weights (Tensor): BBox weights of each level.
+                - pos_inds (Tensor): positive samples indexes.
+                - neg_inds (Tensor): negative samples indexes.
+                - sampling_result (:obj:`SamplingResult`): Sampling results.
+        """
         inside_flags = valid_flags
         if not inside_flags.any():
-            return (None, ) * 7
+            raise ValueError(
+                'There is no valid proposal inside the image boundary. Please '
+                'check the image size.')
         # assign gt and sample proposals
         proposals = flat_proposals[inside_flags, :]
+        pred_instances = InstanceData(priors=proposals)
 
         if stage == 'init':
             assigner = self.init_assigner
-            pos_weight = self.train_cfg.init.pos_weight
+            pos_weight = self.train_cfg['init']['pos_weight']
         else:
             assigner = self.refine_assigner
-            pos_weight = self.train_cfg.refine.pos_weight
-        assign_result = assigner.assign(proposals, gt_bboxes, gt_bboxes_ignore,
-                                        None if self.sampling else gt_labels)
-        sampling_result = self.sampler.sample(assign_result, proposals,
-                                              gt_bboxes)
+            pos_weight = self.train_cfg['refine']['pos_weight']
+
+        assign_result = assigner.assign(pred_instances, gt_instances,
+                                        gt_instances_ignore)
+        sampling_result = self.sampler.sample(assign_result, pred_instances,
+                                              gt_instances)
 
         num_valid_proposals = proposals.shape[0]
         bbox_gt = proposals.new_zeros([num_valid_proposals, 4])
@@ -406,17 +459,11 @@ class RepPointsHead(AnchorFreeHead):
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
-            pos_gt_bboxes = sampling_result.pos_gt_bboxes
-            bbox_gt[pos_inds, :] = pos_gt_bboxes
+            bbox_gt[pos_inds, :] = sampling_result.pos_gt_bboxes
             pos_proposals[pos_inds, :] = proposals[pos_inds, :]
             proposals_weights[pos_inds, :] = 1.0
-            if gt_labels is None:
-                # Only rpn gives gt_labels as None
-                # Foreground is the first class
-                labels[pos_inds] = 0
-            else:
-                labels[pos_inds] = gt_labels[
-                    sampling_result.pos_assigned_gt_inds]
+
+            labels[pos_inds] = sampling_result.pos_gt_labels
             if pos_weight <= 0:
                 label_weights[pos_inds] = 1.0
             else:
@@ -427,7 +474,11 @@ class RepPointsHead(AnchorFreeHead):
         # map up to original set of proposals
         if unmap_outputs:
             num_total_proposals = flat_proposals.size(0)
-            labels = unmap(labels, num_total_proposals, inside_flags)
+            labels = unmap(
+                labels,
+                num_total_proposals,
+                inside_flags,
+                fill=self.num_classes)  # fill bg label
             label_weights = unmap(label_weights, num_total_proposals,
                                   inside_flags)
             bbox_gt = unmap(bbox_gt, num_total_proposals, inside_flags)
@@ -437,49 +488,60 @@ class RepPointsHead(AnchorFreeHead):
                                       inside_flags)
 
         return (labels, label_weights, bbox_gt, pos_proposals,
-                proposals_weights, pos_inds, neg_inds)
+                proposals_weights, pos_inds, neg_inds, sampling_result)
 
     def get_targets(self,
-                    proposals_list,
-                    valid_flag_list,
-                    gt_bboxes_list,
-                    img_metas,
-                    gt_bboxes_ignore_list=None,
-                    gt_labels_list=None,
-                    stage='init',
-                    label_channels=1,
-                    unmap_outputs=True):
+                    proposals_list: List[Tensor],
+                    valid_flag_list: List[Tensor],
+                    batch_gt_instances: InstanceList,
+                    batch_img_metas: List[dict],
+                    batch_gt_instances_ignore: OptInstanceList = None,
+                    stage: str = 'init',
+                    unmap_outputs: bool = True,
+                    return_sampling_results: bool = False) -> tuple:
         """Compute corresponding GT box and classification targets for
         proposals.
 
         Args:
-            proposals_list (list[list]): Multi level points/bboxes of each
+            proposals_list (list[Tensor]): Multi level points/bboxes of each
                 image.
-            valid_flag_list (list[list]): Multi level valid flags of each
+            valid_flag_list (list[Tensor]): Multi level valid flags of each
                 image.
-            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
-            img_metas (list[dict]): Meta info of each image.
-            gt_bboxes_ignore_list (list[Tensor]): Ground truth bboxes to be
-                ignored.
-            gt_bboxes_list (list[Tensor]): Ground truth labels of each box.
-            stage (str): `init` or `refine`. Generate target for init stage or
-                refine stage
-            label_channels (int): Channel of label.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
+            stage (str): 'init' or 'refine'. Generate target for init stage or
+                refine stage.
             unmap_outputs (bool): Whether to map outputs back to the original
                 set of anchors.
+            return_sampling_results (bool): Whether to return the sampling
+                results. Defaults to False.
 
         Returns:
             tuple:
+
                 - labels_list (list[Tensor]): Labels of each level.
-                - label_weights_list (list[Tensor]): Label weights of each level.  # noqa: E501
+                - label_weights_list (list[Tensor]): Label weights of each
+                  level.
                 - bbox_gt_list (list[Tensor]): Ground truth bbox of each level.
-                - proposal_list (list[Tensor]): Proposals(points/bboxes) of each level.  # noqa: E501
-                - proposal_weights_list (list[Tensor]): Proposal weights of each level.  # noqa: E501
-                - num_total_pos (int): Number of positive samples in all images.  # noqa: E501
-                - num_total_neg (int): Number of negative samples in all images.  # noqa: E501
+                - proposals_list (list[Tensor]): Proposals(points/bboxes) of
+                  each level.
+                - proposal_weights_list (list[Tensor]): Proposal weights of
+                  each level.
+                - avg_factor (int): Average factor that is used to average
+                  the loss. When using sampling method, avg_factor is usually
+                  the sum of positive and negative priors. When using
+                  `PseudoSampler`, `avg_factor` is usually equal to the number
+                  of positive priors.
         """
         assert stage in ['init', 'refine']
-        num_imgs = len(img_metas)
+        num_imgs = len(batch_img_metas)
         assert len(proposals_list) == len(valid_flag_list) == num_imgs
 
         # points number of multi levels
@@ -491,27 +553,23 @@ class RepPointsHead(AnchorFreeHead):
             proposals_list[i] = torch.cat(proposals_list[i])
             valid_flag_list[i] = torch.cat(valid_flag_list[i])
 
-        # compute targets for each image
-        if gt_bboxes_ignore_list is None:
-            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
-        if gt_labels_list is None:
-            gt_labels_list = [None for _ in range(num_imgs)]
+        if batch_gt_instances_ignore is None:
+            batch_gt_instances_ignore = [None] * num_imgs
+
         (all_labels, all_label_weights, all_bbox_gt, all_proposals,
-         all_proposal_weights, pos_inds_list, neg_inds_list) = multi_apply(
-             self._point_target_single,
+         all_proposal_weights, pos_inds_list, neg_inds_list,
+         sampling_results_list) = multi_apply(
+             self._get_targets_single,
              proposals_list,
              valid_flag_list,
-             gt_bboxes_list,
-             gt_bboxes_ignore_list,
-             gt_labels_list,
+             batch_gt_instances,
+             batch_gt_instances_ignore,
              stage=stage,
              unmap_outputs=unmap_outputs)
-        # no valid points
-        if any([labels is None for labels in all_labels]):
-            return None
+
         # sampled points of all images
-        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
-        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
+        avg_refactor = sum(
+            [results.avg_factor for results in sampling_results_list])
         labels_list = images_to_levels(all_labels, num_level_proposals)
         label_weights_list = images_to_levels(all_label_weights,
                                               num_level_proposals)
@@ -519,13 +577,51 @@ class RepPointsHead(AnchorFreeHead):
         proposals_list = images_to_levels(all_proposals, num_level_proposals)
         proposal_weights_list = images_to_levels(all_proposal_weights,
                                                  num_level_proposals)
-        return (labels_list, label_weights_list, bbox_gt_list, proposals_list,
-                proposal_weights_list, num_total_pos, num_total_neg)
+        res = (labels_list, label_weights_list, bbox_gt_list, proposals_list,
+               proposal_weights_list, avg_refactor)
+        if return_sampling_results:
+            res = res + (sampling_results_list, )
 
-    def loss_single(self, cls_score, pts_pred_init, pts_pred_refine, labels,
-                    label_weights, bbox_gt_init, bbox_weights_init,
-                    bbox_gt_refine, bbox_weights_refine, stride,
-                    num_total_samples_init, num_total_samples_refine):
+        return res
+
+    def loss_by_feat_single(self, cls_score: Tensor, pts_pred_init: Tensor,
+                            pts_pred_refine: Tensor, labels: Tensor,
+                            label_weights, bbox_gt_init: Tensor,
+                            bbox_weights_init: Tensor, bbox_gt_refine: Tensor,
+                            bbox_weights_refine: Tensor, stride: int,
+                            avg_factor_init: int,
+                            avg_factor_refine: int) -> Tuple[Tensor]:
+        """Calculate the loss of a single scale level based on the features
+        extracted by the detection head.
+
+        Args:
+            cls_score (Tensor): Box scores for each scale level
+                Has shape (N, num_classes, h_i, w_i).
+            pts_pred_init (Tensor): Points of shape
+                (batch_size, h_i * w_i, num_points * 2).
+            pts_pred_refine (Tensor): Points refined of shape
+                (batch_size, h_i * w_i, num_points * 2).
+            labels (Tensor): Ground truth class indices with shape
+                (batch_size, h_i * w_i).
+            label_weights (Tensor): Label weights of shape
+                (batch_size, h_i * w_i).
+            bbox_gt_init (Tensor): BBox regression targets in the init stage
+                of shape (batch_size, h_i * w_i, 4).
+            bbox_weights_init (Tensor): BBox regression loss weights in the
+                init stage of shape (batch_size, h_i * w_i, 4).
+            bbox_gt_refine (Tensor): BBox regression targets in the refine
+                stage of shape (batch_size, h_i * w_i, 4).
+            bbox_weights_refine (Tensor): BBox regression loss weights in the
+                refine stage of shape (batch_size, h_i * w_i, 4).
+            stride (int): Point stride.
+            avg_factor_init (int): Average factor that is used to average
+                the loss in the init stage.
+            avg_factor_refine (int): Average factor that is used to average
+                the loss in the refine stage.
+
+        Returns:
+            Tuple[Tensor]: loss components.
+        """
         # classification loss
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
@@ -533,10 +629,7 @@ class RepPointsHead(AnchorFreeHead):
                                       1).reshape(-1, self.cls_out_channels)
         cls_score = cls_score.contiguous()
         loss_cls = self.loss_cls(
-            cls_score,
-            labels,
-            label_weights,
-            avg_factor=num_total_samples_refine)
+            cls_score, labels, label_weights, avg_factor=avg_factor_refine)
 
         # points loss
         bbox_gt_init = bbox_gt_init.reshape(-1, 4)
@@ -552,32 +645,56 @@ class RepPointsHead(AnchorFreeHead):
             bbox_pred_init / normalize_term,
             bbox_gt_init / normalize_term,
             bbox_weights_init,
-            avg_factor=num_total_samples_init)
+            avg_factor=avg_factor_init)
         loss_pts_refine = self.loss_bbox_refine(
             bbox_pred_refine / normalize_term,
             bbox_gt_refine / normalize_term,
             bbox_weights_refine,
-            avg_factor=num_total_samples_refine)
+            avg_factor=avg_factor_refine)
         return loss_cls, loss_pts_init, loss_pts_refine
 
-    def loss(self,
-             cls_scores,
-             pts_preds_init,
-             pts_preds_refine,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
+    def loss_by_feat(
+        self,
+        cls_scores: List[Tensor],
+        pts_preds_init: List[Tensor],
+        pts_preds_refine: List[Tensor],
+        batch_gt_instances: InstanceList,
+        batch_img_metas: List[dict],
+        batch_gt_instances_ignore: OptInstanceList = None
+    ) -> Dict[str, Tensor]:
+        """Calculate the loss based on the features extracted by the detection
+        head.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level,
+                each is a 4D-tensor, of shape (batch_size, num_classes, h, w).
+            pts_preds_init (list[Tensor]): Points for each scale level, each is
+                a 3D-tensor, of shape (batch_size, h_i * w_i, num_points * 2).
+            pts_preds_refine (list[Tensor]): Points refined for each scale
+                level, each is a 3D-tensor, of shape
+                (batch_size, h_i * w_i, num_points * 2).
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], Optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         device = cls_scores[0].device
-        label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
 
         # target for initial stage
         center_list, valid_flag_list = self.get_points(featmap_sizes,
-                                                       img_metas, device)
+                                                       batch_img_metas, device)
         pts_coordinate_preds_init = self.offset_to_pts(center_list,
                                                        pts_preds_init)
-        if self.train_cfg.init.assigner['type'] == 'PointAssigner':
+        if self.train_cfg['init']['assigner']['type'] == 'PointAssigner':
             # Assign target for center list
             candidate_list = center_list
         else:
@@ -586,23 +703,19 @@ class RepPointsHead(AnchorFreeHead):
             bbox_list = self.centers_to_bboxes(center_list)
             candidate_list = bbox_list
         cls_reg_targets_init = self.get_targets(
-            candidate_list,
-            valid_flag_list,
-            gt_bboxes,
-            img_metas,
-            gt_bboxes_ignore_list=gt_bboxes_ignore,
-            gt_labels_list=gt_labels,
+            proposals_list=candidate_list,
+            valid_flag_list=valid_flag_list,
+            batch_gt_instances=batch_gt_instances,
+            batch_img_metas=batch_img_metas,
+            batch_gt_instances_ignore=batch_gt_instances_ignore,
             stage='init',
-            label_channels=label_channels)
+            return_sampling_results=False)
         (*_, bbox_gt_list_init, candidate_list_init, bbox_weights_list_init,
-         num_total_pos_init, num_total_neg_init) = cls_reg_targets_init
-        num_total_samples_init = (
-            num_total_pos_init +
-            num_total_neg_init if self.sampling else num_total_pos_init)
+         avg_factor_init) = cls_reg_targets_init
 
         # target for refinement stage
         center_list, valid_flag_list = self.get_points(featmap_sizes,
-                                                       img_metas, device)
+                                                       batch_img_metas, device)
         pts_coordinate_preds_refine = self.offset_to_pts(
             center_list, pts_preds_refine)
         bbox_list = []
@@ -618,24 +731,20 @@ class RepPointsHead(AnchorFreeHead):
                             bbox_shift[i_img].permute(1, 2, 0).reshape(-1, 4))
             bbox_list.append(bbox)
         cls_reg_targets_refine = self.get_targets(
-            bbox_list,
-            valid_flag_list,
-            gt_bboxes,
-            img_metas,
-            gt_bboxes_ignore_list=gt_bboxes_ignore,
-            gt_labels_list=gt_labels,
+            proposals_list=bbox_list,
+            valid_flag_list=valid_flag_list,
+            batch_gt_instances=batch_gt_instances,
+            batch_img_metas=batch_img_metas,
+            batch_gt_instances_ignore=batch_gt_instances_ignore,
             stage='refine',
-            label_channels=label_channels)
+            return_sampling_results=False)
         (labels_list, label_weights_list, bbox_gt_list_refine,
-         candidate_list_refine, bbox_weights_list_refine, num_total_pos_refine,
-         num_total_neg_refine) = cls_reg_targets_refine
-        num_total_samples_refine = (
-            num_total_pos_refine +
-            num_total_neg_refine if self.sampling else num_total_pos_refine)
+         candidate_list_refine, bbox_weights_list_refine,
+         avg_factor_refine) = cls_reg_targets_refine
 
         # compute loss
         losses_cls, losses_pts_init, losses_pts_refine = multi_apply(
-            self.loss_single,
+            self.loss_by_feat_single,
             cls_scores,
             pts_coordinate_preds_init,
             pts_coordinate_preds_refine,
@@ -646,8 +755,8 @@ class RepPointsHead(AnchorFreeHead):
             bbox_gt_list_refine,
             bbox_weights_list_refine,
             self.point_strides,
-            num_total_samples_init=num_total_samples_init,
-            num_total_samples_refine=num_total_samples_refine)
+            avg_factor_init=avg_factor_init,
+            avg_factor_refine=avg_factor_refine)
         loss_dict_all = {
             'loss_cls': losses_cls,
             'loss_pts_init': losses_pts_init,
@@ -656,16 +765,15 @@ class RepPointsHead(AnchorFreeHead):
         return loss_dict_all
 
     # Same as base_dense_head/_get_bboxes_single except self._bbox_decode
-    def _get_bboxes_single(self,
-                           cls_score_list,
-                           bbox_pred_list,
-                           score_factor_list,
-                           mlvl_priors,
-                           img_meta,
-                           cfg,
-                           rescale=False,
-                           with_nms=True,
-                           **kwargs):
+    def _predict_by_feat_single(self,
+                                cls_score_list: List[Tensor],
+                                bbox_pred_list: List[Tensor],
+                                score_factor_list: List[Tensor],
+                                mlvl_priors: List[Tensor],
+                                img_meta: dict,
+                                cfg: ConfigDict,
+                                rescale: bool = False,
+                                with_nms: bool = True) -> InstanceData:
         """Transform outputs of a single image into bbox predictions.
 
         Args:
@@ -682,26 +790,24 @@ class RepPointsHead(AnchorFreeHead):
                 the priors of a single level in feature pyramid, has shape
                 (num_priors, 2).
             img_meta (dict): Image meta info.
-            cfg (mmcv.Config): Test / postprocessing configuration,
+            cfg (:obj:`ConfigDict`): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
-                Default: False.
+                Defaults to False.
             with_nms (bool): If True, do nms before return boxes.
-                Default: True.
+                Defaults to True.
 
         Returns:
-            tuple[Tensor]: Results of detected bboxes and labels. If with_nms
-                is False and mlvl_score_factor is None, return mlvl_bboxes and
-                mlvl_scores, else return mlvl_bboxes, mlvl_scores and
-                mlvl_score_factor. Usually with_nms is False is used for aug
-                test. If with_nms is True, then return the following format
+            :obj:`InstanceData`: Detection results of each image
+            after the post process.
+            Each item usually contains following keys.
 
-                - det_bboxes (Tensor): Predicted bboxes with shape \
-                    [num_bboxes, 5], where the first 4 columns are bounding \
-                    box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
-                    column are scores between 0 and 1.
-                - det_labels (Tensor): Predicted labels of the corresponding \
-                    box with shape [num_bboxes].
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_score_list) == len(bbox_pred_list)
@@ -744,16 +850,31 @@ class RepPointsHead(AnchorFreeHead):
             mlvl_scores.append(scores)
             mlvl_labels.append(labels)
 
-        return self._bbox_post_process(
-            mlvl_scores,
-            mlvl_labels,
-            mlvl_bboxes,
-            img_meta['scale_factor'],
-            cfg,
-            rescale=rescale,
-            with_nms=with_nms)
+        results = InstanceData()
+        results.bboxes = torch.cat(mlvl_bboxes)
+        results.scores = torch.cat(mlvl_scores)
+        results.labels = torch.cat(mlvl_labels)
 
-    def _bbox_decode(self, points, bbox_pred, stride, max_shape):
+        return self._bbox_post_process(
+            results=results,
+            cfg=cfg,
+            rescale=rescale,
+            with_nms=with_nms,
+            img_meta=img_meta)
+
+    def _bbox_decode(self, points: Tensor, bbox_pred: Tensor, stride: int,
+                     max_shape: Tuple[int, int]) -> Tensor:
+        """Decode the prediction to bounding box.
+
+        Args:
+            points (Tensor): shape (h_i * w_i, 2).
+            bbox_pred (Tensor): shape (h_i * w_i, 4).
+            stride (int): Stride for bbox_pred in different level.
+            max_shape (Tuple[int, int]): image shape.
+
+        Returns:
+            Tensor: Bounding boxes decoded.
+        """
         bbox_pos_center = torch.cat([points[:, :2], points[:, :2]], dim=1)
         bboxes = bbox_pred * stride + bbox_pos_center
         x1 = bboxes[:, 0].clamp(min=0, max=max_shape[1])

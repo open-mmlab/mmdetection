@@ -1,24 +1,27 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
-import warnings
+from typing import List, Tuple
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv import ConfigDict
 from mmcv.ops import nms
+from mmengine.structures import InstanceData
+from torch import Tensor
 
-from ..builder import HEADS
+from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, InstanceList, MultiConfig, OptInstanceList
 from .guided_anchor_head import GuidedAnchorHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class GARPNHead(GuidedAnchorHead):
     """Guided-Anchor-based RPN head."""
 
     def __init__(self,
-                 in_channels,
-                 init_cfg=dict(
+                 in_channels: int,
+                 num_classes: int = 1,
+                 init_cfg: MultiConfig = dict(
                      type='Normal',
                      layer='Conv2d',
                      std=0.01,
@@ -27,88 +30,118 @@ class GARPNHead(GuidedAnchorHead):
                          name='conv_loc',
                          std=0.01,
                          bias_prob=0.01)),
-                 **kwargs):
-        super(GARPNHead, self).__init__(
-            1, in_channels, init_cfg=init_cfg, **kwargs)
+                 **kwargs) -> None:
+        super().__init__(
+            num_classes=num_classes,
+            in_channels=in_channels,
+            init_cfg=init_cfg,
+            **kwargs)
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         """Initialize layers of the head."""
         self.rpn_conv = nn.Conv2d(
             self.in_channels, self.feat_channels, 3, padding=1)
         super(GARPNHead, self)._init_layers()
 
-    def forward_single(self, x):
+    def forward_single(self, x: Tensor) -> Tuple[Tensor]:
         """Forward feature of a single scale level."""
 
         x = self.rpn_conv(x)
         x = F.relu(x, inplace=True)
         (cls_score, bbox_pred, shape_pred,
-         loc_pred) = super(GARPNHead, self).forward_single(x)
+         loc_pred) = super().forward_single(x)
         return cls_score, bbox_pred, shape_pred, loc_pred
 
-    def loss(self,
-             cls_scores,
-             bbox_preds,
-             shape_preds,
-             loc_preds,
-             gt_bboxes,
-             img_metas,
-             gt_bboxes_ignore=None):
-        losses = super(GARPNHead, self).loss(
+    def loss_by_feat(
+            self,
+            cls_scores: List[Tensor],
+            bbox_preds: List[Tensor],
+            shape_preds: List[Tensor],
+            loc_preds: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                has shape (N, num_anchors * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W).
+            shape_preds (list[Tensor]): shape predictions for each scale
+                level with shape (N, 1, H, W).
+            loc_preds (list[Tensor]): location predictions for each scale
+                level with shape (N, num_anchors * 2, H, W).
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
+
+        Returns:
+            dict: A dictionary of loss components.
+        """
+        losses = super().loss_by_feat(
             cls_scores,
             bbox_preds,
             shape_preds,
             loc_preds,
-            gt_bboxes,
-            None,
-            img_metas,
-            gt_bboxes_ignore=gt_bboxes_ignore)
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore=batch_gt_instances_ignore)
         return dict(
             loss_rpn_cls=losses['loss_cls'],
             loss_rpn_bbox=losses['loss_bbox'],
             loss_anchor_shape=losses['loss_shape'],
             loss_anchor_loc=losses['loss_loc'])
 
-    def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           mlvl_anchors,
-                           mlvl_masks,
-                           img_shape,
-                           scale_factor,
-                           cfg,
-                           rescale=False):
+    def _predict_by_feat_single(self,
+                                cls_scores: List[Tensor],
+                                bbox_preds: List[Tensor],
+                                mlvl_anchors: List[Tensor],
+                                mlvl_masks: List[Tensor],
+                                img_meta: dict,
+                                cfg: ConfigType,
+                                rescale: bool = False) -> InstanceData:
+        """Transform a single image's features extracted from the head into
+        bbox results.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores from all scale
+                levels of a single image, each item has shape
+                (num_priors * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas from
+                all scale levels of a single image, each item has shape
+                (num_priors * 4, H, W).
+            mlvl_anchors (list[Tensor]): Each element in the list is
+                the anchors of a single level in feature pyramid. it has
+                shape (num_priors, 4).
+            mlvl_masks (list[Tensor]): Each element in the list is location
+                masks of a single level.
+            img_meta (dict): Image meta info.
+            cfg (:obj:`ConfigDict` or dict): Test / postprocessing
+                configuration, if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
+
+        Returns:
+            :obj:`InstanceData`: Detection results of each image
+            after the post process.
+            Each item usually contains following keys.
+
+            - scores (Tensor): Classification scores, has a shape
+              (num_instance, )
+            - labels (Tensor): Labels of bboxes, has a shape (num_instances, ).
+            - bboxes (Tensor): Has a shape (num_instances, 4), the last
+              dimension 4 arrange as (x1, y1, x2, y2).
+        """
         cfg = self.test_cfg if cfg is None else cfg
-
         cfg = copy.deepcopy(cfg)
-
-        # deprecate arguments warning
-        if 'nms' not in cfg or 'max_num' in cfg or 'nms_thr' in cfg:
-            warnings.warn(
-                'In rpn_proposal or test_cfg, '
-                'nms_thr has been moved to a dict named nms as '
-                'iou_threshold, max_num has been renamed as max_per_img, '
-                'name of original arguments and the way to specify '
-                'iou_threshold of NMS will be deprecated.')
-        if 'nms' not in cfg:
-            cfg.nms = ConfigDict(dict(type='nms', iou_threshold=cfg.nms_thr))
-        if 'max_num' in cfg:
-            if 'max_per_img' in cfg:
-                assert cfg.max_num == cfg.max_per_img, f'You ' \
-                    f'set max_num and max_per_img at the same time, ' \
-                    f'but get {cfg.max_num} ' \
-                    f'and {cfg.max_per_img} respectively' \
-                    'Please delete max_num which will be deprecated.'
-            else:
-                cfg.max_per_img = cfg.max_num
-        if 'nms_thr' in cfg:
-            assert cfg.nms.iou_threshold == cfg.nms_thr, f'You set ' \
-                f'iou_threshold in nms and ' \
-                f'nms_thr at the same time, but get ' \
-                f'{cfg.nms.iou_threshold} and {cfg.nms_thr}' \
-                f' respectively. Please delete the ' \
-                f'nms_thr which will be deprecated.'
-
         assert cfg.nms.get('type', 'nms') == 'nms', 'GARPNHead only support ' \
             'naive nms.'
 
@@ -149,7 +182,7 @@ class GARPNHead(GuidedAnchorHead):
                 scores = scores[topk_inds]
             # get proposals w.r.t. anchors and rpn_bbox_pred
             proposals = self.bbox_coder.decode(
-                anchors, rpn_bbox_pred, max_shape=img_shape)
+                anchors, rpn_bbox_pred, max_shape=img_meta['img_shape'])
             # filter out too small bboxes
             if cfg.min_bbox_size >= 0:
                 w = proposals[:, 2] - proposals[:, 0]
@@ -174,4 +207,16 @@ class GARPNHead(GuidedAnchorHead):
             num = min(cfg.max_per_img, proposals.shape[0])
             _, topk_inds = scores.topk(num)
             proposals = proposals[topk_inds, :]
-        return proposals
+
+        bboxes = proposals[:, :-1]
+        scores = proposals[:, -1]
+        if rescale:
+            assert img_meta.get('scale_factor') is not None
+            bboxes /= bboxes.new_tensor(img_meta['scale_factor']).repeat(
+                (1, 2))
+
+        results = InstanceData()
+        results.bboxes = bboxes
+        results.scores = scores
+        results.labels = scores.new_zeros(scores.size(0), dtype=torch.long)
+        return results

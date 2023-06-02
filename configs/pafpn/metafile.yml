@@ -17,9 +17,9 @@ Collections:
       Version: v2.0.0
 
 Models:
-  - Name: faster_rcnn_r50_pafpn_1x_coco
+  - Name: faster-rcnn_r50_pafpn_1x_coco
     In Collection: PAFPN
-    Config: configs/pafpn/faster_rcnn_r50_pafpn_1x_coco.py
+    Config: configs/pafpn/faster-rcnn_r50_pafpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.0
       inference time (ms/im):

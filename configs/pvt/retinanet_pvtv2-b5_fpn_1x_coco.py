@@ -8,10 +8,12 @@ model = dict(
                       'releases/download/v2/pvt_v2_b5.pth')),
     neck=dict(in_channels=[64, 128, 320, 512]))
 # optimizer
-optimizer = dict(
-    _delete_=True, type='AdamW', lr=0.0001 / 1.4, weight_decay=0.0001)
+optim_wrapper = dict(
+    optimizer=dict(
+        _delete_=True, type='AdamW', lr=0.0001 / 1.4, weight_decay=0.0001))
+
 # dataset settings
-data = dict(samples_per_gpu=1, workers_per_gpu=1)
+train_dataloader = dict(batch_size=1, num_workers=1)
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.

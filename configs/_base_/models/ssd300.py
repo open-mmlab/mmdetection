@@ -2,6 +2,12 @@
 input_size = 300
 model = dict(
     type='SingleStageDetector',
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[123.675, 116.28, 103.53],
+        std=[1, 1, 1],
+        bgr_to_rgb=True,
+        pad_size_divisor=1),
     backbone=dict(
         type='SSDVGG',
         depth=16,
@@ -42,6 +48,7 @@ model = dict(
             min_pos_iou=0.,
             ignore_iof_thr=-1,
             gt_max_assign_all=False),
+        sampler=dict(type='PseudoSampler'),
         smoothl1_beta=1.,
         allowed_border=-1,
         pos_weight=-1,

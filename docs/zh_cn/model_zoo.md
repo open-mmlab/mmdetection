@@ -10,7 +10,7 @@
 - 我们使用分布式训练。
 - 所有 pytorch-style 的 ImageNet 预训练主干网络来自 PyTorch 的模型库，caffe-style 的预训练主干网络来自 detectron2 最新开源的模型。
 - 为了与其他代码库公平比较，文档中所写的 GPU 内存是8个 GPU 的 `torch.cuda.max_memory_allocated()` 的最大值，此值通常小于 nvidia-smi 显示的值。
-- 我们以网络 forward 和后处理的时间加和作为推理时间，不包含数据加载时间。所有结果通过 [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) 脚本计算所得。该脚本会计算推理 2000 张图像的平均时间。
+- 我们以网络 forward 和后处理的时间加和作为推理时间，不包含数据加载时间。所有结果通过 [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/main/tools/analysis_tools/benchmark.py) 脚本计算所得。该脚本会计算推理 2000 张图像的平均时间。
 
 ## ImageNet 预训练模型
 
@@ -37,227 +37,223 @@ MMdetection 常用到的主干网络细节如下表所示：
 
 ### RPN
 
-请参考 [RPN](https://github.com/open-mmlab/mmdetection/blob/master/configs/rpn)。
+请参考 [RPN](https://github.com/open-mmlab/mmdetection/blob/main/configs/rpn)。
 
 ### Faster R-CNN
 
-请参考 [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn)。
+请参考 [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/main/configs/faster_rcnn)。
 
 ### Mask R-CNN
 
-请参考 [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn)。
+请参考 [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/main/configs/mask_rcnn)。
 
 ### Fast R-CNN (使用提前计算的 proposals)
 
-请参考 [Fast R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/fast_rcnn)。
+请参考 [Fast R-CNN](https://github.com/open-mmlab/mmdetection/blob/main/configs/fast_rcnn)。
 
 ### RetinaNet
 
-请参考 [RetinaNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet)。
+请参考 [RetinaNet](https://github.com/open-mmlab/mmdetection/blob/main/configs/retinanet)。
 
 ### Cascade R-CNN and Cascade Mask R-CNN
 
-请参考 [Cascade R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/cascade_rcnn)。
+请参考 [Cascade R-CNN](https://github.com/open-mmlab/mmdetection/blob/main/configs/cascade_rcnn)。
 
 ### Hybrid Task Cascade (HTC)
 
-请参考 [HTC](https://github.com/open-mmlab/mmdetection/blob/master/configs/htc)。
+请参考 [HTC](https://github.com/open-mmlab/mmdetection/blob/main/configs/htc)。
 
 ### SSD
 
-请参考 [SSD](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd)。
+请参考 [SSD](https://github.com/open-mmlab/mmdetection/blob/main/configs/ssd)。
 
 ### Group Normalization (GN)
 
-请参考 [Group Normalization](https://github.com/open-mmlab/mmdetection/blob/master/configs/gn)。
+请参考 [Group Normalization](https://github.com/open-mmlab/mmdetection/blob/main/configs/gn)。
 
 ### Weight Standardization
 
-请参考 [Weight Standardization](https://github.com/open-mmlab/mmdetection/blob/master/configs/gn+ws)。
+请参考 [Weight Standardization](https://github.com/open-mmlab/mmdetection/blob/main/configs/gn+ws)。
 
 ### Deformable Convolution v2
 
-请参考 [Deformable Convolutional Networks](https://github.com/open-mmlab/mmdetection/blob/master/configs/dcn)。
+请参考 [Deformable Convolutional Networks](https://github.com/open-mmlab/mmdetection/blob/main/configs/dcn)。
 
 ### CARAFE: Content-Aware ReAssembly of FEatures
 
-请参考 [CARAFE](https://github.com/open-mmlab/mmdetection/blob/master/configs/carafe)。
+请参考 [CARAFE](https://github.com/open-mmlab/mmdetection/blob/main/configs/carafe)。
 
 ### Instaboost
 
-请参考 [Instaboost](https://github.com/open-mmlab/mmdetection/blob/master/configs/instaboost)。
+请参考 [Instaboost](https://github.com/open-mmlab/mmdetection/blob/main/configs/instaboost)。
 
 ### Libra R-CNN
 
-请参考 [Libra R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/libra_rcnn)。
+请参考 [Libra R-CNN](https://github.com/open-mmlab/mmdetection/blob/main/configs/libra_rcnn)。
 
 ### Guided Anchoring
 
-请参考 [Guided Anchoring](https://github.com/open-mmlab/mmdetection/blob/master/configs/guided_anchoring)。
+请参考 [Guided Anchoring](https://github.com/open-mmlab/mmdetection/blob/main/configs/guided_anchoring)。
 
 ### FCOS
 
-请参考 [FCOS](https://github.com/open-mmlab/mmdetection/blob/master/configs/fcos)。
+请参考 [FCOS](https://github.com/open-mmlab/mmdetection/blob/main/configs/fcos)。
 
 ### FoveaBox
 
-请参考 [FoveaBox](https://github.com/open-mmlab/mmdetection/blob/master/configs/foveabox)。
+请参考 [FoveaBox](https://github.com/open-mmlab/mmdetection/blob/main/configs/foveabox)。
 
 ### RepPoints
 
-请参考 [RepPoints](https://github.com/open-mmlab/mmdetection/blob/master/configs/reppoints)。
+请参考 [RepPoints](https://github.com/open-mmlab/mmdetection/blob/main/configs/reppoints)。
 
 ### FreeAnchor
 
-请参考 [FreeAnchor](https://github.com/open-mmlab/mmdetection/blob/master/configs/free_anchor)。
+请参考 [FreeAnchor](https://github.com/open-mmlab/mmdetection/blob/main/configs/free_anchor)。
 
 ### Grid R-CNN (plus)
 
-请参考 [Grid R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/grid_rcnn)。
+请参考 [Grid R-CNN](https://github.com/open-mmlab/mmdetection/blob/main/configs/grid_rcnn)。
 
 ### GHM
 
-请参考 [GHM](https://github.com/open-mmlab/mmdetection/blob/master/configs/ghm)。
+请参考 [GHM](https://github.com/open-mmlab/mmdetection/blob/main/configs/ghm)。
 
 ### GCNet
 
-请参考 [GCNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/gcnet)。
+请参考 [GCNet](https://github.com/open-mmlab/mmdetection/blob/main/configs/gcnet)。
 
 ### HRNet
 
-请参考 [HRNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/hrnet)。
+请参考 [HRNet](https://github.com/open-mmlab/mmdetection/blob/main/configs/hrnet)。
 
 ### Mask Scoring R-CNN
 
-请参考 [Mask Scoring R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/ms_rcnn)。
+请参考 [Mask Scoring R-CNN](https://github.com/open-mmlab/mmdetection/blob/main/configs/ms_rcnn)。
 
 ### Train from Scratch
 
-请参考 [Rethinking ImageNet Pre-training](https://github.com/open-mmlab/mmdetection/blob/master/configs/scratch)。
+请参考 [Rethinking ImageNet Pre-training](https://github.com/open-mmlab/mmdetection/blob/main/configs/scratch)。
 
 ### NAS-FPN
 
-请参考 [NAS-FPN](https://github.com/open-mmlab/mmdetection/blob/master/configs/nas_fpn)。
+请参考 [NAS-FPN](https://github.com/open-mmlab/mmdetection/blob/main/configs/nas_fpn)。
 
 ### ATSS
 
-请参考 [ATSS](https://github.com/open-mmlab/mmdetection/blob/master/configs/atss)。
+请参考 [ATSS](https://github.com/open-mmlab/mmdetection/blob/main/configs/atss)。
 
 ### FSAF
 
-请参考 [FSAF](https://github.com/open-mmlab/mmdetection/blob/master/configs/fsaf)。
+请参考 [FSAF](https://github.com/open-mmlab/mmdetection/blob/main/configs/fsaf)。
 
 ### RegNetX
 
-请参考 [RegNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/regnet)。
+请参考 [RegNet](https://github.com/open-mmlab/mmdetection/blob/main/configs/regnet)。
 
 ### Res2Net
 
-请参考 [Res2Net](https://github.com/open-mmlab/mmdetection/blob/master/configs/res2net)。
+请参考 [Res2Net](https://github.com/open-mmlab/mmdetection/blob/main/configs/res2net)。
 
 ### GRoIE
 
-请参考 [GRoIE](https://github.com/open-mmlab/mmdetection/blob/master/configs/groie)。
+请参考 [GRoIE](https://github.com/open-mmlab/mmdetection/blob/main/configs/groie)。
 
 ### Dynamic R-CNN
 
-请参考 [Dynamic R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/dynamic_rcnn)。
+请参考 [Dynamic R-CNN](https://github.com/open-mmlab/mmdetection/blob/main/configs/dynamic_rcnn)。
 
 ### PointRend
 
-请参考 [PointRend](https://github.com/open-mmlab/mmdetection/blob/master/configs/point_rend)。
+请参考 [PointRend](https://github.com/open-mmlab/mmdetection/blob/main/configs/point_rend)。
 
 ### DetectoRS
 
-请参考 [DetectoRS](https://github.com/open-mmlab/mmdetection/blob/master/configs/detectors)。
+请参考 [DetectoRS](https://github.com/open-mmlab/mmdetection/blob/main/configs/detectors)。
 
 ### Generalized Focal Loss
 
-请参考 [Generalized Focal Loss](https://github.com/open-mmlab/mmdetection/blob/master/configs/gfl)。
+请参考 [Generalized Focal Loss](https://github.com/open-mmlab/mmdetection/blob/main/configs/gfl)。
 
 ### CornerNet
 
-请参考 [CornerNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/cornernet)。
+请参考 [CornerNet](https://github.com/open-mmlab/mmdetection/blob/main/configs/cornernet)。
 
 ### YOLOv3
 
-请参考 [YOLOv3](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolo)。
+请参考 [YOLOv3](https://github.com/open-mmlab/mmdetection/blob/main/configs/yolo)。
 
 ### PAA
 
-请参考 [PAA](https://github.com/open-mmlab/mmdetection/blob/master/configs/paa)。
+请参考 [PAA](https://github.com/open-mmlab/mmdetection/blob/main/configs/paa)。
 
 ### SABL
 
-请参考 [SABL](https://github.com/open-mmlab/mmdetection/blob/master/configs/sabl)。
+请参考 [SABL](https://github.com/open-mmlab/mmdetection/blob/main/configs/sabl)。
 
 ### CentripetalNet
 
-请参考 [CentripetalNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/centripetalnet)。
+请参考 [CentripetalNet](https://github.com/open-mmlab/mmdetection/blob/main/configs/centripetalnet)。
 
 ### ResNeSt
 
-请参考 [ResNeSt](https://github.com/open-mmlab/mmdetection/blob/master/configs/resnest)。
+请参考 [ResNeSt](https://github.com/open-mmlab/mmdetection/blob/main/configs/resnest)。
 
 ### DETR
 
-请参考 [DETR](https://github.com/open-mmlab/mmdetection/blob/master/configs/detr)。
+请参考 [DETR](https://github.com/open-mmlab/mmdetection/blob/main/configs/detr)。
 
 ### Deformable DETR
 
-请参考 [Deformable DETR](https://github.com/open-mmlab/mmdetection/blob/master/configs/deformable_detr)。
+请参考 [Deformable DETR](https://github.com/open-mmlab/mmdetection/blob/main/configs/deformable_detr)。
 
 ### AutoAssign
 
-请参考 [AutoAssign](https://github.com/open-mmlab/mmdetection/blob/master/configs/autoassign)。
+请参考 [AutoAssign](https://github.com/open-mmlab/mmdetection/blob/main/configs/autoassign)。
 
 ### YOLOF
 
-请参考 [YOLOF](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolof)。
+请参考 [YOLOF](https://github.com/open-mmlab/mmdetection/blob/main/configs/yolof)。
 
 ### Seesaw Loss
 
-请参考 [Seesaw Loss](https://github.com/open-mmlab/mmdetection/blob/master/configs/seesaw_loss)。
+请参考 [Seesaw Loss](https://github.com/open-mmlab/mmdetection/blob/main/configs/seesaw_loss)。
 
 ### CenterNet
 
-请参考 [CenterNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/centernet)。
+请参考 [CenterNet](https://github.com/open-mmlab/mmdetection/blob/main/configs/centernet)。
 
 ### YOLOX
 
-请参考 [YOLOX](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolox)。
+请参考 [YOLOX](https://github.com/open-mmlab/mmdetection/blob/main/configs/yolox)。
 
 ### PVT
 
-请参考 [PVT](https://github.com/open-mmlab/mmdetection/blob/master/configs/pvt)。
+请参考 [PVT](https://github.com/open-mmlab/mmdetection/blob/main/configs/pvt)。
 
 ### SOLO
 
-请参考 [SOLO](https://github.com/open-mmlab/mmdetection/blob/master/configs/solo)。
+请参考 [SOLO](https://github.com/open-mmlab/mmdetection/blob/main/configs/solo)。
 
 ### QueryInst
 
-请参考 [QueryInst](https://github.com/open-mmlab/mmdetection/blob/master/configs/queryinst)。
-
-### RF-Next
-
-请参考 [RF-Next](https://github.com/open-mmlab/mmdetection/blob/master/configs/rfnext).
+请参考 [QueryInst](https://github.com/open-mmlab/mmdetection/blob/main/configs/queryinst)。
 
 ### Other datasets
 
-我们还在 [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc)，[Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) 和 [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face) 上对一些方法进行了基准测试。
+我们还在 [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/main/configs/pascal_voc)，[Cityscapes](https://github.com/open-mmlab/mmdetection/blob/main/configs/cityscapes) 和 [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/main/configs/wider_face) 上对一些方法进行了基准测试。
 
 ### Pre-trained Models
 
-我们还通过多尺度训练和更长的训练策略来训练用 ResNet-50 和 [RegNetX-3.2G](https://github.com/open-mmlab/mmdetection/blob/master/configs/regnet) 作为主干网络的 [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn) 和 [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn)。这些模型可以作为下游任务的预训练模型。
+我们还通过多尺度训练和更长的训练策略来训练用 ResNet-50 和 [RegNetX-3.2G](https://github.com/open-mmlab/mmdetection/blob/main/configs/regnet) 作为主干网络的 [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/main/configs/faster_rcnn) 和 [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/main/configs/mask_rcnn)。这些模型可以作为下游任务的预训练模型。
 
 ## 速度基准
 
 ### 训练速度基准
 
-我们提供 [analyze_logs.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/analyze_logs.py) 来得到训练中每一次迭代的平均时间。示例请参考 [Log Analysis](https://mmdetection.readthedocs.io/en/latest/useful_tools.html#log-analysis)。
+我们提供 [analyze_logs.py](https://github.com/open-mmlab/mmdetection/blob/main/tools/analysis_tools/analyze_logs.py) 来得到训练中每一次迭代的平均时间。示例请参考 [Log Analysis](https://mmdetection.readthedocs.io/en/latest/useful_tools.html#log-analysis)。
 
-我们与其他流行框架的 Mask R-CNN 训练速度进行比较（数据是从 [detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md/) 复制而来）。在 mmdetection 中，我们使用 [mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py) 进行基准测试。它与 detectron2 的 [mask_rcnn_R_50_FPN_noaug_1x.yaml](https://github.com/facebookresearch/detectron2/blob/master/configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml) 设置完全一样。同时，我们还提供了[模型权重](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_compare_20200518-10127928.pth)和[训练 log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_20200518_105755.log.json) 作为参考。为了跳过 GPU 预热时间，吞吐量按照100-500次迭代之间的平均吞吐量来计算。
+我们与其他流行框架的 Mask R-CNN 训练速度进行比较（数据是从 [detectron2](https://github.com/facebookresearch/detectron2/blob/main/docs/notes/benchmarks.md/) 复制而来）。在 mmdetection 中，我们使用 [mask-rcnn_r50-caffe_fpn_poly-1x_coco_v1.py](https://github.com/open-mmlab/mmdetection/blob/main/configs/mask_rcnn/mask-rcnn_r50-caffe_fpn_poly-1x_coco_v1.py) 进行基准测试。它与 detectron2 的 [mask_rcnn_R_50_FPN_noaug_1x.yaml](https://github.com/facebookresearch/detectron2/blob/main/configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml) 设置完全一样。同时，我们还提供了[模型权重](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_compare_20200518-10127928.pth)和[训练 log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_20200518_105755.log.json) 作为参考。为了跳过 GPU 预热时间，吞吐量按照100-500次迭代之间的平均吞吐量来计算。
 
 | 框架                                                                                   | 吞吐量 (img/s) |
 | -------------------------------------------------------------------------------------- | -------------- |
@@ -271,7 +267,7 @@ MMdetection 常用到的主干网络细节如下表所示：
 
 ### 推理时间基准
 
-我们提供 [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) 对推理时间进行基准测试。此脚本将推理 2000 张图片并计算忽略前 5 次推理的平均推理时间。可以通过设置 `LOG-INTERVAL` 来改变 log 输出间隔（默认为 50）。
+我们提供 [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/main/tools/analysis_tools/benchmark.py) 对推理时间进行基准测试。此脚本将推理 2000 张图片并计算忽略前 5 次推理的平均推理时间。可以通过设置 `LOG-INTERVAL` 来改变 log 输出间隔（默认为 50）。
 
 ```shell
 python tools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL]] [--fuse-conv-bn]
@@ -299,11 +295,11 @@ python tools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL
 
 ### 精度
 
-| 模型                                                                                                                                   | 训练策略 | Detectron2                                                                                                                             | mmdetection | 下载                                                                                                                                                                                                                                                                                                                                                             |
-| -------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco.py) | 1x       | [37.9](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml)                 | 38.0        | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-5324cff8.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco_20200429_234554.log.json)             |
-| [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py)  | 1x       | [38.6 & 35.2](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml) | 38.8 & 35.4 | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco-dbecf295.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco_20200430_054239.log.json) |
-| [Retinanet](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_caffe_fpn_mstrain_1x_coco.py)        | 1x       | [36.5](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-Detection/retinanet_R_50_FPN_1x.yaml)                   | 37.0        | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco-586977a0.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco_20200430_014748.log.json)                     |
+| 模型                                                                                                                            | 训练策略 | Detectron2                                                                                                                             | mmdetection | 下载                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/main/configs/faster_rcnn/faster-rcnn_r50-caffe_fpn_ms-1x_coco.py) | 1x       | [37.9](https://github.com/facebookresearch/detectron2/blob/main/configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml)                   | 38.0        | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-5324cff8.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco_20200429_234554.log.json)             |
+| [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/main/configs/mask_rcnn/mask-rcnn_r50-caffe_fpn_ms-poly-1x_coco.py)  | 1x       | [38.6 & 35.2](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml) | 38.8 & 35.4 | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco-dbecf295.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco_20200430_054239.log.json) |
+| [Retinanet](https://github.com/open-mmlab/mmdetection/blob/main/configs/retinanet/retinanet_r50-caffe_fpn_ms-1x_coco.py)        | 1x       | [36.5](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-Detection/retinanet_R_50_FPN_1x.yaml)                   | 37.0        | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco-586977a0.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco_20200430_014748.log.json)                     |
 
 ### 训练速度
 

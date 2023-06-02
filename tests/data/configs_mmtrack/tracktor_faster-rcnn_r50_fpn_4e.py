@@ -1,5 +1,5 @@
 _base_ = [
-    './faster_rcnn_r50_fpn.py', './mot_challenge.py',
+    './faster-rcnn_r50_fpn.py', './mot_challenge.py',
     '../../../configs/_base_/default_runtime.py'
 ]
 model = dict(

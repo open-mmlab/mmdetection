@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from warnings import warn
+from typing import List, Tuple
 
 import numpy as np
 import torch
@@ -7,39 +7,46 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, build_conv_layer, build_upsample_layer
 from mmcv.ops.carafe import CARAFEPack
-from mmcv.runner import BaseModule, ModuleList, auto_fp16, force_fp32
+from mmengine.config import ConfigDict
+from mmengine.model import BaseModule, ModuleList
+from mmengine.structures import InstanceData
+from torch import Tensor
 from torch.nn.modules.utils import _pair
 
-from mmdet.core import mask_target
-from mmdet.models.builder import HEADS, build_loss
+from mmdet.models.task_modules.samplers import SamplingResult
+from mmdet.models.utils import empty_instances
+from mmdet.registry import MODELS
+from mmdet.structures.mask import mask_target
+from mmdet.utils import ConfigType, InstanceList, OptConfigType, OptMultiConfig
 
 BYTES_PER_FLOAT = 4
 # TODO: This memory limit may be too much or too little. It would be better to
-# determine it based on available resources.
+#  determine it based on available resources.
 GPU_MEM_LIMIT = 1024**3  # 1 GB memory limit
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class FCNMaskHead(BaseModule):
 
     def __init__(self,
-                 num_convs=4,
-                 roi_feat_size=14,
-                 in_channels=256,
-                 conv_kernel_size=3,
-                 conv_out_channels=256,
-                 num_classes=80,
-                 class_agnostic=False,
-                 upsample_cfg=dict(type='deconv', scale_factor=2),
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 predictor_cfg=dict(type='Conv'),
-                 loss_mask=dict(
+                 num_convs: int = 4,
+                 roi_feat_size: int = 14,
+                 in_channels: int = 256,
+                 conv_kernel_size: int = 3,
+                 conv_out_channels: int = 256,
+                 num_classes: int = 80,
+                 class_agnostic: int = False,
+                 upsample_cfg: ConfigType = dict(
+                     type='deconv', scale_factor=2),
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: OptConfigType = None,
+                 predictor_cfg: ConfigType = dict(type='Conv'),
+                 loss_mask: ConfigType = dict(
                      type='CrossEntropyLoss', use_mask=True, loss_weight=1.0),
-                 init_cfg=None):
+                 init_cfg: OptMultiConfig = None) -> None:
         assert init_cfg is None, 'To prevent abnormal initialization ' \
                                  'behavior, init_cfg is not allowed to be set'
-        super(FCNMaskHead, self).__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         self.upsample_cfg = upsample_cfg.copy()
         if self.upsample_cfg['type'] not in [
                 None, 'deconv', 'nearest', 'bilinear', 'carafe'
@@ -61,8 +68,7 @@ class FCNMaskHead(BaseModule):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.predictor_cfg = predictor_cfg
-        self.fp16_enabled = False
-        self.loss_mask = build_loss(loss_mask)
+        self.loss_mask = MODELS.build(loss_mask)
 
         self.convs = ModuleList()
         for i in range(self.num_convs):
@@ -112,8 +118,9 @@ class FCNMaskHead(BaseModule):
         self.relu = nn.ReLU(inplace=True)
         self.debug_imgs = None
 
-    def init_weights(self):
-        super(FCNMaskHead, self).init_weights()
+    def init_weights(self) -> None:
+        """Initialize the weights."""
+        super().init_weights()
         for m in [self.upsample, self.conv_logits]:
             if m is None:
                 continue
@@ -124,138 +131,221 @@ class FCNMaskHead(BaseModule):
                     m.weight, mode='fan_out', nonlinearity='relu')
                 nn.init.constant_(m.bias, 0)
 
-    @auto_fp16()
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
+        """Forward features from the upstream network.
+
+        Args:
+            x (Tensor): Extract mask RoI features.
+
+        Returns:
+            Tensor: Predicted foreground masks.
+        """
         for conv in self.convs:
             x = conv(x)
         if self.upsample is not None:
             x = self.upsample(x)
             if self.upsample_method == 'deconv':
                 x = self.relu(x)
-        mask_pred = self.conv_logits(x)
-        return mask_pred
+        mask_preds = self.conv_logits(x)
+        return mask_preds
 
-    def get_targets(self, sampling_results, gt_masks, rcnn_train_cfg):
-        pos_proposals = [res.pos_bboxes for res in sampling_results]
+    def get_targets(self, sampling_results: List[SamplingResult],
+                    batch_gt_instances: InstanceList,
+                    rcnn_train_cfg: ConfigDict) -> Tensor:
+        """Calculate the ground truth for all samples in a batch according to
+        the sampling_results.
+
+        Args:
+            sampling_results (List[obj:SamplingResult]): Assign results of
+                all images in a batch after sampling.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes``, ``labels``, and
+                ``masks`` attributes.
+            rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
+
+        Returns:
+            Tensor: Mask target of each positive proposals in the image.
+        """
+        pos_proposals = [res.pos_priors for res in sampling_results]
         pos_assigned_gt_inds = [
             res.pos_assigned_gt_inds for res in sampling_results
         ]
+        gt_masks = [res.masks for res in batch_gt_instances]
         mask_targets = mask_target(pos_proposals, pos_assigned_gt_inds,
                                    gt_masks, rcnn_train_cfg)
         return mask_targets
 
-    @force_fp32(apply_to=('mask_pred', ))
-    def loss(self, mask_pred, mask_targets, labels):
-        """
-        Example:
-            >>> from mmdet.models.roi_heads.mask_heads.fcn_mask_head import *  # NOQA
-            >>> N = 7  # N = number of extracted ROIs
-            >>> C, H, W = 11, 32, 32
-            >>> # Create example instance of FCN Mask Head.
-            >>> # There are lots of variations depending on the configuration
-            >>> self = FCNMaskHead(num_classes=C, num_convs=1)
-            >>> inputs = torch.rand(N, self.in_channels, H, W)
-            >>> mask_pred = self.forward(inputs)
-            >>> sf = self.scale_factor
-            >>> labels = torch.randint(0, C, size=(N,))
-            >>> # With the default properties the mask targets should indicate
-            >>> # a (potentially soft) single-class label
-            >>> mask_targets = torch.rand(N, H * sf, W * sf)
-            >>> loss = self.loss(mask_pred, mask_targets, labels)
-            >>> print('loss = {!r}'.format(loss))
-        """
-        loss = dict()
-        if mask_pred.size(0) == 0:
-            loss_mask = mask_pred.sum()
-        else:
-            if self.class_agnostic:
-                loss_mask = self.loss_mask(mask_pred, mask_targets,
-                                           torch.zeros_like(labels))
-            else:
-                loss_mask = self.loss_mask(mask_pred, mask_targets, labels)
-        loss['loss_mask'] = loss_mask
-        return loss
-
-    def get_seg_masks(self, mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
-                      ori_shape, scale_factor, rescale):
-        """Get segmentation masks from mask_pred and bboxes.
+    def loss_and_target(self, mask_preds: Tensor,
+                        sampling_results: List[SamplingResult],
+                        batch_gt_instances: InstanceList,
+                        rcnn_train_cfg: ConfigDict) -> dict:
+        """Calculate the loss based on the features extracted by the mask head.
 
         Args:
-            mask_pred (Tensor or ndarray): shape (n, #class, h, w).
-                For single-scale testing, mask_pred is the direct output of
-                model, whose type is Tensor, while for multi-scale testing,
-                it will be converted to numpy array outside of this method.
-            det_bboxes (Tensor): shape (n, 4/5)
-            det_labels (Tensor): shape (n, )
-            rcnn_test_cfg (dict): rcnn testing config
-            ori_shape (Tuple): original image height and width, shape (2,)
-            scale_factor(ndarray | Tensor): If ``rescale is True``, box
-                coordinates are divided by this scale factor to fit
-                ``ori_shape``.
-            rescale (bool): If True, the resulting masks will be rescaled to
-                ``ori_shape``.
+            mask_preds (Tensor): Predicted foreground masks, has shape
+                (num_pos, num_classes, h, w).
+            sampling_results (List[obj:SamplingResult]): Assign results of
+                all images in a batch after sampling.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes``, ``labels``, and
+                ``masks`` attributes.
+            rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
 
         Returns:
-            list[list]: encoded masks. The c-th item in the outer list
-                corresponds to the c-th class. Given the c-th outer list, the
-                i-th item in that inner list is the mask for the i-th box with
-                class label c.
+            dict: A dictionary of loss and targets components.
+        """
+        mask_targets = self.get_targets(
+            sampling_results=sampling_results,
+            batch_gt_instances=batch_gt_instances,
+            rcnn_train_cfg=rcnn_train_cfg)
+
+        pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
+
+        loss = dict()
+        if mask_preds.size(0) == 0:
+            loss_mask = mask_preds.sum()
+        else:
+            if self.class_agnostic:
+                loss_mask = self.loss_mask(mask_preds, mask_targets,
+                                           torch.zeros_like(pos_labels))
+            else:
+                loss_mask = self.loss_mask(mask_preds, mask_targets,
+                                           pos_labels)
+        loss['loss_mask'] = loss_mask
+        # TODO: which algorithm requires mask_targets?
+        return dict(loss_mask=loss, mask_targets=mask_targets)
+
+    def predict_by_feat(self,
+                        mask_preds: Tuple[Tensor],
+                        results_list: List[InstanceData],
+                        batch_img_metas: List[dict],
+                        rcnn_test_cfg: ConfigDict,
+                        rescale: bool = False,
+                        activate_map: bool = False) -> InstanceList:
+        """Transform a batch of output features extracted from the head into
+        mask results.
+
+        Args:
+            mask_preds (tuple[Tensor]): Tuple of predicted foreground masks,
+                each has shape (n, num_classes, h, w).
+            results_list (list[:obj:`InstanceData`]): Detection results of
+                each image.
+            batch_img_metas (list[dict]): List of image information.
+            rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
+            activate_map (book): Whether get results with augmentations test.
+                If True, the `mask_preds` will not process with sigmoid.
+                Defaults to False.
+
+        Returns:
+            list[:obj:`InstanceData`]: Detection results of each image
+            after the post process. Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
+                - masks (Tensor): Has a shape (num_instances, H, W).
+        """
+        assert len(mask_preds) == len(results_list) == len(batch_img_metas)
+
+        for img_id in range(len(batch_img_metas)):
+            img_meta = batch_img_metas[img_id]
+            results = results_list[img_id]
+            bboxes = results.bboxes
+            if bboxes.shape[0] == 0:
+                results_list[img_id] = empty_instances(
+                    [img_meta],
+                    bboxes.device,
+                    task_type='mask',
+                    instance_results=[results],
+                    mask_thr_binary=rcnn_test_cfg.mask_thr_binary)[0]
+            else:
+                im_mask = self._predict_by_feat_single(
+                    mask_preds=mask_preds[img_id],
+                    bboxes=bboxes,
+                    labels=results.labels,
+                    img_meta=img_meta,
+                    rcnn_test_cfg=rcnn_test_cfg,
+                    rescale=rescale,
+                    activate_map=activate_map)
+                results.masks = im_mask
+        return results_list
+
+    def _predict_by_feat_single(self,
+                                mask_preds: Tensor,
+                                bboxes: Tensor,
+                                labels: Tensor,
+                                img_meta: dict,
+                                rcnn_test_cfg: ConfigDict,
+                                rescale: bool = False,
+                                activate_map: bool = False) -> Tensor:
+        """Get segmentation masks from mask_preds and bboxes.
+
+        Args:
+            mask_preds (Tensor): Predicted foreground masks, has shape
+                (n, num_classes, h, w).
+            bboxes (Tensor): Predicted bboxes, has shape (n, 4)
+            labels (Tensor): Labels of bboxes, has shape (n, )
+            img_meta (dict): image information.
+            rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head.
+                Defaults to None.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
+            activate_map (book): Whether get results with augmentations test.
+                If True, the `mask_preds` will not process with sigmoid.
+                Defaults to False.
+
+        Returns:
+            Tensor: Encoded masks, has shape (n, img_w, img_h)
 
         Example:
-            >>> import mmcv
+            >>> from mmengine.config import Config
             >>> from mmdet.models.roi_heads.mask_heads.fcn_mask_head import *  # NOQA
             >>> N = 7  # N = number of extracted ROIs
             >>> C, H, W = 11, 32, 32
             >>> # Create example instance of FCN Mask Head.
             >>> self = FCNMaskHead(num_classes=C, num_convs=0)
             >>> inputs = torch.rand(N, self.in_channels, H, W)
-            >>> mask_pred = self.forward(inputs)
+            >>> mask_preds = self.forward(inputs)
             >>> # Each input is associated with some bounding box
-            >>> det_bboxes = torch.Tensor([[1, 1, 42, 42 ]] * N)
-            >>> det_labels = torch.randint(0, C, size=(N,))
-            >>> rcnn_test_cfg = mmcv.Config({'mask_thr_binary': 0, })
+            >>> bboxes = torch.Tensor([[1, 1, 42, 42 ]] * N)
+            >>> labels = torch.randint(0, C, size=(N,))
+            >>> rcnn_test_cfg = Config({'mask_thr_binary': 0, })
             >>> ori_shape = (H * 4, W * 4)
-            >>> scale_factor = torch.FloatTensor((1, 1))
+            >>> scale_factor = (1, 1)
             >>> rescale = False
+            >>> img_meta = {'scale_factor': scale_factor,
+            ...             'ori_shape': ori_shape}
             >>> # Encoded masks are a list for each category.
-            >>> encoded_masks = self.get_seg_masks(
-            >>>     mask_pred, det_bboxes, det_labels, rcnn_test_cfg, ori_shape,
-            >>>     scale_factor, rescale
-            >>> )
-            >>> assert len(encoded_masks) == C
-            >>> assert sum(list(map(len, encoded_masks))) == N
+            >>> encoded_masks = self._get_seg_masks_single(
+            ...     mask_preds, bboxes, labels,
+            ...     img_meta, rcnn_test_cfg, rescale)
+            >>> assert encoded_masks.size()[0] == N
+            >>> assert encoded_masks.size()[1:] == ori_shape
         """
-        if isinstance(mask_pred, torch.Tensor):
-            mask_pred = mask_pred.sigmoid()
+        scale_factor = bboxes.new_tensor(img_meta['scale_factor']).repeat(
+            (1, 2))
+        img_h, img_w = img_meta['ori_shape'][:2]
+        device = bboxes.device
+
+        if not activate_map:
+            mask_preds = mask_preds.sigmoid()
         else:
             # In AugTest, has been activated before
-            mask_pred = det_bboxes.new_tensor(mask_pred)
+            mask_preds = bboxes.new_tensor(mask_preds)
 
-        device = mask_pred.device
-        cls_segms = [[] for _ in range(self.num_classes)
-                     ]  # BG is not included in num_classes
-        bboxes = det_bboxes[:, :4]
-        labels = det_labels
-
-        # In most cases, scale_factor should have been
-        # converted to Tensor when rescale the bbox
-        if not isinstance(scale_factor, torch.Tensor):
-            if isinstance(scale_factor, float):
-                scale_factor = np.array([scale_factor] * 4)
-                warn('Scale_factor should be a Tensor or ndarray '
-                     'with shape (4,), float would be deprecated. ')
-            assert isinstance(scale_factor, np.ndarray)
-            scale_factor = torch.Tensor(scale_factor)
-
-        if rescale:
-            img_h, img_w = ori_shape[:2]
-            bboxes = bboxes / scale_factor.to(bboxes)
+        if rescale:  # in-placed rescale the bboxes
+            bboxes /= scale_factor
         else:
-            w_scale, h_scale = scale_factor[0], scale_factor[1]
-            img_h = np.round(ori_shape[0] * h_scale.item()).astype(np.int32)
-            img_w = np.round(ori_shape[1] * w_scale.item()).astype(np.int32)
+            w_scale, h_scale = scale_factor[0, 0], scale_factor[0, 1]
+            img_h = np.round(img_h * h_scale.item()).astype(np.int32)
+            img_w = np.round(img_w * w_scale.item()).astype(np.int32)
 
-        N = len(mask_pred)
+        N = len(mask_preds)
         # The actual implementation split the input into chunks,
         # and paste them chunk by chunk.
         if device.type == 'cpu':
@@ -287,11 +377,11 @@ class FCNMaskHead(BaseModule):
             dtype=torch.bool if threshold >= 0 else torch.uint8)
 
         if not self.class_agnostic:
-            mask_pred = mask_pred[range(N), labels][:, None]
+            mask_preds = mask_preds[range(N), labels][:, None]
 
         for inds in chunks:
             masks_chunk, spatial_inds = _do_paste_mask(
-                mask_pred[inds],
+                mask_preds[inds],
                 bboxes[inds],
                 img_h,
                 img_w,
@@ -304,44 +394,14 @@ class FCNMaskHead(BaseModule):
                 masks_chunk = (masks_chunk * 255).to(dtype=torch.uint8)
 
             im_mask[(inds, ) + spatial_inds] = masks_chunk
-
-        for i in range(N):
-            cls_segms[labels[i]].append(im_mask[i].detach().cpu().numpy())
-        return cls_segms
-
-    def onnx_export(self, mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
-                    ori_shape, **kwargs):
-        """Get segmentation masks from mask_pred and bboxes.
-
-        Args:
-            mask_pred (Tensor): shape (n, #class, h, w).
-            det_bboxes (Tensor): shape (n, 4/5)
-            det_labels (Tensor): shape (n, )
-            rcnn_test_cfg (dict): rcnn testing config
-            ori_shape (Tuple): original image height and width, shape (2,)
-
-        Returns:
-            Tensor: a mask of shape (N, img_h, img_w).
-        """
-
-        mask_pred = mask_pred.sigmoid()
-        bboxes = det_bboxes[:, :4]
-        labels = det_labels
-        # No need to consider rescale and scale_factor while exporting to ONNX
-        img_h, img_w = ori_shape[:2]
-        threshold = rcnn_test_cfg.mask_thr_binary
-        if not self.class_agnostic:
-            box_inds = torch.arange(mask_pred.shape[0])
-            mask_pred = mask_pred[box_inds, labels][:, None]
-        masks, _ = _do_paste_mask(
-            mask_pred, bboxes, img_h, img_w, skip_empty=False)
-        if threshold >= 0:
-            # should convert to float to avoid problems in TRT
-            masks = (masks >= threshold).to(dtype=torch.float)
-        return masks
+        return im_mask
 
 
-def _do_paste_mask(masks, boxes, img_h, img_w, skip_empty=True):
+def _do_paste_mask(masks: Tensor,
+                   boxes: Tensor,
+                   img_h: int,
+                   img_w: int,
+                   skip_empty: bool = True) -> tuple:
     """Paste instance masks according to boxes.
 
     This implementation is modified from
@@ -358,10 +418,12 @@ def _do_paste_mask(masks, boxes, img_h, img_w, skip_empty=True):
 
     Returns:
         tuple: (Tensor, tuple). The first item is mask tensor, the second one
-            is the slice object.
-        If skip_empty == False, the whole image will be pasted. It will
+        is the slice object.
+
+            If skip_empty == False, the whole image will be pasted. It will
             return a mask of shape (N, img_h, img_w) and an empty tuple.
-        If skip_empty == True, only area around the mask will be pasted.
+
+            If skip_empty == True, only area around the mask will be pasted.
             A mask of shape (N, h', w') and its start and end coordinates
             in the original image will be returned.
     """

@@ -19,9 +19,9 @@ Collections:
       Version: v2.7.0
 
 Models:
-  - Name: detr_r50_8x2_150e_coco
+  - Name: detr_r50_8xb2-150e_coco
     In Collection: DETR
-    Config: configs/detr/detr_r50_8x2_150e_coco.py
+    Config: configs/detr/detr_r50_8xb2-150e_coco.py
     Metadata:
       Training Memory (GB): 7.9
       Epochs: 150
@@ -29,5 +29,5 @@ Models:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP: 40.1
-    Weights: https://download.openmmlab.com/mmdetection/v2.0/detr/detr_r50_8x2_150e_coco/detr_r50_8x2_150e_coco_20201130_194835-2c4b8974.pth
+          box AP: 39.9
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/detr/detr_r50_8xb2-150e_coco/detr_r50_8xb2-150e_coco_20221023_153551-436d03e8.pth

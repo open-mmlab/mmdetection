@@ -1,25 +1,30 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Optional, Tuple
+
 import torch
 import torch.nn as nn
-from mmcv.cnn import bias_init_with_prob, normal_init
 from mmcv.ops import batched_nms
-from mmcv.runner import force_fp32
+from mmengine.config import ConfigDict
+from mmengine.model import bias_init_with_prob, normal_init
+from mmengine.structures import InstanceData
+from torch import Tensor
 
-from mmdet.core import multi_apply
-from mmdet.models import HEADS, build_loss
-from mmdet.models.utils import gaussian_radius, gen_gaussian_target
-from ..utils.gaussian_target import (get_local_maximum, get_topk_from_heatmap,
-                                     transpose_and_gather_feat)
+from mmdet.registry import MODELS
+from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
+                         OptInstanceList, OptMultiConfig)
+from ..utils import (gaussian_radius, gen_gaussian_target, get_local_maximum,
+                     get_topk_from_heatmap, multi_apply,
+                     transpose_and_gather_feat)
 from .base_dense_head import BaseDenseHead
-from .dense_test_mixins import BBoxTestMixin
 
 
-@HEADS.register_module()
-class CenterNetHead(BaseDenseHead, BBoxTestMixin):
+@MODELS.register_module()
+class CenterNetHead(BaseDenseHead):
     """Objects as Points Head. CenterHead use center_point to indicate object's
     position. Paper link <https://arxiv.org/abs/1904.07850>
 
     Args:
+<<<<<<< HEAD
         in_channel (int): 输入特征图的通道数.
         feat_channel (int): 中间特征图中的通道数.
         num_classes (int): 检测类别数,不包括背景类.
@@ -30,44 +35,77 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
             只是因为CenterNet继承于SingleStageDetector,才得以有这个参数.
         test_cfg (dict | None): 测试时的配置. 默认: None.
         init_cfg (dict or list[dict], optional): 初始化配置字典.默认: None
+=======
+        in_channels (int): Number of channel in the input feature map.
+        feat_channels (int): Number of channel in the intermediate feature map.
+        num_classes (int): Number of categories excluding the background
+            category.
+        loss_center_heatmap (:obj:`ConfigDict` or dict): Config of center
+            heatmap loss. Defaults to
+            dict(type='GaussianFocalLoss', loss_weight=1.0)
+        loss_wh (:obj:`ConfigDict` or dict): Config of wh loss. Defaults to
+             dict(type='L1Loss', loss_weight=0.1).
+        loss_offset (:obj:`ConfigDict` or dict): Config of offset loss.
+            Defaults to dict(type='L1Loss', loss_weight=1.0).
+        train_cfg (:obj:`ConfigDict` or dict, optional): Training config.
+            Useless in CenterNet, but we keep this variable for
+            SingleStageDetector.
+        test_cfg (:obj:`ConfigDict` or dict, optional): Testing config
+            of CenterNet.
+        init_cfg (:obj:`ConfigDict` or dict or list[dict] or
+            list[:obj:`ConfigDict`], optional): Initialization
+            config dict.
+>>>>>>> mmdetection/main
     """
 
     def __init__(self,
-                 in_channel,
-                 feat_channel,
-                 num_classes,
-                 loss_center_heatmap=dict(
+                 in_channels: int,
+                 feat_channels: int,
+                 num_classes: int,
+                 loss_center_heatmap: ConfigType = dict(
                      type='GaussianFocalLoss', loss_weight=1.0),
-                 loss_wh=dict(type='L1Loss', loss_weight=0.1),
-                 loss_offset=dict(type='L1Loss', loss_weight=1.0),
-                 train_cfg=None,
-                 test_cfg=None,
-                 init_cfg=None):
-        super(CenterNetHead, self).__init__(init_cfg)
+                 loss_wh: ConfigType = dict(type='L1Loss', loss_weight=0.1),
+                 loss_offset: ConfigType = dict(
+                     type='L1Loss', loss_weight=1.0),
+                 train_cfg: OptConfigType = None,
+                 test_cfg: OptConfigType = None,
+                 init_cfg: OptMultiConfig = None) -> None:
+        super().__init__(init_cfg=init_cfg)
         self.num_classes = num_classes
-        self.heatmap_head = self._build_head(in_channel, feat_channel,
+        self.heatmap_head = self._build_head(in_channels, feat_channels,
                                              num_classes)
-        self.wh_head = self._build_head(in_channel, feat_channel, 2)
-        self.offset_head = self._build_head(in_channel, feat_channel, 2)
+        self.wh_head = self._build_head(in_channels, feat_channels, 2)
+        self.offset_head = self._build_head(in_channels, feat_channels, 2)
 
-        self.loss_center_heatmap = build_loss(loss_center_heatmap)
-        self.loss_wh = build_loss(loss_wh)
-        self.loss_offset = build_loss(loss_offset)
+        self.loss_center_heatmap = MODELS.build(loss_center_heatmap)
+        self.loss_wh = MODELS.build(loss_wh)
+        self.loss_offset = MODELS.build(loss_offset)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.fp16_enabled = False
 
+<<<<<<< HEAD
     def _build_head(self, in_channel, feat_channel, out_channel):
         """为cls/xy/wh分支构建head."""
+=======
+    def _build_head(self, in_channels: int, feat_channels: int,
+                    out_channels: int) -> nn.Sequential:
+        """Build head for each branch."""
+>>>>>>> mmdetection/main
         layer = nn.Sequential(
-            nn.Conv2d(in_channel, feat_channel, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels, feat_channels, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
-            nn.Conv2d(feat_channel, out_channel, kernel_size=1))
+            nn.Conv2d(feat_channels, out_channels, kernel_size=1))
         return layer
 
+<<<<<<< HEAD
     def init_weights(self):
         """初始化head权重."""
+=======
+    def init_weights(self) -> None:
+        """Initialize weights of the head."""
+>>>>>>> mmdetection/main
         bias_init = bias_init_with_prob(0.1)
         self.heatmap_head[-1].bias.data.fill_(bias_init)
         for head in [self.wh_head, self.offset_head]:
@@ -75,6 +113,7 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
                 if isinstance(m, nn.Conv2d):
                     normal_init(m, std=0.001)
 
+<<<<<<< HEAD
     def forward(self, feats):
         """Forward features. 注意CenterNet没有FPN结构.其中h/w为输入高宽的1/4.
 
@@ -86,25 +125,50 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
             因为没有FPN结构,所以这里列表长度为1,[[bs, nc, h, w],].下同
             wh_preds (List[Tensor]): 所有层级的wh回归值, [[bs, 2, h, w],].
             offset_preds (List[Tensor]): 所有层级的xy偏移值, [[bs, 2, h, w],].
-        """
-        return multi_apply(self.forward_single, feats)
+=======
+    def forward(self, x: Tuple[Tensor, ...]) -> Tuple[List[Tensor]]:
+        """Forward features. Notice CenterNet head does not use FPN.
 
+        Args:
+            x (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+
+        Returns:
+            center_heatmap_preds (list[Tensor]): center predict heatmaps for
+                all levels, the channels number is num_classes.
+            wh_preds (list[Tensor]): wh predicts for all levels, the channels
+                number is 2.
+            offset_preds (list[Tensor]): offset predicts for all levels, the
+               channels number is 2.
+>>>>>>> mmdetection/main
+        """
+        return multi_apply(self.forward_single, x)
+
+<<<<<<< HEAD
     def forward_single(self, feat):
         """单层级上的前向传播.注意CenterNet不使用FPN结构
 
         Args:
             feat (Tensor): [bs, 64, h, w].此处固定为64是由于Neck最后一层conv输出维度为64.
+=======
+    def forward_single(self, x: Tensor) -> Tuple[Tensor, ...]:
+        """Forward feature of a single level.
+
+        Args:
+            x (Tensor): Feature of a single level.
+>>>>>>> mmdetection/main
 
         Returns:
             center_heatmap_pred (Tensor): 单层级的cls heatmap.
             wh_pred (Tensor): 单层级的wh回归值, [bs, 2, h, w].
             offset_pred (Tensor): 单层级的xy偏移值, [bs, 2, h, w].
         """
-        center_heatmap_pred = self.heatmap_head(feat).sigmoid()
-        wh_pred = self.wh_head(feat)
-        offset_pred = self.offset_head(feat)
+        center_heatmap_pred = self.heatmap_head(x).sigmoid()
+        wh_pred = self.wh_head(x)
+        offset_pred = self.offset_head(x)
         return center_heatmap_pred, wh_pred, offset_pred
 
+<<<<<<< HEAD
     @force_fp32(apply_to=('center_heatmap_preds', 'wh_preds', 'offset_preds'))
     def loss(self,
              center_heatmap_preds,
@@ -127,6 +191,34 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
             img_metas (list[dict]): [{元信息},] * bs
             gt_bboxes_ignore (None | list[Tensor]): 计算loss时可以忽略的gt_bboxes.
                 [[num_ignore, 4],] * bs. 默认: None
+=======
+    def loss_by_feat(
+            self,
+            center_heatmap_preds: List[Tensor],
+            wh_preds: List[Tensor],
+            offset_preds: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Compute losses of the head.
+
+        Args:
+            center_heatmap_preds (list[Tensor]): center predict heatmaps for
+               all levels with shape (B, num_classes, H, W).
+            wh_preds (list[Tensor]): wh predicts for all levels with
+               shape (B, 2, H, W).
+            offset_preds (list[Tensor]): offset predicts for all levels
+               with shape (B, 2, H, W).
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
+>>>>>>> mmdetection/main
 
         Returns:
             dict[str, Tensor]: 它具有以下键:
@@ -140,9 +232,16 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
         wh_pred = wh_preds[0]
         offset_pred = offset_preds[0]
 
+        gt_bboxes = [
+            gt_instances.bboxes for gt_instances in batch_gt_instances
+        ]
+        gt_labels = [
+            gt_instances.labels for gt_instances in batch_gt_instances
+        ]
+        img_shape = batch_img_metas[0]['batch_input_shape']
         target_result, avg_factor = self.get_targets(gt_bboxes, gt_labels,
                                                      center_heatmap_pred.shape,
-                                                     img_metas[0]['pad_shape'])
+                                                     img_shape)
 
         center_heatmap_target = target_result['center_heatmap_target']
         wh_target = target_result['wh_target']
@@ -168,6 +267,7 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
             loss_wh=loss_wh,
             loss_offset=loss_offset)
 
+<<<<<<< HEAD
     def get_targets(self, gt_bboxes, gt_labels, feat_shape, img_shape):
         """计算batch张图像(单层级)中的reg和cls的拟合目标.
 
@@ -184,6 +284,30 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
                - wh_target (Tensor): wh target, [bs, 2, h, w].
                - offset_target (Tensor): xy target, [bs, 2, h, w].
                - wh_offset_target_weight (Tensor): wh 和 xy 的loss权重,[bs, 2, h, w].
+=======
+    def get_targets(self, gt_bboxes: List[Tensor], gt_labels: List[Tensor],
+                    feat_shape: tuple, img_shape: tuple) -> Tuple[dict, int]:
+        """Compute regression and classification targets in multiple images.
+
+        Args:
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box.
+            feat_shape (tuple): feature map shape with value [B, _, H, W]
+            img_shape (tuple): image shape.
+
+        Returns:
+            tuple[dict, float]: The float value is mean avg_factor, the dict
+            has components below:
+               - center_heatmap_target (Tensor): targets of center heatmap, \
+                   shape (B, num_classes, H, W).
+               - wh_target (Tensor): targets of wh predict, shape \
+                   (B, 2, H, W).
+               - offset_target (Tensor): targets of offset predict, shape \
+                   (B, 2, H, W).
+               - wh_offset_target_weight (Tensor): weights of wh and offset \
+                   predict, shape (B, 2, H, W).
+>>>>>>> mmdetection/main
         """
         img_h, img_w = img_shape[:2]
         bs, _, feat_h, feat_w = feat_shape  # 这里的 _ 其实就是num_class
@@ -244,6 +368,7 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
             wh_offset_target_weight=wh_offset_target_weight)
         return target_result, avg_factor
 
+<<<<<<< HEAD
     @force_fp32(apply_to=('center_heatmap_preds', 'wh_preds', 'offset_preds'))
     def get_bboxes(self,
                    center_heatmap_preds,
@@ -261,31 +386,64 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
             img_metas (list[dict]): batch张图像元信息, [dict(),] * bs.
             rescale (bool): 如果为True, 则将预测box缩放回原始图像尺寸上.
             with_nms (bool): 如果为True, 在返回box前实行nms操作.
+=======
+    def predict_by_feat(self,
+                        center_heatmap_preds: List[Tensor],
+                        wh_preds: List[Tensor],
+                        offset_preds: List[Tensor],
+                        batch_img_metas: Optional[List[dict]] = None,
+                        rescale: bool = True,
+                        with_nms: bool = False) -> InstanceList:
+        """Transform network output for a batch into bbox predictions.
+
+        Args:
+            center_heatmap_preds (list[Tensor]): Center predict heatmaps for
+                all levels with shape (B, num_classes, H, W).
+            wh_preds (list[Tensor]): WH predicts for all levels with
+                shape (B, 2, H, W).
+            offset_preds (list[Tensor]): Offset predicts for all levels
+                with shape (B, 2, H, W).
+            batch_img_metas (list[dict], optional): Batch image meta info.
+                Defaults to None.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to True.
+            with_nms (bool): If True, do nms before return boxes.
+                Defaults to False.
+>>>>>>> mmdetection/main
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where 5 represent
-                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
-                The shape of the second tensor in the tuple is (n,), and
-                each element represents the class label of the corresponding
-                box.
+            list[:obj:`InstanceData`]: Instance segmentation
+            results of each image after the post process.
+            Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         # 因为CenterNet是非FPN结构,层级数固定为1.这里是做一下验证
         assert len(center_heatmap_preds) == len(wh_preds) == len(
             offset_preds) == 1
         result_list = []
-        for img_id in range(len(img_metas)):
+        for img_id in range(len(batch_img_metas)):
             result_list.append(
+<<<<<<< HEAD
                 # 该函数的返回值为tuple(det box, det cls) -> ([bs*k, 5], [bs*k,])
                 self._get_bboxes_single(
+=======
+                self._predict_by_feat_single(
+>>>>>>> mmdetection/main
                     center_heatmap_preds[0][img_id:img_id + 1, ...],
                     wh_preds[0][img_id:img_id + 1, ...],
                     offset_preds[0][img_id:img_id + 1, ...],
-                    img_metas[img_id],
+                    batch_img_metas[img_id],
                     rescale=rescale,
                     with_nms=with_nms))
         return result_list
 
+<<<<<<< HEAD
     def _get_bboxes_single(self,
                            center_heatmap_pred,
                            wh_pred,
@@ -306,8 +464,44 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
         Returns:
             tuple[Tensor, Tensor]: 第一个元素代表检测框,[bs*k, 5],[x, y, x, y, score].
                 第二个元素代表检测框对应的类别索引, [bs*k,].
+=======
+    def _predict_by_feat_single(self,
+                                center_heatmap_pred: Tensor,
+                                wh_pred: Tensor,
+                                offset_pred: Tensor,
+                                img_meta: dict,
+                                rescale: bool = True,
+                                with_nms: bool = False) -> InstanceData:
+        """Transform outputs of a single image into bbox results.
+
+        Args:
+            center_heatmap_pred (Tensor): Center heatmap for current level with
+                shape (1, num_classes, H, W).
+            wh_pred (Tensor): WH heatmap for current level with shape
+                (1, num_classes, H, W).
+            offset_pred (Tensor): Offset for current level with shape
+                (1, corner_offset_channels, H, W).
+            img_meta (dict): Meta information of current image, e.g.,
+                image size, scaling factor, etc.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to True.
+            with_nms (bool): If True, do nms before return boxes.
+                Defaults to False.
+
+        Returns:
+            :obj:`InstanceData`: Detection results of each image
+            after the post process.
+            Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
+>>>>>>> mmdetection/main
         """
-        batch_det_bboxes, batch_labels = self.decode_heatmap(
+        batch_det_bboxes, batch_labels = self._decode_heatmap(
             center_heatmap_pred,
             wh_pred,
             offset_pred,
@@ -327,16 +521,25 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
                                                                  [2, 0, 2, 0]]
         det_bboxes[..., :4] -= batch_border
 
+<<<<<<< HEAD
         # 在Test模式下, img_meta['scale_factor']一般为[1. 1. 1. 1.]
         if rescale:
+=======
+        if rescale and 'scale_factor' in img_meta:
+>>>>>>> mmdetection/main
             det_bboxes[..., :4] /= det_bboxes.new_tensor(
-                img_meta['scale_factor'])
+                img_meta['scale_factor']).repeat((1, 2))
 
         if with_nms:
             det_bboxes, det_labels = self._bboxes_nms(det_bboxes, det_labels,
                                                       self.test_cfg)
-        return det_bboxes, det_labels
+        results = InstanceData()
+        results.bboxes = det_bboxes[..., :4]
+        results.scores = det_bboxes[..., 4]
+        results.labels = det_labels
+        return results
 
+<<<<<<< HEAD
     def decode_heatmap(self,
                        center_heatmap_pred,
                        wh_pred,
@@ -358,6 +561,34 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
             tuple[torch.Tensor]: CenterNetHead的解码输出:
               - batch_bboxes (Tensor): 网络预测的box, [bs, k, 5], [x, y, x, y, score]
               - batch_topk_labels (Tensor): 预测box对应的label
+=======
+    def _decode_heatmap(self,
+                        center_heatmap_pred: Tensor,
+                        wh_pred: Tensor,
+                        offset_pred: Tensor,
+                        img_shape: tuple,
+                        k: int = 100,
+                        kernel: int = 3) -> Tuple[Tensor, Tensor]:
+        """Transform outputs into detections raw bbox prediction.
+
+        Args:
+            center_heatmap_pred (Tensor): center predict heatmap,
+               shape (B, num_classes, H, W).
+            wh_pred (Tensor): wh predict, shape (B, 2, H, W).
+            offset_pred (Tensor): offset predict, shape (B, 2, H, W).
+            img_shape (tuple): image shape in hw format.
+            k (int): Get top k center keypoints from heatmap. Defaults to 100.
+            kernel (int): Max pooling kernel for extract local maximum pixels.
+               Defaults to 3.
+
+        Returns:
+            tuple[Tensor]: Decoded output of CenterNetHead, containing
+               the following Tensors:
+
+              - batch_bboxes (Tensor): Coords of each box with shape (B, k, 5)
+              - batch_topk_labels (Tensor): Categories of each box with \
+                  shape (B, k)
+>>>>>>> mmdetection/main
         """
         height, width = center_heatmap_pred.shape[2:]
         inp_h, inp_w = img_shape
@@ -385,7 +616,9 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
                                  dim=-1)
         return batch_bboxes, batch_topk_labels
 
-    def _bboxes_nms(self, bboxes, labels, cfg):
+    def _bboxes_nms(self, bboxes: Tensor, labels: Tensor,
+                    cfg: ConfigDict) -> Tuple[Tensor, Tensor]:
+        """bboxes nms."""
         if labels.numel() > 0:
             max_num = cfg.max_per_img
             bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:,

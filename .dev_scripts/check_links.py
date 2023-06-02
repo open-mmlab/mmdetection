@@ -11,7 +11,7 @@ from multiprocessing.dummy import Pool
 from typing import NamedTuple, Optional, Tuple
 
 import requests
-from mmcv.utils import get_logger
+from mmengine.logging import MMLogger
 
 
 def parse_args():
@@ -92,7 +92,7 @@ def main():
     args = parse_args()
 
     # setup logger
-    logger = get_logger(name='mmdet', log_file=args.out)
+    logger = MMLogger.get_instance(name='mmdet', log_file=args.out)
 
     # setup https_proxy
     if args.https_proxy:

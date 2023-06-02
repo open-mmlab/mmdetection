@@ -1,18 +1,28 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional
+
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
 
-from ..builder import LOSSES
+from mmdet.registry import MODELS
 from .utils import weighted_loss
 
 
 @weighted_loss
-def mse_loss(pred, target):
-    """Wrapper of mse loss."""
+def mse_loss(pred: Tensor, target: Tensor) -> Tensor:
+    """A Wrapper of MSE loss.
+    Args:
+        pred (Tensor): The prediction.
+        target (Tensor): The learning target of the prediction.
+
+    Returns:
+        Tensor: loss Tensor
+    """
     return F.mse_loss(pred, target, reduction='none')
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class MSELoss(nn.Module):
     """MSELoss.
 
@@ -22,23 +32,25 @@ class MSELoss(nn.Module):
         loss_weight (float, optional): The weight of the loss. Defaults to 1.0
     """
 
-    def __init__(self, reduction='mean', loss_weight=1.0):
+    def __init__(self,
+                 reduction: str = 'mean',
+                 loss_weight: float = 1.0) -> None:
         super().__init__()
         self.reduction = reduction
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred,
-                target,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None):
+                pred: Tensor,
+                target: Tensor,
+                weight: Optional[Tensor] = None,
+                avg_factor: Optional[int] = None,
+                reduction_override: Optional[str] = None) -> Tensor:
         """Forward function of loss.
 
         Args:
-            pred (torch.Tensor): The prediction.
-            target (torch.Tensor): The learning target of the prediction.
-            weight (torch.Tensor, optional): Weight of the loss for each
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction.
+            weight (Tensor, optional): Weight of the loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
@@ -47,7 +59,7 @@ class MSELoss(nn.Module):
                 Defaults to None.
 
         Returns:
-            torch.Tensor: The calculated loss
+            Tensor: The calculated loss.
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (

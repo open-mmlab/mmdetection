@@ -1,13 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import (build_activation_layer, build_norm_layer, constant_init,
-                      normal_init)
+from mmcv.cnn import build_activation_layer, build_norm_layer
 from mmcv.ops.modulated_deform_conv import ModulatedDeformConv2d
-from mmcv.runner import BaseModule
+from mmengine.model import BaseModule, constant_init, normal_init
 
-from ..builder import NECKS
-from ..utils import DyReLU
+from mmdet.registry import MODELS
+from ..layers import DyReLU
 
 # Reference:
 # https://github.com/microsoft/DynamicHead
@@ -128,7 +127,7 @@ class DyHeadBlock(nn.Module):
         return outs
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class DyHead(BaseModule):
     """DyHead neck consisting of multiple DyHead Blocks.
 

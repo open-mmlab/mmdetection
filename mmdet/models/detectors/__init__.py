@@ -2,12 +2,20 @@
 from .atss import ATSS
 from .autoassign import AutoAssign
 from .base import BaseDetector
+from .base_detr import DetectionTransformer
+from .boxinst import BoxInst
 from .cascade_rcnn import CascadeRCNN
 from .centernet import CenterNet
+from .condinst import CondInst
+from .conditional_detr import ConditionalDETR
 from .cornernet import CornerNet
+from .crowddet import CrowdDet
+from .d2_wrapper import Detectron2Wrapper
+from .dab_detr import DABDETR
 from .ddod import DDOD
 from .deformable_detr import DeformableDETR
 from .detr import DETR
+from .dino import DINO
 from .fast_rcnn import FastRCNN
 from .faster_rcnn import FasterRCNN
 from .fcos import FCOS
@@ -31,8 +39,11 @@ from .queryinst import QueryInst
 from .reppoints_detector import RepPointsDetector
 from .retinanet import RetinaNet
 from .rpn import RPN
+from .rtmdet import RTMDet
 from .scnet import SCNet
+from .semi_base import SemiBaseDetector
 from .single_stage import SingleStageDetector
+from .soft_teacher import SoftTeacher
 from .solo import SOLO
 from .solov2 import SOLOv2
 from .sparse_rcnn import SparseRCNN
@@ -54,5 +65,7 @@ __all__ = [
     'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet', 'SOLO',
     'SOLOv2', 'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
-    'MaskFormer', 'DDOD', 'Mask2Former'
+    'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector', 'SoftTeacher',
+    'RTMDet', 'Detectron2Wrapper', 'CrowdDet', 'CondInst', 'BoxInst',
+    'DetectionTransformer', 'ConditionalDETR', 'DINO', 'DABDETR'
 ]

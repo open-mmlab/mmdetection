@@ -1,53 +1,108 @@
-import pytest
+# Copyright (c) OpenMMLab. All rights reserved.
+import unittest
+
 import torch
-from mmcv import ConfigDict
+from mmengine.config import Config
 
 from mmdet.models.seg_heads.panoptic_fusion_heads import MaskFormerFusionHead
+from mmdet.structures import DetDataSample
 
 
-def test_maskformer_fusion_head():
-    img_metas = [
-        {
-            'batch_input_shape': (128, 160),
-            'img_shape': (126, 160, 3),
-            'ori_shape': (63, 80, 3),
-            'pad_shape': (128, 160, 3)
-        },
-    ]
-    num_things_classes = 80
-    num_stuff_classes = 53
-    num_classes = num_things_classes + num_stuff_classes
-    config = ConfigDict(
-        type='MaskFormerFusionHead',
-        num_things_classes=num_things_classes,
-        num_stuff_classes=num_stuff_classes,
-        loss_panoptic=None,
-        test_cfg=dict(
-            panoptic_on=True,
-            semantic_on=False,
-            instance_on=True,
-            max_per_image=100,
-            object_mask_thr=0.8,
-            iou_thr=0.8,
-            filter_low_score=False),
-        init_cfg=None)
+class TestMaskFormerFusionHead(unittest.TestCase):
 
-    self = MaskFormerFusionHead(**config)
+    def test_loss(self):
+        head = MaskFormerFusionHead(num_things_classes=2, num_stuff_classes=2)
+        result = head.loss()
+        self.assertTrue(not head.with_loss)
+        self.assertDictEqual(result, dict())
 
-    # test forward_train
-    assert self.forward_train() == dict()
+    def test_predict(self):
+        mask_cls_results = torch.rand((2, 10, 5))
+        mask_pred_results = torch.rand((2, 10, 32, 32))
+        batch_data_samples = [
+            DetDataSample(
+                metainfo={
+                    'batch_input_shape': (32, 32),
+                    'img_shape': (32, 30),
+                    'ori_shape': (30, 30)
+                }),
+            DetDataSample(
+                metainfo={
+                    'batch_input_shape': (32, 32),
+                    'img_shape': (32, 30),
+                    'ori_shape': (29, 30)
+                })
+        ]
 
-    mask_cls_results = torch.rand((1, 100, num_classes + 1))
-    mask_pred_results = torch.rand((1, 100, 128, 160))
+        # get panoptic and instance segmentation results
+        test_cfg = Config(
+            dict(
+                panoptic_on=True,
+                semantic_on=False,
+                instance_on=True,
+                max_per_image=10,
+                object_mask_thr=0.3,
+                iou_thr=0.3,
+                filter_low_score=False))
+        head = MaskFormerFusionHead(
+            num_things_classes=2, num_stuff_classes=2, test_cfg=test_cfg)
+        results = head.predict(
+            mask_cls_results,
+            mask_pred_results,
+            batch_data_samples,
+            rescale=False)
+        for i in range(len(results)):
+            self.assertEqual(results[i]['pan_results'].sem_seg.shape[-2:],
+                             batch_data_samples[i].img_shape)
+            self.assertEqual(results[i]['ins_results'].masks.shape[-2:],
+                             batch_data_samples[i].img_shape)
 
-    # test panoptic_postprocess and instance_postprocess
-    results = self.simple_test(mask_cls_results, mask_pred_results, img_metas)
-    assert 'ins_results' in results[0] and 'pan_results' in results[0]
+        results = head.predict(
+            mask_cls_results,
+            mask_pred_results,
+            batch_data_samples,
+            rescale=True)
+        for i in range(len(results)):
+            self.assertEqual(results[i]['pan_results'].sem_seg.shape[-2:],
+                             batch_data_samples[i].ori_shape)
+            self.assertEqual(results[i]['ins_results'].masks.shape[-2:],
+                             batch_data_samples[i].ori_shape)
 
-    # test semantic_postprocess
-    config.test_cfg.semantic_on = True
-    with pytest.raises(AssertionError):
-        self.simple_test(mask_cls_results, mask_pred_results, img_metas)
+        # get empty results
+        test_cfg = Config(
+            dict(
+                panoptic_on=False,
+                semantic_on=False,
+                instance_on=False,
+                max_per_image=10,
+                object_mask_thr=0.3,
+                iou_thr=0.3,
+                filter_low_score=False))
+        head = MaskFormerFusionHead(
+            num_things_classes=2, num_stuff_classes=2, test_cfg=test_cfg)
+        results = head.predict(
+            mask_cls_results,
+            mask_pred_results,
+            batch_data_samples,
+            rescale=True)
+        for i in range(len(results)):
+            self.assertEqual(results[i], dict())
 
-    with pytest.raises(NotImplementedError):
-        self.semantic_postprocess(mask_cls_results, mask_pred_results)
+        # semantic segmentation is not supported
+        test_cfg = Config(
+            dict(
+                panoptic_on=False,
+                semantic_on=True,
+                instance_on=False,
+                max_per_image=10,
+                object_mask_thr=0.3,
+                iou_thr=0.3,
+                filter_low_score=False))
+        head = MaskFormerFusionHead(
+            num_things_classes=2, num_stuff_classes=2, test_cfg=test_cfg)
+        with self.assertRaises(AssertionError):
+            results = head.predict(
+                mask_cls_results,
+                mask_pred_results,
+                batch_data_samples,
+                rescale=True)

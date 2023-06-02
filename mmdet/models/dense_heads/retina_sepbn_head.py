@@ -1,12 +1,17 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import torch.nn as nn
-from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from typing import Tuple
 
-from ..builder import HEADS
+import torch.nn as nn
+from mmcv.cnn import ConvModule
+from mmengine.model import bias_init_with_prob, normal_init
+from torch import Tensor
+
+from mmdet.registry import MODELS
+from mmdet.utils import OptConfigType, OptMultiConfig
 from .anchor_head import AnchorHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class RetinaSepBNHead(AnchorHead):
     """"RetinaHead with separate BN.
 
@@ -16,24 +21,27 @@ class RetinaSepBNHead(AnchorHead):
     """
 
     def __init__(self,
-                 num_classes,
-                 num_ins,
-                 in_channels,
-                 stacked_convs=4,
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 init_cfg=None,
-                 **kwargs):
+                 num_classes: int,
+                 num_ins: int,
+                 in_channels: int,
+                 stacked_convs: int = 4,
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: OptConfigType = None,
+                 init_cfg: OptMultiConfig = None,
+                 **kwargs) -> None:
         assert init_cfg is None, 'To prevent abnormal initialization ' \
                                  'behavior, init_cfg is not allowed to be set'
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.num_ins = num_ins
-        super(RetinaSepBNHead, self).__init__(
-            num_classes, in_channels, init_cfg=init_cfg, **kwargs)
+        super().__init__(
+            num_classes=num_classes,
+            in_channels=in_channels,
+            init_cfg=init_cfg,
+            **kwargs)
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         """Initialize layers of the head."""
         self.relu = nn.ReLU(inplace=True)
         self.cls_convs = nn.ModuleList()
@@ -41,8 +49,8 @@ class RetinaSepBNHead(AnchorHead):
         for i in range(self.num_ins):
             cls_convs = nn.ModuleList()
             reg_convs = nn.ModuleList()
-            for i in range(self.stacked_convs):
-                chn = self.in_channels if i == 0 else self.feat_channels
+            for j in range(self.stacked_convs):
+                chn = self.in_channels if j == 0 else self.feat_channels
                 cls_convs.append(
                     ConvModule(
                         chn,
@@ -75,9 +83,9 @@ class RetinaSepBNHead(AnchorHead):
         self.retina_reg = nn.Conv2d(
             self.feat_channels, self.num_base_priors * 4, 3, padding=1)
 
-    def init_weights(self):
+    def init_weights(self) -> None:
         """Initialize weights of the head."""
-        super(RetinaSepBNHead, self).init_weights()
+        super().init_weights()
         for m in self.cls_convs[0]:
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs[0]:
@@ -86,7 +94,7 @@ class RetinaSepBNHead(AnchorHead):
         normal_init(self.retina_cls, std=0.01, bias=bias_cls)
         normal_init(self.retina_reg, std=0.01)
 
-    def forward(self, feats):
+    def forward(self, feats: Tuple[Tensor]) -> tuple:
         """Forward features from the upstream network.
 
         Args:
@@ -95,12 +103,13 @@ class RetinaSepBNHead(AnchorHead):
 
         Returns:
             tuple: Usually a tuple of classification scores and bbox prediction
-                cls_scores (list[Tensor]): Classification scores for all scale
-                    levels, each is a 4D-tensor, the channels number is
-                    num_anchors * num_classes.
-                bbox_preds (list[Tensor]): Box energies / deltas for all scale
-                    levels, each is a 4D-tensor, the channels number is
-                    num_anchors * 4.
+
+                - cls_scores (list[Tensor]): Classification scores for all
+                  scale levels, each is a 4D-tensor, the channels number is
+                  num_anchors * num_classes.
+                - bbox_preds (list[Tensor]): Box energies / deltas for all
+                  scale levels, each is a 4D-tensor, the channels number is
+                  num_anchors * 4.
         """
         cls_scores = []
         bbox_preds = []

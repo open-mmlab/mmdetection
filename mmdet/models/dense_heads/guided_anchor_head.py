@@ -1,15 +1,20 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import warnings
+from typing import List, Optional, Tuple
 
 import torch
 import torch.nn as nn
 from mmcv.ops import DeformConv2d, MaskedConv2d
-from mmcv.runner import BaseModule, force_fp32
+from mmengine.model import BaseModule
+from mmengine.structures import InstanceData
+from torch import Tensor
 
-from mmdet.core import (anchor_inside_flags, build_assigner, build_bbox_coder,
-                        build_prior_generator, build_sampler, calc_region,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import (ConfigType, InstanceList, MultiConfig, OptConfigType,
+                         OptInstanceList)
+from ..layers import multiclass_nms
+from ..task_modules.prior_generators import anchor_inside_flags, calc_region
+from ..task_modules.samplers import PseudoSampler
+from ..utils import images_to_levels, multi_apply, unmap
 from .anchor_head import AnchorHead
 
 
@@ -23,23 +28,25 @@ class FeatureAdaption(BaseModule):
     Args:
         in_channels (int): Number of channels in the input feature map.
         out_channels (int): Number of channels in the output feature map.
-        kernel_size (int): Deformable conv kernel size.
-        deform_groups (int): Deformable conv group size.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        kernel_size (int): Deformable conv kernel size. Defaults to 3.
+        deform_groups (int): Deformable conv group size. Defaults to 4.
+        init_cfg (:obj:`ConfigDict` or list[:obj:`ConfigDict`] or dict or \
+            list[dict], optional): Initialization config dict.
     """
 
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_size=3,
-                 deform_groups=4,
-                 init_cfg=dict(
-                     type='Normal',
-                     layer='Conv2d',
-                     std=0.1,
-                     override=dict(
-                         type='Normal', name='conv_adaption', std=0.01))):
-        super(FeatureAdaption, self).__init__(init_cfg)
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int = 3,
+        deform_groups: int = 4,
+        init_cfg: MultiConfig = dict(
+            type='Normal',
+            layer='Conv2d',
+            std=0.1,
+            override=dict(type='Normal', name='conv_adaption', std=0.01))
+    ) -> None:
+        super().__init__(init_cfg=init_cfg)
         offset_channels = kernel_size * kernel_size * 2
         self.conv_offset = nn.Conv2d(
             2, deform_groups * offset_channels, 1, bias=False)
@@ -51,13 +58,13 @@ class FeatureAdaption(BaseModule):
             deform_groups=deform_groups)
         self.relu = nn.ReLU(inplace=True)
 
-    def forward(self, x, shape):
+    def forward(self, x: Tensor, shape: Tensor) -> Tensor:
         offset = self.conv_offset(shape.detach())
         x = self.relu(self.conv_adaption(x, offset))
         return x
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class GuidedAnchorHead(AnchorHead):
     """Guided-Anchor-based head (GA-RPN, GA-RetinaNet, etc.).
 
@@ -74,74 +81,79 @@ class GuidedAnchorHead(AnchorHead):
     Args:
         num_classes (int): Number of classes.
         in_channels (int): Number of channels in the input feature map.
-        feat_channels (int): Number of hidden channels.
-        approx_anchor_generator (dict): Config dict for approx generator
-        square_anchor_generator (dict): Config dict for square generator
-        anchor_coder (dict): Config dict for anchor coder
-        bbox_coder (dict): Config dict for bbox coder
+        feat_channels (int): Number of hidden channels. Defaults to 256.
+        approx_anchor_generator (:obj:`ConfigDict` or dict): Config dict
+            for approx generator
+        square_anchor_generator (:obj:`ConfigDict` or dict): Config dict
+            for square generator
+        anchor_coder (:obj:`ConfigDict` or dict): Config dict for anchor coder
+        bbox_coder (:obj:`ConfigDict` or dict): Config dict for bbox coder
         reg_decoded_bbox (bool): If true, the regression loss would be
             applied directly on decoded bounding boxes, converting both
             the predicted boxes and regression targets to absolute
-            coordinates format. Default False. It should be `True` when
+            coordinates format. Defaults to False. It should be `True` when
             using `IoULoss`, `GIoULoss`, or `DIoULoss` in the bbox head.
-        deform_groups: (int): Group number of DCN in
-            FeatureAdaption module.
+        deform_groups: (int): Group number of DCN in FeatureAdaption module.
+            Defaults to 4.
         loc_filter_thr (float): Threshold to filter out unconcerned regions.
-        loss_loc (dict): Config of location loss.
-        loss_shape (dict): Config of anchor shape loss.
-        loss_cls (dict): Config of classification loss.
-        loss_bbox (dict): Config of bbox regression loss.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Defaults to 0.01.
+        loss_loc (:obj:`ConfigDict` or dict): Config of location loss.
+        loss_shape (:obj:`ConfigDict` or dict): Config of anchor shape loss.
+        loss_cls (:obj:`ConfigDict` or dict): Config of classification loss.
+        loss_bbox (:obj:`ConfigDict` or dict): Config of bbox regression loss.
+        init_cfg (:obj:`ConfigDict` or list[:obj:`ConfigDict`] or dict or \
+            list[dict], optional): Initialization config dict.
     """
 
     def __init__(
-            self,
-            num_classes,
-            in_channels,
-            feat_channels=256,
-            approx_anchor_generator=dict(
-                type='AnchorGenerator',
-                octave_base_scale=8,
-                scales_per_octave=3,
-                ratios=[0.5, 1.0, 2.0],
-                strides=[4, 8, 16, 32, 64]),
-            square_anchor_generator=dict(
-                type='AnchorGenerator',
-                ratios=[1.0],
-                scales=[8],
-                strides=[4, 8, 16, 32, 64]),
-            anchor_coder=dict(
-                type='DeltaXYWHBBoxCoder',
-                target_means=[.0, .0, .0, .0],
-                target_stds=[1.0, 1.0, 1.0, 1.0]
-            ),
-            bbox_coder=dict(
-                type='DeltaXYWHBBoxCoder',
-                target_means=[.0, .0, .0, .0],
-                target_stds=[1.0, 1.0, 1.0, 1.0]
-            ),
-            reg_decoded_bbox=False,
-            deform_groups=4,
-            loc_filter_thr=0.01,
-            train_cfg=None,
-            test_cfg=None,
-            loss_loc=dict(
-                type='FocalLoss',
-                use_sigmoid=True,
-                gamma=2.0,
-                alpha=0.25,
-                loss_weight=1.0),
-            loss_shape=dict(type='BoundedIoULoss', beta=0.2, loss_weight=1.0),
-            loss_cls=dict(
-                type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-            loss_bbox=dict(type='SmoothL1Loss', beta=1.0,
-                           loss_weight=1.0),
-            init_cfg=dict(type='Normal', layer='Conv2d', std=0.01,
-                          override=dict(type='Normal',
-                                        name='conv_loc',
-                                        std=0.01,
-                                        bias_prob=0.01))):  # yapf: disable
-        super(AnchorHead, self).__init__(init_cfg)
+        self,
+        num_classes: int,
+        in_channels: int,
+        feat_channels: int = 256,
+        approx_anchor_generator: ConfigType = dict(
+            type='AnchorGenerator',
+            octave_base_scale=8,
+            scales_per_octave=3,
+            ratios=[0.5, 1.0, 2.0],
+            strides=[4, 8, 16, 32, 64]),
+        square_anchor_generator: ConfigType = dict(
+            type='AnchorGenerator',
+            ratios=[1.0],
+            scales=[8],
+            strides=[4, 8, 16, 32, 64]),
+        anchor_coder: ConfigType = dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0]),
+        bbox_coder: ConfigType = dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0]),
+        reg_decoded_bbox: bool = False,
+        deform_groups: int = 4,
+        loc_filter_thr: float = 0.01,
+        train_cfg: OptConfigType = None,
+        test_cfg: OptConfigType = None,
+        loss_loc: ConfigType = dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_shape: ConfigType = dict(
+            type='BoundedIoULoss', beta=0.2, loss_weight=1.0),
+        loss_cls: ConfigType = dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        loss_bbox: ConfigType = dict(
+            type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
+        init_cfg: MultiConfig = dict(
+            type='Normal',
+            layer='Conv2d',
+            std=0.01,
+            override=dict(
+                type='Normal', name='conv_loc', std=0.01, lbias_prob=0.01))
+    ) -> None:
+        super(AnchorHead, self).__init__(init_cfg=init_cfg)
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
@@ -153,9 +165,9 @@ class GuidedAnchorHead(AnchorHead):
                 square_anchor_generator['scales'][0])
         assert (approx_anchor_generator['strides'] ==
                 square_anchor_generator['strides'])
-        self.approx_anchor_generator = build_prior_generator(
+        self.approx_anchor_generator = TASK_UTILS.build(
             approx_anchor_generator)
-        self.square_anchor_generator = build_prior_generator(
+        self.square_anchor_generator = TASK_UTILS.build(
             square_anchor_generator)
         self.approxs_per_octave = self.approx_anchor_generator \
             .num_base_priors[0]
@@ -167,54 +179,45 @@ class GuidedAnchorHead(AnchorHead):
 
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.loc_focal_loss = loss_loc['type'] in ['FocalLoss']
-        self.sampling = loss_cls['type'] not in ['FocalLoss']
-        self.ga_sampling = train_cfg is not None and hasattr(
-            train_cfg, 'ga_sampler')
         if self.use_sigmoid_cls:
             self.cls_out_channels = self.num_classes
         else:
             self.cls_out_channels = self.num_classes + 1
 
         # build bbox_coder
-        self.anchor_coder = build_bbox_coder(anchor_coder)
-        self.bbox_coder = build_bbox_coder(bbox_coder)
+        self.anchor_coder = TASK_UTILS.build(anchor_coder)
+        self.bbox_coder = TASK_UTILS.build(bbox_coder)
 
         # build losses
-        self.loss_loc = build_loss(loss_loc)
-        self.loss_shape = build_loss(loss_shape)
-        self.loss_cls = build_loss(loss_cls)
-        self.loss_bbox = build_loss(loss_bbox)
+        self.loss_loc = MODELS.build(loss_loc)
+        self.loss_shape = MODELS.build(loss_shape)
+        self.loss_cls = MODELS.build(loss_cls)
+        self.loss_bbox = MODELS.build(loss_bbox)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
         if self.train_cfg:
-            self.assigner = build_assigner(self.train_cfg.assigner)
-            # use PseudoSampler when sampling is False
-            if self.sampling and hasattr(self.train_cfg, 'sampler'):
-                sampler_cfg = self.train_cfg.sampler
+            self.assigner = TASK_UTILS.build(self.train_cfg['assigner'])
+            # use PseudoSampler when no sampler in train_cfg
+            if train_cfg.get('sampler', None) is not None:
+                self.sampler = TASK_UTILS.build(
+                    self.train_cfg['sampler'], default_args=dict(context=self))
             else:
-                sampler_cfg = dict(type='PseudoSampler')
-            self.sampler = build_sampler(sampler_cfg, context=self)
+                self.sampler = PseudoSampler()
 
-            self.ga_assigner = build_assigner(self.train_cfg.ga_assigner)
-            if self.ga_sampling:
-                ga_sampler_cfg = self.train_cfg.ga_sampler
+            self.ga_assigner = TASK_UTILS.build(self.train_cfg['ga_assigner'])
+            if train_cfg.get('ga_sampler', None) is not None:
+                self.ga_sampler = TASK_UTILS.build(
+                    self.train_cfg['ga_sampler'],
+                    default_args=dict(context=self))
             else:
-                ga_sampler_cfg = dict(type='PseudoSampler')
-            self.ga_sampler = build_sampler(ga_sampler_cfg, context=self)
-
-        self.fp16_enabled = False
+                self.ga_sampler = PseudoSampler()
 
         self._init_layers()
 
-    @property
-    def num_anchors(self):
-        warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
-                      'please use "num_base_priors" instead')
-        return self.square_anchor_generator.num_base_priors[0]
-
-    def _init_layers(self):
+    def _init_layers(self) -> None:
+        """Initialize layers of the head."""
         self.relu = nn.ReLU(inplace=True)
         self.conv_loc = nn.Conv2d(self.in_channels, 1, 1)
         self.conv_shape = nn.Conv2d(self.in_channels, self.num_base_priors * 2,
@@ -230,7 +233,8 @@ class GuidedAnchorHead(AnchorHead):
         self.conv_reg = MaskedConv2d(self.feat_channels,
                                      self.num_base_priors * 4, 1)
 
-    def forward_single(self, x):
+    def forward_single(self, x: Tensor) -> Tuple[Tensor]:
+        """Forward feature of a single scale level."""
         loc_pred = self.conv_loc(x)
         shape_pred = self.conv_shape(x)
         x = self.feature_adaption(x, shape_pred)
@@ -243,21 +247,25 @@ class GuidedAnchorHead(AnchorHead):
         bbox_pred = self.conv_reg(x, mask)
         return cls_score, bbox_pred, shape_pred, loc_pred
 
-    def forward(self, feats):
-        return multi_apply(self.forward_single, feats)
+    def forward(self, x: List[Tensor]) -> Tuple[List[Tensor]]:
+        """Forward features from the upstream network."""
+        return multi_apply(self.forward_single, x)
 
-    def get_sampled_approxs(self, featmap_sizes, img_metas, device='cuda'):
+    def get_sampled_approxs(self,
+                            featmap_sizes: List[Tuple[int, int]],
+                            batch_img_metas: List[dict],
+                            device: str = 'cuda') -> tuple:
         """Get sampled approxs and inside flags according to feature map sizes.
 
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
-            img_metas (list[dict]): Image meta info.
-            device (torch.device | str): device for returned tensors
+            batch_img_metas (list[dict]): Image meta info.
+            device (str): device for returned tensors
 
         Returns:
             tuple: approxes of each image, inside flags of each image
         """
-        num_imgs = len(img_metas)
+        num_imgs = len(batch_img_metas)
 
         # since feature map sizes of all images are the same, we only compute
         # approxes for one time
@@ -267,7 +275,7 @@ class GuidedAnchorHead(AnchorHead):
 
         # for each image, we compute inside flags of multi level approxes
         inside_flag_list = []
-        for img_id, img_meta in enumerate(img_metas):
+        for img_id, img_meta in enumerate(batch_img_metas):
             multi_level_flags = []
             multi_level_approxs = approxs_list[img_id]
 
@@ -280,13 +288,13 @@ class GuidedAnchorHead(AnchorHead):
             for i, flags in enumerate(multi_level_approx_flags):
                 approxs = multi_level_approxs[i]
                 inside_flags_list = []
-                for i in range(self.approxs_per_octave):
-                    split_valid_flags = flags[i::self.approxs_per_octave]
-                    split_approxs = approxs[i::self.approxs_per_octave, :]
+                for j in range(self.approxs_per_octave):
+                    split_valid_flags = flags[j::self.approxs_per_octave]
+                    split_approxs = approxs[j::self.approxs_per_octave, :]
                     inside_flags = anchor_inside_flags(
                         split_approxs, split_valid_flags,
                         img_meta['img_shape'][:2],
-                        self.train_cfg.allowed_border)
+                        self.train_cfg['allowed_border'])
                     inside_flags_list.append(inside_flags)
                 # inside_flag for a position is true if any anchor in this
                 # position is true
@@ -297,27 +305,28 @@ class GuidedAnchorHead(AnchorHead):
         return approxs_list, inside_flag_list
 
     def get_anchors(self,
-                    featmap_sizes,
-                    shape_preds,
-                    loc_preds,
-                    img_metas,
-                    use_loc_filter=False,
-                    device='cuda'):
+                    featmap_sizes: List[Tuple[int, int]],
+                    shape_preds: List[Tensor],
+                    loc_preds: List[Tensor],
+                    batch_img_metas: List[dict],
+                    use_loc_filter: bool = False,
+                    device: str = 'cuda') -> tuple:
         """Get squares according to feature map sizes and guided anchors.
 
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
             shape_preds (list[tensor]): Multi-level shape predictions.
             loc_preds (list[tensor]): Multi-level location predictions.
-            img_metas (list[dict]): Image meta info.
-            use_loc_filter (bool): Use loc filter or not.
-            device (torch.device | str): device for returned tensors
+            batch_img_metas (list[dict]): Image meta info.
+            use_loc_filter (bool): Use loc filter or not. Defaults to False
+            device (str): device for returned tensors.
+                Defaults to `cuda`.
 
         Returns:
             tuple: square approxs of each image, guided anchors of each image,
-                loc masks of each image
+            loc masks of each image.
         """
-        num_imgs = len(img_metas)
+        num_imgs = len(batch_img_metas)
         num_levels = len(featmap_sizes)
 
         # since feature map sizes of all images are the same, we only compute
@@ -329,7 +338,7 @@ class GuidedAnchorHead(AnchorHead):
         # for each image, we compute multi level guided anchors
         guided_anchors_list = []
         loc_mask_list = []
-        for img_id, img_meta in enumerate(img_metas):
+        for img_id, img_meta in enumerate(batch_img_metas):
             multi_level_guided_anchors = []
             multi_level_loc_mask = []
             for i in range(num_levels):
@@ -347,18 +356,20 @@ class GuidedAnchorHead(AnchorHead):
             loc_mask_list.append(multi_level_loc_mask)
         return squares_list, guided_anchors_list, loc_mask_list
 
-    def _get_guided_anchors_single(self,
-                                   squares,
-                                   shape_pred,
-                                   loc_pred,
-                                   use_loc_filter=False):
+    def _get_guided_anchors_single(
+            self,
+            squares: Tensor,
+            shape_pred: Tensor,
+            loc_pred: Tensor,
+            use_loc_filter: bool = False) -> Tuple[Tensor]:
         """Get guided anchors and loc masks for a single level.
 
         Args:
-            square (tensor): Squares of a single level.
+            squares (tensor): Squares of a single level.
             shape_pred (tensor): Shape predictions of a single level.
             loc_pred (tensor): Loc predictions of a single level.
             use_loc_filter (list[tensor]): Use loc filter or not.
+                Defaults to False.
 
         Returns:
             tuple: guided anchors, location masks
@@ -381,7 +392,8 @@ class GuidedAnchorHead(AnchorHead):
             squares, bbox_deltas, wh_ratio_clip=1e-6)
         return guided_anchors, mask
 
-    def ga_loc_targets(self, gt_bboxes_list, featmap_sizes):
+    def ga_loc_targets(self, batch_gt_instances: InstanceList,
+                       featmap_sizes: List[Tuple[int, int]]) -> tuple:
         """Compute location targets for guided anchoring.
 
         Each feature map is divided into positive, negative and ignore regions.
@@ -390,12 +402,14 @@ class GuidedAnchorHead(AnchorHead):
         - negative regions: target 0, weight 0.1
 
         Args:
-            gt_bboxes_list (list[Tensor]): Gt bboxes of each image.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
             featmap_sizes (list[tuple]): Multi level sizes of each feature
                 maps.
 
         Returns:
-            tuple
+            tuple: Returns a tuple containing location targets.
         """
         anchor_scale = self.approx_anchor_generator.octave_base_scale
         anchor_strides = self.approx_anchor_generator.strides
@@ -404,9 +418,9 @@ class GuidedAnchorHead(AnchorHead):
             assert (stride[0] == stride[1])
         anchor_strides = [stride[0] for stride in anchor_strides]
 
-        center_ratio = self.train_cfg.center_ratio
-        ignore_ratio = self.train_cfg.ignore_ratio
-        img_per_gpu = len(gt_bboxes_list)
+        center_ratio = self.train_cfg['center_ratio']
+        ignore_ratio = self.train_cfg['ignore_ratio']
+        img_per_gpu = len(batch_gt_instances)
         num_lvls = len(featmap_sizes)
         r1 = (1 - center_ratio) / 2
         r2 = (1 - ignore_ratio) / 2
@@ -420,7 +434,7 @@ class GuidedAnchorHead(AnchorHead):
                 1,
                 h,
                 w,
-                device=gt_bboxes_list[0].device,
+                device=batch_gt_instances[0].bboxes.device,
                 dtype=torch.float32)
             loc_weights = torch.full_like(loc_targets, -1)
             ignore_map = torch.zeros_like(loc_targets)
@@ -428,7 +442,7 @@ class GuidedAnchorHead(AnchorHead):
             all_loc_weights.append(loc_weights)
             all_ignore_map.append(ignore_map)
         for img_id in range(img_per_gpu):
-            gt_bboxes = gt_bboxes_list[img_id]
+            gt_bboxes = batch_gt_instances[img_id].bboxes
             scale = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
                                (gt_bboxes[:, 3] - gt_bboxes[:, 1]))
             min_anchor_size = scale.new_full(
@@ -484,13 +498,13 @@ class GuidedAnchorHead(AnchorHead):
         return all_loc_targets, all_loc_weights, loc_avg_factor
 
     def _ga_shape_target_single(self,
-                                flat_approxs,
-                                inside_flags,
-                                flat_squares,
-                                gt_bboxes,
-                                gt_bboxes_ignore,
-                                img_meta,
-                                unmap_outputs=True):
+                                flat_approxs: Tensor,
+                                inside_flags: Tensor,
+                                flat_squares: Tensor,
+                                gt_instances: InstanceData,
+                                gt_instances_ignore: Optional[InstanceData],
+                                img_meta: dict,
+                                unmap_outputs: bool = True) -> tuple:
         """Compute guided anchoring targets.
 
         This function returns sampled anchors and gt bboxes directly
@@ -503,28 +517,41 @@ class GuidedAnchorHead(AnchorHead):
                 shape (n, ).
             flat_squares (Tensor): flat squares of a single image,
                 shape (approxs_per_octave * n, 4)
-            gt_bboxes (Tensor): Ground truth bboxes of a single image.
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            gt_instances_ignore (:obj:`InstanceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
             img_meta (dict): Meta info of a single image.
-            approxs_per_octave (int): number of approxs per octave
-            cfg (dict): RPN train configs.
             unmap_outputs (bool): unmap outputs or not.
 
         Returns:
-            tuple
+            tuple: Returns a tuple containing shape targets of each image.
         """
         if not inside_flags.any():
-            return (None, ) * 5
+            raise ValueError(
+                'There is no valid anchor inside the image boundary. Please '
+                'check the image size and anchor sizes, or set '
+                '``allowed_border`` to -1 to skip the condition.')
         # assign gt and sample anchors
-        expand_inside_flags = inside_flags[:, None].expand(
-            -1, self.approxs_per_octave).reshape(-1)
-        approxs = flat_approxs[expand_inside_flags, :]
+        num_square = flat_squares.size(0)
+        approxs = flat_approxs.view(num_square, self.approxs_per_octave, 4)
+        approxs = approxs[inside_flags, ...]
         squares = flat_squares[inside_flags, :]
 
-        assign_result = self.ga_assigner.assign(approxs, squares,
-                                                self.approxs_per_octave,
-                                                gt_bboxes, gt_bboxes_ignore)
-        sampling_result = self.ga_sampler.sample(assign_result, squares,
-                                                 gt_bboxes)
+        pred_instances = InstanceData()
+        pred_instances.priors = squares
+        pred_instances.approxs = approxs
+
+        assign_result = self.ga_assigner.assign(
+            pred_instances=pred_instances,
+            gt_instances=gt_instances,
+            gt_instances_ignore=gt_instances_ignore)
+        sampling_result = self.ga_sampler.sample(
+            assign_result=assign_result,
+            pred_instances=pred_instances,
+            gt_instances=gt_instances)
 
         bbox_anchors = torch.zeros_like(squares)
         bbox_gts = torch.zeros_like(squares)
@@ -544,32 +571,41 @@ class GuidedAnchorHead(AnchorHead):
             bbox_gts = unmap(bbox_gts, num_total_anchors, inside_flags)
             bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
-        return (bbox_anchors, bbox_gts, bbox_weights, pos_inds, neg_inds)
+        return (bbox_anchors, bbox_gts, bbox_weights, pos_inds, neg_inds,
+                sampling_result)
 
     def ga_shape_targets(self,
-                         approx_list,
-                         inside_flag_list,
-                         square_list,
-                         gt_bboxes_list,
-                         img_metas,
-                         gt_bboxes_ignore_list=None,
-                         unmap_outputs=True):
+                         approx_list: List[List[Tensor]],
+                         inside_flag_list: List[List[Tensor]],
+                         square_list: List[List[Tensor]],
+                         batch_gt_instances: InstanceList,
+                         batch_img_metas: List[dict],
+                         batch_gt_instances_ignore: OptInstanceList = None,
+                         unmap_outputs: bool = True) -> tuple:
         """Compute guided anchoring targets.
 
         Args:
-            approx_list (list[list]): Multi level approxs of each image.
-            inside_flag_list (list[list]): Multi level inside flags of each
+            approx_list (list[list[Tensor]]): Multi level approxs of each
                 image.
-            square_list (list[list]): Multi level squares of each image.
-            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
-            img_metas (list[dict]): Meta info of each image.
-            gt_bboxes_ignore_list (list[Tensor]): ignore list of gt bboxes.
-            unmap_outputs (bool): unmap outputs or not.
+            inside_flag_list (list[list[Tensor]]): Multi level inside flags
+                of each image.
+            square_list (list[list[Tensor]]): Multi level squares of each
+                image.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
+            unmap_outputs (bool): unmap outputs or not. Defaults to None.
 
         Returns:
-            tuple
+            tuple:  Returns a tuple containing shape targets.
         """
-        num_imgs = len(img_metas)
+        num_imgs = len(batch_img_metas)
         assert len(approx_list) == len(inside_flag_list) == len(
             square_list) == num_imgs
         # anchor number of multi levels
@@ -585,24 +621,21 @@ class GuidedAnchorHead(AnchorHead):
             square_flat_list.append(torch.cat(square_list[i]))
 
         # compute targets for each image
-        if gt_bboxes_ignore_list is None:
-            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
+        if batch_gt_instances_ignore is None:
+            batch_gt_instances_ignore = [None for _ in range(num_imgs)]
         (all_bbox_anchors, all_bbox_gts, all_bbox_weights, pos_inds_list,
-         neg_inds_list) = multi_apply(
+         neg_inds_list, sampling_results_list) = multi_apply(
              self._ga_shape_target_single,
              approx_flat_list,
              inside_flag_flat_list,
              square_flat_list,
-             gt_bboxes_list,
-             gt_bboxes_ignore_list,
-             img_metas,
+             batch_gt_instances,
+             batch_gt_instances_ignore,
+             batch_img_metas,
              unmap_outputs=unmap_outputs)
-        # no valid anchors
-        if any([bbox_anchors is None for bbox_anchors in all_bbox_anchors]):
-            return None
         # sampled anchors of all images
-        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
-        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
+        avg_factor = sum(
+            [results.avg_factor for results in sampling_results_list])
         # split targets to a list w.r.t. multiple levels
         bbox_anchors_list = images_to_levels(all_bbox_anchors,
                                              num_level_squares)
@@ -610,10 +643,12 @@ class GuidedAnchorHead(AnchorHead):
         bbox_weights_list = images_to_levels(all_bbox_weights,
                                              num_level_squares)
         return (bbox_anchors_list, bbox_gts_list, bbox_weights_list,
-                num_total_pos, num_total_neg)
+                avg_factor)
 
-    def loss_shape_single(self, shape_pred, bbox_anchors, bbox_gts,
-                          anchor_weights, anchor_total_num):
+    def loss_shape_single(self, shape_pred: Tensor, bbox_anchors: Tensor,
+                          bbox_gts: Tensor, anchor_weights: Tensor,
+                          avg_factor: int) -> Tensor:
+        """Compute shape loss in single level."""
         shape_pred = shape_pred.permute(0, 2, 3, 1).contiguous().view(-1, 2)
         bbox_anchors = bbox_anchors.contiguous().view(-1, 4)
         bbox_gts = bbox_gts.contiguous().view(-1, 4)
@@ -630,32 +665,54 @@ class GuidedAnchorHead(AnchorHead):
         pred_anchors_ = self.anchor_coder.decode(
             bbox_anchors_, bbox_deltas_, wh_ratio_clip=1e-6)
         loss_shape = self.loss_shape(
-            pred_anchors_,
-            bbox_gts_,
-            anchor_weights_,
-            avg_factor=anchor_total_num)
+            pred_anchors_, bbox_gts_, anchor_weights_, avg_factor=avg_factor)
         return loss_shape
 
-    def loss_loc_single(self, loc_pred, loc_target, loc_weight,
-                        loc_avg_factor):
+    def loss_loc_single(self, loc_pred: Tensor, loc_target: Tensor,
+                        loc_weight: Tensor, avg_factor: float) -> Tensor:
+        """Compute location loss in single level."""
         loss_loc = self.loss_loc(
             loc_pred.reshape(-1, 1),
             loc_target.reshape(-1).long(),
             loc_weight.reshape(-1),
-            avg_factor=loc_avg_factor)
+            avg_factor=avg_factor)
         return loss_loc
 
-    @force_fp32(
-        apply_to=('cls_scores', 'bbox_preds', 'shape_preds', 'loc_preds'))
-    def loss(self,
-             cls_scores,
-             bbox_preds,
-             shape_preds,
-             loc_preds,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
+    def loss_by_feat(
+            self,
+            cls_scores: List[Tensor],
+            bbox_preds: List[Tensor],
+            shape_preds: List[Tensor],
+            loc_preds: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                has shape (N, num_anchors * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W).
+            shape_preds (list[Tensor]): shape predictions for each scale
+                level with shape (N, 1, H, W).
+            loc_preds (list[Tensor]): location predictions for each scale
+                level with shape (N, num_anchors * 2, H, W).
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
+
+        Returns:
+            dict: A dictionary of loss components.
+        """
+
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.approx_anchor_generator.num_levels
 
@@ -663,43 +720,35 @@ class GuidedAnchorHead(AnchorHead):
 
         # get loc targets
         loc_targets, loc_weights, loc_avg_factor = self.ga_loc_targets(
-            gt_bboxes, featmap_sizes)
+            batch_gt_instances, featmap_sizes)
 
         # get sampled approxes
         approxs_list, inside_flag_list = self.get_sampled_approxs(
-            featmap_sizes, img_metas, device=device)
+            featmap_sizes, batch_img_metas, device=device)
         # get squares and guided anchors
         squares_list, guided_anchors_list, _ = self.get_anchors(
-            featmap_sizes, shape_preds, loc_preds, img_metas, device=device)
+            featmap_sizes,
+            shape_preds,
+            loc_preds,
+            batch_img_metas,
+            device=device)
 
         # get shape targets
         shape_targets = self.ga_shape_targets(approxs_list, inside_flag_list,
-                                              squares_list, gt_bboxes,
-                                              img_metas)
-        if shape_targets is None:
-            return None
-        (bbox_anchors_list, bbox_gts_list, anchor_weights_list, anchor_fg_num,
-         anchor_bg_num) = shape_targets
-        anchor_total_num = (
-            anchor_fg_num if not self.ga_sampling else anchor_fg_num +
-            anchor_bg_num)
+                                              squares_list, batch_gt_instances,
+                                              batch_img_metas)
+        (bbox_anchors_list, bbox_gts_list, anchor_weights_list,
+         ga_avg_factor) = shape_targets
 
         # get anchor targets
-        label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
         cls_reg_targets = self.get_targets(
             guided_anchors_list,
             inside_flag_list,
-            gt_bboxes,
-            img_metas,
-            gt_bboxes_ignore_list=gt_bboxes_ignore,
-            gt_labels_list=gt_labels,
-            label_channels=label_channels)
-        if cls_reg_targets is None:
-            return None
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore=batch_gt_instances_ignore)
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
-         num_total_pos, num_total_neg) = cls_reg_targets
-        num_total_samples = (
-            num_total_pos + num_total_neg if self.sampling else num_total_pos)
+         avg_factor) = cls_reg_targets
 
         # anchor number of multi levels
         num_level_anchors = [
@@ -714,7 +763,7 @@ class GuidedAnchorHead(AnchorHead):
 
         # get classification and bbox regression losses
         losses_cls, losses_bbox = multi_apply(
-            self.loss_single,
+            self.loss_by_feat_single,
             cls_scores,
             bbox_preds,
             all_anchor_list,
@@ -722,7 +771,7 @@ class GuidedAnchorHead(AnchorHead):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
-            num_total_samples=num_total_samples)
+            avg_factor=avg_factor)
 
         # get anchor location loss
         losses_loc = []
@@ -731,7 +780,7 @@ class GuidedAnchorHead(AnchorHead):
                 loc_preds[i],
                 loc_targets[i],
                 loc_weights[i],
-                loc_avg_factor=loc_avg_factor)
+                avg_factor=loc_avg_factor)
             losses_loc.append(loss_loc)
 
         # get anchor shape loss
@@ -742,7 +791,7 @@ class GuidedAnchorHead(AnchorHead):
                 bbox_anchors_list[i],
                 bbox_gts_list[i],
                 anchor_weights_list[i],
-                anchor_total_num=anchor_total_num)
+                avg_factor=ga_avg_factor)
             losses_shape.append(loss_shape)
 
         return dict(
@@ -751,16 +800,46 @@ class GuidedAnchorHead(AnchorHead):
             loss_shape=losses_shape,
             loss_loc=losses_loc)
 
-    @force_fp32(
-        apply_to=('cls_scores', 'bbox_preds', 'shape_preds', 'loc_preds'))
-    def get_bboxes(self,
-                   cls_scores,
-                   bbox_preds,
-                   shape_preds,
-                   loc_preds,
-                   img_metas,
-                   cfg=None,
-                   rescale=False):
+    def predict_by_feat(self,
+                        cls_scores: List[Tensor],
+                        bbox_preds: List[Tensor],
+                        shape_preds: List[Tensor],
+                        loc_preds: List[Tensor],
+                        batch_img_metas: List[dict],
+                        cfg: OptConfigType = None,
+                        rescale: bool = False) -> InstanceList:
+        """Transform a batch of output features extracted from the head into
+        bbox results.
+
+        Args:
+            cls_scores (list[Tensor]): Classification scores for all
+                scale levels, each is a 4D-tensor, has shape
+                (batch_size, num_priors * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas for all
+                scale levels, each is a 4D-tensor, has shape
+                (batch_size, num_priors * 4, H, W).
+            shape_preds (list[Tensor]): shape predictions for each scale
+                level with shape (N, 1, H, W).
+            loc_preds (list[Tensor]): location predictions for each scale
+                level with shape (N, num_anchors * 2, H, W).
+            batch_img_metas (list[dict], Optional): Batch image meta info.
+                Defaults to None.
+            cfg (ConfigDict, optional): Test / postprocessing
+                configuration, if None, test_cfg would be used.
+                Defaults to None.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
+
+        Returns:
+            list[:obj:`InstanceData`]: Object detection results of each image
+            after the post process. Each item usually contains following keys.
+
+            - scores (Tensor): Classification scores, has a shape
+              (num_instance, )
+            - labels (Tensor): Labels of bboxes, has a shape (num_instances, ).
+            - bboxes (Tensor): Has a shape (num_instances, 4), the last
+              dimension 4 arrange as (x1, y1, x2, y2).
+        """
         assert len(cls_scores) == len(bbox_preds) == len(shape_preds) == len(
             loc_preds)
         num_levels = len(cls_scores)
@@ -771,11 +850,11 @@ class GuidedAnchorHead(AnchorHead):
             featmap_sizes,
             shape_preds,
             loc_preds,
-            img_metas,
+            batch_img_metas,
             use_loc_filter=not self.training,
             device=device)
         result_list = []
-        for img_id in range(len(img_metas)):
+        for img_id in range(len(batch_img_metas)):
             cls_score_list = [
                 cls_scores[i][img_id].detach() for i in range(num_levels)
             ]
@@ -788,27 +867,61 @@ class GuidedAnchorHead(AnchorHead):
             loc_mask_list = [
                 loc_masks[img_id][i].detach() for i in range(num_levels)
             ]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
-                                                guided_anchor_list,
-                                                loc_mask_list, img_shape,
-                                                scale_factor, cfg, rescale)
+            proposals = self._predict_by_feat_single(
+                cls_scores=cls_score_list,
+                bbox_preds=bbox_pred_list,
+                mlvl_anchors=guided_anchor_list,
+                mlvl_masks=loc_mask_list,
+                img_meta=batch_img_metas[img_id],
+                cfg=cfg,
+                rescale=rescale)
             result_list.append(proposals)
         return result_list
 
-    def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           mlvl_anchors,
-                           mlvl_masks,
-                           img_shape,
-                           scale_factor,
-                           cfg,
-                           rescale=False):
+    def _predict_by_feat_single(self,
+                                cls_scores: List[Tensor],
+                                bbox_preds: List[Tensor],
+                                mlvl_anchors: List[Tensor],
+                                mlvl_masks: List[Tensor],
+                                img_meta: dict,
+                                cfg: ConfigType,
+                                rescale: bool = False) -> InstanceData:
+        """Transform a single image's features extracted from the head into
+        bbox results.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores from all scale
+                levels of a single image, each item has shape
+                (num_priors * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas from
+                all scale levels of a single image, each item has shape
+                (num_priors * 4, H, W).
+            mlvl_anchors (list[Tensor]): Each element in the list is
+                the anchors of a single level in feature pyramid. it has
+                shape (num_priors, 4).
+            mlvl_masks (list[Tensor]): Each element in the list is location
+                masks of a single level.
+            img_meta (dict): Image meta info.
+            cfg (:obj:`ConfigDict` or dict): Test / postprocessing
+                configuration, if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
+
+        Returns:
+            :obj:`InstanceData`: Detection results of each image
+            after the post process.
+            Each item usually contains following keys.
+
+            - scores (Tensor): Classification scores, has a shape
+              (num_instance, )
+            - labels (Tensor): Labels of bboxes, has a shape (num_instances, ).
+            - bboxes (Tensor): Has a shape (num_instances, 4), the last
+              dimension 4 arrange as (x1, y1, x2, y2).
+        """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
-        mlvl_bboxes = []
+        mlvl_bbox_preds = []
+        mlvl_valid_anchors = []
         mlvl_scores = []
         for cls_score, bbox_pred, anchors, mask in zip(cls_scores, bbox_preds,
                                                        mlvl_anchors,
@@ -847,14 +960,22 @@ class GuidedAnchorHead(AnchorHead):
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
-            bboxes = self.bbox_coder.decode(
-                anchors, bbox_pred, max_shape=img_shape)
-            mlvl_bboxes.append(bboxes)
+
+            mlvl_bbox_preds.append(bbox_pred)
+            mlvl_valid_anchors.append(anchors)
             mlvl_scores.append(scores)
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
-        if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
+
+        mlvl_bbox_preds = torch.cat(mlvl_bbox_preds)
+        mlvl_anchors = torch.cat(mlvl_valid_anchors)
         mlvl_scores = torch.cat(mlvl_scores)
+        mlvl_bboxes = self.bbox_coder.decode(
+            mlvl_anchors, mlvl_bbox_preds, max_shape=img_meta['img_shape'])
+
+        if rescale:
+            assert img_meta.get('scale_factor') is not None
+            mlvl_bboxes /= mlvl_bboxes.new_tensor(
+                img_meta['scale_factor']).repeat((1, 2))
+
         if self.use_sigmoid_cls:
             # Add a dummy background class to the backend when using sigmoid
             # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
@@ -865,4 +986,9 @@ class GuidedAnchorHead(AnchorHead):
         det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                 cfg.score_thr, cfg.nms,
                                                 cfg.max_per_img)
-        return det_bboxes, det_labels
+
+        results = InstanceData()
+        results.bboxes = det_bboxes[:, :-1]
+        results.scores = det_bboxes[:, -1]
+        results.labels = det_labels
+        return results

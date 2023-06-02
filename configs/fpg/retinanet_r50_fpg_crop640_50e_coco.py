@@ -1,4 +1,4 @@
-_base_ = '../nas_fpn/retinanet_r50_nasfpn_crop640_50e_coco.py'
+_base_ = '../nas_fpn/retinanet_r50_nasfpn_crop640-50e_coco.py'
 
 norm_cfg = dict(type='BN', requires_grad=True)
 model = dict(
@@ -50,4 +50,4 @@ model = dict(
         norm_cfg=norm_cfg,
         skip_inds=[(0, 1, 2, 3), (0, 1, 2), (0, 1), (0, ), ()]))
 
-evaluation = dict(interval=2)
+train_cfg = dict(val_interval=2)

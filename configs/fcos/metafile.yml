@@ -19,9 +19,9 @@ Collections:
       Version: v2.0.0
 
 Models:
-  - Name: fcos_r50_caffe_fpn_gn-head_1x_coco
+  - Name: fcos_r50-caffe_fpn_gn-head_1x_coco
     In Collection: FCOS
-    Config: configs/fcos/fcos_r50_caffe_fpn_gn-head_1x_coco.py
+    Config: configs/fcos/fcos_r50-caffe_fpn_gn-head_1x_coco.py
     Metadata:
       Training Memory (GB): 3.6
       inference time (ms/im):
@@ -39,9 +39,9 @@ Models:
           box AP: 36.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r50_caffe_fpn_gn-head_1x_coco/fcos_r50_caffe_fpn_gn-head_1x_coco-821213aa.pth
 
-  - Name: fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_1x_coco
+  - Name: fcos_r50-caffe_fpn_gn-head-center-normbbox-centeronreg-giou_1x_coco
     In Collection: FCOS
-    Config: configs/fcos/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_1x_coco.py
+    Config: configs/fcos/fcos_r50-caffe_fpn_gn-head-center-normbbox-centeronreg-giou_1x_coco.py
     Metadata:
       Training Memory (GB): 3.7
       Epochs: 12
@@ -52,9 +52,9 @@ Models:
           box AP: 38.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_1x_coco/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_1x_coco-0a0d75a8.pth
 
-  - Name: fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_dcn_1x_coco
+  - Name: fcos_r50-dcn-caffe_fpn_gn-head-center-normbbox-centeronreg-giou_1x_coco
     In Collection: FCOS
-    Config: configs/fcos/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_dcn_1x_coco.py
+    Config: configs/fcos/fcos_r50-dcn-caffe_fpn_gn-head-center-normbbox-centeronreg-giou_1x_coco.py
     Metadata:
       Training Memory (GB): 3.8
       Epochs: 12
@@ -65,9 +65,9 @@ Models:
           box AP: 42.3
     Weights: https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_dcn_1x_coco/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_dcn_1x_coco-ae4d8b3d.pth
 
-  - Name: fcos_r101_caffe_fpn_gn-head_1x_coco
+  - Name: fcos_r101-caffe_fpn_gn-head-1x_coco
     In Collection: FCOS
-    Config: configs/fcos/fcos_r101_caffe_fpn_gn-head_1x_coco.py
+    Config: configs/fcos/fcos_r101-caffe_fpn_gn-head-1x_coco.py
     Metadata:
       Training Memory (GB): 5.5
       inference time (ms/im):
@@ -85,9 +85,9 @@ Models:
           box AP: 39.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r101_caffe_fpn_gn-head_1x_coco/fcos_r101_caffe_fpn_gn-head_1x_coco-0e37b982.pth
 
-  - Name: fcos_r50_caffe_fpn_gn-head_mstrain_640-800_2x_coco
+  - Name: fcos_r50-caffe_fpn_gn-head_ms-640-800-2x_coco
     In Collection: FCOS
-    Config: configs/fcos/fcos_r50_caffe_fpn_gn-head_mstrain_640-800_2x_coco.py
+    Config: configs/fcos/fcos_r50-caffe_fpn_gn-head_ms-640-800-2x_coco.py
     Metadata:
       Training Memory (GB): 2.6
       inference time (ms/im):
@@ -105,9 +105,9 @@ Models:
           box AP: 38.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r50_caffe_fpn_gn-head_mstrain_640-800_2x_coco/fcos_r50_caffe_fpn_gn-head_mstrain_640-800_2x_coco-d92ceeea.pth
 
-  - Name: fcos_r101_caffe_fpn_gn-head_mstrain_640-800_2x_coco
+  - Name: fcos_r101-caffe_fpn_gn-head_ms-640-800-2x_coco
     In Collection: FCOS
-    Config: configs/fcos/fcos_r101_caffe_fpn_gn-head_mstrain_640-800_2x_coco.py
+    Config: configs/fcos/fcos_r101-caffe_fpn_gn-head_ms-640-800-2x_coco.py
     Metadata:
       Training Memory (GB): 5.5
       inference time (ms/im):
@@ -125,9 +125,9 @@ Models:
           box AP: 40.8
     Weights: https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r101_caffe_fpn_gn-head_mstrain_640-800_2x_coco/fcos_r101_caffe_fpn_gn-head_mstrain_640-800_2x_coco-511424d6.pth
 
-  - Name: fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_2x_coco
+  - Name: fcos_x101-64x4d_fpn_gn-head_ms-640-800-2x_coco
     In Collection: FCOS
-    Config: configs/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_2x_coco.py
+    Config: configs/fcos/fcos_x101-64x4d_fpn_gn-head_ms-640-800-2x_coco.py
     Metadata:
       Training Memory (GB): 10.0
       inference time (ms/im):

@@ -1,178 +1,186 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
 import xml.etree.ElementTree as ET
+from typing import List, Optional, Union
 
 import mmcv
-import numpy as np
-from PIL import Image
+from mmengine.fileio import get, get_local_path, list_from_file
 
-from .builder import DATASETS
-from .custom import CustomDataset
+from mmdet.registry import DATASETS
+from .base_det_dataset import BaseDetDataset
 
 
 @DATASETS.register_module()
-class XMLDataset(CustomDataset):
+class XMLDataset(BaseDetDataset):
     """XML dataset for detection.
 
     Args:
-        min_size (int | float, optional): The minimum size of bounding
-            boxes in the images. If the size of a bounding box is less than
-            ``min_size``, it would be add to ignored field.
         img_subdir (str): Subdir where images are stored. Default: JPEGImages.
         ann_subdir (str): Subdir where annotations are. Default: Annotations.
+        backend_args (dict, optional): Arguments to instantiate the
+            corresponding backend. Defaults to None.
     """
 
     def __init__(self,
-                 min_size=None,
-                 img_subdir='JPEGImages',
-                 ann_subdir='Annotations',
-                 **kwargs):
-        assert self.CLASSES or kwargs.get(
-            'classes', None), 'CLASSES in `XMLDataset` can not be None.'
+                 img_subdir: str = 'JPEGImages',
+                 ann_subdir: str = 'Annotations',
+                 **kwargs) -> None:
         self.img_subdir = img_subdir
         self.ann_subdir = ann_subdir
-        super(XMLDataset, self).__init__(**kwargs)
-        self.cat2label = {cat: i for i, cat in enumerate(self.CLASSES)}
-        self.min_size = min_size
+        super().__init__(**kwargs)
 
-    def load_annotations(self, ann_file):
+    @property
+    def sub_data_root(self) -> str:
+        """Return the sub data root."""
+        return self.data_prefix.get('sub_data_root', '')
+
+    def load_data_list(self) -> List[dict]:
         """Load annotation from XML style ann_file.
-
-        Args:
-            ann_file (str): Path of XML file.
 
         Returns:
             list[dict]: Annotation info from XML file.
         """
+        assert self._metainfo.get('classes', None) is not None, \
+            '`classes` in `XMLDataset` can not be None.'
+        self.cat2label = {
+            cat: i
+            for i, cat in enumerate(self._metainfo['classes'])
+        }
 
-        data_infos = []
-        img_ids = mmcv.list_from_file(ann_file)
+        data_list = []
+        img_ids = list_from_file(self.ann_file, backend_args=self.backend_args)
         for img_id in img_ids:
-            filename = osp.join(self.img_subdir, f'{img_id}.jpg')
-            xml_path = osp.join(self.img_prefix, self.ann_subdir,
+            file_name = osp.join(self.img_subdir, f'{img_id}.jpg')
+            xml_path = osp.join(self.sub_data_root, self.ann_subdir,
                                 f'{img_id}.xml')
-            tree = ET.parse(xml_path)
-            root = tree.getroot()
-            size = root.find('size')
-            if size is not None:
-                width = int(size.find('width').text)
-                height = int(size.find('height').text)
-            else:
-                img_path = osp.join(self.img_prefix, filename)
-                img = Image.open(img_path)
-                width, height = img.size
-            data_infos.append(
-                dict(id=img_id, filename=filename, width=width, height=height))
 
-        return data_infos
+            raw_img_info = {}
+            raw_img_info['img_id'] = img_id
+            raw_img_info['file_name'] = file_name
+            raw_img_info['xml_path'] = xml_path
 
-    def _filter_imgs(self, min_size=32):
-        """Filter images too small or without annotation."""
-        valid_inds = []
-        for i, img_info in enumerate(self.data_infos):
-            if min(img_info['width'], img_info['height']) < min_size:
-                continue
-            if self.filter_empty_gt:
-                img_id = img_info['id']
-                xml_path = osp.join(self.img_prefix, self.ann_subdir,
-                                    f'{img_id}.xml')
-                tree = ET.parse(xml_path)
-                root = tree.getroot()
-                for obj in root.findall('object'):
-                    name = obj.find('name').text
-                    if name in self.CLASSES:
-                        valid_inds.append(i)
-                        break
-            else:
-                valid_inds.append(i)
-        return valid_inds
+            parsed_data_info = self.parse_data_info(raw_img_info)
+            data_list.append(parsed_data_info)
+        return data_list
 
-    def get_ann_info(self, idx):
-        """Get annotation from XML file by index.
+    @property
+    def bbox_min_size(self) -> Optional[str]:
+        """Return the minimum size of bounding boxes in the images."""
+        if self.filter_cfg is not None:
+            return self.filter_cfg.get('bbox_min_size', None)
+        else:
+            return None
+
+    def parse_data_info(self, img_info: dict) -> Union[dict, List[dict]]:
+        """Parse raw annotation to target format.
 
         Args:
-            idx (int): Index of data.
+            img_info (dict): Raw image information, usually it includes
+                `img_id`, `file_name`, and `xml_path`.
 
         Returns:
-            dict: Annotation info of specified index.
+            Union[dict, List[dict]]: Parsed annotation.
         """
+        data_info = {}
+        img_path = osp.join(self.sub_data_root, img_info['file_name'])
+        data_info['img_path'] = img_path
+        data_info['img_id'] = img_info['img_id']
+        data_info['xml_path'] = img_info['xml_path']
 
-        img_id = self.data_infos[idx]['id']
-        xml_path = osp.join(self.img_prefix, self.ann_subdir, f'{img_id}.xml')
-        tree = ET.parse(xml_path)
-        root = tree.getroot()
-        bboxes = []
-        labels = []
-        bboxes_ignore = []
-        labels_ignore = []
-        for obj in root.findall('object'):
+        # deal with xml file
+        with get_local_path(
+                img_info['xml_path'],
+                backend_args=self.backend_args) as local_path:
+            raw_ann_info = ET.parse(local_path)
+        root = raw_ann_info.getroot()
+        size = root.find('size')
+        if size is not None:
+            width = int(size.find('width').text)
+            height = int(size.find('height').text)
+        else:
+            img_bytes = get(img_path, backend_args=self.backend_args)
+            img = mmcv.imfrombytes(img_bytes, backend='cv2')
+            height, width = img.shape[:2]
+            del img, img_bytes
+
+        data_info['height'] = height
+        data_info['width'] = width
+
+        data_info['instances'] = self._parse_instance_info(
+            raw_ann_info, minus_one=True)
+
+        return data_info
+
+    def _parse_instance_info(self,
+                             raw_ann_info: ET,
+                             minus_one: bool = True) -> List[dict]:
+        """parse instance information.
+
+        Args:
+            raw_ann_info (ElementTree): ElementTree object.
+            minus_one (bool): Whether to subtract 1 from the coordinates.
+                Defaults to True.
+
+        Returns:
+            List[dict]: List of instances.
+        """
+        instances = []
+        for obj in raw_ann_info.findall('object'):
+            instance = {}
             name = obj.find('name').text
-            if name not in self.CLASSES:
+            if name not in self._metainfo['classes']:
                 continue
-            label = self.cat2label[name]
             difficult = obj.find('difficult')
             difficult = 0 if difficult is None else int(difficult.text)
             bnd_box = obj.find('bndbox')
-            # TODO: check whether it is necessary to use int
-            # Coordinates may be float type
             bbox = [
                 int(float(bnd_box.find('xmin').text)),
                 int(float(bnd_box.find('ymin').text)),
                 int(float(bnd_box.find('xmax').text)),
                 int(float(bnd_box.find('ymax').text))
             ]
+
+            # VOC needs to subtract 1 from the coordinates
+            if minus_one:
+                bbox = [x - 1 for x in bbox]
+
             ignore = False
-            if self.min_size:
+            if self.bbox_min_size is not None:
                 assert not self.test_mode
                 w = bbox[2] - bbox[0]
                 h = bbox[3] - bbox[1]
-                if w < self.min_size or h < self.min_size:
+                if w < self.bbox_min_size or h < self.bbox_min_size:
                     ignore = True
             if difficult or ignore:
-                bboxes_ignore.append(bbox)
-                labels_ignore.append(label)
+                instance['ignore_flag'] = 1
             else:
-                bboxes.append(bbox)
-                labels.append(label)
-        if not bboxes:
-            bboxes = np.zeros((0, 4))
-            labels = np.zeros((0, ))
-        else:
-            bboxes = np.array(bboxes, ndmin=2) - 1
-            labels = np.array(labels)
-        if not bboxes_ignore:
-            bboxes_ignore = np.zeros((0, 4))
-            labels_ignore = np.zeros((0, ))
-        else:
-            bboxes_ignore = np.array(bboxes_ignore, ndmin=2) - 1
-            labels_ignore = np.array(labels_ignore)
-        ann = dict(
-            bboxes=bboxes.astype(np.float32),
-            labels=labels.astype(np.int64),
-            bboxes_ignore=bboxes_ignore.astype(np.float32),
-            labels_ignore=labels_ignore.astype(np.int64))
-        return ann
+                instance['ignore_flag'] = 0
+            instance['bbox'] = bbox
+            instance['bbox_label'] = self.cat2label[name]
+            instances.append(instance)
+        return instances
 
-    def get_cat_ids(self, idx):
-        """Get category ids in XML file by index.
-
-        Args:
-            idx (int): Index of data.
+    def filter_data(self) -> List[dict]:
+        """Filter annotations according to filter_cfg.
 
         Returns:
-            list[int]: All categories in the image of specified index.
+            List[dict]: Filtered results.
         """
+        if self.test_mode:
+            return self.data_list
 
-        cat_ids = []
-        img_id = self.data_infos[idx]['id']
-        xml_path = osp.join(self.img_prefix, self.ann_subdir, f'{img_id}.xml')
-        tree = ET.parse(xml_path)
-        root = tree.getroot()
-        for obj in root.findall('object'):
-            name = obj.find('name').text
-            if name not in self.CLASSES:
+        filter_empty_gt = self.filter_cfg.get('filter_empty_gt', False) \
+            if self.filter_cfg is not None else False
+        min_size = self.filter_cfg.get('min_size', 0) \
+            if self.filter_cfg is not None else 0
+
+        valid_data_infos = []
+        for i, data_info in enumerate(self.data_list):
+            width = data_info['width']
+            height = data_info['height']
+            if filter_empty_gt and len(data_info['instances']) == 0:
                 continue
-            label = self.cat2label[name]
-            cat_ids.append(label)
+            if min(width, height) >= min_size:
+                valid_data_infos.append(data_info)
 
-        return cat_ids
+        return valid_data_infos

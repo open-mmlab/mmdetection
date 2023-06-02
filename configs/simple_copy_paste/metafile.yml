@@ -23,9 +23,9 @@ Collections:
       Version: v2.25.0
 
 Models:
-  - Name: mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco
+  - Name: mask-rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco
     In Collection: SimpleCopyPaste
-    Config: configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco.py
+    Config: configs/simple_copy_paste/mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_32xb2-ssj-270k_coco.py
     Metadata:
       Training Memory (GB): 7.2
       Iterations: 270000
@@ -40,9 +40,9 @@ Models:
           mask AP: 39.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco_20220324_182940-33a100c5.pth
 
-  - Name: mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_90k_coco
+  - Name: mask-rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_90k_coco
     In Collection: SimpleCopyPaste
-    Config: configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_90k_coco.py
+    Config: configs/simple_copy_paste/mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_32xb2-ssj-90k_coco.py
     Metadata:
       Training Memory (GB): 7.2
       Iterations: 90000
@@ -57,9 +57,9 @@ Models:
           mask AP: 39.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_90k_coco/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_90k_coco_20220316_181409-f79c84c5.pth
 
-  - Name: mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco
+  - Name: mask-rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco
     In Collection: SimpleCopyPaste
-    Config: configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco.py
+    Config: configs/simple_copy_paste/mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_32xb2-ssj-scp-270k_coco.py
     Metadata:
       Training Memory (GB): 7.2
       Iterations: 270000
@@ -74,9 +74,9 @@ Models:
           mask AP: 40.3
     Weights: https://download.openmmlab.com/mmdetection/v2.0/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco_20220324_201229-80ee90b7.pth
 
-  - Name: mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_90k_coco
+  - Name: mask-rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_90k_coco
     In Collection: SimpleCopyPaste
-    Config: configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_90k_coco.py
+    Config: configs/simple_copy_paste/mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_32xb2-ssj-scp-90k_coco.py
     Metadata:
       Training Memory (GB): 7.2
       Iterations: 90000

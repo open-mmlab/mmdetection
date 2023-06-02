@@ -5,19 +5,53 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule, Scale
 
 from mmdet.models.dense_heads.fcos_head import FCOSHead
-from ..builder import HEADS
+from mmdet.registry import MODELS
+from mmdet.utils import OptMultiConfig
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class NASFCOSHead(FCOSHead):
     """Anchor-free head used in `NASFCOS <https://arxiv.org/abs/1906.04423>`_.
 
     It is quite similar with FCOS head, except for the searched structure of
     classification branch and bbox regression branch, where a structure of
     "dconv3x3, conv3x3, dconv3x3, conv1x1" is utilized instead.
-    """
 
-    def __init__(self, *args, init_cfg=None, **kwargs):
+    Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
+        strides (Sequence[int] or Sequence[Tuple[int, int]]): Strides of points
+            in multiple feature levels. Defaults to (4, 8, 16, 32, 64).
+        regress_ranges (Sequence[Tuple[int, int]]): Regress range of multiple
+            level points.
+        center_sampling (bool): If true, use center sampling.
+            Defaults to False.
+        center_sample_radius (float): Radius of center sampling.
+            Defaults to 1.5.
+        norm_on_bbox (bool): If true, normalize the regression targets with
+            FPN strides. Defaults to False.
+        centerness_on_reg (bool): If true, position centerness on the
+            regress branch. Please refer to https://github.com/tianzhi0549/FCOS/issues/89#issuecomment-516877042.
+            Defaults to False.
+        conv_bias (bool or str): If specified as `auto`, it will be decided by
+            the norm_cfg. Bias of conv will be set as True if `norm_cfg` is
+            None, otherwise False. Defaults to "auto".
+        loss_cls (:obj:`ConfigDict` or dict): Config of classification loss.
+        loss_bbox (:obj:`ConfigDict` or dict): Config of localization loss.
+        loss_centerness (:obj:`ConfigDict`, or dict): Config of centerness
+            loss.
+        norm_cfg (:obj:`ConfigDict` or dict): dictionary to construct and
+            config norm layer.  Defaults to
+            ``norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)``.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict], opitonal): Initialization config dict.
+    """  # noqa: E501
+
+    def __init__(self,
+                 *args,
+                 init_cfg: OptMultiConfig = None,
+                 **kwargs) -> None:
         if init_cfg is None:
             init_cfg = [
                 dict(type='Caffe2Xavier', layer=['ConvModule', 'Conv2d']),
@@ -34,9 +68,9 @@ class NASFCOSHead(FCOSHead):
                             bias_prob=0.01)
                     ]),
             ]
-        super(NASFCOSHead, self).__init__(*args, init_cfg=init_cfg, **kwargs)
+        super().__init__(*args, init_cfg=init_cfg, **kwargs)
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         """Initialize layers of the head."""
         dconv3x3_config = dict(
             type='DCNv2',

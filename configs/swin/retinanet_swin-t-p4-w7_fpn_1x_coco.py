@@ -27,4 +27,5 @@ model = dict(
         init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     neck=dict(in_channels=[192, 384, 768], start_level=0, num_outs=5))
 
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+# optimizer
+optim_wrapper = dict(optimizer=dict(lr=0.01))

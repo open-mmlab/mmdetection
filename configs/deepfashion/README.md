@@ -29,22 +29,22 @@ mmdetection
 ├── data
 │   ├── DeepFashion
 │   │   ├── In-shop
-│   │   ├── Anno
-│   │   │   ├── segmentation
-│   │   │   |   ├── DeepFashion_segmentation_train.json
-│   │   │   |   ├── DeepFashion_segmentation_query.json
-│   │   │   |   ├── DeepFashion_segmentation_gallery.json
-│   │   │   ├── list_bbox_inshop.txt
-│   │   │   ├── list_description_inshop.json
-│   │   │   ├── list_item_inshop.txt
-│   │   │   └── list_landmarks_inshop.txt
-│   │   ├── Eval
-│   │   │   └── list_eval_partition.txt
-│   │   ├── Img
-│   │   │   ├── img
-│   │   │   │   ├──XXX.jpg
-│   │   │   ├── img_highres
-│   │   │   └── ├──XXX.jpg
+|   │   │   ├── Anno
+|   │   │   │   ├── segmentation
+|   │   │   │   |   ├── DeepFashion_segmentation_train.json
+|   │   │   │   |   ├── DeepFashion_segmentation_query.json
+|   │   │   │   |   ├── DeepFashion_segmentation_gallery.json
+|   │   │   │   ├── list_bbox_inshop.txt
+|   │   │   │   ├── list_description_inshop.json
+|   │   │   │   ├── list_item_inshop.txt
+|   │   │   │   └── list_landmarks_inshop.txt
+|   │   │   ├── Eval
+|   │   │   │   └── list_eval_partition.txt
+|   │   │   ├── Img
+|   │   │   │   ├── img
+|   │   │   │   │   ├──XXX.jpg
+|   │   │   │   ├── img_highres
+|   │   │   │   └── ├──XXX.jpg
 
 ```
 
@@ -53,9 +53,9 @@ or creating your own config file.
 
 ## Results and Models
 
-| Backbone | Model type |       Dataset       | bbox detection Average Precision | segmentation Average Precision |                                                          Config                                                          |                                                                                                                                       Download (Google)                                                                                                                                       |
-| :------: | :--------: | :-----------------: | :------------------------------: | :----------------------------: | :----------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| ResNet50 | Mask RCNN  | DeepFashion-In-shop |              0.599               |             0.584              | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/deepfashion/mask_rcnn_r50_fpn_15e_deepfashion.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/deepfashion/mask_rcnn_r50_fpn_15e_deepfashion/mask_rcnn_r50_fpn_15e_deepfashion_20200329_192752.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/deepfashion/mask_rcnn_r50_fpn_15e_deepfashion/20200329_192752.log.json) |
+| Backbone | Model type |       Dataset       | bbox detection Average Precision | segmentation Average Precision |                      Config                      |                                                                                                                                       Download (Google)                                                                                                                                       |
+| :------: | :--------: | :-----------------: | :------------------------------: | :----------------------------: | :----------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| ResNet50 | Mask RCNN  | DeepFashion-In-shop |              0.599               |             0.584              | [config](./mask-rcnn_r50_fpn_15e_deepfashion.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/deepfashion/mask_rcnn_r50_fpn_15e_deepfashion/mask_rcnn_r50_fpn_15e_deepfashion_20200329_192752.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/deepfashion/mask_rcnn_r50_fpn_15e_deepfashion/20200329_192752.log.json) |
 
 ## Citation
 

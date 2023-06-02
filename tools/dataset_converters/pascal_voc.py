@@ -3,10 +3,11 @@ import argparse
 import os.path as osp
 import xml.etree.ElementTree as ET
 
-import mmcv
 import numpy as np
+from mmengine.fileio import dump, list_from_file
+from mmengine.utils import mkdir_or_exist, track_progress
 
-from mmdet.core import voc_classes
+from mmdet.evaluation import voc_classes
 
 label_ids = {name: i for i, name in enumerate(voc_classes())}
 
@@ -76,7 +77,7 @@ def cvt_annotations(devkit_path, years, split, out_file):
             print(f'filelist does not exist: {filelist}, '
                   f'skip voc{year} {split}')
             return
-        img_names = mmcv.list_from_file(filelist)
+        img_names = list_from_file(filelist)
         xml_paths = [
             osp.join(devkit_path, f'VOC{year}/Annotations/{img_name}.xml')
             for img_name in img_names
@@ -84,12 +85,12 @@ def cvt_annotations(devkit_path, years, split, out_file):
         img_paths = [
             f'VOC{year}/JPEGImages/{img_name}.jpg' for img_name in img_names
         ]
-        part_annotations = mmcv.track_progress(parse_xml,
-                                               list(zip(xml_paths, img_paths)))
+        part_annotations = track_progress(parse_xml,
+                                          list(zip(xml_paths, img_paths)))
         annotations.extend(part_annotations)
     if out_file.endswith('json'):
         annotations = cvt_to_coco_json(annotations)
-    mmcv.dump(annotations, out_file)
+    dump(annotations, out_file)
     return annotations
 
 
@@ -198,7 +199,7 @@ def main():
     args = parse_args()
     devkit_path = args.devkit_path
     out_dir = args.out_dir if args.out_dir else devkit_path
-    mmcv.mkdir_or_exist(out_dir)
+    mkdir_or_exist(out_dir)
 
     years = []
     if osp.isdir(osp.join(devkit_path, 'VOC2007')):

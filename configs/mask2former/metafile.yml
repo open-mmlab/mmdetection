@@ -17,9 +17,9 @@ Collections:
       Version: v2.23.0
 
 Models:
-- Name: mask2former_swin-s-p4-w7-224_lsj_8x2_50e_coco-panoptic
+- Name: mask2former_swin-s-p4-w7-224_8xb2-lsj-50e_coco-panoptic
   In Collection: Mask2Former
-  Config: configs/mask2former/mask2former_swin-s-p4-w7-224_lsj_8x2_50e_coco-panoptic.py
+  Config: configs/mask2former/mask2former_swin-s-p4-w7-224_8xb2-lsj-50e_coco-panoptic.py
   Metadata:
     Training Memory (GB): 19.1
     Iterations: 368750
@@ -36,10 +36,10 @@ Models:
     Dataset: COCO
     Metrics:
       PQ: 54.5
-  Weights: https://download.openmmlab.com/mmdetection/v2.0/mask2former/mask2former_swin-s-p4-w7-224_lsj_8x2_50e_coco-panoptic/mask2former_swin-s-p4-w7-224_lsj_8x2_50e_coco-panoptic_20220329_225200-c7b94355.pth
-- Name: mask2former_r101_lsj_8x2_50e_coco
+  Weights: https://download.openmmlab.com/mmdetection/v3.0/mask2former/mask2former_swin-s-p4-w7-224_8xb2-lsj-50e_coco-panoptic/mask2former_swin-s-p4-w7-224_8xb2-lsj-50e_coco-panoptic_20220329_225200-4a16ded7.pth
+- Name: mask2former_r101_8xb2-lsj-50e_coco
   In Collection: Mask2Former
-  Config: configs/mask2former/mask2former_r101_lsj_8x2_50e_coco.py
+  Config: configs/mask2former/mask2former_r101_8xb2-lsj-50e_coco.py
   Metadata:
     Training Memory (GB): 15.5
     Iterations: 368750
@@ -52,10 +52,10 @@ Models:
     Dataset: COCO
     Metrics:
       mask AP: 44.0
-  Weights: https://download.openmmlab.com/mmdetection/v2.0/mask2former/mask2former_r101_lsj_8x2_50e_coco/mask2former_r101_lsj_8x2_50e_coco_20220426_100250-c50b6fa6.pth
-- Name: mask2former_r101_lsj_8x2_50e_coco-panoptic
+  Weights: https://download.openmmlab.com/mmdetection/v3.0/mask2former/mask2former_r101_8xb2-lsj-50e_coco/mask2former_r101_8xb2-lsj-50e_coco_20220426_100250-ecf181e2.pth
+- Name: mask2former_r101_8xb2-lsj-50e_coco-panoptic
   In Collection: Mask2Former
-  Config: configs/mask2former/mask2former_r101_lsj_8x2_50e_coco-panoptic.py
+  Config: configs/mask2former/mask2former_r101_8xb2-lsj-50e_coco-panoptic.py
   Metadata:
     Training Memory (GB): 16.1
     Iterations: 368750
@@ -72,10 +72,10 @@ Models:
     Dataset: COCO
     Metrics:
       PQ: 52.4
-  Weights: https://download.openmmlab.com/mmdetection/v2.0/mask2former/mask2former_r101_lsj_8x2_50e_coco-panoptic/mask2former_r101_lsj_8x2_50e_coco-panoptic_20220329_225104-c54e64c9.pth
-- Name: mask2former_r50_lsj_8x2_50e_coco-panoptic
+  Weights: https://download.openmmlab.com/mmdetection/v3.0/mask2former/mask2former_r101_8xb2-lsj-50e_coco-panoptic/mask2former_r101_8xb2-lsj-50e_coco-panoptic_20220329_225104-c74d4d71.pth
+- Name: mask2former_r50_8xb2-lsj-50e_coco-panoptic
   In Collection: Mask2Former
-  Config: configs/mask2former/mask2former_r50_lsj_8x2_50e_coco-panoptic.py
+  Config: configs/mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py
   Metadata:
     Training Memory (GB): 13.9
     Iterations: 368750
@@ -83,19 +83,19 @@ Models:
   - Task: Object Detection
     Dataset: COCO
     Metrics:
-      box AP: 44.8
+      box AP: 44.5
   - Task: Instance Segmentation
     Dataset: COCO
     Metrics:
-      mask AP: 41.9
+      mask AP: 41.8
   - Task: Panoptic Segmentation
     Dataset: COCO
     Metrics:
-      PQ: 51.9
-  Weights: https://download.openmmlab.com/mmdetection/v2.0/mask2former/mask2former_r50_lsj_8x2_50e_coco-panoptic/mask2former_r50_lsj_8x2_50e_coco-panoptic_20220326_224516-11a44721.pth
-- Name: mask2former_swin-t-p4-w7-224_lsj_8x2_50e_coco-panoptic
+      PQ: 52.0
+  Weights: https://download.openmmlab.com/mmdetection/v3.0/mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic/mask2former_r50_8xb2-lsj-50e_coco-panoptic_20230118_125535-54df384a.pth
+- Name: mask2former_swin-t-p4-w7-224_8xb2-lsj-50e_coco-panoptic
   In Collection: Mask2Former
-  Config: configs/mask2former/mask2former_swin-t-p4-w7-224_lsj_8x2_50e_coco-panoptic.py
+  Config: configs/mask2former/mask2former_swin-t-p4-w7-224_8xb2-lsj-50e_coco-panoptic.py
   Metadata:
     Training Memory (GB): 15.9
     Iterations: 368750
@@ -112,10 +112,10 @@ Models:
     Dataset: COCO
     Metrics:
       PQ: 53.4
-  Weights: https://download.openmmlab.com/mmdetection/v2.0/mask2former/mask2former_swin-t-p4-w7-224_lsj_8x2_50e_coco-panoptic/mask2former_swin-t-p4-w7-224_lsj_8x2_50e_coco-panoptic_20220326_224553-fc567107.pth
-- Name: mask2former_r50_lsj_8x2_50e_coco
+  Weights: https://download.openmmlab.com/mmdetection/v3.0/mask2former/mask2former_swin-t-p4-w7-224_8xb2-lsj-50e_coco-panoptic/mask2former_swin-t-p4-w7-224_8xb2-lsj-50e_coco-panoptic_20220326_224553-3ec9e0ae.pth
+- Name: mask2former_r50_8xb2-lsj-50e_coco
   In Collection: Mask2Former
-  Config: configs/mask2former/mask2former_r50_lsj_8x2_50e_coco.py
+  Config: configs/mask2former/mask2former_r50_8xb2-lsj-50e_coco.py
   Metadata:
     Training Memory (GB): 13.7
     Iterations: 368750
@@ -128,10 +128,10 @@ Models:
     Dataset: COCO
     Metrics:
       mask AP: 42.9
-  Weights: https://download.openmmlab.com/mmdetection/v2.0/mask2former/mask2former_r50_lsj_8x2_50e_coco/mask2former_r50_lsj_8x2_50e_coco_20220506_191028-8e96e88b.pth
-- Name: mask2former_swin-l-p4-w12-384-in21k_lsj_16x1_100e_coco-panoptic
+  Weights: https://download.openmmlab.com/mmdetection/v3.0/mask2former/mask2former_r50_8xb2-lsj-50e_coco/mask2former_r50_8xb2-lsj-50e_coco_20220506_191028-41b088b6.pth
+- Name: mask2former_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco-panoptic
   In Collection: Mask2Former
-  Config: configs/mask2former/mask2former_swin-l-p4-w12-384-in21k_lsj_16x1_100e_coco-panoptic.py
+  Config: configs/mask2former/mask2former_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco-panoptic.py
   Metadata:
     Training Memory (GB): 21.1
     Iterations: 737500
@@ -148,10 +148,10 @@ Models:
     Dataset: COCO
     Metrics:
       PQ: 57.6
-  Weights: https://download.openmmlab.com/mmdetection/v2.0/mask2former/mask2former_swin-l-p4-w12-384-in21k_lsj_16x1_100e_coco-panoptic/mask2former_swin-l-p4-w12-384-in21k_lsj_16x1_100e_coco-panoptic_20220407_104949-d4919c44.pth
-- Name: mask2former_swin-b-p4-w12-384-in21k_lsj_8x2_50e_coco-panoptic
+  Weights: https://download.openmmlab.com/mmdetection/v3.0/mask2former/mask2former_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco-panoptic/mask2former_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco-panoptic_20220407_104949-82f8d28d.pth
+- Name: mask2former_swin-b-p4-w12-384-in21k_8xb2-lsj-50e_coco-panoptic
   In Collection: Mask2Former
-  Config: configs/mask2former/mask2former_swin-b-p4-w12-384-in21k_lsj_8x2_50e_coco-panoptic.py
+  Config: configs/mask2former/mask2former_swin-b-p4-w12-384-in21k_8xb2-lsj-50e_coco-panoptic.py
   Metadata:
     Training Memory (GB): 25.8
     Iterations: 368750
@@ -168,10 +168,10 @@ Models:
     Dataset: COCO
     Metrics:
       PQ: 56.3
-  Weights: https://download.openmmlab.com/mmdetection/v2.0/mask2former/mask2former_swin-b-p4-w12-384-in21k_lsj_8x2_50e_coco-panoptic/mask2former_swin-b-p4-w12-384-in21k_lsj_8x2_50e_coco-panoptic_20220329_230021-3bb8b482.pth
-- Name: mask2former_swin-b-p4-w12-384_lsj_8x2_50e_coco-panoptic
+  Weights: https://download.openmmlab.com/mmdetection/v3.0/mask2former/mask2former_swin-b-p4-w12-384-in21k_8xb2-lsj-50e_coco-panoptic/mask2former_swin-b-p4-w12-384-in21k_8xb2-lsj-50e_coco-panoptic_20220329_230021-05ec7315.pth
+- Name: mask2former_swin-b-p4-w12-384_8xb2-lsj-50e_coco-panoptic
   In Collection: Mask2Former
-  Config: configs/mask2former/mask2former_swin-b-p4-w12-384_lsj_8x2_50e_coco-panoptic.py
+  Config: configs/mask2former/mask2former_swin-b-p4-w12-384_8xb2-lsj-50e_coco-panoptic.py
   Metadata:
     Training Memory (GB): 26.0
     Iterations: 368750
@@ -188,10 +188,10 @@ Models:
     Dataset: COCO
     Metrics:
       PQ: 55.1
-  Weights: https://download.openmmlab.com/mmdetection/v2.0/mask2former/mask2former_swin-b-p4-w12-384_lsj_8x2_50e_coco-panoptic/mask2former_swin-b-p4-w12-384_lsj_8x2_50e_coco-panoptic_20220331_002244-c149a9e9.pth
-- Name: mask2former_swin-t-p4-w7-224_lsj_8x2_50e_coco
+  Weights: https://download.openmmlab.com/mmdetection/v3.0/mask2former/mask2former_swin-b-p4-w12-384_8xb2-lsj-50e_coco-panoptic/mask2former_swin-b-p4-w12-384_8xb2-lsj-50e_coco-panoptic_20220331_002244-8a651d82.pth
+- Name: mask2former_swin-t-p4-w7-224_8xb2-lsj-50e_coco
   In Collection: Mask2Former
-  Config: configs/mask2former/mask2former_swin-t-p4-w7-224_lsj_8x2_50e_coco.py
+  Config: configs/mask2former/mask2former_swin-t-p4-w7-224_8xb2-lsj-50e_coco.py
   Metadata:
     Training Memory (GB): 15.3
     Iterations: 368750
@@ -204,10 +204,10 @@ Models:
     Dataset: COCO
     Metrics:
       mask AP: 44.7
-  Weights: https://download.openmmlab.com/mmdetection/v2.0/mask2former/mask2former_swin-t-p4-w7-224_lsj_8x2_50e_coco/mask2former_swin-t-p4-w7-224_lsj_8x2_50e_coco_20220508_091649-4a943037.pth
-- Name: mask2former_swin-s-p4-w7-224_lsj_8x2_50e_coco
+  Weights: https://download.openmmlab.com/mmdetection/v3.0/mask2former/mask2former_swin-t-p4-w7-224_8xb2-lsj-50e_coco/mask2former_swin-t-p4-w7-224_8xb2-lsj-50e_coco_20220508_091649-01b0f990.pth
+- Name: mask2former_swin-s-p4-w7-224_8xb2-lsj-50e_coco
   In Collection: Mask2Former
-  Config: configs/mask2former/mask2former_swin-s-p4-w7-224_lsj_8x2_50e_coco.py
+  Config: configs/mask2former/mask2former_swin-s-p4-w7-224_8xb2-lsj-50e_coco.py
   Metadata:
     Training Memory (GB): 18.8
     Iterations: 368750
@@ -220,4 +220,4 @@ Models:
     Dataset: COCO
     Metrics:
       mask AP: 46.1
-  Weights: https://download.openmmlab.com/mmdetection/v2.0/mask2former/mask2former_swin-s-p4-w7-224_lsj_8x2_50e_coco/mask2former_swin-s-p4-w7-224_lsj_8x2_50e_coco_20220504_001756-743b7d99.pth
+  Weights: https://download.openmmlab.com/mmdetection/v3.0/mask2former/mask2former_swin-s-p4-w7-224_8xb2-lsj-50e_coco/mask2former_swin-s-p4-w7-224_8xb2-lsj-50e_coco_20220504_001756-c9d0c4f2.pth

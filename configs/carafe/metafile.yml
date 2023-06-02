@@ -20,9 +20,9 @@ Collections:
       Version: v2.12.0
 
 Models:
-  - Name: faster_rcnn_r50_fpn_carafe_1x_coco
+  - Name: faster-rcnn_r50_fpn_carafe_1x_coco
     In Collection: CARAFE
-    Config: configs/carafe/faster_rcnn_r50_fpn_carafe_1x_coco.py
+    Config: configs/carafe/faster-rcnn_r50_fpn-carafe_1x_coco.py
     Metadata:
       Training Memory (GB): 4.26
       Epochs: 12
@@ -37,9 +37,9 @@ Models:
           mask AP: 38.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/carafe/faster_rcnn_r50_fpn_carafe_1x_coco/faster_rcnn_r50_fpn_carafe_1x_coco_bbox_mAP-0.386_20200504_175733-385a75b7.pth
 
-  - Name: mask_rcnn_r50_fpn_carafe_1x_coco
+  - Name: mask-rcnn_r50_fpn_carafe_1x_coco
     In Collection: CARAFE
-    Config: configs/carafe/mask_rcnn_r50_fpn_carafe_1x_coco.py
+    Config: configs/carafe/mask-rcnn_r50_fpn-carafe_1x_coco.py
     Metadata:
       Training Memory (GB): 4.31
       Epochs: 12

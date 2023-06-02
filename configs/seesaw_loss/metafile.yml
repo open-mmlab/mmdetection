@@ -21,9 +21,9 @@ Collections:
     README: configs/seesaw_loss/README.md
 
 Models:
-  - Name: mask_rcnn_r50_fpn_random_seesaw_loss_mstrain_2x_lvis_v1
+  - Name: mask-rcnn_r50_fpn_random_seesaw_loss_mstrain_2x_lvis_v1
     In Collection: Seesaw Loss
-    Config: configs/seesaw_loss/mask_rcnn_r50_fpn_random_seesaw_loss_mstrain_2x_lvis_v1.py
+    Config: configs/seesaw_loss/mask-rcnn_r50_fpn_seesaw-loss_random-ms-2x_lvis-v1.py
     Metadata:
       Epochs: 24
     Results:
@@ -36,9 +36,9 @@ Models:
         Metrics:
           mask AP: 25.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/mask_rcnn_r50_fpn_random_seesaw_loss_mstrain_2x_lvis_v1-a698dd3d.pth
-  - Name: mask_rcnn_r50_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1
+  - Name: mask-rcnn_r50_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1
     In Collection: Seesaw Loss
-    Config: configs/seesaw_loss/mask_rcnn_r50_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py
+    Config: configs/seesaw_loss/mask-rcnn_r50_fpn_seesaw-loss-normed-mask_random-ms-2x_lvis-v1.py
     Metadata:
       Epochs: 24
     Results:
@@ -51,9 +51,9 @@ Models:
         Metrics:
           mask AP: 25.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/mask_rcnn_r50_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1-a1c11314.pth
-  - Name: mask_rcnn_r101_fpn_random_seesaw_loss_mstrain_2x_lvis_v1
+  - Name: mask-rcnn_r101_fpn_seesaw-loss_random-ms-2x_lvis-v1
     In Collection: Seesaw Loss
-    Config: configs/seesaw_loss/mask_rcnn_r101_fpn_random_seesaw_loss_mstrain_2x_lvis_v1.py
+    Config: configs/seesaw_loss/mask-rcnn_r101_fpn_seesaw-loss_random-ms-2x_lvis-v1.py
     Metadata:
       Epochs: 24
     Results:
@@ -66,9 +66,9 @@ Models:
         Metrics:
           mask AP: 26.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/mask_rcnn_r101_fpn_random_seesaw_loss_mstrain_2x_lvis_v1-8e6e6dd5.pth
-  - Name: mask_rcnn_r101_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1
+  - Name: mask-rcnn_r101_fpn_seesaw-loss-normed-mask_random-ms-2x_lvis-v1
     In Collection: Seesaw Loss
-    Config: configs/seesaw_loss/mask_rcnn_r101_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py
+    Config: configs/seesaw_loss/mask-rcnn_r101_fpn_seesaw-loss-normed-mask_random-ms-2x_lvis-v1.py
     Metadata:
       Epochs: 24
     Results:
@@ -81,9 +81,9 @@ Models:
         Metrics:
           mask AP: 27.3
     Weights: https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/mask_rcnn_r101_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1-a0b59c42.pth
-  - Name: mask_rcnn_r50_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1
+  - Name: mask-rcnn_r50_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1
     In Collection: Seesaw Loss
-    Config: configs/seesaw_loss/mask_rcnn_r50_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1.py
+    Config: configs/seesaw_loss/mask-rcnn_r50_fpn_seesaw-loss_sample1e-3-ms-2x_lvis-v1.py
     Metadata:
       Epochs: 24
     Results:
@@ -96,9 +96,9 @@ Models:
         Metrics:
           mask AP: 26.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/mask_rcnn_r50_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1-392a804b.pth
-  - Name: mask_rcnn_r50_fpn_sample1e-3_seesaw_loss_normed_mask_mstrain_2x_lvis_v1
+  - Name: mask-rcnn_r50_fpn_sample1e-3_seesaw_loss_normed_mask_mstrain_2x_lvis_v1
     In Collection: Seesaw Loss
-    Config: configs/seesaw_loss/mask_rcnn_r50_fpn_sample1e-3_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py
+    Config: configs/seesaw_loss/mask-rcnn_r50_fpn_seesaw-loss-normed-mask_sample1e-3-ms-2x_lvis-v1.py
     Metadata:
       Epochs: 24
     Results:
@@ -111,9 +111,9 @@ Models:
         Metrics:
           mask AP: 26.8
     Weights: https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/mask_rcnn_r50_fpn_sample1e-3_seesaw_loss_normed_mask_mstrain_2x_lvis_v1-cd0f6a12.pth
-  - Name: mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1
+  - Name: mask-rcnn_r101_fpn_seesaw-loss_sample1e-3-ms-2x_lvis-v1
     In Collection: Seesaw Loss
-    Config: configs/seesaw_loss/mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1.py
+    Config: configs/seesaw_loss/mask-rcnn_r101_fpn_seesaw-loss_sample1e-3-ms-2x_lvis-v1.py
     Metadata:
       Epochs: 24
     Results:
@@ -126,9 +126,9 @@ Models:
         Metrics:
           mask AP: 27.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1-e68eb464.pth
-  - Name: mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_normed_mask_mstrain_2x_lvis_v1
+  - Name: mask-rcnn_r101_fpn_seesaw-loss-normed-mask_sample1e-3-ms-2x_lvis-v1
     In Collection: Seesaw Loss
-    Config: configs/seesaw_loss/mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py
+    Config: configs/seesaw_loss/mask-rcnn_r101_fpn_seesaw-loss-normed-mask_sample1e-3-ms-2x_lvis-v1.py
     Metadata:
       Epochs: 24
     Results:
@@ -141,9 +141,9 @@ Models:
         Metrics:
           mask AP: 28.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_normed_mask_mstrain_2x_lvis_v1-1d817139.pth
-  - Name: cascade_mask_rcnn_r101_fpn_random_seesaw_loss_mstrain_2x_lvis_v1
+  - Name: cascade-mask-rcnn_r101_fpn_seesaw-loss_random-ms-2x_lvis-v1
     In Collection: Seesaw Loss
-    Config: configs/seesaw_loss/cascade_mask_rcnn_r101_fpn_random_seesaw_loss_mstrain_2x_lvis_v1.py
+    Config: configs/seesaw_loss/cascade-mask-rcnn_r101_fpn_seesaw-loss_random-ms-2x_lvis-v1.py
     Metadata:
       Epochs: 24
     Results:
@@ -156,9 +156,9 @@ Models:
         Metrics:
           mask AP: 29.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/cascade_mask_rcnn_r101_fpn_random_seesaw_loss_mstrain_2x_lvis_v1-71e2215e.pth
-  - Name: cascade_mask_rcnn_r101_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1
+  - Name: cascade-mask-rcnn_r101_fpn_seesaw-loss-normed-mask_random-ms-2x_lvis-v1
     In Collection: Seesaw Loss
-    Config: configs/seesaw_loss/cascade_mask_rcnn_r101_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py
+    Config: configs/seesaw_loss/cascade-mask-rcnn_r101_fpn_seesaw-loss-normed-mask_random-ms-2x_lvis-v1.py
     Metadata:
       Epochs: 24
     Results:
@@ -171,9 +171,9 @@ Models:
         Metrics:
           mask AP: 30.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/cascade_mask_rcnn_r101_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1-8b5a6745.pth
-  - Name: cascade_mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1
+  - Name: cascade-mask-rcnn_r101_fpn_seesaw-loss_sample1e-3-ms-2x_lvis-v1
     In Collection: Seesaw Loss
-    Config: configs/seesaw_loss/cascade_mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1.py
+    Config: configs/seesaw_loss/cascade-mask-rcnn_r101_fpn_seesaw-loss_sample1e-3-ms-2x_lvis-v1.py
     Metadata:
       Epochs: 24
     Results:
@@ -186,9 +186,9 @@ Models:
         Metrics:
           mask AP: 29.3
     Weights: https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/cascade_mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1-5d8ca2a4.pth
-  - Name: cascade_mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_normed_mask_mstrain_2x_lvis_v1
+  - Name: cascade-mask-rcnn_r101_fpn_seesaw-loss-normed-mask_sample1e-3-ms-2x_lvis-v1
     In Collection: Seesaw Loss
-    Config: configs/seesaw_loss/cascade_mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py
+    Config: configs/seesaw_loss/cascade-mask-rcnn_r101_fpn_seesaw-loss-normed-mask_sample1e-3-ms-2x_lvis-v1.py
     Metadata:
       Epochs: 24
     Results:

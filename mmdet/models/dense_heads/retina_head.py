@@ -2,11 +2,11 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from .anchor_head import AnchorHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class RetinaHead(AnchorHead):
     r"""An anchor-based head used in `RetinaNet
     <https://arxiv.org/pdf/1708.02002.pdf>`_.
@@ -48,6 +48,9 @@ class RetinaHead(AnchorHead):
                          std=0.01,
                          bias_prob=0.01)),
                  **kwargs):
+        assert stacked_convs >= 0, \
+            '`stacked_convs` must be non-negative integers, ' \
+            f'but got {stacked_convs} instead.'
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
@@ -63,11 +66,11 @@ class RetinaHead(AnchorHead):
         self.relu = nn.ReLU(inplace=True)
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
+        in_channels = self.in_channels
         for i in range(self.stacked_convs):
-            chn = self.in_channels if i == 0 else self.feat_channels
             self.cls_convs.append(
                 ConvModule(
-                    chn,
+                    in_channels,
                     self.feat_channels,
                     3,
                     stride=1,
@@ -76,20 +79,22 @@ class RetinaHead(AnchorHead):
                     norm_cfg=self.norm_cfg))
             self.reg_convs.append(
                 ConvModule(
-                    chn,
+                    in_channels,
                     self.feat_channels,
                     3,
                     stride=1,
                     padding=1,
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg))
+            in_channels = self.feat_channels
         self.retina_cls = nn.Conv2d(
-            self.feat_channels,
+            in_channels,
             self.num_base_priors * self.cls_out_channels,
             3,
             padding=1)
+        reg_dim = self.bbox_coder.encode_size
         self.retina_reg = nn.Conv2d(
-            self.feat_channels, self.num_base_priors * 4, 3, padding=1)
+            in_channels, self.num_base_priors * reg_dim, 3, padding=1)
 
     def forward_single(self, x):
         """Forward feature of a single scale level.

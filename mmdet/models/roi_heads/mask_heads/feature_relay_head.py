@@ -1,31 +1,39 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional
+
 import torch.nn as nn
-from mmcv.runner import BaseModule, auto_fp16
+from mmengine.model import BaseModule
+from torch import Tensor
 
-from mmdet.models.builder import HEADS
+from mmdet.registry import MODELS
+from mmdet.utils import MultiConfig
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class FeatureRelayHead(BaseModule):
     """Feature Relay Head used in `SCNet <https://arxiv.org/abs/2012.10150>`_.
 
     Args:
-        in_channels (int, optional): number of input channels. Default: 256.
-        conv_out_channels (int, optional): number of output channels before
-            classification layer. Default: 256.
-        roi_feat_size (int, optional): roi feat size at box head. Default: 7.
-        scale_factor (int, optional): scale factor to match roi feat size
-            at mask head. Default: 2.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        in_channels (int): number of input channels. Defaults to 256.
+        conv_out_channels (int): number of output channels before
+            classification layer. Defaults to 256.
+        roi_feat_size (int): roi feat size at box head. Default: 7.
+        scale_factor (int): scale factor to match roi feat size
+            at mask head. Defaults to 2.
+        init_cfg (:obj:`ConfigDict` or dict or list[dict] or
+            list[:obj:`ConfigDict`]): Initialization config dict. Defaults to
+            dict(type='Kaiming', layer='Linear').
     """
 
-    def __init__(self,
-                 in_channels=1024,
-                 out_conv_channels=256,
-                 roi_feat_size=7,
-                 scale_factor=2,
-                 init_cfg=dict(type='Kaiming', layer='Linear')):
-        super(FeatureRelayHead, self).__init__(init_cfg)
+    def __init__(
+        self,
+        in_channels: int = 1024,
+        out_conv_channels: int = 256,
+        roi_feat_size: int = 7,
+        scale_factor: int = 2,
+        init_cfg: MultiConfig = dict(type='Kaiming', layer='Linear')
+    ) -> None:
+        super().__init__(init_cfg=init_cfg)
         assert isinstance(roi_feat_size, int)
 
         self.in_channels = in_channels
@@ -39,10 +47,17 @@ class FeatureRelayHead(BaseModule):
         self.upsample = nn.Upsample(
             scale_factor=scale_factor, mode='bilinear', align_corners=True)
 
-    @auto_fp16()
-    def forward(self, x):
-        """Forward function."""
-        N, in_C = x.shape
+    def forward(self, x: Tensor) -> Optional[Tensor]:
+        """Forward function.
+
+        Args:
+            x (Tensor): Input feature.
+
+        Returns:
+            Optional[Tensor]: Output feature. When the first dim of input is
+            0, None is returned.
+        """
+        N, _ = x.shape
         if N > 0:
             out_C = self.out_conv_channels
             out_HW = self.roi_feat_size

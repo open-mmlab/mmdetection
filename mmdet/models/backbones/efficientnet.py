@@ -7,10 +7,11 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn.bricks import ConvModule, DropPath
-from mmcv.runner import BaseModule, Sequential
+from mmengine.model import BaseModule, Sequential
 
-from ..builder import BACKBONES
-from ..utils import InvertedResidual, SELayer, make_divisible
+from mmdet.registry import MODELS
+from ..layers import InvertedResidual, SELayer
+from ..utils import make_divisible
 
 
 class EdgeResidual(BaseModule):
@@ -155,7 +156,7 @@ def model_scaling(layer_setting, arch_setting):
     return merge_layer_setting
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class EfficientNet(BaseModule):
     """EfficientNet backbone.
 

@@ -1,13 +1,17 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Tuple
+
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.cnn.bricks import NonLocal2d
-from mmcv.runner import BaseModule
+from mmengine.model import BaseModule
+from torch import Tensor
 
-from ..builder import NECKS
+from mmdet.registry import MODELS
+from mmdet.utils import OptConfigType, OptMultiConfig
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class BFP(BaseModule):
     """BFP (Balanced Feature Pyramids)
 
@@ -21,25 +25,30 @@ class BFP(BaseModule):
         in_channels (int): Number of input channels (feature maps of all levels
             should have the same channels).
         num_levels (int): Number of input feature levels.
-        conv_cfg (dict): The config dict for convolution layers.
-        norm_cfg (dict): The config dict for normalization layers.
         refine_level (int): Index of integration and refine level of BSF in
             multi-level features from bottom to top.
         refine_type (str): Type of the refine op, currently support
             [None, 'conv', 'non_local'].
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        conv_cfg (:obj:`ConfigDict` or dict, optional): The config dict for
+            convolution layers.
+        norm_cfg (:obj:`ConfigDict` or dict, optional): The config dict for
+            normalization layers.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or
+            dict], optional): Initialization config dict.
     """
 
-    def __init__(self,
-                 in_channels,
-                 num_levels,
-                 refine_level=2,
-                 refine_type=None,
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 init_cfg=dict(
-                     type='Xavier', layer='Conv2d', distribution='uniform')):
-        super(BFP, self).__init__(init_cfg)
+    def __init__(
+        self,
+        in_channels: int,
+        num_levels: int,
+        refine_level: int = 2,
+        refine_type: str = None,
+        conv_cfg: OptConfigType = None,
+        norm_cfg: OptConfigType = None,
+        init_cfg: OptMultiConfig = dict(
+            type='Xavier', layer='Conv2d', distribution='uniform')
+    ) -> None:
+        super().__init__(init_cfg=init_cfg)
         assert refine_type in [None, 'conv', 'non_local']
 
         self.in_channels = in_channels
@@ -67,7 +76,7 @@ class BFP(BaseModule):
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg)
 
-    def forward(self, inputs):
+    def forward(self, inputs: Tuple[Tensor]) -> Tuple[Tensor]:
         """Forward function."""
         assert len(inputs) == self.num_levels
 

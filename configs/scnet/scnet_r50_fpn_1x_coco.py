@@ -90,6 +90,7 @@ model = dict(
             type='SCNetSemanticHead',
             num_ins=5,
             fusion_level=1,
+            seg_scale_factor=1 / 8,
             num_convs=4,
             in_channels=256,
             conv_out_channels=256,
@@ -112,6 +113,7 @@ model = dict(
             roi_feat_size=7,
             scale_factor=2)))
 
+# TODO
 # uncomment below code to enable test time augmentations
 # img_norm_cfg = dict(
 #     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)

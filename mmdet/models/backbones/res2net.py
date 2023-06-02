@@ -5,9 +5,9 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn import build_conv_layer, build_norm_layer
-from mmcv.runner import Sequential
+from mmengine.model import Sequential
 
-from ..builder import BACKBONES
+from mmdet.registry import MODELS
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet
 
@@ -239,7 +239,7 @@ class Res2Layer(Sequential):
         super(Res2Layer, self).__init__(*layers)
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class Res2Net(ResNet):
     """Res2Net backbone.
 

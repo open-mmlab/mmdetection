@@ -1,15 +1,20 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import torch.nn as nn
-from mmcv.cnn import ConvModule, normal_init
-from mmcv.ops import DeformConv2d
-from mmcv.runner import force_fp32
+from typing import List, Optional, Tuple
 
-from mmdet.core import multi_apply
-from ..builder import HEADS, build_loss
+import torch.nn as nn
+from mmcv.cnn import ConvModule
+from mmcv.ops import DeformConv2d
+from mmengine.model import normal_init
+from torch import Tensor
+
+from mmdet.registry import MODELS
+from mmdet.utils import (ConfigType, InstanceList, OptInstanceList,
+                         OptMultiConfig)
+from ..utils import multi_apply
 from .corner_head import CornerHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CentripetalHead(CornerHead):
     """Head of CentripetalNet: Pursuing High-quality Keypoint Pairs for Object
     Detection.
@@ -23,39 +28,41 @@ class CentripetalHead(CornerHead):
         num_classes (int): Number of categories excluding the background
             category.
         in_channels (int): Number of channels in the input feature map.
-        num_feat_levels (int): Levels of feature from the previous module. 2
-            for HourglassNet-104 and 1 for HourglassNet-52. HourglassNet-104
+        num_feat_levels (int): Levels of feature from the previous module.
+            2 for HourglassNet-104 and 1 for HourglassNet-52. HourglassNet-104
             outputs the final feature and intermediate supervision feature and
-            HourglassNet-52 only outputs the final feature. Default: 2.
-        corner_emb_channels (int): Channel of embedding vector. Default: 1.
-        train_cfg (dict | None): Training config. Useless in CornerHead,
-            but we keep this variable for SingleStageDetector. Default: None.
-        test_cfg (dict | None): Testing config of CornerHead. Default: None.
-        loss_heatmap (dict | None): Config of corner heatmap loss. Default:
-            GaussianFocalLoss.
-        loss_embedding (dict | None): Config of corner embedding loss. Default:
-            AssociativeEmbeddingLoss.
-        loss_offset (dict | None): Config of corner offset loss. Default:
-            SmoothL1Loss.
-        loss_guiding_shift (dict): Config of guiding shift loss. Default:
-            SmoothL1Loss.
-        loss_centripetal_shift (dict): Config of centripetal shift loss.
-            Default: SmoothL1Loss.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
+            HourglassNet-52 only outputs the final feature. Defaults to 2.
+        corner_emb_channels (int): Channel of embedding vector. Defaults to 1.
+        train_cfg (:obj:`ConfigDict` or dict, optional): Training config.
+            Useless in CornerHead, but we keep this variable for
+            SingleStageDetector.
+        test_cfg (:obj:`ConfigDict` or dict, optional): Testing config of
+            CornerHead.
+        loss_heatmap (:obj:`ConfigDict` or dict): Config of corner heatmap
+            loss. Defaults to GaussianFocalLoss.
+        loss_embedding (:obj:`ConfigDict` or dict): Config of corner embedding
+            loss. Defaults to AssociativeEmbeddingLoss.
+        loss_offset (:obj:`ConfigDict` or dict): Config of corner offset loss.
+            Defaults to SmoothL1Loss.
+        loss_guiding_shift (:obj:`ConfigDict` or dict): Config of
+            guiding shift loss. Defaults to SmoothL1Loss.
+        loss_centripetal_shift (:obj:`ConfigDict` or dict): Config of
+            centripetal shift loss. Defaults to SmoothL1Loss.
+       init_cfg (:obj:`ConfigDict` or dict, optional): the config to control
+           the initialization.
     """
 
     def __init__(self,
                  *args,
-                 centripetal_shift_channels=2,
-                 guiding_shift_channels=2,
-                 feat_adaption_conv_kernel=3,
-                 loss_guiding_shift=dict(
+                 centripetal_shift_channels: int = 2,
+                 guiding_shift_channels: int = 2,
+                 feat_adaption_conv_kernel: int = 3,
+                 loss_guiding_shift: ConfigType = dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=0.05),
-                 loss_centripetal_shift=dict(
+                 loss_centripetal_shift: ConfigType = dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=1),
-                 init_cfg=None,
-                 **kwargs):
+                 init_cfg: OptMultiConfig = None,
+                 **kwargs) -> None:
         assert init_cfg is None, 'To prevent abnormal initialization ' \
                                  'behavior, init_cfg is not allowed to be set'
         assert centripetal_shift_channels == 2, (
@@ -65,12 +72,11 @@ class CentripetalHead(CornerHead):
             'CentripetalHead only support guiding_shift_channels == 2')
         self.guiding_shift_channels = guiding_shift_channels
         self.feat_adaption_conv_kernel = feat_adaption_conv_kernel
-        super(CentripetalHead, self).__init__(
-            *args, init_cfg=init_cfg, **kwargs)
-        self.loss_guiding_shift = build_loss(loss_guiding_shift)
-        self.loss_centripetal_shift = build_loss(loss_centripetal_shift)
+        super().__init__(*args, init_cfg=init_cfg, **kwargs)
+        self.loss_guiding_shift = MODELS.build(loss_guiding_shift)
+        self.loss_centripetal_shift = MODELS.build(loss_centripetal_shift)
 
-    def _init_centripetal_layers(self):
+    def _init_centripetal_layers(self) -> None:
         """Initialize centripetal layers.
 
         Including feature adaption deform convs (feat_adaption), deform offset
@@ -130,7 +136,7 @@ class CentripetalHead(CornerHead):
                     out_channels=self.centripetal_shift_channels,
                     in_channels=self.in_channels))
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         """Initialize layers for CentripetalHead.
 
         Including two parts: CornerHead layers and CentripetalHead layers
@@ -138,8 +144,8 @@ class CentripetalHead(CornerHead):
         super()._init_layers()  # using _init_layers in CornerHead
         self._init_centripetal_layers()
 
-    def init_weights(self):
-        super(CentripetalHead, self).init_weights()
+    def init_weights(self) -> None:
+        super().init_weights()
         for i in range(self.num_feat_levels):
             normal_init(self.tl_feat_adaption[i], std=0.01)
             normal_init(self.br_feat_adaption[i], std=0.01)
@@ -154,7 +160,7 @@ class CentripetalHead(CornerHead):
                 x.conv.reset_parameters() for x in self.br_centripetal_shift[i]
             ]
 
-    def forward_single(self, x, lvl_ind):
+    def forward_single(self, x: Tensor, lvl_ind: int) -> List[Tensor]:
         """Forward feature of a single level.
 
         Args:
@@ -204,21 +210,21 @@ class CentripetalHead(CornerHead):
         ]
         return result_list
 
-    @force_fp32()
-    def loss(self,
-             tl_heats,
-             br_heats,
-             tl_offs,
-             br_offs,
-             tl_guiding_shifts,
-             br_guiding_shifts,
-             tl_centripetal_shifts,
-             br_centripetal_shifts,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
-        """Compute losses of the head.
+    def loss_by_feat(
+            self,
+            tl_heats: List[Tensor],
+            br_heats: List[Tensor],
+            tl_offs: List[Tensor],
+            br_offs: List[Tensor],
+            tl_guiding_shifts: List[Tensor],
+            br_guiding_shifts: List[Tensor],
+            tl_centripetal_shifts: List[Tensor],
+            br_centripetal_shifts: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
 
         Args:
             tl_heats (list[Tensor]): Top-left corner heatmaps for each level
@@ -239,13 +245,14 @@ class CentripetalHead(CornerHead):
             br_centripetal_shifts (list[Tensor]): Bottom-right centripetal
                 shifts for each level with shape (N,
                 centripetal_shift_channels, H, W).
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [left, top, right, bottom] format.
-            gt_labels (list[Tensor]): Class indices corresponding to each box.
-            img_metas (list[dict]): Meta information of each image, e.g.,
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore (list[Tensor] | None): Specify which bounding
-                boxes can be ignored when computing the loss.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                Specify which bounding boxes can be ignored when computing
+                the loss.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components. Containing the
@@ -260,17 +267,24 @@ class CentripetalHead(CornerHead):
                 - centripetal_loss (list[Tensor]): Centripetal shift losses of
                   all feature levels.
         """
+        gt_bboxes = [
+            gt_instances.bboxes for gt_instances in batch_gt_instances
+        ]
+        gt_labels = [
+            gt_instances.labels for gt_instances in batch_gt_instances
+        ]
+
         targets = self.get_targets(
             gt_bboxes,
             gt_labels,
             tl_heats[-1].shape,
-            img_metas[0]['pad_shape'],
+            batch_img_metas[0]['batch_input_shape'],
             with_corner_emb=self.with_corner_emb,
             with_guiding_shift=True,
             with_centripetal_shift=True)
         mlvl_targets = [targets for _ in range(self.num_feat_levels)]
         [det_losses, off_losses, guiding_losses, centripetal_losses
-         ] = multi_apply(self.loss_single, tl_heats, br_heats, tl_offs,
+         ] = multi_apply(self.loss_by_feat_single, tl_heats, br_heats, tl_offs,
                          br_offs, tl_guiding_shifts, br_guiding_shifts,
                          tl_centripetal_shifts, br_centripetal_shifts,
                          mlvl_targets)
@@ -281,10 +295,14 @@ class CentripetalHead(CornerHead):
             centripetal_loss=centripetal_losses)
         return loss_dict
 
-    def loss_single(self, tl_hmp, br_hmp, tl_off, br_off, tl_guiding_shift,
-                    br_guiding_shift, tl_centripetal_shift,
-                    br_centripetal_shift, targets):
-        """Compute losses for single level.
+    def loss_by_feat_single(self, tl_hmp: Tensor, br_hmp: Tensor,
+                            tl_off: Tensor, br_off: Tensor,
+                            tl_guiding_shift: Tensor, br_guiding_shift: Tensor,
+                            tl_centripetal_shift: Tensor,
+                            br_centripetal_shift: Tensor,
+                            targets: dict) -> Tuple[Tensor, ...]:
+        """Calculate the loss of a single scale level based on the features
+        extracted by the detection head.
 
         Args:
             tl_hmp (Tensor): Top-left corner heatmap for current level with
@@ -316,9 +334,8 @@ class CentripetalHead(CornerHead):
         """
         targets['corner_embedding'] = None
 
-        det_loss, _, _, off_loss = super().loss_single(tl_hmp, br_hmp, None,
-                                                       None, tl_off, br_off,
-                                                       targets)
+        det_loss, _, _, off_loss = super().loss_by_feat_single(
+            tl_hmp, br_hmp, None, None, tl_off, br_off, targets)
 
         gt_tl_guiding_shift = targets['topleft_guiding_shift']
         gt_br_guiding_shift = targets['bottomright_guiding_shift']
@@ -363,20 +380,20 @@ class CentripetalHead(CornerHead):
 
         return det_loss, off_loss, guiding_loss, centripetal_loss
 
-    @force_fp32()
-    def get_bboxes(self,
-                   tl_heats,
-                   br_heats,
-                   tl_offs,
-                   br_offs,
-                   tl_guiding_shifts,
-                   br_guiding_shifts,
-                   tl_centripetal_shifts,
-                   br_centripetal_shifts,
-                   img_metas,
-                   rescale=False,
-                   with_nms=True):
-        """Transform network output for a batch into bbox predictions.
+    def predict_by_feat(self,
+                        tl_heats: List[Tensor],
+                        br_heats: List[Tensor],
+                        tl_offs: List[Tensor],
+                        br_offs: List[Tensor],
+                        tl_guiding_shifts: List[Tensor],
+                        br_guiding_shifts: List[Tensor],
+                        tl_centripetal_shifts: List[Tensor],
+                        br_centripetal_shifts: List[Tensor],
+                        batch_img_metas: Optional[List[dict]] = None,
+                        rescale: bool = False,
+                        with_nms: bool = True) -> InstanceList:
+        """Transform a batch of output features extracted from the head into
+        bbox results.
 
         Args:
             tl_heats (list[Tensor]): Top-left corner heatmaps for each level
@@ -401,23 +418,35 @@ class CentripetalHead(CornerHead):
             br_centripetal_shifts (list[Tensor]): Bottom-right centripetal
                 shifts for each level with shape (N,
                 centripetal_shift_channels, H, W).
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
+            batch_img_metas (list[dict], optional): Batch image meta info.
+                Defaults to None.
             rescale (bool): If True, return boxes in original image space.
-                Default: False.
+                Defaults to False.
             with_nms (bool): If True, do nms before return boxes.
-                Default: True.
+                Defaults to True.
+
+        Returns:
+            list[:obj:`InstanceData`]: Object detection results of each image
+            after the post process. Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        assert tl_heats[-1].shape[0] == br_heats[-1].shape[0] == len(img_metas)
+        assert tl_heats[-1].shape[0] == br_heats[-1].shape[0] == len(
+            batch_img_metas)
         result_list = []
-        for img_id in range(len(img_metas)):
+        for img_id in range(len(batch_img_metas)):
             result_list.append(
-                self._get_bboxes_single(
+                self._predict_by_feat_single(
                     tl_heats[-1][img_id:img_id + 1, :],
                     br_heats[-1][img_id:img_id + 1, :],
                     tl_offs[-1][img_id:img_id + 1, :],
                     br_offs[-1][img_id:img_id + 1, :],
-                    img_metas[img_id],
+                    batch_img_metas[img_id],
                     tl_emb=None,
                     br_emb=None,
                     tl_centripetal_shift=tl_centripetal_shifts[-1][

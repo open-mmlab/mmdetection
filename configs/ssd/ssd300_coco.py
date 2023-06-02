@@ -1,71 +1,65 @@
 _base_ = [
-    '../_base_/models/ssd300.py', '../_base_/datasets/yexi_detection.py',
+    '../_base_/models/ssd300.py', '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
 ]
+
 # dataset settings
-dataset_type = 'CocoDataset'
-data_root = 'd:/mmdetection/data/yexi/'
-classes = (
-    'RaggedBeggar', 'DwarfClown', 'LongLeggedClown', 'DartsClown', 'Truffe', 'LightDwarf',
-    'BallClown', 'NakedElderly', 'ChangeClown', 'HostWhite', 'HostBlack', 'StormRider',
-    'Gold', 'Door', 'Close',
-)
-img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
+input_size = 300
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='Expand',
-        mean=img_norm_cfg['mean'],
-        to_rgb=img_norm_cfg['to_rgb'],
+        mean={{_base_.model.data_preprocessor.mean}},
+        to_rgb={{_base_.model.data_preprocessor.bgr_to_rgb}},
         ratio_range=(1, 4)),
     dict(
         type='MinIoURandomCrop',
         min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
         min_crop_size=0.3),
-    dict(type='Resize', img_scale=(300, 300), keep_ratio=False),
-    dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='Resize', scale=(input_size, input_size), keep_ratio=False),
+    dict(type='RandomFlip', prob=0.5),
     dict(
         type='PhotoMetricDistortion',
         brightness_delta=32,
         contrast_range=(0.5, 1.5),
         saturation_range=(0.5, 1.5),
         hue_delta=18),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
+    dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
+    dict(type='Resize', scale=(input_size, input_size), keep_ratio=False),
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(
-        type='MultiScaleFlipAug',
-        img_scale=(300, 300),
-        flip=False,
-        transforms=[
-            # dict(type='Resize', keep_ratio=False),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
 ]
-data = dict(
-    samples_per_gpu=8,
-    workers_per_gpu=4,
-    train=dict(
+train_dataloader = dict(
+    batch_size=8,
+    num_workers=2,
+    batch_sampler=None,
+    dataset=dict(
         _delete_=True,
         type='RepeatDataset',
         times=5,
         dataset=dict(
-            type=dataset_type,
-            ann_file=data_root + 'yexi_train.json',
-            classes=classes,
-            img_prefix=data_root + 'images/',
-            pipeline=train_pipeline)),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+            type={{_base_.dataset_type}},
+            data_root={{_base_.data_root}},
+            ann_file='annotations/instances_train2017.json',
+            data_prefix=dict(img='train2017/'),
+            filter_cfg=dict(filter_empty_gt=True, min_size=32),
+            pipeline=train_pipeline,
+            backend_args={{_base_.backend_args}})))
+val_dataloader = dict(batch_size=8, dataset=dict(pipeline=test_pipeline))
+test_dataloader = val_dataloader
+
 # optimizer
-optimizer = dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4)
-optimizer_config = dict(_delete_=True)
+optim_wrapper = dict(
+    type='OptimWrapper',
+    optimizer=dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4))
+
 custom_hooks = [
     dict(type='NumClassCheckHook'),
     dict(type='CheckInvalidLossHook', interval=50, priority='VERY_LOW')

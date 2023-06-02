@@ -1,6 +1,6 @@
-## 中文解读文案汇总
+## 中文解读文案汇总（待更新）
 
-### 1 官方解读文案
+### 1 官方解读文案（v2.x）
 
 #### 1.1 框架解读
 
@@ -48,6 +48,6 @@
 - **[不得不知的 MMDetection 学习路线(个人经验版)](https://zhuanlan.zhihu.com/p/369826931)**
 - [OpenMMLab 社区专访之 YOLOX 复现篇](https://zhuanlan.zhihu.com/p/405913343)
 
-### 2 社区解读文案
+### 2 社区解读文案（v2.x）
 
 - [手把手带你实现经典检测网络 Mask R-CNN 的推理](https://zhuanlan.zhihu.com/p/414082071)

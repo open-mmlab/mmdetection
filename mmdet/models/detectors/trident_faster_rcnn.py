@@ -1,49 +1,72 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from ..builder import DETECTORS
+from torch import Tensor
+
+from mmdet.registry import MODELS
+from mmdet.structures import SampleList
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .faster_rcnn import FasterRCNN
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class TridentFasterRCNN(FasterRCNN):
     """Implementation of `TridentNet <https://arxiv.org/abs/1901.01892>`_"""
 
     def __init__(self,
-                 backbone,
-                 rpn_head,
-                 roi_head,
-                 train_cfg,
-                 test_cfg,
-                 neck=None,
-                 init_cfg=None):
+                 backbone: ConfigType,
+                 rpn_head: ConfigType,
+                 roi_head: ConfigType,
+                 train_cfg: ConfigType,
+                 test_cfg: ConfigType,
+                 neck: OptConfigType = None,
+                 data_preprocessor: OptConfigType = None,
+                 init_cfg: OptMultiConfig = None) -> None:
 
-        super(TridentFasterRCNN, self).__init__(
+        super().__init__(
             backbone=backbone,
             neck=neck,
             rpn_head=rpn_head,
             roi_head=roi_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
+            data_preprocessor=data_preprocessor,
             init_cfg=init_cfg)
         assert self.backbone.num_branch == self.roi_head.num_branch
         assert self.backbone.test_branch_idx == self.roi_head.test_branch_idx
         self.num_branch = self.backbone.num_branch
         self.test_branch_idx = self.backbone.test_branch_idx
 
-    def simple_test(self, img, img_metas, proposals=None, rescale=False):
-        """Test without augmentation."""
-        assert self.with_bbox, 'Bbox head must be implemented.'
-        x = self.extract_feat(img)
-        if proposals is None:
-            num_branch = (self.num_branch if self.test_branch_idx == -1 else 1)
-            trident_img_metas = img_metas * num_branch
-            proposal_list = self.rpn_head.simple_test_rpn(x, trident_img_metas)
-        else:
-            proposal_list = proposals
-        # TODO： Fix trident_img_metas undefined errors
-        #  when proposals is specified
-        return self.roi_head.simple_test(
-            x, proposal_list, trident_img_metas, rescale=rescale)
+    def _forward(self, batch_inputs: Tensor,
+                 batch_data_samples: SampleList) -> tuple:
+        """copy the ``batch_data_samples`` to fit multi-branch."""
+        num_branch = self.num_branch \
+            if self.training or self.test_branch_idx == -1 else 1
+        trident_data_samples = batch_data_samples * num_branch
+        return super()._forward(
+            batch_inputs=batch_inputs, batch_data_samples=trident_data_samples)
 
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> dict:
+        """copy the ``batch_data_samples`` to fit multi-branch."""
+        num_branch = self.num_branch \
+            if self.training or self.test_branch_idx == -1 else 1
+        trident_data_samples = batch_data_samples * num_branch
+        return super().loss(
+            batch_inputs=batch_inputs, batch_data_samples=trident_data_samples)
+
+    def predict(self,
+                batch_inputs: Tensor,
+                batch_data_samples: SampleList,
+                rescale: bool = True) -> SampleList:
+        """copy the ``batch_data_samples`` to fit multi-branch."""
+        num_branch = self.num_branch \
+            if self.training or self.test_branch_idx == -1 else 1
+        trident_data_samples = batch_data_samples * num_branch
+        return super().predict(
+            batch_inputs=batch_inputs,
+            batch_data_samples=trident_data_samples,
+            rescale=rescale)
+
+    # TODO need to refactor
     def aug_test(self, imgs, img_metas, rescale=False):
         """Test with augmentations.
 
@@ -56,13 +79,3 @@ class TridentFasterRCNN(FasterRCNN):
         proposal_list = self.rpn_head.aug_test_rpn(x, trident_img_metas)
         return self.roi_head.aug_test(
             x, proposal_list, img_metas, rescale=rescale)
-
-    def forward_train(self, img, img_metas, gt_bboxes, gt_labels, **kwargs):
-        """make copies of img and gts to fit multi-branch."""
-        trident_gt_bboxes = tuple(gt_bboxes * self.num_branch)
-        trident_gt_labels = tuple(gt_labels * self.num_branch)
-        trident_img_metas = tuple(img_metas * self.num_branch)
-
-        return super(TridentFasterRCNN,
-                     self).forward_train(img, trident_img_metas,
-                                         trident_gt_bboxes, trident_gt_labels)

@@ -3,7 +3,7 @@ import argparse
 import os
 import os.path as osp
 
-from mmcv import Config
+from mmengine import Config
 
 
 def parse_args():
@@ -11,10 +11,6 @@ def parse_args():
         description='Convert benchmark model list to script')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('--port', type=int, default=29666, help='dist port')
-    parser.add_argument(
-        '--work-dir',
-        default='tools/batch_test',
-        help='the dir to save metric')
     parser.add_argument(
         '--run', action='store_true', help='run script directly')
     parser.add_argument(
@@ -28,19 +24,13 @@ def process_model_info(model_info, work_dir):
     config = model_info['config'].strip()
     fname, _ = osp.splitext(osp.basename(config))
     job_name = fname
-    work_dir = osp.join(work_dir, fname)
+    work_dir = '$WORK_DIR/' + fname
     checkpoint = model_info['checkpoint'].strip()
-    if not isinstance(model_info['eval'], list):
-        evals = [model_info['eval']]
-    else:
-        evals = model_info['eval']
-    eval = ' '.join(evals)
     return dict(
         config=config,
         job_name=job_name,
         work_dir=work_dir,
-        checkpoint=checkpoint,
-        eval=eval)
+        checkpoint=checkpoint)
 
 
 def create_test_bash_info(commands, model_test_dict, port, script_name,
@@ -49,14 +39,13 @@ def create_test_bash_info(commands, model_test_dict, port, script_name,
     job_name = model_test_dict['job_name']
     checkpoint = model_test_dict['checkpoint']
     work_dir = model_test_dict['work_dir']
-    eval = model_test_dict['eval']
 
     echo_info = f' \necho \'{config}\' &'
     commands.append(echo_info)
     commands.append('\n')
 
     command_info = f'GPUS=8  GPUS_PER_NODE=8  ' \
-                   f'CPUS_PER_TASK=2 {script_name} '
+                   f'CPUS_PER_TASK=$CPUS_PRE_TASK {script_name} '
 
     command_info += f'{partition} '
     command_info += f'{job_name} '
@@ -64,8 +53,7 @@ def create_test_bash_info(commands, model_test_dict, port, script_name,
     command_info += f'$CHECKPOINT_DIR/{checkpoint} '
     command_info += f'--work-dir {work_dir} '
 
-    command_info += f'--eval {eval} '
-    command_info += f'--cfg-option dist_params.port={port} '
+    command_info += f'--cfg-option env_cfg.dist_cfg.port={port} '
     command_info += ' &'
 
     commands.append(command_info)
@@ -90,9 +78,16 @@ def main():
     commands.append(checkpoint_root)
     commands.append('\n')
 
+    work_dir = 'WORK_DIR=$3 '
+    commands.append(work_dir)
+    commands.append('\n')
+
+    cpus_pre_task = 'CPUS_PER_TASK=${4:-2} '
+    commands.append(cpus_pre_task)
+    commands.append('\n')
+
     script_name = osp.join('tools', 'slurm_test.sh')
     port = args.port
-    work_dir = args.work_dir
 
     cfg = Config.fromfile(args.config)
 

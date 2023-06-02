@@ -7,12 +7,12 @@ The modifications follow those in [Detectron2](https://github.com/facebookresear
 
 ## Results and Models
 
-| Backbone |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP |                                  Config                                   |         Download         |
-| :------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :-----------------------------------------------------------------------: | :----------------------: |
-| R-50-FPN | pytorch |   50e   |          |                |        |         |    [config](./mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_lsj_50e_coco.py)     | [model](<>) \| [log](<>) |
-| R-50-FPN | pytorch |  100e   |          |                |        |         |    [config](./mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_lsj_100e_coco.py)    | [model](<>) \| [log](<>) |
-| R-50-FPN |  caffe  |  100e   |          |                |  44.7  |  40.4   | [config](./mask_rcnn_r50_caffe_fpn_syncbn-all_rpn-2conv_lsj_100e_coco.py) | [model](<>) \| [log](<>) |
-| R-50-FPN |  caffe  |  400e   |          |                |        |         | [config](./mask_rcnn_r50_caffe_fpn_syncbn-all_rpn-2conv_lsj_400e_coco.py) | [model](<>) \| [log](<>) |
+| Backbone |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP |                                       Config                                       |         Download         |
+| :------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :--------------------------------------------------------------------------------: | :----------------------: |
+| R-50-FPN | pytorch |   50e   |          |                |        |         |    [config](./mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_lsj-50e_coco.py)     | [model](<>) \| [log](<>) |
+| R-50-FPN | pytorch |  100e   |          |                |        |         |    [config](./mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_lsj-100e_coco.py)    | [model](<>) \| [log](<>) |
+| R-50-FPN |  caffe  |  100e   |          |                |  44.7  |  40.4   | [config](./mask-rcnn_r50-caffe_fpn_rpn-2conv_4conv1fc_syncbn-all_lsj-100e_coco.py) | [model](<>) \| [log](<>) |
+| R-50-FPN |  caffe  |  400e   |          |                |        |         | [config](./mask-rcnn_r50-caffe_fpn_rpn-2conv_4conv1fc_syncbn-all_lsj-400e_coco.py) | [model](<>) \| [log](<>) |
 
 ## Notice
 

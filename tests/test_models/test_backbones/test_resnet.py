@@ -1,15 +1,37 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import pytest
 import torch
-from mmcv import assert_params_all_zeros
 from mmcv.ops import DeformConv2dPack
 from torch.nn.modules import AvgPool2d, GroupNorm
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.models.backbones import ResNet, ResNetV1d
 from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
-from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
+from mmdet.models.layers import ResLayer, SimplifiedBasicBlock
 from .utils import check_norm_state, is_block, is_norm
+
+
+def assert_params_all_zeros(module) -> bool:
+    """Check if the parameters of the module is all zeros.
+
+    Args:
+        module (nn.Module): The module to be checked.
+
+    Returns:
+        bool: Whether the parameters of the module is all zeros.
+    """
+    weight_data = module.weight.data
+    is_weight_zero = weight_data.allclose(
+        weight_data.new_zeros(weight_data.size()))
+
+    if hasattr(module, 'bias') and module.bias is not None:
+        bias_data = module.bias.data
+        is_bias_zero = bias_data.allclose(
+            bias_data.new_zeros(bias_data.size()))
+    else:
+        is_bias_zero = True
+
+    return is_weight_zero and is_bias_zero
 
 
 def test_resnet_basic_block():

@@ -1,13 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import mmcv
+from functools import partial
+
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..builder import LOSSES
-from .utils import weighted_loss
+from mmdet.models.losses.utils import weighted_loss
+from mmdet.registry import MODELS
 
 
-@mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
 def quality_focal_loss(pred, target, beta=2.0):
     r"""Quality Focal Loss (QFL) is from `Generalized Focal Loss: Learning
@@ -46,6 +47,47 @@ def quality_focal_loss(pred, target, beta=2.0):
     scale_factor = score[pos] - pred_sigmoid[pos, pos_label]
     loss[pos, pos_label] = F.binary_cross_entropy_with_logits(
         pred[pos, pos_label], score[pos],
+        reduction='none') * scale_factor.abs().pow(beta)
+
+    loss = loss.sum(dim=1, keepdim=False)
+    return loss
+
+
+@weighted_loss
+def quality_focal_loss_tensor_target(pred, target, beta=2.0, activated=False):
+    """`QualityFocal Loss <https://arxiv.org/abs/2008.13367>`_
+    Args:
+        pred (torch.Tensor): The prediction with shape (N, C), C is the
+            number of classes
+        target (torch.Tensor): The learning target of the iou-aware
+            classification score with shape (N, C), C is the number of classes.
+        beta (float): The beta parameter for calculating the modulating factor.
+            Defaults to 2.0.
+        activated (bool): Whether the input is activated.
+            If True, it means the input has been activated and can be
+            treated as probabilities. Else, it should be treated as logits.
+            Defaults to False.
+    """
+    # pred and target should be of the same size
+    assert pred.size() == target.size()
+    if activated:
+        pred_sigmoid = pred
+        loss_function = F.binary_cross_entropy
+    else:
+        pred_sigmoid = pred.sigmoid()
+        loss_function = F.binary_cross_entropy_with_logits
+
+    scale_factor = pred_sigmoid
+    target = target.type_as(pred)
+
+    zerolabel = scale_factor.new_zeros(pred.shape)
+    loss = loss_function(
+        pred, zerolabel, reduction='none') * scale_factor.pow(beta)
+
+    pos = (target != 0)
+    scale_factor = target[pos] - pred_sigmoid[pos]
+    loss[pos] = loss_function(
+        pred[pos], target[pos],
         reduction='none') * scale_factor.abs().pow(beta)
 
     loss = loss.sum(dim=1, keepdim=False)
@@ -98,7 +140,6 @@ def quality_focal_loss_with_prob(pred, target, beta=2.0):
     return loss
 
 
-@mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
 def distribution_focal_loss(pred, label):
     r"""Distribution Focal Loss (DFL) is from `Generalized Focal Loss: Learning
@@ -124,7 +165,7 @@ def distribution_focal_loss(pred, label):
     return loss
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class QualityFocalLoss(nn.Module):
     r"""Quality Focal Loss (QFL) is a variant of `Generalized Focal Loss:
     Learning Qualified and Distributed Bounding Boxes for Dense Object
@@ -169,8 +210,11 @@ class QualityFocalLoss(nn.Module):
             pred (torch.Tensor): Predicted joint representation of
                 classification and quality (IoU) estimation with shape (N, C),
                 C is the number of classes.
-            target (tuple([torch.Tensor])): Target category label with shape
-                (N,) and target quality label with shape (N,).
+            target (Union(tuple([torch.Tensor]),Torch.Tensor)): The type is
+                tuple, it should be included Target category label with
+                shape (N,) and target quality label with shape (N,).The type
+                is torch.Tensor, the target should be one-hot form with
+                soft weights.
             weight (torch.Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
@@ -187,6 +231,12 @@ class QualityFocalLoss(nn.Module):
                 calculate_loss_func = quality_focal_loss_with_prob
             else:
                 calculate_loss_func = quality_focal_loss
+            if isinstance(target, torch.Tensor):
+                # the target shape with (N,C) or (N,C,...), which means
+                # the target is one-hot form with soft weights.
+                calculate_loss_func = partial(
+                    quality_focal_loss_tensor_target, activated=self.activated)
+
             loss_cls = self.loss_weight * calculate_loss_func(
                 pred,
                 target,
@@ -199,7 +249,7 @@ class QualityFocalLoss(nn.Module):
         return loss_cls
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class DistributionFocalLoss(nn.Module):
     r"""Distribution Focal Loss (DFL) is a variant of `Generalized Focal Loss:
     Learning Qualified and Distributed Bounding Boxes for Dense Object

@@ -6,6 +6,13 @@ num_stages = 6
 num_proposals = 100
 model = dict(
     type='QueryInst',
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_mask=True,
+        pad_size_divisor=32),
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -111,10 +118,11 @@ model = dict(
             dict(
                 assigner=dict(
                     type='HungarianAssigner',
-                    cls_cost=dict(type='FocalLossCost', weight=2.0),
-                    reg_cost=dict(type='BBoxL1Cost', weight=5.0),
-                    iou_cost=dict(type='IoUCost', iou_mode='giou',
-                                  weight=2.0)),
+                    match_costs=[
+                        dict(type='FocalLossCost', weight=2.0),
+                        dict(type='BBoxL1Cost', weight=5.0, box_format='xyxy'),
+                        dict(type='IoUCost', iou_mode='giou', weight=2.0)
+                    ]),
                 sampler=dict(type='PseudoSampler'),
                 pos_weight=1,
                 mask_size=28,
@@ -124,15 +132,24 @@ model = dict(
         rpn=None, rcnn=dict(max_per_img=num_proposals, mask_thr_binary=0.5)))
 
 # optimizer
-optimizer = dict(
-    _delete_=True,
-    type='AdamW',
-    lr=0.0001,
-    weight_decay=0.0001,
+optim_wrapper = dict(
+    type='OptimWrapper',
+    optimizer=dict(
+        _delete_=True, type='AdamW', lr=0.0001, weight_decay=0.0001),
     paramwise_cfg=dict(
-        custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=0.1, norm_type=2))
-# learning policy
-lr_config = dict(policy='step', step=[8, 11], warmup_iters=1000)
-runner = dict(type='EpochBasedRunner', max_epochs=12)
+        custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}),
+    clip_grad=dict(max_norm=0.1, norm_type=2))
+
+# learning rate
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
+        end=1000),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=12,
+        by_epoch=True,
+        milestones=[8, 11],
+        gamma=0.1)
+]

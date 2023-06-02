@@ -1,31 +1,45 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List
+
 import torch
 import torch.nn.functional as F
+from mmengine.structures import InstanceData, PixelData
+from torch import Tensor
 
-from mmdet.core.evaluation.panoptic_utils import INSTANCE_OFFSET
-from mmdet.core.mask import mask2bbox
-from mmdet.models.builder import HEADS
+from mmdet.evaluation.functional import INSTANCE_OFFSET
+from mmdet.registry import MODELS
+from mmdet.structures import SampleList
+from mmdet.structures.mask import mask2bbox
+from mmdet.utils import OptConfigType, OptMultiConfig
 from .base_panoptic_fusion_head import BasePanopticFusionHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class MaskFormerFusionHead(BasePanopticFusionHead):
+    """MaskFormer fusion head which postprocesses results for panoptic
+    segmentation, instance segmentation and semantic segmentation."""
 
     def __init__(self,
-                 num_things_classes=80,
-                 num_stuff_classes=53,
-                 test_cfg=None,
-                 loss_panoptic=None,
-                 init_cfg=None,
+                 num_things_classes: int = 80,
+                 num_stuff_classes: int = 53,
+                 test_cfg: OptConfigType = None,
+                 loss_panoptic: OptConfigType = None,
+                 init_cfg: OptMultiConfig = None,
                  **kwargs):
-        super().__init__(num_things_classes, num_stuff_classes, test_cfg,
-                         loss_panoptic, init_cfg, **kwargs)
+        super().__init__(
+            num_things_classes=num_things_classes,
+            num_stuff_classes=num_stuff_classes,
+            test_cfg=test_cfg,
+            loss_panoptic=loss_panoptic,
+            init_cfg=init_cfg,
+            **kwargs)
 
-    def forward_train(self, **kwargs):
+    def loss(self, **kwargs):
         """MaskFormerFusionHead has no training loss."""
         return dict()
 
-    def panoptic_postprocess(self, mask_cls, mask_pred):
+    def panoptic_postprocess(self, mask_cls: Tensor,
+                             mask_pred: Tensor) -> PixelData:
         """Panoptic segmengation inference.
 
         Args:
@@ -37,7 +51,7 @@ class MaskFormerFusionHead(BasePanopticFusionHead):
                 (num_queries, h, w) for a image.
 
         Returns:
-            Tensor: Panoptic segment result of shape \
+            :obj:`PixelData`: Panoptic segment result of shape \
                 (h, w), each element in Tensor means: \
                 ``segment_id = _cls + instance_id * INSTANCE_OFFSET``.
         """
@@ -89,9 +103,10 @@ class MaskFormerFusionHead(BasePanopticFusionHead):
                             pred_class + instance_id * INSTANCE_OFFSET)
                         instance_id += 1
 
-        return panoptic_seg
+        return PixelData(sem_seg=panoptic_seg[None])
 
-    def semantic_postprocess(self, mask_cls, mask_pred):
+    def semantic_postprocess(self, mask_cls: Tensor,
+                             mask_pred: Tensor) -> PixelData:
         """Semantic segmengation postprocess.
 
         Args:
@@ -103,13 +118,13 @@ class MaskFormerFusionHead(BasePanopticFusionHead):
                 (num_queries, h, w) for a image.
 
         Returns:
-            Tensor: Semantic segment result of shape \
-                (cls_out_channels, h, w).
+            :obj:`PixelData`: Semantic segment result.
         """
         # TODO add semantic segmentation result
         raise NotImplementedError
 
-    def instance_postprocess(self, mask_cls, mask_pred):
+    def instance_postprocess(self, mask_cls: Tensor,
+                             mask_pred: Tensor) -> InstanceData:
         """Instance segmengation postprocess.
 
         Args:
@@ -121,14 +136,15 @@ class MaskFormerFusionHead(BasePanopticFusionHead):
                 (num_queries, h, w) for a image.
 
         Returns:
-            tuple[Tensor]: Instance segmentation results.
+            :obj:`InstanceData`: Instance segmentation results.
 
-            - labels_per_image (Tensor): Predicted labels,\
-                shape (n, ).
-            - bboxes (Tensor): Bboxes and scores with shape (n, 5) of \
-                positive region in binary mask, the last column is scores.
-            - mask_pred_binary (Tensor): Instance masks of \
-                shape (n, h, w).
+                - scores (Tensor): Classification scores, has a shape
+                    (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                    (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                    the last dimension 4 arrange as (x1, y1, x2, y2).
+                - masks (Tensor): Has a shape (num_instances, H, W).
         """
         max_per_image = self.test_cfg.get('max_per_image', 100)
         num_queries = mask_cls.shape[0]
@@ -157,16 +173,20 @@ class MaskFormerFusionHead(BasePanopticFusionHead):
         det_scores = scores_per_image * mask_scores_per_image
         mask_pred_binary = mask_pred_binary.bool()
         bboxes = mask2bbox(mask_pred_binary)
-        bboxes = torch.cat([bboxes, det_scores[:, None]], dim=-1)
 
-        return labels_per_image, bboxes, mask_pred_binary
+        results = InstanceData()
+        results.bboxes = bboxes
+        results.labels = labels_per_image
+        results.scores = det_scores
+        results.masks = mask_pred_binary
+        return results
 
-    def simple_test(self,
-                    mask_cls_results,
-                    mask_pred_results,
-                    img_metas,
-                    rescale=False,
-                    **kwargs):
+    def predict(self,
+                mask_cls_results: Tensor,
+                mask_pred_results: Tensor,
+                batch_data_samples: SampleList,
+                rescale: bool = False,
+                **kwargs) -> List[dict]:
         """Test segment without test-time aumengtation.
 
         Only the output of last decoder layers was used.
@@ -177,12 +197,14 @@ class MaskFormerFusionHead(BasePanopticFusionHead):
                 Note `cls_out_channels` should includes background.
             mask_pred_results (Tensor): Mask logits, shape
                 (batch_size, num_queries, h, w).
-            img_metas (list[dict]): List of image information.
-            rescale (bool, optional): If True, return boxes in
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+            rescale (bool): If True, return boxes in
                 original image space. Default False.
 
         Returns:
-            list[dict[str, Tensor | tuple[Tensor]]]: Semantic segmentation \
+            list[dict]: Instance segmentation \
                 results and panoptic segmentation results for each \
                 image.
 
@@ -190,14 +212,17 @@ class MaskFormerFusionHead(BasePanopticFusionHead):
 
                 [
                     {
-                        'pan_results': Tensor, # shape = [h, w]
-                        'ins_results': tuple[Tensor],
+                        'pan_results': PixelData,
+                        'ins_results': InstanceData,
                         # semantic segmentation results are not supported yet
-                        'sem_results': Tensor
+                        'sem_results': PixelData
                     },
                     ...
                 ]
         """
+        batch_img_metas = [
+            data_sample.metainfo for data_sample in batch_data_samples
+        ]
         panoptic_on = self.test_cfg.get('panoptic_on', True)
         semantic_on = self.test_cfg.get('semantic_on', False)
         instance_on = self.test_cfg.get('instance_on', False)
@@ -206,7 +231,7 @@ class MaskFormerFusionHead(BasePanopticFusionHead):
 
         results = []
         for mask_cls_result, mask_pred_result, meta in zip(
-                mask_cls_results, mask_pred_results, img_metas):
+                mask_cls_results, mask_pred_results, batch_img_metas):
             # remove padding
             img_height, img_width = meta['img_shape'][:2]
             mask_pred_result = mask_pred_result[:, :img_height, :img_width]

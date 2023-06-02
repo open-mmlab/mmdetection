@@ -1,20 +1,25 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
+from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
-from mmcv.runner import force_fp32
+from mmengine.structures import InstanceData
+from torch import Tensor
 
-from mmdet.core import (anchor_inside_flags, build_assigner, build_bbox_coder,
-                        build_prior_generator, build_sampler, images_to_levels,
-                        multi_apply, unmap)
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures.bbox import BaseBoxes, cat_boxes, get_box_tensor
+from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
+                         OptInstanceList, OptMultiConfig)
+from ..task_modules.prior_generators import (AnchorGenerator,
+                                             anchor_inside_flags)
+from ..task_modules.samplers import PseudoSampler
+from ..utils import images_to_levels, multi_apply, unmap
 from .base_dense_head import BaseDenseHead
-from .dense_test_mixins import BBoxTestMixin
 
 
-@HEADS.register_module()
-class AnchorHead(BaseDenseHead, BBoxTestMixin):
+@MODELS.register_module()
+class AnchorHead(BaseDenseHead):
     """Anchor-based head (RPN, RetinaNet, SSD, etc.).
 
     Args:
@@ -33,31 +38,32 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         init_cfg (dict or list[dict], optional): 参数初始化配置字典.
     """  # noqa: W605
 
-    def __init__(self,
-                 num_classes,
-                 in_channels,
-                 feat_channels=256,
-                 anchor_generator=dict(
-                     type='AnchorGenerator',
-                     scales=[8, 16, 32],
-                     ratios=[0.5, 1.0, 2.0],
-                     strides=[4, 8, 16, 32, 64]),
-                 bbox_coder=dict(
-                     type='DeltaXYWHBBoxCoder',
-                     clip_border=True,
-                     target_means=(.0, .0, .0, .0),
-                     target_stds=(1.0, 1.0, 1.0, 1.0)),
-                 reg_decoded_bbox=False,
-                 loss_cls=dict(
-                     type='CrossEntropyLoss',
-                     use_sigmoid=True,
-                     loss_weight=1.0),
-                 loss_bbox=dict(
-                     type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
-                 train_cfg=None,
-                 test_cfg=None,
-                 init_cfg=dict(type='Normal', layer='Conv2d', std=0.01)):
-        super(AnchorHead, self).__init__(init_cfg)
+    def __init__(
+        self,
+        num_classes: int,
+        in_channels: int,
+        feat_channels: int = 256,
+        anchor_generator: ConfigType = dict(
+            type='AnchorGenerator',
+            scales=[8, 16, 32],
+            ratios=[0.5, 1.0, 2.0],
+            strides=[4, 8, 16, 32, 64]),
+        bbox_coder: ConfigType = dict(
+            type='DeltaXYWHBBoxCoder',
+            clip_border=True,
+            target_means=(.0, .0, .0, .0),
+            target_stds=(1.0, 1.0, 1.0, 1.0)),
+        reg_decoded_bbox: bool = False,
+        loss_cls: ConfigType = dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        loss_bbox: ConfigType = dict(
+            type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
+        train_cfg: OptConfigType = None,
+        test_cfg: OptConfigType = None,
+        init_cfg: OptMultiConfig = dict(
+            type='Normal', layer='Conv2d', std=0.01)
+    ) -> None:
+        super().__init__(init_cfg=init_cfg)
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
@@ -71,36 +77,22 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             raise ValueError(f'num_classes={num_classes} is too small')
         self.reg_decoded_bbox = reg_decoded_bbox
 
-        self.bbox_coder = build_bbox_coder(bbox_coder)
-        self.loss_cls = build_loss(loss_cls)
-        self.loss_bbox = build_loss(loss_bbox)
+        self.bbox_coder = TASK_UTILS.build(bbox_coder)
+        self.loss_cls = MODELS.build(loss_cls)
+        self.loss_bbox = MODELS.build(loss_bbox)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         if self.train_cfg:
-            self.assigner = build_assigner(self.train_cfg.assigner)
-            if hasattr(self.train_cfg,
-                       'sampler') and self.train_cfg.sampler.type.split(
-                           '.')[-1] != 'PseudoSampler':
-                self.sampling = True
-                sampler_cfg = self.train_cfg.sampler
-                # avoid BC-breaking
-                if loss_cls['type'] in [
-                        'FocalLoss', 'GHMC', 'QualityFocalLoss'
-                ]:
-                    warnings.warn(
-                        'DeprecationWarning: Determining whether to sampling'
-                        'by loss type is deprecated, please delete sampler in'
-                        'your config when using `FocalLoss`, `GHMC`, '
-                        '`QualityFocalLoss` or other FocalLoss variant.')
-                    self.sampling = False
-                    sampler_cfg = dict(type='PseudoSampler')
+            self.assigner = TASK_UTILS.build(self.train_cfg['assigner'])
+            if train_cfg.get('sampler', None) is not None:
+                self.sampler = TASK_UTILS.build(
+                    self.train_cfg['sampler'], default_args=dict(context=self))
             else:
-                self.sampling = False
-                sampler_cfg = dict(type='PseudoSampler')
-            self.sampler = build_sampler(sampler_cfg, context=self)
+                self.sampler = PseudoSampler(context=self)
+
         self.fp16_enabled = False
 
-        self.prior_generator = build_prior_generator(anchor_generator)
+        self.prior_generator = TASK_UTILS.build(anchor_generator)
 
         # 通常每个层级的基础anchor数量是相同的,但是SSDHead的各层级基础anchor则是一个列表,
         # 因为它不同层级特征点上的anchor数量不同,所以无法用整数表示.
@@ -114,10 +106,11 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         self.conv_cls = nn.Conv2d(self.in_channels,
                                   self.num_base_priors * self.cls_out_channels,
                                   1)
-        self.conv_reg = nn.Conv2d(self.in_channels, self.num_base_priors * 4,
-                                  1)
+        reg_dim = self.bbox_coder.encode_size
+        self.conv_reg = nn.Conv2d(self.in_channels,
+                                  self.num_base_priors * reg_dim, 1)
 
-    def forward_single(self, x):
+    def forward_single(self, x: Tensor) -> Tuple[Tensor, Tensor]:
         """单一层级特征图的前向传播.
 
         Args:
@@ -132,11 +125,11 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         bbox_pred = self.conv_reg(x)
         return cls_score, bbox_pred
 
-    def forward(self, feats):
+    def forward(self, x: Tuple[Tensor]) -> Tuple[List[Tensor]]:
         """对来自上游网络的特征图进行前向传播.
 
         Args:
-            feats (tuple[Tensor]): 来自上游网络的特征图,每个都是 4维 张量.
+            x (tuple[Tensor]): 来自上游网络的特征图,每个都是 4维 张量.
 
         Returns:
             tuple: tuple(cls_scores, reg_predict).
@@ -146,9 +139,13 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 - reg_predict (list[Tensor]): 所有层级的box_reg,
                     [[bs, na*4, h, w], ] * num_level
         """
-        return multi_apply(self.forward_single, feats)
+        return multi_apply(self.forward_single, x)
 
-    def get_anchors(self, featmap_sizes, img_metas, device='cuda'):
+    def get_anchors(self,
+                    featmap_sizes: List[tuple],
+                    batch_img_metas: List[dict],
+                    device: Union[torch.device, str] = 'cuda') \
+            -> Tuple[List[List[Tensor]], List[List[Tensor]]]:
         """根据batch幅图像(直接复制)、多层级特征图尺寸获取anchors.
 
         对于每副图像,collate阶段会将较小图片进行padding,这些padding区域就称为无效区域.
@@ -165,12 +162,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         Returns:
             tuple:
-                anchor_list (list[Tensor]): 多张图像的anchor.
+                anchor_list (list[list[Tensor]]): 多张图像的anchor.
                     [[[h * w * na, 4], ] * num_levels,] * bs
-                valid_flag_list (list[Tensor]): 各个特征图上有效anchor的mask.
+                valid_flag_list (list[list[Tensor]]): 各个特征图上有效anchor的mask.
                     [[[h * w * na, ], ] * num_levels, ] * bs
         """
-        num_imgs = len(img_metas)
+        num_imgs = len(batch_img_metas)
 
         # 由于一个batch中所有图像的特征图大小相同,我们这里只计算一次anchor,然后复制即可
         # [[h * w * na, 4], ] * num_levels
@@ -178,8 +175,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             featmap_sizes, device=device)
         anchor_list = [multi_level_anchors for _ in range(num_imgs)]
 
-        valid_flag_list = []  # [[[h * w * na, ], ] * num_levels] * bs
-        for img_id, img_meta in enumerate(img_metas):
+        valid_flag_list = []
+        for img_id, img_meta in enumerate(batch_img_metas):
             multi_level_flags = self.prior_generator.valid_flags(
                 featmap_sizes, img_meta['pad_shape'], device)
             valid_flag_list.append(multi_level_flags)
@@ -187,36 +184,33 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         return anchor_list, valid_flag_list
 
     def _get_targets_single(self,
-                            flat_anchors,
-                            valid_flags,
-                            gt_bboxes,
-                            gt_bboxes_ignore,
-                            gt_labels,
-                            img_meta,
-                            label_channels=1,
-                            unmap_outputs=True):
+                            flat_anchors: Union[Tensor, BaseBoxes],
+                            valid_flags: Tensor,
+                            gt_instances: InstanceData,
+                            img_meta: dict,
+                            gt_instances_ignore: Optional[InstanceData] = None,
+                            unmap_outputs: bool = True) -> tuple:
         """计算单张图像上anchor的回归和分类拟合目标.
 
         Args:
-            flat_anchors (Tensor): 被合并到一起的单张图像的多层级anchor, [num_levels * h * w * na, 4]
-            valid_flags (Tensor): 同上,有效anchor的mask, [num_levels * h * w * na,]
-            gt_bboxes (Tensor): 单张图片的真实框, [num_gts, 4]
-            gt_bboxes_ignore (Tensor): 单张图片中将要被忽略的gt box, [num_ignored_gts, 4]
+            flat_anchors (Tensor or :obj:`BaseBoxes`): [nl * h * w * na, 4]
+            valid_flags (Tensor): 同上,有效anchor的mask, [nl * h * w * na,]
+            gt_instances (:obj:`InstanceData`): 真实的标注信息. 包含bboxes,labels属性.
             img_meta (dict): 单张图片的元信息
-            gt_labels (Tensor): 单张图片中真实框的所属类别, [num_gts,]
-            label_channels (int): 类别总数
+            gt_instances_ignore (:obj:`InstanceData`, optional): 忽略的标注信息. 包含bboxes属性.
             unmap_outputs (bool): 是否将计算出的有效anchor的label、target、weight映射回原始anchor上
 
         Returns:
             tuple:
-                labels (list[Tensor]): 各层级上的cls_target,
+                - labels (Tensor): 各层级上的cls_target.
                     unmap_outputs为True时,[num_levels * h * w * na, ]
                     unmap_outputs为False时,[num_valid_anchors, ]
-                label_weights (list[Tensor]): 各层级上的cls_target权重,
-                bbox_targets (list[Tensor]): 各层级上的reg_target,
-                bbox_weights (list[Tensor]): 各层级上的target_reg权重,
-                num_total_pos (int): 该张图片中的正样本数量
-                num_total_neg (int): 该张图片中的负样本数量
+                - label_weights (Tensor): 各层级上的cls_target权重.
+                - bbox_targets (Tensor): 各层级上的reg_target.
+                - bbox_weights (Tensor): 各层级上的target_reg权重,
+                - pos_inds (Tensor): 该张图片中的正样本索引.
+                - neg_inds (Tensor): 该张图片中的负样本索引.
+                - sampling_result (:obj:`SamplingResult`): 采样结果.
         """
         # flat_anchors -> [num_levels*(h * w * na), 4]
         # valid_flags过滤了在collact阶段填充的多余像素区域生成的anchor,而这一步是过滤掉超出图像边界的一些anchor
@@ -224,50 +218,55 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         # self.train_cfg.allowed_border默认为-1,即不进行过滤.
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
-                                           self.train_cfg.allowed_border)
+                                           self.train_cfg['allowed_border'])
         if not inside_flags.any():
-            return (None, ) * 7
+            raise ValueError(
+                'There is no valid anchor inside the image boundary. Please '
+                'check the image size and anchor sizes, or set '
+                '``allowed_border`` to -1 to skip the condition.')
         # assign gt and sample anchors
-        anchors = flat_anchors[inside_flags, :]
+        anchors = flat_anchors[inside_flags]
 
-        # 先对单张图片上的有效anchor进行分配正负样本
-        # 若采用sampling,那么不需要传递gt_labels.因为后面还会再次计算assigned_labels
-        assign_result = self.assigner.assign(
-            anchors, gt_bboxes, gt_bboxes_ignore,
-            None if self.sampling else gt_labels)
-        # 然后进行采样以控制正负样本比例
-        sampling_result = self.sampler.sample(assign_result, anchors,
-                                              gt_bboxes)
+        pred_instances = InstanceData(priors=anchors)
+        assign_result = self.assigner.assign(pred_instances, gt_instances,
+                                             gt_instances_ignore)
+        # No sampling is required except for RPN and
+        # Guided Anchoring algorithms
+        sampling_result = self.sampler.sample(assign_result, pred_instances,
+                                              gt_instances)
 
         num_valid_anchors = anchors.shape[0]
-        bbox_targets = torch.zeros_like(anchors)
-        bbox_weights = torch.zeros_like(anchors)
-        labels = anchors.new_full((num_valid_anchors, ),  # 初始化为self.num_classes(背景类别)
+        target_dim = gt_instances.bboxes.size(-1) if self.reg_decoded_bbox \
+            else self.bbox_coder.encode_size
+        bbox_targets = anchors.new_zeros(num_valid_anchors, target_dim)
+        bbox_weights = anchors.new_zeros(num_valid_anchors, target_dim)
+
+        # TODO: Considering saving memory, is it necessary to be long?
+        labels = anchors.new_full((num_valid_anchors, ),
                                   self.num_classes,
                                   dtype=torch.long)
         label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
 
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
+        # `bbox_coder.encode` accepts tensor or box type inputs and generates
+        # tensor targets. If regressing decoded boxes, the code will convert
+        # box type `pos_bbox_targets` to tensor.
         if len(pos_inds) > 0:
             if not self.reg_decoded_bbox:
                 pos_bbox_targets = self.bbox_coder.encode(
-                    sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
+                    sampling_result.pos_priors, sampling_result.pos_gt_bboxes)
             else:
                 pos_bbox_targets = sampling_result.pos_gt_bboxes
+                pos_bbox_targets = get_box_tensor(pos_bbox_targets)
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
-            if gt_labels is None:
-                # 从 v2.5.0开始,只有 rpn 会将 gt_labels 设为 None,
-                # 此时是一个二分类网络,前景是第一个类别
-                labels[pos_inds] = 0
-            else:
-                labels[pos_inds] = gt_labels[
-                    sampling_result.pos_assigned_gt_inds]
-            if self.train_cfg.pos_weight <= 0:
+
+            labels[pos_inds] = sampling_result.pos_gt_labels
+            if self.train_cfg['pos_weight'] <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
+                label_weights[pos_inds] = self.train_cfg['pos_weight']
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 
@@ -286,48 +285,51 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 neg_inds, sampling_result)
 
     def get_targets(self,
-                    anchor_list,
-                    valid_flag_list,
-                    gt_bboxes_list,
-                    img_metas,
-                    gt_bboxes_ignore_list=None,
-                    gt_labels_list=None,
-                    label_channels=1,
-                    unmap_outputs=True,
-                    return_sampling_results=False):
+                    anchor_list: List[List[Tensor]],
+                    valid_flag_list: List[List[Tensor]],
+                    batch_gt_instances: InstanceList,
+                    batch_img_metas: List[dict],
+                    batch_gt_instances_ignore: OptInstanceList = None,
+                    unmap_outputs: bool = True,
+                    return_sampling_results: bool = False) -> tuple:
         """计算多张图像中anchor的回归和分类目标.
 
         Args:
-            anchor_list (list[list[Tensor]]): [[[h * w * na, 4], ] * num_levels] * bs.
-            valid_flag_list (list[list[Tensor]]):[[[h * w * na, ], ] * num_levels] * bs
-            gt_bboxes_list (list[Tensor]): 每张图像中的标注box.
-            img_metas (list[dict]): 每张图片的元信息.
-            gt_bboxes_ignore_list (list[Tensor]): batch幅图像的要忽略的gt box列表.
-                其内部元素shape为 (num_ignored_gts, 4).意为该幅图片所忽略的gt box
-            gt_labels_list (list[Tensor]): 每张图像中标注box所属类别.
-            label_channels (int): 类别维度.
+            anchor_list (list[list[Tensor]]): [[[h * w * na, 4], ] * nl] * bs.
+            valid_flag_list (list[list[Tensor]]): [[[h * w * na, ], ] * nl] * bs
+            batch_gt_instances (list[:obj:`InstanceData`]): 真实的标注信息.
+                它通常包括``bboxes`` 和``labels`` 属性.
+            batch_img_metas (list[dict]): batch张图片的元信息.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                忽略的标注信息. 它通常包含``bboxes``属性.
             unmap_outputs (bool): 是否将输出映射回原始anchor上.
+            return_sampling_results (bool): 是否返回采样结果.
 
         Returns:
             tuple: 通常返回一个包含网络拟合目标的元组.
 
                 - labels_list (list[Tensor]): 每个层级上对应的label.
-                    [[bs, h * w * na, ], ] * num_level
+                    [[bs, h * w * na, ], ] * nl
                 - label_weights_list (list[Tensor]): 每个层级上的label权重.
-                    [[bs, h * w * na, ], ] * num_level
+                    [[bs, h * w * na, ], ] * nl
                 - bbox_targets_list (list[Tensor]): 每个层级上特征图需要回归的目标.
-                    [[bs, h * w * na, 4], ] * num_level
+                    [[bs, h * w * na, 4], ] * nl
                 - bbox_weights_list (list[Tensor]): 每个层级上特征图回归的权重.
-                    [[bs, h * w * na, 4], ] * num_level
-                - num_total_pos (int): batch幅图像中的正样本数.
-                - num_total_neg (int): batch幅图像中的负样本数.
+                    [[bs, h * w * na, 4], ] * nl
+                - avg_factor (int): 用于平均loss的平均因子. 当使用采样方法时,
+                    avg_factor 通常是正负先验之和. 当使用PseudoSampler方法时,
+                    avg_factor 通常是正先验之和.
 
             额外返回值: 此值来自 `self._get_targets_single` 的用户定义返回.
                 这些返回值目前被细化为每个特征图的属性(即具有 HxW 维度).它将与原始返回值
                 合并到一起返回.
         """
-        num_imgs = len(img_metas)
+        num_imgs = len(batch_img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
+
+        if batch_gt_instances_ignore is None:
+            batch_gt_instances_ignore = [None] * num_imgs
+
         # 单张图片的各个层级上的anchor总数量,(向上取整),以RetinaNet-FPN为例
         # [h/8*w/8*9, h/16*w/16*9, h/32*w/32*9, h/64*w/64*9, h/128*w/128*9]
         # [43200, 10800, 2700, 720, 180],其中网络输入batch尺寸(h,w)=(480, 640)
@@ -337,45 +339,31 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         concat_valid_flag_list = []
         for i in range(num_imgs):
             assert len(anchor_list[i]) == len(valid_flag_list[i])
-            concat_anchor_list.append(torch.cat(anchor_list[i]))
+            concat_anchor_list.append(cat_boxes(anchor_list[i]))
             concat_valid_flag_list.append(torch.cat(valid_flag_list[i]))
 
-        # 计算每张图像的拟合目标
-        if gt_bboxes_ignore_list is None:
-            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
-        if gt_labels_list is None:
-            gt_labels_list = [None for _ in range(num_imgs)]
+        # 计算batch张图像的拟合目标
         results = multi_apply(
-            self._get_targets_single,  # 在单张图片上计算anchor目标
+            self._get_targets_single,
             concat_anchor_list,
             concat_valid_flag_list,
-            gt_bboxes_list,
-            gt_bboxes_ignore_list,
-            gt_labels_list,
-            img_metas,
-            label_channels=label_channels,
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore,
             unmap_outputs=unmap_outputs)
         (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
          pos_inds_list, neg_inds_list, sampling_results_list) = results[:7]
-        rest_results = list(results[7:])  # 用户自定义添加的返回值
-        # 没有有效的anchor ,出现该种情况的原因:
-        # 直接原因:
-        #   在前向传播时,batch中某一幅图像边界内没有任何"有效"anchor.
-        # 根本原因：
-        #   训练数据的原始图像尺寸比例过于悬殊,比如1000x150.此时生成的anchor很容易过界
-        #   anchor、allowed_border等参数不合理
-        # 你需要检查图像比例和anchor大小,也可以将配置文件中的allowed_border设置为-1,以跳过筛查条件
-        # 参考:https://github.com/open-mmlab/mmdetection/issues/1882#issuecomment-569276188
-        # 注意!遇到该种情况,虽然可能仅仅由于一张图片引发的,但整体情况已经很严重了.需要重新审视数据或参数
-        if any([labels is None for labels in all_labels]):
-            return None
-        # 整个batch图像上经过sample的正负anchor
-        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
-        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
-        # [target_img0, target_img1, ...] -> [target_level0, target_level1, ...]
-        # 这里存在一个设计缺陷, 当unmap_outputs为False时,且当concat_valid_flag_list
-        # 以及后续allowed_border参数真的过滤某些anchor时,
-        # all_labels与num_level_anchors在shape上是不匹配的.
+        rest_results = list(results[7:])  # user-added return values
+        # Get `avg_factor` of all images, which calculate in `SamplingResult`.
+        # When using sampling method, avg_factor is usually the sum of
+        # positive and negative priors. When using `PseudoSampler`,
+        # `avg_factor` is usually equal to the number of positive priors.
+        avg_factor = sum(
+            [results.avg_factor for results in sampling_results_list])
+        # update `_raw_positive_infos`, which will be used when calling
+        # `get_positive_infos`.
+        self._raw_positive_infos.update(sampling_results=sampling_results_list)
+        # split targets to a list w.r.t. multiple levels
         labels_list = images_to_levels(all_labels, num_level_anchors)
         label_weights_list = images_to_levels(all_label_weights,
                                               num_level_anchors)
@@ -384,7 +372,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         bbox_weights_list = images_to_levels(all_bbox_weights,
                                              num_level_anchors)
         res = (labels_list, label_weights_list, bbox_targets_list,
-               bbox_weights_list, num_total_pos, num_total_neg)
+               bbox_weights_list, avg_factor)
         if return_sampling_results:
             res = res + (sampling_results_list, )
         for i, r in enumerate(rest_results):  # user-added return values
@@ -392,66 +380,73 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         return res + tuple(rest_results)
 
-    def loss_single(self, cls_score, bbox_pred, anchors, labels, label_weights,
-                    bbox_targets, bbox_weights, num_total_samples):
+    def loss_by_feat_single(self, cls_score: Tensor, bbox_pred: Tensor,
+                            anchors: Tensor, labels: Tensor,
+                            label_weights: Tensor, bbox_targets: Tensor,
+                            bbox_weights: Tensor, avg_factor: int) -> tuple:
         """计算单个层级的损失.
 
         Args:
-            cls_score (Tensor): 每层级输出的类别置信度 [bs, na * cls_out_channels, h, w].
+            cls_score (Tensor): 每层级输出的类别置信度 [bs, na * nc, h, w].
             bbox_pred (Tensor): 每层级输出的box/loc  [bs, na * 4, h, w].
             anchors (Tensor): 每层级的基础anchor     [bs, h * w * na, 4].
             labels (Tensor): 每层级的类别拟合目标     [bs, h * w * na,].
             label_weights (Tensor): 每层级的类别权重 [bs, h * w * na,].
             bbox_targets (Tensor): 每层级的回归拟合目标  [bs, h * w * na, 4].
             bbox_weights (Tensor): 每层级的回归权重  [bs, h * w * na, 4].
-            num_total_samples (int): 如果经过采样,则该值等于正负样本总数;否则是正样本的数量.
+            avg_factor (int): 用于平均loss的平均因子.
 
         Returns:
             dict[str, Tensor]: 分类和回归损失.
         """
-        # 分类损失
+        # classification loss
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
         cls_score = cls_score.permute(0, 2, 3,
                                       1).reshape(-1, self.cls_out_channels)
         loss_cls = self.loss_cls(
-            cls_score, labels, label_weights, avg_factor=num_total_samples)
-        # 回归损失
-        bbox_targets = bbox_targets.reshape(-1, 4)
-        bbox_weights = bbox_weights.reshape(-1, 4)
-        bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
+            cls_score, labels, label_weights, avg_factor=avg_factor)
+        # regression loss
+        target_dim = bbox_targets.size(-1)
+        bbox_targets = bbox_targets.reshape(-1, target_dim)
+        bbox_weights = bbox_weights.reshape(-1, target_dim)
+        bbox_pred = bbox_pred.permute(0, 2, 3,
+                                      1).reshape(-1,
+                                                 self.bbox_coder.encode_size)
         if self.reg_decoded_bbox:
-            anchors = anchors.reshape(-1, 4)
+            # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
+            # is applied directly on the decoded bounding boxes, it
+            # decodes the already encoded coordinates to absolute format.
+            anchors = anchors.reshape(-1, anchors.size(-1))
             bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
+            bbox_pred = get_box_tensor(bbox_pred)
         loss_bbox = self.loss_bbox(
-            bbox_pred,
-            bbox_targets,
-            bbox_weights,
-            avg_factor=num_total_samples)
+            bbox_pred, bbox_targets, bbox_weights, avg_factor=avg_factor)
         return loss_cls, loss_bbox
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def loss(self,
-             cls_scores,
-             bbox_preds,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
-        """Compute losses of the head.
+    def loss_by_feat(
+            self,
+            cls_scores: List[Tensor],
+            bbox_preds: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
 
         Args:
             cls_scores (list[Tensor]): 每个层级的box score
-                 [[bs, na * cls_out_channels, h, w],] * num_level
+                 [[bs, na * nc, h, w],] * nl
             bbox_preds (list[Tensor]): 每个层级的box reg
-                [[bs, na * 4, h, w],] * num_level
-            gt_bboxes (list[Tensor]): 每幅图像的gt box, 格式为[x1, y1, x2, y2].
-            gt_labels (list[Tensor]): 每幅图像上gt box对应的class
-            img_metas (list[dict]): 每张图片的元信息.
-            gt_bboxes_ignore (None | list[Tensor]): 计算损失时可以指定忽略哪些gt box.
+                [[bs, na * 4, h, w],] * nl
+            batch_gt_instances (list[:obj:`InstanceData`]): batch幅图像的实例信息
+                通常包含``bboxes`` and ``labels``属性.
+            batch_img_metas (list[dict]): batch张图片的元信息.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                batch幅图像中忽略的实例信息通常包含``bboxes``属性.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict: A dictionary of loss components.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.prior_generator.num_levels
@@ -464,26 +459,18 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         # 而后者依据每幅图片的尺寸不同,anchor有效区域也可能不同,需要具体计算出每张图像的有效mask.
         # 以及feat_h*feat_w是随着层级(level)变化而变化的
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas, device=device)
-        label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
+            featmap_sizes, batch_img_metas, device=device)
         # 利用提供的anchor将其与每张图片上的target计算IOU以及利用相应的thr来分配正负样本
         # 接着采取sample采样正负样本,主要用来筛选合适的正负样本用来训练.同时为他们分配最佳gt和label
         # 最后将数据进行调整以和网络前向传播结果保持一致,方便loss计算
         cls_reg_targets = self.get_targets(  # [level0,level1,...]
             anchor_list,
             valid_flag_list,
-            gt_bboxes,
-            img_metas,
-            gt_bboxes_ignore_list=gt_bboxes_ignore,
-            gt_labels_list=gt_labels,
-            label_channels=label_channels)
-        if cls_reg_targets is None:
-            return None
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore=batch_gt_instances_ignore)
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
-         num_total_pos, num_total_neg) = cls_reg_targets
-        # 如果样本经过手动采样那么会控制负样本数量,否则正负样本比例可能悬殊会导致loss不好收敛
-        num_total_samples = (
-            num_total_pos + num_total_neg if self.sampling else num_total_pos)
+         avg_factor) = cls_reg_targets
 
         # 各层级anchor数量列表
         num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
@@ -491,12 +478,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         # 方法最后部分也存在.之所以这么做的原因是为了和网络输出shape保持一致,方便计算loss
         concat_anchor_list = []
         for i in range(len(anchor_list)):  # 现将每个图像上的anchor合并到一起
-            concat_anchor_list.append(torch.cat(anchor_list[i]))
+            concat_anchor_list.append(cat_boxes(anchor_list[i]))
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
 
         losses_cls, losses_bbox = multi_apply(
-            self.loss_single,
+            self.loss_by_feat_single,
             cls_scores,
             bbox_preds,
             all_anchor_list,
@@ -504,27 +491,5 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
-            num_total_samples=num_total_samples)
+            avg_factor=avg_factor)
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
-
-    def aug_test(self, feats, img_metas, rescale=False):
-        """Test function with test time augmentation.
-
-        Args:
-            feats (list[Tensor]): the outer list indicates test-time
-                augmentations and inner Tensor should have a shape NxCxHxW,
-                which contains features for all images in the batch.
-            img_metas (list[list[dict]]): the outer list indicates test-time
-                augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch. each dict has image information.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
-
-        Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is ``bboxes`` with shape (n, 5), where
-                5 represent (tl_x, tl_y, br_x, br_y, score).
-                The shape of the second tensor in the tuple is ``labels``
-                with shape (n,), The length of list should always be 1.
-        """
-        return self.aug_test_bboxes(feats, img_metas, rescale=rescale)

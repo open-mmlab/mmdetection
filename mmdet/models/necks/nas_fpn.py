@@ -1,13 +1,17 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Tuple
+
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.ops.merge_cells import GlobalPoolingCell, SumCell
-from mmcv.runner import BaseModule, ModuleList
+from mmengine.model import BaseModule, ModuleList
+from torch import Tensor
 
-from ..builder import NECKS
+from mmdet.registry import MODELS
+from mmdet.utils import MultiConfig, OptConfigType
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class NASFPN(BaseModule):
     """NAS-FPN.
 
@@ -21,26 +25,28 @@ class NASFPN(BaseModule):
         stack_times (int): The number of times the pyramid architecture will
             be stacked.
         start_level (int): Index of the start input backbone level used to
-            build the feature pyramid. Default: 0.
+            build the feature pyramid. Defaults to 0.
         end_level (int): Index of the end input backbone level (exclusive) to
-            build the feature pyramid. Default: -1, which means the last level.
-        add_extra_convs (bool): It decides whether to add conv
-            layers on top of the original feature maps. Default to False.
-            If True, its actual mode is specified by `extra_convs_on_inputs`.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+            build the feature pyramid. Defaults to -1, which means the
+            last level.
+        norm_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
+            normalization layer. Defaults to None.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict]): Initialization config dict.
     """
 
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 num_outs,
-                 stack_times,
-                 start_level=0,
-                 end_level=-1,
-                 add_extra_convs=False,
-                 norm_cfg=None,
-                 init_cfg=dict(type='Caffe2Xavier', layer='Conv2d')):
-        super(NASFPN, self).__init__(init_cfg)
+    def __init__(
+        self,
+        in_channels: List[int],
+        out_channels: int,
+        num_outs: int,
+        stack_times: int,
+        start_level: int = 0,
+        end_level: int = -1,
+        norm_cfg: OptConfigType = None,
+        init_cfg: MultiConfig = dict(type='Caffe2Xavier', layer='Conv2d')
+    ) -> None:
+        super().__init__(init_cfg=init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -59,7 +65,6 @@ class NASFPN(BaseModule):
             assert num_outs == end_level - start_level + 1
         self.start_level = start_level
         self.end_level = end_level
-        self.add_extra_convs = add_extra_convs
 
         # add lateral connections
         self.lateral_convs = nn.ModuleList()
@@ -124,8 +129,16 @@ class NASFPN(BaseModule):
                 out_norm_cfg=norm_cfg)
             self.fpn_stages.append(stage)
 
-    def forward(self, inputs):
-        """Forward function."""
+    def forward(self, inputs: Tuple[Tensor]) -> tuple:
+        """Forward function.
+
+         Args:
+            inputs (tuple[Tensor]): Features from the upstream network, each
+                is a 4D-tensor.
+
+        Returns:
+            tuple: Feature maps, each is a 4D-tensor.
+        """
         # build P3-P5
         feats = [
             lateral_conv(inputs[i + self.start_level])

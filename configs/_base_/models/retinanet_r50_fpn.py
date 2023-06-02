@@ -1,6 +1,12 @@
 # model settings
 model = dict(
     type='RetinaNet',
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_size_divisor=32),
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -49,6 +55,8 @@ model = dict(
             neg_iou_thr=0.4,
             min_pos_iou=0,
             ignore_iof_thr=-1),
+        sampler=dict(
+            type='PseudoSampler'),  # Focal loss should use PseudoSampler
         allowed_border=-1,
         pos_weight=-1,  # 正样本权重,仅在适用于分类Loss ...\models\dense_heads\anchor_head.py _get_targets_single(...)
         debug=False),

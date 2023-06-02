@@ -19,9 +19,9 @@ Collections:
       Version: v2.4.0
 
 Models:
-  - Name: sabl_faster_rcnn_r50_fpn_1x_coco
+  - Name: sabl-faster-rcnn_r50_fpn_1x_coco
     In Collection: SABL
-    Config: configs/sabl/sabl_faster_rcnn_r50_fpn_1x_coco.py
+    Config: configs/sabl/sabl-faster-rcnn_r50_fpn_1x_coco.py
     Metadata:
       Epochs: 12
     Results:
@@ -31,9 +31,9 @@ Models:
           box AP: 39.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_faster_rcnn_r50_fpn_1x_coco/sabl_faster_rcnn_r50_fpn_1x_coco-e867595b.pth
 
-  - Name: sabl_faster_rcnn_r101_fpn_1x_coco
+  - Name: sabl-faster-rcnn_r101_fpn_1x_coco
     In Collection: SABL
-    Config: configs/sabl/sabl_faster_rcnn_r101_fpn_1x_coco.py
+    Config: configs/sabl/sabl-faster-rcnn_r101_fpn_1x_coco.py
     Metadata:
       Epochs: 12
     Results:
@@ -43,9 +43,9 @@ Models:
           box AP: 41.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_faster_rcnn_r101_fpn_1x_coco/sabl_faster_rcnn_r101_fpn_1x_coco-f804c6c1.pth
 
-  - Name: sabl_cascade_rcnn_r50_fpn_1x_coco
+  - Name: sabl-cascade-rcnn_r50_fpn_1x_coco
     In Collection: SABL
-    Config: configs/sabl/sabl_cascade_rcnn_r50_fpn_1x_coco.py
+    Config: configs/sabl/sabl-cascade-rcnn_r50_fpn_1x_coco.py
     Metadata:
       Epochs: 12
     Results:
@@ -55,9 +55,9 @@ Models:
           box AP: 41.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_cascade_rcnn_r50_fpn_1x_coco/sabl_cascade_rcnn_r50_fpn_1x_coco-e1748e5e.pth
 
-  - Name: sabl_cascade_rcnn_r101_fpn_1x_coco
+  - Name: sabl-cascade-rcnn_r101_fpn_1x_coco
     In Collection: SABL
-    Config: configs/sabl/sabl_cascade_rcnn_r101_fpn_1x_coco.py
+    Config: configs/sabl/sabl-cascade-rcnn_r101_fpn_1x_coco.py
     Metadata:
       Epochs: 12
     Results:
@@ -67,9 +67,9 @@ Models:
           box AP: 43.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_cascade_rcnn_r101_fpn_1x_coco/sabl_cascade_rcnn_r101_fpn_1x_coco-2b83e87c.pth
 
-  - Name: sabl_retinanet_r50_fpn_1x_coco
+  - Name: sabl-retinanet_r50_fpn_1x_coco
     In Collection: SABL
-    Config: configs/sabl/sabl_retinanet_r50_fpn_1x_coco.py
+    Config: configs/sabl/sabl-retinanet_r50_fpn_1x_coco.py
     Metadata:
       Epochs: 12
     Results:
@@ -79,9 +79,9 @@ Models:
           box AP: 37.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_retinanet_r50_fpn_1x_coco/sabl_retinanet_r50_fpn_1x_coco-6c54fd4f.pth
 
-  - Name: sabl_retinanet_r50_fpn_gn_1x_coco
+  - Name: sabl-retinanet_r50-gn_fpn_1x_coco
     In Collection: SABL
-    Config: configs/sabl/sabl_retinanet_r50_fpn_gn_1x_coco.py
+    Config: configs/sabl/sabl-retinanet_r50-gn_fpn_1x_coco.py
     Metadata:
       Epochs: 12
     Results:
@@ -91,9 +91,9 @@ Models:
           box AP: 38.8
     Weights: https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_retinanet_r50_fpn_gn_1x_coco/sabl_retinanet_r50_fpn_gn_1x_coco-e16dfcf1.pth
 
-  - Name: sabl_retinanet_r101_fpn_1x_coco
+  - Name: sabl-retinanet_r101_fpn_1x_coco
     In Collection: SABL
-    Config: configs/sabl/sabl_retinanet_r101_fpn_1x_coco.py
+    Config: configs/sabl/sabl-retinanet_r101_fpn_1x_coco.py
     Metadata:
       Epochs: 12
     Results:
@@ -103,9 +103,9 @@ Models:
           box AP: 39.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_retinanet_r101_fpn_1x_coco/sabl_retinanet_r101_fpn_1x_coco-42026904.pth
 
-  - Name: sabl_retinanet_r101_fpn_gn_1x_coco
+  - Name: sabl-retinanet_r101-gn_fpn_1x_coco
     In Collection: SABL
-    Config: configs/sabl/sabl_retinanet_r101_fpn_gn_1x_coco.py
+    Config: configs/sabl/sabl-retinanet_r101-gn_fpn_1x_coco.py
     Metadata:
       Epochs: 12
     Results:
@@ -115,9 +115,9 @@ Models:
           box AP: 40.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_retinanet_r101_fpn_gn_1x_coco/sabl_retinanet_r101_fpn_gn_1x_coco-40a893e8.pth
 
-  - Name: sabl_retinanet_r101_fpn_gn_2x_ms_640_800_coco
+  - Name: sabl-retinanet_r101-gn_fpn_ms-640-800-2x_coco
     In Collection: SABL
-    Config: configs/sabl/sabl_retinanet_r101_fpn_gn_2x_ms_640_800_coco.py
+    Config: configs/sabl/sabl-retinanet_r101-gn_fpn_ms-640-800-2x_coco.py
     Metadata:
       Epochs: 24
     Results:
@@ -127,9 +127,9 @@ Models:
           box AP: 42.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_retinanet_r101_fpn_gn_2x_ms_640_800_coco/sabl_retinanet_r101_fpn_gn_2x_ms_640_800_coco-1e63382c.pth
 
-  - Name: sabl_retinanet_r101_fpn_gn_2x_ms_480_960_coco
+  - Name: sabl-retinanet_r101-gn_fpn_ms-480-960-2x_coco
     In Collection: SABL
-    Config: configs/sabl/sabl_retinanet_r101_fpn_gn_2x_ms_480_960_coco.py
+    Config: configs/sabl/sabl-retinanet_r101-gn_fpn_ms-480-960-2x_coco.py
     Metadata:
       Epochs: 24
     Results:

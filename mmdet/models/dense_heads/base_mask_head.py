@@ -1,56 +1,57 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from abc import ABCMeta, abstractmethod
+from typing import List, Tuple, Union
 
-from mmcv.runner import BaseModule
+from mmengine.model import BaseModule
+from torch import Tensor
+
+from mmdet.structures import SampleList
+from mmdet.utils import InstanceList, OptInstanceList, OptMultiConfig
+from ..utils import unpack_gt_instances
 
 
 class BaseMaskHead(BaseModule, metaclass=ABCMeta):
     """Base class for mask heads used in One-Stage Instance Segmentation."""
 
-    def __init__(self, init_cfg):
-        super(BaseMaskHead, self).__init__(init_cfg)
+    def __init__(self, init_cfg: OptMultiConfig = None) -> None:
+        super().__init__(init_cfg=init_cfg)
 
     @abstractmethod
-    def loss(self, **kwargs):
+    def loss_by_feat(self, *args, **kwargs):
+        """Calculate the loss based on the features extracted by the mask
+        head."""
         pass
 
     @abstractmethod
-    def get_results(self, **kwargs):
-        """Get precessed :obj:`InstanceData` of multiple images."""
+    def predict_by_feat(self, *args, **kwargs):
+        """Transform a batch of output features extracted from the head into
+        mask results."""
         pass
 
-    def forward_train(self,
-                      x,
-                      gt_labels,
-                      gt_masks,
-                      img_metas,
-                      gt_bboxes=None,
-                      gt_bboxes_ignore=None,
-                      positive_infos=None,
-                      **kwargs):
-        """
+    def loss(self,
+             x: Union[List[Tensor], Tuple[Tensor]],
+             batch_data_samples: SampleList,
+             positive_infos: OptInstanceList = None,
+             **kwargs) -> dict:
+        """Perform forward propagation and loss calculation of the mask head on
+        the features of the upstream network.
+
         Args:
             x (list[Tensor] | tuple[Tensor]): Features from FPN.
                 Each has a shape (B, C, H, W).
-            gt_labels (list[Tensor]): Ground truth labels of all images.
-                each has a shape (num_gts,).
-            gt_masks (list[Tensor]) : Masks for each bbox, has a shape
-                (num_gts, h , w).
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes (list[Tensor]): Ground truth bboxes of the image,
-                each item has a shape (num_gts, 4).
-            gt_bboxes_ignore (list[Tensor], None): Ground truth bboxes to be
-                ignored, each item has a shape (num_ignored_gts, 4).
+            batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
+                the meta information of each image and corresponding
+                annotations.
             positive_infos (list[:obj:`InstanceData`], optional): Information
                 of positive samples. Used when the label assignment is
-                done outside the MaskHead, e.g., in BboxHead in
+                done outside the MaskHead, e.g., BboxHead in
                 YOLACT or CondInst, etc. When the label assignment is done in
-                MaskHead, it would be None, like SOLO. All values
+                MaskHead, it would be None, like SOLO or SOLOv2. All values
                 in it should have shape (num_positive_samples, *).
 
+
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict: A dictionary of loss components.
         """
         if positive_infos is None:
             outs = self(x)
@@ -59,39 +60,49 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
 
         assert isinstance(outs, tuple), 'Forward results should be a tuple, ' \
                                         'even if only one item is returned'
-        loss = self.loss(
-            *outs,
-            gt_labels=gt_labels,
-            gt_masks=gt_masks,
-            img_metas=img_metas,
-            gt_bboxes=gt_bboxes,
-            gt_bboxes_ignore=gt_bboxes_ignore,
-            positive_infos=positive_infos,
-            **kwargs)
-        return loss
 
-    def simple_test(self,
-                    feats,
-                    img_metas,
-                    rescale=False,
-                    instances_list=None,
-                    **kwargs):
+        outputs = unpack_gt_instances(batch_data_samples)
+        batch_gt_instances, batch_gt_instances_ignore, batch_img_metas \
+            = outputs
+        for gt_instances, img_metas in zip(batch_gt_instances,
+                                           batch_img_metas):
+            img_shape = img_metas['batch_input_shape']
+            gt_masks = gt_instances.masks.pad(img_shape)
+            gt_instances.masks = gt_masks
+
+        losses = self.loss_by_feat(
+            *outs,
+            batch_gt_instances=batch_gt_instances,
+            batch_img_metas=batch_img_metas,
+            positive_infos=positive_infos,
+            batch_gt_instances_ignore=batch_gt_instances_ignore,
+            **kwargs)
+        return losses
+
+    def predict(self,
+                x: Tuple[Tensor],
+                batch_data_samples: SampleList,
+                rescale: bool = False,
+                results_list: OptInstanceList = None,
+                **kwargs) -> InstanceList:
         """Test function without test-time augmentation.
 
         Args:
-            feats (tuple[torch.Tensor]): Multi-level features from the
+            x (tuple[Tensor]): Multi-level features from the
                 upstream network, each is a 4D-tensor.
-            img_metas (list[dict]): List of image information.
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
-            instances_list (list[obj:`InstanceData`], optional): Detection
+            results_list (list[obj:`InstanceData`], optional): Detection
                 results of each image after the post process. Only exist
                 if there is a `bbox_head`, like `YOLACT`, `CondInst`, etc.
 
         Returns:
-            list[obj:`InstanceData`]: Instance segmentation \
-                results of each image after the post process. \
-                Each item usually contains following keys. \
+            list[obj:`InstanceData`]: Instance segmentation
+            results of each image after the post process.
+            Each item usually contains following keys.
 
                 - scores (Tensor): Classification scores, has a shape
                   (num_instance,)
@@ -99,18 +110,19 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                 - masks (Tensor): Processed mask results, has a
                   shape (num_instances, h, w).
         """
-        if instances_list is None:
-            outs = self(feats)
+        batch_img_metas = [
+            data_samples.metainfo for data_samples in batch_data_samples
+        ]
+        if results_list is None:
+            outs = self(x)
         else:
-            outs = self(feats, instances_list=instances_list)
-        mask_inputs = outs + (img_metas, )
-        results_list = self.get_results(
-            *mask_inputs,
-            rescale=rescale,
-            instances_list=instances_list,
-            **kwargs)
-        return results_list
+            outs = self(x, results_list)
 
-    def onnx_export(self, img, img_metas):
-        raise NotImplementedError(f'{self.__class__.__name__} does '
-                                  f'not support ONNX EXPORT')
+        results_list = self.predict_by_feat(
+            *outs,
+            batch_img_metas=batch_img_metas,
+            rescale=rescale,
+            results_list=results_list,
+            **kwargs)
+
+        return results_list

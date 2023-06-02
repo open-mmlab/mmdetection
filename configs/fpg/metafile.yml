@@ -17,9 +17,9 @@ Collections:
       Version: v2.10.0
 
 Models:
-  - Name: faster_rcnn_r50_fpg_crop640_50e_coco
+  - Name: faster-rcnn_r50_fpg_crop640-50e_coco
     In Collection: Feature Pyramid Grids
-    Config: configs/fpg/faster_rcnn_r50_fpg_crop640_50e_coco.py
+    Config: configs/fpg/faster-rcnn_r50_fpg_crop640-50e_coco.py
     Metadata:
       Training Memory (GB): 20.0
       Epochs: 50
@@ -30,9 +30,9 @@ Models:
           box AP: 42.3
     Weights: https://download.openmmlab.com/mmdetection/v2.0/fpg/faster_rcnn_r50_fpg_crop640_50e_coco/faster_rcnn_r50_fpg_crop640_50e_coco_20220311_011856-74109f42.pth
 
-  - Name: faster_rcnn_r50_fpg-chn128_crop640_50e_coco
+  - Name: faster-rcnn_r50_fpg-chn128_crop640-50e_coco
     In Collection: Feature Pyramid Grids
-    Config: configs/fpg/faster_rcnn_r50_fpg-chn128_crop640_50e_coco.py
+    Config: configs/fpg/faster-rcnn_r50_fpg-chn128_crop640-50e_coco.py
     Metadata:
       Training Memory (GB): 11.9
       Epochs: 50
@@ -43,9 +43,9 @@ Models:
           box AP: 41.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/fpg/faster_rcnn_r50_fpg-chn128_crop640_50e_coco/faster_rcnn_r50_fpg-chn128_crop640_50e_coco_20220311_011857-9376aa9d.pth
 
-  - Name: mask_rcnn_r50_fpg_crop640_50e_coco
+  - Name: mask-rcnn_r50_fpg_crop640-50e_coco
     In Collection: Feature Pyramid Grids
-    Config: configs/fpg/mask_rcnn_r50_fpg_crop640_50e_coco.py
+    Config: configs/fpg/mask-rcnn_r50_fpg_crop640-50e_coco.py
     Metadata:
       Training Memory (GB): 23.2
       Epochs: 50
@@ -60,9 +60,9 @@ Models:
           mask AP:  38.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/fpg/mask_rcnn_r50_fpg_crop640_50e_coco/mask_rcnn_r50_fpg_crop640_50e_coco_20220311_011857-233b8334.pth
 
-  - Name: mask_rcnn_r50_fpg-chn128_crop640_50e_coco
+  - Name: mask-rcnn_r50_fpg-chn128_crop640-50e_coco
     In Collection: Feature Pyramid Grids
-    Config: configs/fpg/mask_rcnn_r50_fpg-chn128_crop640_50e_coco.py
+    Config: configs/fpg/mask-rcnn_r50_fpg-chn128_crop640-50e_coco.py
     Metadata:
       Training Memory (GB): 15.3
       Epochs: 50

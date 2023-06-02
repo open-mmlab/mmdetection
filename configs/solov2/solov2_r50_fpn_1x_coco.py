@@ -6,6 +6,13 @@ _base_ = [
 # model settings
 model = dict(
     type='SOLOv2',
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_mask=True,
+        pad_size_divisor=32),
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -56,6 +63,8 @@ model = dict(
         max_per_img=100))
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
+optim_wrapper = dict(
+    optimizer=dict(lr=0.01), clip_grad=dict(max_norm=35, norm_type=2))
+
+val_evaluator = dict(metric='segm')
+test_evaluator = val_evaluator

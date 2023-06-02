@@ -1,18 +1,26 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from ..builder import DETECTORS
+from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .single_stage import SingleStageDetector
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class FSAF(SingleStageDetector):
     """Implementation of `FSAF <https://arxiv.org/abs/1903.00621>`_"""
 
     def __init__(self,
-                 backbone,
-                 neck,
-                 bbox_head,
-                 train_cfg=None,
-                 test_cfg=None,
-                 init_cfg=None):
-        super(FSAF, self).__init__(backbone, neck, bbox_head, train_cfg,
-                                   test_cfg, init_cfg)
+                 backbone: ConfigType,
+                 neck: ConfigType,
+                 bbox_head: ConfigType,
+                 train_cfg: OptConfigType = None,
+                 test_cfg: OptConfigType = None,
+                 data_preprocessor: OptConfigType = None,
+                 init_cfg: OptMultiConfig = None):
+        super().__init__(
+            backbone=backbone,
+            neck=neck,
+            bbox_head=bbox_head,
+            train_cfg=train_cfg,
+            test_cfg=test_cfg,
+            data_preprocessor=data_preprocessor,
+            init_cfg=init_cfg)

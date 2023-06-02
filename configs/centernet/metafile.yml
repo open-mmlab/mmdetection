@@ -17,9 +17,9 @@ Collections:
       Version: v2.13.0
 
 Models:
-  - Name: centernet_resnet18_dcnv2_140e_coco
+  - Name: centernet_r18-dcnv2_8xb16-crop512-140e_coco
     In Collection: CenterNet
-    Config: configs/centernet/centernet_resnet18_dcnv2_140e_coco.py
+    Config: configs/centernet/centernet_r18-dcnv2_8xb16-crop512-140e_coco.py
     Metadata:
       Batch Size: 128
       Training Memory (GB): 3.47
@@ -31,9 +31,9 @@ Models:
           box AP: 29.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_dcnv2_140e_coco/centernet_resnet18_dcnv2_140e_coco_20210702_155131-c8cd631f.pth
 
-  - Name: centernet_resnet18_140e_coco
+  - Name: centernet_r18_8xb16-crop512-140e_coco
     In Collection: CenterNet
-    Config: configs/centernet/centernet_resnet18_140e_coco.py
+    Config: configs/centernet/centernet_r18_8xb16-crop512-140e_coco.py
     Metadata:
       Batch Size: 128
       Training Memory (GB): 3.45
@@ -44,3 +44,16 @@ Models:
         Metrics:
           box AP: 25.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_140e_coco/centernet_resnet18_140e_coco_20210705_093630-bb5b3bf7.pth
+
+  - Name: centernet-update_r50-caffe_fpn_ms-1x_coco
+    In Collection: CenterNet
+    Config: configs/centernet/centernet-update_r50-caffe_fpn_ms-1x_coco.py
+    Metadata:
+      Batch Size: 16
+      Training Memory (GB): 3.3
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.2

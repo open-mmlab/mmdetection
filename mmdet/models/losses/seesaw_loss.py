@@ -1,32 +1,35 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Dict, Optional, Tuple, Union
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
 
-from ..builder import LOSSES
+from mmdet.registry import MODELS
 from .accuracy import accuracy
 from .cross_entropy_loss import cross_entropy
 from .utils import weight_reduce_loss
 
 
-def seesaw_ce_loss(cls_score,
-                   labels,
-                   label_weights,
-                   cum_samples,
-                   num_classes,
-                   p,
-                   q,
-                   eps,
-                   reduction='mean',
-                   avg_factor=None):
+def seesaw_ce_loss(cls_score: Tensor,
+                   labels: Tensor,
+                   label_weights: Tensor,
+                   cum_samples: Tensor,
+                   num_classes: int,
+                   p: float,
+                   q: float,
+                   eps: float,
+                   reduction: str = 'mean',
+                   avg_factor: Optional[int] = None) -> Tensor:
     """Calculate the Seesaw CrossEntropy loss.
 
     Args:
-        cls_score (torch.Tensor): The prediction with shape (N, C),
+        cls_score (Tensor): The prediction with shape (N, C),
              C is the number of classes.
-        labels (torch.Tensor): The learning label of the prediction.
-        label_weights (torch.Tensor): Sample-wise loss weight.
-        cum_samples (torch.Tensor): Cumulative samples for each category.
+        labels (Tensor): The learning label of the prediction.
+        label_weights (Tensor): Sample-wise loss weight.
+        cum_samples (Tensor): Cumulative samples for each category.
         num_classes (int): The number of classes.
         p (float): The ``p`` in the mitigation factor.
         q (float): The ``q`` in the compenstation factor.
@@ -37,7 +40,7 @@ def seesaw_ce_loss(cls_score,
             the loss. Defaults to None.
 
     Returns:
-        torch.Tensor: The calculated loss
+        Tensor: The calculated loss
     """
     assert cls_score.size(-1) == num_classes
     assert len(cum_samples) == num_classes
@@ -76,7 +79,7 @@ def seesaw_ce_loss(cls_score,
     return loss
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class SeesawLoss(nn.Module):
     """
     Seesaw Loss for Long-Tailed Instance Segmentation (CVPR 2021)
@@ -101,15 +104,15 @@ class SeesawLoss(nn.Module):
     """
 
     def __init__(self,
-                 use_sigmoid=False,
-                 p=0.8,
-                 q=2.0,
-                 num_classes=1203,
-                 eps=1e-2,
-                 reduction='mean',
-                 loss_weight=1.0,
-                 return_dict=True):
-        super(SeesawLoss, self).__init__()
+                 use_sigmoid: bool = False,
+                 p: float = 0.8,
+                 q: float = 2.0,
+                 num_classes: int = 1203,
+                 eps: float = 1e-2,
+                 reduction: str = 'mean',
+                 loss_weight: float = 1.0,
+                 return_dict: bool = True) -> None:
+        super().__init__()
         assert not use_sigmoid
         self.use_sigmoid = False
         self.p = p
@@ -135,14 +138,23 @@ class SeesawLoss(nn.Module):
         # custom accuracy of the classsifier
         self.custom_accuracy = True
 
-    def _split_cls_score(self, cls_score):
+    def _split_cls_score(self, cls_score: Tensor) -> Tuple[Tensor, Tensor]:
+        """split cls_score.
+
+        Args:
+            cls_score (Tensor): The prediction with shape (N, C + 2).
+
+        Returns:
+            Tuple[Tensor, Tensor]: The score for classes and objectness,
+                 respectively
+        """
         # split cls_score to cls_score_classes and cls_score_objectness
         assert cls_score.size(-1) == self.num_classes + 2
         cls_score_classes = cls_score[..., :-2]
         cls_score_objectness = cls_score[..., -2:]
         return cls_score_classes, cls_score_objectness
 
-    def get_cls_channels(self, num_classes):
+    def get_cls_channels(self, num_classes: int) -> int:
         """Get custom classification channels.
 
         Args:
@@ -154,14 +166,14 @@ class SeesawLoss(nn.Module):
         assert num_classes == self.num_classes
         return num_classes + 2
 
-    def get_activation(self, cls_score):
+    def get_activation(self, cls_score: Tensor) -> Tensor:
         """Get custom activation of cls_score.
 
         Args:
-            cls_score (torch.Tensor): The prediction with shape (N, C + 2).
+            cls_score (Tensor): The prediction with shape (N, C + 2).
 
         Returns:
-            torch.Tensor: The custom activation of cls_score with shape
+            Tensor: The custom activation of cls_score with shape
                  (N, C + 1).
         """
         cls_score_classes, cls_score_objectness = self._split_cls_score(
@@ -174,15 +186,16 @@ class SeesawLoss(nn.Module):
         scores = torch.cat([score_classes, score_neg], dim=-1)
         return scores
 
-    def get_accuracy(self, cls_score, labels):
+    def get_accuracy(self, cls_score: Tensor,
+                     labels: Tensor) -> Dict[str, Tensor]:
         """Get custom accuracy w.r.t. cls_score and labels.
 
         Args:
-            cls_score (torch.Tensor): The prediction with shape (N, C + 2).
-            labels (torch.Tensor): The learning label of the prediction.
+            cls_score (Tensor): The prediction with shape (N, C + 2).
+            labels (Tensor): The learning label of the prediction.
 
         Returns:
-            Dict [str, torch.Tensor]: The accuracy for objectness and classes,
+            Dict [str, Tensor]: The accuracy for objectness and classes,
                  respectively.
         """
         pos_inds = labels < self.num_classes
@@ -196,24 +209,27 @@ class SeesawLoss(nn.Module):
         acc['acc_classes'] = acc_classes
         return acc
 
-    def forward(self,
-                cls_score,
-                labels,
-                label_weights=None,
-                avg_factor=None,
-                reduction_override=None):
+    def forward(
+        self,
+        cls_score: Tensor,
+        labels: Tensor,
+        label_weights: Optional[Tensor] = None,
+        avg_factor: Optional[int] = None,
+        reduction_override: Optional[str] = None
+    ) -> Union[Tensor, Dict[str, Tensor]]:
         """Forward function.
 
         Args:
-            cls_score (torch.Tensor): The prediction with shape (N, C + 2).
-            labels (torch.Tensor): The learning label of the prediction.
-            label_weights (torch.Tensor, optional): Sample-wise loss weight.
+            cls_score (Tensor): The prediction with shape (N, C + 2).
+            labels (Tensor): The learning label of the prediction.
+            label_weights (Tensor, optional): Sample-wise loss weight.
             avg_factor (int, optional): Average factor that is used to average
                  the loss. Defaults to None.
             reduction (str, optional): The method used to reduce the loss.
                  Options are "none", "mean" and "sum".
+
         Returns:
-            torch.Tensor | Dict [str, torch.Tensor]:
+            Tensor | Dict [str, Tensor]:
                  if return_dict == False: The calculated loss |
                  if return_dict == True: The dict of calculated losses
                  for objectness and classes, respectively.

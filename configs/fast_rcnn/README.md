@@ -15,49 +15,97 @@ This paper proposes a Fast Region-based Convolutional Network method (Fast R-CNN
 ## Introduction
 
 Before training the Fast R-CNN, users should first train an [RPN](../rpn/README.md), and use the RPN to extract the region proposals.
+The region proposals can be obtained by setting `DumpProposals` pseudo metric. The dumped results is a `dict(file_name: pred_instance)`.
+The `pred_instance` is an `InstanceData` containing the sorted boxes and scores predicted by RPN. We provide example of dumping proposals in [RPN config](../rpn/rpn_r50_fpn_1x_coco.py).
 
-- Firstly, extract the region proposals of the val set by this command as below:
+- First, it should be obtained the region proposals in both training and validation (or testing) set.
+  change the type of `test_evaluator` to `DumpProposals` in the RPN config to get the region proposals as below:
 
-```bash
-./tools/dist_test.sh \
-    configs/rpn_r50_fpn_1x_coco.py \
-    checkpoints/rpn_r50_fpn_1x_coco_20200218-5525fa2e.pth \
-    8 \
-    --out proposals/rpn_r50_fpn_1x_val2017.pkl
-```
+  The config of get training image region proposals can be set as below:
 
-- Then, change the `ann_file` and `img_prefix` of `data.test` in the RPN config to train set as below:
+  ```python
+  # For training set
+  val_dataloader = dict(
+      dataset=dict(
+          ann_file='data/coco/annotations/instances_train2017.json',
+          data_prefix=dict(img='val2017/')))
+  val_dataloader = dict(
+      _delete_=True,
+      type='DumpProposals',
+      output_dir='data/coco/proposals/',
+      proposals_file='rpn_r50_fpn_1x_train2017.pkl')
+  test_dataloader = val_dataloader
+  test_evaluator = val_dataloader
+  ```
 
-```python
-data = dict(
-    test=dict(
-        ann_file='data/coco/annotations/instances_train2017.json',
-        img_prefix='data/coco/train2017/'))
-```
+  The config of get validation image region proposals can be set as below:
 
-- Extract the region proposals of the train set by this command as below:
+  ```python
+  # For validation set
+  val_dataloader = dict(
+    _delete_=True,
+    type='DumpProposals',
+    output_dir='data/coco/proposals/',
+    proposals_file='rpn_r50_fpn_1x_val2017.pkl')
+  test_evaluator = val_dataloader
+  ```
 
-```bash
-./tools/dist_test.sh \
-    configs/rpn_r50_fpn_1x_coco.py \
-    checkpoints/rpn_r50_fpn_1x_coco_20200218-5525fa2e.pth \
-    8 \
-    --out proposals/rpn_r50_fpn_1x_train2017.pkl
-```
+  Extract the region proposals command can be set as below:
 
-- Modify the path of `proposal_file` in Fast R-CNN config as below:
+  ```bash
+  ./tools/dist_test.sh \
+      configs/rpn_r50_fpn_1x_coco.py \
+      checkpoints/rpn_r50_fpn_1x_coco_20200218-5525fa2e.pth \
+      8
+  ```
 
-```python
-data = dict(
-    train=dict(
-        proposal_file='proposals/rpn_r50_fpn_1x_train2017.pkl'),
-    val=dict(
-        proposal_file='proposals/rpn_r50_fpn_1x_val2017.pkl'),
-    test=dict(
-        proposal_file='proposals/rpn_r50_fpn_1x_val2017.pkl'))
-```
+  Users can refer to [test tutorial](https://mmdetection.readthedocs.io/en/latest/user_guides/test.html) for more details.
 
-Finally, users can start training the Fast R-CNN.
+- Then, modify the path of `proposal_file` in the dataset and using `ProposalBroadcaster` to process both ground truth bounding boxes and region proposals in pipelines.
+  An example of Fast R-CNN important setting can be seen as below:
+
+  ```python
+  train_pipeline = [
+      dict(
+          type='LoadImageFromFile',
+          backend_args={{_base_.backend_args}}),
+      dict(type='LoadProposals', num_max_proposals=2000),
+      dict(type='LoadAnnotations', with_bbox=True),
+      dict(
+          type='ProposalBroadcaster',
+          transforms=[
+              dict(type='Resize', scale=(1333, 800), keep_ratio=True),
+              dict(type='RandomFlip', prob=0.5),
+          ]),
+      dict(type='PackDetInputs')
+  ]
+  test_pipeline = [
+      dict(
+          type='LoadImageFromFile',
+          backend_args={{_base_.backend_args}}),
+      dict(type='LoadProposals', num_max_proposals=None),
+      dict(
+          type='ProposalBroadcaster',
+          transforms=[
+              dict(type='Resize', scale=(1333, 800), keep_ratio=True),
+          ]),
+      dict(
+          type='PackDetInputs',
+          meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                     'scale_factor'))
+  ]
+  train_dataloader = dict(
+      dataset=dict(
+          proposal_file='proposals/rpn_r50_fpn_1x_train2017.pkl',
+          pipeline=train_pipeline))
+  val_dataloader = dict(
+      dataset=dict(
+          proposal_file='proposals/rpn_r50_fpn_1x_val2017.pkl',
+          pipeline=test_pipeline))
+  test_dataloader = val_dataloader
+  ```
+
+- Finally, users can start training the Fast R-CNN.
 
 ## Results and Models
 

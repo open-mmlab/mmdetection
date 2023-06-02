@@ -1,0 +1,74 @@
+Collections:
+  - Name: DINO
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - AdamW
+        - Multi Scale Train
+        - Gradient Clip
+      Training Resources: 8x A100 GPUs
+      Architecture:
+        - ResNet
+        - Transformer
+    Paper:
+      URL: https://arxiv.org/abs/2203.03605
+      Title: 'DINO: DETR with Improved DeNoising Anchor Boxes for End-to-End Object Detection'
+    README: configs/dino/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/f4112c9e5611468ffbd57cfba548fd1289264b52/mmdet/models/detectors/dino.py#L17
+      Version: v3.0.0rc6
+
+Models:
+  - Name: dino-4scale_r50_8xb2-12e_coco.py
+    In Collection: DINO
+    Config: configs/dino/dino-4scale_r50_8xb2-12e_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 49.0
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/dino/dino-4scale_r50_8xb2-12e_coco/dino-4scale_r50_8xb2-12e_coco_20221202_182705-55b2bba2.pth
+
+  - Name: dino-4scale_r50_8xb2-24e_coco.py
+    In Collection: DINO
+    Config: configs/dino/dino-4scale_r50_8xb2-24e_coco.py
+    Metadata:
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+
+  - Name:  dino-4scale_r50_8xb2-24e_coco.py
+    In Collection: DINO
+    Config: configs/dino/dino-4scale_r50_8xb2-36e_coco.py
+    Metadata:
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+
+  - Name: dino-5scale_swin-l_8xb2-12e_coco.py
+    In Collection: DINO
+    Config: configs/dino/dino-5scale_swin-l_8xb2-12e_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 57.2
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/dino/dino-5scale_swin-l_8xb2-12e_coco/dino-5scale_swin-l_8xb2-12e_coco_20230228_072924-a654145f.pth
+
+  - Name: dino-5scale_swin-l_8xb2-36e_coco.py
+    In Collection: DINO
+    Config: configs/dino/dino-5scale_swin-l_8xb2-36e_coco.py
+    Metadata:
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 58.4
+    Weights: https://github.com/RistoranteRist/mmlab-weights/releases/download/dino-swinl/dino-5scale_swin-l_8xb2-36e_coco-5486e051.pth

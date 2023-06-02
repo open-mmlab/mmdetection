@@ -1,44 +1,74 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Dict, List, Tuple
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmcv.runner import BaseModule
+from mmengine.config import ConfigDict
+from mmengine.model import BaseModule
+from mmengine.structures import InstanceData
+from torch import Tensor
 
-from mmdet.models.builder import HEADS, build_loss
+from mmdet.models.task_modules.samplers import SamplingResult
+from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, InstanceList, MultiConfig, OptConfigType
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class GridHead(BaseModule):
+    """Implementation of `Grid Head <https://arxiv.org/abs/1811.12030>`_
 
-    def __init__(self,
-                 grid_points=9,
-                 num_convs=8,
-                 roi_feat_size=14,
-                 in_channels=256,
-                 conv_kernel_size=3,
-                 point_feat_channels=64,
-                 deconv_kernel_size=4,
-                 class_agnostic=False,
-                 loss_grid=dict(
-                     type='CrossEntropyLoss', use_sigmoid=True,
-                     loss_weight=15),
-                 conv_cfg=None,
-                 norm_cfg=dict(type='GN', num_groups=36),
-                 init_cfg=[
-                     dict(type='Kaiming', layer=['Conv2d', 'Linear']),
-                     dict(
-                         type='Normal',
-                         layer='ConvTranspose2d',
-                         std=0.001,
-                         override=dict(
-                             type='Normal',
-                             name='deconv2',
-                             std=0.001,
-                             bias=-np.log(0.99 / 0.01)))
-                 ]):
-        super(GridHead, self).__init__(init_cfg)
+    Args:
+        grid_points (int): The number of grid points. Defaults to 9.
+        num_convs (int): The number of convolution layers. Defaults to 8.
+        roi_feat_size (int): RoI feature size. Default to 14.
+        in_channels (int): The channel number of inputs features.
+            Defaults to 256.
+        conv_kernel_size (int): The kernel size of convolution layers.
+            Defaults to 3.
+        point_feat_channels (int): The number of channels of each point
+            features. Defaults to 64.
+        class_agnostic (bool): Whether use class agnostic classification.
+            If so, the output channels of logits will be 1. Defaults to False.
+        loss_grid (:obj:`ConfigDict` or dict): Config of grid loss.
+        conv_cfg (:obj:`ConfigDict` or dict, optional) dictionary to
+            construct and config conv layer.
+        norm_cfg (:obj:`ConfigDict` or dict): dictionary to construct and
+            config norm layer.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict]): Initialization config dict.
+    """
+
+    def __init__(
+        self,
+        grid_points: int = 9,
+        num_convs: int = 8,
+        roi_feat_size: int = 14,
+        in_channels: int = 256,
+        conv_kernel_size: int = 3,
+        point_feat_channels: int = 64,
+        deconv_kernel_size: int = 4,
+        class_agnostic: bool = False,
+        loss_grid: ConfigType = dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=15),
+        conv_cfg: OptConfigType = None,
+        norm_cfg: ConfigType = dict(type='GN', num_groups=36),
+        init_cfg: MultiConfig = [
+            dict(type='Kaiming', layer=['Conv2d', 'Linear']),
+            dict(
+                type='Normal',
+                layer='ConvTranspose2d',
+                std=0.001,
+                override=dict(
+                    type='Normal',
+                    name='deconv2',
+                    std=0.001,
+                    bias=-np.log(0.99 / 0.01)))
+        ]
+    ) -> None:
+        super().__init__(init_cfg=init_cfg)
         self.grid_points = grid_points
         self.num_convs = num_convs
         self.roi_feat_size = roi_feat_size
@@ -150,9 +180,19 @@ class GridHead(BaseModule):
             self.forder_trans.append(fo_trans)
             self.sorder_trans.append(so_trans)
 
-        self.loss_grid = build_loss(loss_grid)
+        self.loss_grid = MODELS.build(loss_grid)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Dict[str, Tensor]:
+        """forward function of ``GridHead``.
+
+        Args:
+            x (Tensor): RoI features, has shape
+                (num_rois, num_channels, roi_feat_size, roi_feat_size).
+
+        Returns:
+            Dict[str, Tensor]: Return a dict including fused and unfused
+            heatmap.
+        """
         assert x.shape[-1] == x.shape[-2] == self.roi_feat_size
         # RoI feature transformation, downsample 2x
         x = self.convs(x)
@@ -190,10 +230,10 @@ class GridHead(BaseModule):
 
         return dict(fused=heatmap, unfused=heatmap_unfused)
 
-    def calc_sub_regions(self):
+    def calc_sub_regions(self) -> List[Tuple[float]]:
         """Compute point specific representation regions.
 
-        See Grid R-CNN Plus (https://arxiv.org/abs/1906.05688) for details.
+        See `Grid R-CNN Plus <https://arxiv.org/abs/1906.05688>`_ for details.
         """
         # to make it consistent with the original implementation, half_size
         # is computed as 2 * quarter_size, which is smaller
@@ -221,7 +261,19 @@ class GridHead(BaseModule):
                 (sub_x1, sub_y1, sub_x1 + half_size, sub_y1 + half_size))
         return sub_regions
 
-    def get_targets(self, sampling_results, rcnn_train_cfg):
+    def get_targets(self, sampling_results: List[SamplingResult],
+                    rcnn_train_cfg: ConfigDict) -> Tensor:
+        """Calculate the ground truth for all samples in a batch according to
+        the sampling_results.".
+
+        Args:
+            sampling_results (List[:obj:`SamplingResult`]): Assign results of
+                all images in a batch after sampling.
+            rcnn_train_cfg (:obj:`ConfigDict`): `train_cfg` of RCNN.
+
+        Returns:
+            Tensor: Grid heatmap targets.
+        """
         # mix all samples (across images) together.
         pos_bboxes = torch.cat([res.pos_bboxes for res in sampling_results],
                                dim=0).cpu()
@@ -289,19 +341,90 @@ class GridHead(BaseModule):
         sub_targets = sub_targets.to(sampling_results[0].pos_bboxes.device)
         return sub_targets
 
-    def loss(self, grid_pred, grid_targets):
+    def loss(self, grid_pred: Tensor, sample_idx: Tensor,
+             sampling_results: List[SamplingResult],
+             rcnn_train_cfg: ConfigDict) -> dict:
+        """Calculate the loss based on the features extracted by the grid head.
+
+        Args:
+            grid_pred (dict[str, Tensor]): Outputs of grid_head forward.
+            sample_idx (Tensor): The sampling index of ``grid_pred``.
+            sampling_results (List[obj:SamplingResult]): Assign results of
+                all images in a batch after sampling.
+            rcnn_train_cfg (obj:`ConfigDict`): `train_cfg` of RCNN.
+
+        Returns:
+            dict: A dictionary of loss and targets components.
+        """
+        grid_targets = self.get_targets(sampling_results, rcnn_train_cfg)
+        grid_targets = grid_targets[sample_idx]
+
         loss_fused = self.loss_grid(grid_pred['fused'], grid_targets)
         loss_unfused = self.loss_grid(grid_pred['unfused'], grid_targets)
         loss_grid = loss_fused + loss_unfused
         return dict(loss_grid=loss_grid)
 
-    def get_bboxes(self, det_bboxes, grid_pred, img_metas):
-        # TODO: refactoring
-        assert det_bboxes.shape[0] == grid_pred.shape[0]
-        det_bboxes = det_bboxes.cpu()
-        cls_scores = det_bboxes[:, [4]]
-        det_bboxes = det_bboxes[:, :4]
-        grid_pred = grid_pred.sigmoid().cpu()
+    def predict_by_feat(self,
+                        grid_preds: Dict[str, Tensor],
+                        results_list: List[InstanceData],
+                        batch_img_metas: List[dict],
+                        rescale: bool = False) -> InstanceList:
+        """Adjust the predicted bboxes from bbox head.
+
+        Args:
+            grid_preds (dict[str, Tensor]): dictionary outputted by forward
+                function.
+            results_list (list[:obj:`InstanceData`]): Detection results of
+                each image.
+            batch_img_metas (list[dict]): List of image information.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
+
+        Returns:
+            list[:obj:`InstanceData`]: Detection results of each image
+            after the post process. Each item usually contains following keys.
+
+            - scores (Tensor): Classification scores, has a shape \
+            (num_instance, )
+            - labels (Tensor): Labels of bboxes, has a shape (num_instances, ).
+            - bboxes (Tensor): Has a shape (num_instances, 4), the last \
+            dimension 4 arrange as (x1, y1, x2, y2).
+        """
+        num_roi_per_img = tuple(res.bboxes.size(0) for res in results_list)
+        grid_preds = {
+            k: v.split(num_roi_per_img, 0)
+            for k, v in grid_preds.items()
+        }
+
+        for i, results in enumerate(results_list):
+            if len(results) != 0:
+                bboxes = self._predict_by_feat_single(
+                    grid_pred=grid_preds['fused'][i],
+                    bboxes=results.bboxes,
+                    img_meta=batch_img_metas[i],
+                    rescale=rescale)
+                results.bboxes = bboxes
+        return results_list
+
+    def _predict_by_feat_single(self,
+                                grid_pred: Tensor,
+                                bboxes: Tensor,
+                                img_meta: dict,
+                                rescale: bool = False) -> Tensor:
+        """Adjust ``bboxes`` according to ``grid_pred``.
+
+        Args:
+            grid_pred (Tensor): Grid fused heatmap.
+            bboxes (Tensor): Predicted bboxes, has shape (n, 4)
+            img_meta (dict): image information.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
+
+        Returns:
+            Tensor: adjusted bboxes.
+        """
+        assert bboxes.size(0) == grid_pred.size(0)
+        grid_pred = grid_pred.sigmoid()
 
         R, c, h, w = grid_pred.shape
         half_size = self.whole_map_size // 4 * 2
@@ -324,10 +447,10 @@ class GridHead(BaseModule):
             map(lambda x: x.view(R, c), [pred_scores, xs, ys]))
 
         # get expanded pos_bboxes
-        widths = (det_bboxes[:, 2] - det_bboxes[:, 0]).unsqueeze(-1)
-        heights = (det_bboxes[:, 3] - det_bboxes[:, 1]).unsqueeze(-1)
-        x1 = (det_bboxes[:, 0, None] - widths / 2)
-        y1 = (det_bboxes[:, 1, None] - heights / 2)
+        widths = (bboxes[:, 2] - bboxes[:, 0]).unsqueeze(-1)
+        heights = (bboxes[:, 3] - bboxes[:, 1]).unsqueeze(-1)
+        x1 = (bboxes[:, 0, None] - widths / 2)
+        y1 = (bboxes[:, 1, None] - heights / 2)
         # map the grid point to the absolute coordinates
         abs_xs = (xs.float() + 0.5) / w * widths + x1
         abs_ys = (ys.float() + 0.5) / h * heights + y1
@@ -355,9 +478,13 @@ class GridHead(BaseModule):
             dim=1, keepdim=True) / (
                 pred_scores[:, y2_inds].sum(dim=1, keepdim=True))
 
-        bbox_res = torch.cat(
-            [bboxes_x1, bboxes_y1, bboxes_x2, bboxes_y2, cls_scores], dim=1)
-        bbox_res[:, [0, 2]].clamp_(min=0, max=img_metas[0]['img_shape'][1])
-        bbox_res[:, [1, 3]].clamp_(min=0, max=img_metas[0]['img_shape'][0])
+        bboxes = torch.cat([bboxes_x1, bboxes_y1, bboxes_x2, bboxes_y2], dim=1)
+        bboxes[:, [0, 2]].clamp_(min=0, max=img_meta['img_shape'][1])
+        bboxes[:, [1, 3]].clamp_(min=0, max=img_meta['img_shape'][0])
 
-        return bbox_res
+        if rescale:
+            assert img_meta.get('scale_factor') is not None
+            bboxes /= bboxes.new_tensor(img_meta['scale_factor']).repeat(
+                (1, 2))
+
+        return bboxes

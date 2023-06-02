@@ -17,9 +17,9 @@ Collections:
       Version: v2.5.0
 
 Models:
-  - Name: centripetalnet_hourglass104_mstest_16x6_210e_coco
+  - Name: centripetalnet_hourglass104_16xb6-crop511-210e-mstest_coco
     In Collection: CentripetalNet
-    Config: configs/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco.py
+    Config: configs/centripetalnet/centripetalnet_hourglass104_16xb6-crop511-210e-mstest_coco.py
     Metadata:
       Batch Size: 96
       Training Memory (GB): 16.7

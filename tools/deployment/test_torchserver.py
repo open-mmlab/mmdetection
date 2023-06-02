@@ -1,10 +1,14 @@
+import os
 from argparse import ArgumentParser
 
-import numpy as np
+import mmcv
 import requests
+import torch
+from mmengine.structures import InstanceData
 
-from mmdet.apis import inference_detector, init_detector, show_result_pyplot
-from mmdet.core import bbox2result
+from mmdet.apis import inference_detector, init_detector
+from mmdet.registry import VISUALIZERS
+from mmdet.structures import DetDataSample
 
 
 def parse_args():
@@ -21,52 +25,87 @@ def parse_args():
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
         '--score-thr', type=float, default=0.5, help='bbox score threshold')
+    parser.add_argument(
+        '--work-dir',
+        type=str,
+        default=None,
+        help='output directory to save drawn results.')
     args = parser.parse_args()
     return args
 
 
-def parse_result(input, model_class):
-    bbox = []
-    label = []
-    score = []
-    for anchor in input:
-        bbox.append(anchor['bbox'])
-        label.append(model_class.index(anchor['class_name']))
-        score.append([anchor['score']])
-    bboxes = np.append(bbox, score, axis=1)
-    labels = np.array(label)
-    result = bbox2result(bboxes, labels, len(model_class))
-    return result
+def align_ts_output(inputs, metainfo, device):
+    bboxes = []
+    labels = []
+    scores = []
+    for i, pred in enumerate(inputs):
+        bboxes.append(pred['bbox'])
+        labels.append(pred['class_label'])
+        scores.append(pred['score'])
+    pred_instances = InstanceData(metainfo=metainfo)
+    pred_instances.bboxes = torch.tensor(
+        bboxes, dtype=torch.float32, device=device)
+    pred_instances.labels = torch.tensor(
+        labels, dtype=torch.int64, device=device)
+    pred_instances.scores = torch.tensor(
+        scores, dtype=torch.float32, device=device)
+    ts_data_sample = DetDataSample(pred_instances=pred_instances)
+    return ts_data_sample
 
 
 def main(args):
     # build the model from a config file and a checkpoint file
     model = init_detector(args.config, args.checkpoint, device=args.device)
     # test a single image
-    model_result = inference_detector(model, args.img)
-    for i, anchor_set in enumerate(model_result):
-        anchor_set = anchor_set[anchor_set[:, 4] >= 0.5]
-        model_result[i] = anchor_set
+    pytorch_results = inference_detector(model, args.img)
+    keep = pytorch_results.pred_instances.scores >= args.score_thr
+    pytorch_results.pred_instances = pytorch_results.pred_instances[keep]
+
+    # init visualizer
+    visualizer = VISUALIZERS.build(model.cfg.visualizer)
+    # the dataset_meta is loaded from the checkpoint and
+    # then pass to the model in init_detector
+    visualizer.dataset_meta = model.dataset_meta
+
     # show the results
-    show_result_pyplot(
-        model,
-        args.img,
-        model_result,
-        score_thr=args.score_thr,
-        title='pytorch_result')
+    img = mmcv.imread(args.img)
+    img = mmcv.imconvert(img, 'bgr', 'rgb')
+    pt_out_file = None
+    ts_out_file = None
+    if args.work_dir is not None:
+        os.makedirs(args.work_dir, exist_ok=True)
+        pt_out_file = os.path.join(args.work_dir, 'pytorch_result.png')
+        ts_out_file = os.path.join(args.work_dir, 'torchserve_result.png')
+    visualizer.add_datasample(
+        'pytorch_result',
+        img.copy(),
+        data_sample=pytorch_results,
+        draw_gt=False,
+        out_file=pt_out_file,
+        show=True,
+        wait_time=0)
+
     url = 'http://' + args.inference_addr + '/predictions/' + args.model_name
     with open(args.img, 'rb') as image:
         response = requests.post(url, image)
-    server_result = parse_result(response.json(), model.CLASSES)
-    show_result_pyplot(
-        model,
-        args.img,
-        server_result,
-        score_thr=args.score_thr,
-        title='server_result')
+    metainfo = pytorch_results.pred_instances.metainfo
+    ts_results = align_ts_output(response.json(), metainfo, args.device)
 
-    for i in range(len(model.CLASSES)):
-        assert np.allclose(model_result[i], server_result[i])
+    visualizer.add_datasample(
+        'torchserve_result',
+        img,
+        data_sample=ts_results,
+        draw_gt=False,
+        out_file=ts_out_file,
+        show=True,
+        wait_time=0)
+
+    assert torch.allclose(pytorch_results.pred_instances.bboxes,
+                          ts_results.pred_instances.bboxes)
+    assert torch.allclose(pytorch_results.pred_instances.labels,
+                          ts_results.pred_instances.labels)
+    assert torch.allclose(pytorch_results.pred_instances.scores,
+                          ts_results.pred_instances.scores)
 
 
 if __name__ == '__main__':

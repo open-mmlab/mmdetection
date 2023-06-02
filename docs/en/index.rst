@@ -2,47 +2,29 @@ Welcome to MMDetection's documentation!
 =======================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Get Started
 
+   overview.md
    get_started.md
-   modelzoo_statistics.md
-   model_zoo.md
 
 .. toctree::
    :maxdepth: 2
-   :caption: Quick Run
+   :caption: User Guides
 
-   1_exist_data_model.md
-   2_new_data_model.md
-   3_exist_data_new_model.md
+   user_guides/index.rst
 
 .. toctree::
    :maxdepth: 2
-   :caption: Tutorials
+   :caption: Advanced Guides
 
-   tutorials/index.rst
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Useful Tools and Scripts
-
-   useful_tools.md
+   advanced_guides/index.rst
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Notes
+   :maxdepth: 1
+   :caption: Migration
 
-   conventions.md
-   compatibility.md
-   projects.md
-   changelog.md
-   faq.md
-
-.. toctree::
-   :caption: Switch Language
-
-   switch_language.md
+   migration/migration.md
 
 .. toctree::
    :maxdepth: 1
@@ -52,9 +34,27 @@ Welcome to MMDetection's documentation!
 
 .. toctree::
    :maxdepth: 1
-   :caption: Device Support
+   :caption: Model Zoo
 
-   device/npu.md
+   model_zoo.md
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Notes
+
+   notes/contribution_guide.md
+   notes/projects.md
+   notes/changelog.md
+   notes/changelog_v2.x.md
+   notes/faq.md
+   notes/compatibility.md
+
+.. toctree::
+   :caption: Switch Language
+
+   switch_language.md
+
+
 
 Indices and tables
 ==================

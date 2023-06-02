@@ -1,7 +1,7 @@
 Models:
-  - Name: faster_rcnn_r2_101_fpn_2x_coco
+  - Name: faster-rcnn_res2net-101_fpn_2x_coco
     In Collection: Faster R-CNN
-    Config: configs/res2net/faster_rcnn_r2_101_fpn_2x_coco.py
+    Config: configs/res2net/faster-rcnn_res2net-101_fpn_2x_coco.py
     Metadata:
       Training Memory (GB): 7.4
       Epochs: 24
@@ -26,9 +26,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/res2net.py#L239
       Version: v2.1.0
 
-  - Name: mask_rcnn_r2_101_fpn_2x_coco
+  - Name: mask-rcnn_res2net-101_fpn_2x_coco
     In Collection: Mask R-CNN
-    Config: configs/res2net/mask_rcnn_r2_101_fpn_2x_coco.py
+    Config: configs/res2net/mask-rcnn_res2net-101_fpn_2x_coco.py
     Metadata:
       Training Memory (GB): 7.9
       Epochs: 24
@@ -57,9 +57,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/res2net.py#L239
       Version: v2.1.0
 
-  - Name: cascade_rcnn_r2_101_fpn_20e_coco
+  - Name: cascade-rcnn_res2net-101_fpn_20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/res2net/cascade_rcnn_r2_101_fpn_20e_coco.py
+    Config: configs/res2net/cascade-rcnn_res2net-101_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 7.8
       Epochs: 20
@@ -84,9 +84,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/res2net.py#L239
       Version: v2.1.0
 
-  - Name: cascade_mask_rcnn_r2_101_fpn_20e_coco
+  - Name: cascade-mask-rcnn_res2net-101_fpn_20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/res2net/cascade_mask_rcnn_r2_101_fpn_20e_coco.py
+    Config: configs/res2net/cascade-mask-rcnn_res2net-101_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 9.5
       Epochs: 20
@@ -115,9 +115,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/res2net.py#L239
       Version: v2.1.0
 
-  - Name: htc_r2_101_fpn_20e_coco
+  - Name: htc_res2net-101_fpn_20e_coco
     In Collection: HTC
-    Config: configs/res2net/htc_r2_101_fpn_20e_coco.py
+    Config: configs/res2net/htc_res2net-101_fpn_20e_coco.py
     Metadata:
       Epochs: 20
       Training Data: COCO

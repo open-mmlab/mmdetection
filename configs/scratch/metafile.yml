@@ -15,13 +15,13 @@ Collections:
       Title: 'Rethinking ImageNet Pre-training'
     README: configs/scratch/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/configs/scratch/faster_rcnn_r50_fpn_gn-all_scratch_6x_coco.py
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/configs/scratch/faster-rcnn_r50-scratch_fpn_gn-all_6x_coco.py
       Version: v2.0.0
 
 Models:
-  - Name: faster_rcnn_r50_fpn_gn-all_scratch_6x_coco
+  - Name: faster-rcnn_r50_fpn_gn-all_scratch_6x_coco
     In Collection: Rethinking ImageNet Pre-training
-    Config: configs/scratch/faster_rcnn_r50_fpn_gn-all_scratch_6x_coco.py
+    Config: configs/scratch/faster-rcnn_r50-scratch_fpn_gn-all_6x_coco.py
     Metadata:
       Epochs: 72
     Results:
@@ -31,9 +31,9 @@ Models:
           box AP: 40.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/scratch/faster_rcnn_r50_fpn_gn-all_scratch_6x_coco/scratch_faster_rcnn_r50_fpn_gn_6x_bbox_mAP-0.407_20200201_193013-90813d01.pth
 
-  - Name: mask_rcnn_r50_fpn_gn-all_scratch_6x_coco
+  - Name: mask-rcnn_r50_fpn_gn-all_scratch_6x_coco
     In Collection: Rethinking ImageNet Pre-training
-    Config: configs/scratch/mask_rcnn_r50_fpn_gn-all_scratch_6x_coco.py
+    Config: configs/scratch/mask-rcnn_r50-scratch_fpn_gn-all_6x_coco.py
     Metadata:
       Epochs: 72
     Results:

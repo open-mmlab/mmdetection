@@ -19,9 +19,9 @@ Collections:
       Version: v2.12.0
 
 Models:
-  - Name: autoassign_r50_fpn_8x2_1x_coco
+  - Name: autoassign_r50-caffe_fpn_1x_coco
     In Collection: AutoAssign
-    Config: configs/autoassign/autoassign_r50_fpn_8x2_1x_coco.py
+    Config: configs/autoassign/autoassign_r50-caffe_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.08
       Epochs: 12

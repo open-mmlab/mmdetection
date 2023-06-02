@@ -15,7 +15,7 @@ Collections:
       Title: 'Instances as Queries'
     README: configs/queryinst/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/detectors/queryinst.py
+      URL: https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/detectors/queryinst.py
       Version: v2.18.0
 
 Models:
@@ -35,9 +35,9 @@ Models:
           mask AP: 37.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/queryinst/queryinst_r50_fpn_1x_coco/queryinst_r50_fpn_1x_coco_20210907_084916-5a8f1998.pth
 
-  - Name: queryinst_r50_fpn_mstrain_480-800_3x_coco
+  - Name: queryinst_r50_fpn_ms-480-800-3x_coco
     In Collection: QueryInst
-    Config: configs/queryinst/queryinst_r50_fpn_mstrain_480-800_3x_coco.py
+    Config: configs/queryinst/queryinst_r50_fpn_ms-480-800-3x_coco.py
     Metadata:
       Epochs: 36
     Results:
@@ -51,9 +51,9 @@ Models:
           mask AP: 39.8
     Weights: https://download.openmmlab.com/mmdetection/v2.0/queryinst/queryinst_r50_fpn_mstrain_480-800_3x_coco/queryinst_r50_fpn_mstrain_480-800_3x_coco_20210901_103643-7837af86.pth
 
-  - Name: queryinst_r50_fpn_300_proposals_crop_mstrain_480-800_3x_coco
+  - Name: queryinst_r50_fpn_300-proposals_crop-ms-480-800-3x_coco
     In Collection: QueryInst
-    Config: configs/queryinst/queryinst_r50_fpn_300_proposals_crop_mstrain_480-800_3x_coco.py
+    Config: configs/queryinst/queryinst_r50_fpn_300-proposals_crop-ms-480-800-3x_coco.py
     Metadata:
       Epochs: 36
     Results:
@@ -67,9 +67,9 @@ Models:
           mask AP: 41.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/queryinst/queryinst_r50_fpn_300_proposals_crop_mstrain_480-800_3x_coco/queryinst_r50_fpn_300_proposals_crop_mstrain_480-800_3x_coco_20210904_101802-85cffbd8.pth
 
-  - Name: queryinst_r101_fpn_mstrain_480-800_3x_coco
+  - Name: queryinst_r101_fpn_ms-480-800-3x_coco
     In Collection: QueryInst
-    Config: configs/queryinst/queryinst_r101_fpn_mstrain_480-800_3x_coco.py
+    Config: configs/queryinst/queryinst_r101_fpn_ms-480-800-3x_coco.py
     Metadata:
       Epochs: 36
     Results:
@@ -83,9 +83,9 @@ Models:
           mask AP: 41.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/queryinst/queryinst_r101_fpn_mstrain_480-800_3x_coco/queryinst_r101_fpn_mstrain_480-800_3x_coco_20210904_104048-91f9995b.pth
 
-  - Name: queryinst_r101_fpn_300_proposals_crop_mstrain_480-800_3x_coco
+  - Name: queryinst_r101_fpn_300-proposals_crop-ms-480-800-3x_coco
     In Collection: QueryInst
-    Config: configs/queryinst/queryinst_r101_fpn_300_proposals_crop_mstrain_480-800_3x_coco.py
+    Config: configs/queryinst/queryinst_r101_fpn_300-proposals_crop-ms-480-800-3x_coco.py
     Metadata:
       Epochs: 36
     Results:

@@ -1,44 +1,65 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Tuple
+
 import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import Conv2d, Linear, MaxPool2d
-from mmcv.runner import BaseModule, force_fp32
+from mmengine.config import ConfigDict
+from mmengine.model import BaseModule
+from mmengine.structures import InstanceData
+from torch import Tensor
 from torch.nn.modules.utils import _pair
 
-from mmdet.models.builder import HEADS, build_loss
+from mmdet.models.task_modules.samplers import SamplingResult
+from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, InstanceList, OptMultiConfig
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class MaskIoUHead(BaseModule):
     """Mask IoU Head.
 
     This head predicts the IoU of predicted masks and corresponding gt masks.
+
+    Args:
+        num_convs (int): The number of convolution layers. Defaults to 4.
+        num_fcs (int): The number of fully connected layers. Defaults to 2.
+        roi_feat_size (int): RoI feature size. Default to 14.
+        in_channels (int): The channel number of inputs features.
+            Defaults to 256.
+        conv_out_channels (int): The feature channels of convolution layers.
+            Defaults to 256.
+        fc_out_channels (int): The feature channels of fully connected layers.
+            Defaults to 1024.
+        num_classes (int): Number of categories excluding the background
+            category. Defaults to 80.
+        loss_iou (:obj:`ConfigDict` or dict): IoU loss.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict], optional): Initialization config dict.
     """
 
-    def __init__(self,
-                 num_convs=4,
-                 num_fcs=2,
-                 roi_feat_size=14,
-                 in_channels=256,
-                 conv_out_channels=256,
-                 fc_out_channels=1024,
-                 num_classes=80,
-                 loss_iou=dict(type='MSELoss', loss_weight=0.5),
-                 init_cfg=[
-                     dict(type='Kaiming', override=dict(name='convs')),
-                     dict(type='Caffe2Xavier', override=dict(name='fcs')),
-                     dict(
-                         type='Normal',
-                         std=0.01,
-                         override=dict(name='fc_mask_iou'))
-                 ]):
-        super(MaskIoUHead, self).__init__(init_cfg)
+    def __init__(
+        self,
+        num_convs: int = 4,
+        num_fcs: int = 2,
+        roi_feat_size: int = 14,
+        in_channels: int = 256,
+        conv_out_channels: int = 256,
+        fc_out_channels: int = 1024,
+        num_classes: int = 80,
+        loss_iou: ConfigType = dict(type='MSELoss', loss_weight=0.5),
+        init_cfg: OptMultiConfig = [
+            dict(type='Kaiming', override=dict(name='convs')),
+            dict(type='Caffe2Xavier', override=dict(name='fcs')),
+            dict(type='Normal', std=0.01, override=dict(name='fc_mask_iou'))
+        ]
+    ) -> None:
+        super().__init__(init_cfg=init_cfg)
         self.in_channels = in_channels
         self.conv_out_channels = conv_out_channels
         self.fc_out_channels = fc_out_channels
         self.num_classes = num_classes
-        self.fp16_enabled = False
 
         self.convs = nn.ModuleList()
         for i in range(num_convs):
@@ -68,11 +89,20 @@ class MaskIoUHead(BaseModule):
         self.fc_mask_iou = Linear(self.fc_out_channels, self.num_classes)
         self.relu = nn.ReLU()
         self.max_pool = MaxPool2d(2, 2)
-        self.loss_iou = build_loss(loss_iou)
+        self.loss_iou = MODELS.build(loss_iou)
 
-    def forward(self, mask_feat, mask_pred):
-        mask_pred = mask_pred.sigmoid()
-        mask_pred_pooled = self.max_pool(mask_pred.unsqueeze(1))
+    def forward(self, mask_feat: Tensor, mask_preds: Tensor) -> Tensor:
+        """Forward function.
+
+        Args:
+            mask_feat (Tensor): Mask features from upstream models.
+            mask_preds (Tensor): Mask predictions from mask head.
+
+        Returns:
+            Tensor: Mask IoU predictions.
+        """
+        mask_preds = mask_preds.sigmoid()
+        mask_pred_pooled = self.max_pool(mask_preds.unsqueeze(1))
 
         x = torch.cat((mask_feat, mask_pred_pooled), 1)
 
@@ -84,8 +114,38 @@ class MaskIoUHead(BaseModule):
         mask_iou = self.fc_mask_iou(x)
         return mask_iou
 
-    @force_fp32(apply_to=('mask_iou_pred', ))
-    def loss(self, mask_iou_pred, mask_iou_targets):
+    def loss_and_target(self, mask_iou_pred: Tensor, mask_preds: Tensor,
+                        mask_targets: Tensor,
+                        sampling_results: List[SamplingResult],
+                        batch_gt_instances: InstanceList,
+                        rcnn_train_cfg: ConfigDict) -> dict:
+        """Calculate the loss and targets of MaskIoUHead.
+
+        Args:
+            mask_iou_pred (Tensor): Mask IoU predictions results, has shape
+                (num_pos, num_classes)
+            mask_preds (Tensor): Mask predictions from mask head, has shape
+                (num_pos, mask_size, mask_size).
+            mask_targets (Tensor): The ground truth masks assigned with
+                predictions, has shape
+                (num_pos, mask_size, mask_size).
+            sampling_results (List[obj:SamplingResult]): Assign results of
+                all images in a batch after sampling.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It includes ``masks`` inside.
+            rcnn_train_cfg (obj:`ConfigDict`): `train_cfg` of RCNN.
+
+        Returns:
+            dict: A dictionary of loss and targets components.
+                The targets are only used for cascade rcnn.
+        """
+        mask_iou_targets = self.get_targets(
+            sampling_results=sampling_results,
+            batch_gt_instances=batch_gt_instances,
+            mask_preds=mask_preds,
+            mask_targets=mask_targets,
+            rcnn_train_cfg=rcnn_train_cfg)
+
         pos_inds = mask_iou_targets > 0
         if pos_inds.sum() > 0:
             loss_mask_iou = self.loss_iou(mask_iou_pred[pos_inds],
@@ -94,9 +154,10 @@ class MaskIoUHead(BaseModule):
             loss_mask_iou = mask_iou_pred.sum() * 0
         return dict(loss_mask_iou=loss_mask_iou)
 
-    @force_fp32(apply_to=('mask_pred', ))
-    def get_targets(self, sampling_results, gt_masks, mask_pred, mask_targets,
-                    rcnn_train_cfg):
+    def get_targets(self, sampling_results: List[SamplingResult],
+                    batch_gt_instances: InstanceList, mask_preds: Tensor,
+                    mask_targets: Tensor,
+                    rcnn_train_cfg: ConfigDict) -> Tensor:
         """Compute target of mask IoU.
 
         Mask IoU target is the IoU of the predicted mask (inside a bbox) and
@@ -108,21 +169,22 @@ class MaskIoUHead(BaseModule):
 
         Args:
             sampling_results (list[:obj:`SamplingResult`]): sampling results.
-            gt_masks (BitmapMask | PolygonMask): Gt masks (the whole instance)
-                of each image, with the same shape of the input image.
-            mask_pred (Tensor): Predicted masks of each positive proposal,
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It includes ``masks`` inside.
+            mask_preds (Tensor): Predicted masks of each positive proposal,
                 shape (num_pos, h, w).
             mask_targets (Tensor): Gt mask of each positive proposal,
                 binary map of the shape (num_pos, h, w).
-            rcnn_train_cfg (dict): Training config for R-CNN part.
+            rcnn_train_cfg (obj:`ConfigDict`): Training config for R-CNN part.
 
         Returns:
             Tensor: mask iou target (length == num positive).
         """
-        pos_proposals = [res.pos_bboxes for res in sampling_results]
+        pos_proposals = [res.pos_priors for res in sampling_results]
         pos_assigned_gt_inds = [
             res.pos_assigned_gt_inds for res in sampling_results
         ]
+        gt_masks = [res.masks for res in batch_gt_instances]
 
         # compute the area ratio of gt areas inside the proposals and
         # the whole instance
@@ -131,11 +193,11 @@ class MaskIoUHead(BaseModule):
         area_ratios = torch.cat(list(area_ratios))
         assert mask_targets.size(0) == area_ratios.size(0)
 
-        mask_pred = (mask_pred > rcnn_train_cfg.mask_thr_binary).float()
-        mask_pred_areas = mask_pred.sum((-1, -2))
+        mask_preds = (mask_preds > rcnn_train_cfg.mask_thr_binary).float()
+        mask_pred_areas = mask_preds.sum((-1, -2))
 
-        # mask_pred and mask_targets are binary maps
-        overlap_areas = (mask_pred * mask_targets).sum((-1, -2))
+        # mask_preds and mask_targets are binary maps
+        overlap_areas = (mask_preds * mask_targets).sum((-1, -2))
 
         # compute the mask area of the whole instance
         gt_full_areas = mask_targets.sum((-1, -2)) / (area_ratios + 1e-7)
@@ -144,9 +206,23 @@ class MaskIoUHead(BaseModule):
             mask_pred_areas + gt_full_areas - overlap_areas)
         return mask_iou_targets
 
-    def _get_area_ratio(self, pos_proposals, pos_assigned_gt_inds, gt_masks):
+    def _get_area_ratio(self, pos_proposals: Tensor,
+                        pos_assigned_gt_inds: Tensor,
+                        gt_masks: InstanceData) -> Tensor:
         """Compute area ratio of the gt mask inside the proposal and the gt
-        mask of the corresponding instance."""
+        mask of the corresponding instance.
+
+        Args:
+            pos_proposals (Tensor): Positive proposals, has shape (num_pos, 4).
+            pos_assigned_gt_inds (Tensor): positive proposals assigned ground
+                truth index.
+            gt_masks (BitmapMask or PolygonMask): Gt masks (the whole instance)
+                of each image, with the same shape of the input image.
+
+        Returns:
+            Tensor: The area ratio of the gt mask inside the proposal and the
+            gt mask of the corresponding instance.
+        """
         num_pos = pos_proposals.size(0)
         if num_pos > 0:
             area_ratios = []
@@ -170,14 +246,32 @@ class MaskIoUHead(BaseModule):
             area_ratios = pos_proposals.new_zeros((0, ))
         return area_ratios
 
-    @force_fp32(apply_to=('mask_iou_pred', ))
-    def get_mask_scores(self, mask_iou_pred, det_bboxes, det_labels):
-        """Get the mask scores.
+    def predict_by_feat(self, mask_iou_preds: Tuple[Tensor],
+                        results_list: InstanceList) -> InstanceList:
+        """Predict the mask iou and calculate it into ``results.scores``.
 
-        mask_score = bbox_score * mask_iou
+        Args:
+            mask_iou_preds (Tensor): Mask IoU predictions results, has shape
+                (num_proposals, num_classes)
+            results_list (list[:obj:`InstanceData`]): Detection results of
+                each image.
+
+        Returns:
+            list[:obj:`InstanceData`]: Detection results of each image
+            after the post process. Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
+                - masks (Tensor): Has a shape (num_instances, H, W).
         """
-        inds = range(det_labels.size(0))
-        mask_scores = mask_iou_pred[inds, det_labels] * det_bboxes[inds, -1]
-        mask_scores = mask_scores.cpu().numpy()
-        det_labels = det_labels.cpu().numpy()
-        return [mask_scores[det_labels == i] for i in range(self.num_classes)]
+        assert len(mask_iou_preds) == len(results_list)
+        for results, mask_iou_pred in zip(results_list, mask_iou_preds):
+            labels = results.labels
+            scores = results.scores
+            results.scores = scores * mask_iou_pred[range(labels.size(0)),
+                                                    labels]
+        return results_list
