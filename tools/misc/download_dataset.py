@@ -146,6 +146,13 @@ def main():
             'http://images.cocodataset.org/annotations/image_info_test2017.zip',  # noqa
             'http://images.cocodataset.org/annotations/image_info_unlabeled2017.zip',  # noqa
         ],
+        coco2014=[
+            'http://images.cocodataset.org/zips/train2014.zip',
+            'http://images.cocodataset.org/zips/val2014.zip',
+            'http://images.cocodataset.org/zips/test2014.zip',
+            'http://images.cocodataset.org/annotations/annotations_trainval2014.zip',  # noqa
+            'http://images.cocodataset.org/annotations/image_info_test2014.zip'  # noqa
+        ],
         lvis=[
             'https://s3-us-west-2.amazonaws.com/dl.fbaipublicfiles.com/LVIS/lvis_v1_train.json.zip',  # noqa
             'https://s3-us-west-2.amazonaws.com/dl.fbaipublicfiles.com/LVIS/lvis_v1_train.json.zip',  # noqa
@@ -186,6 +193,16 @@ def main():
             'https://raw.githubusercontent.com/CSAILVision/placeschallenge/master/instancesegmentation/imgCatIds.json',  # noqa
             # category mapping
             'https://raw.githubusercontent.com/CSAILVision/placeschallenge/master/instancesegmentation/categoryMapping.txt'  # noqa
+        ],
+        refcoco=[
+            # images
+            'http://images.cocodataset.org/zips/train2014.zip',
+            # refcoco annotations
+            'https://bvisionweb1.cs.unc.edu/licheng/referit/data/refcoco.zip',
+            # refcoco+ annotations
+            'https://bvisionweb1.cs.unc.edu/licheng/referit/data/refcoco+.zip',
+            # refcocog annotations
+            'https://bvisionweb1.cs.unc.edu/licheng/referit/data/refcocog.zip'
         ])
     url = data2url.get(args.dataset_name, None)
     if url is None:
