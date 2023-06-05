@@ -25,8 +25,6 @@ class SemSegMetric(BaseMetric):
     """mIoU evaluation metric.
 
     Args:
-        ignore_index (list[int]): Indexes that will be ignored in evaluation.
-            Default: 255.
         iou_metrics (list[str] | str): Metrics to be calculated, the options
             includes 'mIoU', 'mDice' and 'mFscore'.
         beta (int): Determines the weight of recall in the combined score.
@@ -49,7 +47,6 @@ class SemSegMetric(BaseMetric):
     """
 
     def __init__(self,
-                 ignore_index: Union[int, list[int]] = 255,
                  iou_metrics: List[str] = ['mIoU'],
                  beta: int = 1,
                  collect_device: str = 'cpu',
@@ -65,11 +62,6 @@ class SemSegMetric(BaseMetric):
         if not set(iou_metrics).issubset(set(['mIoU', 'mDice', 'mFscore'])):
             raise KeyError(f'metrics {iou_metrics} is not supported')
         self.metrics = iou_metrics
-
-        if isinstance(ignore_index, int):
-            ignore_index = [ignore_index]
-        self.ignore_index = ignore_index
-
         self.beta = beta
         self.output_dir = output_dir
         if self.output_dir and is_main_process():
@@ -95,8 +87,7 @@ class SemSegMetric(BaseMetric):
                 label = data_sample['gt_sem_seg']['sem_seg'].squeeze().to(
                     pred_label)
                 self.results.append(
-                    self._compute_pred_stats(pred_label, label, num_classes,
-                                             self.ignore_index))
+                    self._compute_pred_stats(pred_label, label, num_classes))
             # format_result
             if self.output_dir is not None:
                 basename = osp.splitext(osp.basename(
@@ -148,8 +139,7 @@ class SemSegMetric(BaseMetric):
         return metrics
 
     def _compute_pred_stats(self, pred_label: torch.tensor,
-                            label: torch.tensor, num_classes: int,
-                            ignore_index: list):
+                            label: torch.tensor, num_classes: int):
         """Parse semantic segmentation predictions.
 
         Args:
@@ -158,7 +148,6 @@ class SemSegMetric(BaseMetric):
             label (torch.tensor): Ground truth segmentation map
                 or label filename. The shape is (H, W).
             num_classes (int): Number of categories.
-            ignore_index (list): Index that will be ignored in evaluation.
 
         Returns:
             torch.Tensor: The intersection of prediction and ground truth
@@ -168,20 +157,17 @@ class SemSegMetric(BaseMetric):
             torch.Tens6or: The prediction histogram on all classes.
             torch.Tensor: The ground truth histogram on all classes.
         """
-
-        mask = torch.ones(label.shape, dtype=torch.bool, device=label.device)
-        for v in ignore_index:
-            mask &= label != v
-        pred_label = pred_label[mask]
-        label = label[mask]
-
+        assert pred_label.shape == label.shape
+        # Assume 0 is the index should be ignored
+        mask = label != 0
+        pred_label = (pred_label + 1) * mask
         intersect = pred_label[pred_label == label]
         area_intersect = torch.histc(
-            intersect.float(), bins=(num_classes), min=0, max=num_classes - 1)
+            intersect.float(), bins=(num_classes), min=1, max=num_classes)
         area_pred_label = torch.histc(
-            pred_label.float(), bins=(num_classes), min=0, max=num_classes - 1)
+            pred_label.float(), bins=(num_classes), min=1, max=num_classes)
         area_label = torch.histc(
-            label.float(), bins=(num_classes), min=0, max=num_classes - 1)
+            label.float(), bins=(num_classes), min=1, max=num_classes)
         area_union = area_pred_label + area_label - area_intersect
         result = dict(
             area_intersect=area_intersect,
@@ -273,6 +259,7 @@ def print_semantic_table(
         ret_metric: np.round(ret_metric_value * 100, 2)
         for ret_metric, ret_metric_value in results.items()
     })
+
     print_log('per class results:', logger)
     if PrettyTable:
         class_table_data = PrettyTable()
