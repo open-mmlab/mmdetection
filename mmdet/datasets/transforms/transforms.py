@@ -60,7 +60,8 @@ def _fixed_scale_size(
 
 def rescale_size(old_size: tuple,
                  scale: Union[float, int, tuple],
-                 return_scale: bool = False) -> tuple:
+                 return_scale: bool = False,
+                 short_side_mode: bool = False) -> tuple:
     """Calculate the new size to be rescaled to.
 
     Args:
@@ -83,8 +84,12 @@ def rescale_size(old_size: tuple,
     elif isinstance(scale, tuple):
         max_long_edge = max(scale)
         max_short_edge = min(scale)
-        scale_factor = min(max_long_edge / max(h, w),
-                           max_short_edge / min(h, w))
+        if short_side_mode:
+            short, long = (w, h) if w <= h else (h, w)
+            scale_factor = max_short_edge / short
+        else:
+            scale_factor = min(max_long_edge / max(h, w),
+                               max_short_edge / min(h, w))
     else:
         raise TypeError(
             f'Scale must be a number or tuple of int, but got {type(scale)}')
@@ -102,7 +107,8 @@ def imrescale(
     scale: Union[float, Tuple[int, int]],
     return_scale: bool = False,
     interpolation: str = 'bilinear',
-    backend: Optional[str] = None
+    backend: Optional[str] = None,
+    short_side_mode: bool = False,
 ) -> Union[np.ndarray, Tuple[np.ndarray, float]]:
     """Resize image while keeping the aspect ratio.
 
@@ -121,7 +127,10 @@ def imrescale(
         ndarray: The rescaled image.
     """
     h, w = img.shape[:2]
-    new_size, scale_factor = rescale_size((w, h), scale, return_scale=True)
+    new_size, scale_factor = rescale_size((w, h),
+                                          scale,
+                                          return_scale=True,
+                                          short_side_mode=short_side_mode)
     rescaled_img = imresize(
         img, new_size, interpolation=interpolation, backend=backend)
     if return_scale:
@@ -250,6 +259,17 @@ class FixScaleResize(Resize):
     """Compared to Resize, FixScaleResize fixes the scaling issue when
     `keep_ratio=true`."""
 
+    def __init__(
+        self,
+        *args,
+        short_side_mode: bool = False,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.short_side_mode = short_side_mode
+        if short_side_mode is True:
+            assert self.scale and self.keep_ratio is True
+
     def _resize_img(self, results):
         """Resize images with ``results['scale']``."""
         if results.get('img', None) is not None:
@@ -259,7 +279,8 @@ class FixScaleResize(Resize):
                     results['scale'],
                     interpolation=self.interpolation,
                     return_scale=True,
-                    backend=self.backend)
+                    backend=self.backend,
+                    short_side_mode=self.short_side_mode)
                 new_h, new_w = img.shape[:2]
                 h, w = results['img'].shape[:2]
                 w_scale = new_w / w
@@ -2383,40 +2404,40 @@ class Mosaic(BaseTransform):
         if loc == 'top_left':
             # index0 to top left part of image
             x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
-                             max(center_position_xy[1] - img_shape_wh[1], 0), \
-                             center_position_xy[0], \
-                             center_position_xy[1]
+                max(center_position_xy[1] - img_shape_wh[1], 0), \
+                center_position_xy[0], \
+                center_position_xy[1]
             crop_coord = img_shape_wh[0] - (x2 - x1), img_shape_wh[1] - (
                 y2 - y1), img_shape_wh[0], img_shape_wh[1]
 
         elif loc == 'top_right':
             # index1 to top right part of image
             x1, y1, x2, y2 = center_position_xy[0], \
-                             max(center_position_xy[1] - img_shape_wh[1], 0), \
-                             min(center_position_xy[0] + img_shape_wh[0],
-                                 self.img_scale[0] * 2), \
-                             center_position_xy[1]
+                max(center_position_xy[1] - img_shape_wh[1], 0), \
+                min(center_position_xy[0] + img_shape_wh[0],
+                    self.img_scale[0] * 2), \
+                center_position_xy[1]
             crop_coord = 0, img_shape_wh[1] - (y2 - y1), min(
                 img_shape_wh[0], x2 - x1), img_shape_wh[1]
 
         elif loc == 'bottom_left':
             # index2 to bottom left part of image
             x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
-                             center_position_xy[1], \
-                             center_position_xy[0], \
-                             min(self.img_scale[1] * 2, center_position_xy[1] +
-                                 img_shape_wh[1])
+                center_position_xy[1], \
+                center_position_xy[0], \
+                min(self.img_scale[1] * 2, center_position_xy[1] +
+                    img_shape_wh[1])
             crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(
                 y2 - y1, img_shape_wh[1])
 
         else:
             # index3 to bottom right part of image
             x1, y1, x2, y2 = center_position_xy[0], \
-                             center_position_xy[1], \
-                             min(center_position_xy[0] + img_shape_wh[0],
-                                 self.img_scale[0] * 2), \
-                             min(self.img_scale[1] * 2, center_position_xy[1] +
-                                 img_shape_wh[1])
+                center_position_xy[1], \
+                min(center_position_xy[0] + img_shape_wh[0],
+                    self.img_scale[0] * 2), \
+                min(self.img_scale[1] * 2, center_position_xy[1] +
+                    img_shape_wh[1])
             crop_coord = 0, 0, min(img_shape_wh[0],
                                    x2 - x1), min(y2 - y1, img_shape_wh[1])
 
