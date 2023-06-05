@@ -25,12 +25,10 @@ class SemSegMetric(BaseMetric):
     """mIoU evaluation metric.
 
     Args:
-        ignore_index (int): Index that will be ignored in evaluation.
+        ignore_index (list[int]): Indexes that will be ignored in evaluation.
             Default: 255.
         iou_metrics (list[str] | str): Metrics to be calculated, the options
             includes 'mIoU', 'mDice' and 'mFscore'.
-        nan_to_num (int, optional): If specified, NaN values will be replaced
-            by the numbers defined by the user. Default: None.
         beta (int): Determines the weight of recall in the combined score.
             Default: 1.
         collect_device (str): Device name used for collecting results from
@@ -51,9 +49,8 @@ class SemSegMetric(BaseMetric):
     """
 
     def __init__(self,
-                 ignore_index: int = 255,
+                 ignore_index: Union[int, list[int]] = 255,
                  iou_metrics: List[str] = ['mIoU'],
-                 nan_to_num: Optional[int] = None,
                  beta: int = 1,
                  collect_device: str = 'cpu',
                  output_dir: Optional[str] = None,
@@ -69,8 +66,10 @@ class SemSegMetric(BaseMetric):
             raise KeyError(f'metrics {iou_metrics} is not supported')
         self.metrics = iou_metrics
 
+        if isinstance(ignore_index, int):
+            ignore_index = [ignore_index]
         self.ignore_index = ignore_index
-        self.nan_to_num = nan_to_num
+
         self.beta = beta
         self.output_dir = output_dir
         if self.output_dir and is_main_process():
@@ -150,7 +149,7 @@ class SemSegMetric(BaseMetric):
 
     def _compute_pred_stats(self, pred_label: torch.tensor,
                             label: torch.tensor, num_classes: int,
-                            ignore_index: int):
+                            ignore_index: list):
         """Parse semantic segmentation predictions.
 
         Args:
@@ -159,18 +158,20 @@ class SemSegMetric(BaseMetric):
             label (torch.tensor): Ground truth segmentation map
                 or label filename. The shape is (H, W).
             num_classes (int): Number of categories.
-            ignore_index (int): Index that will be ignored in evaluation.
+            ignore_index (list): Index that will be ignored in evaluation.
 
         Returns:
             torch.Tensor: The intersection of prediction and ground truth
                 histogram on all classes.
             torch.Tensor: The union of prediction and ground truth histogram on
                 all classes.
-            torch.Tensor: The prediction histogram on all classes.
+            torch.Tens6or: The prediction histogram on all classes.
             torch.Tensor: The ground truth histogram on all classes.
         """
 
-        mask = (label != ignore_index)
+        mask = torch.ones(label.shape, dtype=torch.bool, device=label.device)
+        for v in ignore_index:
+            mask &= label != v
         pred_label = pred_label[mask]
         label = label[mask]
 
@@ -250,11 +251,7 @@ class SemSegMetric(BaseMetric):
             metric: value.cpu().numpy()
             for metric, value in ret_metrics.items()
         }
-        if self.nan_to_num is not None:
-            ret_metrics = OrderedDict({
-                metric: np.nan_to_num(metric_value, nan=self.nan_to_num)
-                for metric, metric_value in ret_metrics.items()
-            })
+
         return ret_metrics
 
 
