@@ -127,7 +127,7 @@ class XDecoderUnifiedhead(nn.Module):
             # used for ref-caption
             if self.return_inter_mask:
                 sem_seg = mask_pred_results[0] > 0
-                pred_sem_seg = PixelData(data=sem_seg)
+                pred_sem_seg = PixelData(sem_seg=sem_seg)
                 batch_data_samples[0].pred_sem_seg = pred_sem_seg
                 return batch_data_samples
 
@@ -178,7 +178,7 @@ class XDecoderUnifiedhead(nn.Module):
 
                 if self.return_inter_mask:
                     sem_seg = mask_pred_result > 0
-                    pred_sem_seg = PixelData(data=sem_seg)
+                    pred_sem_seg = PixelData(sem_seg=sem_seg)
                     data_samples.pred_sem_seg = pred_sem_seg
                     continue
 
@@ -240,7 +240,7 @@ class XDecoderUnifiedhead(nn.Module):
             else:
                 sem_seg = sem_seg.max(0)[1] + 1
                 label_names = [text_prompts[id] for id in torch.unique(sem_seg) - 1]
-        pred_sem_seg = PixelData(data=sem_seg, metainfo={'label_names': label_names})
+        pred_sem_seg = PixelData(sem_seg=sem_seg, metainfo={'label_names': label_names})
         return pred_sem_seg
 
     def _panoptic_inference(self, mask_cls, mask_pred, thing_text, stuff_text):

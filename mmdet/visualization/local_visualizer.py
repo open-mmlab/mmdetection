@@ -346,7 +346,7 @@ class DetLocalVisualizer(Visualizer):
         Returns:
             np.ndarray: the drawn image which channel is RGB.
         """
-        sem_seg_data = sem_seg.data
+        sem_seg_data = sem_seg.sem_seg
         if isinstance(sem_seg_data, torch.Tensor):
             sem_seg_data = sem_seg_data.numpy()
 
