@@ -140,9 +140,8 @@ class ADE20KDataset(BaseSegDataset):
     """ADE20K dataset.
 
     In segmentation map annotation for ADE20K, 0 stands for background, which
-    is not included in 150 categories. ``reduce_zero_label`` is fixed to True.
-    The ``img_suffix`` is fixed to '.jpg' and ``seg_map_suffix`` is fixed to
-    '.png'.
+    is not included in 150 categories. The ``img_suffix`` is fixed to '.jpg',
+    and ``seg_map_suffix`` is fixed to '.png'.
     """
     METAINFO = dict(
         classes=('wall', 'building', 'sky', 'floor', 'tree', 'ceiling', 'road',

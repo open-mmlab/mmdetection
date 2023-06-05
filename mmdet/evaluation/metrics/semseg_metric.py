@@ -95,11 +95,6 @@ class SemSegMetric(BaseMetric):
                 png_filename = osp.abspath(
                     osp.join(self.output_dir, f'{basename}.png'))
                 output_mask = pred_label.cpu().numpy()
-                # The index range of official ADE20k dataset is from 0 to 150.
-                # But the index range of output is from 0 to 149.
-                # That is because we set reduce_zero_label=True.
-                if data_sample.get('reduce_zero_label', False):
-                    output_mask = output_mask + 1
                 output = Image.fromarray(output_mask.astype(np.uint8))
                 imwrite(output, png_filename, backend_args=self.backend_args)
 
