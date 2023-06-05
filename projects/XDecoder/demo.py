@@ -15,7 +15,7 @@ TASKINFOS = {
     'instance': DetInferencer,
     'panoptic': DetInferencer,
     'caption': ImageCaptionInferencer,
-    'ref-captioning': RefImageCaptionInferencer,
+    'ref-caption': RefImageCaptionInferencer,
     'retrieval': TextToImageRegionRetrievalInferencer,
 }
 
@@ -75,7 +75,7 @@ def main():
     init_args, call_args = parse_args()
 
     cfg = Config.fromfile(init_args['model'])
-    task = cfg.model.task
+    task = cfg.model.head.task
     assert task in TASKINFOS
 
     inferencer = TASKINFOS[task](**init_args)

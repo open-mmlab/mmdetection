@@ -5,7 +5,6 @@ custom_imports = dict(
 
 model = dict(
     type='XDecoder',
-    task='semseg',
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
@@ -14,14 +13,14 @@ model = dict(
         pad_size_divisor=32
     ),
     backbone=dict(type='FocalNet'),
-    semseg_head=dict(type='XDecoderOVSemSegHead',
-                     in_channels=(96, 192, 384, 768),
-                     num_classes=133,
-                     pixel_decoder=dict(type='TransformerEncoderPixelDecoder'),
-                     transformer_decoder=dict(type='XDecoderTransformerDecoder'),
-                     ),
+    head=dict(type='XDecoderUnifiedhead',
+              in_channels=(96, 192, 384, 768),
+              task='semseg',
+              pixel_decoder=dict(type='TransformerEncoderPixelDecoder'),
+              transformer_decoder=dict(type='XDecoderTransformerDecoder'),
+              ),
     test_cfg=dict(mask_thr=0.5,
-                  keep_bg=True)
+                  use_thr_for_mc=True)  # mc means multi-class
 )
 
 # Example to use different file client

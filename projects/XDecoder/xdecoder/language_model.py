@@ -31,76 +31,35 @@ class LanguageEncoder(nn.Module):
         # for key, value in queue_operator.items():
         #     self.register_buffer(key, value)
 
-    def get_text_embeddings(self, class_names, name='default', is_eval=False, add_bgd=False, prompt=True, norm=True):
-        if not is_eval:
-            if prompt:
-                # randomly sample one template 随机选择一个？ 那不会每次结果不一样吗？
-                arbitary_concepts = [
-                    prompt_engineering(
-                        class_names[label].replace('-other', '').replace('-merged', '').replace('-stuff', ''),
-                        topk=10000, suffix='.') \
-                    for label in range(len(class_names))
-                ]
-                if add_bgd:
-                    arbitary_concepts.append("A background in coco.")
-            else:
-                arbitary_concepts = class_names
+    def get_text_embeddings(self, class_names, name='default'):
+        with torch.no_grad():
+            def extract_mean_emb(txts):
+                tokens = self.tokenizer(  # CLIP tokenizer
+                    txts, padding='max_length', truncation=True, max_length=self.max_token_num, return_tensors='pt'
+                )  # 每个文本会生成 81 条 prompt
+                clss_embedding = self.forward_language(
+                    (tokens['input_ids'].cuda(), tokens['attention_mask'].cuda()), norm=True)  # 计算文本嵌入
+                clss_embedding = clss_embedding.mean(dim=0)  # 求平均，变成 512 维
+                clss_embedding /= clss_embedding.norm()
+                return clss_embedding
 
-            input_ids = []
-            attention_masks = []
-            for txt in arbitary_concepts:
-                tokens = self.tokenizer(
-                    txt, padding='max_length', truncation=True, max_length=self.max_token_num, return_tensors='pt'
-                )
-                tokens['input_ids'].squeeze_()
-                tokens['attention_mask'].squeeze_()
+            # 用了 clip 的 集成模板
+            templates = get_prompt_templates()
 
-                input_ids.append(tokens['input_ids'])
-                attention_masks.append(tokens['attention_mask'])
+            clss_embeddings = []
+            for clss in class_names:
+                txts = [template.format(clss.replace('-other', '').replace('-merged', '').replace('-stuff', ''))
+                        for template in templates]
+                clss_embeddings.append(extract_mean_emb(txts))
 
-            arbitary_tokens = torch.stack(input_ids)
-            arbitary_attention_masks = torch.stack(attention_masks)
-
-            text_emb = self.forward_language((arbitary_tokens.cuda(), arbitary_attention_masks.cuda()), norm=norm)
+            text_emb = torch.stack(clss_embeddings, dim=0)  # 10, 512, 10 表示 输入的类别数，包括背景
             setattr(self, '{}_text_embeddings'.format(name), text_emb)
-        else:
-            with torch.no_grad():
-                def extract_mean_emb(txts):
-                    tokens = self.tokenizer(  # CLIP tokenizer
-                        txts, padding='max_length', truncation=True, max_length=self.max_token_num, return_tensors='pt'
-                    )  # 每个文本会生成 81 条 prompt
-                    clss_embedding = self.forward_language(
-                        (tokens['input_ids'].cuda(), tokens['attention_mask'].cuda()), norm=norm)  # 计算文本嵌入
-                    clss_embedding = clss_embedding.mean(dim=0)  # 求平均，变成 512 维
-                    clss_embedding /= clss_embedding.norm()
-                    return clss_embedding
 
-                # 用了 clip 的 集成模板
-                templates = get_prompt_templates()
-                clss_embeddings = []
-                if prompt:
-                    for clss in class_names:
-                        txts = [template.format(clss.replace('-other', '').replace('-merged', '').replace('-stuff', ''))
-                                for template in templates]
-                        clss_embeddings.append(extract_mean_emb(txts))
-                else:
-                    clss_embeddings.append(extract_mean_emb(class_names))
-
-                if add_bgd:  # false
-                    txts = ["A background in coco."]
-                    clss_embeddings.append(extract_mean_emb(txts))
-
-                text_emb = torch.stack(clss_embeddings, dim=0)  # 10, 512, 10 表示 输入的类别数，包括背景
-                setattr(self, '{}_text_embeddings'.format(name), text_emb)
-
-    def get_text_token_embeddings(self, txts, name='default', token=False, norm=False):
-        if not token:
-            tokens = self.tokenizer(
-                txts, padding='max_length', truncation=True, max_length=self.max_token_num, return_tensors='pt'
-            )
-            tokens = {key: value.cuda() for key, value in tokens.items()}
-        else:
-            tokens = txts
+    def get_text_token_embeddings(self, txts, name='grounding', norm=False):
+        tokens = self.tokenizer(
+            txts, padding='max_length', truncation=True, max_length=self.max_token_num, return_tensors='pt'
+        )
+        tokens = {key: value.cuda() for key, value in tokens.items()}
         token_emb, class_emb = self.forward_language_token((tokens['input_ids'], tokens['attention_mask']), norm=norm)
         ret = {"tokens": tokens,
                "token_emb": token_emb,

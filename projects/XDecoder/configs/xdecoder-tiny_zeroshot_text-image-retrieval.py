@@ -1,8 +1,8 @@
 _base_ = 'xdecoder-tiny_zeroshot_open-vocab-semseg.py'
 
-model = dict(task='retrieval')
+model = dict(head=dict(task='retrieval'))
 
-grounding_resize_scale = 512
+grounding_scale = 512
 
 test_pipeline = [
     dict(type='LoadImageFromFile', imdecode_backend='pillow', backend_args=_base_.backend_args),

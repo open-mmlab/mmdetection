@@ -1,6 +1,6 @@
 _base_ = 'xdecoder-tiny_zeroshot_open-vocab-semseg.py'
 
-model = dict(task='caption')
+model = dict(head=dict(task='caption'))
 
 test_pipeline = [
     dict(type='LoadImageFromFile', imdecode_backend='pillow', backend_args=_base_.backend_args),

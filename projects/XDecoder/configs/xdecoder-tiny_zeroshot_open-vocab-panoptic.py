@@ -1,13 +1,9 @@
 _base_ = 'xdecoder-tiny_zeroshot_open-vocab-semseg.py'
 
-model = dict(task='panoptic',
+model = dict(head=dict(task='panoptic'),
              test_cfg=dict(
-                 nms_pre=1000,
-                 min_bbox_size=0,
                  mask_thr=0.8,
-                 overlap_thr=0.5,
-                 nms=dict(type='nms', iou_threshold=0.5),
-                 max_per_img=100)
+                 overlap_thr=0.5)
              )
 
 test_pipeline = [

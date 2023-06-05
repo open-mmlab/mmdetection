@@ -1,9 +1,9 @@
 from .xdecoder import XDecoder
 from .focalnet import FocalNet
-from .ov_semseg_head import XDecoderOVSemSegHead
+from .unified_head import XDecoderUnifiedhead
 from .pixel_decoder import TransformerEncoderPixelDecoder
 from .transformer_decoder import XDecoderTransformerDecoder
 
-__all__ = ["XDecoder", "FocalNet", "XDecoderOVSemSegHead", "TransformerEncoderPixelDecoder",
+__all__ = ["XDecoder", "FocalNet", "XDecoderUnifiedhead", "TransformerEncoderPixelDecoder",
            "XDecoderTransformerDecoder"]
 

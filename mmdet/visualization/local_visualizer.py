@@ -346,36 +346,29 @@ class DetLocalVisualizer(Visualizer):
         Returns:
             np.ndarray: the drawn image which channel is RGB.
         """
-        num_classes = len(classes)
-
         sem_seg_data = sem_seg.data
         if isinstance(sem_seg_data, torch.Tensor):
             sem_seg_data = sem_seg_data.numpy()
 
+        # 0 ~ num_class, the value 0 means background
+        ids = np.unique(sem_seg_data)
+        ids = ids[ids != 0]
+
         if 'label_names' in sem_seg:
             # open set semseg
             label_names = sem_seg.metainfo['label_names']
-            ids = np.unique(sem_seg_data)
-            if 'background' in label_names:
-                label_names.remove('background')
-                # 0 = background
-                ids = ids[ids != 0]
-        else:
-            ids = np.unique(sem_seg_data)[::-1]
-            legal_indices = ids < num_classes
-            ids = ids[legal_indices]
 
-        labels = np.array(ids, dtype=np.int64)
+        labels = np.array(ids, dtype=np.int64)-1
         colors = [palette[label] for label in labels]
 
         self.set_image(image)
 
         # draw semantic masks
         for i, (label, color) in enumerate(zip(labels, colors)):
-            masks = sem_seg_data == label
+            masks = sem_seg_data == (label+1)
             self.draw_binary_masks(masks, colors=[color], alphas=self.alpha)
             if 'label_names' in sem_seg:
-                label_text = label_names[label - 1]
+                label_text = label_names[label]
                 _, _, stats, centroids = cv2.connectedComponentsWithStats(masks[0].astype(np.uint8), connectivity=8)
                 if stats.shape[0] > 1:
                     largest_id = np.argmax(stats[1:, -1]) + 1

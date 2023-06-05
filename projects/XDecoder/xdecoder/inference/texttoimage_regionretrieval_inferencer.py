@@ -30,7 +30,7 @@ class TextToImageRegionRetrievalInferencer(DetInferencer):
         retrieval_pipeline = Compose(pipeline_cfg)
 
         grounding_pipeline_cp = copy.deepcopy(pipeline_cfg)
-        grounding_pipeline_cp[1].scale = cfg.grounding_resize_scale
+        grounding_pipeline_cp[1].scale = cfg.grounding_scale
         grounding_pipeline = Compose(grounding_pipeline_cp)
 
         return {'grounding_pipeline': grounding_pipeline, 'retrieval_pipeline': retrieval_pipeline}
@@ -149,7 +149,7 @@ class TextToImageRegionRetrievalInferencer(DetInferencer):
 
         for i in range(len(texts)):
             ori_inputs[i] = {'img_path': ori_inputs[i],
-                             'text': texts[i],  # TODO： rename to text
+                             'text': texts[i],
                              'custom_entities': False}
         inputs = self.preprocess(
             ori_inputs,

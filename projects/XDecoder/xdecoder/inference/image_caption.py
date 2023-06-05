@@ -136,7 +136,7 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
         caption_pipeline = Compose(pipeline_cfg)
 
         grounding_pipeline_cp = copy.deepcopy(pipeline_cfg)
-        grounding_pipeline_cp[1].scale = cfg.grounding_resize_scale
+        grounding_pipeline_cp[1].scale = cfg.grounding_scale
         grounding_pipeline = Compose(grounding_pipeline_cp)
 
         return {'grounding_pipeline': grounding_pipeline, 'caption_pipeline': caption_pipeline}
@@ -231,7 +231,7 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
 
         for i in range(len(texts)):
             ori_inputs[i] = {'img_path': ori_inputs[i],
-                             'text': texts[i],  # TODO： rename to text
+                             'text': texts[i],
                              'custom_entities': False}
         inputs = self.preprocess(
             ori_inputs, batch_size=batch_size, **preprocess_kwargs)
@@ -239,7 +239,6 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
         results_dict = {'predictions': [], 'visualization': []}
         for ori_inputs, grounding_data, caption_data in track(inputs, description='Inference'):
 
-            self.model.task = 'ref-semseg'
             self.model.sem_seg_head.task = 'ref-semseg'
             self.model.sem_seg_head.predictor.task = 'ref-semseg'
             preds = self.forward(grounding_data, **forward_kwargs)
@@ -248,7 +247,6 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
                 data_sample.pred_sem_seg = pred_datasmaple.pred_sem_seg
                 data_sample.set_metainfo({'grounding_img_shape': pred_datasmaple.metainfo['img_shape']})
 
-            self.model.task = 'caption'
             self.model.sem_seg_head.task = 'caption'
             self.model.sem_seg_head.predictor.task = 'caption'
 
