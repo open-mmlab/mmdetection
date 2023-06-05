@@ -601,6 +601,72 @@ class LoadPanopticAnnotations(LoadAnnotations):
 
 
 @TRANSFORMS.register_module()
+class LoadSemSegAnnotations(LoadAnnotations):
+    """Load annotations for semantic segmentation provided by dataset.
+
+    The annotation format is as the following:
+
+    .. code-block:: python
+
+        {
+            # Filename of semantic segmentation ground truth file.
+            'seg_map_path': 'a/b/c'
+        }
+
+    After this module, the annotation has been changed to the format below:
+
+    .. code-block:: python
+
+        {
+             # In uint8 type.
+            'gt_seg_map': np.ndarray (H, W)
+        }
+
+    Required Keys:
+
+    - seg_map_path (str): Path of semantic segmentation ground truth file.
+
+    Added Keys:
+
+    - gt_seg_map (np.uint8)
+    """
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(
+            with_bbox=False,
+            with_label=False,
+            with_seg=True,
+            with_keypoints=False,
+            **kwargs)
+
+    def _load_seg_map(self, results: dict) -> None:
+        """Private function to load semantic segmentation annotations.
+
+        Args:
+            results (dict): Result dict from :obj:``mmcv.BaseDataset``.
+
+        Returns:
+            dict: The dict contains loaded semantic segmentation annotations.
+        """
+
+        img_bytes = get(
+            results['seg_map_path'], backend_args=self.backend_args)
+        gt_semantic_seg = mmcv.imfrombytes(
+            img_bytes, flag='unchanged',
+            backend=self.imdecode_backend).squeeze().astype(np.uint8)
+
+        # modify if custom classes
+        if results.get('label_map', None) is not None:
+            # Add deep copy to solve bug of repeatedly
+            # replace `gt_semantic_seg`, which is reported in
+            # https://github.com/open-mmlab/mmsegmentation/pull/1445/
+            gt_semantic_seg_copy = gt_semantic_seg.copy()
+            for old_id, new_id in results['label_map'].items():
+                gt_semantic_seg[gt_semantic_seg_copy == old_id] = new_id
+        results['gt_seg_map'] = gt_semantic_seg
+
+
+@TRANSFORMS.register_module()
 class LoadProposals(BaseTransform):
     """Load proposal pipeline.
 
