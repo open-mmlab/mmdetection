@@ -280,24 +280,25 @@ class DetInferencer(BaseInferencer):
     # TODO: Video and Webcam are currently not supported and
     #  may consume too much memory if your input folder has a lot of images.
     #  We will be optimized later.
-    def __call__(self,
-                 inputs: InputsType,
-                 batch_size: int = 1,
-                 return_vis: bool = False,
-                 show: bool = False,
-                 wait_time: int = 0,
-                 no_save_vis: bool = False,
-                 draw_pred: bool = True,
-                 pred_score_thr: float = 0.3,
-                 return_datasample: bool = False,
-                 print_result: bool = False,
-                 no_save_pred: bool = True,
-                 out_dir: str = '',
-                 texts: Optional[Union[str, list]] = None,
-                 # by open panoptic task
-                 stuff_texts: Optional[Union[str, list]] = None,
-                 custom_entities: bool = False,  # by GLIP
-                 **kwargs) -> dict:
+    def __call__(
+            self,
+            inputs: InputsType,
+            batch_size: int = 1,
+            return_vis: bool = False,
+            show: bool = False,
+            wait_time: int = 0,
+            no_save_vis: bool = False,
+            draw_pred: bool = True,
+            pred_score_thr: float = 0.3,
+            return_datasample: bool = False,
+            print_result: bool = False,
+            no_save_pred: bool = True,
+            out_dir: str = '',
+            texts: Optional[Union[str, list]] = None,
+            # by open panoptic task
+            stuff_texts: Optional[Union[str, list]] = None,
+            custom_entities: bool = False,  # by GLIP
+            **kwargs) -> dict:
         """Call the inferencer.
 
         Args:
@@ -347,9 +348,11 @@ class DetInferencer(BaseInferencer):
         if texts is not None:
             assert len(texts) == len(ori_inputs)
             for i in range(len(texts)):
-                ori_inputs[i] = {'img_path': ori_inputs[i],
-                                 'text': texts[i],
-                                 'custom_entities': custom_entities}
+                ori_inputs[i] = {
+                    'img_path': ori_inputs[i],
+                    'text': texts[i],
+                    'custom_entities': custom_entities
+                }
         if stuff_texts is not None:
             assert len(stuff_texts) == len(ori_inputs)
             for i in range(len(stuff_texts)):
@@ -470,14 +473,14 @@ class DetInferencer(BaseInferencer):
         return results
 
     def postprocess(
-            self,
-            preds: PredType,
-            visualization: Optional[List[np.ndarray]] = None,
-            return_datasample: bool = False,
-            print_result: bool = False,
-            no_save_pred: bool = False,
-            pred_out_dir: str = '',
-            **kwargs,
+        self,
+        preds: PredType,
+        visualization: Optional[List[np.ndarray]] = None,
+        return_datasample: bool = False,
+        print_result: bool = False,
+        no_save_pred: bool = False,
+        pred_out_dir: str = '',
+        **kwargs,
     ) -> Dict:
         """Process the predictions and visualization results from ``forward``
         and ``visualize``.
@@ -582,7 +585,8 @@ class DetInferencer(BaseInferencer):
             if 'bboxes' in pred_instances:
                 result['bboxes'] = pred_instances.bboxes.tolist()
             if masks is not None:
-                if 'bboxes' not in pred_instances or pred_instances.bboxes.sum() == 0:
+                if 'bboxes' not in pred_instances or pred_instances.bboxes.sum(
+                ) == 0:
                     # Fake bbox, such as the SOLO.
                     bboxes = mask2bbox(masks.cpu()).numpy().tolist()
                     result['bboxes'] = bboxes

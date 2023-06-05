@@ -1,13 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from argparse import ArgumentParser
 
-from mmengine.logging import print_log
 from mmengine.config import Config
-from mmdet.apis import DetInferencer
+from mmengine.logging import print_log
 
-from projects.XDecoder.xdecoder.inference import ImageCaptionInferencer, \
-    RefImageCaptionInferencer, \
-    TextToImageRegionRetrievalInferencer
+from mmdet.apis import DetInferencer
+from projects.XDecoder.xdecoder.inference import (
+    ImageCaptionInferencer, RefImageCaptionInferencer,
+    TextToImageRegionRetrievalInferencer)
 
 TASKINFOS = {
     'semseg': DetInferencer,
@@ -24,10 +24,7 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
         'inputs', type=str, help='Input image file or folder path.')
-    parser.add_argument(
-        'model',
-        type=str,
-        help='Config file name')
+    parser.add_argument('model', type=str, help='Config file name')
     parser.add_argument('--weights', help='Checkpoint file')
     parser.add_argument('--texts', help='text prompt')
     parser.add_argument(
@@ -57,7 +54,9 @@ def parse_args():
         help='Color palette used for visualization')
 
     # only for panoptic segmentation
-    parser.add_argument('--stuff-texts', help='text prompt for stuff name in panoptic segmentation')
+    parser.add_argument(
+        '--stuff-texts',
+        help='text prompt for stuff name in panoptic segmentation')
 
     call_args = vars(parser.parse_args())
     if call_args['no_save_vis']:
@@ -81,9 +80,11 @@ def main():
     inferencer = TASKINFOS[task](**init_args)
 
     if task != 'caption':
-        assert call_args['texts'] is not None, f'text prompts is required for {task}'
+        assert call_args[
+            'texts'] is not None, f'text prompts is required for {task}'
         if task == 'region-retrieval':
-            assert call_args['ref_inputs'] is not None, f'ref inputs is required for {task}'
+            assert call_args[
+                'ref_inputs'] is not None, f'ref inputs is required for {task}'
         else:
             if task != 'panoptic':
                 call_args.pop('stuff_texts')

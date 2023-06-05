@@ -1,11 +1,12 @@
 import copy
+from typing import Iterable, Optional, Union
 
-from mmdet.apis.det_inferencer import InputsType, DetInferencer
-from typing import Union, Iterable, Optional
 import torch
-from mmdet.utils import ConfigType
 from mmengine.dataset import Compose
 from rich.progress import track
+
+from mmdet.apis.det_inferencer import DetInferencer, InputsType
+from mmdet.utils import ConfigType
 
 
 class TextToImageRegionRetrievalInferencer(DetInferencer):
@@ -33,7 +34,10 @@ class TextToImageRegionRetrievalInferencer(DetInferencer):
         grounding_pipeline_cp[1].scale = cfg.grounding_scale
         grounding_pipeline = Compose(grounding_pipeline_cp)
 
-        return {'grounding_pipeline': grounding_pipeline, 'retrieval_pipeline': retrieval_pipeline}
+        return {
+            'grounding_pipeline': grounding_pipeline,
+            'retrieval_pipeline': retrieval_pipeline
+        }
 
     def _get_chunk_data(self, inputs: Iterable, pipeline, chunk_size: int):
         """Get batch data from inputs.
@@ -51,14 +55,19 @@ class TextToImageRegionRetrievalInferencer(DetInferencer):
                 chunk_data = []
                 for _ in range(chunk_size):
                     inputs_ = next(inputs_iter)
-                    chunk_data.append((inputs_, pipeline(copy.deepcopy(inputs_))))
+                    chunk_data.append(
+                        (inputs_, pipeline(copy.deepcopy(inputs_))))
                 yield chunk_data
             except StopIteration:
                 if chunk_data:
                     yield chunk_data
                 break
 
-    def preprocess(self, inputs: InputsType, pipeline, batch_size: int = 1, **kwargs):
+    def preprocess(self,
+                   inputs: InputsType,
+                   pipeline,
+                   batch_size: int = 1,
+                   **kwargs):
         """Process the inputs into a model-feedable format.
 
         Customize your preprocess by overriding this method. Preprocess should
@@ -85,23 +94,25 @@ class TextToImageRegionRetrievalInferencer(DetInferencer):
         chunked_data = self._get_chunk_data(inputs, pipeline, batch_size)
         yield from map(self.collate_fn, chunked_data)
 
-    def __call__(self,
-                 inputs: InputsType,
-                 batch_size: int = 1,
-                 return_vis: bool = False,
-                 show: bool = False,
-                 wait_time: int = 0,
-                 no_save_vis: bool = False,
-                 draw_pred: bool = True,
-                 pred_score_thr: float = 0.3,
-                 return_datasample: bool = False,
-                 print_result: bool = False,
-                 no_save_pred: bool = True,
-                 out_dir: str = '',
-                 texts: Optional[Union[str, list]] = None,
-                 stuff_texts: Optional[Union[str, list]] = None,  # by open panoptic task
-                 custom_entities: bool = False,  # by GLIP
-                 **kwargs) -> dict:
+    def __call__(
+            self,
+            inputs: InputsType,
+            batch_size: int = 1,
+            return_vis: bool = False,
+            show: bool = False,
+            wait_time: int = 0,
+            no_save_vis: bool = False,
+            draw_pred: bool = True,
+            pred_score_thr: float = 0.3,
+            return_datasample: bool = False,
+            print_result: bool = False,
+            no_save_pred: bool = True,
+            out_dir: str = '',
+            texts: Optional[Union[str, list]] = None,
+            stuff_texts: Optional[Union[str,
+                                        list]] = None,  # by open panoptic task
+            custom_entities: bool = False,  # by GLIP
+            **kwargs) -> dict:
         """Call the inferencer.
 
         Args:
@@ -148,9 +159,11 @@ class TextToImageRegionRetrievalInferencer(DetInferencer):
             texts = [texts] * len(ori_inputs)
 
         for i in range(len(texts)):
-            ori_inputs[i] = {'img_path': ori_inputs[i],
-                             'text': texts[i],
-                             'custom_entities': False}
+            ori_inputs[i] = {
+                'img_path': ori_inputs[i],
+                'text': texts[i],
+                'custom_entities': False
+            }
         inputs = self.preprocess(
             ori_inputs,
             pipeline=self.pipeline['retrieval_pipeline'],
@@ -167,14 +180,14 @@ class TextToImageRegionRetrievalInferencer(DetInferencer):
         max_id = torch.argmax(pred_score)
         retrieval_ori_input = ori_inputs[max_id.item()]
         max_prob = round(pred_score[max_id].item(), 3)
-        print("The image that best matches the given text is "
-              f"{retrieval_ori_input['img_path']} and probability is {max_prob}")
+        print(
+            'The image that best matches the given text is '
+            f"{retrieval_ori_input['img_path']} and probability is {max_prob}")
 
-        inputs = self.preprocess(
-            [retrieval_ori_input],
-            pipeline=self.pipeline['grounding_pipeline'],
-            batch_size=1,
-            **preprocess_kwargs)
+        inputs = self.preprocess([retrieval_ori_input],
+                                 pipeline=self.pipeline['grounding_pipeline'],
+                                 batch_size=1,
+                                 **preprocess_kwargs)
 
         self.model.task = 'ref-semseg'
         self.model.sem_seg_head.task = 'ref-semseg'

@@ -39,8 +39,8 @@ Number = Union[int, float]
 
 
 def _fixed_scale_size(
-        size: Tuple[int, int],
-        scale: Union[float, int, tuple],
+    size: Tuple[int, int],
+    scale: Union[float, int, tuple],
 ) -> Tuple[int, int]:
     """Rescale a size by a ratio.
 
@@ -103,12 +103,12 @@ def rescale_size(old_size: tuple,
 
 
 def imrescale(
-        img: np.ndarray,
-        scale: Union[float, Tuple[int, int]],
-        return_scale: bool = False,
-        interpolation: str = 'bilinear',
-        backend: Optional[str] = None,
-        short_side_mode: bool = False,
+    img: np.ndarray,
+    scale: Union[float, Tuple[int, int]],
+    return_scale: bool = False,
+    interpolation: str = 'bilinear',
+    backend: Optional[str] = None,
+    short_side_mode: bool = False,
 ) -> Union[np.ndarray, Tuple[np.ndarray, float]]:
     """Resize image while keeping the aspect ratio.
 
@@ -127,7 +127,10 @@ def imrescale(
         ndarray: The rescaled image.
     """
     h, w = img.shape[:2]
-    new_size, scale_factor = rescale_size((w, h), scale, return_scale=True, short_side_mode=short_side_mode)
+    new_size, scale_factor = rescale_size((w, h),
+                                          scale,
+                                          return_scale=True,
+                                          short_side_mode=short_side_mode)
     rescaled_img = imresize(
         img, new_size, interpolation=interpolation, backend=backend)
     if return_scale:
@@ -256,11 +259,12 @@ class FixScaleResize(Resize):
     """Compared to Resize, FixScaleResize fixes the scaling issue when
     `keep_ratio=true`."""
 
-    def __init__(self,
-                 *args,
-                 short_side_mode: bool = False,
-                 **kwargs,
-                 ) -> None:
+    def __init__(
+        self,
+        *args,
+        short_side_mode: bool = False,
+        **kwargs,
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.short_side_mode = short_side_mode
         if short_side_mode is True:
@@ -606,7 +610,7 @@ class RandomShift(BaseTransform):
 
             # remove invalid bboxes
             valid_inds = (bboxes.widths > self.filter_thr_px).numpy() & (
-                    bboxes.heights > self.filter_thr_px).numpy()
+                bboxes.heights > self.filter_thr_px).numpy()
             # If the shift does not contain any gt-bbox area, skip this
             # image.
             if not valid_inds.any():
@@ -792,7 +796,7 @@ class RandomCrop(BaseTransform):
                  recompute_bbox: bool = False,
                  bbox_clip_border: bool = True) -> None:
         if crop_type not in [
-            'relative_range', 'relative', 'absolute', 'absolute_range'
+                'relative_range', 'relative', 'absolute', 'absolute_range'
         ]:
             raise ValueError(f'Invalid crop_type {crop_type}.')
         if crop_type in ['absolute', 'absolute_range']:
@@ -875,7 +879,7 @@ class RandomCrop(BaseTransform):
             if results.get('gt_masks', None) is not None:
                 results['gt_masks'] = results['gt_masks'][
                     valid_inds.nonzero()[0]].crop(
-                    np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
+                        np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
                 if self.recompute_bbox:
                     results['gt_bboxes'] = results['gt_masks'].get_bboxes(
                         type(results['gt_bboxes']))
@@ -888,7 +892,7 @@ class RandomCrop(BaseTransform):
         # crop semantic seg
         if results.get('gt_seg_map', None) is not None:
             results['gt_seg_map'] = results['gt_seg_map'][crop_y1:crop_y2,
-                                    crop_x1:crop_x2]
+                                                          crop_x1:crop_x2]
 
         return results
 
@@ -1418,7 +1422,7 @@ class MinIoURandomCrop(BaseTransform):
                 # seg fields
                 if results.get('gt_seg_map', None) is not None:
                     results['gt_seg_map'] = results['gt_seg_map'][
-                                            patch[1]:patch[3], patch[0]:patch[2]]
+                        patch[1]:patch[3], patch[0]:patch[2]]
                 return results
 
     def __repr__(self) -> str:
@@ -1675,7 +1679,7 @@ class Albu(BaseTransform):
             self,
             results: dict,
             ori_masks: Optional[Union[BitmapMasks,
-            PolygonMasks]] = None) -> dict:
+                                      PolygonMasks]] = None) -> dict:
         """Post-processing Albu output."""
         # albumentations may return np.array or list on different versions
         if 'gt_bboxes_labels' in results and isinstance(
@@ -1909,8 +1913,8 @@ class RandomCenterCropPad(BaseTransform):
         """
         center = boxes.centers.numpy()
         mask = (center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) * (
-                center[:, 0] < patch[2]) * (
-                       center[:, 1] < patch[3])
+            center[:, 0] < patch[2]) * (
+                center[:, 1] < patch[3])
         return mask
 
     def _crop_image_and_paste(self, image, center, size):
@@ -1960,7 +1964,7 @@ class RandomCenterCropPad(BaseTransform):
             cropped_center_y - top, cropped_center_y + bottom,
             cropped_center_x - left, cropped_center_x + right
         ],
-            dtype=np.float32)
+                          dtype=np.float32)
 
         return cropped_img, border, patch
 
@@ -2134,14 +2138,14 @@ class CutOut(BaseTransform):
     """
 
     def __init__(
-            self,
-            n_holes: Union[int, Tuple[int, int]],
-            cutout_shape: Optional[Union[Tuple[int, int],
-            List[Tuple[int, int]]]] = None,
-            cutout_ratio: Optional[Union[Tuple[float, float],
-            List[Tuple[float, float]]]] = None,
-            fill_in: Union[Tuple[float, float, float], Tuple[int, int,
-            int]] = (0, 0, 0)
+        self,
+        n_holes: Union[int, Tuple[int, int]],
+        cutout_shape: Optional[Union[Tuple[int, int],
+                                     List[Tuple[int, int]]]] = None,
+        cutout_ratio: Optional[Union[Tuple[float, float],
+                                     List[Tuple[float, float]]]] = None,
+        fill_in: Union[Tuple[float, float, float], Tuple[int, int,
+                                                         int]] = (0, 0, 0)
     ) -> None:
 
         assert (cutout_shape is None) ^ (cutout_ratio is None), \
@@ -2404,7 +2408,7 @@ class Mosaic(BaseTransform):
                 center_position_xy[0], \
                 center_position_xy[1]
             crop_coord = img_shape_wh[0] - (x2 - x1), img_shape_wh[1] - (
-                    y2 - y1), img_shape_wh[0], img_shape_wh[1]
+                y2 - y1), img_shape_wh[0], img_shape_wh[1]
 
         elif loc == 'top_right':
             # index1 to top right part of image
@@ -2614,7 +2618,7 @@ class MixUp(BaseTransform):
         if padded_img.shape[1] > target_w:
             x_offset = random.randint(0, padded_img.shape[1] - target_w)
         padded_cropped_img = padded_img[y_offset:y_offset + target_h,
-                             x_offset:x_offset + target_w]
+                                        x_offset:x_offset + target_w]
 
         # 6. adjust bbox
         retrieve_gt_bboxes = retrieve_results['gt_bboxes']
@@ -2759,7 +2763,7 @@ class RandomAffine(BaseTransform):
         translate_matrix = self._get_translation_matrix(trans_x, trans_y)
 
         warp_matrix = (
-                translate_matrix @ shear_matrix @ rotation_matrix @ scaling_matrix)
+            translate_matrix @ shear_matrix @ rotation_matrix @ scaling_matrix)
         return warp_matrix
 
     @autocast_box_type()
@@ -2950,11 +2954,11 @@ class CopyPaste(BaseTransform):
     """
 
     def __init__(
-            self,
-            max_num_pasted: int = 100,
-            bbox_occluded_thr: int = 10,
-            mask_occluded_thr: int = 300,
-            selected: bool = True,
+        self,
+        max_num_pasted: int = 100,
+        bbox_occluded_thr: int = 10,
+        mask_occluded_thr: int = 300,
+        selected: bool = True,
     ) -> None:
         self.max_num_pasted = max_num_pasted
         self.bbox_occluded_thr = bbox_occluded_thr
@@ -3139,14 +3143,14 @@ class RandomErasing(BaseTransform):
     """
 
     def __init__(
-            self,
-            n_patches: Union[int, Tuple[int, int]],
-            ratio: Union[float, Tuple[float, float]],
-            squared: bool = True,
-            bbox_erased_thr: float = 0.9,
-            img_border_value: Union[int, float, tuple] = 128,
-            mask_border_value: int = 0,
-            seg_ignore_label: int = 255,
+        self,
+        n_patches: Union[int, Tuple[int, int]],
+        ratio: Union[float, Tuple[float, float]],
+        squared: bool = True,
+        bbox_erased_thr: float = 0.9,
+        img_border_value: Union[int, float, tuple] = 128,
+        mask_border_value: int = 0,
+        seg_ignore_label: int = 255,
     ) -> None:
         if isinstance(n_patches, tuple):
             assert len(n_patches) == 2 and 0 <= n_patches[0] < n_patches[1]
@@ -3182,7 +3186,7 @@ class RandomErasing(BaseTransform):
             ph, pw = int(img_shape[0] * ratio[0]), int(img_shape[1] * ratio[1])
             px1, py1 = np.random.randint(0,
                                          img_shape[1] - pw), np.random.randint(
-                0, img_shape[0] - ph)
+                                             0, img_shape[0] - ph)
             px2, py2 = px1 + pw, py1 + ph
             patches.append([px1, py1, px2, py2])
         return np.array(patches)
@@ -3204,7 +3208,7 @@ class RandomErasing(BaseTransform):
         wh = np.maximum(right_bottom - left_top, 0)
         inter_areas = wh[:, :, 0] * wh[:, :, 1]
         bbox_areas = (bboxes[:, 2] - bboxes[:, 0]) * (
-                bboxes[:, 3] - bboxes[:, 1])
+            bboxes[:, 3] - bboxes[:, 1])
         bboxes_erased_ratio = inter_areas.sum(-1) / (bbox_areas + 1e-7)
         valid_inds = bboxes_erased_ratio < self.bbox_erased_thr
         results['gt_bboxes'] = HorizontalBoxes(bboxes[valid_inds])
@@ -3218,7 +3222,7 @@ class RandomErasing(BaseTransform):
         for patch in patches:
             px1, py1, px2, py2 = patch
             results['gt_masks'].masks[:, py1:py2,
-            px1:px2] = self.mask_border_value
+                                      px1:px2] = self.mask_border_value
 
     def _transform_seg(self, results: dict, patches: List[list]) -> None:
         """Random erasing the segmentation map."""
@@ -3685,7 +3689,7 @@ class CachedMixUp(BaseTransform):
         if padded_img.shape[1] > target_w:
             x_offset = random.randint(0, padded_img.shape[1] - target_w)
         padded_cropped_img = padded_img[y_offset:y_offset + target_h,
-                             x_offset:x_offset + target_w]
+                                        x_offset:x_offset + target_w]
 
         # 6. adjust bbox
         retrieve_gt_bboxes = retrieve_results['gt_bboxes']

@@ -1,16 +1,19 @@
 _base_ = 'xdecoder-tiny_zeroshot_open-vocab-semseg.py'
 
-model = dict(head=dict(task='instance'),
-             test_cfg=dict(max_per_img=100))
+model = dict(head=dict(task='instance'), test_cfg=dict(max_per_img=100))
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', imdecode_backend='pillow', backend_args=_base_.backend_args),
-    dict(type='FixScaleResize',
-         scale=800,
-         keep_ratio=True,
-         short_side_mode=True,
-         backend='pillow',
-         interpolation='bicubic'),
+    dict(
+        type='LoadImageFromFile',
+        imdecode_backend='pillow',
+        backend_args=_base_.backend_args),
+    dict(
+        type='FixScaleResize',
+        scale=800,
+        keep_ratio=True,
+        short_side_mode=True,
+        backend='pillow',
+        interpolation='bicubic'),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',

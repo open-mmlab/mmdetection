@@ -10,17 +10,16 @@ model = dict(
         mean=[123.675, 116.28, 103.53],
         std=[58.395, 57.12, 57.375],
         bgr_to_rgb=True,
-        pad_size_divisor=32
-    ),
+        pad_size_divisor=32),
     backbone=dict(type='FocalNet'),
-    head=dict(type='XDecoderUnifiedhead',
-              in_channels=(96, 192, 384, 768),
-              task='semseg',
-              pixel_decoder=dict(type='TransformerEncoderPixelDecoder'),
-              transformer_decoder=dict(type='XDecoderTransformerDecoder'),
-              ),
-    test_cfg=dict(mask_thr=0.5,
-                  use_thr_for_mc=True)  # mc means multi-class
+    head=dict(
+        type='XDecoderUnifiedhead',
+        in_channels=(96, 192, 384, 768),
+        task='semseg',
+        pixel_decoder=dict(type='TransformerEncoderPixelDecoder'),
+        transformer_decoder=dict(type='XDecoderTransformerDecoder'),
+    ),
+    test_cfg=dict(mask_thr=0.5, use_thr_for_mc=True)  # mc means multi-class
 )
 
 # Example to use different file client
@@ -39,13 +38,17 @@ model = dict(
 backend_args = None
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', imdecode_backend='pillow', backend_args=backend_args),
-    dict(type='FixScaleResize',
-         scale=512,
-         keep_ratio=True,
-         short_side_mode=True,
-         backend='pillow',
-         interpolation='bicubic'),
+    dict(
+        type='LoadImageFromFile',
+        imdecode_backend='pillow',
+        backend_args=backend_args),
+    dict(
+        type='FixScaleResize',
+        scale=512,
+        keep_ratio=True,
+        short_side_mode=True,
+        backend='pillow',
+        interpolation='bicubic'),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',

@@ -1,15 +1,16 @@
 import copy
-
-from mmdet.apis.det_inferencer import InputsType, PredType, DetInferencer
-from typing import List, Tuple, Union, Iterable, Optional
-import numpy as np
-import mmengine
-import mmcv
 import os.path as osp
+from typing import Iterable, List, Optional, Tuple, Union
+
+import mmcv
+import mmengine
+import numpy as np
 import torch
-from mmdet.utils import ConfigType
 from mmengine.dataset import Compose
 from rich.progress import track
+
+from mmdet.apis.det_inferencer import DetInferencer, InputsType, PredType
+from mmdet.utils import ConfigType
 
 
 def get_adaptive_scale(img_shape: Tuple[int, int],
@@ -94,7 +95,9 @@ class ImageCaptionInferencer(DetInferencer):
             img_scale = get_adaptive_scale(img.shape[:2])
             text_cfg['font_sizes'] = int(img_scale * 7)
 
-            self.visualizer.draw_texts(pred.pred_caption, torch.tensor([img_scale * 5, img_scale * 5]), **text_cfg)
+            self.visualizer.draw_texts(
+                pred.pred_caption, torch.tensor([img_scale * 5,
+                                                 img_scale * 5]), **text_cfg)
             drawn_img = self.visualizer.get_image()
 
             self.visualizer.add_datasample(
@@ -139,7 +142,10 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
         grounding_pipeline_cp[1].scale = cfg.grounding_scale
         grounding_pipeline = Compose(grounding_pipeline_cp)
 
-        return {'grounding_pipeline': grounding_pipeline, 'caption_pipeline': caption_pipeline}
+        return {
+            'grounding_pipeline': grounding_pipeline,
+            'caption_pipeline': caption_pipeline
+        }
 
     def _get_chunk_data(self, inputs: Iterable, chunk_size: int):
         """Get batch data from inputs.
@@ -157,32 +163,36 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
                 chunk_data = []
                 for _ in range(chunk_size):
                     inputs_ = next(inputs_iter)
-                    chunk_data.append((inputs_,
-                                       self.pipeline['grounding_pipeline'](copy.deepcopy(inputs_)),
-                                       self.pipeline['caption_pipeline'](copy.deepcopy(inputs_))))
+                    chunk_data.append(
+                        (inputs_, self.pipeline['grounding_pipeline'](
+                            copy.deepcopy(inputs_)),
+                         self.pipeline['caption_pipeline'](
+                             copy.deepcopy(inputs_))))
                 yield chunk_data
             except StopIteration:
                 if chunk_data:
                     yield chunk_data
                 break
 
-    def __call__(self,
-                 inputs: InputsType,
-                 batch_size: int = 1,
-                 return_vis: bool = False,
-                 show: bool = False,
-                 wait_time: int = 0,
-                 no_save_vis: bool = False,
-                 draw_pred: bool = True,
-                 pred_score_thr: float = 0.3,
-                 return_datasample: bool = False,
-                 print_result: bool = False,
-                 no_save_pred: bool = True,
-                 out_dir: str = '',
-                 texts: Optional[Union[str, list]] = None,
-                 stuff_texts: Optional[Union[str, list]] = None,  # by open panoptic task
-                 custom_entities: bool = False,  # by GLIP
-                 **kwargs) -> dict:
+    def __call__(
+            self,
+            inputs: InputsType,
+            batch_size: int = 1,
+            return_vis: bool = False,
+            show: bool = False,
+            wait_time: int = 0,
+            no_save_vis: bool = False,
+            draw_pred: bool = True,
+            pred_score_thr: float = 0.3,
+            return_datasample: bool = False,
+            print_result: bool = False,
+            no_save_pred: bool = True,
+            out_dir: str = '',
+            texts: Optional[Union[str, list]] = None,
+            stuff_texts: Optional[Union[str,
+                                        list]] = None,  # by open panoptic task
+            custom_entities: bool = False,  # by GLIP
+            **kwargs) -> dict:
         """Call the inferencer.
 
         Args:
@@ -230,22 +240,29 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
             texts = [texts] * len(ori_inputs)
 
         for i in range(len(texts)):
-            ori_inputs[i] = {'img_path': ori_inputs[i],
-                             'text': texts[i],
-                             'custom_entities': False}
+            ori_inputs[i] = {
+                'img_path': ori_inputs[i],
+                'text': texts[i],
+                'custom_entities': False
+            }
         inputs = self.preprocess(
             ori_inputs, batch_size=batch_size, **preprocess_kwargs)
 
         results_dict = {'predictions': [], 'visualization': []}
-        for ori_inputs, grounding_data, caption_data in track(inputs, description='Inference'):
+        for ori_inputs, grounding_data, caption_data in track(
+                inputs, description='Inference'):
 
             self.model.sem_seg_head.task = 'ref-semseg'
             self.model.sem_seg_head.predictor.task = 'ref-semseg'
             preds = self.forward(grounding_data, **forward_kwargs)
 
-            for data_sample, pred_datasmaple in zip(caption_data['data_samples'], preds):
+            for data_sample, pred_datasmaple in zip(
+                    caption_data['data_samples'], preds):
                 data_sample.pred_sem_seg = pred_datasmaple.pred_sem_seg
-                data_sample.set_metainfo({'grounding_img_shape': pred_datasmaple.metainfo['img_shape']})
+                data_sample.set_metainfo({
+                    'grounding_img_shape':
+                    pred_datasmaple.metainfo['img_shape']
+                })
 
             self.model.sem_seg_head.task = 'caption'
             self.model.sem_seg_head.predictor.task = 'caption'

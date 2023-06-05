@@ -1,31 +1,27 @@
 import logging
 from contextlib import contextmanager
 from functools import wraps
-import torch
+
 import torch
 from torch.nn import functional as F
 
 
 @contextmanager
 def _ignore_torch_cuda_oom():
-    """
-    A context which ignores CUDA OOM exception from pytorch.
-    """
+    """A context which ignores CUDA OOM exception from pytorch."""
     try:
         yield
     except RuntimeError as e:
         # NOTE: the string may change?
-        if "CUDA out of memory. " in str(e):
+        if 'CUDA out of memory. ' in str(e):
             pass
         else:
             raise
 
 
 def retry_if_cuda_oom(func):
-    """
-    Makes a function retry itself after encountering
-    pytorch's CUDA OOM error.
-    It will first retry after calling `torch.cuda.empty_cache()`.
+    """Makes a function retry itself after encountering pytorch's CUDA OOM
+    error. It will first retry after calling `torch.cuda.empty_cache()`.
 
     If that still fails, it will then retry by trying to convert inputs to CPUs.
     In this case, it expects the function to dispatch to CPU implementation.
@@ -54,14 +50,13 @@ def retry_if_cuda_oom(func):
 
     def maybe_to_cpu(x):
         try:
-            like_gpu_tensor = x.device.type == "cuda" and hasattr(x, "to")
+            like_gpu_tensor = x.device.type == 'cuda' and hasattr(x, 'to')
         except AttributeError:
             like_gpu_tensor = False
         if like_gpu_tensor:
-            return x.to(device="cpu")
+            return x.to(device='cpu')
         else:
             return x
-
 
     @wraps(func)
     def wrapped(*args, **kwargs):
@@ -75,16 +70,18 @@ def retry_if_cuda_oom(func):
 
         # Try on CPU. This slows down the code significantly, therefore print a notice.
         logger = logging.getLogger(__name__)
-        logger.info("Attempting to copy inputs of {} to CPU due to CUDA OOM".format(str(func)[0:5]))
+        logger.info(
+            'Attempting to copy inputs of {} to CPU due to CUDA OOM'.format(
+                str(func)[0:5]))
         new_args = (maybe_to_cpu(x) for x in args)
         new_kwargs = {k: maybe_to_cpu(v) for k, v in kwargs.items()}
         return func(*new_args, **new_kwargs)
 
     return wrapped
 
+
 def sem_seg_postprocess(result, img_size, output_height, output_width):
-    """
-    Return semantic segmentation predictions in the original resolution.
+    """Return semantic segmentation predictions in the original resolution.
 
     The input images are often resized when entering semantic segmentor. Moreover, in same
     cases, they also padded inside segmentor to be divisible by maximum network stride.
@@ -101,8 +98,11 @@ def sem_seg_postprocess(result, img_size, output_height, output_width):
         semantic segmentation prediction (Tensor): A tensor of the shape
             (C, output_height, output_width) that contains per-pixel soft predictions.
     """
-    result = result[:, : img_size[0], : img_size[1]].expand(1, -1, -1, -1)
+    result = result[:, :img_size[0], :img_size[1]].expand(1, -1, -1, -1)
     result = F.interpolate(
-        result, size=(output_height, output_width), mode="bicubic", align_corners=False, antialias=True
-    )[0]
+        result,
+        size=(output_height, output_width),
+        mode='bicubic',
+        align_corners=False,
+        antialias=True)[0]
     return result

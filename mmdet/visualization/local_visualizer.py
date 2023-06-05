@@ -86,7 +86,7 @@ class DetLocalVisualizer(Visualizer):
                  save_dir: Optional[str] = None,
                  bbox_color: Optional[Union[str, Tuple[int]]] = None,
                  text_color: Optional[Union[str,
-                 Tuple[int]]] = (200, 200, 200),
+                                            Tuple[int]]] = (200, 200, 200),
                  mask_color: Optional[Union[str, Tuple[int]]] = None,
                  line_width: Union[int, float] = 3,
                  alpha: float = 0.8) -> None:
@@ -143,7 +143,7 @@ class DetLocalVisualizer(Visualizer):
 
             positions = bboxes[:, :2] + self.line_width
             areas = (bboxes[:, 3] - bboxes[:, 1]) * (
-                    bboxes[:, 2] - bboxes[:, 0])
+                bboxes[:, 2] - bboxes[:, 0])
             scales = _get_adaptive_scales(areas)
 
             for i, (pos, label) in enumerate(zip(positions, labels)):
@@ -358,18 +358,19 @@ class DetLocalVisualizer(Visualizer):
             # open set semseg
             label_names = sem_seg.metainfo['label_names']
 
-        labels = np.array(ids, dtype=np.int64)-1
+        labels = np.array(ids, dtype=np.int64) - 1
         colors = [palette[label] for label in labels]
 
         self.set_image(image)
 
         # draw semantic masks
         for i, (label, color) in enumerate(zip(labels, colors)):
-            masks = sem_seg_data == (label+1)
+            masks = sem_seg_data == (label + 1)
             self.draw_binary_masks(masks, colors=[color], alphas=self.alpha)
             if 'label_names' in sem_seg:
                 label_text = label_names[label]
-                _, _, stats, centroids = cv2.connectedComponentsWithStats(masks[0].astype(np.uint8), connectivity=8)
+                _, _, stats, centroids = cv2.connectedComponentsWithStats(
+                    masks[0].astype(np.uint8), connectivity=8)
                 if stats.shape[0] > 1:
                     largest_id = np.argmax(stats[1:, -1]) + 1
                     centroids = centroids[largest_id]
@@ -452,8 +453,7 @@ class DetLocalVisualizer(Visualizer):
             if 'gt_sem_seg' in data_sample:
                 gt_img_data = self._draw_sem_seg(gt_img_data,
                                                  data_sample.gt_sem_seg,
-                                                 classes,
-                                                 palette)
+                                                 classes, palette)
 
             if 'gt_panoptic_seg' in data_sample:
                 assert classes is not None, 'class information is ' \
@@ -601,7 +601,7 @@ class TrackLocalVisualizer(Visualizer):
             if texts is not None:
                 positions = bboxes[:, :2] + self.line_width
                 areas = (bboxes[:, 3] - bboxes[:, 1]) * (
-                        bboxes[:, 2] - bboxes[:, 0])
+                    bboxes[:, 2] - bboxes[:, 0])
                 scales = _get_adaptive_scales(areas.cpu().numpy())
                 for i, pos in enumerate(positions):
                     self.draw_texts(

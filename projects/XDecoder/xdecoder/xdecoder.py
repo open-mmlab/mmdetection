@@ -1,12 +1,14 @@
 from torch import Tensor
+
+from mmdet.models.detectors.single_stage import SingleStageDetector
 from mmdet.registry import MODELS
 from mmdet.structures import SampleList
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
-from mmdet.models.detectors.single_stage import SingleStageDetector
 
 
 @MODELS.register_module()
 class XDecoder(SingleStageDetector):
+
     def __init__(self,
                  backbone: ConfigType,
                  neck: OptConfigType = None,
@@ -29,7 +31,6 @@ class XDecoder(SingleStageDetector):
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> SampleList:
         visual_features = self.extract_feat(batch_inputs)
-        outputs = self.sem_seg_head.predict(
-            visual_features,
-            batch_data_samples)
+        outputs = self.sem_seg_head.predict(visual_features,
+                                            batch_data_samples)
         return outputs
