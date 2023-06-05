@@ -167,7 +167,7 @@ class BaseSegDataset(BaseDataset):
                     f'subset of classes {old_classes} in METAINFO.')
             for i, c in enumerate(old_classes):
                 if c not in new_classes:
-                    label_map[i] = 255
+                    label_map[i] = 0
                 else:
                     label_map[i] = new_classes.index(c)
             return label_map
@@ -208,7 +208,7 @@ class BaseSegDataset(BaseDataset):
             # return subset of palette
             for old_id, new_id in sorted(
                     self.label_map.items(), key=lambda x: x[1]):
-                if new_id != 255:
+                if new_id != 0:
                     new_palette.append(palette[old_id])
             new_palette = type(palette)(new_palette)
         else:
