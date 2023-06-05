@@ -153,7 +153,7 @@ class SemSegMetric(BaseMetric):
             torch.Tensor: The ground truth histogram on all classes.
         """
         assert pred_label.shape == label.shape
-        # Assume 0 is the index should be ignored
+        # 0 is background
         mask = label != 0
         pred_label = (pred_label + 1) * mask
         intersect = pred_label[pred_label == label]

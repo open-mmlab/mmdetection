@@ -167,6 +167,7 @@ class BaseSegDataset(BaseDataset):
                     f'subset of classes {old_classes} in METAINFO.')
             for i, c in enumerate(old_classes):
                 if c not in new_classes:
+                    # 0 is background
                     label_map[i] = 0
                 else:
                     label_map[i] = new_classes.index(c)
@@ -208,6 +209,7 @@ class BaseSegDataset(BaseDataset):
             # return subset of palette
             for old_id, new_id in sorted(
                     self.label_map.items(), key=lambda x: x[1]):
+                # 0 is background
                 if new_id != 0:
                     new_palette.append(palette[old_id])
             new_palette = type(palette)(new_palette)
@@ -238,7 +240,6 @@ class BaseSegDataset(BaseDataset):
                     seg_map = img_name + self.seg_map_suffix
                     data_info['seg_map_path'] = osp.join(ann_dir, seg_map)
                 data_info['label_map'] = self.label_map
-                data_info['seg_fields'] = []
                 data_list.append(data_info)
         else:
             for img in fileio.list_dir_or_file(
@@ -252,7 +253,6 @@ class BaseSegDataset(BaseDataset):
                     seg_map = img.replace(self.img_suffix, self.seg_map_suffix)
                     data_info['seg_map_path'] = osp.join(ann_dir, seg_map)
                 data_info['label_map'] = self.label_map
-                data_info['seg_fields'] = []
                 data_list.append(data_info)
             data_list = sorted(data_list, key=lambda x: x['img_path'])
         return data_list

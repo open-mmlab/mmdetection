@@ -601,7 +601,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
 
 
 @TRANSFORMS.register_module()
-class LoadSemSegAnnotations(MMCV_LoadAnnotations):
+class LoadSemSegAnnotations(LoadAnnotations):
     """Load annotations for semantic segmentation provided by dataset.
 
     The annotation format is as the following:
@@ -618,8 +618,6 @@ class LoadSemSegAnnotations(MMCV_LoadAnnotations):
     .. code-block:: python
 
         {
-            # in str
-            'seg_fields': List
              # In uint8 type.
             'gt_seg_map': np.ndarray (H, W)
         }
@@ -630,34 +628,16 @@ class LoadSemSegAnnotations(MMCV_LoadAnnotations):
 
     Added Keys:
 
-    - seg_fields (List)
     - gt_seg_map (np.uint8)
-
-    Args:
-        imdecode_backend (str): The image decoding backend type. The backend
-            argument for :func:``mmcv.imfrombytes``.
-            See :fun:``mmcv.imfrombytes`` for details.
-            Defaults to 'pillow'.
-        backend_args (dict): Arguments to instantiate a file backend.
-            See https://mmengine.readthedocs.io/en/latest/api/fileio.htm
-            for details. Defaults to None.
-            Notes: mmcv>=2.0.0rc4, mmengine>=0.2.0 required.
     """
 
-    def __init__(
-        self,
-        backend_args=None,
-        imdecode_backend='pillow',
-    ) -> None:
+    def __init__(self, **kwargs) -> None:
         super().__init__(
             with_bbox=False,
             with_label=False,
             with_seg=True,
             with_keypoints=False,
-            imdecode_backend=imdecode_backend,
-            backend_args=backend_args)
-
-        self.imdecode_backend = imdecode_backend
+            **kwargs)
 
     def _load_seg_map(self, results: dict) -> None:
         """Private function to load semantic segmentation annotations.
@@ -684,13 +664,6 @@ class LoadSemSegAnnotations(MMCV_LoadAnnotations):
             for old_id, new_id in results['label_map'].items():
                 gt_semantic_seg[gt_semantic_seg_copy == old_id] = new_id
         results['gt_seg_map'] = gt_semantic_seg
-        results['seg_fields'].append('gt_seg_map')
-
-    def __repr__(self) -> str:
-        repr_str = self.__class__.__name__
-        repr_str += f"imdecode_backend='{self.imdecode_backend}', "
-        repr_str += f'backend_args={self.backend_args})'
-        return repr_str
 
 
 @TRANSFORMS.register_module()
