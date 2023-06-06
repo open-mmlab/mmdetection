@@ -242,7 +242,6 @@ class ADE20KDataset(BaseSegDataset):
             data_info['label_map'] = self.label_map
             data_info['seg_fields'] = []
             if self.return_classes:
-                pass
                 data_info['text'] = list(self._metainfo['classes'])
             data_list.append(data_info)
         return data_list
