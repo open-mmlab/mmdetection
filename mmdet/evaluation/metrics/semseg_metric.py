@@ -155,7 +155,7 @@ class SemSegMetric(BaseMetric):
         assert pred_label.shape == label.shape
         # 0 is background
         mask = label != 0
-        pred_label = (pred_label + 1) * mask
+        pred_label = pred_label * mask
         intersect = pred_label[pred_label == label]
         area_intersect = torch.histc(
             intersect.float(), bins=(num_classes), min=1, max=num_classes)
