@@ -9,7 +9,7 @@ from torch.nn import functional as F
 TORCH_VERSION = tuple(int(x) for x in torch.__version__.split('.')[:2])
 
 
-def is_lower_torch_version(version=(1, 12)):
+def is_lower_torch_version(version=(1, 10)):
     """Check if the pytorch version is lower than "version."""
     return obsolete_torch_version(TORCH_VERSION, version)
 
