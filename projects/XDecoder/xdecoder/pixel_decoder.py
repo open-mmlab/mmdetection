@@ -13,16 +13,14 @@ from .transformer_blocks import (Conv2d, PositionEmbeddingSine,
 
 class TransformerEncoderOnly(nn.Module):
 
-    def __init__(
-        self,
-        d_model=512,
-        nhead=8,
-        num_encoder_layers=6,
-        dim_feedforward=2048,
-        dropout=0.1,
-        activation='relu',
-        normalize_before=False,
-    ):
+    def __init__(self,
+                 d_model=512,
+                 nhead=8,
+                 num_encoder_layers=6,
+                 dim_feedforward=2048,
+                 dropout=0.1,
+                 activation='relu',
+                 normalize_before=False):
         super().__init__()
 
         encoder_layer = TransformerEncoderLayer(d_model, nhead,
@@ -168,8 +166,7 @@ class XTransformerEncoderPixelDecoder(BasePixelDecoder):
             num_encoder_layers=transformer_enc_layers,
             normalize_before=transformer_pre_norm,
         )
-        N_steps = conv_dim // 2
-        self.pe_layer = PositionEmbeddingSine(N_steps, normalize=True)
+        self.pe_layer = PositionEmbeddingSine(conv_dim // 2, normalize=True)
 
         # update layer
         use_bias = norm == ''

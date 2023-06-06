@@ -15,7 +15,7 @@ from .utils import (is_lower_torch_version, retry_if_cuda_oom,
 class XDecoderUnifiedhead(nn.Module):
 
     def __init__(self,
-                 in_channels,
+                 in_channels: int,
                  pixel_decoder: nn.Module,
                  transformer_decoder: nn.Module,
                  task: str = 'semseg',
