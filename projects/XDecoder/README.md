@@ -24,6 +24,6 @@ Prepare your dataset according to the [docs](https://mmsegmentation.readthedocs.
 ./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_semseg.py xdecoder_focalt_best_openseg.pt 8
 ```
 
-| Model                               | Params (M) | mIoU  |                 Config                  |                                                       Download                                                       |
-| :---------------------------------- | :--------: | :---: | :-------------------------------------: | :------------------------------------------------------------------------------------------------------------------: |
-| `xdecoder_focalt_best_openseg.pt`\* |     -      | 25.13 | [config](ofa-base_finetuned_caption.py) | [model](https://download.openmmlab.com/mmclassification/v1/ofa/ofa-base_3rdparty_coco-caption_20230418-de18914e.pth) |
+| Model                               | mIoU  |                       Config                       |                                            Download                                             |
+| :---------------------------------- | :---: | :------------------------------------------------: | :---------------------------------------------------------------------------------------------: |
+| `xdecoder_focalt_best_openseg.pt`\* | 25.13 | [config](configs/xdecoder-tiny_zeroshot_semseg.py) | [model](https://huggingface.co/xdecoder/X-Decoder/resolve/main/xdecoder_focalt_best_openseg.pt) |
