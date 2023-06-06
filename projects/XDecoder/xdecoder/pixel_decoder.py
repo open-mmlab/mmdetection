@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Optional, Union
 
 from torch import nn
 from torch.nn import functional as F
@@ -7,6 +7,8 @@ from mmdet.registry import MODELS
 from .transformer_blocks import (Conv2d, PositionEmbeddingSine,
                                  TransformerEncoder, TransformerEncoderLayer,
                                  get_norm)
+
+# modified from https://github.com/microsoft/X-Decoder/blob/main/xdecoder/body/encoder/transformer_encoder_fpn.py # noqa
 
 
 class TransformerEncoderOnly(nn.Module):
@@ -81,7 +83,6 @@ class BasePixelDecoder(nn.Module):
                     norm=output_norm,
                     activation=F.relu,
                 )
-                # weight_init.c2_xavier_fill(output_conv)
                 self.add_module('layer_{}'.format(idx + 1), output_conv)
 
                 lateral_convs.append(None)
@@ -106,8 +107,6 @@ class BasePixelDecoder(nn.Module):
                     norm=output_norm,
                     activation=F.relu,
                 )
-                # weight_init.c2_xavier_fill(lateral_conv)
-                # weight_init.c2_xavier_fill(output_conv)
                 self.add_module('adapter_{}'.format(idx + 1), lateral_conv)
                 self.add_module('layer_{}'.format(idx + 1), output_conv)
 
@@ -128,13 +127,13 @@ class BasePixelDecoder(nn.Module):
                 stride=1,
                 padding=1,
             )
-            # weight_init.c2_xavier_fill(self.mask_features)
-
-        self.maskformer_num_feature_levels = 3  # always use 3 scales
+        self.maskformer_num_feature_levels = 3
 
 
-@MODELS.register_module(force=True)
-class TransformerEncoderPixelDecoder(BasePixelDecoder):
+# To prevent conflicts with TransformerEncoderPixelDecoder in mask2former,
+# we change the name to XTransformerEncoderPixelDecoder
+@MODELS.register_module()
+class XTransformerEncoderPixelDecoder(BasePixelDecoder):
 
     def __init__(
         self,
@@ -146,7 +145,6 @@ class TransformerEncoderPixelDecoder(BasePixelDecoder):
         transformer_pre_norm: bool = False,
         conv_dim: int = 512,
         mask_dim: int = 512,
-        mask_on: bool = True,
         norm: Optional[Union[str, Callable]] = 'GN',
     ):
 
@@ -155,14 +153,13 @@ class TransformerEncoderPixelDecoder(BasePixelDecoder):
             conv_dim=conv_dim,
             mask_dim=mask_dim,
             norm=norm,
-            mask_on=mask_on)
+            mask_on=True)
 
         self.in_features = ['res2', 'res3', 'res4', 'res5']
         feature_channels = in_channels
 
         in_channels = feature_channels[len(in_channels) - 1]
         self.input_proj = Conv2d(in_channels, conv_dim, kernel_size=1)
-        # weight_init.c2_xavier_fill(self.input_proj)
         self.transformer = TransformerEncoderOnly(
             d_model=conv_dim,
             dropout=transformer_dropout,
@@ -187,17 +184,16 @@ class TransformerEncoderPixelDecoder(BasePixelDecoder):
             norm=output_norm,
             activation=F.relu,
         )
-        # weight_init.c2_xavier_fill(output_conv)
         delattr(self, 'layer_{}'.format(len(self.in_features)))
         self.add_module('layer_{}'.format(len(self.in_features)), output_conv)
         self.output_convs[0] = output_conv
 
-    # 使用 transformer 图片特征的多尺度特征融合,类似于 transformer 版本的 FPN
     def forward(self, features):
         multi_scale_features = []
         num_cur_levels = 0
 
-        # Reverse feature maps into top-down order (from low to high resolution)
+        # Reverse feature maps into top-down order
+        # (from low to high resolution)
         for idx, f in enumerate(self.in_features[::-1]):
             x = features[f]
             lateral_conv = self.lateral_convs[idx]
@@ -207,8 +203,6 @@ class TransformerEncoderPixelDecoder(BasePixelDecoder):
                 pos = self.pe_layer(x)
                 transformer = self.transformer(transformer, None, pos)
                 y = output_conv(transformer)
-                # save intermediate feature as input to Transformer decoder
-                transformer_encoder_features = transformer
             else:
                 cur_fpn = lateral_conv(x)
                 # Following FPN implementation, we use nearest upsampling here
@@ -219,5 +213,5 @@ class TransformerEncoderPixelDecoder(BasePixelDecoder):
                 multi_scale_features.append(y)
                 num_cur_levels += 1
 
-        mask_features = self.mask_features(y) if self.mask_on else None
+        mask_features = self.mask_features(y)
         return mask_features, multi_scale_features

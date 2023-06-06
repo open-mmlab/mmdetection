@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
+from typing import List
 
 from mmengine import fileio
 
@@ -220,7 +221,7 @@ class ADE20KDataset(BaseSegDataset):
         super().__init__(
             img_suffix=img_suffix, seg_map_suffix=seg_map_suffix, **kwargs)
 
-    def load_data_list(self) -> list[dict]:
+    def load_data_list(self) -> List[dict]:
         """Load annotation from directory or annotation file.
 
         Returns:

@@ -6,10 +6,10 @@ from mmdet.registry import MODELS
 from .language_model import LanguageEncoder
 from .transformer_blocks import (MLP, Conv2d, CrossAttentionLayer, FFNLayer,
                                  PositionEmbeddingSine, SelfAttentionLayer)
+from .utils import is_lower_torch_version
 
 
 def vl_similarity(image_feat, text_feat, temperature=1):
-    # Only support single GPU for now.
     logits = torch.matmul(image_feat, text_feat.t())
     logits = temperature.exp().clamp(max=100) * logits
     return logits
@@ -37,8 +37,7 @@ class XDecoderTransformerDecoder(nn.Module):
         super().__init__()
 
         # positional encoding
-        N_steps = hidden_dim // 2
-        self.pe_layer = PositionEmbeddingSine(N_steps, normalize=True)
+        self.pe_layer = PositionEmbeddingSine(hidden_dim // 2, normalize=True)
 
         # define Transformer decoder here
         self.num_heads = nheads
@@ -81,7 +80,7 @@ class XDecoderTransformerDecoder(nn.Module):
         # learnable query p.e.
         self.query_embed = nn.Embedding(num_queries, hidden_dim)
 
-        # level embedding (we always use 3 scales)
+        # level embedding (always use 3 scales)
         self.num_feature_levels = 3
         self.level_embed = nn.Embedding(self.num_feature_levels, hidden_dim)
         self.input_proj = nn.ModuleList()
@@ -107,7 +106,8 @@ class XDecoderTransformerDecoder(nn.Module):
         self.captioning_step = captioning_step
 
         # register self_attn_mask to avoid information leakage,
-        # it includes interaction between object query, class query and caping query
+        # it includes interaction between object query, class query and
+        # caption query
         self_attn_mask = torch.zeros(
             (1, num_queries + contxt_len, num_queries + contxt_len)).bool()
         # object+class query does not attend with caption query.
@@ -123,9 +123,8 @@ class XDecoderTransformerDecoder(nn.Module):
 
     def forward(self, x, mask_features, extra=None):
         if self.task == 'caption':
-            return self._caption_forward(x, mask_features, extra)
+            return self.forward_caption(x, mask_features, extra)
 
-        # x is a list of multi-scale feature
         assert len(x) == self.num_feature_levels
         src = []
         pos = []
@@ -146,7 +145,6 @@ class XDecoderTransformerDecoder(nn.Module):
         query_embed = self.query_embed.weight.unsqueeze(1).repeat(1, bs, 1)
         output = self.query_feat.weight.unsqueeze(1).repeat(1, bs, 1)
 
-        predictions_class = []
         predictions_mask = []
         predictions_class_embed = []
 
@@ -166,13 +164,12 @@ class XDecoderTransformerDecoder(nn.Module):
                     output.shape[1] * self.num_heads, 1, 1)
             pad_tgt_mask[:, :self.num_queries, :self.
                          num_queries] = self_tgt_mask
-            pad_tgt_mask[:, self.num_queries:, self.
-                         num_queries:] = False  # grounding tokens could attend with eatch other
+            # grounding tokens could attend with eatch other
+            pad_tgt_mask[:, self.num_queries:, self.num_queries:] = False
             self_tgt_mask = pad_tgt_mask
             output = torch.cat((output, output[:-1]), dim=0)
-            query_embed = torch.cat(
-                (query_embed, query_embed[:-1]),
-                dim=0)  # also pad language embdding to fix embedding
+            # also pad language embdding to fix embedding
+            query_embed = torch.cat((query_embed, query_embed[:-1]), dim=0)
         else:
             self_tgt_mask = self.self_attn_mask[:, :self.num_queries, :self.
                                                 num_queries].repeat(
@@ -182,7 +179,6 @@ class XDecoderTransformerDecoder(nn.Module):
         results = self.forward_prediction_heads(
             output, mask_features, attn_mask_target_size=size_list[0])
         attn_mask = results['attn_mask']
-        predictions_class.append(results['outputs_class'])
         predictions_class_embed.append(results['class_embed'])
         predictions_mask.append(results['outputs_mask'])
 
@@ -196,8 +192,8 @@ class XDecoderTransformerDecoder(nn.Module):
                 output,
                 src[level_index],
                 memory_mask=attn_mask,
-                memory_key_padding_mask=
-                None,  # here we do not apply masking on padded region
+                # here we do not apply masking on padded region
+                memory_key_padding_mask=None,
                 pos=pos[level_index],
                 query_pos=query_embed)
 
@@ -224,20 +220,17 @@ class XDecoderTransformerDecoder(nn.Module):
                 attn_mask_target_size=size_list[(i + 1) %
                                                 self.num_feature_levels])
             attn_mask = results['attn_mask']
-            predictions_class.append(results['outputs_class'])
             predictions_mask.append(results['outputs_mask'])
             predictions_class_embed.append(results['class_embed'])
 
-        assert len(predictions_class) == self.num_layers + 1
         out = {
-            'pred_logits': predictions_class[-1],
             'pred_masks': predictions_mask[-1],
             'pred_class_embed': predictions_class_embed[-1],
         }
 
         if self.task == 'ref-semseg':
             mask_pred_results = []
-            for idx in range(mask_features.shape[0]):
+            for idx in range(mask_features.shape[0]):  # batch size
                 pred_gmasks = out['pred_masks'][idx, self.num_queries:2 *
                                                 self.num_queries - 1]
                 v_emb = predictions_class_embed[-1][idx, self.num_queries:2 *
@@ -260,9 +253,13 @@ class XDecoderTransformerDecoder(nn.Module):
             v_emb = v_emb / (v_emb.norm(dim=-1, keepdim=True) + 1e-7)
             logits = vl_similarity(v_emb, t_emb, temperature)
             out['pred_logits'] = logits
+        elif self.task in ['semseg', 'instance', 'panoptic']:
+            outputs_class = self.lang_encoder.compute_similarity(
+                out['pred_class_embed'])
+            out['pred_logits'] = outputs_class
         return out
 
-    def _caption_forward(self, x, mask_features, extra=None):
+    def forward_caption(self, x, mask_features, extra=None):
         assert len(x) == self.num_feature_levels
         src = []
         pos = []
@@ -283,22 +280,19 @@ class XDecoderTransformerDecoder(nn.Module):
         # QxNxC
         query_embed_ = self.query_embed.weight.unsqueeze(1).repeat(1, bs, 1)
         query_feat = self.query_feat.weight.unsqueeze(1).repeat(1, bs, 1)
-        caping_lang_token = extra['start_token'].repeat(bs, 1)
-        pos_embed_caping = self.pos_embed_caping.weight.unsqueeze(1).repeat(
-            1, bs, 1)
+        lang_token = extra['start_token'].repeat(bs, 1)
+        pos_embed = self.pos_embed_caping.weight.unsqueeze(1).repeat(1, bs, 1)
 
         # prepare token embedding for evaluation
         token_embs = self.lang_encoder.lang_encoder.token_embedding.weight
 
         for cap_idx in range(0, self.captioning_step):
-            caping_lang_embed = self.lang_encoder.forward_language_token(
-                (caping_lang_token, ))[0].transpose(0, 1)
-            output = torch.cat(
-                (query_feat, caping_lang_embed),
-                dim=0)  # concat object query, class token and caption token.
-            caping_lang_embed += pos_embed_caping
-            query_embed = torch.cat((query_embed_, caping_lang_embed),
-                                    dim=0)  # may not add at the beginning.
+            lang_embed = self.lang_encoder.forward_language(
+                (lang_token, ), with_cls_embed=False)[1].transpose(0, 1)
+            # concat object query, class token and caption token.
+            output = torch.cat((query_feat, lang_embed), dim=0)
+            lang_embed += pos_embed
+            query_embed = torch.cat((query_embed_, lang_embed), dim=0)
 
             # prediction heads on learnable query features
             results = self.forward_prediction_heads(
@@ -318,14 +312,16 @@ class XDecoderTransformerDecoder(nn.Module):
 
                 if 'grounding_mask' in extra:
                     bs, nq, wh = attn_mask.shape
-                    assert bs == self.num_heads, 'Only support single image referring captioning.'
-                    cap_mask = extra['grounding_mask']
+                    assert bs == self.num_heads, 'Only support single ' \
+                                                 'image referring captioning.'
+                    grounding_mask = extra['grounding_mask']
                     attn_mask = attn_mask.reshape(bs, nq, size_list[i % 3][0],
                                                   size_list[i % 3][1])
-                    cap_mask = F.interpolate(
-                        cap_mask.float(), size_list[i % 3],
+                    grounding_mask = F.interpolate(
+                        grounding_mask.float(),
+                        size_list[i % 3],
                         mode='nearest').bool()[0, 0]
-                    attn_mask[:, self.num_queries:, cap_mask] = True
+                    attn_mask[:, self.num_queries:, grounding_mask] = True
                     attn_mask = attn_mask.reshape(bs, nq, wh)
 
                 # attention: cross-attention first
@@ -333,8 +329,8 @@ class XDecoderTransformerDecoder(nn.Module):
                     output,
                     src[level_index],
                     memory_mask=attn_mask,
-                    memory_key_padding_mask=
-                    None,  # here we do not apply masking on padded region
+                    # here we do not apply masking on padded region
+                    memory_key_padding_mask=None,
                     pos=pos[level_index],
                     query_pos=query_embed)
 
@@ -344,7 +340,6 @@ class XDecoderTransformerDecoder(nn.Module):
                     tgt_key_padding_mask=None,
                     query_pos=query_embed)
 
-                # FFN
                 output = self.transformer_ffn_layers[i](output)
 
                 results = self.forward_prediction_heads(
@@ -354,13 +349,12 @@ class XDecoderTransformerDecoder(nn.Module):
                                                     self.num_feature_levels])
                 attn_mask = results['attn_mask']
 
-            pred_captions_gen = results['outputs_caption']
-            pred_captions_gen = pred_captions_gen @ token_embs.t()
-            caping_lang_token[:, cap_idx +
-                              1] = pred_captions_gen[:, cap_idx].max(-1)[1]
+            pred_captions = results['outputs_caption']
+            pred_captions = pred_captions @ token_embs.t()
+            lang_token[:, cap_idx + 1] = pred_captions[:, cap_idx].max(-1)[1]
 
         texts = self.lang_encoder.tokenizer.batch_decode(
-            caping_lang_token, skip_special_tokens=False)
+            lang_token, skip_special_tokens=False)
         texts_new = []
 
         for x in texts:
@@ -385,15 +379,14 @@ class XDecoderTransformerDecoder(nn.Module):
         # recompute class token output.
         norm_decoder_output = decoder_output / (
             decoder_output.norm(dim=-1, keepdim=True) + 1e-7)
-        obj_token = norm_decoder_output[:, :self.num_queries -
-                                        1]  # 101 个 query中，最后一个是 cls token，前面的100 个是 obj token
+        obj_token = norm_decoder_output[:, :self.num_queries - 1]
         cls_token = norm_decoder_output[:,
                                         self.num_queries - 1:self.num_queries]
 
         sim = (cls_token @ obj_token.transpose(
             1, 2)).softmax(-1)[:, 0, :, None]  # TODO include class token.
         cls_token = (sim * decoder_output[:, :self.num_queries - 1]).sum(
-            dim=1, keepdim=True)  # 1 1 512
+            dim=1, keepdim=True)
 
         if self.task == 'ref-semseg':
             decoder_output = torch.cat(
@@ -406,25 +399,26 @@ class XDecoderTransformerDecoder(nn.Module):
 
         mask_embed = self.mask_embed(decoder_output)
         outputs_mask = torch.einsum('bqc,bchw->bqhw', mask_embed,
-                                    mask_features)  # 1,101,h,w
+                                    mask_features)
 
-        # NOTE: prediction is of higher-resolution
-        # [B, Q, H, W] -> [B, Q, H*W] -> [B, h, Q, H*W] -> [B*h, Q, HW]
+        if is_lower_torch_version():
+            attn_mask = F.interpolate(
+                outputs_mask,
+                size=attn_mask_target_size,
+                mode='bicubic',
+                align_corners=False)
+        else:
+            attn_mask = F.interpolate(
+                outputs_mask,
+                size=attn_mask_target_size,
+                mode='bicubic',
+                align_corners=False,
+                antialias=True)
 
-        # pytorch1.7 没有 antialias 参数
-        attn_mask = F.interpolate(
-            outputs_mask,
-            size=attn_mask_target_size,
-            mode='bicubic',
-            align_corners=False,
-            antialias=True)
-        # must use bool type
-        # If a BoolTensor is provided, positions with ``True`` are not allowed to attend while ``False`` values will be unchanged.
         attn_mask = (attn_mask.sigmoid().flatten(2).unsqueeze(1).repeat(
             1, self.num_heads, 1, 1).flatten(0, 1) < 0.5).bool()
         attn_mask = attn_mask.detach()
 
-        # NOTE: fill False for cls token (JY)
         attn_mask[:, self.num_queries:self.num_queries + 1].fill_(False)
 
         if self.task == 'caption':
@@ -434,16 +428,8 @@ class XDecoderTransformerDecoder(nn.Module):
             }
             return results
         else:
-            # compute class, mask and bbox.
             class_embed = decoder_output @ self.class_embed
-            # HACK do not compute similarity if mask is not on
-            outputs_class = None
-            if self.task in ['semseg', 'instance', 'panoptic']:
-                outputs_class = self.lang_encoder.compute_similarity(
-                    class_embed, fake=False)
-
             results = {
-                'outputs_class': outputs_class,
                 'outputs_mask': outputs_mask,
                 'attn_mask': attn_mask,
                 'class_embed': class_embed,

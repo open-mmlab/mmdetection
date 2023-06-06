@@ -6,6 +6,8 @@ from mmcv.cnn.bricks import DropPath
 
 from mmdet.registry import MODELS
 
+# modified from https://github.com/microsoft/X-Decoder/blob/main/xdecoder/backbone/focal_dw.py # noqa
+
 
 @MODELS.register_module()
 class FocalNet(nn.Module):
@@ -53,12 +55,10 @@ class FocalNet(nn.Module):
 
         self.pos_drop = nn.Dropout(p=drop_rate)
 
-        # stochastic depth
         dpr = [
             x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))
-        ]  # stochastic depth decay rule
+        ]
 
-        # build layers
         self.layers = nn.ModuleList()
         for i_layer in range(self.num_layers):
             layer = BasicLayer(
@@ -83,7 +83,6 @@ class FocalNet(nn.Module):
 
         num_features = [int(embed_dim * 2**i) for i in range(self.num_layers)]
         self.num_features = num_features
-        # self.norm = norm_layer(num_features[-1])
 
         # add a norm layer for each output
         for i_layer in self.out_indices:
@@ -148,7 +147,6 @@ class FocalModulation(nn.Module):
         focal_level (int): Number of focal levels
         focal_window (int): Focal window size at focal level 1
         focal_factor (int, default=2): Step to increase the focal window
-        use_postln (bool, default=False): Whether use post-modulation layernorm
     """
 
     def __init__(self,
@@ -157,14 +155,12 @@ class FocalModulation(nn.Module):
                  focal_level=2,
                  focal_window=7,
                  focal_factor=2,
-                 use_postln=False,
                  use_postln_in_modulation=False,
                  scaling_modulator=False):
 
         super().__init__()
         self.dim = dim
 
-        # specific args for focalv3
         self.focal_level = focal_level
         self.focal_window = focal_window
         self.focal_factor = focal_factor
@@ -210,9 +206,9 @@ class FocalModulation(nn.Module):
         q, ctx, gates = torch.split(x, (C, C, self.focal_level + 1), 1)
 
         ctx_all = 0
-        for l in range(self.focal_level):
-            ctx = self.focal_layers[l](ctx)
-            ctx_all = ctx_all + ctx * gates[:, l:l + 1]
+        for level in range(self.focal_level):
+            ctx = self.focal_layers[level](ctx)
+            ctx_all = ctx_all + ctx * gates[:, level:level + 1]
         ctx_global = self.act(ctx.mean(2, keepdim=True).mean(3, keepdim=True))
         ctx_all = ctx_all + ctx_global * gates[:, self.focal_level:]
 
@@ -237,7 +233,8 @@ class FocalModulationBlock(nn.Module):
         drop (float, optional): Dropout rate. Default: 0.0
         drop_path (float, optional): Stochastic depth rate. Default: 0.0
         act_layer (nn.Module, optional): Activation layer. Default: nn.GELU
-        norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
+        norm_layer (nn.Module, optional): Normalization layer.
+            Default: nn.LayerNorm
         focal_level (int): number of focal levels
         focal_window (int): focal kernel size at level 1
     """
@@ -294,9 +291,9 @@ class FocalModulationBlock(nn.Module):
         self.gamma_2 = 1.0
         if self.use_layerscale:
             self.gamma_1 = nn.Parameter(
-                layerscale_value * torch.ones((dim)), requires_grad=True)
+                layerscale_value * torch.ones(dim), requires_grad=True)
             self.gamma_2 = nn.Parameter(
-                layerscale_value * torch.ones((dim)), requires_grad=True)
+                layerscale_value * torch.ones(dim), requires_grad=True)
 
     def forward(self, x):
         """Forward function.
@@ -343,15 +340,21 @@ class BasicLayer(nn.Module):
     Args:
         dim (int): Number of feature channels
         depth (int): Depths of this stage.
-        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim. Default: 4.
+        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
+            Default: 4.
         drop (float, optional): Dropout rate. Default: 0.0
-        drop_path (float | tuple[float], optional): Stochastic depth rate. Default: 0.0
-        norm_layer (nn.Module, optional): Normalization layer. Default: nn.LayerNorm
-        downsample (nn.Module | None, optional): Downsample layer at the end of the layer. Default: None
+        drop_path (float | tuple[float], optional): Stochastic depth rate.
+            Default: 0.0
+        norm_layer (nn.Module, optional): Normalization layer.
+            Default: nn.LayerNorm
+        downsample (nn.Module | None, optional): Downsample layer at the
+            end of the layer. Default: None
         focal_level (int): Number of focal levels
         focal_window (int): Focal window size at focal level 1
-        use_conv_embed (bool): Use overlapped convolution for patch embedding or now. Default: False
-        use_checkpoint (bool): Whether to use checkpointing to save memory. Default: False
+        use_conv_embed (bool): Use overlapped convolution for patch
+            embedding or now. Default: False
+        use_checkpoint (bool): Whether to use checkpointing to save memory.
+            Default: False
     """
 
     def __init__(
@@ -437,9 +440,12 @@ class PatchEmbed(nn.Module):
     Args:
         patch_size (int): Patch token size. Default: 4.
         in_chans (int): Number of input image channels. Default: 3.
-        embed_dim (int): Number of linear projection output channels. Default: 96.
-        norm_layer (nn.Module, optional): Normalization layer. Default: None
-        use_conv_embed (bool): Whether use overlapped convolution for patch embedding. Default: False
+        embed_dim (int): Number of linear projection output channels.
+            Default: 96.
+        norm_layer (nn.Module, optional): Normalization layer.
+            Default: None
+        use_conv_embed (bool): Whether use overlapped convolution for
+            patch embedding. Default: False
         is_stem (bool): Is the stem block or not.
     """
 
@@ -460,7 +466,8 @@ class PatchEmbed(nn.Module):
         self.use_pre_norm = use_pre_norm
 
         if use_conv_embed:
-            # if we choose to use conv embedding, then we treat the stem and non-stem differently
+            # if we choose to use conv embedding,
+            # then we treat the stem and non-stem differently
             if is_stem:
                 kernel_size = 7
                 padding = 3

@@ -7,7 +7,8 @@ from torch.nn import functional as F
 
 from mmdet.evaluation.functional import INSTANCE_OFFSET
 from mmdet.registry import MODELS
-from .utils import retry_if_cuda_oom, sem_seg_postprocess
+from .utils import (is_lower_torch_version, retry_if_cuda_oom,
+                    sem_seg_postprocess)
 
 
 @MODELS.register_module()
@@ -33,6 +34,8 @@ class XDecoderUnifiedhead(nn.Module):
 
         self.return_inter_mask = False
         if self.task == 'ref-caption':
+            # ref-caption = ref-semseg + caption,
+            # so we need to return the intermediate mask
             self.return_inter_mask = True
 
     def pre_process(self, batch_data_samples, device):
@@ -57,10 +60,10 @@ class XDecoderUnifiedhead(nn.Module):
             all_text_prompts = all_text_prompts[0]
 
             if self.task in ['semseg', 'instance', 'panoptic']:
-                self.predictor.lang_encoder.get_text_embeddings(
+                self.predictor.lang_encoder.get_mean_embeddings(
                     all_text_prompts + ['background'])
             elif self.task == 'ref-semseg':
-                token_info = self.predictor.lang_encoder.get_text_token_embeddings(
+                token_info = self.predictor.lang_encoder.get_text_embeddings(
                     all_text_prompts, norm=False)
                 token_emb = token_info['token_emb']
                 tokens = token_info['tokens']
@@ -68,14 +71,14 @@ class XDecoderUnifiedhead(nn.Module):
                 extra['grounding_tokens'] = query_emb[:, None]
                 extra['class_emb'] = token_info['class_emb']
             elif self.task == 'retrieval':
-                token_info = self.predictor.lang_encoder.get_text_token_embeddings(
+                token_info = self.predictor.lang_encoder.get_text_embeddings(
                     all_text_prompts, norm=True)
                 extra['class_emb'] = token_info['class_emb']
-
             return extra, all_text_prompts, stuff_text_prompts
         else:
             if not hasattr(self, 'start_token'):
-                self.start_token = torch.tensor([[49406] * 77], device=device)
+                self.start_token = self.predictor.lang_encoder.\
+                    get_sot_token(device=device)
             extra['start_token'] = self.start_token
             return extra, None, None
 
@@ -119,7 +122,7 @@ class XDecoderUnifiedhead(nn.Module):
                     image_size = img_metas['grounding_img_shape'][:2]
 
                     mask_pred_result = retry_if_cuda_oom(sem_seg_postprocess)(
-                        data_samples.pred_sem_seg.data.float(), image_size,
+                        data_samples.pred_sem_seg.sem_seg.float(), image_size,
                         height, width)
                     pred_sem_seg = retry_if_cuda_oom(self._semantic_inference)(
                         None, mask_pred_result, text_prompts)
@@ -127,13 +130,19 @@ class XDecoderUnifiedhead(nn.Module):
         elif self.task in ['semseg', 'instance', 'panoptic']:
             mask_pred_results = predictions['pred_masks']
             mask_cls_results = predictions['pred_logits']
-
-            mask_pred_results = F.interpolate(
-                mask_pred_results,
-                size=(batch_input_shape[-2], batch_input_shape[-1]),
-                mode='bicubic',
-                align_corners=False,
-                antialias=True)
+            if is_lower_torch_version():
+                mask_pred_results = F.interpolate(
+                    mask_pred_results,
+                    size=(batch_input_shape[-2], batch_input_shape[-1]),
+                    mode='bilinear',
+                    align_corners=False)
+            else:
+                mask_pred_results = F.interpolate(
+                    mask_pred_results,
+                    size=(batch_input_shape[-2], batch_input_shape[-1]),
+                    mode='bicubic',
+                    align_corners=False,
+                    antialias=True)
 
             # used for ref-caption
             if self.return_inter_mask:
@@ -143,9 +152,14 @@ class XDecoderUnifiedhead(nn.Module):
                 return batch_data_samples
 
             # for batch
-            for mask_cls_result, mask_pred_result, img_metas, data_samples in zip(
-                    mask_cls_results, mask_pred_results, batch_img_metas,
-                    batch_data_samples):
+            for mask_cls_result, \
+                    mask_pred_result, \
+                    img_metas, \
+                    data_samples in zip(
+                                        mask_cls_results,
+                                        mask_pred_results,
+                                        batch_img_metas,
+                                        batch_data_samples):
                 height = img_metas['ori_shape'][0]
                 width = img_metas['ori_shape'][1]
                 image_size = img_metas['img_shape'][:2]
@@ -180,13 +194,19 @@ class XDecoderUnifiedhead(nn.Module):
             mask_pred_results = predictions['pred_masks']
             for mask_pred_result, img_metas, data_samples in zip(
                     mask_pred_results, batch_img_metas, batch_data_samples):
-
-                mask_pred_result = F.interpolate(
-                    mask_pred_result[None, ],
-                    size=(batch_input_shape[-2], batch_input_shape[-1]),
-                    mode='bicubic',
-                    align_corners=False,
-                    antialias=True)[0]
+                if is_lower_torch_version():
+                    mask_pred_result = F.interpolate(
+                        mask_pred_result[None, ],
+                        size=(batch_input_shape[-2], batch_input_shape[-1]),
+                        mode='bilinear',
+                        align_corners=False)[0]
+                else:
+                    mask_pred_result = F.interpolate(
+                        mask_pred_result[None, ],
+                        size=(batch_input_shape[-2], batch_input_shape[-1]),
+                        mode='bicubic',
+                        align_corners=False,
+                        antialias=True)[0]
 
                 if self.return_inter_mask:
                     sem_seg = mask_pred_result > 0
@@ -287,10 +307,8 @@ class XDecoderUnifiedhead(nn.Module):
         current_segment_id = 1
 
         if cur_masks.shape[0] == 0:
-            # We didn't detect any mask :(
             pass
         else:
-            # take argmax
             cur_mask_ids = cur_prob_masks.argmax(0)
             stuff_memory_list = {}
             for k in range(cur_classes.shape[0]):
@@ -321,9 +339,9 @@ class XDecoderUnifiedhead(nn.Module):
                             })
                         continue
 
+                    # 0 is background
                     segment_id = int(
-                        pred_class
-                    ) + 1 + current_segment_id * INSTANCE_OFFSET  # 0 is background
+                        pred_class) + 1 + current_segment_id * INSTANCE_OFFSET
                     current_segment_id += 1
                     panoptic_seg[mask] = segment_id
                     label_names.append(
