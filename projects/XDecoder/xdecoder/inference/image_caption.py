@@ -27,8 +27,8 @@ def get_adaptive_scale(img_shape: Tuple[int, int],
 
     Args:
         img_shape (Tuple[int, int]): The shape of the canvas image.
-        min_size (int): The minimum scale. Defaults to 0.3.
-        max_size (int): The maximum scale. Defaults to 3.0.
+        min_scale (float): The minimum scale. Defaults to 0.3.
+        max_scale (float): The maximum scale. Defaults to 3.0.
 
     Returns:
         int: The adaptive scale.
@@ -189,8 +189,8 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
             no_save_pred: bool = True,
             out_dir: str = '',
             texts: Optional[Union[str, list]] = None,
-            stuff_texts: Optional[Union[str,
-                                        list]] = None,  # by open panoptic task
+            # by open panoptic task
+            stuff_texts: Optional[Union[str, list]] = None,
             custom_entities: bool = False,  # by GLIP
             **kwargs) -> dict:
         """Call the inferencer.
@@ -269,9 +269,9 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
 
             preds = self.forward(caption_data, **forward_kwargs)
 
-            # TODO: Not Robust
             if isinstance(ori_inputs, dict):
                 ori_inputs = ori_inputs['img_path']
+
             visualization = self.visualize(
                 ori_inputs,
                 preds,

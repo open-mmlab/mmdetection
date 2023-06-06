@@ -18,7 +18,6 @@ class LanguageEncoder(nn.Module):
         tokenizer='openai/clip-vit-base-patch32',
         dim_lang=512,
         dim_projection=512,
-        max_token_num=77,
     ):
         super().__init__()
 
@@ -27,48 +26,49 @@ class LanguageEncoder(nn.Module):
         self.tokenizer.add_special_tokens(
             {'cls_token': self.tokenizer.eos_token})
 
-        self.lang_encoder = Transformer()
+        max_token_num = self.tokenizer.model_max_length
+        self.lang_encoder = Transformer(max_token_num,
+                                        self.tokenizer.vocab_size, dim_lang)
 
         self.lang_proj = nn.Parameter(torch.empty(dim_lang, dim_projection))
         self.max_token_num = max_token_num
         self.logit_scale = nn.Parameter(torch.ones([]))
 
-    def get_mean_embeddings(self, class_names, name='default'):
-        with torch.no_grad():
+    @torch.no_grad()
+    def get_mean_embeds(self, class_names, name='default'):
 
-            def extract_mean_emb(txts):
-                tokens = self.tokenizer(
-                    txts,
-                    padding='max_length',
-                    truncation=True,
-                    max_length=self.max_token_num,
-                    return_tensors='pt')
-                clss_embedding, _ = self.forward_language(
-                    (tokens['input_ids'].cuda(),
-                     tokens['attention_mask'].cuda()),
-                    norm=True,
-                    with_token_embed=False)
-                clss_embedding = clss_embedding.mean(dim=0)
-                clss_embedding /= clss_embedding.norm()
-                return clss_embedding
+        def extract_mean_emb(txts):
+            tokens = self.tokenizer(
+                txts,
+                padding='max_length',
+                truncation=True,
+                max_length=self.max_token_num,
+                return_tensors='pt')
+            clss_embedding, _ = self.forward_language(
+                (tokens['input_ids'].cuda(), tokens['attention_mask'].cuda()),
+                norm=True,
+                with_token_embed=False)
+            clss_embedding = clss_embedding.mean(dim=0)
+            clss_embedding /= clss_embedding.norm()
+            return clss_embedding
 
-            templates = get_prompt_templates()
+        templates = get_prompt_templates()
 
-            clss_embeddings = []
-            for clss in class_names:
-                txts = [
-                    template.format(
-                        clss.replace('-other',
-                                     '').replace('-merged',
-                                                 '').replace('-stuff', ''))
-                    for template in templates
-                ]
-                clss_embeddings.append(extract_mean_emb(txts))
+        clss_embeddings = []
+        for clss in class_names:
+            txts = [
+                template.format(
+                    clss.replace('-other',
+                                 '').replace('-merged',
+                                             '').replace('-stuff', ''))
+                for template in templates
+            ]
+            clss_embeddings.append(extract_mean_emb(txts))
 
-            text_emb = torch.stack(clss_embeddings, dim=0)
-            setattr(self, '{}_text_embeddings'.format(name), text_emb)
+        text_emb = torch.stack(clss_embeddings, dim=0)
+        setattr(self, '{}_text_embeddings'.format(name), text_emb)
 
-    def get_text_embeddings(self, txts, name='grounding', norm=False):
+    def get_text_embeds(self, txts, name='grounding', norm=False):
         tokens = self.tokenizer(
             txts,
             padding='max_length',
@@ -129,9 +129,9 @@ class LanguageEncoder(nn.Module):
 class Transformer(nn.Module):
 
     def __init__(self,
-                 context_length: int = 77,
-                 vocab_size: int = 49408,
-                 width: int = 512,
+                 context_length,
+                 vocab_size,
+                 width,
                  layers: int = 12,
                  heads: int = 8,
                  drop_path: float = 0.0,

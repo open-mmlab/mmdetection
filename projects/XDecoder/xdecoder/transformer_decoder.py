@@ -24,25 +24,24 @@ class XDecoderTransformerDecoder(nn.Module):
         hidden_dim: int = 512,
         dim_proj: int = 512,
         num_queries: int = 101,
-        contxt_len: int = 77,
+        max_token_num: int = 77,
         nheads: int = 8,
         dim_feedforward: int = 2048,
-        dec_layers: int = 9,
+        decoder_layers: int = 9,
         pre_norm: bool = False,
         mask_dim: int = 512,
-        task='semseg',
+        task: str = 'semseg',
         captioning_step: int = 50,
-        enforce_input_project: bool = False,
     ):
         super().__init__()
 
         # positional encoding
         self.pe_layer = PositionEmbeddingSine(hidden_dim // 2, normalize=True)
 
-        # define Transformer decoder here
+        # define transformer decoder here
         self.num_heads = nheads
-        self.num_layers = dec_layers
-        self.contxt_len = contxt_len
+        self.num_layers = decoder_layers
+        self.max_token_num = max_token_num
         self.transformer_self_attention_layers = nn.ModuleList()
         self.transformer_cross_attention_layers = nn.ModuleList()
         self.transformer_ffn_layers = nn.ModuleList()
@@ -86,7 +85,7 @@ class XDecoderTransformerDecoder(nn.Module):
         self.input_proj = nn.ModuleList()
 
         for _ in range(self.num_feature_levels):
-            if in_channels != hidden_dim or enforce_input_project:
+            if in_channels != hidden_dim:
                 self.input_proj.append(
                     Conv2d(in_channels, hidden_dim, kernel_size=1))
             else:
@@ -102,19 +101,19 @@ class XDecoderTransformerDecoder(nn.Module):
 
         # for caption and ref-caption
         self.caping_embed = nn.Parameter(torch.empty(hidden_dim, dim_proj))
-        self.pos_embed_caping = nn.Embedding(contxt_len, hidden_dim)
+        self.pos_embed_caping = nn.Embedding(max_token_num, hidden_dim)
         self.captioning_step = captioning_step
 
         # register self_attn_mask to avoid information leakage,
         # it includes interaction between object query, class query and
         # caption query
-        self_attn_mask = torch.zeros(
-            (1, num_queries + contxt_len, num_queries + contxt_len)).bool()
+        self_attn_mask = torch.zeros((1, num_queries + max_token_num,
+                                      num_queries + max_token_num)).bool()
         # object+class query does not attend with caption query.
         self_attn_mask[:, :num_queries, num_queries:] = True
         # caption query only attend with previous token.
         self_attn_mask[:, num_queries:, num_queries:] = torch.triu(
-            torch.ones((1, contxt_len, contxt_len)), diagonal=1).bool()
+            torch.ones((1, max_token_num, max_token_num)), diagonal=1).bool()
         # object query does not attend with class query.
         self_attn_mask[:, :num_queries - 1, num_queries - 1:num_queries] = True
         # class query does not attend with object query.
@@ -305,7 +304,7 @@ class XDecoderTransformerDecoder(nn.Module):
                     attn_mask.sum(-1) == attn_mask.shape[-1])] = False
                 attn_mask = torch.cat(
                     (attn_mask,
-                     torch.zeros_like(attn_mask[:, :self.contxt_len, :])),
+                     torch.zeros_like(attn_mask[:, :self.max_token_num, :])),
                     dim=1)
                 self_tgt_mask = self.self_attn_mask.repeat(
                     output.shape[1] * self.num_heads, 1, 1)
@@ -383,8 +382,8 @@ class XDecoderTransformerDecoder(nn.Module):
         cls_token = norm_decoder_output[:,
                                         self.num_queries - 1:self.num_queries]
 
-        sim = (cls_token @ obj_token.transpose(
-            1, 2)).softmax(-1)[:, 0, :, None]  # TODO include class token.
+        sim = (cls_token @ obj_token.transpose(1, 2)).softmax(-1)[:, 0, :,
+                                                                  None]
         cls_token = (sim * decoder_output[:, :self.num_queries - 1]).sum(
             dim=1, keepdim=True)
 

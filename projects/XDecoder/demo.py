@@ -35,11 +35,6 @@ def parse_args():
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
-        '--pred-score-thr',
-        type=float,
-        default=0.5,
-        help='bbox score threshold')
-    parser.add_argument(
         '--show',
         action='store_true',
         help='Display the image in a popup window.')
@@ -53,6 +48,12 @@ def parse_args():
         choices=['ade20k', 'coco', 'voc', 'citys', 'random', 'none'],
         help='Color palette used for visualization')
 
+    # only for instance segmentation
+    parser.add_argument(
+        '--pred-score-thr',
+        type=float,
+        default=0.5,
+        help='bbox score threshold')
     # only for panoptic segmentation
     parser.add_argument(
         '--stuff-texts',
@@ -82,13 +83,10 @@ def main():
     if task != 'caption':
         assert call_args[
             'texts'] is not None, f'text prompts is required for {task}'
-        if task == 'region-retrieval':
-            assert call_args[
-                'ref_inputs'] is not None, f'ref inputs is required for {task}'
-        else:
-            if task != 'panoptic':
-                call_args.pop('stuff_texts')
+        if task != 'panoptic':
+            call_args.pop('stuff_texts')
     else:
+        call_args.pop('texts')
         call_args.pop('stuff_texts')
 
     inferencer(**call_args)

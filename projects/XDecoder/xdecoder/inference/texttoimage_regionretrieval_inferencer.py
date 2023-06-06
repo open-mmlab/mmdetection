@@ -109,8 +109,8 @@ class TextToImageRegionRetrievalInferencer(DetInferencer):
             no_save_pred: bool = True,
             out_dir: str = '',
             texts: Optional[Union[str, list]] = None,
-            stuff_texts: Optional[Union[str,
-                                        list]] = None,  # by open panoptic task
+            # by open panoptic task
+            stuff_texts: Optional[Union[str, list]] = None,
             custom_entities: bool = False,  # by GLIP
             **kwargs) -> dict:
         """Call the inferencer.
@@ -170,6 +170,8 @@ class TextToImageRegionRetrievalInferencer(DetInferencer):
             batch_size=batch_size,
             **preprocess_kwargs)
 
+        self.model.sem_seg_head._force_not_use_cache = True
+
         pred_scores = []
         for _, retrieval_data in track(inputs, description='Inference'):
             preds = self.forward(retrieval_data, **forward_kwargs)
@@ -195,9 +197,9 @@ class TextToImageRegionRetrievalInferencer(DetInferencer):
 
         ori_inputs, grounding_data = next(inputs)
 
-        # TODO: Not Robust
         if isinstance(ori_inputs, dict):
             ori_inputs = ori_inputs['img_path']
+
         preds = self.forward(grounding_data, **forward_kwargs)
 
         visualization = self.visualize(

@@ -15,7 +15,7 @@ from .utils import (is_lower_torch_version, retry_if_cuda_oom,
 class XDecoderUnifiedhead(nn.Module):
 
     def __init__(self,
-                 in_channels,
+                 in_channels: int,
                  pixel_decoder: nn.Module,
                  transformer_decoder: nn.Module,
                  task: str = 'semseg',
@@ -38,6 +38,11 @@ class XDecoderUnifiedhead(nn.Module):
             # so we need to return the intermediate mask
             self.return_inter_mask = True
 
+        self._all_text_prompts = None
+        self._extra = None
+        # TODO: Very trick, for retrieval task
+        self._force_not_use_cache = False
+
     def pre_process(self, batch_data_samples, device):
         extra = {}
         if self.task != 'caption':
@@ -59,25 +64,32 @@ class XDecoderUnifiedhead(nn.Module):
             # TODO: support batch
             all_text_prompts = all_text_prompts[0]
 
-            if self.task in ['semseg', 'instance', 'panoptic']:
-                self.predictor.lang_encoder.get_mean_embeddings(
-                    all_text_prompts + ['background'])
-            elif self.task == 'ref-semseg':
-                token_info = self.predictor.lang_encoder.get_text_embeddings(
-                    all_text_prompts, norm=False)
-                token_emb = token_info['token_emb']
-                tokens = token_info['tokens']
-                query_emb = token_emb[tokens['attention_mask'].bool()]
-                extra['grounding_tokens'] = query_emb[:, None]
-                extra['class_emb'] = token_info['class_emb']
-            elif self.task == 'retrieval':
-                token_info = self.predictor.lang_encoder.get_text_embeddings(
-                    all_text_prompts, norm=True)
-                extra['class_emb'] = token_info['class_emb']
-            return extra, all_text_prompts, stuff_text_prompts
+            if all_text_prompts != self._all_text_prompts \
+                    or self._force_not_use_cache:
+                # avoid redundant computation
+                self._all_text_prompts = all_text_prompts
+                if self.task in ['semseg', 'instance', 'panoptic']:
+                    self.predictor.lang_encoder.get_mean_embeds(
+                        all_text_prompts + ['background'])
+                elif self.task == 'ref-semseg':
+                    token_info = self.predictor.lang_encoder.get_text_embeds(
+                        all_text_prompts, norm=False)
+                    token_emb = token_info['token_emb']
+                    tokens = token_info['tokens']
+                    query_emb = token_emb[tokens['attention_mask'].bool()]
+                    extra['grounding_tokens'] = query_emb[:, None]
+                    extra['class_emb'] = token_info['class_emb']
+                elif self.task == 'retrieval':
+                    token_info = self.predictor.lang_encoder.get_text_embeds(
+                        all_text_prompts, norm=True)
+                    extra['class_emb'] = token_info['class_emb']
+                self._extra = extra
+                return extra, all_text_prompts, stuff_text_prompts
+            else:
+                return self._extra, all_text_prompts, stuff_text_prompts
         else:
             if not hasattr(self, 'start_token'):
-                self.start_token = self.predictor.lang_encoder.\
+                self.start_token = self.predictor.lang_encoder. \
                     get_sot_token(device=device)
             extra['start_token'] = self.start_token
             return extra, None, None
@@ -156,10 +168,10 @@ class XDecoderUnifiedhead(nn.Module):
                     mask_pred_result, \
                     img_metas, \
                     data_samples in zip(
-                                        mask_cls_results,
-                                        mask_pred_results,
-                                        batch_img_metas,
-                                        batch_data_samples):
+                                    mask_cls_results,
+                                    mask_pred_results,
+                                    batch_img_metas,
+                                    batch_data_samples):
                 height = img_metas['ori_shape'][0]
                 width = img_metas['ori_shape'][1]
                 image_size = img_metas['img_shape'][:2]
