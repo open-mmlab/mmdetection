@@ -1,10 +1,14 @@
 import os
+from collections import OrderedDict
 
 import torch
+from mmcv.cnn.bricks import DropPath
 from torch import nn
 from transformers import CLIPTokenizer
 
-from .prompt_engineering import get_prompt_templates, prompt_engineering
+from .utils import get_prompt_templates
+
+# modified from https://github.com/microsoft/X-Decoder/blob/main/xdecoder/language/vlpencoder.py # noqa
 
 
 class LanguageEncoder(nn.Module):
@@ -17,6 +21,7 @@ class LanguageEncoder(nn.Module):
         max_token_num=77,
     ):
         super().__init__()
+
         os.environ['TOKENIZERS_PARALLELISM'] = 'true'
         self.tokenizer = CLIPTokenizer.from_pretrained(tokenizer)
         self.tokenizer.add_special_tokens(
@@ -25,34 +30,28 @@ class LanguageEncoder(nn.Module):
         self.lang_encoder = Transformer()
 
         self.lang_proj = nn.Parameter(torch.empty(dim_lang, dim_projection))
-        # trunc_normal_(self.lang_proj, std=.02)
-
         self.max_token_num = max_token_num
         self.logit_scale = nn.Parameter(torch.ones([]))
 
-        # # captioning & retrieval
-        # for key, value in queue_operator.items():
-        #     self.register_buffer(key, value)
-
-    def get_text_embeddings(self, class_names, name='default'):
+    def get_mean_embeddings(self, class_names, name='default'):
         with torch.no_grad():
 
             def extract_mean_emb(txts):
-                tokens = self.tokenizer(  # CLIP tokenizer
+                tokens = self.tokenizer(
                     txts,
                     padding='max_length',
                     truncation=True,
                     max_length=self.max_token_num,
-                    return_tensors='pt')  # 每个文本会生成 81 条 prompt
-                clss_embedding = self.forward_language(
+                    return_tensors='pt')
+                clss_embedding, _ = self.forward_language(
                     (tokens['input_ids'].cuda(),
                      tokens['attention_mask'].cuda()),
-                    norm=True)  # 计算文本嵌入
-                clss_embedding = clss_embedding.mean(dim=0)  # 求平均，变成 512 维
+                    norm=True,
+                    with_token_embed=False)
+                clss_embedding = clss_embedding.mean(dim=0)
                 clss_embedding /= clss_embedding.norm()
                 return clss_embedding
 
-            # 用了 clip 的 集成模板
             templates = get_prompt_templates()
 
             clss_embeddings = []
@@ -66,11 +65,10 @@ class LanguageEncoder(nn.Module):
                 ]
                 clss_embeddings.append(extract_mean_emb(txts))
 
-            text_emb = torch.stack(
-                clss_embeddings, dim=0)  # 10, 512, 10 表示 输入的类别数，包括背景
+            text_emb = torch.stack(clss_embeddings, dim=0)
             setattr(self, '{}_text_embeddings'.format(name), text_emb)
 
-    def get_text_token_embeddings(self, txts, name='grounding', norm=False):
+    def get_text_embeddings(self, txts, name='grounding', norm=False):
         tokens = self.tokenizer(
             txts,
             padding='max_length',
@@ -78,7 +76,7 @@ class LanguageEncoder(nn.Module):
             max_length=self.max_token_num,
             return_tensors='pt')
         tokens = {key: value.cuda() for key, value in tokens.items()}
-        token_emb, class_emb = self.forward_language_token(
+        class_emb, token_emb = self.forward_language(
             (tokens['input_ids'], tokens['attention_mask']), norm=norm)
         ret = {
             'tokens': tokens,
@@ -88,42 +86,44 @@ class LanguageEncoder(nn.Module):
         setattr(self, '{}_token_embeddings'.format(name), ret)
         return ret
 
-    def forward_language(self, texts, norm=True):
-        x = self.lang_encoder(*texts)
-        x = x['last_hidden_state']  # 81,77,512
+    def get_sot_token(self, device):
+        # 49406: CLIP SOT token <|startoftext|>
+        # 77: CLIP context_length
+        return torch.tensor([[49406] * 77], device=device)
 
-        x = x[torch.arange(x.size(0)),
-              texts[0].argmax(dim=-1)]  # 取最后的 token 对应的输出，81,512
-
-        x = x @ self.lang_proj
-        if norm:
-            x = x / (x.norm(dim=-1, keepdim=True) + 1e-7)
-        return x
-
-    def forward_language_token(self, texts, norm=False):
-        x = self.lang_encoder(*texts)
-        token_x = x['last_hidden_state']
-
-        class_x = token_x[torch.arange(token_x.size(0)),
-                          texts[0].argmax(dim=-1)]
-
-        class_x = class_x @ self.lang_proj
-        token_x = token_x @ self.lang_proj
-
-        if norm:
-            class_x = class_x / (class_x.norm(dim=-1, keepdim=True) + 1e-7)
-            token_x = token_x / (token_x.norm(dim=-1, keepdim=True) + 1e-7)
-
-        return token_x, class_x
-
-    def compute_similarity(self, v_emb, name='default', fake=False):
-        if fake:
-            return None
+    def compute_similarity(self, v_emb, name='default'):
         v_emb = v_emb / (v_emb.norm(dim=-1, keepdim=True) + 1e-7)
         t_emb = getattr(self, '{}_text_embeddings'.format(name))
         output = self.logit_scale.exp() * v_emb @ t_emb.unsqueeze(0).transpose(
             1, 2)
         return output
+
+    def forward_language(self,
+                         texts,
+                         norm=False,
+                         with_token_embed=True,
+                         with_cls_embed=True):
+        x = self.lang_encoder(*texts)
+        hidden_x = x['last_hidden_state']
+
+        class_embed = None
+        if with_cls_embed:
+            class_embed = hidden_x[torch.arange(hidden_x.size(0)),
+                                   texts[0].argmax(dim=-1)]
+
+            class_embed = class_embed @ self.lang_proj
+            if norm:
+                class_embed = class_embed / (
+                    class_embed.norm(dim=-1, keepdim=True) + 1e-7)
+
+        hidden_embed = None
+        if with_token_embed:
+            hidden_embed = hidden_x @ self.lang_proj
+            if norm:
+                hidden_embed = hidden_embed / (
+                    hidden_embed.norm(dim=-1, keepdim=True) + 1e-7)
+
+        return class_embed, hidden_embed
 
 
 class Transformer(nn.Module):
@@ -157,33 +157,22 @@ class Transformer(nn.Module):
 
         self.ln_final = LayerNorm(width)
 
-        # trunc_normal_(self.positional_embedding, std=.02)
-        # trunc_normal_(self.token_embedding.weight, std=.02)
-        # self.apply(self._init_weights)
-
     @property
     def dim_out(self):
         return self.width
 
     def build_attention_mask(self):
-        # lazily create causal attention mask, with full attention between the vision tokens
+        # lazily create causal attention mask,
+        # with full attention between the vision tokens
         # pytorch uses additive attention mask; fill with -inf
         mask = torch.empty(self.context_length, self.context_length)
         mask.fill_(float('-inf'))
         mask.triu_(1)  # zero out the lower diagonal
         return mask
 
-    @torch.jit.ignore
-    def no_weight_decay(self):
-        return {
-            'positional_embedding',
-            'token_embedding',
-        }
-
     def forward(self, input_ids, attention_mask=None):
         key_padding_mask = (attention_mask == 0) if (
             not self.autogressive and attention_mask is not None) else None
-        # key_padding_mask = (input_ids == 0) if not self.autogressive else None
         x = self.token_embedding(input_ids)  # [batch_size, n_ctx, d_model]
         x = x + self.positional_embedding
         x = x.permute(1, 0, 2)  # NLD -> LND
@@ -213,11 +202,6 @@ class LayerNorm(nn.Module):
         s = (x - u).pow(2).mean(-1, keepdim=True)
         x = (x - u) / torch.sqrt(s + self.variance_epsilon)
         return self.weight * x.to(pdtype) + self.bias
-
-
-from collections import OrderedDict
-
-from mmcv.cnn.bricks import DropPath
 
 
 class QuickGELU(nn.Module):
