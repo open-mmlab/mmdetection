@@ -170,6 +170,8 @@ class TextToImageRegionRetrievalInferencer(DetInferencer):
             batch_size=batch_size,
             **preprocess_kwargs)
 
+        self.model.sem_seg_head._force_not_use_cache = True
+
         pred_scores = []
         for _, retrieval_data in track(inputs, description='Inference'):
             preds = self.forward(retrieval_data, **forward_kwargs)

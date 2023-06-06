@@ -35,7 +35,7 @@ class LanguageEncoder(nn.Module):
         self.logit_scale = nn.Parameter(torch.ones([]))
 
     @torch.no_grad()
-    def get_mean_embeddings(self, class_names, name='default'):
+    def get_mean_embeds(self, class_names, name='default'):
 
         def extract_mean_emb(txts):
             tokens = self.tokenizer(
@@ -68,7 +68,7 @@ class LanguageEncoder(nn.Module):
         text_emb = torch.stack(clss_embeddings, dim=0)
         setattr(self, '{}_text_embeddings'.format(name), text_emb)
 
-    def get_text_embeddings(self, txts, name='grounding', norm=False):
+    def get_text_embeds(self, txts, name='grounding', norm=False):
         tokens = self.tokenizer(
             txts,
             padding='max_length',
