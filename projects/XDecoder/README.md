@@ -20,9 +20,13 @@ Prepare your dataset according to the [docs](https://mmsegmentation.readthedocs.
 
 **Test Command**
 
+Since semantic segmentation is a pixel-level task, we don't need to use a threshold to filter out low-confidence predictions. So we set `model.test_cfg.use_thr_for_mc=False` in the test command.
+
+````shell
+
 ```shell
-./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_semseg.py xdecoder_focalt_best_openseg.pt 8
-```
+./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_semseg.py xdecoder_focalt_best_openseg.pt 8 --cfg-options model.test_cfg.use_thr_for_mc=False
+````
 
 | Model                               | mIoU  |                       Config                       |                                            Download                                             |
 | :---------------------------------- | :---: | :------------------------------------------------: | :---------------------------------------------------------------------------------------------: |
