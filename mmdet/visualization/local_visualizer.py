@@ -255,18 +255,11 @@ class DetLocalVisualizer(Visualizer):
 
         if 'label_names' in panoptic_seg:
             # open set panoptic segmentation
-            label_names = panoptic_seg.metainfo['label_names']
+            classes = panoptic_seg.metainfo['label_names']
             ids = np.unique(panoptic_seg_data)
-            if {0: 'background'} in label_names:
-                label_names.remove({0: 'background'})
-                # 0 = background
-                ids = ids[ids != 0]
-                label_names_values = []
-                for id in ids:
-                    for name in label_names:
-                        if id in name.keys():
-                            label_names_values.append(name[id])
-                            break
+            # for VOID label
+            bg_index = panoptic_seg.metainfo.get('bg_index', 255)
+            ids = ids[ids != bg_index]
         else:
             ids = np.unique(panoptic_seg_data)[::-1]
             legal_indices = ids != num_classes  # for VOID label
@@ -305,10 +298,7 @@ class DetLocalVisualizer(Visualizer):
         text_colors = [text_palette[label] for label in labels]
 
         for i, (pos, label) in enumerate(zip(positions, labels)):
-            if 'label_names' in panoptic_seg:
-                label_text = label_names_values[i]
-            else:
-                label_text = classes[label]
+            label_text = classes[label]
 
             self.draw_texts(
                 label_text,
@@ -352,20 +342,21 @@ class DetLocalVisualizer(Visualizer):
 
         # 0 ~ num_class, the value 0 means background
         ids = np.unique(sem_seg_data)
-        ids = ids[ids != 0]
 
         if 'label_names' in sem_seg:
             # open set semseg
             label_names = sem_seg.metainfo['label_names']
+            bg_index = sem_seg.metainfo.get('bg_index', 255)
+            ids = ids[ids != bg_index]
 
-        labels = np.array(ids, dtype=np.int64) - 1
+        labels = np.array(ids, dtype=np.int64)
         colors = [palette[label] for label in labels]
 
         self.set_image(image)
 
         # draw semantic masks
         for i, (label, color) in enumerate(zip(labels, colors)):
-            masks = sem_seg_data == (label + 1)
+            masks = sem_seg_data == label
             self.draw_binary_masks(masks, colors=[color], alphas=self.alpha)
             if 'label_names' in sem_seg:
                 label_text = label_names[label]
