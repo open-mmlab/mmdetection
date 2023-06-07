@@ -10,6 +10,18 @@ We present X-Decoder, a generalized decoding model that can predict pixel-level 
 
 ![img](https://raw.githubusercontent.com/microsoft/X-Decoder/main/images/teaser_new.png)
 
+## Installation
+
+```shell
+# if source
+pip install -r requirements/multimodal.txt
+
+# if wheel
+mim install mmdet[multimodal]
+```
+
+## How to use it?
+
 ## Models and results
 
 ### Semantic segmentation on ADE20K
@@ -22,12 +34,30 @@ Prepare your dataset according to the [docs](https://mmsegmentation.readthedocs.
 
 Since semantic segmentation is a pixel-level task, we don't need to use a threshold to filter out low-confidence predictions. So we set `model.test_cfg.use_thr_for_mc=False` in the test command.
 
-````shell
-
 ```shell
 ./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_semseg.py xdecoder_focalt_best_openseg.pt 8 --cfg-options model.test_cfg.use_thr_for_mc=False
-````
+```
 
 | Model                               | mIoU  |                       Config                       |                                            Download                                             |
 | :---------------------------------- | :---: | :------------------------------------------------: | :---------------------------------------------------------------------------------------------: |
 | `xdecoder_focalt_best_openseg.pt`\* | 25.13 | [config](configs/xdecoder-tiny_zeroshot_semseg.py) | [model](https://huggingface.co/xdecoder/X-Decoder/resolve/main/xdecoder_focalt_best_openseg.pt) |
+
+### Instance segmentation on COCO2017
+
+```shell
+./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py xdecoder_focalt_last_novg.pt 8
+```
+
+| Model                                               | mAP  |                                Config                                |                                            Download                                             |
+| :-------------------------------------------------- | :--: | :------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* | 39.7 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) | [model](https://huggingface.co/xdecoder/X-Decoder/resolve/main/xdecoder_focalt_best_openseg.pt) |
+
+### Image Caption on COCO2014
+
+```shell
+./tools/dist_test.sh projects/XDecoder/configs/xdecoder-tiny_zeroshot_caption_coco2014.py xdecoder_focalt_last_novg.pt 8
+```
+
+| Model                                       | BLEU-4 | CIDER  |                            Config                            |                                           Download                                           |
+| :------------------------------------------ | :----: | :----: | :----------------------------------------------------------: | :------------------------------------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_caption_coco2014`\* | 35.14  | 116.62 | [config](configs/xdecoder-tiny_zeroshot_caption_coco2014.py) | [model](https://huggingface.co/xdecoder/X-Decoder/resolve/main/xdecoder_focalt_last_novg.pt) |

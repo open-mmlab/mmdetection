@@ -1,4 +1,5 @@
 import copy
+from typing import Sequence
 
 import torch
 from mmengine.structures import InstanceData, PixelData
@@ -48,23 +49,28 @@ class XDecoderUnifiedhead(nn.Module):
         if self.task != 'caption':
             # have text
             all_text_prompts = []
-            stuff_text_prompts = []
+            num_thing_class = 0
             for data_samples in batch_data_samples:
                 if isinstance(data_samples.text, str):
                     text = data_samples.text.split('.')
-                elif isinstance(data_samples.text, list):
+                elif isinstance(data_samples.text, Sequence):
                     text = data_samples.text
                 else:
                     raise TypeError(
-                        'Type pf data_sample.text must be list or str')
+                        'Type pf data_sample.text must be sequence or str')
                 text = list(filter(lambda x: len(x) > 0, text))
                 all_text_prompts.append(text)
-
+                num_thing_class = len(text)
                 # for panoptic
                 if 'stuff_text' in data_samples:
-                    text = data_samples.stuff_text.split('.')
+                    if isinstance(data_samples.stuff_text, str):
+                        text = data_samples.stuff_text.split('.')
+                    elif isinstance(data_samples.stuff_text, Sequence):
+                        text = data_samples.stuff_text
+                    else:
+                        raise TypeError('Type pf data_sample.stuff_text '
+                                        'must be sequence or str')
                     text = list(filter(lambda x: len(x) > 0, text))
-                    stuff_text_prompts.append(text)
                     all_text_prompts[-1].extend(text)
 
             # TODO: support batch
@@ -90,9 +96,9 @@ class XDecoderUnifiedhead(nn.Module):
                         all_text_prompts, norm=True)
                     extra['class_emb'] = token_info['class_emb']
                 self._extra = extra
-                return extra, all_text_prompts, stuff_text_prompts
+                return extra, all_text_prompts, num_thing_class
             else:
-                return self._extra, all_text_prompts, stuff_text_prompts
+                return self._extra, all_text_prompts, num_thing_class
         else:
             if not hasattr(self, 'start_token'):
                 self.start_token = self.predictor.lang_encoder. \
@@ -105,7 +111,7 @@ class XDecoderUnifiedhead(nn.Module):
         mask_features, multi_scale_features = self.pixel_decoder(features)
 
         # pre process
-        extra, all_text_prompts, stuff_text_prompts = self.pre_process(
+        extra, all_text_prompts, num_thing_class = self.pre_process(
             batch_data_samples, mask_features.device)
 
         # transformer decoder forward
@@ -114,10 +120,10 @@ class XDecoderUnifiedhead(nn.Module):
 
         # post process
         return self.post_process(predictions, batch_data_samples,
-                                 all_text_prompts, stuff_text_prompts)
+                                 all_text_prompts, num_thing_class)
 
     def post_process(self, predictions, batch_data_samples, all_text_prompts,
-                     stuff_text_prompts):
+                     num_thing_class):
         batch_img_metas = [
             data_samples.metainfo for data_samples in batch_data_samples
         ]
@@ -152,7 +158,7 @@ class XDecoderUnifiedhead(nn.Module):
                 mask_pred_results = F.interpolate(
                     mask_pred_results,
                     size=(batch_input_shape[-2], batch_input_shape[-1]),
-                    mode='bilinear',
+                    mode='bicubic',
                     align_corners=False)
             else:
                 mask_pred_results = F.interpolate(
@@ -196,17 +202,11 @@ class XDecoderUnifiedhead(nn.Module):
                                                   all_text_prompts)
                     data_samples.pred_instances = pred_instances
                 elif self.task == 'panoptic':
-                    # TODO: support batch
-                    stuff_text_prompts = stuff_text_prompts[0]
-                    thing_text_prompts = [
-                        x for x in all_text_prompts
-                        if x not in stuff_text_prompts
-                    ]
                     pred_panoptic_seg = retry_if_cuda_oom(
                         self._panoptic_inference)(mask_cls_result,
                                                   mask_pred_result,
-                                                  thing_text_prompts,
-                                                  stuff_text_prompts)
+                                                  all_text_prompts,
+                                                  num_thing_class)
                     data_samples.pred_panoptic_seg = pred_panoptic_seg
         elif self.task == 'ref-semseg':
             mask_pred_results = predictions['pred_masks']
@@ -216,7 +216,7 @@ class XDecoderUnifiedhead(nn.Module):
                     mask_pred_result = F.interpolate(
                         mask_pred_result[None, ],
                         size=(batch_input_shape[-2], batch_input_shape[-1]),
-                        mode='bilinear',
+                        mode='bicubic',
                         align_corners=False)[0]
                 else:
                     mask_pred_result = F.interpolate(
@@ -273,6 +273,7 @@ class XDecoderUnifiedhead(nn.Module):
         result.label_names = [
             text_prompts[label] for label in labels_per_image
         ]
+        result.bboxes = result.scores.new_zeros(len(result.scores), 4)
         return result
 
     def _semantic_inference(self, mask_cls, mask_pred, text_prompts):
@@ -284,32 +285,39 @@ class XDecoderUnifiedhead(nn.Module):
             sem_seg = torch.einsum('qc,qhw->chw', mask_cls, mask_pred)
 
         if sem_seg.shape[0] == 1:
-            sem_seg = sem_seg.squeeze(0) > self.test_cfg.mask_thr
-            # the value 0 means background, 1 means foreground
+            # 0 is foreground, bg_index is background
+            sem_seg = (sem_seg.squeeze(0) <= self.test_cfg.mask_thr).int()
+            sem_seg[sem_seg == 1] = self.test_cfg.get('bg_index', 255)
             label_names = text_prompts  # for visualization
         else:
-            # 0 ~ num_class, the value 0 means background
+            # 0 is foreground, bg_index is background
             if self.test_cfg.use_thr_for_mc:
                 foreground_flag = sem_seg > self.test_cfg.mask_thr
-                sem_seg = sem_seg.max(0)[1] + 1
+                sem_seg = sem_seg.max(0)[1]
                 label_names = [
-                    text_prompts[id] for id in torch.unique(sem_seg) - 1
+                    text_prompts[id] for id in torch.unique(sem_seg)
                 ]
-                sem_seg[foreground_flag.sum(0) == 0] = 0
+                sem_seg[foreground_flag.sum(0) == 0] = self.test_cfg.get(
+                    'bg_index', 255)
             else:
-                sem_seg = sem_seg.max(0)[1] + 1
+                sem_seg = sem_seg.max(0)[1]
                 label_names = [
-                    text_prompts[id] for id in torch.unique(sem_seg) - 1
+                    text_prompts[id] for id in torch.unique(sem_seg)
                 ]
         pred_sem_seg = PixelData(
-            sem_seg=sem_seg, metainfo={'label_names': label_names})
+            sem_seg=sem_seg,
+            metainfo={
+                'label_names': label_names,
+                'bg_index': self.test_cfg.get('bg_index', 255)
+            })
         return pred_sem_seg
 
-    def _panoptic_inference(self, mask_cls, mask_pred, thing_text, stuff_text):
+    def _panoptic_inference(self, mask_cls, mask_pred, all_text_prompts,
+                            num_thing_class):
         scores, labels = F.softmax(mask_cls, dim=-1).max(-1)
         mask_pred = mask_pred.sigmoid()
 
-        keep = labels.ne(len(thing_text) + len(stuff_text)) & (
+        keep = labels.ne(len(all_text_prompts)) & (
             scores > self.test_cfg.mask_thr)
         cur_scores = scores[keep]
         cur_classes = labels[keep]
@@ -317,21 +325,17 @@ class XDecoderUnifiedhead(nn.Module):
         cur_prob_masks = cur_scores.view(-1, 1, 1) * cur_masks
 
         h, w = cur_masks.shape[-2:]
-        panoptic_seg = torch.zeros((h, w),
-                                   dtype=torch.int32,
-                                   device=cur_masks.device)
-        label_names = []
+        panoptic_seg = torch.full((h, w),
+                                  self.test_cfg.get('bg_index', 255),
+                                  dtype=torch.int32,
+                                  device=cur_masks.device)
+        instance_id = 1
 
-        current_segment_id = 1
-
-        if cur_masks.shape[0] == 0:
-            pass
-        else:
+        if cur_masks.shape[0] > 0:
             cur_mask_ids = cur_prob_masks.argmax(0)
-            stuff_memory_list = {}
             for k in range(cur_classes.shape[0]):
                 pred_class = cur_classes[k].item()
-                isthing = int(pred_class) < len(thing_text)
+                isthing = int(pred_class) < num_thing_class
                 mask_area = (cur_mask_ids == k).sum().item()
                 original_area = (cur_masks[k] >= 0.5).sum().item()
                 mask = (cur_mask_ids == k) & (cur_masks[k] >= 0.5)
@@ -340,33 +344,18 @@ class XDecoderUnifiedhead(nn.Module):
                 ) > 0:
                     if mask_area / original_area < self.test_cfg.overlap_thr:
                         continue
-
                     # merge stuff regions
                     if not isthing:
-                        if int(pred_class) in stuff_memory_list.keys():
-                            panoptic_seg[mask] = stuff_memory_list[int(
-                                pred_class)]
-                        else:
-                            stuff_memory_list[int(pred_class)] = int(
-                                pred_class)
-                            panoptic_seg[mask] = int(
-                                pred_class) + 1  # 0 is background
-                            label_names.append({
-                                int(pred_class) + 1:
-                                stuff_text[int(pred_class) - len(thing_text)]
-                            })
-                        continue
+                        panoptic_seg[mask] = int(pred_class)
+                    else:
+                        panoptic_seg[mask] = int(
+                            pred_class) + instance_id * INSTANCE_OFFSET
+                        instance_id += 1
 
-                    # 0 is background
-                    segment_id = int(
-                        pred_class) + 1 + current_segment_id * INSTANCE_OFFSET
-                    current_segment_id += 1
-                    panoptic_seg[mask] = segment_id
-                    label_names.append(
-                        {segment_id: thing_text[int(pred_class)]})
-
-            label_names.insert(0, {0: 'background'})
-            panoptic_seg = PixelData(
-                sem_seg=panoptic_seg.int(),
-                metainfo={'label_names': label_names})
-            return panoptic_seg
+        panoptic_seg = PixelData(
+            sem_seg=panoptic_seg.int(),
+            metainfo={
+                'label_names': all_text_prompts,
+                'bg_index': self.test_cfg.get('bg_index', 255)
+            })
+        return panoptic_seg

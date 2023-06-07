@@ -122,7 +122,7 @@ def sem_seg_postprocess(result, img_size, output_height, output_width):
         result = F.interpolate(
             result,
             size=(output_height, output_width),
-            mode='bilinear',
+            mode='bicubic',
             align_corners=False,
             antialias=True)[0]
     return result

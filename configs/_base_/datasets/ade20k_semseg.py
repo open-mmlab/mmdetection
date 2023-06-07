@@ -1,14 +1,32 @@
 dataset_type = 'ADE20KSemsegDataset'
 data_root = 'data/ade/ADEChallengeData2016'
 
+# Example to use different file client
+# Method 1: simply set the data root and let the file I/O module
+# automatically infer from prefix (not support LMDB and Memcache yet)
+
+# data_root = 's3://openmmlab/datasets/detection/coco/'
+
+# Method 2: Use `backend_args`, `file_client_args` in versions before 3.0.0rc6
+# backend_args = dict(
+#     backend='petrel',
+#     path_mapping=dict({
+#         './data/': 's3://openmmlab/datasets/detection/',
+#         'data/': 's3://openmmlab/datasets/detection/'
+#     }))
+backend_args = None
+
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='Resize', scale=(2048, 512), keep_ratio=True),
-    dict(type='LoadSemSegAnnotations'),
+    dict(
+        type='LoadAnnotations',
+        with_bbox=False,
+        with_mask=False,
+        with_seg=True),
     dict(
         type='PackDetInputs',
-        meta_keys=('img_path', 'ori_shape', 'img_shape', 'seg_map_path', 'img',
-                   'gt_seg_map', 'text'))
+        meta_keys=('img_path', 'ori_shape', 'img_shape', 'text'))
 ]
 
 val_dataloader = dict(

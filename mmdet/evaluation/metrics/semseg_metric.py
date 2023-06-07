@@ -153,16 +153,13 @@ class SemSegMetric(BaseMetric):
             torch.Tensor: The ground truth histogram on all classes.
         """
         assert pred_label.shape == label.shape
-        # 0 is background
-        mask = label != 0
-        pred_label = pred_label * mask
         intersect = pred_label[pred_label == label]
         area_intersect = torch.histc(
-            intersect.float(), bins=(num_classes), min=1, max=num_classes)
+            intersect.float(), bins=num_classes, min=0, max=num_classes-1)
         area_pred_label = torch.histc(
-            pred_label.float(), bins=(num_classes), min=1, max=num_classes)
+            pred_label.float(), bins=num_classes, min=0, max=num_classes-1)
         area_label = torch.histc(
-            label.float(), bins=(num_classes), min=1, max=num_classes)
+            label.float(), bins=num_classes, min=0, max=num_classes-1)
         area_union = area_pred_label + area_label - area_intersect
         result = dict(
             area_intersect=area_intersect,
