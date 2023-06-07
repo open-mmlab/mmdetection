@@ -355,7 +355,7 @@ class XDecoderUnifiedhead(nn.Module):
                         panoptic_seg[mask] = int(pred_class) + 1
                         label_names.append({
                             int(pred_class) + 1:
-                                stuff_text[int(pred_class) - len(thing_text)]
+                            stuff_text[int(pred_class) - len(thing_text)]
                         })
 
                         # if int(pred_class) in stuff_memory_list.keys():
@@ -373,7 +373,8 @@ class XDecoderUnifiedhead(nn.Module):
                     else:
                         # 0 is background
                         segment_id = int(
-                            pred_class) + 1 + current_segment_id * INSTANCE_OFFSET
+                            pred_class
+                        ) + 1 + current_segment_id * INSTANCE_OFFSET
                         current_segment_id += 1
                         panoptic_seg[mask] = segment_id
                         label_names.append(
