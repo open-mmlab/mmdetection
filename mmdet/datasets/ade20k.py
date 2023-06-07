@@ -137,7 +137,7 @@ class ADE20KPanopticDataset(CocoPanopticDataset):
 
 
 @DATASETS.register_module()
-class ADE20KDataset(BaseSegDataset):
+class ADE20KSemsegDataset(BaseSegDataset):
     """ADE20K dataset.
 
     In segmentation map annotation for ADE20K, 0 stands for background, which

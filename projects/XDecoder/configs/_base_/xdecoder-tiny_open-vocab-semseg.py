@@ -15,11 +15,14 @@ model = dict(
     head=dict(
         type='XDecoderUnifiedhead',
         in_channels=(96, 192, 384, 768),
-        task='semseg',
         pixel_decoder=dict(type='XTransformerEncoderPixelDecoder'),
         transformer_decoder=dict(type='XDecoderTransformerDecoder'),
+        task='semseg',
     ),
-    test_cfg=dict(mask_thr=0.5, use_thr_for_mc=True)  # mc means multi-class
+    # use_thr_for_mc=True means use threshold for multi-class
+    # This parameter is only used in semantic segmentation task and
+    # referring semantic segmentation task.
+    test_cfg=dict(mask_thr=0.5, use_thr_for_mc=True),
 )
 
 val_cfg = dict(type='ValLoop')

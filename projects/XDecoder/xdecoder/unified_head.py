@@ -50,7 +50,13 @@ class XDecoderUnifiedhead(nn.Module):
             all_text_prompts = []
             stuff_text_prompts = []
             for data_samples in batch_data_samples:
-                text = data_samples.text.split('.')
+                if isinstance(data_samples.text, str):
+                    text = data_samples.text.split('.')
+                elif isinstance(data_samples.text, list):
+                    text = data_samples.text
+                else:
+                    raise TypeError(
+                        'Type pf data_sample.text must be list or str')
                 text = list(filter(lambda x: len(x) > 0, text))
                 all_text_prompts.append(text)
 
