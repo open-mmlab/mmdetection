@@ -1,6 +1,5 @@
 _base_ = [
-    '_base_/xdecoder-tiny_zeroshot_caption.py',
-    'mmdet:_base_/datasets/coco_caption.py'
+    '_base_/xdecoder-tiny_caption.py', 'mmdet:_base_/datasets/coco_caption.py'
 ]
 
 test_pipeline = [
@@ -23,6 +22,3 @@ test_pipeline = [
 
 val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
 test_dataloader = val_dataloader
-
-val_cfg = dict(type='ValLoop')
-test_cfg = dict(type='TestLoop')

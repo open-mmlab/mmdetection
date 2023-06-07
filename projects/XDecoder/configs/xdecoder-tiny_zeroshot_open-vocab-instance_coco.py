@@ -1,6 +1,7 @@
-_base_ = 'xdecoder-tiny_zeroshot_open-vocab-semseg.py'
-
-model = dict(head=dict(task='instance'), test_cfg=dict(max_per_img=100))
+_base_ = [
+    '_base_/xdecoder-tiny_open-vocab-instance.py',
+    'mmdet:_base_/datasets/coco_instance.py'
+]
 
 test_pipeline = [
     dict(
