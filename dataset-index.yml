@@ -1,0 +1,5 @@
+voc2007:
+  dataset: PASCAL_VOC2007
+  download_root: data
+  data_root: data/VOCdevkit
+  script: tools/dataset_converters/scripts/preprocess_voc2007.sh
