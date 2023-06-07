@@ -63,7 +63,7 @@ class COCOCaptionMetric(BaseMetric):
             result = dict()
 
             result['caption'] = data_sample['pred_caption']
-            result['image_id'] = data_sample['img_id']
+            result['image_id'] = int(data_sample['img_id'])
 
             # Save the result to `self.results`.
             self.results.append(result)
