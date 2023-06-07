@@ -1,11 +1,13 @@
 _base_ = [
-    'mmdet::_base_/default_runtime.py',
     '_base_/xdecoder-tiny_open-vocab-semseg.py',
     'mmdet::_base_/datasets/ade20k_semseg.py'
 ]
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', imdecode_backend='pillow'),
+    dict(
+        type='LoadImageFromFile',
+        imdecode_backend='pillow',
+        backend_args=_base_.backend_args),
     dict(
         type='FixScaleResize',
         scale=640,
@@ -13,11 +15,14 @@ test_pipeline = [
         short_side_mode=True,
         backend='pillow',
         interpolation='bicubic'),
-    dict(type='LoadSemSegAnnotations'),
+    dict(
+        type='LoadAnnotations',
+        with_bbox=False,
+        with_mask=False,
+        with_seg=True),
     dict(
         type='PackDetInputs',
-        meta_keys=('img_path', 'ori_shape', 'img_shape', 'seg_map_path', 'img',
-                   'gt_seg_map', 'text'))
+        meta_keys=('img_path', 'ori_shape', 'img_shape', 'text'))
 ]
 
 x_decoder_ade20k_classes = (

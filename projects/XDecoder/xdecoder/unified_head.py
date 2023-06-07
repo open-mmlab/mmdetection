@@ -1,5 +1,6 @@
 import copy
 from typing import Sequence
+
 import torch
 from mmengine.structures import InstanceData, PixelData
 from torch import nn
@@ -67,9 +68,8 @@ class XDecoderUnifiedhead(nn.Module):
                     elif isinstance(data_samples.stuff_text, Sequence):
                         text = data_samples.stuff_text
                     else:
-                        raise TypeError(
-                            'Type pf data_sample.stuff_text must be sequence or str'
-                        )
+                        raise TypeError('Type pf data_sample.stuff_text '
+                                        'must be sequence or str')
                     text = list(filter(lambda x: len(x) > 0, text))
                     stuff_text_prompts.append(text)
                     all_text_prompts[-1].extend(text)
