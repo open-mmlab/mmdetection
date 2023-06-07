@@ -159,7 +159,7 @@ class XDecoderUnifiedhead(nn.Module):
                 mask_pred_results = F.interpolate(
                     mask_pred_results,
                     size=(batch_input_shape[-2], batch_input_shape[-1]),
-                    mode='bilinear',
+                    mode='bicubic',
                     align_corners=False)
             else:
                 mask_pred_results = F.interpolate(
@@ -223,7 +223,7 @@ class XDecoderUnifiedhead(nn.Module):
                     mask_pred_result = F.interpolate(
                         mask_pred_result[None, ],
                         size=(batch_input_shape[-2], batch_input_shape[-1]),
-                        mode='bilinear',
+                        mode='bicubic',
                         align_corners=False)[0]
                 else:
                     mask_pred_result = F.interpolate(
@@ -351,27 +351,33 @@ class XDecoderUnifiedhead(nn.Module):
 
                     # merge stuff regions
                     if not isthing:
-                        if int(pred_class) in stuff_memory_list.keys():
-                            panoptic_seg[mask] = stuff_memory_list[int(
-                                pred_class)]
-                        else:
-                            stuff_memory_list[int(pred_class)] = int(
-                                pred_class)
-                            panoptic_seg[mask] = int(
-                                pred_class) + 1  # 0 is background
-                            label_names.append({
-                                int(pred_class) + 1:
+                        # 0 is background
+                        panoptic_seg[mask] = int(pred_class) + 1
+                        label_names.append({
+                            int(pred_class) + 1:
                                 stuff_text[int(pred_class) - len(thing_text)]
-                            })
-                        continue
+                        })
 
-                    # 0 is background
-                    segment_id = int(
-                        pred_class) + 1 + current_segment_id * INSTANCE_OFFSET
-                    current_segment_id += 1
-                    panoptic_seg[mask] = segment_id
-                    label_names.append(
-                        {segment_id: thing_text[int(pred_class)]})
+                        # if int(pred_class) in stuff_memory_list.keys():
+                        #     panoptic_seg[mask] = stuff_memory_list[int(
+                        #         pred_class)]
+                        # else:
+                        #     stuff_memory_list[int(pred_class)] = int(
+                        #         pred_class)
+                        #     panoptic_seg[mask] = int(
+                        #         pred_class) + 1  # 0 is background
+                        #     label_names.append({
+                        #         int(pred_class) + 1:
+                        #         stuff_text[int(pred_class) - len(thing_text)]
+                        #     })
+                    else:
+                        # 0 is background
+                        segment_id = int(
+                            pred_class) + 1 + current_segment_id * INSTANCE_OFFSET
+                        current_segment_id += 1
+                        panoptic_seg[mask] = segment_id
+                        label_names.append(
+                            {segment_id: thing_text[int(pred_class)]})
 
             label_names.insert(0, {0: 'background'})
             panoptic_seg = PixelData(
