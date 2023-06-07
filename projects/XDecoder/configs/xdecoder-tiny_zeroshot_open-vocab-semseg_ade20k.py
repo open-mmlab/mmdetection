@@ -1,6 +1,8 @@
-_base_ = ['mmdet::_base_/default_runtime.py', '_base_/xdecoder-tiny.py']
-
-backend_args = None
+_base_ = [
+    'mmdet::_base_/default_runtime.py',
+    '_base_/xdecoder-tiny_open-vocab-semseg.py',
+    'mmdet::_base_/datasets/ade20k_semseg.py'
+]
 
 test_pipeline = [
     dict(type='LoadImageFromFile', imdecode_backend='pillow'),
@@ -17,9 +19,6 @@ test_pipeline = [
         meta_keys=('img_path', 'ori_shape', 'img_shape', 'seg_map_path', 'img',
                    'gt_seg_map', 'text'))
 ]
-
-dataset_type = 'ADE20KDataset'
-data_root = 'data/ade/ADEChallengeData2016'
 
 x_decoder_ade20k_classes = (
     'wall', 'building', 'sky', 'floor', 'tree', 'ceiling', 'road', 'bed',
@@ -46,18 +45,10 @@ x_decoder_ade20k_classes = (
     'bulletin board', 'shower', 'radiator', 'glass', 'clock', 'flag')
 
 val_dataloader = dict(
-    batch_size=1,
-    num_workers=4,
-    persistent_workers=True,
-    sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
         metainfo=dict(classes=x_decoder_ade20k_classes),
-        data_prefix=dict(
-            img_path='images/validation',
-            seg_map_path='annotations/validation'),
         return_classes=True,
+        use_label_map=False,
         pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
