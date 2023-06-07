@@ -26,3 +26,4 @@ model = dict(
 )
 
 val_cfg = dict(type='ValLoop')
+test_cfg = dict(type='TestLoop')
