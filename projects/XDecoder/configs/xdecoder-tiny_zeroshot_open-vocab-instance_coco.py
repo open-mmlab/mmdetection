@@ -21,8 +21,11 @@ test_pipeline = [
                    'scale_factor', 'text'))
 ]
 
-val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+val_dataloader = dict(
+    dataset=dict(pipeline=test_pipeline, return_classes=True))
 test_dataloader = val_dataloader
 
 val_evaluator = dict(metric='segm')
 test_evaluator = val_evaluator
+
+train_dataloader = None

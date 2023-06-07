@@ -62,7 +62,14 @@ class XDecoderUnifiedhead(nn.Module):
 
                 # for panoptic
                 if 'stuff_text' in data_samples:
-                    text = data_samples.stuff_text.split('.')
+                    if isinstance(data_samples.stuff_text, str):
+                        text = data_samples.stuff_text.split('.')
+                    elif isinstance(data_samples.stuff_text, list):
+                        text = data_samples.stuff_text
+                    else:
+                        raise TypeError(
+                            'Type pf data_sample.stuff_text must be list or str'
+                        )
                     text = list(filter(lambda x: len(x) > 0, text))
                     stuff_text_prompts.append(text)
                     all_text_prompts[-1].extend(text)

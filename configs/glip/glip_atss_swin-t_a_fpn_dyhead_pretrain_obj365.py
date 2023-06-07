@@ -86,5 +86,5 @@ test_pipeline = [
 ]
 
 val_dataloader = dict(
-    dataset=dict(pipeline=test_pipeline, return_caption=True))
+    dataset=dict(pipeline=test_pipeline, return_classes=True))
 test_dataloader = val_dataloader
