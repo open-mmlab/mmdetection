@@ -1,6 +1,6 @@
 _base_ = [
     '_base_/xdecoder-tiny_open-vocab-instance.py',
-    'mmdet:_base_/datasets/coco_instance.py'
+    'mmdet::_base_/datasets/coco_instance.py'
 ]
 
 test_pipeline = [

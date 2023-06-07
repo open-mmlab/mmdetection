@@ -1,6 +1,6 @@
 _base_ = [
     '_base_/xdecoder-tiny_open-vocab-panoptic.py',
-    'mmdet:_base_/datasets/coco_panoptic.py'
+    'mmdet::_base_/datasets/coco_panoptic.py'
 ]
 
 test_pipeline = [
