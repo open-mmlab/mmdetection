@@ -1,5 +1,5 @@
 _base_ = [
-    '_base_/xdecoder-tiny_caption.py', 'mmdet:_base_/datasets/coco_caption.py'
+    '_base_/xdecoder-tiny_caption.py', 'mmdet::_base_/datasets/coco_caption.py'
 ]
 
 test_pipeline = [
