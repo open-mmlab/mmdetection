@@ -1,3 +1,5 @@
+_base_ = 'mmdet::_base_/default_runtime.py'
+
 custom_imports = dict(
     imports=['projects.XDecoder.xdecoder'], allow_failed_imports=False)
 
@@ -22,3 +24,5 @@ model = dict(
     # referring semantic segmentation task.
     test_cfg=dict(mask_thr=0.5, use_thr_for_mc=True),
 )
+
+val_cfg = dict(type='ValLoop')
