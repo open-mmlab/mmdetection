@@ -14,4 +14,4 @@ coco2017:
   dataset: COCO_2017
   download_root: data
   data_root: data/coco
-  script: tools/dataset_converters/scripts/preprocess_voc2012.sh
+  script: tools/dataset_converters/scripts/preprocess_coco2017.sh
