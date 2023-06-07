@@ -267,6 +267,7 @@ class XDecoderUnifiedhead(nn.Module):
         result.label_names = [
             text_prompts[label] for label in labels_per_image
         ]
+        result.bboxes = result.scores.new_zeros(len(result.scores), 4)
         return result
 
     def _semantic_inference(self, mask_cls, mask_pred, text_prompts):
