@@ -202,7 +202,7 @@ def parse_args():
         description=\
         'Convert COCO Stuff 164k annotations to mmsegmentation format')  # noqa
     parser.add_argument('coco_path', help='coco stuff path')
-    parser.add_argument('out_dir_name', default='stuffthingmaps_semseg',help='output path')
+    parser.add_argument('--out-dir-name', '-o', default='stuffthingmaps_semseg', help='output path')
     parser.add_argument(
         '--nproc', default=16, type=int, help='number of process')
     args = parser.parse_args()
