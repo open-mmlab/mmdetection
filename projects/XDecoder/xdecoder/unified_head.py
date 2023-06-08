@@ -278,7 +278,7 @@ class XDecoderUnifiedhead(nn.Module):
 
     def _semantic_inference(self, mask_cls, mask_pred, text_prompts):
         if mask_cls is None:
-            sem_seg = mask_pred
+            sem_seg = mask_pred.sigmoid()
         else:
             mask_cls = F.softmax(mask_cls, dim=-1)[..., :-1]
             mask_pred = mask_pred.sigmoid()
