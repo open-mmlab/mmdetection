@@ -10,9 +10,7 @@ test_pipeline = [
         type='LoadAnnotations',
         with_bbox=False,
         with_label=False,
-        with_seg=True,
-        seg_reduce_indexes=[0, 12, 26, 29, 30, 45, 66, 68, 69, 71, 83, 91],
-        ignore_index=255),
+        with_seg=True),
     dict(
         type='PackDetInputs',
         meta_keys=('img_path', 'ori_shape', 'img_shape',

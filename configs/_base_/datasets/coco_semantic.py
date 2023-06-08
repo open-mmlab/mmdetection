@@ -23,9 +23,7 @@ train_pipeline = [
         type='LoadAnnotations',
         with_bbox=False,
         with_label=False,
-        with_seg=True,
-        seg_reduce_indexes=[0, 12, 26, 29, 30, 45, 66, 68, 69, 71, 83, 91],
-        ignore_index=255),
+        with_seg=True),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
@@ -38,9 +36,7 @@ test_pipeline = [
         type='LoadAnnotations',
         with_bbox=False,
         with_label=False,
-        with_seg=True,
-        seg_reduce_indexes=[0, 12, 26, 29, 30, 45, 66, 68, 69, 71, 83, 91],
-        ignore_index=255),
+        with_seg=True),
     dict(
         type='PackDetInputs',
         meta_keys=('img_path', 'ori_shape', 'img_shape', 'scale_factor'))
@@ -57,7 +53,7 @@ train_dataloader = dict(
         data_root=data_root,
         data_prefix=dict(
             img_path='train2017/',
-            seg_map_path='stuffthingmaps/train2017/'),
+            seg_map_path='stuffthingmaps_semseg/train2017/'),
         pipeline=train_pipeline))
 
 val_dataloader = dict(
@@ -71,7 +67,7 @@ val_dataloader = dict(
         data_root=data_root,
         data_prefix=dict(
             img_path='val2017/',
-            seg_map_path='stuffthingmaps/val2017/'),
+            seg_map_path='stuffthingmaps_semseg/val2017/'),
         pipeline=test_pipeline))
 
 test_dataloader = val_dataloader
