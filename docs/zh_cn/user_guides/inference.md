@@ -185,3 +185,81 @@ python demo/video_gpuaccel_demo.py demo/demo.mp4 \
     checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
     --nvdecode --out result.mp4
 ```
+
+## 多模态算法的推理和验证
+
+随着多模态视觉算法的不断完善，MMDetection 也完成了对这类算法的支持。这一个 section 我们通过 GLIP 算法和模型来演示如何使用对应多模态算法的 demo 和 eval 脚本。
+
+### 模型准备
+
+MMDetection 已经提供了模型转换脚本，所以对应 GLIP 算法模型，我们可以直接下载官方的预训练版本进行转换使用，具体操作如下：
+
+```shell
+cd mmdetection
+wget https://penzhanwu2bbs.blob.core.windows.net/data/GLIPv1_Open/models/glip_a_tiny_o365.pth
+
+python tools/model_converters/glip_to_mmdet.py --src glip_a_tiny_o365.pth --dst glip_tiny_mmdet.pth
+```
+
+### 推理演示
+
+在成功获得转换为 MMDetection 格式的模型后我们就可以利用多模态推理脚本完成 demo ：
+
+```shell
+python demo/multimodal_demo.py demo/demo.jpg bench configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_mmdet.pth
+```
+
+demo 效果如下图所示：
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/17425982/234548156-ef9bbc2e-7605-4867-abe6-048b8578893d.png" height="300"/>
+</div>
+
+如果想进行多种类型的识别，需要使用 `"xx . xx ."` 的格式声明目标:
+
+```shell
+python demo/multimodal_demo.py demo/demo.jpg "bench . car . " configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_mmdet.pth
+```
+
+结果如下图所示：
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/17425982/234548490-d2e0a16d-1aad-4708-aea0-c829634fabbd.png" height="300"/>
+</div>
+
+### 验证演示
+
+MMDetection 支持后的 GLIP 算法对比官方版本没有精度上的损失， benchmark 如下所示：
+
+| Model                   | official mAP | mmdet mAP |
+| ----------------------- | :----------: | :-------: |
+| glip_A_Swin_T_O365.yaml |     42.9     |   43.0    |
+| glip_Swin_T_O365.yaml   |     44.9     |   44.9    |
+| glip_Swin_L.yaml        |     51.4     |   51.3    |
+
+用户可以使用 test 脚本对模型精度进行验证，使用如下所示：
+
+```shell
+# 1 gpu
+python tools/test.py configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_mmdet.pth
+
+# 8 GPU
+./tools/dist_test.sh configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_mmdet.pth 8
+```
+
+验证结果大致如下：
+
+```shell
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.428
+Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=1000 ] = 0.594
+Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=1000 ] = 0.466
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.300
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.477
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.534
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.634
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=300 ] = 0.634
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=1000 ] = 0.634
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.473
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.690
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.789
+```
