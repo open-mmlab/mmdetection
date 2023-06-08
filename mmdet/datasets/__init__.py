@@ -25,6 +25,7 @@ from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
 from .youtube_vis_dataset import YouTubeVISDataset
+from .coco_semantic import CocoSegDaset
 
 __all__ = [
     'XMLDataset', 'CocoDataset', 'DeepFashionDataset', 'VOCDataset',
@@ -37,5 +38,5 @@ __all__ = [
     'BaseVideoDataset', 'MOTChallengeDataset', 'TrackImgSampler',
     'ReIDDataset', 'YouTubeVISDataset', 'TrackAspectRatioBatchSampler',
     'ADE20KPanopticDataset', 'COCOCaptionDataset', 'RefCOCODataset',
-    'BaseSegDataset', 'ADE20KSemsegDataset'
+    'BaseSegDataset', 'ADE20KSemsegDataset', 'CocoSegDaset'
 ]

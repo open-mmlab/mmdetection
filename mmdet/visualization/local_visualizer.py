@@ -258,8 +258,8 @@ class DetLocalVisualizer(Visualizer):
             classes = panoptic_seg.metainfo['label_names']
             ids = np.unique(panoptic_seg_data)
             # for VOID label
-            bg_index = panoptic_seg.metainfo.get('bg_index', 255)
-            ids = ids[ids != bg_index]
+            ignore_index = panoptic_seg.metainfo.get('ignore_index', 255)
+            ids = ids[ids != ignore_index]
         else:
             ids = np.unique(panoptic_seg_data)[::-1]
             legal_indices = ids != num_classes  # for VOID label
@@ -346,8 +346,8 @@ class DetLocalVisualizer(Visualizer):
         if 'label_names' in sem_seg:
             # open set semseg
             label_names = sem_seg.metainfo['label_names']
-            bg_index = sem_seg.metainfo.get('bg_index', 255)
-            ids = ids[ids != bg_index]
+            ignore_index = sem_seg.metainfo.get('ignore_index', 255)
+            ids = ids[ids != ignore_index]
 
         labels = np.array(ids, dtype=np.int64)
         colors = [palette[label] for label in labels]

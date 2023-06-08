@@ -241,7 +241,6 @@ class ADE20KSemsegDataset(BaseSegDataset):
                 seg_map = img.replace(self.img_suffix, self.seg_map_suffix)
                 data_info['seg_map_path'] = osp.join(ann_dir, seg_map)
             data_info['label_map'] = self.label_map
-            data_info['seg_fields'] = []
             if self.return_classes:
                 data_info['text'] = list(self._metainfo['classes'])
             data_list.append(data_info)

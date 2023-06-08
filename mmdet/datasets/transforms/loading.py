@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, Sequence
 
 import mmcv
 import numpy as np
@@ -254,13 +254,22 @@ class LoadAnnotations(MMCV_LoadAnnotations):
                  with_mask: bool = False,
                  poly2mask: bool = True,
                  box_type: str = 'hbox',
-                 reduce_zero_label: bool = False,
+                 # use for semseg
+                 seg_reduce_indexes: Optional[Union[Sequence, int]] = None,
+                 ignore_index: Optional[int] = None,  # use for semseg
                  **kwargs) -> None:
         super(LoadAnnotations, self).__init__(**kwargs)
         self.with_mask = with_mask
         self.poly2mask = poly2mask
         self.box_type = box_type
-        self.reduce_zero_label = reduce_zero_label
+
+        self.ignore_index = ignore_index
+        self.seg_reduce_indexes = None
+        if isinstance(seg_reduce_indexes, int):
+            seg_reduce_indexes = [seg_reduce_indexes]
+        if seg_reduce_indexes:
+            assert ignore_index is not None
+            self.seg_reduce_indexes = np.array(seg_reduce_indexes)
 
     def _load_bboxes(self, results: dict) -> None:
         """Private function to load bounding box annotations.
@@ -404,11 +413,15 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             img_bytes, flag='unchanged',
             backend=self.imdecode_backend).squeeze()
 
-        if self.reduce_zero_label:
-            # avoid using underflow conversion
-            gt_semantic_seg[gt_semantic_seg == 0] = 255
-            gt_semantic_seg = gt_semantic_seg - 1
-            gt_semantic_seg[gt_semantic_seg == 254] = 255
+        if self.seg_reduce_indexes is not None:
+            mask = np.isin(gt_semantic_seg, self.seg_reduce_indexes)
+            gt_semantic_seg[mask] = self.ignore_index
+
+            ids = np.unique(gt_semantic_seg)
+            ids = np.sort(ids)
+            d = np.arange(len(ids) - 1)
+            for b_, d_ in zip(ids[:-1], d):
+                gt_semantic_seg[gt_semantic_seg == b_] = d_
 
         # modify if custom classes
         if results.get('label_map', None) is not None:
@@ -698,7 +711,7 @@ class LoadProposals(BaseTransform):
 
     def __repr__(self):
         return self.__class__.__name__ + \
-               f'(num_max_proposals={self.num_max_proposals})'
+            f'(num_max_proposals={self.num_max_proposals})'
 
 
 @TRANSFORMS.register_module()
@@ -788,8 +801,8 @@ class FilterAnnotations(BaseTransform):
 
     def __repr__(self):
         return self.__class__.__name__ + \
-               f'(min_gt_bbox_wh={self.min_gt_bbox_wh}, ' \
-               f'keep_empty={self.keep_empty})'
+            f'(min_gt_bbox_wh={self.min_gt_bbox_wh}, ' \
+            f'keep_empty={self.keep_empty})'
 
 
 @TRANSFORMS.register_module()
@@ -839,9 +852,9 @@ class LoadEmptyAnnotations(BaseTransform):
         """
         if self.with_bbox:
             results['gt_bboxes'] = np.zeros((0, 4), dtype=np.float32)
-            results['gt_ignore_flags'] = np.zeros((0, ), dtype=bool)
+            results['gt_ignore_flags'] = np.zeros((0,), dtype=bool)
         if self.with_label:
-            results['gt_bboxes_labels'] = np.zeros((0, ), dtype=np.int64)
+            results['gt_bboxes_labels'] = np.zeros((0,), dtype=np.int64)
         if self.with_mask:
             # TODO: support PolygonMasks
             h, w = results['img_shape']
