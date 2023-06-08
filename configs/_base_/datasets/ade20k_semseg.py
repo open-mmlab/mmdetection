@@ -23,7 +23,8 @@ test_pipeline = [
         type='LoadAnnotations',
         with_bbox=False,
         with_mask=False,
-        with_seg=True),
+        with_seg=True,
+        reduce_zero_label=True),
     dict(
         type='PackDetInputs',
         meta_keys=('img_path', 'ori_shape', 'img_shape', 'text'))
