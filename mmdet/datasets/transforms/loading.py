@@ -239,6 +239,9 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         poly2mask (bool): Whether to convert mask to bitmap. Default: True.
         box_type (str): The box type used to wrap the bboxes. If ``box_type``
             is None, gt_bboxes will keep being np.ndarray. Defaults to 'hbox'.
+        reduce_zero_label (bool): Whether reduce all label value
+            by 1. Usually used for datasets where 0 is background label.
+            Defaults to False.
         imdecode_backend (str): The image decoding backend type. The backend
             argument for :func:``mmcv.imfrombytes``.
             See :fun:``mmcv.imfrombytes`` for details.
@@ -251,11 +254,13 @@ class LoadAnnotations(MMCV_LoadAnnotations):
                  with_mask: bool = False,
                  poly2mask: bool = True,
                  box_type: str = 'hbox',
+                 reduce_zero_label: bool = False,
                  **kwargs) -> None:
         super(LoadAnnotations, self).__init__(**kwargs)
         self.with_mask = with_mask
         self.poly2mask = poly2mask
         self.box_type = box_type
+        self.reduce_zero_label = reduce_zero_label
 
     def _load_bboxes(self, results: dict) -> None:
         """Private function to load bounding box annotations.
@@ -398,6 +403,12 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         gt_semantic_seg = mmcv.imfrombytes(
             img_bytes, flag='unchanged',
             backend=self.imdecode_backend).squeeze()
+
+        if self.reduce_zero_label:
+            # avoid using underflow conversion
+            gt_semantic_seg[gt_semantic_seg == 0] = 255
+            gt_semantic_seg = gt_semantic_seg - 1
+            gt_semantic_seg[gt_semantic_seg == 254] = 255
 
         # modify if custom classes
         if results.get('label_map', None) is not None:

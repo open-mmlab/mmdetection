@@ -288,26 +288,19 @@ class XDecoderUnifiedhead(nn.Module):
             # 0 is foreground, bg_index is background
             sem_seg = (sem_seg.squeeze(0) <= self.test_cfg.mask_thr).int()
             sem_seg[sem_seg == 1] = self.test_cfg.get('bg_index', 255)
-            label_names = text_prompts  # for visualization
         else:
             # 0 is foreground, bg_index is background
             if self.test_cfg.use_thr_for_mc:
                 foreground_flag = sem_seg > self.test_cfg.mask_thr
                 sem_seg = sem_seg.max(0)[1]
-                label_names = [
-                    text_prompts[id] for id in torch.unique(sem_seg)
-                ]
                 sem_seg[foreground_flag.sum(0) == 0] = self.test_cfg.get(
                     'bg_index', 255)
             else:
                 sem_seg = sem_seg.max(0)[1]
-                label_names = [
-                    text_prompts[id] for id in torch.unique(sem_seg)
-                ]
         pred_sem_seg = PixelData(
             sem_seg=sem_seg,
             metainfo={
-                'label_names': label_names,
+                'label_names': text_prompts,
                 'bg_index': self.test_cfg.get('bg_index', 255)
             })
         return pred_sem_seg
