@@ -377,10 +377,10 @@ class DetLocalVisualizer(Visualizer):
                     font_sizes=int(13 * scales),
                     horizontal_alignments='center',
                     bboxes=[{
-                            'facecolor': 'black',
-                            'alpha': 0.8,
-                            'pad': 0.7,
-                            'edgecolor': 'none'
+                        'facecolor': 'black',
+                        'alpha': 0.8,
+                        'pad': 0.7,
+                        'edgecolor': 'none'
                     }])
 
         return self.get_image()

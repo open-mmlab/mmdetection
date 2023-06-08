@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional, Tuple, Union, Sequence
+from typing import Optional, Tuple, Union
 
 import mmcv
 import numpy as np
@@ -250,14 +250,15 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             corresponding backend. Defaults to None.
     """
 
-    def __init__(self,
-                 with_mask: bool = False,
-                 poly2mask: bool = True,
-                 box_type: str = 'hbox',
-                 # use for semseg
-                 reduce_zero_label: bool = False,
-                 ignore_index: int = 255,
-                 **kwargs) -> None:
+    def __init__(
+            self,
+            with_mask: bool = False,
+            poly2mask: bool = True,
+            box_type: str = 'hbox',
+            # use for semseg
+            reduce_zero_label: bool = False,
+            ignore_index: int = 255,
+            **kwargs) -> None:
         super(LoadAnnotations, self).__init__(**kwargs)
         self.with_mask = with_mask
         self.poly2mask = poly2mask
@@ -411,7 +412,8 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             # avoid using underflow conversion
             gt_semantic_seg[gt_semantic_seg == 0] = self.ignore_index
             gt_semantic_seg = gt_semantic_seg - 1
-            gt_semantic_seg[gt_semantic_seg == self.ignore_index-1] = self.ignore_index
+            gt_semantic_seg[gt_semantic_seg == self.ignore_index -
+                            1] = self.ignore_index
 
         # modify if custom classes
         if results.get('label_map', None) is not None:
@@ -843,9 +845,9 @@ class LoadEmptyAnnotations(BaseTransform):
         """
         if self.with_bbox:
             results['gt_bboxes'] = np.zeros((0, 4), dtype=np.float32)
-            results['gt_ignore_flags'] = np.zeros((0,), dtype=bool)
+            results['gt_ignore_flags'] = np.zeros((0, ), dtype=bool)
         if self.with_label:
-            results['gt_bboxes_labels'] = np.zeros((0,), dtype=np.int64)
+            results['gt_bboxes_labels'] = np.zeros((0, ), dtype=np.int64)
         if self.with_mask:
             # TODO: support PolygonMasks
             h, w = results['img_shape']

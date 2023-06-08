@@ -186,14 +186,16 @@ clsID_to_trID = {
     255: 255
 }
 
+
 def convert_to_trainID(maskpath, out_mask_dir, is_train):
     mask = np.array(Image.open(maskpath))
     mask_copy = mask.copy()
     for clsID, trID in clsID_to_trID.items():
         mask_copy[mask == clsID] = trID
-    seg_filename = osp.join(
-        out_mask_dir, 'train2017',
-        osp.basename(maskpath)) if is_train else osp.join(out_mask_dir, 'val2017', osp.basename(maskpath))
+    seg_filename = osp.join(out_mask_dir, 'train2017',
+                            osp.basename(maskpath)) if is_train else osp.join(
+                                out_mask_dir, 'val2017',
+                                osp.basename(maskpath))
     Image.fromarray(mask_copy).save(seg_filename, 'PNG')
 
 
@@ -202,7 +204,11 @@ def parse_args():
         description=\
         'Convert COCO Stuff 164k annotations to mmsegmentation format')  # noqa
     parser.add_argument('coco_path', help='coco stuff path')
-    parser.add_argument('--out-dir-name', '-o', default='stuffthingmaps_semseg', help='output path')
+    parser.add_argument(
+        '--out-dir-name',
+        '-o',
+        default='stuffthingmaps_semseg',
+        help='output path')
     parser.add_argument(
         '--nproc', default=16, type=int, help='number of process')
     args = parser.parse_args()
@@ -226,23 +232,19 @@ def main():
 
     if args.nproc > 1:
         track_parallel_progress(
-            partial(
-                convert_to_trainID, out_mask_dir=out_dir, is_train=True),
+            partial(convert_to_trainID, out_mask_dir=out_dir, is_train=True),
             train_list,
             nproc=nproc)
         track_parallel_progress(
-            partial(
-                convert_to_trainID, out_mask_dir=out_dir, is_train=False),
+            partial(convert_to_trainID, out_mask_dir=out_dir, is_train=False),
             val_list,
             nproc=nproc)
     else:
         track_progress(
-            partial(
-                convert_to_trainID, out_mask_dir=out_dir, is_train=True),
+            partial(convert_to_trainID, out_mask_dir=out_dir, is_train=True),
             train_list)
         track_progress(
-            partial(
-                convert_to_trainID, out_mask_dir=out_dir, is_train=False),
+            partial(convert_to_trainID, out_mask_dir=out_dir, is_train=False),
             val_list)
 
     print('Done!')

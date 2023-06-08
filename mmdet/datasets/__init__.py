@@ -7,6 +7,7 @@ from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
 from .coco_caption import COCOCaptionDataset
 from .coco_panoptic import CocoPanopticDataset
+from .coco_semantic import CocoSegDaset
 from .crowdhuman import CrowdHumanDataset
 from .dataset_wrappers import MultiImageMixDataset
 from .deepfashion import DeepFashionDataset
@@ -25,7 +26,6 @@ from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
 from .youtube_vis_dataset import YouTubeVISDataset
-from .coco_semantic import CocoSegDaset
 
 __all__ = [
     'XMLDataset', 'CocoDataset', 'DeepFashionDataset', 'VOCDataset',
