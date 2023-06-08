@@ -90,6 +90,7 @@ class SemSegMetric(BaseMetric):
                 self.results.append(
                     self._compute_pred_stats(pred_label, label, num_classes,
                                              bg_index))
+
             # format_result
             if self.output_dir is not None:
                 basename = osp.splitext(osp.basename(
