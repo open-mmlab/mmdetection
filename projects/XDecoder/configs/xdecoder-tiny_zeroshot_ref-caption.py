@@ -5,9 +5,7 @@ model = dict(head=dict(task='ref-caption'))
 grounding_scale = 512
 
 test_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        imdecode_backend='pillow'),
+    dict(type='LoadImageFromFile', imdecode_backend='pillow'),
     dict(
         type='FixScaleResize',
         scale=224,
@@ -23,4 +21,3 @@ test_pipeline = [
 
 val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
 test_dataloader = val_dataloader
-
