@@ -86,8 +86,10 @@ class SemSegMetric(BaseMetric):
             if not self.format_only:
                 label = data_sample['gt_sem_seg']['sem_seg'].squeeze().to(
                     pred_label)
+                bg_index = data_sample['pred_sem_seg']['bg_index']
                 self.results.append(
-                    self._compute_pred_stats(pred_label, label, num_classes))
+                    self._compute_pred_stats(pred_label, label, num_classes,
+                                             bg_index))
             # format_result
             if self.output_dir is not None:
                 basename = osp.splitext(osp.basename(
@@ -134,7 +136,8 @@ class SemSegMetric(BaseMetric):
         return metrics
 
     def _compute_pred_stats(self, pred_label: torch.tensor,
-                            label: torch.tensor, num_classes: int):
+                            label: torch.tensor, num_classes: int,
+                            bg_index: int):
         """Parse semantic segmentation predictions.
 
         Args:
@@ -153,13 +156,16 @@ class SemSegMetric(BaseMetric):
             torch.Tensor: The ground truth histogram on all classes.
         """
         assert pred_label.shape == label.shape
+        mask = label != bg_index
+        label, pred_label = label[mask], pred_label[mask]
+
         intersect = pred_label[pred_label == label]
         area_intersect = torch.histc(
-            intersect.float(), bins=num_classes, min=0, max=num_classes-1)
+            intersect.float(), bins=num_classes, min=0, max=num_classes - 1)
         area_pred_label = torch.histc(
-            pred_label.float(), bins=num_classes, min=0, max=num_classes-1)
+            pred_label.float(), bins=num_classes, min=0, max=num_classes - 1)
         area_label = torch.histc(
-            label.float(), bins=num_classes, min=0, max=num_classes-1)
+            label.float(), bins=num_classes, min=0, max=num_classes - 1)
         area_union = area_pred_label + area_label - area_intersect
         result = dict(
             area_intersect=area_intersect,
