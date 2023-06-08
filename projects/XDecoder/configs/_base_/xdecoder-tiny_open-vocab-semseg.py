@@ -22,7 +22,7 @@ model = dict(
     # use_thr_for_mc=True means use threshold for multi-class
     # This parameter is only used in semantic segmentation task and
     # referring semantic segmentation task.
-    test_cfg=dict(mask_thr=0.5, use_thr_for_mc=True, bg_index=255),
+    test_cfg=dict(mask_thr=0.5, use_thr_for_mc=True, ignore_index=255),
 )
 
 val_cfg = dict(type='ValLoop')

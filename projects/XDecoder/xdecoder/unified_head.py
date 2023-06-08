@@ -278,30 +278,30 @@ class XDecoderUnifiedhead(nn.Module):
 
     def _semantic_inference(self, mask_cls, mask_pred, text_prompts):
         if mask_cls is None:
-            sem_seg = mask_pred
+            sem_seg = mask_pred.sigmoid()
         else:
             mask_cls = F.softmax(mask_cls, dim=-1)[..., :-1]
             mask_pred = mask_pred.sigmoid()
             sem_seg = torch.einsum('qc,qhw->chw', mask_cls, mask_pred)
 
         if sem_seg.shape[0] == 1:
-            # 0 is foreground, bg_index is background
+            # 0 is foreground, ignore_index is background
             sem_seg = (sem_seg.squeeze(0) <= self.test_cfg.mask_thr).int()
-            sem_seg[sem_seg == 1] = self.test_cfg.get('bg_index', 255)
+            sem_seg[sem_seg == 1] = self.test_cfg.get('ignore_index', 255)
         else:
-            # 0 is foreground, bg_index is background
+            # 0 is foreground, ignore_index is background
             if self.test_cfg.use_thr_for_mc:
                 foreground_flag = sem_seg > self.test_cfg.mask_thr
                 sem_seg = sem_seg.max(0)[1]
                 sem_seg[foreground_flag.sum(0) == 0] = self.test_cfg.get(
-                    'bg_index', 255)
+                    'ignore_index', 255)
             else:
                 sem_seg = sem_seg.max(0)[1]
         pred_sem_seg = PixelData(
             sem_seg=sem_seg[None],
             metainfo={
                 'label_names': text_prompts,
-                'bg_index': self.test_cfg.get('bg_index', 255)
+                'ignore_index': self.test_cfg.get('ignore_index', 255)
             })
         return pred_sem_seg
 
@@ -319,7 +319,7 @@ class XDecoderUnifiedhead(nn.Module):
 
         h, w = cur_masks.shape[-2:]
         panoptic_seg = torch.full((h, w),
-                                  self.test_cfg.get('bg_index', 255),
+                                  self.test_cfg.get('ignore_index', 255),
                                   dtype=torch.int32,
                                   device=cur_masks.device)
         instance_id = 1
@@ -349,6 +349,6 @@ class XDecoderUnifiedhead(nn.Module):
             sem_seg=panoptic_seg[None],
             metainfo={
                 'label_names': all_text_prompts,
-                'bg_index': self.test_cfg.get('bg_index', 255)
+                'ignore_index': self.test_cfg.get('ignore_index', 255)
             })
         return panoptic_seg

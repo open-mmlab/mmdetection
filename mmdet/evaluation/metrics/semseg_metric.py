@@ -86,10 +86,10 @@ class SemSegMetric(BaseMetric):
             if not self.format_only:
                 label = data_sample['gt_sem_seg']['sem_seg'].squeeze().to(
                     pred_label)
-                bg_index = data_sample['pred_sem_seg']['bg_index']
+                ignore_index = data_sample['pred_sem_seg']['ignore_index']
                 self.results.append(
                     self._compute_pred_stats(pred_label, label, num_classes,
-                                             bg_index))
+                                             ignore_index))
 
             # format_result
             if self.output_dir is not None:
@@ -138,7 +138,7 @@ class SemSegMetric(BaseMetric):
 
     def _compute_pred_stats(self, pred_label: torch.tensor,
                             label: torch.tensor, num_classes: int,
-                            bg_index: int):
+                            ignore_index: int):
         """Parse semantic segmentation predictions.
 
         Args:
@@ -157,7 +157,7 @@ class SemSegMetric(BaseMetric):
             torch.Tensor: The ground truth histogram on all classes.
         """
         assert pred_label.shape == label.shape
-        mask = label != bg_index
+        mask = label != ignore_index
         label, pred_label = label[mask], pred_label[mask]
 
         intersect = pred_label[pred_label == label]
