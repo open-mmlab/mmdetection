@@ -1,4 +1,4 @@
-_base_ = 'xdecoder-tiny_zeroshot_open-vocab-semseg.py'
+_base_ = 'xdecoder-tiny_zeroshot_caption_coco2014.py'
 
 model = dict(head=dict(task='retrieval'))
 

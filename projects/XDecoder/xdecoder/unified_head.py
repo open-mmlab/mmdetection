@@ -171,7 +171,7 @@ class XDecoderUnifiedhead(nn.Module):
             # used for ref-caption
             if self.return_inter_mask:
                 sem_seg = mask_pred_results[0] > 0
-                pred_sem_seg = PixelData(sem_seg=sem_seg)
+                pred_sem_seg = PixelData(sem_seg=sem_seg[None])
                 batch_data_samples[0].pred_sem_seg = pred_sem_seg
                 return batch_data_samples
 
@@ -298,7 +298,7 @@ class XDecoderUnifiedhead(nn.Module):
             else:
                 sem_seg = sem_seg.max(0)[1]
         pred_sem_seg = PixelData(
-            sem_seg=sem_seg,
+            sem_seg=sem_seg[None],
             metainfo={
                 'label_names': text_prompts,
                 'bg_index': self.test_cfg.get('bg_index', 255)
@@ -346,7 +346,7 @@ class XDecoderUnifiedhead(nn.Module):
                         instance_id += 1
 
         panoptic_seg = PixelData(
-            sem_seg=panoptic_seg.int(),
+            sem_seg=panoptic_seg[None],
             metainfo={
                 'label_names': all_text_prompts,
                 'bg_index': self.test_cfg.get('bg_index', 255)
