@@ -215,6 +215,8 @@ class BaseSegDataset(BaseDataset):
                 if new_id != 0:
                     new_palette.append(palette[old_id])
             new_palette = type(palette)(new_palette)
+        elif len(palette) >= len(classes):
+            return palette
         else:
             raise ValueError('palette does not match classes '
                              f'as metainfo is {self._metainfo}.')
