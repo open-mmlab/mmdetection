@@ -182,7 +182,7 @@ class MobileNetV2(BaseModule):
         for i, layer_name in enumerate(self.layers):
             layer = getattr(self, layer_name)
             x = layer(x)
-            if i in self.out_indices:
+            if i + 1 in self.out_indices:
                 outs.append(x)
         return tuple(outs)
 
