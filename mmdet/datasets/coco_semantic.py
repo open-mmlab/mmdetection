@@ -1,10 +1,10 @@
 # Copyright [c] OpenMMLab. All rights reserved.
 from mmdet.registry import DATASETS
-from .ade20k import ADE20KSemsegDataset
+from .ade20k import ADE20KSegDataset
 
 
 @DATASETS.register_module()
-class CocoSegDaset(ADE20KSemsegDataset):
+class CocoSegDaset(ADE20KSegDataset):
     """COCO dataset.
 
     In segmentation map annotation for COCO, 0 stands for background, which is

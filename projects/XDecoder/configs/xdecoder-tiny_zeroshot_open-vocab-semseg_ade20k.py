@@ -1,6 +1,6 @@
 _base_ = [
     '_base_/xdecoder-tiny_open-vocab-semseg.py',
-    'mmdet::_base_/datasets/ade20k_semseg.py'
+    'mmdet::_base_/datasets/ade20k_semantic.py'
 ]
 
 test_pipeline = [
@@ -57,9 +57,3 @@ val_dataloader = dict(
         use_label_map=False,
         pipeline=test_pipeline))
 test_dataloader = val_dataloader
-
-val_evaluator = dict(type='SemSegMetric', iou_metrics=['mIoU'])
-test_evaluator = val_evaluator
-
-val_cfg = dict(type='ValLoop')
-test_cfg = dict(type='TestLoop')

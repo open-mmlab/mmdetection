@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .ade20k import ADE20KPanopticDataset, ADE20KSemsegDataset
+from .ade20k import ADE20KPanopticDataset, ADE20KSegDataset
 from .base_det_dataset import BaseDetDataset
 from .base_semseg_dataset import BaseSegDataset
 from .base_video_dataset import BaseVideoDataset
@@ -38,5 +38,5 @@ __all__ = [
     'BaseVideoDataset', 'MOTChallengeDataset', 'TrackImgSampler',
     'ReIDDataset', 'YouTubeVISDataset', 'TrackAspectRatioBatchSampler',
     'ADE20KPanopticDataset', 'COCOCaptionDataset', 'RefCOCODataset',
-    'BaseSegDataset', 'ADE20KSemsegDataset', 'CocoSegDaset'
+    'BaseSegDataset', 'ADE20KSegDataset', 'CocoSegDaset'
 ]
