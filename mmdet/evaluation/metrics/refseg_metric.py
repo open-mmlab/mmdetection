@@ -10,8 +10,15 @@ from mmdet.registry import METRICS
 @METRICS.register_module()
 class RefSegIoUMetric(BaseMetric):
 
-    def __init__(self, eval_first_text: bool = False, **kwargs):
+    def __init__(self,
+                 metrics: list = ['cIoU', 'mIoU'],
+                 eval_first_text: bool = False,
+                 **kwargs):
         super().__init__(**kwargs)
+        assert set(metrics).issubset(['cIoU', 'mIoU']), \
+            f'Only support cIoU and mIoU, but got {metrics}'
+        assert len(metrics) > 0, 'metrics should not be empty'
+        self.metrics = metrics
         self.eval_first_text = eval_first_text
 
     def compute_iou(self, pred_seg, gt_seg):
@@ -55,6 +62,8 @@ class RefSegIoUMetric(BaseMetric):
         seg_total = sum(results[3])
 
         metrics = {}
-        metrics['cIoU'] = cum_i * 100 / cum_u
-        metrics['mIoU'] = iou * 100 / seg_total
+        if 'cIoU' in self.metrics:
+            metrics['cIoU'] = cum_i * 100 / cum_u
+        if 'mIoU' in self.metrics:
+            metrics['mIoU'] = iou * 100 / seg_total
         return metrics

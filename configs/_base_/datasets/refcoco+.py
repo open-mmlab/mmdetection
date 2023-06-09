@@ -51,5 +51,5 @@ test_dataloader = dict(
         text_mode='concat',
         pipeline=test_pipeline))
 
-val_evaluator = dict(type='RefSegIoUMetric')
+val_evaluator = dict(type='RefSegIoUMetric', metrics=['cIoU', 'mIoU'])
 test_evaluator = val_evaluator
