@@ -43,7 +43,7 @@ class RefCOCODataset(BaseDataset):
         self.split_file = split_file
         self.split = split
 
-        assert text_mode in ['random', 'concat']
+        assert text_mode in ['random', 'concat', 'select_first', 'all']
         self.text_mode = text_mode
 
         self._init_refs(
@@ -135,6 +135,12 @@ class RefCOCODataset(BaseDataset):
                 text = texts[idx]
             elif self.text_mode == 'concat':
                 text = [''.join(texts)]
+            elif self.text_mode == 'select_first':
+                text = [texts[0]]
+            elif self.text_mode == 'all':
+                text = texts
+            else:
+                raise ValueError(f'Invalid text mode "{self.text_mode}".')
             data_info = {
                 'img_path':
                 join_path(img_prefix, image['file_name']),
