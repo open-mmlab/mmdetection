@@ -276,3 +276,51 @@ def print_semantic_table(
                                         ret_metrics_class['Acc']):
             print_result[class_name] = {'IoU': iou, 'Acc': acc}
         print_log(print_result, logger)
+
+
+@METRICS.register_module()
+class SimpleIoUMetric(BaseMetric):
+
+    def __init__(self, label_key: str, **kwargs):
+        super().__init__(**kwargs)
+        self.label_key = label_key
+
+    def compute_iou(self, pred_seg, gt_seg):
+        i = pred_seg & gt_seg
+        u = pred_seg | gt_seg
+        return i, u
+
+    def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
+        """Process one batch of data and data_samples.
+
+        The processed results should be stored in ``self.results``, which will
+        be used to compute the metrics when all batches have been processed.
+
+        Args:
+            data_batch (dict): A batch of data from the dataloader.
+            data_samples (Sequence[dict]): A batch of outputs from the model.
+        """
+        for data_sample in data_samples:
+            pred_label = data_sample['pred_sem_seg']['sem_seg'].squeeze()
+            label = data_sample[self.label_key].to_tensor(
+                pred_label.dtype, pred_label.device).squeeze(0).bool()
+            assert pred_label.shape == label.shape
+            # calculate iou
+            i, u = self.compute_iou(pred_label, label)
+
+            bsi = len(pred_label)
+            iou = i.reshape(bsi, -1).sum(-1) * 1.0 / u.reshape(bsi, -1).sum(-1)
+            self.results.append((i.sum(), u.sum(), iou.sum(), bsi))
+
+    def compute_metrics(self, results: list) -> dict:
+        results = tuple(zip(*results))
+        assert len(results) == 4
+        cum_i = sum(results[0])
+        cum_u = sum(results[1])
+        iou = sum(results[2])
+        seg_total = sum(results[3])
+
+        metrics = {}
+        metrics['cIoU'] = cum_i * 100 / cum_u
+        metrics['mIoU'] = iou / seg_total
+        return metrics
