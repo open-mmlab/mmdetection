@@ -11,7 +11,7 @@ from projects.XDecoder.xdecoder.inference import (
 
 TASKINFOS = {
     'semseg': DetInferencer,
-    'ref-semseg': DetInferencer,
+    'ref-seg': DetInferencer,
     'instance': DetInferencer,
     'panoptic': DetInferencer,
     'caption': ImageCaptionInferencer,

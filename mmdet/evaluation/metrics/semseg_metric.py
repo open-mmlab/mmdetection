@@ -53,14 +53,14 @@ class SemSegMetric(BaseMetric):
                  output_dir: Optional[str] = None,
                  format_only: bool = False,
                  backend_args: dict = None,
-                 prefix: Optional[str] = None,
-                 **kwargs) -> None:
+                 prefix: Optional[str] = None) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
 
         if isinstance(iou_metrics, str):
             iou_metrics = [iou_metrics]
         if not set(iou_metrics).issubset(set(['mIoU', 'mDice', 'mFscore'])):
-            raise KeyError(f'metrics {iou_metrics} is not supported')
+            raise KeyError(f'metrics {iou_metrics} is not supported. '
+                           f'Only supports mIoU/mDice/mFscore.')
         self.metrics = iou_metrics
         self.beta = beta
         self.output_dir = output_dir
@@ -86,7 +86,8 @@ class SemSegMetric(BaseMetric):
             if not self.format_only:
                 label = data_sample['gt_sem_seg']['sem_seg'].squeeze().to(
                     pred_label)
-                ignore_index = data_sample['pred_sem_seg']['ignore_index']
+                ignore_index = data_sample['pred_sem_seg'].get(
+                    'ignore_index', 255)
                 self.results.append(
                     self._compute_pred_stats(pred_label, label, num_classes,
                                              ignore_index))
@@ -153,7 +154,7 @@ class SemSegMetric(BaseMetric):
                 histogram on all classes.
             torch.Tensor: The union of prediction and ground truth histogram on
                 all classes.
-            torch.Tens6or: The prediction histogram on all classes.
+            torch.Tensor: The prediction histogram on all classes.
             torch.Tensor: The ground truth histogram on all classes.
         """
         assert pred_label.shape == label.shape

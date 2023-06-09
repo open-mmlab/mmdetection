@@ -7,7 +7,7 @@ from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
 from .coco_caption import COCOCaptionDataset
 from .coco_panoptic import CocoPanopticDataset
-from .coco_semantic import CocoSegDaset
+from .coco_semantic import CocoSegDataset
 from .crowdhuman import CrowdHumanDataset
 from .dataset_wrappers import MultiImageMixDataset
 from .deepfashion import DeepFashionDataset
@@ -38,5 +38,5 @@ __all__ = [
     'BaseVideoDataset', 'MOTChallengeDataset', 'TrackImgSampler',
     'ReIDDataset', 'YouTubeVISDataset', 'TrackAspectRatioBatchSampler',
     'ADE20KPanopticDataset', 'COCOCaptionDataset', 'RefCOCODataset',
-    'BaseSegDataset', 'ADE20KSegDataset', 'CocoSegDaset'
+    'BaseSegDataset', 'ADE20KSegDataset', 'CocoSegDataset'
 ]
