@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import collections
 import os.path as osp
+import random
 from typing import List
 
 import mmengine
@@ -37,9 +38,13 @@ class RefCOCODataset(BaseDataset):
                  data_prefix,
                  split_file,
                  split='train',
+                 text_mode='random',
                  **kwargs):
         self.split_file = split_file
         self.split = split
+
+        assert text_mode in ['random', 'concat']
+        self.text_mode = text_mode
 
         self._init_refs(
             osp.join(data_root, ann_file), osp.join(data_root, split_file))
@@ -124,6 +129,12 @@ class RefCOCODataset(BaseDataset):
         for image in images:
             img_id = image['id']
             grounding_anno = grounding_dict[img_id][0]
+            texts = [x['raw'].lower() for x in grounding_anno['sentences']]
+            if self.text_mode == 'random':
+                idx = random.randint(0, len(texts) - 1)
+                text = texts[idx]
+            elif self.text_mode == 'concat':
+                text = [''.join(texts)]
             data_info = {
                 'img_path':
                 join_path(img_prefix, image['file_name']),
@@ -134,7 +145,7 @@ class RefCOCODataset(BaseDataset):
                     'ignore_flag': 0
                 }],
                 'text':
-                [x['raw'].lower() for x in grounding_anno['sentences']]
+                text
             }
             data_list.append(data_info)
 

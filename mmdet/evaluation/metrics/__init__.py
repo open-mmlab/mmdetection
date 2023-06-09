@@ -12,8 +12,9 @@ from .dump_proposals_metric import DumpProposals
 from .lvis_metric import LVISMetric
 from .mot_challenge_metric import MOTChallengeMetric
 from .openimages_metric import OpenImagesMetric
+from .refseg_metric import RefSegIoUMetric
 from .reid_metric import ReIDMetrics
-from .semseg_metric import ReferSegIoUMetric, SemSegMetric
+from .semseg_metric import SemSegMetric
 from .voc_metric import VOCMetric
 from .youtube_vis_metric import YouTubeVISMetric
 
@@ -22,5 +23,5 @@ __all__ = [
     'VOCMetric', 'LVISMetric', 'CrowdHumanMetric', 'DumpProposals',
     'CocoOccludedSeparatedMetric', 'DumpDetResults', 'BaseVideoMetric',
     'MOTChallengeMetric', 'CocoVideoMetric', 'ReIDMetrics', 'YouTubeVISMetric',
-    'COCOCaptionMetric', 'SemSegMetric', 'ReferSegIoUMetric'
+    'COCOCaptionMetric', 'SemSegMetric', 'RefSegIoUMetric'
 ]

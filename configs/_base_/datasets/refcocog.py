@@ -32,6 +32,7 @@ val_dataloader = dict(
         ann_file='refcocog/instances.json',
         split_file='refcocog/refs(umd).p',
         split='val',
+        text_model='concat',
         pipeline=test_pipeline))
 
 test_dataloader = dict(
@@ -47,7 +48,8 @@ test_dataloader = dict(
         ann_file='refcocog/instances.json',
         split_file='refcocog/refs(umd).p',
         split='test',
+        text_model='concat',
         pipeline=test_pipeline))
 
-val_evaluator = dict(type='ReferSegIoUMetric', label_key='gt_masks')
+val_evaluator = dict(type='RefSegIoUMetric')
 test_evaluator = val_evaluator
