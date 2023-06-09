@@ -43,7 +43,7 @@ class RefCOCODataset(BaseDataset):
         self.split_file = split_file
         self.split = split
 
-        assert text_mode in ['random', 'concat', 'select_first', 'all']
+        assert text_mode in ['original', 'random', 'concat', 'select_first']
         self.text_mode = text_mode
 
         self._init_refs(
