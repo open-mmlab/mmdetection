@@ -32,8 +32,7 @@ val_dataloader = dict(
         ann_file='refcoco/instances.json',
         split_file='refcoco/refs(unc).p',
         split='val',
-        pipeline=test_pipeline,
-        backend_args=backend_args))
+        pipeline=test_pipeline))
 
 test_dataloader = dict(
     batch_size=1,
@@ -48,8 +47,7 @@ test_dataloader = dict(
         ann_file='refcoco/instances.json',
         split_file='refcoco/refs(unc).p',
         split='testA',  # or 'testB'
-        pipeline=test_pipeline,
-        backend_args=backend_args))
+        pipeline=test_pipeline))
 
 val_evaluator = dict(type='ReferSegIoUMetric', label_key='gt_masks')
 test_evaluator = val_evaluator
