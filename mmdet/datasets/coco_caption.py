@@ -11,17 +11,7 @@ from mmdet.registry import DATASETS
 
 @DATASETS.register_module()
 class COCOCaptionDataset(BaseDataset):
-    """COCO Caption dataset.
-
-    Args:
-        data_root (str): The root directory for ``data_prefix`` and
-            ``ann_file``..
-        ann_file (str): Annotation file path.
-        data_prefix (dict): Prefix for data field. Defaults to
-            ``dict(img_path='')``.
-        pipeline (Sequence): Processing pipeline. Defaults to an empty tuple.
-        **kwargs: Other keyword arguments in :class:`BaseDataset`.
-    """
+    """COCO2014 Caption dataset."""
 
     def load_data_list(self) -> List[dict]:
         """Load data list."""

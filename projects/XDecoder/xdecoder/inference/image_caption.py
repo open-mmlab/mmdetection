@@ -252,13 +252,13 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
         for ori_inputs, grounding_data, caption_data in track(
                 inputs, description='Inference'):
 
-            self.model.sem_seg_head.task = 'ref-semseg'
-            self.model.sem_seg_head.predictor.task = 'ref-semseg'
+            self.model.sem_seg_head.task = 'ref-seg'
+            self.model.sem_seg_head.predictor.task = 'ref-seg'
             preds = self.forward(grounding_data, **forward_kwargs)
 
             for data_sample, pred_datasmaple in zip(
                     caption_data['data_samples'], preds):
-                data_sample.pred_sem_seg = pred_datasmaple.pred_sem_seg
+                data_sample.pred_instances = pred_datasmaple.pred_instances
                 data_sample.set_metainfo({
                     'grounding_img_shape':
                     pred_datasmaple.metainfo['img_shape']

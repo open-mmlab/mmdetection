@@ -85,7 +85,7 @@ class COCOCaptionMetric(BaseMetric):
             eval_result_file = save_result(
                 result=results,
                 result_dir=temp_dir,
-                filename='m4-caption_pred',
+                filename='caption_pred',
                 remove_duplicate='image_id',
             )
 

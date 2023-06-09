@@ -1,4 +1,4 @@
-dataset_type = 'ADE20KSemsegDataset'
+dataset_type = 'ADE20KSegDataset'
 data_root = 'data/ade/ADEChallengeData2016'
 
 # Example to use different file client

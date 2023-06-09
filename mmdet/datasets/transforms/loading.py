@@ -242,6 +242,8 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         reduce_zero_label (bool): Whether reduce all label value
             by 1. Usually used for datasets where 0 is background label.
             Defaults to False.
+        ignore_index (int): The label index to be ignored.
+            Valid only if reduce_zero_label is true. Defaults is 255.
         imdecode_backend (str): The image decoding backend type. The backend
             argument for :func:``mmcv.imfrombytes``.
             See :fun:``mmcv.imfrombytes`` for details.
@@ -250,17 +252,21 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             corresponding backend. Defaults to None.
     """
 
-    def __init__(self,
-                 with_mask: bool = False,
-                 poly2mask: bool = True,
-                 box_type: str = 'hbox',
-                 reduce_zero_label: bool = False,
-                 **kwargs) -> None:
+    def __init__(
+            self,
+            with_mask: bool = False,
+            poly2mask: bool = True,
+            box_type: str = 'hbox',
+            # use for semseg
+            reduce_zero_label: bool = False,
+            ignore_index: int = 255,
+            **kwargs) -> None:
         super(LoadAnnotations, self).__init__(**kwargs)
         self.with_mask = with_mask
         self.poly2mask = poly2mask
         self.box_type = box_type
         self.reduce_zero_label = reduce_zero_label
+        self.ignore_index = ignore_index
 
     def _load_bboxes(self, results: dict) -> None:
         """Private function to load bounding box annotations.
@@ -406,9 +412,10 @@ class LoadAnnotations(MMCV_LoadAnnotations):
 
         if self.reduce_zero_label:
             # avoid using underflow conversion
-            gt_semantic_seg[gt_semantic_seg == 0] = 255
+            gt_semantic_seg[gt_semantic_seg == 0] = self.ignore_index
             gt_semantic_seg = gt_semantic_seg - 1
-            gt_semantic_seg[gt_semantic_seg == 254] = 255
+            gt_semantic_seg[gt_semantic_seg == self.ignore_index -
+                            1] = self.ignore_index
 
         # modify if custom classes
         if results.get('label_map', None) is not None:
@@ -419,6 +426,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             for old_id, new_id in results['label_map'].items():
                 gt_semantic_seg[gt_semantic_seg_copy == old_id] = new_id
         results['gt_seg_map'] = gt_semantic_seg
+        results['ignore_index'] = self.ignore_index
 
     def transform(self, results: dict) -> dict:
         """Function to load multiple types annotations.
@@ -698,7 +706,7 @@ class LoadProposals(BaseTransform):
 
     def __repr__(self):
         return self.__class__.__name__ + \
-               f'(num_max_proposals={self.num_max_proposals})'
+            f'(num_max_proposals={self.num_max_proposals})'
 
 
 @TRANSFORMS.register_module()
@@ -788,8 +796,8 @@ class FilterAnnotations(BaseTransform):
 
     def __repr__(self):
         return self.__class__.__name__ + \
-               f'(min_gt_bbox_wh={self.min_gt_bbox_wh}, ' \
-               f'keep_empty={self.keep_empty})'
+            f'(min_gt_bbox_wh={self.min_gt_bbox_wh}, ' \
+            f'keep_empty={self.keep_empty})'
 
 
 @TRANSFORMS.register_module()

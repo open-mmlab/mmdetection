@@ -123,7 +123,7 @@ class DetLocalVisualizer(Visualizer):
         """
         self.set_image(image)
 
-        if 'bboxes' in instances:
+        if 'bboxes' in instances and instances.bboxes.sum() > 0:
             bboxes = instances.bboxes
             labels = instances.labels
 
@@ -253,17 +253,17 @@ class DetLocalVisualizer(Visualizer):
 
         panoptic_seg_data = panoptic_seg.sem_seg[0]
 
+        ids = np.unique(panoptic_seg_data)[::-1]
+
         if 'label_names' in panoptic_seg:
             # open set panoptic segmentation
             classes = panoptic_seg.metainfo['label_names']
-            ids = np.unique(panoptic_seg_data)
-            # for VOID label
-            bg_index = panoptic_seg.metainfo.get('bg_index', 255)
-            ids = ids[ids != bg_index]
+            ignore_index = panoptic_seg.metainfo.get('ignore_index',
+                                                     len(classes))
+            ids = ids[ids != ignore_index]
         else:
-            ids = np.unique(panoptic_seg_data)[::-1]
-            legal_indices = ids != num_classes  # for VOID label
-            ids = ids[legal_indices]
+            # for VOID label
+            ids = ids[ids != num_classes]
 
         labels = np.array([id % INSTANCE_OFFSET for id in ids], dtype=np.int64)
         segms = (panoptic_seg_data[None] == ids[:, None, None])
@@ -342,12 +342,14 @@ class DetLocalVisualizer(Visualizer):
 
         # 0 ~ num_class, the value 0 means background
         ids = np.unique(sem_seg_data)
+        ignore_index = sem_seg.metainfo.get('ignore_index', 255)
+        ids = ids[ids != ignore_index]
 
         if 'label_names' in sem_seg:
             # open set semseg
             label_names = sem_seg.metainfo['label_names']
-            bg_index = sem_seg.metainfo.get('bg_index', 255)
-            ids = ids[ids != bg_index]
+        else:
+            label_names = classes
 
         labels = np.array(ids, dtype=np.int64)
         colors = [palette[label] for label in labels]
@@ -358,29 +360,28 @@ class DetLocalVisualizer(Visualizer):
         for i, (label, color) in enumerate(zip(labels, colors)):
             masks = sem_seg_data == label
             self.draw_binary_masks(masks, colors=[color], alphas=self.alpha)
-            if 'label_names' in sem_seg:
-                label_text = label_names[label]
-                _, _, stats, centroids = cv2.connectedComponentsWithStats(
-                    masks[0].astype(np.uint8), connectivity=8)
-                if stats.shape[0] > 1:
-                    largest_id = np.argmax(stats[1:, -1]) + 1
-                    centroids = centroids[largest_id]
+            label_text = label_names[label]
+            _, _, stats, centroids = cv2.connectedComponentsWithStats(
+                masks[0].astype(np.uint8), connectivity=8)
+            if stats.shape[0] > 1:
+                largest_id = np.argmax(stats[1:, -1]) + 1
+                centroids = centroids[largest_id]
 
-                    areas = stats[largest_id, -1]
-                    scales = _get_adaptive_scales(areas)
+                areas = stats[largest_id, -1]
+                scales = _get_adaptive_scales(areas)
 
-                    self.draw_texts(
-                        label_text,
-                        centroids,
-                        colors=(255, 255, 255),
-                        font_sizes=int(13 * scales),
-                        horizontal_alignments='center',
-                        bboxes=[{
-                            'facecolor': 'black',
-                            'alpha': 0.8,
-                            'pad': 0.7,
-                            'edgecolor': 'none'
-                        }])
+                self.draw_texts(
+                    label_text,
+                    centroids,
+                    colors=(255, 255, 255),
+                    font_sizes=int(13 * scales),
+                    horizontal_alignments='center',
+                    bboxes=[{
+                        'facecolor': 'black',
+                        'alpha': 0.8,
+                        'pad': 0.7,
+                        'edgecolor': 'none'
+                    }])
 
         return self.get_image()
 
