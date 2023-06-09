@@ -123,7 +123,7 @@ class DetLocalVisualizer(Visualizer):
         """
         self.set_image(image)
 
-        if 'bboxes' in instances:
+        if 'bboxes' in instances and instances.bboxes.sum() > 0:
             bboxes = instances.bboxes
             labels = instances.labels
 
@@ -253,17 +253,17 @@ class DetLocalVisualizer(Visualizer):
 
         panoptic_seg_data = panoptic_seg.sem_seg[0]
 
+        ids = np.unique(panoptic_seg_data)[::-1]
+
         if 'label_names' in panoptic_seg:
             # open set panoptic segmentation
             classes = panoptic_seg.metainfo['label_names']
-            ids = np.unique(panoptic_seg_data)
-            # for VOID label
-            ignore_index = panoptic_seg.metainfo.get('ignore_index', 255)
+            ignore_index = panoptic_seg.metainfo.get('ignore_index',
+                                                     len(classes))
             ids = ids[ids != ignore_index]
         else:
-            ids = np.unique(panoptic_seg_data)[::-1]
-            legal_indices = ids != num_classes  # for VOID label
-            ids = ids[legal_indices]
+            # for VOID label
+            ids = ids[ids != num_classes]
 
         labels = np.array([id % INSTANCE_OFFSET for id in ids], dtype=np.int64)
         segms = (panoptic_seg_data[None] == ids[:, None, None])

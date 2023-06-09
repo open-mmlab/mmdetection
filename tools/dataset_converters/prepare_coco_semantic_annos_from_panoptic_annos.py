@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+# Modified from https://github.com/facebookresearch/Mask2Former/blob/main/datasets/prepare_coco_semantic_annos_from_panoptic_annos.py # noqa
+
 import argparse
 import functools
 import json

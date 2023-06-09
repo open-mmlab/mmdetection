@@ -4,12 +4,11 @@ from .ade20k import ADE20KSegDataset
 
 
 @DATASETS.register_module()
-class CocoSegDaset(ADE20KSegDataset):
+class CocoSegDataset(ADE20KSegDataset):
     """COCO dataset.
 
-    In segmentation map annotation for COCO, 0 stands for background, which is
-    not included in 150 categories. The ``img_suffix`` is fixed to '.jpg', and
-    ``seg_map_suffix`` is fixed to '.png'.
+    In segmentation map annotation for COCO. The ``img_suffix`` is fixed to
+    '.jpg',  and ``seg_map_suffix`` is fixed to '.png'.
     """
 
     METAINFO = dict(

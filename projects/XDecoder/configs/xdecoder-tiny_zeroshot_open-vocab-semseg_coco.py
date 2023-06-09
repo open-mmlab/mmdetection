@@ -1,6 +1,6 @@
 _base_ = '_base_/xdecoder-tiny_open-vocab-semseg.py'
 
-dataset_type = 'CocoSegDaset'
+dataset_type = 'CocoSegDataset'
 data_root = 'data/coco/'
 
 test_pipeline = [

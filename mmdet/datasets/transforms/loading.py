@@ -242,6 +242,8 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         reduce_zero_label (bool): Whether reduce all label value
             by 1. Usually used for datasets where 0 is background label.
             Defaults to False.
+        ignore_index (int): The label index to be ignored.
+            Valid only if reduce_zero_label is true. Defaults is 255.
         imdecode_backend (str): The image decoding backend type. The backend
             argument for :func:``mmcv.imfrombytes``.
             See :fun:``mmcv.imfrombytes`` for details.

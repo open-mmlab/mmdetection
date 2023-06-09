@@ -24,9 +24,16 @@ mim install mmdet[multimodal]
 
 ## Models and results
 
-### Semantic segmentation on ADE20K
+For convenience, you can download the weights to the `mmdetection` root dir
 
-**Prepare dataset**
+```shell
+wget https://download.openmmlab.com/mmdetection/v3.0/xdecoder/xdecoder_focalt_best_openseg.pt
+wget https://download.openmmlab.com/mmdetection/v3.0/xdecoder/xdecoder_focalt_last_novg.pt
+```
+
+The above two weights are directly copied from the official website without any modification. The specific source is https://github.com/microsoft/X-Decoder
+
+### Semantic segmentation on ADE20K
 
 Prepare your dataset according to the [docs](https://mmsegmentation.readthedocs.io/en/latest/user_guides/2_dataset_prepare.html#ade20k).
 
@@ -38,26 +45,81 @@ Since semantic segmentation is a pixel-level task, we don't need to use a thresh
 ./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_semseg.py xdecoder_focalt_best_openseg.pt 8 --cfg-options model.test_cfg.use_thr_for_mc=False
 ```
 
-| Model                               | mIoU  |                       Config                       |                                            Download                                             |
-| :---------------------------------- | :---: | :------------------------------------------------: | :---------------------------------------------------------------------------------------------: |
-| `xdecoder_focalt_best_openseg.pt`\* | 25.13 | [config](configs/xdecoder-tiny_zeroshot_semseg.py) | [model](https://huggingface.co/xdecoder/X-Decoder/resolve/main/xdecoder_focalt_best_openseg.pt) |
+| Model                               | mIoU  |                       Config                       |
+| :---------------------------------- | :---: | :------------------------------------------------: |
+| `xdecoder_focalt_best_openseg.pt`\* | 25.13 | [config](configs/xdecoder-tiny_zeroshot_semseg.py) |
+
+### Instance segmentation on ADE20K
+
+### Panoptic segmentation on ADE20K
+
+### Semantic segmentation on COCO2017
+
+Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/en/latest/user_guides/dataset_prepare.html#coco).
+
+**Test Command**
+
+```shell
+./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py xdecoder_focalt_last_novg.pt 8
+```
+
+| Model                                             | mIOU |                               Config                               |
+| :------------------------------------------------ | :--: | :----------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco`\* |      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
 
 ### Instance segmentation on COCO2017
+
+Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/en/latest/user_guides/dataset_prepare.html#coco).
+
+**Test Command**
 
 ```shell
 ./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py xdecoder_focalt_last_novg.pt 8
 ```
 
-| Model                                               | mAP  |                                Config                                |                                            Download                                             |
-| :-------------------------------------------------- | :--: | :------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* | 39.7 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) | [model](https://huggingface.co/xdecoder/X-Decoder/resolve/main/xdecoder_focalt_best_openseg.pt) |
+| Model                                               | mAP  |                                Config                                |
+| :-------------------------------------------------- | :--: | :------------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* | 39.7 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) |
+
+### Panoptic segmentation on COCO2017
+
+Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/en/latest/user_guides/dataset_prepare.html#coco).
+
+**Test Command**
+
+```shell
+./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_coco.py xdecoder_focalt_last_novg.pt 8
+```
+
+| Model                                               | mIOU |                                Config                                |
+| :-------------------------------------------------- | :--: | :------------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-panoptic_coco`\* |      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_coco.py) |
+
+### Referring segmentation on RefCOCO
 
 ### Image Caption on COCO2014
+
+Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/en/latest/user_guides/dataset_prepare.html#coco_caption).
+
+Before testing, you need to install jdk 1.8, otherwise it will prompt that java does not exist during the evaluation process
+
+**Test Command**
 
 ```shell
 ./tools/dist_test.sh projects/XDecoder/configs/xdecoder-tiny_zeroshot_caption_coco2014.py xdecoder_focalt_last_novg.pt 8
 ```
 
-| Model                                       | BLEU-4 | CIDER  |                            Config                            |                                           Download                                           |
-| :------------------------------------------ | :----: | :----: | :----------------------------------------------------------: | :------------------------------------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_caption_coco2014`\* | 35.14  | 116.62 | [config](configs/xdecoder-tiny_zeroshot_caption_coco2014.py) | [model](https://huggingface.co/xdecoder/X-Decoder/resolve/main/xdecoder_focalt_last_novg.pt) |
+| Model                                       | BLEU-4 | CIDER  |                            Config                            |
+| :------------------------------------------ | :----: | :----: | :----------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_caption_coco2014`\* | 35.14  | 116.62 | [config](configs/xdecoder-tiny_zeroshot_caption_coco2014.py) |
+
+## Citation
+
+```latex
+@article{zou2022xdecoder,
+  author      = {Zou*, Xueyan and Dou*, Zi-Yi and Yang*, Jianwei and Gan, Zhe and Li, Linjie and Li, Chunyuan and Dai, Xiyang and Wang, Jianfeng and Yuan, Lu and Peng, Nanyun and Wang, Lijuan and Lee*, Yong Jae and Gao*, Jianfeng},
+  title       = {Generalized Decoding for Pixel, Image and Language},
+  publisher   = {arXiv},
+  year        = {2022},
+}
+```

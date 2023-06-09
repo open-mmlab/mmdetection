@@ -191,9 +191,9 @@ class TextToImageRegionRetrievalInferencer(DetInferencer):
                                  batch_size=1,
                                  **preprocess_kwargs)
 
-        self.model.task = 'ref-semseg'
-        self.model.sem_seg_head.task = 'ref-semseg'
-        self.model.sem_seg_head.predictor.task = 'ref-semseg'
+        self.model.task = 'ref-seg'
+        self.model.sem_seg_head.task = 'ref-seg'
+        self.model.sem_seg_head.predictor.task = 'ref-seg'
 
         ori_inputs, grounding_data = next(inputs)
 

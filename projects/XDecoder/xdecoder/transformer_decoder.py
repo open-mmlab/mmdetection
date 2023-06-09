@@ -147,7 +147,7 @@ class XDecoderTransformerDecoder(nn.Module):
         predictions_mask = []
         predictions_class_embed = []
 
-        if self.task == 'ref-semseg':
+        if self.task == 'ref-seg':
             self_tgt_mask = self.self_attn_mask[:, :self.num_queries, :self.
                                                 num_queries].repeat(
                                                     output.shape[1] *
@@ -196,7 +196,7 @@ class XDecoderTransformerDecoder(nn.Module):
                 pos=pos[level_index],
                 query_pos=query_embed)
 
-            if self.task == 'ref-semseg':
+            if self.task == 'ref-seg':
                 output = torch.cat((output, _grounding_tokens), dim=0)
                 query_embed = torch.cat((query_embed, grounding_tokens), dim=0)
 
@@ -208,7 +208,7 @@ class XDecoderTransformerDecoder(nn.Module):
 
             output = self.transformer_ffn_layers[i](output)
 
-            if self.task == 'ref-semseg':
+            if self.task == 'ref-seg':
                 _grounding_tokens = output[-len(_grounding_tokens):]
                 output = output[:-len(_grounding_tokens)]
                 query_embed = query_embed[:-len(_grounding_tokens)]
@@ -227,8 +227,9 @@ class XDecoderTransformerDecoder(nn.Module):
             'pred_class_embed': predictions_class_embed[-1],
         }
 
-        if self.task == 'ref-semseg':
+        if self.task == 'ref-seg':
             mask_pred_results = []
+            outputs_class = []
             for idx in range(mask_features.shape[0]):  # batch size
                 pred_gmasks = out['pred_masks'][idx, self.num_queries:2 *
                                                 self.num_queries - 1]
@@ -244,7 +245,9 @@ class XDecoderTransformerDecoder(nn.Module):
 
                 matched_id = out_prob.max(0)[1]
                 mask_pred_results += [pred_gmasks[matched_id, :, :]]
+                outputs_class += [out_prob[matched_id, :]]
             out['pred_masks'] = mask_pred_results
+            out['pred_logits'] = outputs_class
         elif self.task == 'retrieval':
             t_emb = extra['class_emb']
             temperature = self.lang_encoder.logit_scale
@@ -387,7 +390,7 @@ class XDecoderTransformerDecoder(nn.Module):
         cls_token = (sim * decoder_output[:, :self.num_queries - 1]).sum(
             dim=1, keepdim=True)
 
-        if self.task == 'ref-semseg':
+        if self.task == 'ref-seg':
             decoder_output = torch.cat(
                 (decoder_output[:, :self.num_queries - 1], cls_token,
                  decoder_output[:, self.num_queries:2 * self.num_queries - 1]),
