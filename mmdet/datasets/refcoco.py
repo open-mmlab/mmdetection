@@ -137,7 +137,7 @@ class RefCOCODataset(BaseDataset):
                 text = [''.join(texts)]
             elif self.text_mode == 'select_first':
                 text = [texts[0]]
-            elif self.text_mode == 'all':
+            elif self.text_mode == 'original':
                 text = texts
             else:
                 raise ValueError(f'Invalid text mode "{self.text_mode}".')
