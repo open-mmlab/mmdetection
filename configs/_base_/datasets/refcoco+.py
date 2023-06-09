@@ -32,7 +32,7 @@ val_dataloader = dict(
         ann_file='refcoco+/instances.json',
         split_file='refcoco+/refs(unc).p',
         split='val',
-        text_model='concat',
+        text_mode='concat',
         pipeline=test_pipeline))
 
 test_dataloader = dict(
@@ -48,7 +48,7 @@ test_dataloader = dict(
         ann_file='refcoco+/instances.json',
         split_file='refcoco+/refs(unc).p',
         split='testA',  # or 'testB'
-        text_model='concat',
+        text_mode='concat',
         pipeline=test_pipeline))
 
 val_evaluator = dict(type='RefSegIoUMetric')
