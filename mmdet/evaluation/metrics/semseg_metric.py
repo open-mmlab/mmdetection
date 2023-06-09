@@ -86,10 +86,10 @@ class SemSegMetric(BaseMetric):
             if not self.format_only:
                 label = data_sample['gt_sem_seg']['sem_seg'].squeeze().to(
                     pred_label)
-                bg_index = data_sample['pred_sem_seg']['bg_index']
+                ignore_index = data_sample['pred_sem_seg']['ignore_index']
                 self.results.append(
                     self._compute_pred_stats(pred_label, label, num_classes,
-                                             bg_index))
+                                             ignore_index))
 
             # format_result
             if self.output_dir is not None:
@@ -138,7 +138,7 @@ class SemSegMetric(BaseMetric):
 
     def _compute_pred_stats(self, pred_label: torch.tensor,
                             label: torch.tensor, num_classes: int,
-                            bg_index: int):
+                            ignore_index: int):
         """Parse semantic segmentation predictions.
 
         Args:
@@ -157,7 +157,7 @@ class SemSegMetric(BaseMetric):
             torch.Tensor: The ground truth histogram on all classes.
         """
         assert pred_label.shape == label.shape
-        mask = label != bg_index
+        mask = label != ignore_index
         label, pred_label = label[mask], pred_label[mask]
 
         intersect = pred_label[pred_label == label]
@@ -279,7 +279,7 @@ def print_semantic_table(
 
 
 @METRICS.register_module()
-class SimpleIoUMetric(BaseMetric):
+class ReferSegIoUMetric(BaseMetric):
 
     def __init__(self, label_key: str, **kwargs):
         super().__init__(**kwargs)
@@ -304,12 +304,18 @@ class SimpleIoUMetric(BaseMetric):
             pred_label = data_sample['pred_sem_seg']['sem_seg'].squeeze()
             label = data_sample[self.label_key].to_tensor(
                 pred_label.dtype, pred_label.device).squeeze(0).bool()
+            ignore_index = data_sample['pred_sem_seg']['ignore_index']
             assert pred_label.shape == label.shape
+            # The model output is 0 for foreground, ignore_index for foreground
+            pred_label[pred_label == 0] = 1
+            pred_label[pred_label == ignore_index] = 0
+
             # calculate iou
             i, u = self.compute_iou(pred_label, label)
 
             bsi = len(pred_label)
             iou = i.reshape(bsi, -1).sum(-1) * 1.0 / u.reshape(bsi, -1).sum(-1)
+            iou = torch.nan_to_num_(iou, nan=0.0)
             self.results.append((i.sum(), u.sum(), iou.sum(), bsi))
 
     def compute_metrics(self, results: list) -> dict:
@@ -322,5 +328,5 @@ class SimpleIoUMetric(BaseMetric):
 
         metrics = {}
         metrics['cIoU'] = cum_i * 100 / cum_u
-        metrics['mIoU'] = iou / seg_total
+        metrics['mIoU'] = iou * 100 / seg_total
         return metrics

@@ -49,6 +49,5 @@ test_dataloader = dict(
         split='test',
         pipeline=test_pipeline))
 
-# TODO: set the metrics
-val_evaluator = dict(type='SimpleIoUMetric', label_key='gt_masks')
+val_evaluator = dict(type='ReferSegIoUMetric', label_key='gt_masks')
 test_evaluator = val_evaluator
