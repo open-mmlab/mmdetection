@@ -3,4 +3,3 @@ _base_ = [
 ]
 
 test_dataloader = dict(dataset=dict(split='val'))
-test_evaluator = dict(eval_first_text=True)
