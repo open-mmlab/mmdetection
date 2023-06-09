@@ -53,14 +53,14 @@ class SemSegMetric(BaseMetric):
                  output_dir: Optional[str] = None,
                  format_only: bool = False,
                  backend_args: dict = None,
-                 prefix: Optional[str] = None,
-                 **kwargs) -> None:
+                 prefix: Optional[str] = None) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
 
         if isinstance(iou_metrics, str):
             iou_metrics = [iou_metrics]
         if not set(iou_metrics).issubset(set(['mIoU', 'mDice', 'mFscore'])):
-            raise KeyError(f'metrics {iou_metrics} is not supported')
+            raise KeyError(f'metrics {iou_metrics} is not supported. '
+                           f'Only supports mIoU/mDice/mFscore.')
         self.metrics = iou_metrics
         self.beta = beta
         self.output_dir = output_dir
@@ -86,7 +86,8 @@ class SemSegMetric(BaseMetric):
             if not self.format_only:
                 label = data_sample['gt_sem_seg']['sem_seg'].squeeze().to(
                     pred_label)
-                ignore_index = data_sample['pred_sem_seg']['ignore_index']
+                ignore_index = data_sample['pred_sem_seg'].get(
+                    'ignore_index', 255)
                 self.results.append(
                     self._compute_pred_stats(pred_label, label, num_classes,
                                              ignore_index))
@@ -153,7 +154,7 @@ class SemSegMetric(BaseMetric):
                 histogram on all classes.
             torch.Tensor: The union of prediction and ground truth histogram on
                 all classes.
-            torch.Tens6or: The prediction histogram on all classes.
+            torch.Tensor: The prediction histogram on all classes.
             torch.Tensor: The ground truth histogram on all classes.
         """
         assert pred_label.shape == label.shape
@@ -281,9 +282,13 @@ def print_semantic_table(
 @METRICS.register_module()
 class ReferSegIoUMetric(BaseMetric):
 
-    def __init__(self, label_key: str, **kwargs):
+    def __init__(self,
+                 label_key: str,
+                 eval_first_text: bool = False,
+                 **kwargs):
         super().__init__(**kwargs)
         self.label_key = label_key
+        self.eval_first_text = eval_first_text
 
     def compute_iou(self, pred_seg, gt_seg):
         i = pred_seg & gt_seg
@@ -301,14 +306,13 @@ class ReferSegIoUMetric(BaseMetric):
             data_samples (Sequence[dict]): A batch of outputs from the model.
         """
         for data_sample in data_samples:
-            pred_label = data_sample['pred_sem_seg']['sem_seg'].squeeze()
+            pred_label = data_sample['pred_instances']['masks'].bool()
             label = data_sample[self.label_key].to_tensor(
-                pred_label.dtype, pred_label.device).squeeze(0).bool()
-            ignore_index = data_sample['pred_sem_seg']['ignore_index']
-            assert pred_label.shape == label.shape
-            # The model output is 0 for foreground, ignore_index for foreground
-            pred_label[pred_label == 0] = 1
-            pred_label[pred_label == ignore_index] = 0
+                pred_label.dtype, pred_label.device).bool()
+            if self.eval_first_text:
+                pred_label = pred_label[0:1]
+            else:
+                label = label.repeat(pred_label.shape[0], 1, 1)
 
             # calculate iou
             i, u = self.compute_iou(pred_label, label)
