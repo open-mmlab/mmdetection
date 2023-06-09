@@ -8,7 +8,7 @@ from mmdet.registry import METRICS
 
 
 @METRICS.register_module()
-class RefSegIoUMetric(BaseMetric):
+class RefSegMetric(BaseMetric):
 
     def __init__(self,
                  metrics: list = ['cIoU', 'mIoU'],
