@@ -74,3 +74,28 @@ python tools/dataset_converters/cityscapes.py \
     --nproc 8 \
     --out-dir ./data/cityscapes/annotations
 ```
+
+The images and annotations of [RefCOCO](https://github.com/lichengunc/refer) series datasets can be download by running `tools/misc/download_dataset.py`:
+
+```shell
+python tools/misc/download_dataset.py --dataset-name refcoco --save-dir data/refcoco --unzip
+```
+
+Then the directory should be like this.
+
+```text
+data
+├── refcoco
+│   ├── refcoco
+│   │   ├── instances.json
+│   │   ├── refs(google).p
+│   │   └── refs(unc).p
+│   ├── refcoco+
+│   │   ├── instances.json
+│   │   └── refs(unc).p
+│   ├── refcocog
+│   │   ├── instances.json
+│   │   ├── refs(google).p
+│   │   └── refs(umd).p
+|   |── train2014
+```

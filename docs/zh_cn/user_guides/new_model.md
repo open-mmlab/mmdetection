@@ -216,16 +216,15 @@ train_pipeline = [
             [dict(
                  type='Rotate',
                  level=5,
-                 img_fill_val=(124, 116, 104),
-                 prob=0.5,
-                 scale=1)
+                 img_border_value=(124, 116, 104),
+                 prob=0.5)
             ],
-            [dict(type='Rotate', level=7, img_fill_val=(124, 116, 104)),
+            [dict(type='Rotate', level=7, img_border_value=(124, 116, 104)),
              dict(
                  type='TranslateX',
                  level=5,
                  prob=0.5,
-                 img_fill_val=(124, 116, 104))
+                 img_border_value=(124, 116, 104))
             ],
         ]),
     dict(

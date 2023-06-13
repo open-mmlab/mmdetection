@@ -1,0 +1,48 @@
+Collections:
+  - Name: StrongSORT++
+    Metadata:
+      Training Techniques:
+        - SGD with Momentum
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - ResNet
+        - YOLOX
+    Paper:
+      URL: https://arxiv.org/abs/2202.13514
+      Title: "StrongSORT: Make DeepSORT Great Again"
+    README: configs/strongsort/README.md
+
+Models:
+  - Name: strongsort_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval
+    In Collection: StrongSORT++
+    Config: configs/strongsort/strongsort_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval.py
+    Metadata:
+      Training Data: CrowdHuman + MOT17-half-train
+    Results:
+      - Task: Multiple Object Tracking
+        Dataset: MOT17-half-val
+        Metrics:
+          MOTA: 78.3
+          IDF1: 83.2
+          HOTA: 70.9
+    Weights:
+      - https://download.openmmlab.com/mmtracking/mot/strongsort/mot_dataset/yolox_x_crowdhuman_mot17-private-half_20220812_192036-b6c9ce9a.pth
+      - https://download.openmmlab.com/mmtracking/mot/reid/reid_r50_6e_mot17-4bf6b63d.pth
+      - https://download.openmmlab.com/mmtracking/mot/strongsort/mot_dataset/aflink_motchallenge_20220812_190310-a7578ad3.pth
+
+  - Name: strongsort_yolox_x_8xb4-80e_crowdhuman-mot20train_test-mot20test
+    In Collection: StrongSORT++
+    Config: configs/strongsort/strongsort_yolox_x_8xb4-80e_crowdhuman-mot20train_test-mot20test.py
+    Metadata:
+      Training Data: CrowdHuman + MOT20-train
+    Results:
+      - Task: Multiple Object Tracking
+        Dataset: MOT20-test
+        Metrics:
+          MOTA: 75.5
+          IDF1: 77.3
+          HOTA: 62.9
+    Weights:
+      - https://download.openmmlab.com/mmtracking/mot/strongsort/mot_dataset/yolox_x_crowdhuman_mot20-private_20220812_192123-77c014de.pth
+      - https://download.openmmlab.com/mmtracking/mot/reid/reid_r50_6e_mot20_20210803_212426-c83b1c01.pth
+      - https://download.openmmlab.com/mmtracking/mot/strongsort/mot_dataset/aflink_motchallenge_20220812_190310-a7578ad3.pth

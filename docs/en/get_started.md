@@ -103,6 +103,69 @@ inference_detector(model, 'demo/demo.jpg')
 
 You will see a list of `DetDataSample`, and the predictions are in the `pred_instance`, indicating the detected bounding boxes, labels, and scores.
 
+## Tracking Installation
+
+We recommend that users follow our best practices to install MMDetection for for tracking task.
+
+### Best Practices
+
+**Step 0.** Install [MMEngine](https://github.com/open-mmlab/mmengine) and [MMCV](https://github.com/open-mmlab/mmcv) using [MIM](https://github.com/open-mmlab/mim).
+
+```shell
+pip install -U openmim
+mim install mmengine
+mim install "mmcv>=2.0.0"
+```
+
+**Step 1.** Install MMDetection.
+
+Case a: If you develop and run mmdet directly, install it from source:
+
+```shell
+git clone https://github.com/open-mmlab/mmdetection.git
+cd mmdetection
+pip install -v -e . -r requirements/tracking.txt
+# "-v" means verbose, or more output
+# "-e" means installing a project in editable mode,
+# thus any local modifications made to the code will take effect without reinstallation.
+```
+
+Case b: If you use mmdet as a dependency or third-party package, install it with MIM:
+
+```shell
+mim install mmdet[tracking]
+```
+
+**Step 2.** Install TrackEval.
+
+```shell
+pip install git+https://github.com/JonathonLuiten/TrackEval.git
+```
+
+## Verify the installation
+
+To verify whether MMDetection is installed correctly, we provide some sample codes to run an inference demo.
+
+**Step 1.** We need to download config and checkpoint files.
+
+```shell
+mim download mmdet --config bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval --dest .
+```
+
+The downloading will take several seconds or more, depending on your network environment. When it is done, you will find two files `bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py` and `bytetrack_yolox_x_crowdhuman_mot17-private-half_20211218_205500-1985c9f0.pth` in your current folder.
+
+**Step 2.** Verify the inference demo.
+
+Case a: If you install MMDetection from source, just run the following command.
+
+```shell
+python demo/mot_demo.py demo/demo_mot.mp4 bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py --checkpoint bytetrack_yolox_x_crowdhuman_mot17-private-half_20211218_205500-1985c9f0.pth --out mot.mp4
+```
+
+You will see a new video `mot.mp4` on your folder, where bounding boxes are plotted on person.
+
+Case b: If you install MMDetection with MIM, open your python interpreter and demo/mot_demo.py, then run it like Case a.
+
 ### Customize Installation
 
 #### CUDA versions

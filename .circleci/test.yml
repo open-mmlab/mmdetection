@@ -62,6 +62,7 @@ jobs:
             equal: ["3.9.0", << parameters.python >>]
           steps:
             - run: pip install "protobuf <= 3.20.1" && sudo apt-get update && sudo apt-get -y install libprotobuf-dev protobuf-compiler cmake
+            - run: pip install dsdl
       - run:
           name: Install mmdet dependencies
           # numpy may be downgraded after building pycocotools, which causes `ImportError: numpy.core.multiarray failed to import`
@@ -74,6 +75,7 @@ jobs:
             pip install --force-reinstall pycocotools
             pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
             pip install git+https://github.com/cocodataset/panopticapi.git
+            pip install git+https://github.com/JonathonLuiten/TrackEval.git
       - run:
           name: Build and install
           command: |
@@ -122,6 +124,7 @@ jobs:
             docker exec mmdetection pip install pycocotools
             docker exec mmdetection pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
             docker exec mmdetection pip install git+https://github.com/cocodataset/panopticapi.git
+            docker exec mmdetection pip install git+https://github.com/JonathonLuiten/TrackEval.git
             docker exec mmdetection python -c 'import mmcv; print(mmcv.__version__)'
       - run:
           name: Build and install
@@ -154,8 +157,8 @@ workflows:
                 - dev-3.x
       - build_cpu:
           name: minimum_version_cpu
-          torch: 1.6.0
-          torchvision: 0.7.0
+          torch: 1.7.1
+          torchvision: 0.8.2
           python: 3.7.4 # The lowest python 3.7.x version available on CircleCI images
           requires:
             - lint
