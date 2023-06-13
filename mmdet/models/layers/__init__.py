@@ -29,12 +29,13 @@ from .transformer import (MLP, AdaptivePadding, CdnQueryGenerator,
                           DeformableDetrTransformerEncoderLayer,
                           DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DetrTransformerEncoder, DetrTransformerEncoderLayer,
-                          DinoTransformerDecoder, DynamicConv,
+                          DinoTransformerDecoder, DynamicConv, HybridEncoder,
                           Mask2FormerTransformerDecoder,
                           Mask2FormerTransformerDecoderLayer,
                           Mask2FormerTransformerEncoder, PatchEmbed,
-                          PatchMerging, coordinate_to_encoding,
-                          inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
+                          PatchMerging, RTDETRTransformerDecoder,
+                          coordinate_to_encoding, inverse_sigmoid, nchw_to_nlc,
+                          nlc_to_nchw)
 
 # yapf: enable
 
@@ -57,5 +58,6 @@ __all__ = [
     'DABDetrTransformerEncoder', 'ConditionalDetrTransformerDecoder',
     'ConditionalDetrTransformerDecoderLayer', 'DinoTransformerDecoder',
     'CdnQueryGenerator', 'Mask2FormerTransformerEncoder',
-    'Mask2FormerTransformerDecoderLayer', 'Mask2FormerTransformerDecoder'
+    'Mask2FormerTransformerDecoderLayer', 'Mask2FormerTransformerDecoder',
+    'HybridEncoder', 'RTDETRTransformerDecoder'
 ]

@@ -1,4 +1,25 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Modified from DETR (https://github.com/facebookresearch/detr)
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Modified from detrex (https://github.com/IDEA-Research/detrex)
+# Copyright 2022 The IDEA Authors. All rights reserved.
+# Modified from PaddleDetection
+#  (https://github.com/PaddlePaddle/PaddleDetection/)
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+
 from typing import Optional
 
 import torch.nn as nn
@@ -7,6 +28,53 @@ from torch import Tensor
 
 from mmdet.registry import MODELS
 from .utils import weight_reduce_loss
+
+
+def rtdetr_varifocal_loss(pred: Tensor,
+                          target: Tensor,
+                          weight: Optional[Tensor] = None,
+                          alpha: float = 0.75,
+                          gamma: float = 2.0,
+                          iou_weighted: bool = True,
+                          reduction: str = 'mean',
+                          avg_factor: Optional[int] = None) -> Tensor:
+    """`Varifocal Loss from RTDETR <https://arxiv.org/abs/2304.08069>`_
+
+    Args:
+        pred (Tensor): The prediction with shape (N, C), C is the
+            number of classes.
+        target (Tensor): The learning target of the iou-aware
+            classification score with shape (N, C), C is the number of classes.
+        weight (Tensor, optional): The weight of loss for each
+            prediction. Defaults to None.
+        alpha (float, optional): A balance factor for the negative part of
+            Varifocal Loss, which is different from the alpha of Focal Loss.
+            Defaults to 0.75.
+        gamma (float, optional): The gamma for calculating the modulating
+            factor. Defaults to 2.0.
+        iou_weighted (bool, optional): Whether to weight the loss of the
+            positive example with the iou target. Defaults to True.
+        reduction (str, optional): The method used to reduce the loss into
+            a scalar. Defaults to 'mean'. Options are "none", "mean" and
+            "sum".
+        avg_factor (int, optional): Average factor that is used to average
+            the loss. Defaults to None.
+
+    Returns:
+        Tensor: Loss tensor.
+    """
+    # pred and target should be of the same size
+    assert pred.size() == target.size(), f'{pred.size()} != {target.size()}'
+    pred_sigmoid = pred.sigmoid()
+    target = target.type_as(pred)
+    focal_weight = target * (target > 0.0).float() + \
+        alpha * (pred_sigmoid).pow(gamma) * \
+        (target <= 0.0).float()
+
+    loss = F.binary_cross_entropy_with_logits(
+        pred, target, reduction='none') * focal_weight
+    loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
+    return loss
 
 
 def varifocal_loss(pred: Tensor,
@@ -69,6 +137,7 @@ class VarifocalLoss(nn.Module):
                  gamma: float = 2.0,
                  iou_weighted: bool = True,
                  reduction: str = 'mean',
+                 use_rtdetr: bool = False,
                  loss_weight: float = 1.0) -> None:
         """`Varifocal Loss <https://arxiv.org/abs/2008.13367>`_
 
@@ -85,6 +154,8 @@ class VarifocalLoss(nn.Module):
             reduction (str, optional): The method used to reduce the loss into
                 a scalar. Defaults to 'mean'. Options are "none", "mean" and
                 "sum".
+            use_rtdetr (bool, optional): Whether to use RTDETR version of
+                varifocal loss. Defaults to False.
             loss_weight (float, optional): Weight of loss. Defaults to 1.0.
         """
         super().__init__()
@@ -97,6 +168,7 @@ class VarifocalLoss(nn.Module):
         self.iou_weighted = iou_weighted
         self.reduction = reduction
         self.loss_weight = loss_weight
+        self.use_rtdetr = use_rtdetr
 
     def forward(self,
                 pred: Tensor,
@@ -126,8 +198,9 @@ class VarifocalLoss(nn.Module):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
+        loss = rtdetr_varifocal_loss if self.use_rtdetr else varifocal_loss
         if self.use_sigmoid:
-            loss_cls = self.loss_weight * varifocal_loss(
+            loss_cls = self.loss_weight * loss(
                 pred,
                 target,
                 weight,
