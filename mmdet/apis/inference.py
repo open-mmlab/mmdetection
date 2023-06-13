@@ -5,8 +5,9 @@ from pathlib import Path
 import mmcv
 import numpy as np
 import torch
+from mmcv.device import scatter
 from mmcv.ops import RoIPool
-from mmcv.parallel import collate, scatter
+from mmcv.parallel import collate
 from mmcv.runner import load_checkpoint
 
 from mmdet.core import get_classes
@@ -143,15 +144,14 @@ def inference_detector(model, imgs):
     # just get the actual data from DataContainer
     data['img_metas'] = [img_metas.data[0] for img_metas in data['img_metas']]
     data['img'] = [img.data[0] for img in data['img']]
-    if next(model.parameters()).is_cuda:
-        # scatter to specified GPU
-        data = scatter(data, [device])[0]
-    else:
+    if device == torch.device('cpu'):
         for m in model.modules():
             assert not isinstance(
                 m, RoIPool
             ), 'CPU inference with RoIPool is not supported currently.'
-
+    else:
+        # scatter to specified GPU
+        data = scatter(data, [device])[0]
     # forward the model
     with torch.no_grad():
         results = model(return_loss=False, rescale=True, **data)
@@ -203,14 +203,14 @@ async def async_inference_detector(model, imgs):
     # just get the actual data from DataContainer
     data['img_metas'] = [img_metas.data[0] for img_metas in data['img_metas']]
     data['img'] = [img.data[0] for img in data['img']]
-    if next(model.parameters()).is_cuda:
-        # scatter to specified GPU
-        data = scatter(data, [device])[0]
-    else:
+    if device == torch.device('cpu'):
         for m in model.modules():
             assert not isinstance(
                 m, RoIPool
             ), 'CPU inference with RoIPool is not supported currently.'
+    else:
+        # scatter to specified GPU
+        data = scatter(data, [device])[0]
 
     # We don't restore `torch.is_grad_enabled()` value during concurrent
     # inference since execution can overlap
