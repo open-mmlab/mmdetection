@@ -4,7 +4,10 @@ _base_ = [
 ]
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', imdecode_backend='pillow', backend_args=_base_.backend_args),
+    dict(
+        type='LoadImageFromFile',
+        imdecode_backend='pillow',
+        backend_args=_base_.backend_args),
     dict(type='Resize', scale=(1333, 800), backend='pillow', keep_ratio=True),
     dict(
         type='PackDetInputs',
