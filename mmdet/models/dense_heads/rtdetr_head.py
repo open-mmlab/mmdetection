@@ -216,7 +216,7 @@ class RTDETRHead(DINOHead):
         # construct weighted avg_factor to match with the official DETR repo
         cls_avg_factor = num_total_pos * 1.0 + \
             num_total_neg * self.bg_cls_weight
-        # TODO CHeck
+        
         if self.sync_cls_avg_factor:
             cls_avg_factor = reduce_mean(
                 cls_scores.new_tensor([cls_avg_factor]))

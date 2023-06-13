@@ -171,7 +171,7 @@ class RTDETR(DINO):
             **encoder_outputs_dict, batch_data_samples=batch_data_samples)
         decoder_inputs_dict.update(tmp_dec_in)
 
-        # TODO:
+        
         decoder_outputs_dict = self.forward_decoder(**decoder_inputs_dict)
         head_inputs_dict.update(decoder_outputs_dict)
         return head_inputs_dict
@@ -251,8 +251,6 @@ class RTDETR(DINO):
         topk_coords = topk_coords_unact.sigmoid()
         topk_coords_unact = topk_coords_unact.detach()
 
-        # query = self.query_embedding.weight[:, None, :]
-        # query = query.repeat(1, bs, 1).transpose(0, 1)
         query = torch.gather(output_memory, 1,
                              topk_indices.unsqueeze(-1).repeat(1, 1, c))
         if self.training:
