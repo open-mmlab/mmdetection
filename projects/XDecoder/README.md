@@ -60,12 +60,12 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 **Test Command**
 
 ```shell
-./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py xdecoder_focalt_last_novg.pt 8
+./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py xdecoder_focalt_last_novg.pt 8 --cfg-options model.test_cfg.use_thr_for_mc=False
 ```
 
 | Model                                             | mIOU  | mIOU(official) |                               Config                               |
-| :------------------------------------------------ | :---: | -------------: | :----------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco`\* | 61.47 |                | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
+| :------------------------------------------------ | :---: |---------------:| :----------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco`\* | 61.47 |          62.09 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
 
 ### Instance segmentation on COCO2017
 

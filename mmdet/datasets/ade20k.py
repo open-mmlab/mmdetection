@@ -266,6 +266,6 @@ class ADE20KSegDataset(BaseSegDataset):
                 data_info['seg_map_path'] = osp.join(ann_dir, seg_map)
             data_info['label_map'] = self.label_map
             if self.return_classes:
-                data_info['text'] = list(self._metainfo('classes'))
+                data_info['text'] = list(self._metainfo['classes'])
             data_list.append(data_info)
         return data_list
