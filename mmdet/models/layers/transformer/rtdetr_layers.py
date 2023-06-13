@@ -103,8 +103,6 @@ class RTDETRTransformerDecoder(DinoTransformerDecoder):
                     new_bboxes = tmp + inverse_sigmoid(ref_points, eps=1e-3)
                     new_bboxes = new_bboxes.sigmoid()
                     out_bboxes.append(new_bboxes)
-                # new_reference_points = new_reference_points.sigmoid()
-                # reference_points = new_reference_points.detach()
             elif lid == self.eval_idx:
                 out_logits.append(cls_branches[lid](query))
                 out_bboxes.append(new_reference_bboxes)
