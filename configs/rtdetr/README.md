@@ -14,9 +14,9 @@ Recently, end-to-end transformer-based detectors (DETRs) have achieved remarkabl
 
 ## Results and Models
 
-| Backbone |    Model    | Lr schd | box AP |                     Config                      |                                                                                                                                                     Download                                                                                                                                                      |
-| :------: | :---------: | :-----: | :----: | :---------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|   R-50   | RT-DETR-R50* |   72e   |  53.1  |  [config](./rtdetr_r50vd_8xb2-72e_coco.py)   |    [model](https://github.com/nijkah/storage/releases/download/v0.0.1/rtdetr_r50vd_6x_coco_mmdet.pth) \|  |
+| Backbone |     Model     | Lr schd | box AP |                  Config                   |                                               Download                                                |
+| :------: | :-----------: | :-----: | :----: | :---------------------------------------: | :---------------------------------------------------------------------------------------------------: |
+|   R-50   | RT-DETR-R50\* |   72e   |  53.1  | [config](./rtdetr_r50vd_8xb2-72e_coco.py) | [model](https://github.com/nijkah/storage/releases/download/v0.0.1/rtdetr_r50vd_6x_coco_mmdet.pth) \| |
 
 ### NOTE
 
