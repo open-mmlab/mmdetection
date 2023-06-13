@@ -60,12 +60,12 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 **Test Command**
 
 ```shell
-./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py xdecoder_focalt_last_novg.pt 8
+./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py xdecoder_focalt_last_novg.pt 8 --cfg-options model.test_cfg.use_thr_for_mc=False
 ```
 
-| Model                                             | mIOU |                               Config                               |
-| :------------------------------------------------ | :--: | :----------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco`\* |      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
+| Model                                             | mIOU | mIOU(official) |                               Config                               |
+| :------------------------------------------------ |:----:|---------------:| :----------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco`\* | 61.8 |    62.1 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
 
 ### Instance segmentation on COCO2017
 
@@ -77,9 +77,9 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 ./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py xdecoder_focalt_last_novg.pt 8
 ```
 
-| Model                                               | mAP  |                                Config                                |
-| :-------------------------------------------------- | :--: | :------------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* | 39.7 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) |
+| Model                                               | mAP  | mAP(official) |                                Config                                |
+| :-------------------------------------------------- | :--: | ------------: | :------------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* | 39.7 |   39.7 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) |
 
 ### Panoptic segmentation on COCO2017
 
@@ -91,9 +91,9 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 ./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_coco.py xdecoder_focalt_last_novg.pt 8
 ```
 
-| Model                                               | mIOU |                                Config                                |
-| :-------------------------------------------------- | :--: | :------------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-panoptic_coco`\* |      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_coco.py) |
+| Model                                               |  PQ   | PQ(official) |                                Config                                |
+| :-------------------------------------------------- | :---: | :----------: | :------------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-panoptic_coco`\* | 51.16 |    51.16     | [config](configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_coco.py) |
 
 ### Referring segmentation on RefCOCO
 

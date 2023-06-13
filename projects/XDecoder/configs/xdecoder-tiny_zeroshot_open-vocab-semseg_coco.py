@@ -4,8 +4,10 @@ dataset_type = 'CocoSegDataset'
 data_root = 'data/coco/'
 
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='Resize', scale=(1333, 800), keep_ratio=True),
+    dict(
+        type='LoadImageFromFile', imdecode_backend='pillow',
+        backend_args=None),
+    dict(type='Resize', scale=(1333, 800), backend='pillow', keep_ratio=True),
     dict(
         type='LoadAnnotations',
         with_bbox=False,

@@ -3,27 +3,12 @@ _base_ = [
     'mmdet::_base_/datasets/coco_panoptic.py'
 ]
 
-# test_pipeline = [
-#     dict(
-#         type='LoadImageFromFile',
-#         imdecode_backend='pillow',
-#         backend_args=_base_.backend_args),
-#     dict(
-#         type='FixScaleResize',
-#         scale=800,
-#         keep_ratio=True,
-#         short_side_mode=True,
-#         backend='pillow',
-#         interpolation='bicubic'),
-#     dict(
-#         type='PackDetInputs',
-#         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-#                    'scale_factor', 'text', 'stuff_text'))
-# ]
-
 test_pipeline = [
-    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
-    dict(type='Resize', scale=(1333, 800), keep_ratio=True),
+    dict(
+        type='LoadImageFromFile',
+        imdecode_backend='pillow',
+        backend_args=_base_.backend_args),
+    dict(type='Resize', scale=(1333, 800), backend='pillow', keep_ratio=True),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
