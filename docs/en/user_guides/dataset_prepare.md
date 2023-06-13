@@ -99,3 +99,20 @@ data
 │   │   └── refs(umd).p
 |   |── train2014
 ```
+
+The images and annotations of [ADE20K](https://groups.csail.mit.edu/vision/datasets/ADE20K/) dataset can be download by running `tools/misc/download_dataset.py`:
+
+```shell
+python tools/misc/download_dataset.py --dataset-name ade20k_2016 --save-dir data --unzip
+```
+
+Then move the annotations to the `data/ADEChallengeData2016` directory and run the preprocess script to produce the coco format annotations:
+
+````shell
+
+
+
+The directory should be like this.
+
+```text
+````
