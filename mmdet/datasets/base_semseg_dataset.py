@@ -90,6 +90,7 @@ class BaseSegDataset(BaseDataset):
                  pipeline: List[Union[dict, Callable]] = [],
                  test_mode: bool = False,
                  lazy_init: bool = False,
+                 use_label_map: bool = True,
                  max_refetch: int = 1000,
                  backend_args: Optional[dict] = None) -> None:
 
@@ -113,7 +114,8 @@ class BaseSegDataset(BaseDataset):
 
         # Get label map for custom classes
         new_classes = self._metainfo.get('classes', None)
-        self.label_map = self.get_label_map(new_classes)
+        self.label_map = self.get_label_map(
+            new_classes) if use_label_map else None
         self._metainfo.update(dict(label_map=self.label_map))
 
         # Update palette based on label map or generate palette
@@ -213,6 +215,8 @@ class BaseSegDataset(BaseDataset):
                 if new_id != 0:
                     new_palette.append(palette[old_id])
             new_palette = type(palette)(new_palette)
+        elif len(palette) >= len(classes):
+            return palette
         else:
             raise ValueError('palette does not match classes '
                              f'as metainfo is {self._metainfo}.')
