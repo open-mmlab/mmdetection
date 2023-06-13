@@ -1112,6 +1112,7 @@ class Expand:
         expand_img[top:top + h, left:left + w] = img
 
         results['img'] = expand_img
+        results['img_shape'] = expand_img.shape
         # expand bboxes
         for key in results.get('bbox_fields', []):
             results[key] = results[key] + np.tile(
