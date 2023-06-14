@@ -8,8 +8,6 @@ import argparse
 # config_file = 'configs/custom/my_retinanet_pvt-t_fpn_1x_coco.py'
 # checkpoint_file = 'work_dirs/my_retinanet_pvt-t_fpn_1x_coco/epoch_7.pth'
 
-# config_file = '/data/label_studio_datasets/forklift_person_id_84/ml/models/2023_06_06_17_05_37.016432/auto_config.py'
-# checkpoint_file = '/data/label_studio_datasets/forklift_person_id_84/ml/models/2023_06_06_17_05_37.016432/latest.pth'
 
 # config_file = 'configs/custom_yolo/yolox_s_8x8_300e_coco.py'
 # checkpoint_file = 'work_dirs/yolox_s_8x8_300e_coco/latest.pth'
