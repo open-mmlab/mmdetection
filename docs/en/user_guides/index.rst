@@ -33,3 +33,9 @@ Useful Tools
    robustness_benchmarking.md
    deploy.md
    label_studio.md
+   tracking_analysis_tools.md
+   tracking_config.md
+   tracking_dataset_prepare.md
+   tracking_inference.md
+   tracking_train_test.md
+   tracking_visualization.md
