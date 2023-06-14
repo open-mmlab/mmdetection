@@ -308,7 +308,7 @@ class ResizeShortestEdge(BaseTransform):
     """
 
     def __init__(self, scale: Union[int, Tuple[int, int]],
-                 max_size: int,
+                 max_size: Optional[int]=None,
                  resize_type: str = 'Resize',
                  **resize_kwargs) -> None:
         super().__init__()
@@ -337,7 +337,7 @@ class ResizeShortestEdge(BaseTransform):
         else:
             new_h, new_w = scale * h, size
 
-        if max(new_h, new_w) > self.max_size:
+        if self.max_size and max(new_h, new_w) > self.max_size:
             scale = self.max_size * 1.0 / max(new_h, new_w)
             new_h *= scale
             new_w *= scale
