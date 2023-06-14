@@ -11,6 +11,46 @@ from PIL import Image
 
 from mmdet.datasets.ade20k import ADE20KPanopticDataset
 
+ORIGINAL_CATEGORIES = [
+    'wall', 'building', 'sky', 'floor', 'tree', 'ceiling', 'road, route',
+    'bed', 'window ', 'grass', 'cabinet', 'sidewalk, pavement', 'person',
+    'earth, ground', 'door', 'table', 'mountain, mount', 'plant', 'curtain',
+    'chair', 'car', 'water', 'painting, picture', 'sofa', 'shelf', 'house',
+    'sea', 'mirror', 'rug', 'field', 'armchair', 'seat', 'fence', 'desk',
+    'rock, stone', 'wardrobe, closet, press', 'lamp', 'tub', 'rail', 'cushion',
+    'base, pedestal, stand', 'box', 'column, pillar', 'signboard, sign',
+    'chest of drawers, chest, bureau, dresser', 'counter', 'sand', 'sink',
+    'skyscraper', 'fireplace', 'refrigerator, icebox',
+    'grandstand, covered stand', 'path', 'stairs', 'runway',
+    'case, display case, showcase, vitrine',
+    'pool table, billiard table, snooker table', 'pillow',
+    'screen door, screen', 'stairway, staircase', 'river', 'bridge, span',
+    'bookcase', 'blind, screen', 'coffee table',
+    'toilet, can, commode, crapper, pot, potty, stool, throne', 'flower',
+    'book', 'hill', 'bench', 'countertop', 'stove', 'palm, palm tree',
+    'kitchen island', 'computer', 'swivel chair', 'boat', 'bar',
+    'arcade machine', 'hovel, hut, hutch, shack, shanty', 'bus', 'towel',
+    'light', 'truck', 'tower', 'chandelier', 'awning, sunshade, sunblind',
+    'street lamp', 'booth', 'tv', 'plane', 'dirt track', 'clothes', 'pole',
+    'land, ground, soil',
+    'bannister, banister, balustrade, balusters, handrail',
+    'escalator, moving staircase, moving stairway',
+    'ottoman, pouf, pouffe, puff, hassock', 'bottle',
+    'buffet, counter, sideboard',
+    'poster, posting, placard, notice, bill, card', 'stage', 'van', 'ship',
+    'fountain',
+    'conveyer belt, conveyor belt, conveyer, conveyor, transporter', 'canopy',
+    'washer, automatic washer, washing machine', 'plaything, toy', 'pool',
+    'stool', 'barrel, cask', 'basket, handbasket', 'falls', 'tent', 'bag',
+    'minibike, motorbike', 'cradle', 'oven', 'ball', 'food, solid food',
+    'step, stair', 'tank, storage tank', 'trade name', 'microwave', 'pot',
+    'animal', 'bicycle', 'lake', 'dishwasher', 'screen', 'blanket, cover',
+    'sculpture', 'hood, exhaust hood', 'sconce', 'vase', 'traffic light',
+    'tray', 'trash can', 'fan', 'pier', 'crt screen', 'plate', 'monitor',
+    'bulletin board', 'shower', 'radiator', 'glass, drinking glass', 'clock',
+    'flag'
+]
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -143,10 +183,19 @@ def prepare_panoptic_annotations(dataset_dir: str):
 
         ADE20K_150_CATEGORIES = []
         # ADE20K_SEM_SEG_CATEGORIES = ADE20KPanopticDataset.METAINFO['classes']
-        all_classes = ADE20KPanopticDataset.METAINFO['classes']
+        all_classes = ORIGINAL_CATEGORIES
         thing_classes = ADE20KPanopticDataset.METAINFO['thing_classes']
         stuff_classes = ADE20KPanopticDataset.METAINFO['stuff_classes']
         palette = ADE20KPanopticDataset.METAINFO['palette']
+
+        mapping = {}
+        for i, t in enumerate(thing_classes):
+            j = list(all_classes).index(t)
+            mapping[j] = i
+        for i, t in enumerate(stuff_classes):
+            j = list(all_classes).index(t)
+            mapping[j] = i + len(thing_classes)
+
         for cat_id, cat_name in enumerate(all_classes):
             ADE20K_150_CATEGORIES.append({
                 'id':
@@ -163,14 +212,6 @@ def prepare_panoptic_annotations(dataset_dir: str):
         panoptic_json_categories = ADE20K_150_CATEGORIES[:]
         panoptic_json_images = []
         panoptic_json_annotations = []
-
-        mapping = {}
-        for i, t in enumerate(thing_classes):
-            j = list(all_classes).index(t)
-            mapping[j] = i
-        for i, t in enumerate(stuff_classes):
-            j = list(all_classes).index(t)
-            mapping[j] = i + len(thing_classes)
 
         filenames = sorted(list(image_dir.iterdir()))
         progressbar = ProgressBar(len(filenames))
