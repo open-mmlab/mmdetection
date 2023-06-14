@@ -19,8 +19,6 @@ import argparse
 # inf_dir = 'data/fst/random_select_/random_select'
 # inf_out_dir = 'data/fst/random_select_/fstv2_first'
 
-# inf_dir = "/data/label_studio_datasets/forklift_person_id_84/images_test"
-# inf_out_dir = '/data/label_studio_datasets/forklift_person_id_84/inference_result_annotations'
 
 class FPSLogger():
     def __init__(self):
