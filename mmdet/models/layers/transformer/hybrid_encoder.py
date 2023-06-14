@@ -16,7 +16,7 @@ from mmdet.utils import ConfigType, OptConfigType
 try:
     from mmpretrain.models.backbones.repvgg import RepVGGBlock as _RepVGGBlock
 except ImportError:
-    RepVGGBlock = None
+    _RepVGGBlock = object
 
 
 class RepVGGBlock(_RepVGGBlock):
@@ -98,7 +98,7 @@ class CSPRepLayer(BaseModule):
                  norm_cfg: OptConfigType = dict(type='BN', requires_grad=True),
                  act_cfg: OptConfigType = dict(type='SiLU', inplace=True)):
         super(CSPRepLayer, self).__init__()
-        assert RepVGGBlock is not None, (
+        assert _RepVGGBlock is not None, (
             'Please install mmpretrain to use CSPRepLayer')
         hidden_channels = int(out_channels * expansion)
         self.conv1 = ConvModule(
