@@ -34,9 +34,9 @@ def py_sigmoid_focal_loss(pred,
     """
     pred_sigmoid = pred.sigmoid()
     target = target.type_as(pred)
-    pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
+    pt = pred_sigmoid * target + (1 - pred_sigmoid) * (1 - target)
     focal_weight = (alpha * target + (1 - alpha) *
-                    (1 - target)) * pt.pow(gamma)
+                    (1 - target)) * (1 - pt).pow(gamma)
     loss = F.binary_cross_entropy_with_logits(
         pred, target, reduction='none') * focal_weight
     if weight is not None:
@@ -89,9 +89,9 @@ def py_focal_loss_with_prob(pred,
         target = target[:, :num_classes]
 
     target = target.type_as(pred)
-    pt = (1 - pred) * target + pred * (1 - target)
+    pt = pred * target + (1 - pred) * (1 - target)
     focal_weight = (alpha * target + (1 - alpha) *
-                    (1 - target)) * pt.pow(gamma)
+                    (1 - target)) * (1 - pt).pow(gamma)
     loss = F.binary_cross_entropy(
         pred, target, reduction='none') * focal_weight
     if weight is not None:
