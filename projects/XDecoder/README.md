@@ -186,6 +186,10 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 
 ### Referring segmentation on RefCOCO
 
+| Model                            | cIoU  | cIOU(official) |                                 Config                                  |
+| :------------------------------- | :---: | :------------: | :---------------------------------------------------------------------: |
+| `xdecoder_focalt_last_novg.pt`\* | 62.25 |     57.85      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
+
 ### Image Caption on COCO2014
 
 Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/en/latest/user_guides/dataset_prepare.html#coco_caption).

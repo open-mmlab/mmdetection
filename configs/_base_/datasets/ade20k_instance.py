@@ -6,7 +6,7 @@ data_root = 'data/ADEChallengeData2016/'
 # Method 1: simply set the data root and let the file I/O module
 # automatically infer from prefix (not support LMDB and Memcache yet)
 
-# data_root = 's3://openmmlab/datasets/detection/coco/'
+# data_root = 's3://openmmlab/datasets/detection/ADEChallengeData2016/'
 
 # Method 2: Use `backend_args`, `file_client_args` in versions before 3.0.0rc6
 # backend_args = dict(
@@ -47,7 +47,7 @@ test_dataloader = val_dataloader
 val_evaluator = dict(
     type='CocoMetric',
     ann_file=data_root + 'ade20k_instance_val.json',
-    metric=['segm'],
+    metric=['bbox', 'segm'],
     format_only=False,
     backend_args=backend_args)
 test_evaluator = val_evaluator

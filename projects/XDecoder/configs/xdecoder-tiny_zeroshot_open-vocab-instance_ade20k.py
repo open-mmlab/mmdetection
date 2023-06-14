@@ -25,3 +25,5 @@ test_pipeline = [
 val_dataloader = dict(
     dataset=dict(return_classes=True, pipeline=test_pipeline))
 test_dataloader = val_dataloader
+
+test_evaluator = dict(metric=['segm'])
