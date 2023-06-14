@@ -270,7 +270,16 @@ class DetInferencer(BaseInferencer):
                 chunk_data = []
                 for _ in range(chunk_size):
                     inputs_ = next(inputs_iter)
-                    chunk_data.append((inputs_, self.pipeline(inputs_)))
+                    if isinstance(inputs_, dict):
+                        if 'img' in inputs_:
+                            ori_inputs_ = inputs_['img']
+                        else:
+                            ori_inputs_ = inputs_['img_path']
+                        chunk_data.append(
+                            (ori_inputs_,
+                             self.pipeline(copy.deepcopy(inputs_))))
+                    else:
+                        chunk_data.append((inputs_, self.pipeline(inputs_)))
                 yield chunk_data
             except StopIteration:
                 if chunk_data:
@@ -324,9 +333,9 @@ class DetInferencer(BaseInferencer):
             out_file: Dir to save the inference results or
                 visualization. If left as empty, no file will be saved.
                 Defaults to ''.
-            texts (str | list[str]): Text prommpts. Defaults to None.
-            stuff_texts (str | list[str]): Stuff text prommpts of open panoptic task.
-                Defaults to None.
+            texts (str | list[str]): Text prompts. Defaults to None.
+            stuff_texts (str | list[str]): Stuff text prompts of open
+                panoptic task. Defaults to None.
             custom_entities (bool): Whether to use custom entities.
                 Defaults to False. Only used in GLIP.
             **kwargs: Other keyword arguments passed to :meth:`preprocess`,
@@ -354,11 +363,18 @@ class DetInferencer(BaseInferencer):
         if texts is not None:
             assert len(texts) == len(ori_inputs)
             for i in range(len(texts)):
-                ori_inputs[i] = {
-                    'img_path': ori_inputs[i],
-                    'text': texts[i],
-                    'custom_entities': custom_entities
-                }
+                if isinstance(ori_inputs[i], str):
+                    ori_inputs[i] = {
+                        'text': texts[i],
+                        'img_path': ori_inputs[i],
+                        'custom_entities': custom_entities
+                    }
+                else:
+                    ori_inputs[i] = {
+                        'text': texts[i],
+                        'img': ori_inputs[i],
+                        'custom_entities': custom_entities
+                    }
         if stuff_texts is not None:
             assert len(stuff_texts) == len(ori_inputs)
             for i in range(len(stuff_texts)):
@@ -368,15 +384,10 @@ class DetInferencer(BaseInferencer):
             ori_inputs, batch_size=batch_size, **preprocess_kwargs)
 
         results_dict = {'predictions': [], 'visualization': []}
-        for ori_inputs, data in track(inputs, description='Inference'):
+        for ori_imgs, data in track(inputs, description='Inference'):
             preds = self.forward(data, **forward_kwargs)
-
-            # TODO: need more robust
-            if isinstance(ori_inputs, dict):
-                ori_inputs = ori_inputs['img_path']
-
             visualization = self.visualize(
-                ori_inputs,
+                ori_imgs,
                 preds,
                 return_vis=return_vis,
                 show=show,
