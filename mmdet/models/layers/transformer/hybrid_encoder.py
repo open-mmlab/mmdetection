@@ -6,20 +6,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import (ConvModule, build_activation_layer, build_conv_layer,
                       build_norm_layer)
-from mmengine.model import BaseModule, ModuleList
+from mmengine.model import BaseModule, ModuleList, Sequential
 from torch import Tensor
 
 from mmdet.models.layers.transformer.detr_layers import DetrTransformerEncoder
 from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, OptConfigType
 
-try:
-    from mmpretrain.models.backbones.repvgg import RepVGGBlock as _RepVGGBlock
-except ImportError:
-    _RepVGGBlock = object
 
-
-class RepVGGBlock(_RepVGGBlock):
+class RepVGGBlock(BaseModule):
     """RepVGG block is modifided to skip branch_norm."""
 
     def __init__(self,
@@ -30,17 +25,12 @@ class RepVGGBlock(_RepVGGBlock):
                  dilation=1,
                  groups=1,
                  padding_mode='zeros',
-                 se_cfg=None,
-                 with_cp=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  act_cfg=dict(type='ReLU'),
                  without_branch_norm=True,
-                 deploy=False,
                  init_cfg=None):
-        super(_RepVGGBlock, self).__init__(init_cfg)
-
-        assert se_cfg is None or isinstance(se_cfg, dict)
+        super(RepVGGBlock, self).__init__(init_cfg)
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -48,44 +38,59 @@ class RepVGGBlock(_RepVGGBlock):
         self.padding = padding
         self.dilation = dilation
         self.groups = groups
-        self.se_cfg = se_cfg
-        self.with_cp = with_cp
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.act_cfg = act_cfg
-        self.deploy = deploy
 
-        if deploy:
-            self.branch_reparam = build_conv_layer(
-                conv_cfg,
-                in_channels=in_channels,
-                out_channels=out_channels,
-                kernel_size=3,
-                stride=stride,
-                padding=padding,
-                dilation=dilation,
-                groups=groups,
-                bias=True,
-                padding_mode=padding_mode)
+        # judge if input shape and output shape are the same.
+        # If true, add a normalized identity shortcut.
+        if out_channels == in_channels and stride == 1 and \
+                padding == dilation and not without_branch_norm:
+            self.branch_norm = build_norm_layer(norm_cfg, in_channels)[1]
         else:
-            # judge if input shape and output shape are the same.
-            # If true, add a normalized identity shortcut.
-            if out_channels == in_channels and stride == 1 and \
-                    padding == dilation and not without_branch_norm:
-                self.branch_norm = build_norm_layer(norm_cfg, in_channels)[1]
-            else:
-                self.branch_norm = None
+            self.branch_norm = None
 
-            self.branch_3x3 = self.create_conv_bn(
-                kernel_size=3,
-                dilation=dilation,
-                padding=padding,
-            )
-            self.branch_1x1 = self.create_conv_bn(kernel_size=1)
-
-        self.se_layer = None
+        self.branch_3x3 = self.create_conv_bn(
+            kernel_size=3,
+            dilation=dilation,
+            padding=padding,
+        )
+        self.branch_1x1 = self.create_conv_bn(kernel_size=1)
 
         self.act = build_activation_layer(act_cfg)
+
+    def create_conv_bn(self, kernel_size, dilation=1, padding=0):
+        conv_bn = Sequential()
+        conv_bn.add_module(
+            'conv',
+            build_conv_layer(
+                self.conv_cfg,
+                in_channels=self.in_channels,
+                out_channels=self.out_channels,
+                kernel_size=kernel_size,
+                stride=self.stride,
+                dilation=dilation,
+                padding=padding,
+                groups=self.groups,
+                bias=False))
+        conv_bn.add_module(
+            'norm',
+            build_norm_layer(self.norm_cfg, num_features=self.out_channels)[1])
+
+        return conv_bn
+
+    def forward(self, x):
+
+        if self.branch_norm is None:
+            branch_norm_out = 0
+        else:
+            branch_norm_out = self.branch_norm(x)
+
+        out = self.branch_3x3(x) + self.branch_1x1(x) + branch_norm_out
+
+        out = self.act(out)
+
+        return out
 
 
 class CSPRepLayer(BaseModule):
@@ -98,8 +103,6 @@ class CSPRepLayer(BaseModule):
                  norm_cfg: OptConfigType = dict(type='BN', requires_grad=True),
                  act_cfg: OptConfigType = dict(type='SiLU', inplace=True)):
         super(CSPRepLayer, self).__init__()
-        assert _RepVGGBlock is not None, (
-            'Please install mmpretrain to use CSPRepLayer')
         hidden_channels = int(out_channels * expansion)
         self.conv1 = ConvModule(
             in_channels,
