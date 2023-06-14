@@ -261,10 +261,6 @@ class ADE20KSegDataset(BaseSegDataset):
                 recursive=True,
                 backend_args=self.backend_args):
             data_info = dict(img_path=osp.join(img_dir, img))
-
-            if 'val2017/000000149770.jpg' not in osp.join(img_dir, img):
-                continue
-
             if ann_dir is not None:
                 seg_map = img.replace(self.img_suffix, self.seg_map_suffix)
                 data_info['seg_map_path'] = osp.join(ann_dir, seg_map)
