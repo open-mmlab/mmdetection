@@ -108,11 +108,30 @@ python tools/misc/download_dataset.py --dataset-name ade20k_2016 --save-dir data
 
 Then move the annotations to the `data/ADEChallengeData2016` directory and run the preprocess script to produce the coco format annotations:
 
-````shell
-
-
+```shell
+mv data/annotations_instance data/ADEChallengeData2016/
+mv data/categoryMapping.txt data/ADEChallengeData2016/
+mv data/objectInfo150.txt data/ADEChallengeData2016/
+python tools/dataset_converters/ade20k2coco.py data/ADEChallengeData2016 --task panoptic
+python tools/dataset_converters/ade20k2coco.py data/ADEChallengeData2016 --task instance
+```
 
 The directory should be like this.
 
 ```text
-````
+data
+├── ADEChallengeData2016
+│   ├── ade20k_instance_train.json
+│   ├── ade20k_instance_val.json
+│   ├── ade20k_panoptic_train
+│   ├── ade20k_panoptic_train.json
+│   ├── ade20k_panoptic_val
+│   ├── ade20k_panoptic_val.json
+│   ├── annotations
+│   ├── annotations_instance
+│   ├── categoryMapping.txt
+│   ├── images
+│   ├── imgCatIds.json
+│   ├── objectInfo150.txt
+|   |── sceneCategories.txt
+```
