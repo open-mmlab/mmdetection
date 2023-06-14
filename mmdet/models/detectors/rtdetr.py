@@ -332,7 +332,7 @@ class RTDETR(DINO):
                     0, W - 1, W, dtype=torch.float32, device=device))
             grid = torch.cat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], -1)
 
-            valid_wh = torch.tensor([H, W], dtype=torch.float32)
+            valid_wh = torch.tensor([H, W], dtype=torch.float32, device=device)
             grid = (grid.unsqueeze(0) + 0.5) / valid_wh
             wh = torch.ones_like(grid) * grid_size * (2.0**lvl)
             proposals.append(torch.cat((grid, wh), -1).view(-1, H * W, 4))
