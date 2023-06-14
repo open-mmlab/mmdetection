@@ -10,7 +10,15 @@ from .utils import MLP, inverse_sigmoid
 
 
 class RTDETRTransformerDecoder(DinoTransformerDecoder):
-    """Transformer decoder of RTDETR."""
+    """Transformer decoder used in `RT-DETR.
+
+    <https://arxiv.org/abs/2304.08069>`_.
+
+    Args:
+        eval_idx (int): The index of the decoder layer to be evaluated. If
+            `eval_idx` is negative, the index will be calculated as
+            `num_layers + eval_idx`. Default: -1.
+    """
 
     def __init__(self, eval_idx=-1, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -39,7 +39,6 @@ class RTDETR(DINO):
             feat_strides.append(feat_strides[-1] * 2)
         self.feat_strides = feat_strides
         assert len(self.backbone.out_indices) <= num_levels
-        assert not self.encoder, 'RTDETR uses a neck as encoder.'
 
         if self.eval_size:
             self.proposals, self.valid_mask = self.generate_proposals()
@@ -98,9 +97,7 @@ class RTDETR(DINO):
 
         feat_flatten = []
         spatial_shapes = []
-        level_start_index = [
-            0,
-        ]
+        level_start_index = [0]
         for lvl, feat in enumerate(mlvl_feats):
             batch_size, c, h, w = feat.shape
             # [bs, c, h_lvl, w_lvl] -> [bs, h_lvl*w_lvl, c]
@@ -119,10 +116,9 @@ class RTDETR(DINO):
         level_start_index = torch.as_tensor(
             level_start_index, dtype=torch.long, device=feat_flatten.device)
 
-        spatial_shapes = torch.as_tensor(  # (num_level, 2)
-            spatial_shapes,
-            dtype=torch.long,
-            device=feat_flatten.device)
+        # (num_level, 2)
+        spatial_shapes = torch.as_tensor(
+            spatial_shapes, dtype=torch.long, device=feat_flatten.device)
 
         encoder_inputs_dict = dict(
             feat=feat_flatten,
@@ -132,52 +128,11 @@ class RTDETR(DINO):
             spatial_shapes=spatial_shapes, level_start_index=level_start_index)
         return encoder_inputs_dict, decoder_inputs_dict
 
-    def forward_transformer(
-        self,
-        img_feats: Tuple[Tensor],
-        batch_data_samples: OptSampleList = None,
-    ) -> Dict:
-        """Forward process of Transformer.
-
-        The forward procedure of the transformer is defined as:
-        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'
-        More details can be found at `TransformerDetector.forward_transformer`
-        in `mmdet/detector/base_detr.py`.
-        The difference is that the ground truth in `batch_data_samples` is
-        required for the `pre_decoder` to prepare the query of DINO.
-        Additionally, DINO inherits the `pre_transformer` method and the
-        `forward_encoder` method of DeformableDETR. More details about the
-        two methods can be found in `mmdet/detector/deformable_detr.py`.
-
-        Args:
-            img_feats (tuple[Tensor]): Tuple of feature maps from neck. Each
-                feature map has shape (bs, dim, H, W).
-            batch_data_samples (list[:obj:`DetDataSample`]): The batch
-                data samples. It usually includes information such
-                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
-                Defaults to None.
-
-        Returns:
-            dict: The dictionary of bbox_head function inputs, which always
-            includes the `hidden_states` of the decoder output and may contain
-            `references` including the initial and intermediate references.
-        """
-        encoder_inputs_dict, decoder_inputs_dict = self.pre_transformer(
-            img_feats, batch_data_samples)
-
-        encoder_outputs_dict = self.forward_encoder(**encoder_inputs_dict)
-
-        tmp_dec_in, head_inputs_dict = self.pre_decoder(
-            **encoder_outputs_dict, batch_data_samples=batch_data_samples)
-        decoder_inputs_dict.update(tmp_dec_in)
-
-        
-        decoder_outputs_dict = self.forward_decoder(**decoder_inputs_dict)
-        head_inputs_dict.update(decoder_outputs_dict)
-        return head_inputs_dict
-
     def forward_encoder(self, feat, spatial_shapes: Tensor) -> Dict:
-        """Forward with Transformer encoder."""
+        """Forward with Transformer encoder.
+
+        RT-DETR uses the encoder in the neck.
+        """
         return dict(memory=feat, spatial_shapes=spatial_shapes)
 
     def pre_decoder(
@@ -236,10 +191,6 @@ class RTDETR(DINO):
         enc_outputs_coord_unact = self.bbox_head.reg_branches[
             self.decoder.num_layers](output_memory) + output_proposals
 
-        # NOTE The DINO selects top-k proposals according to scores of
-        # multi-class classification, while DeformDETR, where the input
-        # is `enc_outputs_class[..., 0]` selects according to scores of
-        # binary classification.
         topk_indices = torch.topk(
             enc_outputs_class.max(-1)[0], k=self.num_queries, dim=1)[1]
         topk_score = torch.gather(
@@ -270,9 +221,7 @@ class RTDETR(DINO):
             memory=original_memory,
             reference_points=reference_points,
             dn_mask=dn_mask)
-        # NOTE DINO calculates encoder losses on scores and coordinates
-        # of selected top-k encoder queries, while DeformDETR is of all
-        # encoder queries.
+
         head_inputs_dict = dict(
             enc_outputs_class=topk_score,
             enc_outputs_coord=topk_coords,

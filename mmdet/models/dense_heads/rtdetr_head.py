@@ -23,21 +23,8 @@ class RTDETRHead(DINOHead):
 
     def forward(self, hidden_states: Tensor,
                 references: List[Tensor]) -> Tuple[Tensor]:
-        """Forward function.
-
-        Args:
-            hidden_states (Tensor): Hidden states output from each decoder
-                layer, has shape (num_decoder_layers, bs, num_queries, dim).
-            references (list[Tensor]): List of the reference from the decoder.
-                The first reference is the `init_reference` (initial) and the
-                other num_decoder_layers(6) references are `inter_references`
-                (intermediate). The `init_reference` has shape (bs,
-                num_queries, 4) when `as_two_stage` of the detector is `True`,
-                otherwise (bs, num_queries, 2). Each `inter_reference` has
-                shape (bs, num_queries, 4) when `with_box_refine` of the
-                detector is `True`, otherwise (bs, num_queries, 2). The
-                coordinates are arranged as (cx, cy) when the last dimension is
-                2, and (cx, cy, w, h) when it is 4.
+        """Forward function. In RT-DETR, regression and classification are
+        performed in the transformer decoder.
 
         Returns:
             tuple[Tensor]: results of head containing the following tensor.
@@ -216,7 +203,7 @@ class RTDETRHead(DINOHead):
         # construct weighted avg_factor to match with the official DETR repo
         cls_avg_factor = num_total_pos * 1.0 + \
             num_total_neg * self.bg_cls_weight
-        
+
         if self.sync_cls_avg_factor:
             cls_avg_factor = reduce_mean(
                 cls_scores.new_tensor([cls_avg_factor]))
