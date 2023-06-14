@@ -136,24 +136,6 @@ class ADE20KPanopticDataset(CocoPanopticDataset):
         ADE_PALETTE
     }
 
-    def parse_data_info(self, raw_data_info: dict) -> dict:
-        """Parse raw annotation to target format.
-
-        Args:
-            raw_data_info (dict): Raw data information load from ``ann_file``.
-
-        Returns:
-            dict: Parsed annotation.
-        """
-
-        data_info = super().parse_data_info(raw_data_info)
-
-        if self.return_classes:
-            data_info['text'] = self.metainfo['classes']
-            data_info['custom_entities'] = True
-
-        return data_info
-
 
 @DATASETS.register_module()
 class ADE20KInstanceDataset(CocoDataset):

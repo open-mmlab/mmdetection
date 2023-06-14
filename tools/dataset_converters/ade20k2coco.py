@@ -142,9 +142,12 @@ def prepare_panoptic_annotations(dataset_dir: str):
                 map_id[int(ins_id) - 1] = int(sem_id) - 1
 
         ADE20K_150_CATEGORIES = []
-        ADE20K_SEM_SEG_CATEGORIES = ADE20KPanopticDataset.METAINFO['classes']
-        PALETTE = ADE20KPanopticDataset.METAINFO['palette']
-        for cat_id, cat_name in enumerate(ADE20K_SEM_SEG_CATEGORIES):
+        # ADE20K_SEM_SEG_CATEGORIES = ADE20KPanopticDataset.METAINFO['classes']
+        all_classes = ADE20KPanopticDataset.METAINFO['classes']
+        thing_classes = ADE20KPanopticDataset.METAINFO['thing_classes']
+        stuff_classes = ADE20KPanopticDataset.METAINFO['stuff_classes']
+        palette = ADE20KPanopticDataset.METAINFO['palette']
+        for cat_id, cat_name in enumerate(all_classes):
             ADE20K_150_CATEGORIES.append({
                 'id':
                 cat_id,
@@ -153,13 +156,21 @@ def prepare_panoptic_annotations(dataset_dir: str):
                 'isthing':
                 int(cat_id in map_id.values()),
                 'color':
-                PALETTE[cat_id]
+                palette[cat_id]
             })
         categories_dict = {cat['id']: cat for cat in ADE20K_150_CATEGORIES}
 
         panoptic_json_categories = ADE20K_150_CATEGORIES[:]
         panoptic_json_images = []
         panoptic_json_annotations = []
+
+        mapping = {}
+        for i, t in enumerate(thing_classes):
+            j = list(all_classes).index(t)
+            mapping[j] = i
+        for i, t in enumerate(stuff_classes):
+            j = list(all_classes).index(t)
+            mapping[j] = i + len(thing_classes)
 
         filenames = sorted(list(image_dir.iterdir()))
         progressbar = ProgressBar(len(filenames))
@@ -225,7 +236,7 @@ def prepare_panoptic_annotations(dataset_dir: str):
 
                 segm_info.append({
                     'id': int(segment_id),
-                    'category_id': int(semantic_cat_id),
+                    'category_id': mapping[int(semantic_cat_id)],
                     'area': int(area),
                     'bbox': bbox,
                     'iscrowd': 0
@@ -259,7 +270,7 @@ def prepare_panoptic_annotations(dataset_dir: str):
 
                 segm_info.append({
                     'id': int(segment_id),
-                    'category_id': int(semantic_cat_id),
+                    'category_id': mapping[int(semantic_cat_id)],
                     'area': int(area),
                     'bbox': bbox,
                     'iscrowd': 0
