@@ -163,8 +163,12 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
                 chunk_data = []
                 for _ in range(chunk_size):
                     inputs_ = next(inputs_iter)
+                    if 'img' in inputs_:
+                        ori_inputs_ = inputs_['img']
+                    else:
+                        ori_inputs_ = inputs_['img_path']
                     chunk_data.append(
-                        (inputs_, self.pipeline['grounding_pipeline'](
+                        (ori_inputs_, self.pipeline['grounding_pipeline'](
                             copy.deepcopy(inputs_)),
                          self.pipeline['caption_pipeline'](
                              copy.deepcopy(inputs_))))
@@ -240,11 +244,18 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
             texts = [texts] * len(ori_inputs)
 
         for i in range(len(texts)):
-            ori_inputs[i] = {
-                'img_path': ori_inputs[i],
-                'text': texts[i],
-                'custom_entities': False
-            }
+            if isinstance(ori_inputs[i], str):
+                ori_inputs[i] = {
+                    'text': texts[i],
+                    'img_path': ori_inputs[i],
+                    'custom_entities': custom_entities
+                }
+            else:
+                ori_inputs[i] = {
+                    'text': texts[i],
+                    'img': ori_inputs[i],
+                    'custom_entities': custom_entities
+                }
         inputs = self.preprocess(
             ori_inputs, batch_size=batch_size, **preprocess_kwargs)
 

@@ -220,7 +220,7 @@ class CocoPanopticDataset(CocoDataset):
         if self.return_classes:
             data_info['text'] = self.metainfo['thing_classes']
             data_info['stuff_text'] = self.metainfo['stuff_classes']
-            data_info['custom_entities'] = True
+            data_info['custom_entities'] = True  # no important
 
         instances = []
         segments_info = []
