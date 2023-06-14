@@ -60,8 +60,7 @@ def _fixed_scale_size(
 
 def rescale_size(old_size: tuple,
                  scale: Union[float, int, tuple],
-                 return_scale: bool = False,
-                 short_side_mode: bool = False) -> tuple:
+                 return_scale: bool = False) -> tuple:
     """Calculate the new size to be rescaled to.
 
     Args:
@@ -84,12 +83,8 @@ def rescale_size(old_size: tuple,
     elif isinstance(scale, tuple):
         max_long_edge = max(scale)
         max_short_edge = min(scale)
-        if short_side_mode:
-            short, long = (w, h) if w <= h else (h, w)
-            scale_factor = max_short_edge / short
-        else:
-            scale_factor = min(max_long_edge / max(h, w),
-                               max_short_edge / min(h, w))
+        scale_factor = min(max_long_edge / max(h, w),
+                           max_short_edge / min(h, w))
     else:
         raise TypeError(
             f'Scale must be a number or tuple of int, but got {type(scale)}')
@@ -107,8 +102,7 @@ def imrescale(
     scale: Union[float, Tuple[int, int]],
     return_scale: bool = False,
     interpolation: str = 'bilinear',
-    backend: Optional[str] = None,
-    short_side_mode: bool = False,
+    backend: Optional[str] = None
 ) -> Union[np.ndarray, Tuple[np.ndarray, float]]:
     """Resize image while keeping the aspect ratio.
 
@@ -127,10 +121,7 @@ def imrescale(
         ndarray: The rescaled image.
     """
     h, w = img.shape[:2]
-    new_size, scale_factor = rescale_size((w, h),
-                                          scale,
-                                          return_scale=True,
-                                          short_side_mode=short_side_mode)
+    new_size, scale_factor = rescale_size((w, h), scale, return_scale=True)
     rescaled_img = imresize(
         img, new_size, interpolation=interpolation, backend=backend)
     if return_scale:
@@ -259,17 +250,6 @@ class FixScaleResize(Resize):
     """Compared to Resize, FixScaleResize fixes the scaling issue when
     `keep_ratio=true`."""
 
-    def __init__(
-        self,
-        *args,
-        short_side_mode: bool = False,
-        **kwargs,
-    ) -> None:
-        super().__init__(*args, **kwargs)
-        self.short_side_mode = short_side_mode
-        if short_side_mode is True:
-            assert self.scale and self.keep_ratio is True
-
     def _resize_img(self, results):
         """Resize images with ``results['scale']``."""
         if results.get('img', None) is not None:
@@ -279,8 +259,7 @@ class FixScaleResize(Resize):
                     results['scale'],
                     interpolation=self.interpolation,
                     return_scale=True,
-                    backend=self.backend,
-                    short_side_mode=self.short_side_mode)
+                    backend=self.backend)
                 new_h, new_w = img.shape[:2]
                 h, w = results['img'].shape[:2]
                 w_scale = new_w / w
@@ -296,6 +275,81 @@ class FixScaleResize(Resize):
             results['img_shape'] = img.shape[:2]
             results['scale_factor'] = (w_scale, h_scale)
             results['keep_ratio'] = self.keep_ratio
+
+
+@TRANSFORMS.register_module()
+class ResizeShortestEdge(BaseTransform):
+    """Resize the image and mask while keeping the aspect ratio unchanged.
+
+    Modified from https://github.com/facebookresearch/detectron2/blob/main/detectron2/data/transforms/augmentation_impl.py#L130 # noqa:E501
+
+    This transform attempts to scale the shorter edge to the given
+    `scale`, as long as the longer edge does not exceed `max_size`.
+    If `max_size` is reached, then downscale so that the longer
+    edge does not exceed `max_size`.
+
+    Required Keys:
+        - img
+        - gt_seg_map (optional)
+    Modified Keys:
+        - img
+        - img_shape
+        - gt_seg_map (optional))
+    Added Keys:
+        - scale
+        - scale_factor
+        - keep_ratio
+
+    Args:
+        scale (Union[int, Tuple[int, int]]): The target short edge length.
+            If it's tuple, will select the min value as the short edge length.
+        max_size (int): The maximum allowed longest edge length.
+    """
+
+    def __init__(self,
+                 scale: Union[int, Tuple[int, int]],
+                 max_size: Optional[int] = None,
+                 resize_type: str = 'Resize',
+                 **resize_kwargs) -> None:
+        super().__init__()
+        self.scale = scale
+        self.max_size = max_size
+
+        self.resize_cfg = dict(type=resize_type, **resize_kwargs)
+        self.resize = TRANSFORMS.build({'scale': 0, **self.resize_cfg})
+
+    def _get_output_shape(self, img, short_edge_length) -> Tuple[int, int]:
+        """Compute the target image shape with the given `short_edge_length`.
+
+        Args:
+            img (np.ndarray): The input image.
+            short_edge_length (Union[int, Tuple[int, int]]): The target short
+                edge length. If it's tuple, will select the min value as the
+                short edge length.
+        """
+        h, w = img.shape[:2]
+        if isinstance(short_edge_length, int):
+            size = short_edge_length * 1.0
+        elif isinstance(short_edge_length, tuple):
+            size = min(short_edge_length) * 1.0
+        scale = size / min(h, w)
+        if h < w:
+            new_h, new_w = size, scale * w
+        else:
+            new_h, new_w = scale * h, size
+
+        if self.max_size and max(new_h, new_w) > self.max_size:
+            scale = self.max_size * 1.0 / max(new_h, new_w)
+            new_h *= scale
+            new_w *= scale
+
+        new_h = int(new_h + 0.5)
+        new_w = int(new_w + 0.5)
+        return (new_w, new_h)
+
+    def transform(self, results: dict) -> dict:
+        self.resize.scale = self._get_output_shape(results['img'], self.scale)
+        return self.resize(results)
 
 
 @TRANSFORMS.register_module()

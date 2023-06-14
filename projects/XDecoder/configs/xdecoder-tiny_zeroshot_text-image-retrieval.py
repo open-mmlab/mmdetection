@@ -10,10 +10,8 @@ test_pipeline = [
         imdecode_backend='pillow',
         backend_args=_base_.backend_args),
     dict(
-        type='FixScaleResize',
+        type='ResizeShortestEdge',
         scale=224,
-        keep_ratio=True,
-        short_side_mode=True,
         backend='pillow',
         interpolation='bicubic'),
     dict(

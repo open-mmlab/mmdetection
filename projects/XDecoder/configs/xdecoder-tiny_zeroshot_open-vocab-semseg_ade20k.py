@@ -8,13 +8,7 @@ test_pipeline = [
         type='LoadImageFromFile',
         imdecode_backend='pillow',
         backend_args=_base_.backend_args),
-    dict(
-        type='FixScaleResize',
-        scale=640,
-        keep_ratio=True,
-        short_side_mode=True,
-        backend='pillow',
-        interpolation='bicubic'),
+    dict(type='ResizeShortestEdge', scale=640, backend='pillow'),
     dict(
         type='LoadAnnotations',
         with_bbox=False,
