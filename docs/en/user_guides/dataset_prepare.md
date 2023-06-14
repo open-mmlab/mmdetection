@@ -99,3 +99,69 @@ data
 │   │   └── refs(umd).p
 |   |── train2014
 ```
+
+The images and annotations of [ADE20K](https://groups.csail.mit.edu/vision/datasets/ADE20K/) dataset can be download by running `tools/misc/download_dataset.py`:
+
+```shell
+python tools/misc/download_dataset.py --dataset-name ade20k_2016 --save-dir data --unzip
+```
+
+Then move the annotations to the `data/ADEChallengeData2016` directory and run the preprocess script to produce the coco format annotations:
+
+```shell
+mv data/annotations_instance data/ADEChallengeData2016/
+mv data/categoryMapping.txt data/ADEChallengeData2016/
+mv data/objectInfo150.txt data/ADEChallengeData2016/
+python tools/dataset_converters/ade20k2coco.py data/ADEChallengeData2016 --task panoptic
+python tools/dataset_converters/ade20k2coco.py data/ADEChallengeData2016 --task instance
+```
+
+The directory should be like this.
+
+```text
+data
+├── ADEChallengeData2016
+│   ├── ade20k_instance_train.json
+│   ├── ade20k_instance_val.json
+│   ├── ade20k_panoptic_train
+|   |   ├── ADE_train_00000001.png
+|   |   ├── ADE_train_00000002.png
+|   |   ├── ...
+│   ├── ade20k_panoptic_train.json
+│   ├── ade20k_panoptic_val
+|   |   ├── ADE_val_00000001.png
+|   |   ├── ADE_val_00000002.png
+|   |   ├── ...
+│   ├── ade20k_panoptic_val.json
+│   ├── annotations
+|   |   ├── training
+|   |   |   ├── ADE_train_00000001.png
+|   |   |   ├── ADE_train_00000002.png
+|   |   |   ├── ...
+|   |   ├── validation
+|   |   |   ├── ADE_val_00000001.png
+|   |   |   ├── ADE_val_00000002.png
+|   |   |   ├── ...
+│   ├── annotations_instance
+|   |   ├── training
+|   |   |   ├── ADE_train_00000001.png
+|   |   |   ├── ADE_train_00000002.png
+|   |   |   ├── ...
+|   |   ├── validation
+|   |   |   ├── ADE_val_00000001.png
+|   |   |   ├── ADE_val_00000002.png
+|   |   |   ├── ...
+│   ├── categoryMapping.txt
+│   ├── images
+│   |   ├── training
+|   |   |   ├── ADE_train_00000001.jpg
+|   |   |   ├── ADE_train_00000002.jpg
+|   |   |   ├── ...
+|   |   ├── validation
+|   |   |   ├── ADE_val_00000001.jpg
+|   |   |   ├── ADE_val_00000002.jpg
+|   |   |   ├── ...
+│   ├── imgCatIds.json
+│   ├── objectInfo150.txt
+|   |── sceneCategories.txt
+```

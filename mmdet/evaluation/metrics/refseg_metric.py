@@ -11,14 +11,14 @@ from mmdet.registry import METRICS
 class RefSegMetric(BaseMetric):
 
     def __init__(self,
-                 metrics: list = ['cIoU', 'mIoU'],
+                 iou_metrics: list = ['cIoU', 'mIoU'],
                  eval_first_text: bool = False,
                  **kwargs):
         super().__init__(**kwargs)
-        assert set(metrics).issubset(['cIoU', 'mIoU']), \
-            f'Only support cIoU and mIoU, but got {metrics}'
-        assert len(metrics) > 0, 'metrics should not be empty'
-        self.metrics = metrics
+        assert set(iou_metrics).issubset(['cIoU', 'mIoU']), \
+            f'Only support cIoU and mIoU, but got {iou_metrics}'
+        assert len(iou_metrics) > 0, 'metrics should not be empty'
+        self.metrics = iou_metrics
         self.eval_first_text = eval_first_text
 
     def compute_iou(self, pred_seg, gt_seg):
