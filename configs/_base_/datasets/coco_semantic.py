@@ -42,6 +42,8 @@ test_pipeline = [
         meta_keys=('img_path', 'ori_shape', 'img_shape', 'scale_factor'))
 ]
 
+# For stuffthingmaps_semseg, please refer to
+# `docs/en/user_guides/dataset_prepare.md`
 train_dataloader = dict(
     batch_size=2,
     num_workers=2,

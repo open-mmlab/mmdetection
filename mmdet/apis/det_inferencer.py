@@ -294,10 +294,12 @@ class DetInferencer(BaseInferencer):
             print_result: bool = False,
             no_save_pred: bool = True,
             out_dir: str = '',
+            # by open image task
             texts: Optional[Union[str, list]] = None,
             # by open panoptic task
             stuff_texts: Optional[Union[str, list]] = None,
-            custom_entities: bool = False,  # by GLIP
+            # by GLIP
+            custom_entities: bool = False,
             **kwargs) -> dict:
         """Call the inferencer.
 
@@ -322,7 +324,11 @@ class DetInferencer(BaseInferencer):
             out_file: Dir to save the inference results or
                 visualization. If left as empty, no file will be saved.
                 Defaults to ''.
-
+            texts (str | list[str]): Text prommpts. Defaults to None.
+            stuff_texts (str | list[str]): Stuff text prommpts of open panoptic task.
+                Defaults to None.
+            custom_entities (bool): Whether to use custom entities.
+                Defaults to False. Only used in GLIP.
             **kwargs: Other keyword arguments passed to :meth:`preprocess`,
                 :meth:`forward`, :meth:`visualize` and :meth:`postprocess`.
                 Each key in kwargs should be in the corresponding set of

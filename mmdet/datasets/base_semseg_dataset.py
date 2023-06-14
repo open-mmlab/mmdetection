@@ -67,13 +67,15 @@ class BaseSegDataset(BaseDataset):
             information of the dataset is needed, which is not necessary to
             load annotation file. ``Basedataset`` can skip load annotations to
             save time by set ``lazy_init=True``. Defaults to False.
+        use_label_map (bool, optional): Whether to use label map.
+            Defaults to False.
         max_refetch (int, optional): If ``Basedataset.prepare_data`` get a
             None img. The maximum extra number of cycles to get a valid
             image. Defaults to 1000.
         backend_args (dict, Optional): Arguments to instantiate a file backend.
             See https://mmengine.readthedocs.io/en/latest/api/fileio.htm
             for details. Defaults to None.
-            Notes: mmcv>=2.0.0rc4, mmengine>=0.2.0 required.
+            Notes: mmcv>=2.0.0rc4 required.
     """
     METAINFO: dict = dict()
 
@@ -90,7 +92,7 @@ class BaseSegDataset(BaseDataset):
                  pipeline: List[Union[dict, Callable]] = [],
                  test_mode: bool = False,
                  lazy_init: bool = False,
-                 use_label_map: bool = True,
+                 use_label_map: bool = False,
                  max_refetch: int = 1000,
                  backend_args: Optional[dict] = None) -> None:
 
@@ -216,6 +218,7 @@ class BaseSegDataset(BaseDataset):
                     new_palette.append(palette[old_id])
             new_palette = type(palette)(new_palette)
         elif len(palette) >= len(classes):
+            # Allow palette length is greater than classes.
             return palette
         else:
             raise ValueError('palette does not match classes '
