@@ -48,6 +48,9 @@ class ToyBaseBoxes(BaseBoxes):
     def find_inside_points(self, points, is_aligned=False):
         pass
 
+    def create_masks(self, img_shape):
+        pass
+
     def overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
         pass
 
