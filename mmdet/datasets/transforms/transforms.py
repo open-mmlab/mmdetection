@@ -2938,11 +2938,13 @@ class CopyPaste(BaseTransform):
         bbox_occluded_thr: int = 10,
         mask_occluded_thr: int = 300,
         selected: bool = True,
+        paste_by_box: bool = False,
     ) -> None:
         self.max_num_pasted = max_num_pasted
         self.bbox_occluded_thr = bbox_occluded_thr
         self.mask_occluded_thr = mask_occluded_thr
         self.selected = selected
+        self.paste_by_box = paste_by_box
 
     @cache_randomness
     def get_indexes(self, dataset: BaseDataset) -> int:
@@ -2981,11 +2983,28 @@ class CopyPaste(BaseTransform):
         num_pasted = np.random.randint(0, max_num_pasted)
         return np.random.choice(num_bboxes, size=num_pasted, replace=False)
 
+    def get_gt_masks(self, results):
+        """Get gt_masks originally or generated based on bboxes.
+
+        If gt_masks is not contained in results,
+        it will be generated based on gt_bboxes.
+        Args:
+            results (dict): Result dict.
+        Returns:
+            BitmapMasks: gt_masks, originally or generated based on bboxes.
+        """
+        if results.get('gt_masks', None) is not None:
+            return results['gt_masks']
+        else:
+            if not self.paste_by_box:
+                raise RuntimeError('results does not contain masks.')
+            return results['gt_bboxes'].create_masks(results['img'].shape[:2])
+
     def _select_object(self, results: dict) -> dict:
         """Select some objects from the source results."""
         bboxes = results['gt_bboxes']
         labels = results['gt_bboxes_labels']
-        masks = results['gt_masks']
+        masks = self.get_gt_masks(results)
         ignore_flags = results['gt_ignore_flags']
 
         selected_inds = self._get_selected_inds(bboxes.shape[0])
@@ -3013,7 +3032,7 @@ class CopyPaste(BaseTransform):
         dst_img = dst_results['img']
         dst_bboxes = dst_results['gt_bboxes']
         dst_labels = dst_results['gt_bboxes_labels']
-        dst_masks = dst_results['gt_masks']
+        dst_masks = self.get_gt_masks(dst_results)
         dst_ignore_flags = dst_results['gt_ignore_flags']
 
         src_img = src_results['img']

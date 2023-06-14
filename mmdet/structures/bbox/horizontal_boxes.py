@@ -335,6 +335,26 @@ class HorizontalBoxes(BaseBoxes):
         return (points[..., 0] >= x_min) & (points[..., 0] <= x_max) & \
             (points[..., 1] >= y_min) & (points[..., 1] <= y_max)
 
+    def create_masks(self, img_shape: Tuple[int, int]) -> BitmapMasks:
+        """
+        Args:
+            img_shape (Tuple[int, int]): A tuple of image height and width.
+
+        Returns:
+            :obj:`BitmapMasks`: Converted masks
+        """
+        img_h, img_w = img_shape
+        boxes = self.tensor
+
+        xmin, ymin = boxes[:, 0:1], boxes[:, 1:2]
+        xmax, ymax = boxes[:, 2:3], boxes[:, 3:4]
+        gt_masks = np.zeros((len(boxes), img_h, img_w), dtype=np.uint8)
+        for i in range(len(boxes)):
+            gt_masks[i,
+                     int(ymin[i]):int(ymax[i]),
+                     int(xmin[i]):int(xmax[i])] = 1
+        return BitmapMasks(gt_masks, img_h, img_w)
+
     @staticmethod
     def overlaps(boxes1: BaseBoxes,
                  boxes2: BaseBoxes,

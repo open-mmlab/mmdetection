@@ -509,6 +509,17 @@ class BaseBoxes(metaclass=ABCMeta):
         """
         pass
 
+    @abstractmethod
+    def create_masks(self, img_shape: Tuple[int, int]) -> Tensor:
+        """
+        Args:
+            img_shape (Tuple[int, int]): A tuple of image height and width.
+
+        Returns:
+            :obj:`BitmapMasks`: Converted masks
+        """
+        pass
+
     @abstractstaticmethod
     def overlaps(boxes1: 'BaseBoxes',
                  boxes2: 'BaseBoxes',
