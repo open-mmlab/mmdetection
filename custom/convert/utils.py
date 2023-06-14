@@ -124,13 +124,13 @@ def read_kitti_annot(kitti_path):
 
 
 
-def extract_bounding_boxes(results, threshold=50):
+def extract_bounding_boxes(results, threshold=0.5):
     bboxes = []
 
     for idx, result in enumerate(results):
         for detected_object in result:
             if len(detected_object) == 5:
-                if detected_object[4] >= threshold / 100.0:
+                if detected_object[4] >= threshold:
                     x_min, y_min, x_max, y_max, score = detected_object
                     # Convert float32 to float
                     x_min, y_min, x_max, y_max, score = (
