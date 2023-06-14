@@ -124,13 +124,43 @@ data
 │   ├── ade20k_instance_train.json
 │   ├── ade20k_instance_val.json
 │   ├── ade20k_panoptic_train
+|   |   ├── ADE_train_00000001.png
+|   |   ├── ADE_train_00000002.png
+|   |   ├── ...
 │   ├── ade20k_panoptic_train.json
 │   ├── ade20k_panoptic_val
+|   |   ├── ADE_val_00000001.png
+|   |   ├── ADE_val_00000002.png
+|   |   ├── ...
 │   ├── ade20k_panoptic_val.json
 │   ├── annotations
+|   |   ├── training
+|   |   |   ├── ADE_train_00000001.png
+|   |   |   ├── ADE_train_00000002.png
+|   |   |   ├── ...
+|   |   ├── validation
+|   |   |   ├── ADE_val_00000001.png
+|   |   |   ├── ADE_val_00000002.png
+|   |   |   ├── ...
 │   ├── annotations_instance
+|   |   ├── training
+|   |   |   ├── ADE_train_00000001.png
+|   |   |   ├── ADE_train_00000002.png
+|   |   |   ├── ...
+|   |   ├── validation
+|   |   |   ├── ADE_val_00000001.png
+|   |   |   ├── ADE_val_00000002.png
+|   |   |   ├── ...
 │   ├── categoryMapping.txt
 │   ├── images
+│   |   ├── training
+|   |   |   ├── ADE_train_00000001.jpg
+|   |   |   ├── ADE_train_00000002.jpg
+|   |   |   ├── ...
+|   |   ├── validation
+|   |   |   ├── ADE_val_00000001.jpg
+|   |   |   ├── ADE_val_00000002.jpg
+|   |   |   ├── ...
 │   ├── imgCatIds.json
 │   ├── objectInfo150.txt
 |   |── sceneCategories.txt
