@@ -132,11 +132,15 @@ Since semantic segmentation is a pixel-level task, we don't need to use a thresh
 
 ### Instance segmentation on ADE20K
 
-| Model                            | mIoU | mIOU(official) |                                 Config                                 |
-| :------------------------------- | :--: | :------------: | :--------------------------------------------------------------------: |
-| `xdecoder_focalt_last_novg.pt`\* | 10.3 |      10.3      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_ade20k.py) |
+| Model                               | mIoU | mIOU(official) |                                 Config                                 |
+| :---------------------------------- | :--: | :------------: | :--------------------------------------------------------------------: |
+| `xdecoder_focalt_best_openseg.pt`\* | 10.1 |      10.1      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_ade20k.py) |
 
 ### Panoptic segmentation on ADE20K
+
+| Model                               | mIoU  | mIOU(official) |                                 Config                                 |
+| :---------------------------------- | :---: | :------------: | :--------------------------------------------------------------------: |
+| `xdecoder_focalt_best_openseg.pt`\* | 15.26 |     18.97      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_ade20k.py) |
 
 ### Semantic segmentation on COCO2017
 
