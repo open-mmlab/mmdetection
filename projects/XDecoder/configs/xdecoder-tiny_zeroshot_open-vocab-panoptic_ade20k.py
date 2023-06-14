@@ -1,6 +1,6 @@
 _base_ = [
-    '_base_/xdecoder-tiny_open-vocab-instance.py',
-    'mmdet::_base_/datasets/ade20k_instance.py'
+    '_base_/xdecoder-tiny_open-vocab-panoptic.py',
+    'mmdet::_base_/datasets/ade20k_panoptic.py'
 ]
 
 test_pipeline = [
@@ -10,16 +10,11 @@ test_pipeline = [
         backend_args=_base_.backend_args),
     dict(
         type='ResizeShortestEdge', scale=640, max_size=2560, backend='pillow'),
-    dict(
-        type='LoadAnnotations',
-        with_bbox=False,
-        with_mask=False,
-        with_seg=True,
-        reduce_zero_label=True),
+    dict(type='LoadPanopticAnnotations', backend_args=_base_.backend_args),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor', 'text'))
+                   'scale_factor', 'text', 'stuff_text'))
 ]
 
 val_dataloader = dict(
