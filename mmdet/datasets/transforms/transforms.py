@@ -121,9 +121,7 @@ def imrescale(
         ndarray: The rescaled image.
     """
     h, w = img.shape[:2]
-    new_size, scale_factor = rescale_size((w, h),
-                                          scale,
-                                          return_scale=True)
+    new_size, scale_factor = rescale_size((w, h), scale, return_scale=True)
     rescaled_img = imresize(
         img, new_size, interpolation=interpolation, backend=backend)
     if return_scale:
@@ -278,6 +276,7 @@ class FixScaleResize(Resize):
             results['scale_factor'] = (w_scale, h_scale)
             results['keep_ratio'] = self.keep_ratio
 
+
 @TRANSFORMS.register_module()
 class ResizeShortestEdge(BaseTransform):
     """Resize the image and mask while keeping the aspect ratio unchanged.
@@ -307,8 +306,9 @@ class ResizeShortestEdge(BaseTransform):
         max_size (int): The maximum allowed longest edge length.
     """
 
-    def __init__(self, scale: Union[int, Tuple[int, int]],
-                 max_size: Optional[int]=None,
+    def __init__(self,
+                 scale: Union[int, Tuple[int, int]],
+                 max_size: Optional[int] = None,
                  resize_type: str = 'Resize',
                  **resize_kwargs) -> None:
         super().__init__()
@@ -320,6 +320,7 @@ class ResizeShortestEdge(BaseTransform):
 
     def _get_output_shape(self, img, short_edge_length) -> Tuple[int, int]:
         """Compute the target image shape with the given `short_edge_length`.
+
         Args:
             img (np.ndarray): The input image.
             short_edge_length (Union[int, Tuple[int, int]]): The target short
@@ -3822,4 +3823,3 @@ class CachedMixUp(BaseTransform):
         repr_str += f'random_pop={self.random_pop}, '
         repr_str += f'prob={self.prob})'
         return repr_str
-

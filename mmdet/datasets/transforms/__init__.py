@@ -18,8 +18,8 @@ from .transforms import (Albu, CachedMixUp, CachedMosaic, CopyPaste, CutOut,
                          MinIoURandomCrop, MixUp, Mosaic, Pad,
                          PhotoMetricDistortion, RandomAffine,
                          RandomCenterCropPad, RandomCrop, RandomErasing,
-                         RandomFlip, RandomShift, Resize, SegRescale,
-                         YOLOXHSVRandomAug, ResizeShortestEdge)
+                         RandomFlip, RandomShift, Resize, ResizeShortestEdge,
+                         SegRescale, YOLOXHSVRandomAug)
 from .wrappers import MultiBranch, ProposalBroadcaster, RandomOrder
 
 __all__ = [
@@ -37,5 +37,5 @@ __all__ = [
     'LoadEmptyAnnotations', 'RandomOrder', 'CachedMosaic', 'CachedMixUp',
     'FixShapeResize', 'ProposalBroadcaster', 'InferencerLoader',
     'LoadTrackAnnotations', 'BaseFrameSample', 'UniformRefFrameSample',
-    'PackTrackInputs', 'PackReIDInputs', 'FixScaleResize'
+    'PackTrackInputs', 'PackReIDInputs', 'FixScaleResize', 'ResizeShortestEdge'
 ]

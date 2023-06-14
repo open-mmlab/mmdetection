@@ -7,10 +7,8 @@ test_pipeline = [
     dict(
         type='LoadImageFromFile', imdecode_backend='pillow',
         backend_args=None),
-    dict(type='ResizeShortestEdge',
-         scale=800,
-         max_size=1333,
-         backend='pillow'),
+    dict(
+        type='ResizeShortestEdge', scale=800, max_size=1333, backend='pillow'),
     dict(
         type='LoadAnnotations',
         with_bbox=False,

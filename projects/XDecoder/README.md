@@ -22,16 +22,95 @@ mim install mmdet[multimodal]
 
 ## How to use it?
 
-## Models and results
-
 For convenience, you can download the weights to the `mmdetection` root dir
 
 ```shell
-wget https://download.openmmlab.com/mmdetection/v3.0/xdecoder/xdecoder_focalt_best_openseg.pt
 wget https://download.openmmlab.com/mmdetection/v3.0/xdecoder/xdecoder_focalt_last_novg.pt
+wget https://download.openmmlab.com/mmdetection/v3.0/xdecoder/xdecoder_focalt_best_openseg.pt
 ```
 
 The above two weights are directly copied from the official website without any modification. The specific source is https://github.com/microsoft/X-Decoder
+
+For convenience of demonstration, please download [the folder](https://github.com/microsoft/X-Decoder/tree/main/images) and place it in the root directory of mmdetection.
+
+**(1) Open Vocabulary Semantic Segmentation**
+
+```shell
+cd projects/XDecoder
+python demo.py ../../images/animals.png configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py --weights ../../xdecoder_focalt_last_novg.pt --texts zebra.giraffe
+```
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/c397c0ed-859a-4004-8725-78a591742bc8"/>
+</div>
+
+**(2) Open Vocabulary Instance Segmentation**
+
+```shell
+cd projects/XDecoder
+python demo.py ../../images/owls.jpeg configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py --weights ../../xdecoder_focalt_last_novg.pt --texts owl
+```
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/494b0b1c-4a42-4019-97ae-d33ee68af3d2"/>
+</div>
+
+**(3) Open Vocabulary Panoptic Segmentation**
+
+```shell
+cd projects/XDecoder
+python demo.py ../../images/street.jpg configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_coco.py --weights ../../xdecoder_focalt_last_novg.pt  --text car.person --stuff-text tree.sky
+```
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/9ad1e0f4-75ce-4e37-a5cc-83e0e8a722ed"/>
+</div>
+
+**(4) Referring Expression Segmentation**
+
+```shell
+cd projects/XDecoder
+python demo.py ../../images/fruit.jpg configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py --weights ../../xdecoder_focalt_last_novg.pt  --text "The larger watermelon. The front white flower. White tea pot."
+```
+
+**(5) Image Caption**
+
+```shell
+cd projects/XDecoder
+python demo.py ../../images/penguin.jpeg configs/xdecoder-tiny_zeroshot_caption_coco2014.py --weights ../../xdecoder_focalt_last_novg.pt
+```
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/7690ab79-791e-4011-ab0c-01f46c4a3d80"/>
+</div>
+
+**(6) Referring Expression Image Caption**
+
+```shell
+cd projects/XDecoder
+python demo.py ../../images/fruit.jpg configs/xdecoder-tiny_zeroshot_ref-caption.py --weights ../../xdecoder_focalt_last_novg.pt --text 'White tea pot'
+```
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/bae2fdba-0172-4fc8-8ad1-73b54c64ec30"/>
+</div>
+
+**(7) Text Image Region Retrieval**
+
+```shell
+cd projects/XDecoder
+python demo.py ../../images/coco configs/xdecoder-tiny_zeroshot_text-image-retrieval.py --weights ../../xdecoder_focalt_last_novg.pt --text 'pizza on the plate'
+```
+
+```text
+The image that best matches the given text is ../../images/coco/000.jpg and probability is 0.998
+```
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/479de6b2-88e7-41f0-8228-4b9a48f52954"/>
+</div>
+
+## Models and results
 
 ### Semantic segmentation on ADE20K
 
@@ -64,8 +143,8 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 ```
 
 | Model                                             | mIOU | mIOU(official) |                               Config                               |
-| :------------------------------------------------ |:----:|---------------:| :----------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco`\* | 62.1 |    62.1 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
+| :------------------------------------------------ | :--: | -------------: | :----------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco`\* | 62.1 |           62.1 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
 
 ### Instance segmentation on COCO2017
 
@@ -78,7 +157,7 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 ```
 
 | Model                                               | Mask mAP | Mask mAP(official) |                                Config                                |
-| :-------------------------------------------------- |:--------:|-------------------:| :------------------------------------------------------------------: |
+| :-------------------------------------------------- | :------: | -----------------: | :------------------------------------------------------------------: |
 | `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* |   39.8   |               39.7 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) |
 
 ### Panoptic segmentation on COCO2017
@@ -111,7 +190,7 @@ Before testing, you need to install jdk 1.8, otherwise it will prompt that java 
 
 | Model                                       | BLEU-4 | CIDER  |                            Config                            |
 | :------------------------------------------ | :----: | :----: | :----------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_caption_coco2014`\* | 35.14  | 116.62 | [config](configs/xdecoder-tiny_zeroshot_caption_coco2014.py) |
+| `xdecoder-tiny_zeroshot_caption_coco2014`\* | 35.26  | 116.81 | [config](configs/xdecoder-tiny_zeroshot_caption_coco2014.py) |
 
 ## Citation
 

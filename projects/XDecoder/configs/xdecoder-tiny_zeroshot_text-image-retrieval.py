@@ -12,7 +12,8 @@ test_pipeline = [
     dict(
         type='ResizeShortestEdge',
         scale=224,
-        backend='pillow'),
+        backend='pillow',
+        interpolation='bicubic'),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',

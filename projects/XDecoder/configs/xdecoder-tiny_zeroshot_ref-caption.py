@@ -6,10 +6,7 @@ grounding_scale = 512
 
 test_pipeline = [
     dict(type='LoadImageFromFile', imdecode_backend='pillow'),
-    dict(
-        type='ResizeShortestEdge',
-        scale=224,
-        backend='pillow'),
+    dict(type='ResizeShortestEdge', scale=224, backend='pillow'),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
