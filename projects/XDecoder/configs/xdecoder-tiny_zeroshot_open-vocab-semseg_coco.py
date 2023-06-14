@@ -1,7 +1,7 @@
 _base_ = '_base_/xdecoder-tiny_open-vocab-semseg.py'
 
 dataset_type = 'CocoSegDataset'
-data_root = '/home/PJLAB/huanghaian/dataset/coco/'
+data_root = 'data/coco/'
 
 test_pipeline = [
     dict(
@@ -49,8 +49,8 @@ x_decoder_coco2017_semseg_classes = (
 
 val_dataloader = dict(
     batch_size=1,
-    num_workers=0,
-    persistent_workers=False,
+    num_workers=2,
+    persistent_workers=True,
     drop_last=False,
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
