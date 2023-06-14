@@ -9,12 +9,11 @@ test_pipeline = [
         imdecode_backend='pillow',
         backend_args=_base_.backend_args),
     dict(
-        type='FixScaleResize',
+        type='ResizeShortestEdge',
         scale=640,
-        keep_ratio=True,
-        short_side_mode=True,
+        max_size=2560,
         backend='pillow',
-        interpolation='bicubic'),
+        keep_ratio=False),
     dict(
         type='LoadAnnotations',
         with_bbox=False,
@@ -23,32 +22,9 @@ test_pipeline = [
         reduce_zero_label=True),
     dict(
         type='PackDetInputs',
-        meta_keys=('img_path', 'ori_shape', 'img_shape', 'text'))
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor', 'text'))
 ]
-
-x_decoder_ade20k_classes = (
-    'wall', 'building', 'sky', 'floor', 'tree', 'ceiling', 'road', 'bed',
-    'window', 'grass', 'cabinet', 'sidewalk', 'person', 'earth', 'door',
-    'table', 'mountain', 'plant', 'curtain', 'chair', 'car', 'water',
-    'painting', 'sofa', 'shelf', 'house', 'sea', 'mirror', 'rug', 'field',
-    'armchair', 'seat', 'fence', 'desk', 'rock', 'wardrobe', 'lamp', 'tub',
-    'rail', 'cushion', 'base', 'box', 'column', 'signboard',
-    'chest of drawers', 'counter', 'sand', 'sink', 'skyscraper', 'fireplace',
-    'refrigerator', 'grandstand', 'path', 'stairs', 'runway', 'case',
-    'pool table', 'pillow', 'screen door', 'stairway', 'river', 'bridge',
-    'bookcase', 'blind', 'coffee table', 'toilet', 'flower', 'book', 'hill',
-    'bench', 'countertop', 'stove', 'palm', 'kitchen island', 'computer',
-    'swivel chair', 'boat', 'bar', 'arcade machine', 'hovel', 'bus', 'towel',
-    'light', 'truck', 'tower', 'chandelier', 'awning', 'street lamp', 'booth',
-    'tv', 'airplane', 'dirt track', 'clothes', 'pole', 'land', 'bannister',
-    'escalator', 'ottoman', 'bottle', 'buffet', 'poster', 'stage', 'van',
-    'ship', 'fountain', 'conveyer belt', 'canopy', 'washer', 'plaything',
-    'pool', 'stool', 'barrel', 'basket', 'falls', 'tent', 'bag', 'minibike',
-    'cradle', 'oven', 'ball', 'food', 'step', 'tank', 'trade name',
-    'microwave', 'pot', 'animal', 'bicycle', 'lake', 'dishwasher', 'screen',
-    'blanket', 'sculpture', 'hood', 'sconce', 'vase', 'traffic light', 'tray',
-    'trash can', 'fan', 'pier', 'crt screen', 'plate', 'monitor',
-    'bulletin board', 'shower', 'radiator', 'glass', 'clock', 'flag')
 
 val_dataloader = dict(
     dataset=dict(return_classes=True, pipeline=test_pipeline))
