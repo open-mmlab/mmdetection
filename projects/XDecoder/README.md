@@ -35,7 +35,7 @@ The above two weights are directly copied from the official website without any 
 
 ### Semantic segmentation on ADE20K
 
-Prepare your dataset according to the [docs](https://mmsegmentation.readthedocs.io/en/latest/user_guides/2_dataset_prepare.html#ade20k).
+Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_prepare.md).
 
 **Test Command**
 
@@ -45,11 +45,15 @@ Since semantic segmentation is a pixel-level task, we don't need to use a thresh
 ./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_semseg.py xdecoder_focalt_best_openseg.pt 8 --cfg-options model.test_cfg.use_thr_for_mc=False
 ```
 
-| Model                               | mIoU  |                       Config                       |
-| :---------------------------------- | :---: | :------------------------------------------------: |
-| `xdecoder_focalt_best_openseg.pt`\* | 25.13 | [config](configs/xdecoder-tiny_zeroshot_semseg.py) |
+| Model                               | mIoU  | mIOU(official) |                                Config                                |
+| :---------------------------------- | :---: | :------------: | :------------------------------------------------------------------: |
+| `xdecoder_focalt_best_openseg.pt`\* | 25.13 |     25.13      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_ade20k.py) |
 
 ### Instance segmentation on ADE20K
+
+| Model                            | mIoU | mIOU(official) |                                 Config                                 |
+| :------------------------------- | :--: | :------------: | :--------------------------------------------------------------------: |
+| `xdecoder_focalt_last_novg.pt`\* | 10.3 |      10.3      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_ade20k.py) |
 
 ### Panoptic segmentation on ADE20K
 
@@ -64,8 +68,8 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 ```
 
 | Model                                             | mIOU | mIOU(official) |                               Config                               |
-| :------------------------------------------------ |:----:|---------------:| :----------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco`\* | 61.8 |    62.1 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
+| :------------------------------------------------ | :--: | -------------: | :----------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco`\* | 61.8 |           62.1 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
 
 ### Instance segmentation on COCO2017
 
@@ -79,7 +83,7 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 
 | Model                                               | mAP  | mAP(official) |                                Config                                |
 | :-------------------------------------------------- | :--: | ------------: | :------------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* | 39.7 |   39.7 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) |
+| `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* | 39.7 |          39.7 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) |
 
 ### Panoptic segmentation on COCO2017
 
