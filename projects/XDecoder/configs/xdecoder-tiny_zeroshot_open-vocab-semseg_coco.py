@@ -1,13 +1,16 @@
 _base_ = '_base_/xdecoder-tiny_open-vocab-semseg.py'
 
 dataset_type = 'CocoSegDataset'
-data_root = 'data/coco/'
+data_root = '/home/PJLAB/huanghaian/dataset/coco/'
 
 test_pipeline = [
     dict(
         type='LoadImageFromFile', imdecode_backend='pillow',
         backend_args=None),
-    dict(type='Resize', scale=(1333, 800), backend='pillow', keep_ratio=True),
+    dict(type='ResizeShortestEdge',
+         scale=800,
+         max_size=1333,
+         backend='pillow'),
     dict(
         type='LoadAnnotations',
         with_bbox=False,
@@ -46,8 +49,8 @@ x_decoder_coco2017_semseg_classes = (
 
 val_dataloader = dict(
     batch_size=1,
-    num_workers=2,
-    persistent_workers=True,
+    num_workers=0,
+    persistent_workers=False,
     drop_last=False,
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
