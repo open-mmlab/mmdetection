@@ -564,7 +564,6 @@ class LoadPanopticAnnotations(LoadAnnotations):
                  with_mask: bool = True,
                  with_seg: bool = True,
                  box_type: str = 'hbox',
-                 ignore_index: int = 255,
                  imdecode_backend: str = 'cv2',
                  backend_args: dict = None) -> None:
         try:
@@ -575,7 +574,6 @@ class LoadPanopticAnnotations(LoadAnnotations):
                 'pip install git+https://github.com/cocodataset/'
                 'panopticapi.git.')
         self.rgb2id = utils.rgb2id
-        self.ignore_index = ignore_index
 
         super(LoadPanopticAnnotations, self).__init__(
             with_bbox=with_bbox,
@@ -605,13 +603,6 @@ class LoadPanopticAnnotations(LoadAnnotations):
             results['seg_map_path'], backend_args=self.backend_args)
         pan_png = mmcv.imfrombytes(
             img_bytes, flag='color', channel_order='rgb').squeeze()
-
-        if self.reduce_zero_label:
-            # avoid using underflow conversion
-            pan_png[pan_png == 0] = self.ignore_index
-            pan_png = pan_png - 1
-            pan_png[pan_png == self.ignore_index - 1] = self.ignore_index
-
         pan_png = self.rgb2id(pan_png)
 
         gt_masks = []
