@@ -2217,7 +2217,7 @@ class Mosaic(BaseTransform):
     Modified Keys:
 
     - img
-    - img_scale
+    - img_shape
     - gt_bboxes (optional)
     - gt_bboxes_labels (optional)
     - gt_ignore_flags (optional)
