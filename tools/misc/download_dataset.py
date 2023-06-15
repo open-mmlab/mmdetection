@@ -206,7 +206,8 @@ def main():
         ])
     url = data2url.get(args.dataset_name, None)
     if url is None:
-        print('Only support COCO, VOC, LVIS, balloon, and Objects365v2 now!')
+        print('Only support ADE20K, COCO, RefCOCO, VOC, LVIS, '
+              'balloon, and Objects365v2 now!')
         return
     if args.dataset_name == 'objects365v2':
         download_objects365v2(

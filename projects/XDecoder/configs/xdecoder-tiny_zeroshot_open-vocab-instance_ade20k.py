@@ -10,12 +10,7 @@ test_pipeline = [
         backend_args=_base_.backend_args),
     dict(
         type='ResizeShortestEdge', scale=640, max_size=2560, backend='pillow'),
-    dict(
-        type='LoadAnnotations',
-        with_bbox=False,
-        with_mask=False,
-        with_seg=True,
-        reduce_zero_label=True),
+    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',

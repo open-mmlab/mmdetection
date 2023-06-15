@@ -879,7 +879,7 @@ def separate_coco_semantic_from_panoptic(panoptic_json, panoptic_root,
 def parse_args():
     parser = argparse.ArgumentParser(
         description=\
-        'Convert COCO Stuff 164k annotations to mmsegmentation format')  # noqa
+        'Convert COCO Stuff 164k annotations to mmdet format')  # noqa
     parser.add_argument('coco_path', help='coco stuff path')
     args = parser.parse_args()
     return args

@@ -201,14 +201,12 @@ def prepare_panoptic_annotations(dataset_dir: str):
             new_2_old_mapping[i + len(thing_classes)] = j
 
         for old, new in old_2_new_mapping.items():
-            neworder_categories.append(
-                {
-                    'id': new,
-                    'name': all_classes[old],
-                    'isthing': int(new < len(thing_classes)),
-                    'color': palette[new]
-                }
-            )
+            neworder_categories.append({
+                'id': new,
+                'name': all_classes[old],
+                'isthing': int(new < len(thing_classes)),
+                'color': palette[new]
+            })
         categories_dict = {cat['id']: cat for cat in neworder_categories}
 
         panoptic_json_categories = neworder_categories[:]
@@ -255,7 +253,8 @@ def prepare_panoptic_annotations(dataset_dir: str):
             for semantic_cat_id in np.unique(semantic_cat_ids):
                 if semantic_cat_id == 255:
                     continue
-                if categories_dict[old_2_new_mapping[int(semantic_cat_id)]]['isthing'] == 1:
+                if categories_dict[old_2_new_mapping[int(
+                        semantic_cat_id)]]['isthing'] == 1:
                     continue
                 mask = semantic_cat_ids == semantic_cat_id
                 # should not have any overlap
@@ -278,11 +277,16 @@ def prepare_panoptic_annotations(dataset_dir: str):
                 bbox = [int(x), int(y), int(width), int(height)]
 
                 segm_info.append({
-                    'id': int(segment_id),
-                    'category_id': old_2_new_mapping[int(semantic_cat_id)],
-                    'area': int(area),
-                    'bbox': bbox,
-                    'iscrowd': 0
+                    'id':
+                    int(segment_id),
+                    'category_id':
+                    old_2_new_mapping[int(semantic_cat_id)],
+                    'area':
+                    int(area),
+                    'bbox':
+                    bbox,
+                    'iscrowd':
+                    0
                 })
 
             # process things

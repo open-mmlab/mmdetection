@@ -6,7 +6,7 @@ backend_args = None
 
 test_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
-    dict(type='Resize', scale=(640, 640), keep_ratio=True),
+    dict(type='Resize', scale=(2560, 640), keep_ratio=True),
     dict(type='LoadPanopticAnnotations', backend_args=backend_args),
     dict(
         type='PackDetInputs',
