@@ -136,6 +136,18 @@ class RepVGGBlock(BaseModule):
 
 
 class CSPRepLayer(BaseModule):
+    """CSPRepLayer.
+
+    Args:
+        in_channels (int): The input channels of the block.
+        out_channels (int): The output channels of the block.
+        num_blocks (int): The number of blocks in the layer. Defaults to 3.
+        expansion (float): The expansion of the block. Defaults to 1.0.
+        norm_cfg (:obj:`ConfigDict` or dict, optional): The config dict for
+            normalization layers. Defaults to dict(type='BN').
+        act_cfg (:obj:`ConfigDict` or dict, optional): The config dict for
+            activation layers. Defaults to dict(type='SiLU', inplace=True).
+    """
 
     def __init__(self,
                  in_channels: int,
@@ -190,6 +202,35 @@ class CSPRepLayer(BaseModule):
 
 @MODELS.register_module()
 class HybridEncoder(BaseModule):
+    """HybridEncoder.
+
+    Args:
+        layer_cfg (:obj:`ConfigDict` or dict): The config dict for the layer.
+        projector (:obj:`ConfigDict` or dict, optional): The config dict for
+            the projector. Defaults to None.
+        num_encoder_layers (int, optional): The number of encoder layers.
+            Defaults to 1.
+        in_channels (List[int], optional): The input channels of the
+            feature maps. Defaults to [512, 1024, 2048].
+        feat_strides (List[int], optional): The strides of the feature
+            maps. Defaults to [8, 16, 32].
+        hidden_dim (int, optional): The hidden dimension of the MLP.
+            Defaults to 256.
+        use_encoder_idx (List[int], optional): The indices of the encoder
+            layers to use. Defaults to [2].
+        pe_temperature (int, optional): The temperature of the positional
+            encoding. Defaults to 10000.
+        expansion (float, optional): The expansion of the CSPRepLayer.
+            Defaults to 1.0.
+        depth_mult (float, optional): The depth multiplier of the CSPRepLayer.
+            Defaults to 1.0.
+        norm_cfg (:obj:`ConfigDict` or dict, optional): The config dict for
+            normalization layers. Defaults to dict(type='BN').
+        act_cfg (:obj:`ConfigDict` or dict, optional): The config dict for
+            activation layers. Defaults to dict(type='SiLU', inplace=True).
+        eval_size (int, optional): The size of the test image.
+            Defaults to None.
+    """
 
     def __init__(self,
                  layer_cfg: ConfigType,
@@ -204,7 +245,7 @@ class HybridEncoder(BaseModule):
                  depth_mult: float = 1.0,
                  norm_cfg: OptConfigType = dict(type='BN', requires_grad=True),
                  act_cfg: OptConfigType = dict(type='SiLU', inplace=True),
-                 test_size=None):
+                 eval_size=None):
         super(HybridEncoder, self).__init__()
         self.in_channels = in_channels
         self.feat_strides = feat_strides
@@ -212,7 +253,7 @@ class HybridEncoder(BaseModule):
         self.use_encoder_idx = use_encoder_idx
         self.num_encoder_layers = num_encoder_layers
         self.pe_temperature = pe_temperature
-        self.eval_size = test_size
+        self.eval_size = eval_size
 
         # channel projection
         self.input_proj = ModuleList()

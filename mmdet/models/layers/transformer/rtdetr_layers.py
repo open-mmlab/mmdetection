@@ -20,7 +20,7 @@ class RTDETRTransformerDecoder(DinoTransformerDecoder):
             `num_layers + eval_idx`. Default: -1.
     """
 
-    def __init__(self, eval_idx=-1, *args, **kwargs):
+    def __init__(self, eval_idx: int = -1, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if eval_idx < 0:
             eval_idx = self.num_layers + eval_idx
