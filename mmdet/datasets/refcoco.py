@@ -82,8 +82,7 @@ class RefCOCODataset(BaseDataset):
     def load_data_list(self) -> List[dict]:
         """Load data list."""
         self.splits = mmengine.load(self.split_file, file_format='pkl')
-        self.instances = mmengine.load(
-            osp.join(self.data_root, self.ann_file), file_format='json')
+        self.instances = mmengine.load(self.ann_file, file_format='json')
         self._init_refs()
         img_prefix = self.data_prefix['img_path']
 
