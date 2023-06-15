@@ -159,7 +159,7 @@ def prepare_instance_annotations(dataset_dir: str):
 def prepare_panoptic_annotations(dataset_dir: str):
     dataset_dir = Path(dataset_dir)
 
-    for name, dirname in [('val', 'validation')]:
+    for name, dirname in [('train', 'training'), ('val', 'validation')]:
         image_dir = dataset_dir / 'images' / dirname
         semantic_dir = dataset_dir / 'annotations' / dirname
         instance_dir = dataset_dir / 'annotations_instance' / dirname
@@ -172,17 +172,7 @@ def prepare_panoptic_annotations(dataset_dir: str):
         mkdir_or_exist(out_folder)
 
         # catid mapping
-        mapping_file = dataset_dir / 'categoryMapping.txt'
-        # with open(mapping_file, 'r') as f:
-        #     map_id = {}
-        #     for i, line in enumerate(f.readlines()):
-        #         if i == 0:
-        #             continue
-        #         ins_id, sem_id, _ = line.strip().split()
-        #         map_id[int(ins_id) - 1] = int(sem_id) - 1
-
         neworder_categories = []
-        # ADE20K_SEM_SEG_CATEGORIES = ADE20KPanopticDataset.METAINFO['classes']
         all_classes = ORIGINAL_CATEGORIES
         thing_classes = ADE20KPanopticDataset.METAINFO['thing_classes']
         stuff_classes = ADE20KPanopticDataset.METAINFO['stuff_classes']
@@ -295,15 +285,8 @@ def prepare_panoptic_annotations(dataset_dir: str):
                     continue
                 mask = instance_ins_ids == thing_id
 
-                # import cv2
-                # cv2.imshow('mask', mask.astype(np.uint8) * 255)
-                # cv2.waitKey(0)
-
                 instance_cat_id = np.unique(instance_cat_ids[mask])
                 assert len(instance_cat_id) == 1
-
-                # semantic_cat_id = new_2_old_mapping[instance_cat_id[0]]
-                # print(semantic_cat_id)
 
                 segment_id, color = id_generator.get_id_and_color(
                     instance_cat_id[0])
@@ -361,9 +344,9 @@ def main():
         print(
             f'Creating panoptic annotations to {annotation_train_path} and {annotation_val_path} ...'  # noqa
         )
-        # if os.path.exists(annotation_train_path) or os.path.exists(
-        #         annotation_val_path):
-        #     raise RuntimeError('Panoptic annotations already exist.')
+        if os.path.exists(annotation_train_path) or os.path.exists(
+                annotation_val_path):
+            raise RuntimeError('Panoptic annotations already exist.')
         prepare_panoptic_annotations(src)
         print('Done.')
     else:
