@@ -46,10 +46,6 @@ class RefCOCODataset(BaseDataset):
 
         assert text_mode in ['original', 'random', 'concat', 'select_first']
         self.text_mode = text_mode
-
-        self._init_refs(
-            osp.join(data_root, ann_file), osp.join(data_root, split_file))
-
         super().__init__(
             data_root=data_root,
             data_prefix=data_prefix,
@@ -63,16 +59,8 @@ class RefCOCODataset(BaseDataset):
 
         return super()._join_prefix()
 
-    def _init_refs(self, ann_file: str, split_file: str):
-        """Initialize the refs for RefCOCO.
-
-        Args:
-            ann_file (str): Annotation file path.
-            split_file (str): Split file path.
-        """
-        self.instances = mmengine.load(ann_file, file_format='json')
-        splits = mmengine.load(split_file, file_format='pkl')
-
+    def _init_refs(self):
+        """Initialize the refs for RefCOCO."""
         anns, imgs = {}, {}
         for ann in self.instances['annotations']:
             anns[ann['id']] = ann
@@ -80,7 +68,7 @@ class RefCOCODataset(BaseDataset):
             imgs[img['id']] = img
 
         refs, ref_to_ann = {}, {}
-        for ref in splits:
+        for ref in self.splits:
             # ids
             ref_id = ref['ref_id']
             ann_id = ref['ann_id']
@@ -93,11 +81,14 @@ class RefCOCODataset(BaseDataset):
 
     def load_data_list(self) -> List[dict]:
         """Load data list."""
-        splits = mmengine.load(self.split_file, file_format='pkl')
+        self.splits = mmengine.load(self.split_file, file_format='pkl')
+        self.instances = mmengine.load(
+            osp.join(self.data_root, self.ann_file), file_format='json')
+        self._init_refs()
         img_prefix = self.data_prefix['img_path']
 
         ref_ids = [
-            ref['ref_id'] for ref in splits if ref['split'] == self.split
+            ref['ref_id'] for ref in self.splits if ref['split'] == self.split
         ]
         full_anno = []
         for ref_id in ref_ids:

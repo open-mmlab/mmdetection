@@ -189,15 +189,15 @@ mmdetection
 The images and annotations of [RefCOCO](https://github.com/lichengunc/refer) series datasets can be download by running `tools/misc/download_dataset.py`:
 
 ```shell
-python tools/misc/download_dataset.py --dataset-name refcoco --save-dir data/refcoco --unzip
+python tools/misc/download_dataset.py --dataset-name refcoco --save-dir data/coco --unzip
 ```
 
 Then the directory should be like this.
 
 ```text
 data
-├── refcoco
-│   ├── refcoco
+├── coco
+│   ├── refcoco
 │   │   ├── instances.json
 │   │   ├── refs(google).p
 │   │   └── refs(unc).p
