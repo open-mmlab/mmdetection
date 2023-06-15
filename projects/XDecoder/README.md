@@ -198,7 +198,9 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 
 | Model                            | cIoU  | cIOU(official) |                                 Config                                  |
 | :------------------------------- | :---: | :------------: | :---------------------------------------------------------------------: |
-| `xdecoder_focalt_last_novg.pt`\* | 62.25 |     57.85      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
+| `xdecoder_focalt_last_novg.pt`\* | 58.85 |     57.85      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
+
+**Note:** If you set the scale of `Resize` to (1024, 512), the result will be `57.69`.
 
 ### Image Caption on COCO2014
 

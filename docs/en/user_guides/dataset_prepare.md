@@ -192,7 +192,7 @@ The images and annotations of [RefCOCO](https://github.com/lichengunc/refer) ser
 python tools/misc/download_dataset.py --dataset-name refcoco --save-dir data/coco --unzip
 ```
 
-Then the directory should be like this.
+Then the directory should be like this:
 
 ```text
 data
