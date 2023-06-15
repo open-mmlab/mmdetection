@@ -2,7 +2,7 @@
 import collections
 import os.path as osp
 import random
-from typing import List
+from typing import Dict, List
 
 import mmengine
 from mmengine.dataset import BaseDataset
@@ -29,16 +29,17 @@ class RefCOCODataset(BaseDataset):
         data_prefix (str): Prefix for training data.
         split_file (str): Split file path.
         split (str): Split name. Defaults to 'train'.
+        text_mode (str): Text mode. Defaults to 'random'.
         **kwargs: Other keyword arguments in :class:`BaseDataset`.
     """
 
     def __init__(self,
-                 data_root,
-                 ann_file,
-                 data_prefix,
-                 split_file,
-                 split='train',
-                 text_mode='random',
+                 data_root: str,
+                 ann_file: str,
+                 split_file: str,
+                 data_prefix: Dict,
+                 split: str = 'train',
+                 text_mode: str = 'random',
                  **kwargs):
         self.split_file = split_file
         self.split = split
@@ -62,8 +63,13 @@ class RefCOCODataset(BaseDataset):
 
         return super()._join_prefix()
 
-    def _init_refs(self, ann_file, split_file):
-        """Initialize the refs for RefCOCO."""
+    def _init_refs(self, ann_file: str, split_file: str):
+        """Initialize the refs for RefCOCO.
+
+        Args:
+            ann_file (str): Annotation file path.
+            split_file (str): Split file path.
+        """
         self.instances = mmengine.load(ann_file, file_format='json')
         splits = mmengine.load(split_file, file_format='pkl')
 
@@ -128,30 +134,31 @@ class RefCOCODataset(BaseDataset):
         join_path = mmengine.fileio.get_file_backend(img_prefix).join_path
         for image in images:
             img_id = image['id']
-            grounding_anno = grounding_dict[img_id][0]
-            texts = [x['raw'].lower() for x in grounding_anno['sentences']]
-            if self.text_mode == 'random':
-                idx = random.randint(0, len(texts) - 1)
-                text = texts[idx]
-            elif self.text_mode == 'concat':
-                text = [''.join(texts)]
-            elif self.text_mode == 'select_first':
-                text = [texts[0]]
-            elif self.text_mode == 'original':
-                text = texts
-            else:
-                raise ValueError(f'Invalid text mode "{self.text_mode}".')
-            data_info = {
-                'img_path':
-                join_path(img_prefix, image['file_name']),
-                'img_id':
-                img_id,
-                'instances': [{
+            instances = []
+            sentences = []
+            for grounding_anno in grounding_dict[img_id]:
+                texts = [x['raw'].lower() for x in grounding_anno['sentences']]
+                if self.text_mode == 'random':
+                    idx = random.randint(0, len(texts) - 1)
+                    text = [texts[idx]]
+                elif self.text_mode == 'concat':
+                    text = [''.join(texts)]
+                elif self.text_mode == 'select_first':
+                    text = texts[0]
+                elif self.text_mode == 'original':
+                    text = texts
+                else:
+                    raise ValueError(f'Invalid text mode "{self.text_mode}".')
+                instances.append({
                     'mask': grounding_anno['segmentation'],
                     'ignore_flag': 0
-                }],
-                'text':
-                text
+                })
+                sentences.append(text)
+            data_info = {
+                'img_path': join_path(img_prefix, image['file_name']),
+                'img_id': img_id,
+                'instances': instances,
+                'text': sentences
             }
             data_list.append(data_info)
 

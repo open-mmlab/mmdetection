@@ -28,11 +28,11 @@ val_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        data_prefix=dict(img='train2014/'),
+        data_prefix=dict(img_path='train2014/'),
         ann_file='refcoco/instances.json',
         split_file='refcoco/refs(unc).p',
         split='val',
-        text_mode='original',
+        text_mode='select_first',
         pipeline=test_pipeline))
 
 test_dataloader = dict(
@@ -44,11 +44,11 @@ test_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        data_prefix=dict(img='train2014/'),
+        data_prefix=dict(img_path='train2014/'),
         ann_file='refcoco/instances.json',
         split_file='refcoco/refs(unc).p',
         split='testA',  # or 'testB'
-        text_mode='original',
+        text_mode='select_first',
         pipeline=test_pipeline))
 
 val_evaluator = dict(type='RefSegMetric', iou_metrics=['cIoU', 'mIoU'])
