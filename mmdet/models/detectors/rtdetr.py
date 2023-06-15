@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from torch import Tensor, nn
@@ -9,6 +9,8 @@ from mmdet.structures import OptSampleList
 from ..layers import RTDETRTransformerDecoder, SinePositionalEncoding
 from .deformable_detr import DeformableDETR, MultiScaleDeformableAttention
 from .dino import DINO
+
+DeviceType = Union[str, torch.device]
 
 
 @MODELS.register_module()
@@ -22,13 +24,16 @@ class RTDETR(DINO):
     backbone -> neck -> transformer -> detr_head
 
     Args:
-        eval_size()
+        eval_size (Tuple[int, int]): The size of images for evaluation.
+            Defaults to None.
+        feat_strides (List[int]): The stride of each level of features.
+            Defaults to [8, 16, 32].
     """
 
     def __init__(self,
                  *args,
-                 eval_size=None,
-                 feat_strides=[8, 16, 32],
+                 eval_size: Tuple[int, int] = None,
+                 feat_strides: List[int] = [8, 16, 32],
                  **kwargs) -> None:
         self.eval_size = eval_size
         self.eval_idx = -1
@@ -88,10 +93,11 @@ class RTDETR(DINO):
             second dict contains the inputs of decoder.
 
             - encoder_inputs_dict (dict): The keyword args dictionary of
-              `self.forward_encoder()`, which includes 'feat', 'feat_mask',
-              and 'feat_pos'.
+              `self.forward_encoder()`, which includes 'feat' and
+              'spatial_shapes'.
             - decoder_inputs_dict (dict): The keyword args dictionary of
-              `self.forward_decoder()`, which includes 'memory_mask'.
+              `self.forward_decoder()`, which includes 'spatial_shapes' and
+                'level_start_index'.
         """
         batch_size = mlvl_feats[0].size(0)
 
@@ -128,10 +134,19 @@ class RTDETR(DINO):
             spatial_shapes=spatial_shapes, level_start_index=level_start_index)
         return encoder_inputs_dict, decoder_inputs_dict
 
-    def forward_encoder(self, feat, spatial_shapes: Tensor) -> Dict:
-        """Forward with Transformer encoder.
+    def forward_encoder(self, feat: Tensor, spatial_shapes: Tensor) -> Dict:
+        """Forward with Transformer encoder. RT-DETR uses the encoder in the
+        neck.
 
-        RT-DETR uses the encoder in the neck.
+        Args:
+            feat (Tensor): The input features of the Transformer encoder,
+                has shape (bs, num_feat_points, dim).
+            spatial_shapes (Tensor): Spatial shapes of features in all levels.
+                With shape (num_levels, 2), last dimension represents (h, w).
+
+        Returns:
+            dict: The output of the Transformer encoder, which includes
+            'memory', 'spatial_shapes'.
         """
         return dict(memory=feat, spatial_shapes=spatial_shapes)
 
@@ -147,9 +162,6 @@ class RTDETR(DINO):
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
                 has shape (bs, num_feat_points, dim).
-            memory_mask (Tensor): ByteTensor, the padding mask of the memory,
-                has shape (bs, num_feat_points). Will only be used when
-                `as_two_stage` is `True`.
             spatial_shapes (Tensor): Spatial shapes of features in all levels.
                 With shape (num_levels, 2), last dimension represents (h, w).
                 Will only be used when `as_two_stage` is `True`.
@@ -251,8 +263,6 @@ class RTDETR(DINO):
                 `self.training` is `True`, else `num_matching_queries`.
             memory (Tensor): The output embeddings of the Transformer encoder,
                 has shape (bs, num_feat_points, dim).
-            memory_mask (Tensor): ByteTensor, the padding mask of the memory,
-                has shape (bs, num_feat_points).
             reference_points (Tensor): The initial reference, has shape
                 (bs, num_queries_total, 4) with the last dimension arranged as
                 (cx, cy, w, h).
@@ -263,7 +273,9 @@ class RTDETR(DINO):
                 as [0, h_0*w_0, h_0*w_0+h_1*w_1, ...].
             valid_ratios (Tensor): The ratios of the valid width and the valid
                 height relative to the width and the height of features in all
-                levels, has shape (bs, num_levels, 2).
+                levels, has shape (bs, num_levels, 2). Defaults to None.
+            memory_mask (Tensor): ByteTensor, the padding mask of the memory,
+                has shape (bs, num_feat_points). Defaults to None.
             dn_mask (Tensor, optional): The attention mask to prevent
                 information leakage from different denoising groups and
                 matching parts, will be used as `self_attn_mask` of the
@@ -273,10 +285,9 @@ class RTDETR(DINO):
 
         Returns:
             dict: The dictionary of decoder outputs, which includes the
-            `hidden_states` of the decoder output and `references` including
-            the initial and intermediate reference_points.
+            `outputs_classes` and `output_coords` of the decoder output.
         """
-        out_bboxes, out_logits = self.decoder(
+        out_logits, out_bboxes = self.decoder(
             query=query,
             value=memory,
             key_padding_mask=memory_mask,
@@ -289,32 +300,30 @@ class RTDETR(DINO):
             cls_branches=self.bbox_head.cls_branches)
 
         decoder_outputs_dict = dict(
-            hidden_states=out_bboxes, references=out_logits)
+            outputs_classes=out_logits, outputs_coords=out_bboxes)
         return decoder_outputs_dict
 
     def generate_proposals(self,
                            spatial_shapes: Tensor = None,
                            device: Optional[torch.device] = None,
                            grid_size: float = 0.05) -> Tuple[Tensor, Tensor]:
-        """Generate proposals from encoded memory. The function will only be
-        used when `as_two_stage` is `True`.
+        """Generate proposals from spatial shapes.
 
         Args:
-            memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (bs, num_feat_points, dim).
-            memory_mask (Tensor): ByteTensor, the padding mask of the memory,
-                has shape (bs, num_feat_points).
             spatial_shapes (Tensor): Spatial shapes of features in all levels,
                 has shape (num_levels, 2), last dimension represents (h, w).
+                Defaults to None.
+            device (str | torch.device): The device where the anchors will be
+                put on. Defaults to None.
+            grid_size (float): The grid size of the anchors. Defaults to 0.05.
 
         Returns:
-            tuple: A tuple of transformed memory and proposals.
+            tuple: A tuple of proposals and valid masks.
 
-            - output_memory (Tensor): The transformed memory for obtaining
-              top-k proposals, has shape (bs, num_feat_points, dim).
-            - output_proposals (Tensor): The inverse-normalized proposal, has
-              shape (batch_size, num_keys, 4) with the last dimension arranged
-              as (cx, cy, w, h).
+            - proposals (Tensor): The proposals of the detector, has shape
+                (bs, num_proposals, 4).
+            - valid_masks (Tensor): The valid masks of the proposals, has shape
+                (bs, num_proposals).
         """
 
         if spatial_shapes is None:
@@ -338,8 +347,8 @@ class RTDETR(DINO):
             proposals.append(torch.cat((grid, wh), -1).view(-1, H * W, 4))
 
         proposals = torch.cat(proposals, 1)
-        valid_mask = ((proposals > 0.01) * (proposals < 0.99)).all(
+        valid_masks = ((proposals > 0.01) * (proposals < 0.99)).all(
             -1, keepdim=True)
         proposals = torch.log(proposals / (1 - proposals))
-        proposals = proposals.masked_fill(~valid_mask, float('inf'))
-        return proposals, valid_mask
+        proposals = proposals.masked_fill(~valid_masks, float('inf'))
+        return proposals, valid_masks

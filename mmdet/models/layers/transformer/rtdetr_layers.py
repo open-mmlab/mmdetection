@@ -62,19 +62,15 @@ class RTDETRTransformerDecoder(DinoTransformerDecoder):
                 regression results.
 
         Returns:
-            tuple[Tensor]: Output queries and references of Transformer
-                decoder
+            tuple[Tensor]: results of head containing the following tensor.
 
-            - query (Tensor): Output embeddings of the last decoder, has
-              shape (num_queries, bs, embed_dims) when `return_intermediate`
-              is `False`. Otherwise, Intermediate output embeddings of all
-              decoder layers, has shape (num_decoder_layers, num_queries, bs,
-              embed_dims).
-            - reference_points (Tensor): The reference of the last decoder
-              layer, has shape (bs, num_queries, 4)  when `return_intermediate`
-              is `False`. Otherwise, Intermediate references of all decoder
-              layers, has shape (num_decoder_layers, bs, num_queries, 4). The
-              coordinates are arranged as (cx, cy, w, h)
+            - all_layers_outputs_classes (Tensor): Outputs from the
+              classification head, has shape (num_decoder_layers, bs,
+              num_queries, cls_out_channels).
+            - all_layers_outputs_coords (Tensor): Sigmoid outputs from the
+              regression head with normalized coordinate format (cx, cy, w,
+              h), has shape (num_decoder_layers, bs, num_queries, 4) with the
+              last dimension arranged as (cx, cy, w, h).
         """
         assert reg_branches is not None
         assert cls_branches is not None
@@ -120,4 +116,4 @@ class RTDETRTransformerDecoder(DinoTransformerDecoder):
             reference_points = new_reference_bboxes.detach(
             ) if self.training else new_reference_bboxes
 
-        return torch.stack(out_bboxes), torch.stack(out_logits)
+        return torch.stack(out_logits), torch.stack(out_bboxes)

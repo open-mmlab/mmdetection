@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Tuple
+from typing import List, Tuple
 
 import torch
 import torch.nn as nn
@@ -15,21 +15,40 @@ from mmdet.utils import ConfigType, OptConfigType
 
 
 class RepVGGBlock(BaseModule):
-    """RepVGG block is modifided to skip branch_norm."""
+    """RepVGG block is modifided to skip branch_norm.
+
+    Args:
+        in_channels (int): The input channels of the block.
+        out_channels (int): The output channels of the block.
+        stride (int): The stride of the block. Defaults to 1.
+        padding (int): The padding of the block. Defaults to 1.
+        dilation (int): The dilation of the block. Defaults to 1.
+        groups (int): The groups of the block. Defaults to 1.
+        padding_mode (str): The padding mode of the block. Defaults to 'zeros'.
+        conv_cfg (dict): The config dict for convolution layers.
+            Defaults to None.
+        norm_cfg (dict): The config dict for normalization layers.
+            Defaults to dict(type='BN').
+        act_cfg (dict): The config dict for activation layers.
+            Defaults to dict(type='ReLU').
+        without_branch_norm (bool): Whether to skip branch_norm.
+            Defaults to True.
+        init_cfg (dict): The config dict for initialization. Defaults to None.
+    """
 
     def __init__(self,
-                 in_channels,
-                 out_channels,
-                 stride=1,
-                 padding=1,
-                 dilation=1,
-                 groups=1,
-                 padding_mode='zeros',
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN'),
-                 act_cfg=dict(type='ReLU'),
-                 without_branch_norm=True,
-                 init_cfg=None):
+                 in_channels: int,
+                 out_channels: int,
+                 stride: int = 1,
+                 padding: int = 1,
+                 dilation: int = 1,
+                 groups: int = 1,
+                 padding_mode: str = 'zeros',
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: OptConfigType = dict(type='BN'),
+                 act_cfg: OptConfigType = dict(type='ReLU'),
+                 without_branch_norm: bool = True,
+                 init_cfg: OptConfigType = None):
         super(RepVGGBlock, self).__init__(init_cfg)
 
         self.in_channels = in_channels
@@ -59,7 +78,22 @@ class RepVGGBlock(BaseModule):
 
         self.act = build_activation_layer(act_cfg)
 
-    def create_conv_bn(self, kernel_size, dilation=1, padding=0):
+    def create_conv_bn(self,
+                       kernel_size: int,
+                       dilation: int = 1,
+                       padding: int = 0) -> nn.Sequential:
+        """Create a conv_bn layer.
+
+        Args:
+            kernel_size (int): The kernel size of the conv layer.
+            dilation (int, optional): The dilation of the conv layer.
+                Defaults to 1.
+            padding (int, optional): The padding of the conv layer.
+                Defaults to 0.
+
+        Returns:
+            nn.Sequential: The created conv_bn layer.
+        """
         conv_bn = Sequential()
         conv_bn.add_module(
             'conv',
@@ -79,7 +113,15 @@ class RepVGGBlock(BaseModule):
 
         return conv_bn
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
+        """1x1 conv + 3x3 conv + identity shortcut.
+
+        Args:
+            x (Tensor): The input tensor.
+
+        Returns:
+            Tensor: The output tensor.
+        """
 
         if self.branch_norm is None:
             branch_norm_out = 0
@@ -96,10 +138,10 @@ class RepVGGBlock(BaseModule):
 class CSPRepLayer(BaseModule):
 
     def __init__(self,
-                 in_channels,
-                 out_channels,
-                 num_blocks=3,
-                 expansion=1.0,
+                 in_channels: int,
+                 out_channels: int,
+                 num_blocks: int = 3,
+                 expansion: float = 1.0,
                  norm_cfg: OptConfigType = dict(type='BN', requires_grad=True),
                  act_cfg: OptConfigType = dict(type='SiLU', inplace=True)):
         super(CSPRepLayer, self).__init__()
@@ -131,7 +173,15 @@ class CSPRepLayer(BaseModule):
         else:
             self.conv3 = nn.Identity()
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
+        """Forward function.
+
+        Args:
+            x (Tensor): The input tensor.
+
+        Returns:
+            Tensor: The output tensor.
+        """
         x_1 = self.conv1(x)
         x_1 = self.bottlenecks(x_1)
         x_2 = self.conv2(x)
@@ -144,14 +194,14 @@ class HybridEncoder(BaseModule):
     def __init__(self,
                  layer_cfg: ConfigType,
                  projector: OptConfigType = None,
-                 num_encoder_layers=1,
-                 in_channels=[512, 1024, 2048],
-                 feat_strides=[8, 16, 32],
-                 hidden_dim=256,
-                 use_encoder_idx=[2],
-                 pe_temperature=10000,
-                 expansion=1.0,
-                 depth_mult=1.0,
+                 num_encoder_layers: int = 1,
+                 in_channels: List[int] = [512, 1024, 2048],
+                 feat_strides: List[int] = [8, 16, 32],
+                 hidden_dim: int = 256,
+                 use_encoder_idx: List[int] = [2],
+                 pe_temperature: int = 10000,
+                 expansion: float = 1.0,
+                 depth_mult: float = 1.0,
                  norm_cfg: OptConfigType = dict(type='BN', requires_grad=True),
                  act_cfg: OptConfigType = dict(type='SiLU', inplace=True),
                  test_size=None):
@@ -299,10 +349,24 @@ class HybridEncoder(BaseModule):
         return tuple(outs)
 
     @staticmethod
-    def build_2d_sincos_position_embedding(w,
-                                           h,
+    def build_2d_sincos_position_embedding(w: int,
+                                           h: int,
                                            embed_dim=256,
-                                           temperature=10000.):
+                                           temperature=10000.) -> Tensor:
+        """Build 2D sin-cos position embedding.
+
+        Args:
+            w (int): The width of the feature map.
+            h (int): The height of the feature map.
+            embed_dim (int): The dimension of the embedding.
+                Defaults to 256.
+            temperature (float): The temperature of the position embedding.
+                Defaults to 10000.
+
+        Returns:
+            Tensor: The position embedding.
+        """
+
         grid_w = torch.arange(int(w), dtype=torch.float32)
         grid_h = torch.arange(int(h), dtype=torch.float32)
         grid_w, grid_h = torch.meshgrid(grid_w, grid_h)
