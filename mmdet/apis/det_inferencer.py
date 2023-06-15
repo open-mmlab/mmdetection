@@ -60,6 +60,8 @@ class DetInferencer(BaseInferencer):
         scope (str, optional): The scope of the model. Defaults to mmdet.
         palette (str): Color palette used for visualization. The order of
             priority is palette -> config -> checkpoint. Defaults to 'none'.
+        show_progress (bool): Control whether to display the progress bar during
+            the inference process. Defaults to True.
     """
 
     preprocess_kwargs: set = set()
@@ -85,7 +87,8 @@ class DetInferencer(BaseInferencer):
                  weights: Optional[str] = None,
                  device: Optional[str] = None,
                  scope: Optional[str] = 'mmdet',
-                 palette: str = 'none') -> None:
+                 palette: str = 'none',
+                 show_progress: bool = True) -> None:
         # A global counter tracking the number of images processed, for
         # naming of the output images
         self.num_visualized_imgs = 0
@@ -93,7 +96,8 @@ class DetInferencer(BaseInferencer):
         self.palette = palette
         init_default_scope(scope)
         super().__init__(
-            model=model, weights=weights, device=device, scope=scope)
+            model=model, weights=weights, device=device, scope=scope,
+            show_progress=show_progress)
         self.model = revert_sync_batchnorm(self.model)
 
     def _load_weights_to_model(self, model: nn.Module,
@@ -339,7 +343,8 @@ class DetInferencer(BaseInferencer):
             ori_inputs, batch_size=batch_size, **preprocess_kwargs)
 
         results_dict = {'predictions': [], 'visualization': []}
-        for ori_inputs, data in track(inputs, description='Inference'):
+        for ori_inputs, data in (track(inputs, description='Inference')
+                                 if self.show_progress else inputs):
             preds = self.forward(data, **forward_kwargs)
             visualization = self.visualize(
                 ori_inputs,
