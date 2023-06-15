@@ -111,7 +111,6 @@ Then move the annotations to the `data/ADEChallengeData2016` directory and run t
 ```shell
 mv data/annotations_instance data/ADEChallengeData2016/
 mv data/categoryMapping.txt data/ADEChallengeData2016/
-mv data/objectInfo150.txt data/ADEChallengeData2016/
 mv data/imgCatIds.json data/ADEChallengeData2016/
 python tools/dataset_converters/ade20k2coco.py data/ADEChallengeData2016 --task panoptic
 python tools/dataset_converters/ade20k2coco.py data/ADEChallengeData2016 --task instance

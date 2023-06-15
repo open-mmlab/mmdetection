@@ -147,7 +147,7 @@ Since semantic segmentation is a pixel-level task, we don't need to use a thresh
 ```
 
 | Model                               | mIoU  | mIOU(official) |                                 Config                                 |
-| :---------------------------------- |:-----:| :------------: | :--------------------------------------------------------------------: |
+| :---------------------------------- | :---: | :------------: | :--------------------------------------------------------------------: |
 | `xdecoder_focalt_best_openseg.pt`\* | 19.06 |     18.97      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_ade20k.py) |
 
 ### Semantic segmentation on COCO2017
@@ -175,8 +175,8 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 ```
 
 | Model                                               | Mask mAP | Mask mAP(official) |                                Config                                |
-| :-------------------------------------------------- | :------: |-------------------:| :------------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* |   39.8   |    39.7 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) |
+| :-------------------------------------------------- | :------: | -----------------: | :------------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* |   39.8   |               39.7 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) |
 
 ### Panoptic segmentation on COCO2017
 

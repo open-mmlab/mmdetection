@@ -706,7 +706,7 @@ class LoadProposals(BaseTransform):
 
     def __repr__(self):
         return self.__class__.__name__ + \
-            f'(num_max_proposals={self.num_max_proposals})'
+               f'(num_max_proposals={self.num_max_proposals})'
 
 
 @TRANSFORMS.register_module()
@@ -796,8 +796,8 @@ class FilterAnnotations(BaseTransform):
 
     def __repr__(self):
         return self.__class__.__name__ + \
-            f'(min_gt_bbox_wh={self.min_gt_bbox_wh}, ' \
-            f'keep_empty={self.keep_empty})'
+               f'(min_gt_bbox_wh={self.min_gt_bbox_wh}, ' \
+               f'keep_empty={self.keep_empty})'
 
 
 @TRANSFORMS.register_module()
