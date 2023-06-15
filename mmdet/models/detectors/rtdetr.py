@@ -285,7 +285,7 @@ class RTDETR(DINO):
 
         Returns:
             dict: The dictionary of decoder outputs, which includes the
-            `outputs_classes` and `output_coords` of the decoder output.
+            `out_logits` and `out_bboxes` of the decoder output.
         """
         out_logits, out_bboxes = self.decoder(
             query=query,
@@ -300,7 +300,7 @@ class RTDETR(DINO):
             cls_branches=self.bbox_head.cls_branches)
 
         decoder_outputs_dict = dict(
-            outputs_classes=out_logits, outputs_coords=out_bboxes)
+            hidden_states=out_logits, references=out_bboxes)
         return decoder_outputs_dict
 
     def generate_proposals(self,

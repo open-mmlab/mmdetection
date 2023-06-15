@@ -21,8 +21,8 @@ class RTDETRHead(DINOHead):
     <https://arxiv.org/abs/2304.08069>`_ .
     """
 
-    def forward(self, outputs_classes: Tensor,
-                outputs_coords: List[Tensor]) -> Tuple[Tensor]:
+    def forward(self, hidden_states: Tensor,
+                references: List[Tensor]) -> Tuple[Tensor]:
         """Forward function. In RT-DETR, regression and classification are
         performed in the transformer decoder.
 
@@ -37,6 +37,8 @@ class RTDETRHead(DINOHead):
               h), has shape (num_decoder_layers, bs, num_queries, 4) with the
               last dimension arranged as (cx, cy, w, h).
         """
+        outputs_classes = hidden_states
+        outputs_coords = references
 
         return outputs_classes, outputs_coords
 
