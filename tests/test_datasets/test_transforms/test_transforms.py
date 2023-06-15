@@ -15,7 +15,8 @@ from mmdet.datasets.transforms import (CopyPaste, CutOut, Expand,
                                        PhotoMetricDistortion, RandomAffine,
                                        RandomCenterCropPad, RandomCrop,
                                        RandomErasing, RandomFlip, RandomShift,
-                                       Resize, SegRescale, YOLOXHSVRandomAug)
+                                       Resize, ResizeShortestEdge, SegRescale,
+                                       YOLOXHSVRandomAug)
 # yapf:enable
 from mmdet.evaluation import bbox_overlaps
 from mmdet.registry import TRANSFORMS
@@ -147,11 +148,6 @@ class TestFixScaleResize(unittest.TestCase):
             gt_bboxes=np.array([[0, 0, 112, 112]], dtype=np.float32),
             gt_masks=BitmapMasks(
                 rng.rand(1, 1333, 800), height=1333, width=800))
-        self.data_info2 = dict(
-            img=np.random.random((300, 400, 3)),
-            gt_bboxes=np.array([[200, 150, 600, 450]], dtype=np.float32),
-            dtype=np.float32)
-        self.data_info3 = dict(img=np.random.random((300, 400, 3)))
 
     def test_resize(self):
         # test keep_ratio is True
@@ -1744,3 +1740,36 @@ class TestRandomErasing(unittest.TestCase):
                               'img_border_value=128, '
                               'mask_border_value=0, '
                               'seg_ignore_label=255)'))
+
+
+class TestResizeShortestEdge(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod()
+        -> tearDown() -> cleanUp()
+        """
+        rng = np.random.RandomState(0)
+        self.data_info = dict(
+            img=np.random.random((1333, 800, 3)),
+            gt_seg_map=np.random.random((1333, 800, 3)),
+            gt_bboxes=np.array([[0, 0, 112, 112]], dtype=np.float32),
+            gt_masks=BitmapMasks(
+                rng.rand(1, 1333, 800), height=1333, width=800))
+
+    def test_resize(self):
+        transform = ResizeShortestEdge(scale=200)
+        results = transform(copy.deepcopy(self.data_info))
+        self.assertEqual(results['img_shape'], (333, 200))
+        self.assertEqual(results['scale_factor'], (200 / 800, 333 / 1333))
+
+        transform = ResizeShortestEdge(scale=200, max_size=301)
+        results = transform(copy.deepcopy(self.data_info))
+        self.assertEqual(results['img_shape'], (301, 181))
+        self.assertEqual(results['scale_factor'], (181 / 800, 301 / 1333))
+
+        transform = ResizeShortestEdge(scale=201, keep_ratio=True)
+        results = transform(copy.deepcopy(self.data_info))
+        self.assertEqual(results['img_shape'], (335, 201))
+        self.assertEqual(results['scale_factor'], (201 / 800, 335 / 1333))

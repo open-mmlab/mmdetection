@@ -161,8 +161,8 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 ```
 
 | Model                                             | mIOU | mIOU(official) |                               Config                               |
-| :------------------------------------------------ | :--: | -------------: | :----------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco`\* | 62.1 |           62.1 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
+| :------------------------------------------------ | :--: | :------------: | :----------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco`\* | 62.1 |      62.1      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
 
 ### Instance segmentation on COCO2017
 
@@ -175,8 +175,8 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 ```
 
 | Model                                               | Mask mAP | Mask mAP(official) |                                Config                                |
-| :-------------------------------------------------- | :------: | -----------------: | :------------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* |   39.8   |               39.7 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) |
+| :-------------------------------------------------- | :------: | :----------------: | :------------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* |   39.8   |        39.7        | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) |
 
 ### Panoptic segmentation on COCO2017
 
