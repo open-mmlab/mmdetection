@@ -2930,6 +2930,9 @@ class CopyPaste(BaseTransform):
             all objects of the source image will be pasted to the
             destination image.
             Defaults to True.
+        paste_by_box (bool): Whether use boxes as masks when masks are not
+            available.
+            Defaults to False.
     """
 
     def __init__(
@@ -2983,7 +2986,7 @@ class CopyPaste(BaseTransform):
         num_pasted = np.random.randint(0, max_num_pasted)
         return np.random.choice(num_bboxes, size=num_pasted, replace=False)
 
-    def get_gt_masks(self, results):
+    def get_gt_masks(self, results: dict) -> BitmapMasks:
         """Get gt_masks originally or generated based on bboxes.
 
         If gt_masks is not contained in results,
