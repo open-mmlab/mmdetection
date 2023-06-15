@@ -13,7 +13,7 @@ from mmdet.datasets.ade20k import ADE20KPanopticDataset
 
 ORIGINAL_CATEGORIES = [
     'wall', 'building', 'sky', 'floor', 'tree', 'ceiling', 'road, route',
-    'bed', 'window ', 'grass', 'cabinet', 'sidewalk, pavement', 'person',
+    'bed', 'window', 'grass', 'cabinet', 'sidewalk, pavement', 'person',
     'earth, ground', 'door', 'table', 'mountain, mount', 'plant', 'curtain',
     'chair', 'car', 'water', 'painting, picture', 'sofa', 'shelf', 'house',
     'sea', 'mirror', 'rug', 'field', 'armchair', 'seat', 'fence', 'desk',
@@ -31,7 +31,7 @@ ORIGINAL_CATEGORIES = [
     'kitchen island', 'computer', 'swivel chair', 'boat', 'bar',
     'arcade machine', 'hovel, hut, hutch, shack, shanty', 'bus', 'towel',
     'light', 'truck', 'tower', 'chandelier', 'awning, sunshade, sunblind',
-    'street lamp', 'booth', 'tv', 'plane', 'dirt track', 'clothes', 'pole',
+    'street lamp', 'booth', 'tv', 'airplane', 'dirt track', 'clothes', 'pole',
     'land, ground, soil',
     'bannister, banister, balustrade, balusters, handrail',
     'escalator, moving staircase, moving stairway',
