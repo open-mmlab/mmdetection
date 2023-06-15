@@ -112,6 +112,8 @@ The image that best matches the given text is ../../images/coco/000.jpg and prob
 <img src="https://github.com/open-mmlab/mmdetection/assets/17425982/479de6b2-88e7-41f0-8228-4b9a48f52954" width="70%"/>
 </div>
 
+We have also prepared a gradio program in the `projects/gradio_demo` directory, which you can run interactively all the inference supported by mmdetection in your browser.
+
 ## Models and results
 
 ### Semantic segmentation on ADE20K
@@ -147,7 +149,7 @@ Since semantic segmentation is a pixel-level task, we don't need to use a thresh
 ```
 
 | Model                               | mIoU  | mIOU(official) |                                 Config                                 |
-| :---------------------------------- |:-----:| :------------: | :--------------------------------------------------------------------: |
+| :---------------------------------- | :---: | :------------: | :--------------------------------------------------------------------: |
 | `xdecoder_focalt_best_openseg.pt`\* | 19.06 |     18.97      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_ade20k.py) |
 
 ### Semantic segmentation on COCO2017
@@ -161,8 +163,8 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 ```
 
 | Model                                             | mIOU | mIOU(official) |                               Config                               |
-| :------------------------------------------------ | :--: | -------------: | :----------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco`\* | 62.1 |           62.1 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
+| :------------------------------------------------ | :--: | :------------: | :----------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco`\* | 62.1 |      62.1      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
 
 ### Instance segmentation on COCO2017
 
@@ -175,8 +177,8 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 ```
 
 | Model                                               | Mask mAP | Mask mAP(official) |                                Config                                |
-| :-------------------------------------------------- | :------: |-------------------:| :------------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* |   39.8   |    39.7 | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) |
+| :-------------------------------------------------- | :------: | :----------------: | :------------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* |   39.8   |        39.7        | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) |
 
 ### Panoptic segmentation on COCO2017
 

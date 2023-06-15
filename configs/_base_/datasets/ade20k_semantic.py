@@ -1,5 +1,5 @@
 dataset_type = 'ADE20KSegDataset'
-data_root = 'data/ade/ADEChallengeData2016'
+data_root = 'data/ADEChallengeData2016/'
 
 # Example to use different file client
 # Method 1: simply set the data root and let the file I/O module
@@ -26,14 +26,14 @@ test_pipeline = [
         with_seg=True,
         reduce_zero_label=True),
     dict(
-        type='PackDetInputs',
-        meta_keys=('img_path', 'ori_shape', 'img_shape', 'text'))
+        type='PackDetInputs', meta_keys=('img_path', 'ori_shape', 'img_shape'))
 ]
 
 val_dataloader = dict(
     batch_size=1,
-    num_workers=4,
+    num_workers=2,
     persistent_workers=True,
+    drop_last=False,
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
         type=dataset_type,
