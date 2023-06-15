@@ -236,7 +236,8 @@ class DetLocalVisualizer(Visualizer):
 
     def _draw_panoptic_seg(self, image: np.ndarray,
                            panoptic_seg: ['PixelData'],
-                           classes: Optional[List[str]]) -> np.ndarray:
+                           classes: Optional[List[str]],
+                           palette: Optional[List]) -> np.ndarray:
         """Draw panoptic seg of GT or prediction.
 
         Args:
@@ -269,7 +270,10 @@ class DetLocalVisualizer(Visualizer):
         segms = (panoptic_seg_data[None] == ids[:, None, None])
 
         max_label = int(max(labels) if len(labels) > 0 else 0)
-        mask_palette = get_palette(self.mask_color, max_label + 1)
+
+        mask_color = palette if self.mask_color is None \
+            else self.mask_color
+        mask_palette = get_palette(mask_color, max_label + 1)
         colors = [mask_palette[label] for label in labels]
 
         self.set_image(image)
@@ -453,7 +457,7 @@ class DetLocalVisualizer(Visualizer):
                                             'visualizing panoptic ' \
                                             'segmentation results.'
                 gt_img_data = self._draw_panoptic_seg(
-                    gt_img_data, data_sample.gt_panoptic_seg, classes)
+                    gt_img_data, data_sample.gt_panoptic_seg, classes, palette)
 
         if draw_pred and data_sample is not None:
             pred_img_data = image
@@ -476,7 +480,7 @@ class DetLocalVisualizer(Visualizer):
                                             'segmentation results.'
                 pred_img_data = self._draw_panoptic_seg(
                     pred_img_data, data_sample.pred_panoptic_seg.numpy(),
-                    classes)
+                    classes, palette)
 
         if gt_img_data is not None and pred_img_data is not None:
             drawn_img = np.concatenate((gt_img_data, pred_img_data), axis=1)

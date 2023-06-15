@@ -13,7 +13,7 @@ from mmdet.datasets.ade20k import ADE20KPanopticDataset
 
 ORIGINAL_CATEGORIES = [
     'wall', 'building', 'sky', 'floor', 'tree', 'ceiling', 'road, route',
-    'bed', 'window ', 'grass', 'cabinet', 'sidewalk, pavement', 'person',
+    'bed', 'window', 'grass', 'cabinet', 'sidewalk, pavement', 'person',
     'earth, ground', 'door', 'table', 'mountain, mount', 'plant', 'curtain',
     'chair', 'car', 'water', 'painting, picture', 'sofa', 'shelf', 'house',
     'sea', 'mirror', 'rug', 'field', 'armchair', 'seat', 'fence', 'desk',
@@ -31,7 +31,7 @@ ORIGINAL_CATEGORIES = [
     'kitchen island', 'computer', 'swivel chair', 'boat', 'bar',
     'arcade machine', 'hovel, hut, hutch, shack, shanty', 'bus', 'towel',
     'light', 'truck', 'tower', 'chandelier', 'awning, sunshade, sunblind',
-    'street lamp', 'booth', 'tv', 'plane', 'dirt track', 'clothes', 'pole',
+    'street lamp', 'booth', 'tv', 'airplane', 'dirt track', 'clothes', 'pole',
     'land, ground, soil',
     'bannister, banister, balustrade, balusters, handrail',
     'escalator, moving staircase, moving stairway',
@@ -159,7 +159,7 @@ def prepare_instance_annotations(dataset_dir: str):
 def prepare_panoptic_annotations(dataset_dir: str):
     dataset_dir = Path(dataset_dir)
 
-    for name, dirname in [('train', 'training'), ('val', 'validation')]:
+    for name, dirname in [('val', 'validation')]:
         image_dir = dataset_dir / 'images' / dirname
         semantic_dir = dataset_dir / 'annotations' / dirname
         instance_dir = dataset_dir / 'annotations_instance' / dirname
@@ -173,43 +173,45 @@ def prepare_panoptic_annotations(dataset_dir: str):
 
         # catid mapping
         mapping_file = dataset_dir / 'categoryMapping.txt'
-        with open(mapping_file, 'r') as f:
-            map_id = {}
-            for i, line in enumerate(f.readlines()):
-                if i == 0:
-                    continue
-                ins_id, sem_id, _ = line.strip().split()
-                map_id[int(ins_id) - 1] = int(sem_id) - 1
+        # with open(mapping_file, 'r') as f:
+        #     map_id = {}
+        #     for i, line in enumerate(f.readlines()):
+        #         if i == 0:
+        #             continue
+        #         ins_id, sem_id, _ = line.strip().split()
+        #         map_id[int(ins_id) - 1] = int(sem_id) - 1
 
-        ADE20K_150_CATEGORIES = []
+        neworder_categories = []
         # ADE20K_SEM_SEG_CATEGORIES = ADE20KPanopticDataset.METAINFO['classes']
         all_classes = ORIGINAL_CATEGORIES
         thing_classes = ADE20KPanopticDataset.METAINFO['thing_classes']
         stuff_classes = ADE20KPanopticDataset.METAINFO['stuff_classes']
         palette = ADE20KPanopticDataset.METAINFO['palette']
 
-        mapping = {}
+        old_2_new_mapping = {}
+        new_2_old_mapping = {}
         for i, t in enumerate(thing_classes):
             j = list(all_classes).index(t)
-            mapping[j] = i
+            old_2_new_mapping[j] = i
+            new_2_old_mapping[i] = j
+
         for i, t in enumerate(stuff_classes):
             j = list(all_classes).index(t)
-            mapping[j] = i + len(thing_classes)
+            old_2_new_mapping[j] = i + len(thing_classes)
+            new_2_old_mapping[i + len(thing_classes)] = j
 
-        for cat_id, cat_name in enumerate(all_classes):
-            ADE20K_150_CATEGORIES.append({
-                'id':
-                cat_id,
-                'name':
-                cat_name,
-                'isthing':
-                int(cat_id in map_id.values()),
-                'color':
-                palette[cat_id]
-            })
-        categories_dict = {cat['id']: cat for cat in ADE20K_150_CATEGORIES}
+        for old, new in old_2_new_mapping.items():
+            neworder_categories.append(
+                {
+                    'id': new,
+                    'name': all_classes[old],
+                    'isthing': int(new < len(thing_classes)),
+                    'color': palette[new]
+                }
+            )
+        categories_dict = {cat['id']: cat for cat in neworder_categories}
 
-        panoptic_json_categories = ADE20K_150_CATEGORIES[:]
+        panoptic_json_categories = neworder_categories[:]
         panoptic_json_images = []
         panoptic_json_annotations = []
 
@@ -253,14 +255,14 @@ def prepare_panoptic_annotations(dataset_dir: str):
             for semantic_cat_id in np.unique(semantic_cat_ids):
                 if semantic_cat_id == 255:
                     continue
-                if categories_dict[semantic_cat_id]['isthing'] == 1:
+                if categories_dict[old_2_new_mapping[int(semantic_cat_id)]]['isthing'] == 1:
                     continue
                 mask = semantic_cat_ids == semantic_cat_id
                 # should not have any overlap
                 assert pan_seg[mask].sum() == 0
 
                 segment_id, color = id_generator.get_id_and_color(
-                    semantic_cat_id)
+                    old_2_new_mapping[int(semantic_cat_id)])
                 pan_seg[mask] = color
 
                 area = np.sum(mask)
@@ -277,7 +279,7 @@ def prepare_panoptic_annotations(dataset_dir: str):
 
                 segm_info.append({
                     'id': int(segment_id),
-                    'category_id': mapping[int(semantic_cat_id)],
+                    'category_id': old_2_new_mapping[int(semantic_cat_id)],
                     'area': int(area),
                     'bbox': bbox,
                     'iscrowd': 0
@@ -288,13 +290,19 @@ def prepare_panoptic_annotations(dataset_dir: str):
                 if thing_id == 0:
                     continue
                 mask = instance_ins_ids == thing_id
+
+                # import cv2
+                # cv2.imshow('mask', mask.astype(np.uint8) * 255)
+                # cv2.waitKey(0)
+
                 instance_cat_id = np.unique(instance_cat_ids[mask])
                 assert len(instance_cat_id) == 1
-                id_ = instance_cat_id[0]
-                semantic_cat_id = map_id[id_]
+
+                # semantic_cat_id = new_2_old_mapping[instance_cat_id[0]]
+                # print(semantic_cat_id)
 
                 segment_id, color = id_generator.get_id_and_color(
-                    semantic_cat_id)
+                    instance_cat_id[0])
                 pan_seg[mask] = color
 
                 area = np.sum(mask)
@@ -311,7 +319,7 @@ def prepare_panoptic_annotations(dataset_dir: str):
 
                 segm_info.append({
                     'id': int(segment_id),
-                    'category_id': mapping[int(semantic_cat_id)],
+                    'category_id': int(instance_cat_id[0]),
                     'area': int(area),
                     'bbox': bbox,
                     'iscrowd': 0
@@ -349,9 +357,9 @@ def main():
         print(
             f'Creating panoptic annotations to {annotation_train_path} and {annotation_val_path} ...'  # noqa
         )
-        if os.path.exists(annotation_train_path) or os.path.exists(
-                annotation_val_path):
-            raise RuntimeError('Panoptic annotations already exist.')
+        # if os.path.exists(annotation_train_path) or os.path.exists(
+        #         annotation_val_path):
+        #     raise RuntimeError('Panoptic annotations already exist.')
         prepare_panoptic_annotations(src)
         print('Done.')
     else:
