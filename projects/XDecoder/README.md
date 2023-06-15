@@ -196,6 +196,14 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 
 ### Referring segmentation on RefCOCO
 
+Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/en/latest/user_guides/dataset_prepare.html#refcoco-dataset-preparation).
+
+**Test Command**
+
+```shell
+./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py ../X-Decoder/xdecoder_focalt_last_novg.pt 8  --cfg-options test_dataloader.dataset.split='val'
+```
+
 | Model                            | cIoU  | cIOU(official) |                                 Config                                  |
 | :------------------------------- | :---: | :------------: | :---------------------------------------------------------------------: |
 | `xdecoder_focalt_last_novg.pt`\* | 58.85 |     57.85      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
