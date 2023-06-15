@@ -118,7 +118,7 @@ COCO 语义分割有两种类型标注，主要差别在于类别名定义不一
 
 **(1) 使用 stuffthingmaps 数据集**
 
-该数据集的下载地址为 [stuffthingmaps_trainval2017](http://calvin.inf.ed.ac.uk/wp-content/uploads/data/cocostuffdataset/stuffthingmaps_trainval2017.zip)，请下载后解压防止到 `data/coco` 文件夹下。
+该数据集的下载地址为 [stuffthingmaps_trainval2017](http://calvin.inf.ed.ac.uk/wp-content/uploads/data/cocostuffdataset/stuffthingmaps_trainval2017.zip)，请下载后解压到 `data/coco` 文件夹下。
 
 ```text
 mmdetection
@@ -133,11 +133,11 @@ mmdetection
 
 该数据集不同于标准的 COCO 类别标注，其包括 172 个类： 80 thing 类、91 stuff 类和 1 个 'unlabeled'，其每个类别的说明见 https://github.com/nightrome/cocostuff/blob/master/labels.md
 
-虽然只标注了 172 个类别，但是 stuffthingmaps 中最大标签 id 是 182，中间有些类别是没有标注的，并且第 0 类的 `unlabeled` 类别被移除。因此最终的 stuffthingmaps 图片中每个位置的值对应的类别关系见 https://github.com/kazuto1011/deeplab-pytorch/blob/master/data/datasets/cocostuff/labels.txt
+虽然只标注了 172 个类别，但是 `stuffthingmaps` 中最大标签 id 是 182，中间有些类别是没有标注的，并且第 0 类的 `unlabeled` 类别被移除。因此最终的 `stuffthingmaps` 图片中每个位置的值对应的类别关系见 https://github.com/kazuto1011/deeplab-pytorch/blob/master/data/datasets/cocostuff/labels.txt
 
-考虑到训练高效和方便用户，在开启训练或者评估前，我们需要将没有标注的 12 个类移除，这 12 个类的名字为： street sign、hat、shoe、eye glasses、plate、mirror、window、desk、door、blender、hair brush，最终可用于训练和评估的类别信息见 `mmdet/datasets/coco_semantic.py`
+考虑到训练高效和方便用户，在开启训练或者评估前，我们需要将没有标注的 12 个类移除，这 12 个类的名字为： `street sign、hat、shoe、eye glasses、plate、mirror、window、desk、door、blender、hair brush`，最终可用于训练和评估的类别信息见 `mmdet/datasets/coco_semantic.py`
 
-你可以使用 `tools/dataset_converters/coco_stuff164k.py` 来完成将下载的 stuffthingmaps 转换为直接可以训练和评估的数据集，转换后的数据集文件夹结构如下：
+你可以使用 `tools/dataset_converters/coco_stuff164k.py` 来完成将下载的 `stuffthingmaps` 转换为直接可以训练和评估的数据集，转换后的数据集文件夹结构如下：
 
 ```text
 mmdetection
@@ -151,11 +151,11 @@ mmdetection
 │   │   ├── stuffthingmaps_semseg
 ```
 
-stuffthingmaps_semseg 即为新生成的可以直接训练和测试的 COCO 语义分割数据集。
+`stuffthingmaps_semseg` 即为新生成的可以直接训练和测试的 COCO 语义分割数据集。
 
 **(2) 使用 panoptic 数据集**
 
-通过 panoptic 标注生成的语义分割数据集类别数相比使用 stuffthingmaps 数据集生成的会少一些。首先你需要准备全景分割标注，然后使用如下脚本完成转换
+通过 panoptic 标注生成的语义分割数据集类别数相比使用 `stuffthingmaps` 数据集生成的会少一些。首先你需要准备全景分割标注，然后使用如下脚本完成转换
 
 ```shell
 python tools/dataset_converters/prepare_coco_semantic_annos_from_panoptic_annos.py data/coco
@@ -179,7 +179,7 @@ mmdetection
 │   │   ├── test2017
 ```
 
-panoptic_semseg_train2017 和 panoptic_semseg_val2017 即为新生成的可以直接训练和测试的 COCO 语义分割数据集。注意其类别信息就是 COCO 全景分割的类别信息，包括 thing 和 stuff。
+`panoptic_semseg_train2017` 和 `panoptic_semseg_val2017` 即为新生成的可以直接训练和测试的 COCO 语义分割数据集。注意其类别信息就是 COCO 全景分割的类别信息，包括 thing 和 stuff。
 
 ### RefCOCO 数据集准备
 
