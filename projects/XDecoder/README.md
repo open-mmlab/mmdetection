@@ -201,7 +201,7 @@ Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/
 **Test Command**
 
 ```shell
-./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py ../X-Decoder/xdecoder_focalt_last_novg.pt 8  --cfg-options test_dataloader.dataset.split='val'
+./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py xdecoder_focalt_last_novg.pt 8  --cfg-options test_dataloader.dataset.split='val'
 ```
 
 | Model                            | cIoU  | cIOU(official) |                                 Config                                  |
