@@ -2217,13 +2217,13 @@ class Mosaic(BaseTransform):
     Modified Keys:
 
     - img
-    - img_shape
+    - img_scale
     - gt_bboxes (optional)
     - gt_bboxes_labels (optional)
     - gt_ignore_flags (optional)
 
     Args:
-        img_scale (Sequence[int]): Image size after mosaic pipeline of single
+        img_scale (Sequence[int]): Image size before mosaic pipeline of single
             image. The shape order should be (width, height).
             Defaults to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
@@ -3278,13 +3278,13 @@ class CachedMosaic(Mosaic):
     Modified Keys:
 
     - img
-    - img_shape
+    - img_scale
     - gt_bboxes (optional)
     - gt_bboxes_labels (optional)
     - gt_ignore_flags (optional)
 
     Args:
-        img_scale (Sequence[int]): Image size after mosaic pipeline of single
+        img_scale (Sequence[int]): Image size before mosaic pipeline of single
             image. The shape order should be (width, height).
             Defaults to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
