@@ -53,7 +53,7 @@ ADE_PALETTE = [(120, 120, 120), (180, 120, 120), (6, 230, 230), (80, 50, 50),
 class ADE20KPanopticDataset(CocoPanopticDataset):
     METAINFO = {
         'classes':
-        ('bed', 'window ', 'cabinet', 'person', 'door', 'table', 'curtain',
+        ('bed', 'window', 'cabinet', 'person', 'door', 'table', 'curtain',
          'chair', 'car', 'painting, picture', 'sofa', 'shelf', 'mirror',
          'armchair', 'seat', 'fence', 'desk', 'wardrobe, closet, press',
          'lamp', 'tub', 'rail', 'cushion', 'box', 'column, pillar',
@@ -66,7 +66,7 @@ class ADE20KPanopticDataset(CocoPanopticDataset):
          'book', 'bench', 'countertop', 'stove', 'palm, palm tree',
          'kitchen island', 'computer', 'swivel chair', 'boat',
          'arcade machine', 'bus', 'towel', 'light', 'truck', 'chandelier',
-         'awning, sunshade, sunblind', 'street lamp', 'booth', 'tv', 'plane',
+         'awning, sunshade, sunblind', 'street lamp', 'booth', 'tv', 'airplane',
          'clothes', 'pole',
          'bannister, banister, balustrade, balusters, handrail',
          'ottoman, pouf, pouffe, puff, hassock', 'bottle', 'van', 'ship',
@@ -92,7 +92,7 @@ class ADE20KPanopticDataset(CocoPanopticDataset):
          'canopy', 'pool', 'falls', 'tent', 'cradle', 'tank, storage tank',
          'lake', 'blanket, cover', 'pier', 'crt screen', 'shower'),
         'thing_classes':
-        ('bed', 'window ', 'cabinet', 'person', 'door', 'table', 'curtain',
+        ('bed', 'window', 'cabinet', 'person', 'door', 'table', 'curtain',
          'chair', 'car', 'painting, picture', 'sofa', 'shelf', 'mirror',
          'armchair', 'seat', 'fence', 'desk', 'wardrobe, closet, press',
          'lamp', 'tub', 'rail', 'cushion', 'box', 'column, pillar',
@@ -105,7 +105,7 @@ class ADE20KPanopticDataset(CocoPanopticDataset):
          'book', 'bench', 'countertop', 'stove', 'palm, palm tree',
          'kitchen island', 'computer', 'swivel chair', 'boat',
          'arcade machine', 'bus', 'towel', 'light', 'truck', 'chandelier',
-         'awning, sunshade, sunblind', 'street lamp', 'booth', 'tv', 'plane',
+         'awning, sunshade, sunblind', 'street lamp', 'booth', 'tv', 'airplane',
          'clothes', 'pole',
          'bannister, banister, balustrade, balusters, handrail',
          'ottoman, pouf, pouffe, puff, hassock', 'bottle', 'van', 'ship',

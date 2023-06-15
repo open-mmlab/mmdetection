@@ -188,7 +188,7 @@ def main():
             # training images and semantic segmentation annotations
             'http://data.csail.mit.edu/places/ADEchallenge/ADEChallengeData2016.zip',  # noqa
             # instance segmentation annotations
-            'http://sceneparsing.csail.mit.edu/data/ChallengeData2017/annotations_instance.tar'  # noqa
+            'http://sceneparsing.csail.mit.edu/data/ChallengeData2017/annotations_instance.tar',  # noqa
             # img categories ids
             'https://raw.githubusercontent.com/CSAILVision/placeschallenge/master/instancesegmentation/imgCatIds.json',  # noqa
             # category mapping
