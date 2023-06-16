@@ -1458,7 +1458,7 @@ class TestCopyPaste(unittest.TestCase):
         results = copy.deepcopy(self.dst_results)
         results = {k: v for k, v in results.items() if 'mask' not in k}
         results['mix_results'] = [copy.deepcopy(self.src_results)]
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(RuntimeError):
             results = transform(results)
 
         # test copypaste with boxes as masks
