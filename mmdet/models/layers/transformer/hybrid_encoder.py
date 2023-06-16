@@ -346,7 +346,8 @@ class HybridEncoder(BaseModule):
             for i, enc_ind in enumerate(self.use_encoder_idx):
                 h, w = proj_feats[enc_ind].shape[2:]
                 # flatten [B, C, H, W] to [B, HxW, C]
-                src_flatten = proj_feats[enc_ind].flatten(2).permute(0, 2, 1)
+                src_flatten = proj_feats[enc_ind].flatten(2).permute(
+                    0, 2, 1).contiguous()
                 if self.training or self.eval_size is None:
                     pos_embed = self.build_2d_sincos_position_embedding(
                         w, h, self.hidden_dim, self.pe_temperature)
@@ -356,8 +357,8 @@ class HybridEncoder(BaseModule):
                     src_flatten,
                     query_pos=pos_embed.to(src_flatten.device),
                     key_padding_mask=None)
-                proj_feats[enc_ind] = memory.permute(0, 2, 1).reshape(
-                    [-1, self.hidden_dim, h, w])
+                proj_feats[enc_ind] = memory.permute(
+                    0, 2, 1).contiguous().view([-1, self.hidden_dim, h, w])
 
         # top-down fpn
         inner_outs = [proj_feats[-1]]
