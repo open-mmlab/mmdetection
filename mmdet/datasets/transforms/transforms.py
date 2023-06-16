@@ -3093,7 +3093,8 @@ class CopyPaste(BaseTransform):
         repr_str += f'(max_num_pasted={self.max_num_pasted}, '
         repr_str += f'bbox_occluded_thr={self.bbox_occluded_thr}, '
         repr_str += f'mask_occluded_thr={self.mask_occluded_thr}, '
-        repr_str += f'selected={self.selected})'
+        repr_str += f'selected={self.selected}), '
+        repr_str += f'paste_by_box={self.paste_by_box})'
         return repr_str
 
 
