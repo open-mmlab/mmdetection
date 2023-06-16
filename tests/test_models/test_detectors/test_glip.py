@@ -50,7 +50,7 @@ class TestGLIP(TestCase):
             # test custom_entities is True
             packed_inputs = demo_mm_inputs(
                 2, [[3, 128, 128], [3, 125, 130]],
-                captions=['a', 'b'],
+                texts=['a', 'b'],
                 custom_entities=True)
             data = detector.data_preprocessor(packed_inputs, False)
             # Test forward test
@@ -63,7 +63,7 @@ class TestGLIP(TestCase):
             # test custom_entities is False
             packed_inputs = demo_mm_inputs(
                 2, [[3, 128, 128], [3, 125, 130]],
-                captions=['a', 'b'],
+                texts=['a', 'b'],
                 custom_entities=False)
             data = detector.data_preprocessor(packed_inputs, False)
             # Test forward test

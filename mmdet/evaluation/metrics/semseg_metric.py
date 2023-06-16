@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
 from collections import OrderedDict
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict, Optional, Sequence, Union
 
 import numpy as np
 import torch
@@ -47,20 +47,20 @@ class SemSegMetric(BaseMetric):
     """
 
     def __init__(self,
-                 iou_metrics: List[str] = ['mIoU'],
+                 iou_metrics: Sequence[str] = ['mIoU'],
                  beta: int = 1,
                  collect_device: str = 'cpu',
                  output_dir: Optional[str] = None,
                  format_only: bool = False,
                  backend_args: dict = None,
-                 prefix: Optional[str] = None,
-                 **kwargs) -> None:
+                 prefix: Optional[str] = None) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
 
         if isinstance(iou_metrics, str):
             iou_metrics = [iou_metrics]
         if not set(iou_metrics).issubset(set(['mIoU', 'mDice', 'mFscore'])):
-            raise KeyError(f'metrics {iou_metrics} is not supported')
+            raise KeyError(f'metrics {iou_metrics} is not supported. '
+                           f'Only supports mIoU/mDice/mFscore.')
         self.metrics = iou_metrics
         self.beta = beta
         self.output_dir = output_dir
@@ -86,8 +86,12 @@ class SemSegMetric(BaseMetric):
             if not self.format_only:
                 label = data_sample['gt_sem_seg']['sem_seg'].squeeze().to(
                     pred_label)
+                ignore_index = data_sample['pred_sem_seg'].get(
+                    'ignore_index', 255)
                 self.results.append(
-                    self._compute_pred_stats(pred_label, label, num_classes))
+                    self._compute_pred_stats(pred_label, label, num_classes,
+                                             ignore_index))
+
             # format_result
             if self.output_dir is not None:
                 basename = osp.splitext(osp.basename(
@@ -134,7 +138,8 @@ class SemSegMetric(BaseMetric):
         return metrics
 
     def _compute_pred_stats(self, pred_label: torch.tensor,
-                            label: torch.tensor, num_classes: int):
+                            label: torch.tensor, num_classes: int,
+                            ignore_index: int):
         """Parse semantic segmentation predictions.
 
         Args:
@@ -149,20 +154,20 @@ class SemSegMetric(BaseMetric):
                 histogram on all classes.
             torch.Tensor: The union of prediction and ground truth histogram on
                 all classes.
-            torch.Tens6or: The prediction histogram on all classes.
+            torch.Tensor: The prediction histogram on all classes.
             torch.Tensor: The ground truth histogram on all classes.
         """
         assert pred_label.shape == label.shape
-        # 0 is background
-        mask = label != 0
-        pred_label = (pred_label + 1) * mask
+        mask = label != ignore_index
+        label, pred_label = label[mask], pred_label[mask]
+
         intersect = pred_label[pred_label == label]
         area_intersect = torch.histc(
-            intersect.float(), bins=(num_classes), min=1, max=num_classes)
+            intersect.float(), bins=num_classes, min=0, max=num_classes - 1)
         area_pred_label = torch.histc(
-            pred_label.float(), bins=(num_classes), min=1, max=num_classes)
+            pred_label.float(), bins=num_classes, min=0, max=num_classes - 1)
         area_label = torch.histc(
-            label.float(), bins=(num_classes), min=1, max=num_classes)
+            label.float(), bins=num_classes, min=0, max=num_classes - 1)
         area_union = area_pred_label + area_label - area_intersect
         result = dict(
             area_intersect=area_intersect,

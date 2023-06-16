@@ -224,7 +224,7 @@ class GLIP(SingleStageDetector):
                     the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         text_prompts = [
-            data_samples.caption for data_samples in batch_data_samples
+            data_samples.text for data_samples in batch_data_samples
         ]
 
         if 'custom_entities' in batch_data_samples[0]:
