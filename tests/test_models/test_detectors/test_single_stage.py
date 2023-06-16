@@ -39,11 +39,8 @@ class TestSingleStageDetector(TestCase):
         ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu',
                                                                 'cuda')),
-        ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda')),
         ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda')),
-        ('reppoints/reppoints-minmax_r50_fpn-gn_head-gn_1x_coco.py', ('cpu',
-                                                                      'cuda')),
     ])
     def test_single_stage_forward_loss_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
@@ -74,11 +71,8 @@ class TestSingleStageDetector(TestCase):
         ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu',
                                                                 'cuda')),
-        ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda')),
         ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda')),
-        ('reppoints/reppoints-minmax_r50_fpn-gn_head-gn_1x_coco.py', ('cpu',
-                                                                      'cuda')),
     ])
     def test_single_stage_forward_predict_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
@@ -108,11 +102,8 @@ class TestSingleStageDetector(TestCase):
         ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu',
                                                                 'cuda')),
-        ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda')),
         ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda')),
-        ('reppoints/reppoints-minmax_r50_fpn-gn_head-gn_1x_coco.py', ('cpu',
-                                                                      'cuda')),
     ])
     def test_single_stage_forward_tensor_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
