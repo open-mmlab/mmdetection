@@ -204,11 +204,20 @@ Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_p
 ./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py xdecoder_focalt_last_novg.pt 8  --cfg-options test_dataloader.dataset.split='val'
 ```
 
-| Model                          | cIoU  | cIOU(official) |                                 Config                                  |
-| :----------------------------- | :---: | :------------: | :---------------------------------------------------------------------: |
-| `xdecoder_focalt_last_novg.pt` | 58.84 |     57.85      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
+| Model                          |  text mode   |  cIoU   | cIOU(official) |                                 Config                                  |
+| :----------------------------- | :----------: | :-----: | :------------: | :---------------------------------------------------------------------: |
+| `xdecoder_focalt_last_novg.pt` | select first | 58.8415 |     57.85      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
+| `xdecoder_focalt_last_novg.pt` |   original   | 60.0321 |       -        | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
+| `xdecoder_focalt_last_novg.pt` |    concat    | 60.3551 |       -        | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
 
-**Note:** If you set the scale of `Resize` to (1024, 512), the result will be `57.69`.
+**Note:**
+
+1. If you set the scale of `Resize` to (1024, 512), the result will be `57.69`.
+2. `text mode` is the `RefCoCoDataset` parameter in MMDetection, it determines the texts loaded to the data list. It can be set to `select_first`, `original`, `concat` and `random`.
+   - `select_first`: select the first text in the text list as the description to an instance.
+   - `original`: use all texts in the text list as the description to an instance.
+   - `concat`: concatenate all texts in the text list as the description to an instance.
+   - `random`: randomly select one text in the text list as the description to an instance, usually used for training.
 
 ### Image Caption on COCO2014
 
@@ -216,7 +225,7 @@ Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_p
 
 Before testing, you need to install jdk 1.8, otherwise it will prompt that java does not exist during the evaluation process
 
-```shell
+```
 ./tools/dist_test.sh projects/XDecoder/configs/xdecoder-tiny_zeroshot_caption_coco2014.py xdecoder_focalt_last_novg.pt 8
 ```
 
