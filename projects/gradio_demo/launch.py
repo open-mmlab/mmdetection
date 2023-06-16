@@ -56,6 +56,7 @@ class ObjectDetectionTab:
                     label='Image',
                     source='upload',
                     elem_classes='input_image',
+                    type='filepath',
                     interactive=True,
                     tool='editor',
                 )
@@ -123,6 +124,7 @@ class OpenVocabObjectDetectionTab:
                     label='Image',
                     source='upload',
                     elem_classes='input_image',
+                    type='filepath',
                     interactive=True,
                     tool='editor',
                 )
@@ -167,6 +169,7 @@ class OpenVocabObjectDetectionTab:
             image,
             texts=text,
             custom_entities=True,
+            pred_score_thr=0.5,
             return_vis=True,
             no_save_vis=True)
         vis = results_dict['visualization'][0]
@@ -191,6 +194,7 @@ class GroundingDetectionTab(OpenVocabObjectDetectionTab):
                     label='Image',
                     source='upload',
                     elem_classes='input_image',
+                    type='filepath',
                     interactive=True,
                     tool='editor',
                 )
@@ -231,6 +235,7 @@ class GroundingDetectionTab(OpenVocabObjectDetectionTab):
             image,
             texts=text,
             custom_entities=False,
+            pred_score_thr=0.5,
             return_vis=True,
             no_save_vis=True)
         vis = results_dict['visualization'][0]
@@ -285,6 +290,7 @@ class OpenVocabPanopticSegTab(OpenVocabObjectDetectionTab):
                     label='Image',
                     source='upload',
                     elem_classes='input_image',
+                    type='filepath',
                     interactive=True,
                     tool='editor',
                 )
@@ -460,6 +466,7 @@ class ReferImageCaptionTab(OpenVocabInstanceSegTab):
                     label='Input',
                     source='upload',
                     elem_classes='input_image',
+                    type='filepath',
                     interactive=True,
                     tool='editor',
                 )
@@ -569,19 +576,21 @@ class TextToImageRetrievalTab:
 if __name__ == '__main__':
     title = 'MMDetection Inference Demo'
 
-    DESCRIPTION = '''# MMDetection Inference Demo
+    DESCRIPTION = '''# <div align="center">MMDetection Inference Demo  </div>
     <div align="center">
-    <img src="https://user-images.githubusercontent.com/45811724/190993591-bd3f1f11-1c30-4b93-b5f4-05c9ff64ff7f.gif" width="50%"/> # noqa
+    <img src="https://user-images.githubusercontent.com/45811724/190993591-
+    bd3f1f11-1c30-4b93-b5f4-05c9ff64ff7f.gif" width="50%"/>
     </div>
 
     #### This is an official demo for MMDet. \n
 
-    - The first time running requires downloading the weights, please wait a moment. \n # noqa
+    - The first time running requires downloading the weights,
+    please wait a moment. \n
     - OV is mean Open Vocabulary \n
     - Refer Seg is mean Referring Expression Segmentation \n
-    - In Text-Image Region Retrieval, you need to provide n images and a query text, \ # noqa
-    and the model will predict the most matching image and its corresponding \ # noqa
-    grounding mask.
+    - In Text-Image Region Retrieval, you need to provide n images and
+    a query text, and the model will predict the most matching image and
+    its corresponding grounding mask.
     '''
 
     with gr.Blocks(analytics_enabled=False, title=title) as demo:
