@@ -62,7 +62,7 @@ English | [简体中文](README_zh-CN.md)
 </div>
 
 <div align="center">
-<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/6c29886f-ae7a-4a55-8be4-352ee85b7d3e" width="70%"/>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/6c29886f-ae7a-4a55-8be4-352ee85b7d3e"/>
 </div>
 
 ## Introduction
