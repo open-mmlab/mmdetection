@@ -10,16 +10,12 @@ from mmdet.registry import METRICS
 @METRICS.register_module()
 class RefSegMetric(BaseMetric):
 
-    def __init__(self,
-                 iou_metrics: list = ['cIoU', 'mIoU'],
-                 eval_first_text: bool = False,
-                 **kwargs):
+    def __init__(self, metric: list = ['cIoU', 'mIoU'], **kwargs):
         super().__init__(**kwargs)
-        assert set(iou_metrics).issubset(['cIoU', 'mIoU']), \
-            f'Only support cIoU and mIoU, but got {iou_metrics}'
-        assert len(iou_metrics) > 0, 'metrics should not be empty'
-        self.metrics = iou_metrics
-        self.eval_first_text = eval_first_text
+        assert set(metric).issubset(['cIoU', 'mIoU']), \
+            f'Only support cIoU and mIoU, but got {metric}'
+        assert len(metric) > 0, 'metrics should not be empty'
+        self.metrics = metric
 
     def compute_iou(self, pred_seg, gt_seg):
         i = pred_seg & gt_seg
@@ -40,11 +36,6 @@ class RefSegMetric(BaseMetric):
             pred_label = data_sample['pred_instances']['masks'].bool()
             label = data_sample['gt_masks'].to_tensor(
                 pred_label.dtype, pred_label.device).bool()
-            if self.eval_first_text:
-                pred_label = pred_label[0:1]
-            else:
-                label = label.repeat(pred_label.shape[0], 1, 1)
-
             # calculate iou
             i, u = self.compute_iou(pred_label, label)
 

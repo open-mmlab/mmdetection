@@ -32,7 +32,7 @@ val_dataloader = dict(
         ann_file='refcocog/instances.json',
         split_file='refcocog/refs(umd).p',
         split='val',
-        text_mode='original',
+        text_mode='select_first',
         pipeline=test_pipeline))
 
 test_dataloader = dict(
@@ -48,8 +48,8 @@ test_dataloader = dict(
         ann_file='refcocog/instances.json',
         split_file='refcocog/refs(umd).p',
         split='test',
-        text_mode='original',
+        text_mode='select_first',
         pipeline=test_pipeline))
 
-val_evaluator = dict(type='RefSegMetric', iou_metrics=['cIoU', 'mIoU'])
+val_evaluator = dict(type='RefSegMetric', metric=['cIoU', 'mIoU'])
 test_evaluator = val_evaluator

@@ -183,4 +183,97 @@ mmdetection
 
 ### RefCOCO 数据集准备
 
+[RefCOCO](https://github.com/lichengunc/refer)系列数据集的图像和注释可以通过运行 `tools/misc/download_dataset.py` 下载:
+
+```shell
+python tools/misc/download_dataset.py --dataset-name refcoco --save-dir data/coco --unzip
+```
+
+然后，目录应该是这样的：
+
+```text
+data
+├── coco
+│   ├── refcoco
+│   │   ├── instances.json
+│   │   ├── refs(google).p
+│   │   └── refs(unc).p
+│   ├── refcoco+
+│   │   ├── instances.json
+│   │   └── refs(unc).p
+│   ├── refcocog
+│   │   ├── instances.json
+│   │   ├── refs(google).p
+│   │   └── refs(umd).p
+|   |── train2014
+```
+
 ### ADE20K 数据集准备
+
+[ADE20K](http://groups.csail.mit.edu/vision/datasets/ADE20K/)数据集的图像和注释可以通过运行 `tools/misc/download_dataset.py` 下载:
+
+```shell
+python tools/misc/download_dataset.py --dataset-name ade20k_2016 --save-dir data --unzip
+```
+
+然后将注释移至`data/ADEChallengeData2016`目录，并运行预处理脚本以产生coco格式注释：
+
+```shell
+mv data/annotations_instance data/ADEChallengeData2016/
+mv data/categoryMapping.txt data/ADEChallengeData2016/
+mv data/imgCatIds.json data/ADEChallengeData2016/
+python tools/dataset_converters/ade20k2coco.py data/ADEChallengeData2016 --task panoptic
+python tools/dataset_converters/ade20k2coco.py data/ADEChallengeData2016 --task instance
+```
+
+然后，目录应该是这样的：
+
+```text
+data
+├── ADEChallengeData2016
+│   ├── ade20k_instance_train.json
+│   ├── ade20k_instance_val.json
+│   ├── ade20k_panoptic_train
+|   |   ├── ADE_train_00000001.png
+|   |   ├── ADE_train_00000002.png
+|   |   ├── ...
+│   ├── ade20k_panoptic_train.json
+│   ├── ade20k_panoptic_val
+|   |   ├── ADE_val_00000001.png
+|   |   ├── ADE_val_00000002.png
+|   |   ├── ...
+│   ├── ade20k_panoptic_val.json
+│   ├── annotations
+|   |   ├── training
+|   |   |   ├── ADE_train_00000001.png
+|   |   |   ├── ADE_train_00000002.png
+|   |   |   ├── ...
+|   |   ├── validation
+|   |   |   ├── ADE_val_00000001.png
+|   |   |   ├── ADE_val_00000002.png
+|   |   |   ├── ...
+│   ├── annotations_instance
+|   |   ├── training
+|   |   |   ├── ADE_train_00000001.png
+|   |   |   ├── ADE_train_00000002.png
+|   |   |   ├── ...
+|   |   ├── validation
+|   |   |   ├── ADE_val_00000001.png
+|   |   |   ├── ADE_val_00000002.png
+|   |   |   ├── ...
+│   ├── categoryMapping.txt
+│   ├── images
+│   |   ├── training
+|   |   |   ├── ADE_train_00000001.jpg
+|   |   |   ├── ADE_train_00000002.jpg
+|   |   |   ├── ...
+|   |   ├── validation
+|   |   |   ├── ADE_val_00000001.jpg
+|   |   |   ├── ADE_val_00000002.jpg
+|   |   |   ├── ...
+│   ├── imgCatIds.json
+│   ├── objectInfo150.txt
+|   |── sceneCategories.txt
+```
+
+上述文件夹包括ADE20K的语义分割、实例分割和泛在分割的所有数据。
