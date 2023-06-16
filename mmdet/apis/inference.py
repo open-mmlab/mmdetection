@@ -172,7 +172,7 @@ def inference_detector(
             data_ = dict(img_path=img, img_id=0)
 
         if text_prompt:
-            data_['caption'] = text_prompt
+            data_['text'] = text_prompt
             data_['custom_entities'] = custom_entities
 
         # build the data pipeline

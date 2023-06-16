@@ -239,6 +239,11 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         poly2mask (bool): Whether to convert mask to bitmap. Default: True.
         box_type (str): The box type used to wrap the bboxes. If ``box_type``
             is None, gt_bboxes will keep being np.ndarray. Defaults to 'hbox'.
+        reduce_zero_label (bool): Whether reduce all label value
+            by 1. Usually used for datasets where 0 is background label.
+            Defaults to False.
+        ignore_index (int): The label index to be ignored.
+            Valid only if reduce_zero_label is true. Defaults is 255.
         imdecode_backend (str): The image decoding backend type. The backend
             argument for :func:``mmcv.imfrombytes``.
             See :fun:``mmcv.imfrombytes`` for details.
@@ -247,15 +252,21 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             corresponding backend. Defaults to None.
     """
 
-    def __init__(self,
-                 with_mask: bool = False,
-                 poly2mask: bool = True,
-                 box_type: str = 'hbox',
-                 **kwargs) -> None:
+    def __init__(
+            self,
+            with_mask: bool = False,
+            poly2mask: bool = True,
+            box_type: str = 'hbox',
+            # use for semseg
+            reduce_zero_label: bool = False,
+            ignore_index: int = 255,
+            **kwargs) -> None:
         super(LoadAnnotations, self).__init__(**kwargs)
         self.with_mask = with_mask
         self.poly2mask = poly2mask
         self.box_type = box_type
+        self.reduce_zero_label = reduce_zero_label
+        self.ignore_index = ignore_index
 
     def _load_bboxes(self, results: dict) -> None:
         """Private function to load bounding box annotations.
@@ -380,6 +391,42 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             # fake polygon masks will be ignored in `PackDetInputs`
             gt_masks = PolygonMasks([mask for mask in gt_masks], h, w)
         results['gt_masks'] = gt_masks
+
+    def _load_seg_map(self, results: dict) -> None:
+        """Private function to load semantic segmentation annotations.
+
+        Args:
+            results (dict): Result dict from :obj:``mmcv.BaseDataset``.
+
+        Returns:
+            dict: The dict contains loaded semantic segmentation annotations.
+        """
+        if results.get('seg_map_path', None) is None:
+            return
+
+        img_bytes = get(
+            results['seg_map_path'], backend_args=self.backend_args)
+        gt_semantic_seg = mmcv.imfrombytes(
+            img_bytes, flag='unchanged',
+            backend=self.imdecode_backend).squeeze()
+
+        if self.reduce_zero_label:
+            # avoid using underflow conversion
+            gt_semantic_seg[gt_semantic_seg == 0] = self.ignore_index
+            gt_semantic_seg = gt_semantic_seg - 1
+            gt_semantic_seg[gt_semantic_seg == self.ignore_index -
+                            1] = self.ignore_index
+
+        # modify if custom classes
+        if results.get('label_map', None) is not None:
+            # Add deep copy to solve bug of repeatedly
+            # replace `gt_semantic_seg`, which is reported in
+            # https://github.com/open-mmlab/mmsegmentation/pull/1445/
+            gt_semantic_seg_copy = gt_semantic_seg.copy()
+            for old_id, new_id in results['label_map'].items():
+                gt_semantic_seg[gt_semantic_seg_copy == old_id] = new_id
+        results['gt_seg_map'] = gt_semantic_seg
+        results['ignore_index'] = self.ignore_index
 
     def transform(self, results: dict) -> dict:
         """Function to load multiple types annotations.
@@ -598,72 +645,6 @@ class LoadPanopticAnnotations(LoadAnnotations):
             self._load_masks_and_semantic_segs(results)
 
         return results
-
-
-@TRANSFORMS.register_module()
-class LoadSemSegAnnotations(LoadAnnotations):
-    """Load annotations for semantic segmentation provided by dataset.
-
-    The annotation format is as the following:
-
-    .. code-block:: python
-
-        {
-            # Filename of semantic segmentation ground truth file.
-            'seg_map_path': 'a/b/c'
-        }
-
-    After this module, the annotation has been changed to the format below:
-
-    .. code-block:: python
-
-        {
-             # In uint8 type.
-            'gt_seg_map': np.ndarray (H, W)
-        }
-
-    Required Keys:
-
-    - seg_map_path (str): Path of semantic segmentation ground truth file.
-
-    Added Keys:
-
-    - gt_seg_map (np.uint8)
-    """
-
-    def __init__(self, **kwargs) -> None:
-        super().__init__(
-            with_bbox=False,
-            with_label=False,
-            with_seg=True,
-            with_keypoints=False,
-            **kwargs)
-
-    def _load_seg_map(self, results: dict) -> None:
-        """Private function to load semantic segmentation annotations.
-
-        Args:
-            results (dict): Result dict from :obj:``mmcv.BaseDataset``.
-
-        Returns:
-            dict: The dict contains loaded semantic segmentation annotations.
-        """
-
-        img_bytes = get(
-            results['seg_map_path'], backend_args=self.backend_args)
-        gt_semantic_seg = mmcv.imfrombytes(
-            img_bytes, flag='unchanged',
-            backend=self.imdecode_backend).squeeze().astype(np.uint8)
-
-        # modify if custom classes
-        if results.get('label_map', None) is not None:
-            # Add deep copy to solve bug of repeatedly
-            # replace `gt_semantic_seg`, which is reported in
-            # https://github.com/open-mmlab/mmsegmentation/pull/1445/
-            gt_semantic_seg_copy = gt_semantic_seg.copy()
-            for old_id, new_id in results['label_map'].items():
-                gt_semantic_seg[gt_semantic_seg_copy == old_id] = new_id
-        results['gt_seg_map'] = gt_semantic_seg
 
 
 @TRANSFORMS.register_module()

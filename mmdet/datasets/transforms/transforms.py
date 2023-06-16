@@ -6,6 +6,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 
 import cv2
 import mmcv
+import numpy
 import numpy as np
 from mmcv.image import imresize
 from mmcv.image.geometric import _scale_size
@@ -275,6 +276,83 @@ class FixScaleResize(Resize):
             results['img_shape'] = img.shape[:2]
             results['scale_factor'] = (w_scale, h_scale)
             results['keep_ratio'] = self.keep_ratio
+
+
+@TRANSFORMS.register_module()
+class ResizeShortestEdge(BaseTransform):
+    """Resize the image and mask while keeping the aspect ratio unchanged.
+
+    Modified from https://github.com/facebookresearch/detectron2/blob/main/detectron2/data/transforms/augmentation_impl.py#L130 # noqa:E501
+
+    This transform attempts to scale the shorter edge to the given
+    `scale`, as long as the longer edge does not exceed `max_size`.
+    If `max_size` is reached, then downscale so that the longer
+    edge does not exceed `max_size`.
+
+    Required Keys:
+        - img
+        - gt_seg_map (optional)
+    Modified Keys:
+        - img
+        - img_shape
+        - gt_seg_map (optional))
+    Added Keys:
+        - scale
+        - scale_factor
+        - keep_ratio
+
+    Args:
+        scale (Union[int, Tuple[int, int]]): The target short edge length.
+            If it's tuple, will select the min value as the short edge length.
+        max_size (int): The maximum allowed longest edge length.
+    """
+
+    def __init__(self,
+                 scale: Union[int, Tuple[int, int]],
+                 max_size: Optional[int] = None,
+                 resize_type: str = 'Resize',
+                 **resize_kwargs) -> None:
+        super().__init__()
+        self.scale = scale
+        self.max_size = max_size
+
+        self.resize_cfg = dict(type=resize_type, **resize_kwargs)
+        self.resize = TRANSFORMS.build({'scale': 0, **self.resize_cfg})
+
+    def _get_output_shape(
+            self, img: np.ndarray,
+            short_edge_length: Union[int, Tuple[int, int]]) -> Tuple[int, int]:
+        """Compute the target image shape with the given `short_edge_length`.
+
+        Args:
+            img (np.ndarray): The input image.
+            short_edge_length (Union[int, Tuple[int, int]]): The target short
+                edge length. If it's tuple, will select the min value as the
+                short edge length.
+        """
+        h, w = img.shape[:2]
+        if isinstance(short_edge_length, int):
+            size = short_edge_length * 1.0
+        elif isinstance(short_edge_length, tuple):
+            size = min(short_edge_length) * 1.0
+        scale = size / min(h, w)
+        if h < w:
+            new_h, new_w = size, scale * w
+        else:
+            new_h, new_w = scale * h, size
+
+        if self.max_size and max(new_h, new_w) > self.max_size:
+            scale = self.max_size * 1.0 / max(new_h, new_w)
+            new_h *= scale
+            new_w *= scale
+
+        new_h = int(new_h + 0.5)
+        new_w = int(new_w + 0.5)
+        return new_w, new_h
+
+    def transform(self, results: dict) -> dict:
+        self.resize.scale = self._get_output_shape(results['img'], self.scale)
+        return self.resize(results)
 
 
 @TRANSFORMS.register_module()
