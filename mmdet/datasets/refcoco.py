@@ -11,7 +11,7 @@ from mmdet.registry import DATASETS
 
 
 @DATASETS.register_module()
-class RefCOCODataset(BaseDataset):
+class RefCocoDataset(BaseDataset):
     """RefCOCO dataset.
 
     The `Refcoco` and `Refcoco+` dataset is based on

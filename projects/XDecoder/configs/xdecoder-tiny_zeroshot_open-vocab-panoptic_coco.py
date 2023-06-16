@@ -3,6 +3,8 @@ _base_ = [
     'mmdet::_base_/datasets/coco_panoptic.py'
 ]
 
+model = dict(test_cfg=dict(mask_thr=0.4))
+
 test_pipeline = [
     dict(
         type='LoadImageFromFile',

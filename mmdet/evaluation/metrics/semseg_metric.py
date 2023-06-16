@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
 from collections import OrderedDict
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict, Optional, Sequence, Union
 
 import numpy as np
 import torch
@@ -47,7 +47,7 @@ class SemSegMetric(BaseMetric):
     """
 
     def __init__(self,
-                 iou_metrics: List[str] = ['mIoU'],
+                 iou_metrics: Sequence[str] = ['mIoU'],
                  beta: int = 1,
                  collect_device: str = 'cpu',
                  output_dir: Optional[str] = None,

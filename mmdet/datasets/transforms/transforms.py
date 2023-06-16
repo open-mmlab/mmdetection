@@ -6,6 +6,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 
 import cv2
 import mmcv
+import numpy
 import numpy as np
 from mmcv.image import imresize
 from mmcv.image.geometric import _scale_size
@@ -318,7 +319,9 @@ class ResizeShortestEdge(BaseTransform):
         self.resize_cfg = dict(type=resize_type, **resize_kwargs)
         self.resize = TRANSFORMS.build({'scale': 0, **self.resize_cfg})
 
-    def _get_output_shape(self, img, short_edge_length) -> Tuple[int, int]:
+    def _get_output_shape(
+            self, img: np.ndarray,
+            short_edge_length: Union[int, Tuple[int, int]]) -> Tuple[int, int]:
         """Compute the target image shape with the given `short_edge_length`.
 
         Args:
@@ -345,7 +348,7 @@ class ResizeShortestEdge(BaseTransform):
 
         new_h = int(new_h + 0.5)
         new_w = int(new_w + 0.5)
-        return (new_w, new_h)
+        return new_w, new_h
 
     def transform(self, results: dict) -> dict:
         self.resize.scale = self._get_output_shape(results['img'], self.scale)

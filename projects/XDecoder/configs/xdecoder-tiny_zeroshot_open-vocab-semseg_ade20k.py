@@ -4,11 +4,8 @@ _base_ = [
 ]
 
 test_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        imdecode_backend='pillow',
-        backend_args=_base_.backend_args),
-    dict(type='ResizeShortestEdge', scale=640, backend='pillow'),
+    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
+    dict(type='Resize', scale=(2560, 640), keep_ratio=True),
     dict(
         type='LoadAnnotations',
         with_bbox=False,

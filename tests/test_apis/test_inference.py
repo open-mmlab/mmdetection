@@ -62,8 +62,8 @@ def test_inference_detector(config, devices):
 
     # test init_detector with config_file: str and cfg_options
     rng = np.random.RandomState(0)
-    img1 = rng.randint(0, 255, (100, 100, 3), dtype=np.uint8)
-    img2 = rng.randint(0, 255, (100, 100, 3), dtype=np.uint8)
+    img1 = rng.randint(0, 255, (32, 32, 3), dtype=np.uint8)
+    img2 = rng.randint(0, 255, (32, 32, 3), dtype=np.uint8)
 
     for device in devices:
         if device == 'cuda' and not torch.cuda.is_available():

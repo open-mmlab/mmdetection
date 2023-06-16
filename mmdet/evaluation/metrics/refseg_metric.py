@@ -9,18 +9,20 @@ from mmdet.registry import METRICS
 
 @METRICS.register_module()
 class RefSegMetric(BaseMetric):
+    """Referring Expression Segmentation Metric."""
 
-    def __init__(self, metric: list = ['cIoU', 'mIoU'], **kwargs):
+    def __init__(self, metric: Sequence = ('cIoU', 'mIoU'), **kwargs):
         super().__init__(**kwargs)
         assert set(metric).issubset(['cIoU', 'mIoU']), \
             f'Only support cIoU and mIoU, but got {metric}'
         assert len(metric) > 0, 'metrics should not be empty'
         self.metrics = metric
 
-    def compute_iou(self, pred_seg, gt_seg):
-        i = pred_seg & gt_seg
-        u = pred_seg | gt_seg
-        return i, u
+    def compute_iou(self, pred_seg: torch.Tensor,
+                    gt_seg: torch.Tensor) -> tuple:
+        overlap = pred_seg & gt_seg
+        union = pred_seg | gt_seg
+        return overlap, union
 
     def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
         """Process one batch of data and data_samples.
@@ -37,12 +39,13 @@ class RefSegMetric(BaseMetric):
             label = data_sample['gt_masks'].to_tensor(
                 pred_label.dtype, pred_label.device).bool()
             # calculate iou
-            i, u = self.compute_iou(pred_label, label)
+            overlap, union = self.compute_iou(pred_label, label)
 
-            bsi = len(pred_label)
-            iou = i.reshape(bsi, -1).sum(-1) * 1.0 / u.reshape(bsi, -1).sum(-1)
+            bs = len(pred_label)
+            iou = overlap.reshape(bs, -1).sum(-1) * 1.0 / union.reshape(
+                bs, -1).sum(-1)
             iou = torch.nan_to_num_(iou, nan=0.0)
-            self.results.append((i.sum(), u.sum(), iou.sum(), bsi))
+            self.results.append((overlap.sum(), union.sum(), iou.sum(), bs))
 
     def compute_metrics(self, results: list) -> dict:
         results = tuple(zip(*results))
