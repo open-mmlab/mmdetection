@@ -75,6 +75,10 @@ cd projects/XDecoder
 python demo.py ../../images/fruit.jpg configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py --weights ../../xdecoder_focalt_last_novg.pt  --text "The larger watermelon. The front white flower. White tea pot."
 ```
 
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/f3ecdb50-20f0-4dc4-aa9c-90995ae04893" width="70%"/>
+</div>
+
 **(5) Image Caption**
 
 ```shell
@@ -118,113 +122,107 @@ We have also prepared a gradio program in the `projects/gradio_demo` directory, 
 
 ### Semantic segmentation on ADE20K
 
-Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_prepare.md).
+Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_prepare.md#ade20k-2016-dataset-preparation).
 
 **Test Command**
 
 Since semantic segmentation is a pixel-level task, we don't need to use a threshold to filter out low-confidence predictions. So we set `model.test_cfg.use_thr_for_mc=False` in the test command.
 
 ```shell
-./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-semseg_ade20k.py xdecoder_focalt_best_openseg.pt 8 --cfg-options model.test_cfg.use_thr_for_mc=False
+./tools/dist_test.sh projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-semseg_ade20k.py xdecoder_focalt_best_openseg.pt 8 --cfg-options model.test_cfg.use_thr_for_mc=False
 ```
 
-| Model                               | mIoU  | mIOU(official) |                                Config                                |
-| :---------------------------------- | :---: | :------------: | :------------------------------------------------------------------: |
-| `xdecoder_focalt_best_openseg.pt`\* | 25.13 |     25.13      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_ade20k.py) |
+| Model                             | mIoU  | mIOU(official) |                                Config                                |
+| :-------------------------------- | :---: | :------------: | :------------------------------------------------------------------: |
+| `xdecoder_focalt_best_openseg.pt` | 25.13 |     25.13      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_ade20k.py) |
 
 ### Instance segmentation on ADE20K
 
+Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_prepare.md#ade20k-2016-dataset-preparation).
+
 ```shell
-./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-instance_ade20k.py xdecoder_focalt_best_openseg.pt 8
+./tools/dist_test.sh projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-instance_ade20k.py xdecoder_focalt_best_openseg.pt 8
 ```
 
-| Model                               | mIoU | mIOU(official) |                                 Config                                 |
-| :---------------------------------- | :--: | :------------: | :--------------------------------------------------------------------: |
-| `xdecoder_focalt_best_openseg.pt`\* | 10.1 |      10.1      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_ade20k.py) |
+| Model                             | mIoU | mIOU(official) |                                 Config                                 |
+| :-------------------------------- | :--: | :------------: | :--------------------------------------------------------------------: |
+| `xdecoder_focalt_best_openseg.pt` | 10.1 |      10.1      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_ade20k.py) |
 
 ### Panoptic segmentation on ADE20K
 
+Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_prepare.md#ade20k-2016-dataset-preparation).
+
 ```shell
-./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_ade20k.py xdecoder_focalt_best_openseg.pt 8
+./tools/dist_test.sh projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_ade20k.py xdecoder_focalt_best_openseg.pt 8
 ```
 
-| Model                               | mIoU  | mIOU(official) |                                 Config                                 |
-| :---------------------------------- | :---: | :------------: | :--------------------------------------------------------------------: |
-| `xdecoder_focalt_best_openseg.pt`\* | 19.06 |     18.97      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_ade20k.py) |
+| Model                             | mIoU  | mIOU(official) |                                 Config                                 |
+| :-------------------------------- | :---: | :------------: | :--------------------------------------------------------------------: |
+| `xdecoder_focalt_best_openseg.pt` | 19.06 |     18.97      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_ade20k.py) |
 
 ### Semantic segmentation on COCO2017
 
-Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/en/latest/user_guides/dataset_prepare.html#coco).
-
-**Test Command**
+Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_prepare.md#coco-semantic-dataset-preparation) of `(2) use panoptic dataset` part.
 
 ```shell
-./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py xdecoder_focalt_last_novg.pt 8 --cfg-options model.test_cfg.use_thr_for_mc=False
+./tools/dist_test.sh projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py xdecoder_focalt_last_novg.pt 8 --cfg-options model.test_cfg.use_thr_for_mc=False
 ```
 
-| Model                                             | mIOU | mIOU(official) |                               Config                               |
-| :------------------------------------------------ | :--: | :------------: | :----------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco`\* | 62.1 |      62.1      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
+| Model                                           | mIOU | mIOU(official) |                               Config                               |
+| :---------------------------------------------- | :--: | :------------: | :----------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-semseg_coco` | 62.1 |      62.1      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_coco.py) |
 
 ### Instance segmentation on COCO2017
 
-Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/en/latest/user_guides/dataset_prepare.html#coco).
-
-**Test Command**
+Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_prepare.md#basic-detection-dataset-preparation).
 
 ```shell
-./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py xdecoder_focalt_last_novg.pt 8
+./tools/dist_test.sh projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py xdecoder_focalt_last_novg.pt 8
 ```
 
-| Model                                               | Mask mAP | Mask mAP(official) |                                Config                                |
-| :-------------------------------------------------- | :------: | :----------------: | :------------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-instance_coco`\* |   39.8   |        39.7        | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) |
+| Model                                             | Mask mAP | Mask mAP(official) |                                Config                                |
+| :------------------------------------------------ | :------: | :----------------: | :------------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-instance_coco` |   39.8   |        39.7        | [config](configs/xdecoder-tiny_zeroshot_open-vocab-instance_coco.py) |
 
 ### Panoptic segmentation on COCO2017
 
-Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/en/latest/user_guides/dataset_prepare.html#coco).
-
-**Test Command**
+Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_prepare.md#basic-detection-dataset-preparation).
 
 ```shell
-./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_coco.py xdecoder_focalt_last_novg.pt 8
+./tools/dist_test.sh projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_coco.py xdecoder_focalt_last_novg.pt 8
 ```
 
-| Model                                               |  PQ   | PQ(official) |                                Config                                |
-| :-------------------------------------------------- | :---: | :----------: | :------------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-panoptic_coco`\* | 51.16 |    51.16     | [config](configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_coco.py) |
+| Model                                             |  PQ   | PQ(official) |                                Config                                |
+| :------------------------------------------------ | :---: | :----------: | :------------------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_open-vocab-panoptic_coco` | 51.16 |    51.16     | [config](configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_coco.py) |
 
 ### Referring segmentation on RefCOCO
 
-Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/en/latest/user_guides/dataset_prepare.html#refcoco-dataset-preparation).
-
-**Test Command**
+Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_prepare.md#refcoco-dataset-preparation).
 
 ```shell
 ./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py xdecoder_focalt_last_novg.pt 8  --cfg-options test_dataloader.dataset.split='val'
 ```
 
-| Model                            | cIoU  | cIOU(official) |                                 Config                                  |
-| :------------------------------- | :---: | :------------: | :---------------------------------------------------------------------: |
-| `xdecoder_focalt_last_novg.pt`\* | 58.85 |     57.85      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
+| Model                          | cIoU  | cIOU(official) |                                 Config                                  |
+| :----------------------------- | :---: | :------------: | :---------------------------------------------------------------------: |
+| `xdecoder_focalt_last_novg.pt` | 58.85 |     57.85      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
 
 **Note:** If you set the scale of `Resize` to (1024, 512), the result will be `57.69`.
 
 ### Image Caption on COCO2014
 
-Prepare your dataset according to the [docs](https://mmdetection.readthedocs.io/en/latest/user_guides/dataset_prepare.html#coco_caption).
+Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_prepare.md#coco-caption-dataset-preparation).
 
 Before testing, you need to install jdk 1.8, otherwise it will prompt that java does not exist during the evaluation process
-
-**Test Command**
 
 ```shell
 ./tools/dist_test.sh projects/XDecoder/configs/xdecoder-tiny_zeroshot_caption_coco2014.py xdecoder_focalt_last_novg.pt 8
 ```
 
-| Model                                       | BLEU-4 | CIDER  |                            Config                            |
-| :------------------------------------------ | :----: | :----: | :----------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_caption_coco2014`\* | 35.26  | 116.81 | [config](configs/xdecoder-tiny_zeroshot_caption_coco2014.py) |
+| Model                                     | BLEU-4 | CIDER  |                            Config                            |
+| :---------------------------------------- | :----: | :----: | :----------------------------------------------------------: |
+| `xdecoder-tiny_zeroshot_caption_coco2014` | 35.26  | 116.81 | [config](configs/xdecoder-tiny_zeroshot_caption_coco2014.py) |
 
 ## Citation
 

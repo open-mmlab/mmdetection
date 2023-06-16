@@ -10,7 +10,7 @@ from mmdet.registry import DATASETS
 
 
 @DATASETS.register_module()
-class COCOCaptionDataset(BaseDataset):
+class CocoCaptionDataset(BaseDataset):
     """COCO2014 Caption dataset."""
 
     def load_data_list(self) -> List[dict]:

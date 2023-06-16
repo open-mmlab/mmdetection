@@ -1,5 +1,5 @@
 # dataset settings
-dataset_type = 'RefCOCODataset'
+dataset_type = 'RefCocoDataset'
 data_root = 'data/coco/'
 
 backend_args = None
