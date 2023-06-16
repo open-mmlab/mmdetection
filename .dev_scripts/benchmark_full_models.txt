@@ -90,3 +90,9 @@ yolact/yolact_r50_8xb8-55e_coco.py
 yolo/yolov3_d53_8xb8-320-273e_coco.py
 yolof/yolof_r50-c5_8xb8-1x_coco.py
 yolox/yolox_s_8xb8-300e_coco.py
+deepsort/deepsort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py
+mask2former_vis/mask2former_r50_8xb2-8e_youtubevis2021.py
+masktrack_rcnn/masktrack-rcnn_mask-rcnn_r50_fpn_8xb1-12e_youtubevis2021.py
+ocsort/ocsort_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py
+qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py
+strongsort/strongsort_yolox_x_8xb4-80e_crowdhuman-mot17halftrain_test-mot17halfval.py
