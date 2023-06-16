@@ -6,12 +6,8 @@ _base_ = [
 model = dict(test_cfg=dict(mask_thr=0.4))
 
 test_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        imdecode_backend='pillow',
-        backend_args=_base_.backend_args),
-    dict(
-        type='ResizeShortestEdge', scale=640, max_size=2560, backend='pillow'),
+    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
+    dict(type='Resize', scale=(2560, 640), keep_ratio=True),
     dict(type='LoadPanopticAnnotations', backend_args=_base_.backend_args),
     dict(
         type='PackDetInputs',

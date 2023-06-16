@@ -134,7 +134,7 @@ Since semantic segmentation is a pixel-level task, we don't need to use a thresh
 
 | Model                             | mIoU  | mIOU(official) |                                Config                                |
 | :-------------------------------- | :---: | :------------: | :------------------------------------------------------------------: |
-| `xdecoder_focalt_best_openseg.pt` | 25.13 |     25.13      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_ade20k.py) |
+| `xdecoder_focalt_best_openseg.pt` | 25.24 |     25.13      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-semseg_ade20k.py) |
 
 ### Instance segmentation on ADE20K
 
@@ -158,7 +158,7 @@ Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_p
 
 | Model                             | mIoU  | mIOU(official) |                                 Config                                 |
 | :-------------------------------- | :---: | :------------: | :--------------------------------------------------------------------: |
-| `xdecoder_focalt_best_openseg.pt` | 19.06 |     18.97      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_ade20k.py) |
+| `xdecoder_focalt_best_openseg.pt` | 19.11 |     18.97      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_ade20k.py) |
 
 ### Semantic segmentation on COCO2017
 
@@ -194,7 +194,7 @@ Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_p
 
 | Model                                             |  PQ   | PQ(official) |                                Config                                |
 | :------------------------------------------------ | :---: | :----------: | :------------------------------------------------------------------: |
-| `xdecoder-tiny_zeroshot_open-vocab-panoptic_coco` | 51.16 |    51.16     | [config](configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_coco.py) |
+| `xdecoder-tiny_zeroshot_open-vocab-panoptic_coco` | 51.42 |    51.16     | [config](configs/xdecoder-tiny_zeroshot_open-vocab-panoptic_coco.py) |
 
 ### Referring segmentation on RefCOCO
 
@@ -206,7 +206,7 @@ Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_p
 
 | Model                          | cIoU  | cIOU(official) |                                 Config                                  |
 | :----------------------------- | :---: | :------------: | :---------------------------------------------------------------------: |
-| `xdecoder_focalt_last_novg.pt` | 58.85 |     57.85      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
+| `xdecoder_focalt_last_novg.pt` | 58.84 |     57.85      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
 
 **Note:** If you set the scale of `Resize` to (1024, 512), the result will be `57.69`.
 
