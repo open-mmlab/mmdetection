@@ -128,22 +128,27 @@ class RefCocoDataset(BaseDataset):
             sentences = []
             for grounding_anno in grounding_dict[img_id]:
                 texts = [x['raw'].lower() for x in grounding_anno['sentences']]
+                # random select one text
                 if self.text_mode == 'random':
                     idx = random.randint(0, len(texts) - 1)
                     text = [texts[idx]]
+                # concat all texts
                 elif self.text_mode == 'concat':
                     text = [''.join(texts)]
+                # select the first text
                 elif self.text_mode == 'select_first':
-                    text = texts[0]
+                    text = [texts[0]]
+                # use all texts
                 elif self.text_mode == 'original':
                     text = texts
                 else:
                     raise ValueError(f'Invalid text mode "{self.text_mode}".')
-                instances.append({
+                ins = [{
                     'mask': grounding_anno['segmentation'],
                     'ignore_flag': 0
-                })
-                sentences.append(text)
+                }] * len(text)
+                instances.extend(ins)
+                sentences.extend(text)
             data_info = {
                 'img_path': join_path(img_prefix, image['file_name']),
                 'img_id': img_id,
