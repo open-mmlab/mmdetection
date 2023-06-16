@@ -204,11 +204,13 @@ Prepare your dataset according to the [docs](../../docs/en/user_guides/dataset_p
 ./tools/dist_test.sh  projects/XDecoder/configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py xdecoder_focalt_last_novg.pt 8  --cfg-options test_dataloader.dataset.split='val'
 ```
 
-| Model                          | cIoU  | cIOU(official) |                                 Config                                  |
-| :----------------------------- | :---: | :------------: | :---------------------------------------------------------------------: |
-| `xdecoder_focalt_last_novg.pt` | 58.85 |     57.85      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
+| Model                          |  text mode   |  cIoU   | cIOU(official) |                                 Config                                  |
+| :----------------------------- | :----------: | :-----: | :------------: | :---------------------------------------------------------------------: |
+| `xdecoder_focalt_last_novg.pt` | select first | 58.8509 |     57.85      | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
+| `xdecoder_focalt_last_novg.pt` |   original   | 60.0576 |       -        | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
+| `xdecoder_focalt_last_novg.pt` |    concat    | 60.3031 |       -        | [config](configs/xdecoder-tiny_zeroshot_open-vocab-ref-seg_refcocog.py) |
 
-**Note:** If you set the scale of `Resize` to (1024, 512), the result will be `57.69`.
+**Note:** If you set the scale of `Resize` to (1024, 512), the result will be `57.69`. Text mode is `select first` by default, it means that the first text in the text list is used as the input of the model. If you want to use the original text, you can set `test_dataloader.dataset.text_mode='original'` in the config. If you want to use the concatenation of the text, you can set `test_dataloader.dataset.text_mode='concat'` in the config.
 
 ### Image Caption on COCO2014
 
