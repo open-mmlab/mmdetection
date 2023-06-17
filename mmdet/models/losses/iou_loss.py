@@ -394,6 +394,8 @@ class BaseIoULoss(nn.Module):
         reduction (str): Options are "none", "mean" and "sum". Defaults to
             "mean".
         loss_weight (float): Weight of loss. Defaults to 1.0.
+        reduce_weight (bool): Specifies whether the weight is reduced or not.
+            Defaults to True.
         normalize_bbox (bool): Specifies whether the bounding box should be
             normalized by a constant value. This is useful for preventing
             overflow in FP16 (half-precision). Defaults to False.
@@ -406,12 +408,14 @@ class BaseIoULoss(nn.Module):
                  eps: float = 1e-6,
                  reduction: str = 'mean',
                  loss_weight: float = 1.0,
+                 reduce_weight: bool = True,
                  normalize_bbox: bool = False,
                  norm_value: float = 100.0) -> None:
         super().__init__()
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight
+        self.reduce_weight = reduce_weight
         self.normalize_bbox = normalize_bbox
         self.norm_value = norm_value
 
@@ -420,7 +424,7 @@ class BaseIoULoss(nn.Module):
         pred: Tensor,
         target: Tensor,
         weight: Optional[Tensor] = None,
-        reduction_override: Optional[str] = None
+        reduction_override: Optional[str] = None,
     ) -> Tuple[Tensor, Tensor, Tensor, str]:
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
@@ -432,7 +436,7 @@ class BaseIoULoss(nn.Module):
                 weight = weight.unsqueeze(1)
             return (pred * weight).sum(), 0, 0, reduction  # 0
 
-        if weight is not None and weight.dim() > 1:
+        if self.reduce_weight and weight is not None and weight.dim() > 1:
             # TODO: remove this in the future
             # reduce the weight of shape (n, 4) to (n,) to match the
             # iou_loss of shape (n,)
@@ -562,10 +566,16 @@ class BoundedIoULoss(BaseIoULoss):
     Args:
         beta (float, optional): Beta parameter in smoothl1.
         eps (float, optional): Epsilon to avoid NaN values.
+        reduce_weight (bool): Specifies whether the weight is reduced or not.
+            Defaults to False.
     """
 
-    def __init__(self, beta: float = 0.2, eps: float = 1e-3, **kwargs) -> None:
-        super().__init__(eps=eps, **kwargs)
+    def __init__(self,
+                 beta: float = 0.2,
+                 eps: float = 1e-3,
+                 reduce_weight: bool = False,
+                 **kwargs) -> None:
+        super().__init__(eps=eps, reduce_weight=reduce_weight, **kwargs)
         self.beta = beta
 
     def forward(self,
