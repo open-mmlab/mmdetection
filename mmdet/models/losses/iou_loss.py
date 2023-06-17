@@ -302,6 +302,7 @@ def eiou_loss(pred: Tensor,
         ious - 0.5 * smooth_point)
     return loss
 
+
 @weighted_loss
 def siou_loss(pred, target, eps=1e-7, neg_gamma=False):
     r"""`Implementation of paper `SIoU Loss: More Powerful Learning
@@ -831,9 +832,6 @@ class SIoULoss(BaseIoULoss):
     Args:
         eps (float): Eps to avoid log(0).
         neg_gamma (bool): `True` follows original implementation in paper.
-
-    Return:
-        Tensor: Loss tensor.
     """
 
     def __init__(self,
