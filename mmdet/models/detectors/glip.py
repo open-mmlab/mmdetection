@@ -175,9 +175,9 @@ class GLIP(SingleStageDetector):
         bbox_head (:obj:`ConfigDict` or dict): The bbox head config.
         language_model (:obj:`ConfigDict` or dict): The language model config.
         train_cfg (:obj:`ConfigDict` or dict, optional): The training config
-            of FOVEA. Defaults to None.
+            of GLIP. Defaults to None.
         test_cfg (:obj:`ConfigDict` or dict, optional): The testing config
-            of FOVEA. Defaults to None.
+            of GLIP. Defaults to None.
         data_preprocessor (:obj:`ConfigDict` or dict, optional): Config of
             :class:`DetDataPreprocessor` to process the input data.
             Defaults to None.
