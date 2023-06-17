@@ -468,16 +468,26 @@ class GIoULoss(nn.Module):
         eps (float): Epsilon to avoid log(0).
         reduction (str): Options are "none", "mean" and "sum".
         loss_weight (float): Weight of loss.
+        normalize_bbox (bool): Specifies whether the bounding box should be
+            normalized by a constant value. This is useful for preventing
+            overflow in FP16 (half-precision). Defaults to False.
+        norm_value (float): The constant value used for normalizing the
+            bounding box. It is applied when normalize_bbox is True.
+            Defaults to 100.0.
     """
 
     def __init__(self,
                  eps: float = 1e-6,
                  reduction: str = 'mean',
-                 loss_weight: float = 1.0) -> None:
+                 loss_weight: float = 1.0,
+                 normalize_bbox: bool = False,
+                 norm_value: float = 100.0) -> None:
         super().__init__()
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight
+        self.normalize_bbox = normalize_bbox
+        self.norm_value = norm_value
 
     def forward(self,
                 pred: Tensor,
@@ -517,6 +527,10 @@ class GIoULoss(nn.Module):
             # giou_loss of shape (n,)
             assert weight.shape == pred.shape
             weight = weight.mean(-1)
+        if self.normalize_bbox:
+            pred = pred / self.norm_value
+            target = target / self.norm_value
+
         loss = self.loss_weight * giou_loss(
             pred,
             target,

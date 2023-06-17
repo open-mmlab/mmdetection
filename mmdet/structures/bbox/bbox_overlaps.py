@@ -148,9 +148,9 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
         else:
             return bboxes1.new(batch_shape + (rows, cols))
 
-    area1 = (bboxes1[..., 2] - bboxes1[..., 0]).float() * (
+    area1 = (bboxes1[..., 2] - bboxes1[..., 0]) * (
         bboxes1[..., 3] - bboxes1[..., 1])
-    area2 = (bboxes2[..., 2] - bboxes2[..., 0]).float() * (
+    area2 = (bboxes2[..., 2] - bboxes2[..., 0]) * (
         bboxes2[..., 3] - bboxes2[..., 1])
 
     if is_aligned:

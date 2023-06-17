@@ -126,6 +126,12 @@ class IoUCost(BaseMatchCost):
     Args:
         iou_mode (str): iou mode such as 'iou', 'giou'. Defaults to 'giou'.
         weight (Union[float, int]): Cost weight. Defaults to 1.
+        normalize_bbox (bool): Specifies whether the bounding box should be
+            normalized by a constant value. This is useful for preventing
+            overflow in FP16 (half-precision). Defaults to False.
+        norm_value (float): The constant value used for normalizing the
+            bounding box. It is applied when normalize_bbox is True.
+            Defaults to 100.0.
 
     Examples:
         >>> from mmdet.models.task_modules.assigners.
@@ -139,9 +145,15 @@ class IoUCost(BaseMatchCost):
             [ 0.1667, -0.5000]])
     """
 
-    def __init__(self, iou_mode: str = 'giou', weight: Union[float, int] = 1.):
+    def __init__(self,
+                 iou_mode: str = 'giou',
+                 weight: Union[float, int] = 1.,
+                 normalize_bbox: bool = False,
+                 norm_value: float = 100.0) -> None:
         super().__init__(weight=weight)
         self.iou_mode = iou_mode
+        self.normalize_bbox = normalize_bbox
+        self.norm_value = norm_value
 
     def __call__(self,
                  pred_instances: InstanceData,
@@ -163,6 +175,9 @@ class IoUCost(BaseMatchCost):
         """
         pred_bboxes = pred_instances.bboxes
         gt_bboxes = gt_instances.bboxes
+        if self.normalize_bbox:
+            pred_bboxes = pred_bboxes / self.norm_value
+            gt_bboxes = gt_bboxes / self.norm_value
 
         overlaps = bbox_overlaps(
             pred_bboxes, gt_bboxes, mode=self.iou_mode, is_aligned=False)
