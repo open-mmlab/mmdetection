@@ -2,13 +2,20 @@
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 
-# file_client_args = dict(
+# Example to use different file client
+# Method 1: simply set the data root and let the file I/O module
+# automatically infer from prefix (not support LMDB and Memcache yet)
+
+# data_root = 's3://openmmlab/datasets/detection/coco/'
+
+# Method 2: Use `backend_args`, `file_client_args` in versions before 3.0.0rc6
+# backend_args = dict(
 #     backend='petrel',
 #     path_mapping=dict({
 #         './data/': 's3://openmmlab/datasets/detection/',
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
-file_client_args = dict(backend='disk')
+backend_args = None
 
 color_space = [
     [dict(type='ColorTransform')],
@@ -36,7 +43,7 @@ branch_field = ['sup', 'unsup_teacher', 'unsup_student']
 # pipeline used to augment labeled data,
 # which will be sent to student model for supervised training.
 sup_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomResize', scale=scale, keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
@@ -82,7 +89,7 @@ strong_pipeline = [
 
 # pipeline used to augment unlabeled data into different views
 unsup_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadEmptyAnnotations'),
     dict(
         type='MultiBranch',
@@ -93,7 +100,7 @@ unsup_pipeline = [
 ]
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     dict(
         type='PackDetInputs',
@@ -122,7 +129,8 @@ labeled_dataset = dict(
     ann_file='annotations/instances_train2017.json',
     data_prefix=dict(img='train2017/'),
     filter_cfg=dict(filter_empty_gt=True, min_size=32),
-    pipeline=sup_pipeline)
+    pipeline=sup_pipeline,
+    backend_args=backend_args)
 
 unlabeled_dataset = dict(
     type=dataset_type,
@@ -130,7 +138,8 @@ unlabeled_dataset = dict(
     ann_file='annotations/instances_unlabeled2017.json',
     data_prefix=dict(img='unlabeled2017/'),
     filter_cfg=dict(filter_empty_gt=False),
-    pipeline=unsup_pipeline)
+    pipeline=unsup_pipeline,
+    backend_args=backend_args)
 
 train_dataloader = dict(
     batch_size=batch_size,
@@ -155,7 +164,8 @@ val_dataloader = dict(
         ann_file='annotations/instances_val2017.json',
         data_prefix=dict(img='val2017/'),
         test_mode=True,
-        pipeline=test_pipeline))
+        pipeline=test_pipeline,
+        backend_args=backend_args))
 
 test_dataloader = val_dataloader
 
@@ -163,5 +173,6 @@ val_evaluator = dict(
     type='CocoMetric',
     ann_file=data_root + 'annotations/instances_val2017.json',
     metric='bbox',
-    format_only=False)
+    format_only=False,
+    backend_args=backend_args)
 test_evaluator = val_evaluator

@@ -44,3 +44,17 @@ Models:
         Metrics:
           box AP: 25.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_140e_coco/centernet_resnet18_140e_coco_20210705_093630-bb5b3bf7.pth
+
+  - Name: centernet-update_r50-caffe_fpn_ms-1x_coco
+    In Collection: CenterNet
+    Config: configs/centernet/centernet-update_r50-caffe_fpn_ms-1x_coco.py
+    Metadata:
+      Batch Size: 16
+      Training Memory (GB): 3.3
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.2
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/centernet/centernet-update_r50-caffe_fpn_ms-1x_coco/centernet-update_r50-caffe_fpn_ms-1x_coco_20230512_203845-8306baf2.pth

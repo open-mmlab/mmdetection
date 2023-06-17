@@ -76,7 +76,7 @@ backend = 'pillow'
 train_pipeline = [
     dict(
         type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}},
+        backend_args={{_base_.backend_args}},
         imdecode_backend=backend),
     dict(
         type='LoadAnnotations',
@@ -96,7 +96,7 @@ train_pipeline = [
 test_pipeline = [
     dict(
         type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}},
+        backend_args={{_base_.backend_args}},
         imdecode_backend=backend),
     dict(type='Resize', scale=(640, 853), keep_ratio=True, backend=backend),
     dict(

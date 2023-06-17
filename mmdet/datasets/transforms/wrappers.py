@@ -28,8 +28,7 @@ class MultiBranch(BaseTransform):
     Examples:
         >>> branch_field = ['sup', 'unsup_teacher', 'unsup_student']
         >>> sup_pipeline = [
-        >>>     dict(type='LoadImageFromFile',
-        >>>         file_client_args=dict(backend='disk')),
+        >>>     dict(type='LoadImageFromFile'),
         >>>     dict(type='LoadAnnotations', with_bbox=True),
         >>>     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
         >>>     dict(type='RandomFlip', prob=0.5),
@@ -39,8 +38,7 @@ class MultiBranch(BaseTransform):
         >>>         sup=dict(type='PackDetInputs'))
         >>>     ]
         >>> weak_pipeline = [
-        >>>     dict(type='LoadImageFromFile',
-        >>>         file_client_args=dict(backend='disk')),
+        >>>     dict(type='LoadImageFromFile'),
         >>>     dict(type='LoadAnnotations', with_bbox=True),
         >>>     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
         >>>     dict(type='RandomFlip', prob=0.0),
@@ -50,8 +48,7 @@ class MultiBranch(BaseTransform):
         >>>         sup=dict(type='PackDetInputs'))
         >>>     ]
         >>> strong_pipeline = [
-        >>>     dict(type='LoadImageFromFile',
-        >>>         file_client_args=dict(backend='disk')),
+        >>>     dict(type='LoadImageFromFile'),
         >>>     dict(type='LoadAnnotations', with_bbox=True),
         >>>     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
         >>>     dict(type='RandomFlip', prob=1.0),
@@ -61,8 +58,7 @@ class MultiBranch(BaseTransform):
         >>>         sup=dict(type='PackDetInputs'))
         >>>     ]
         >>> unsup_pipeline = [
-        >>>     dict(type='LoadImageFromFile',
-        >>>         file_client_args=file_client_args),
+        >>>     dict(type='LoadImageFromFile'),
         >>>     dict(type='LoadEmptyAnnotations'),
         >>>     dict(
         >>>         type='MultiBranch',
@@ -75,15 +71,15 @@ class MultiBranch(BaseTransform):
         >>> unsup_branch = Compose(unsup_pipeline)
         >>> print(sup_branch)
         >>> Compose(
-        >>>     LoadImageFromFile(ignore_empty=False, to_float32=False, color_type='color', imdecode_backend='cv2', file_client_args={'backend': 'disk'}) # noqa
-        >>>     LoadAnnotations(with_bbox=True, with_label=True, with_mask=False, with_seg=False, poly2mask=True, imdecode_backend='cv2', file_client_args={'backend': 'disk'}) # noqa
+        >>>     LoadImageFromFile(ignore_empty=False, to_float32=False, color_type='color', imdecode_backend='cv2') # noqa
+        >>>     LoadAnnotations(with_bbox=True, with_label=True, with_mask=False, with_seg=False, poly2mask=True, imdecode_backend='cv2') # noqa
         >>>     Resize(scale=(1333, 800), scale_factor=None, keep_ratio=True, clip_object_border=True), backend=cv2), interpolation=bilinear) # noqa
         >>>     RandomFlip(prob=0.5, direction=horizontal)
         >>>     MultiBranch(branch_pipelines=['sup'])
         >>> )
         >>> print(unsup_branch)
         >>> Compose(
-        >>>     LoadImageFromFile(ignore_empty=False, to_float32=False, color_type='color', imdecode_backend='cv2', file_client_args={'backend': 'disk'}) # noqa
+        >>>     LoadImageFromFile(ignore_empty=False, to_float32=False, color_type='color', imdecode_backend='cv2') # noqa
         >>>     LoadEmptyAnnotations(with_bbox=True, with_label=True, with_mask=False, with_seg=False, seg_ignore_label=255) # noqa
         >>>     MultiBranch(branch_pipelines=['unsup_teacher', 'unsup_student'])
         >>> )

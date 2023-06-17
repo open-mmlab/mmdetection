@@ -69,7 +69,7 @@ class MultiImageMixDataset:
 
         self._metainfo = self.dataset.metainfo
         if hasattr(self.dataset, 'flag'):
-            self.flag = dataset.flag
+            self.flag = self.dataset.flag
         self.num_samples = len(self.dataset)
         self.max_refetch = max_refetch
 

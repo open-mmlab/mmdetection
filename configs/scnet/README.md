@@ -46,7 +46,7 @@ The results on COCO 2017val are shown in the below table. (results on test-dev a
 
 ### Notes
 
-- Training hyper-parameters are identical to those of [HTC](https://github.com/open-mmlab/mmdetection/tree/master/configs/htc).
+- Training hyper-parameters are identical to those of [HTC](https://github.com/open-mmlab/mmdetection/tree/main/configs/htc).
 - TTA means Test Time Augmentation, which applies horizontal flip and multi-scale testing. Refer to [config](./scnet_r50_fpn_1x_coco.py).
 
 ## Citation

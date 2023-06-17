@@ -22,7 +22,7 @@ We propose CornerNet, a new approach to object detection where we detect an obje
 
 Note:
 
-- TTA setting is single-scale and `flip=True`.
+- TTA setting is single-scale and `flip=True`. If you want to reproduce the TTA performance, please add `--tta` in the test command.
 - Experiments with `images_per_gpu=6` are conducted on Tesla V100-SXM2-32GB, `images_per_gpu=3` are conducted on GeForce GTX 1080 Ti.
 - Here are the descriptions of each experiment setting:
   - 10 x 5: 10 GPUs with 5 images per gpu. This is the same setting as that reported in the original paper.

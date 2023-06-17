@@ -1,0 +1,37 @@
+Collections:
+  - Name: DeepSORT
+    Metadata:
+      Training Techniques:
+        - SGD with Momentum
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - ResNet
+        - FPN
+    Paper:
+      URL: https://arxiv.org/abs/1703.07402
+      Title: Simple Online and Realtime Tracking with a Deep Association Metric
+    README: configs/deepsort/README.md
+
+Models:
+  - Name: deepsort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval
+    In Collection: DeepSORT
+    Config: configs/deepsort/deepsort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py
+    Metadata:
+      Training Data: MOT17-half-train
+      inference time (ms/im):
+        - value: 72.5
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (640, 1088)
+    Results:
+      - Task: Multiple Object Tracking
+        Dataset: MOT17-half-val
+        Metrics:
+          MOTA: 63.7
+          IDF1: 69.5
+          HOTA: 57.0
+    Weights:
+      - https://download.openmmlab.com/mmtracking/mot/faster_rcnn/faster-rcnn_r50_fpn_4e_mot17-half-64ee2ed4.pth
+      - https://download.openmmlab.com/mmtracking/mot/reid/tracktor_reid_r50_iter25245-a452f51f.pth

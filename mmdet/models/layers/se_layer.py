@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmengine.model import BaseModule
-from mmengine.utils import is_tuple_of
+from mmengine.utils import digit_version, is_tuple_of
 from torch import Tensor
 
 from mmdet.utils import MultiConfig, OptConfigType, OptMultiConfig
@@ -148,7 +148,10 @@ class ChannelAttention(BaseModule):
         super().__init__(init_cfg=init_cfg)
         self.global_avgpool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Conv2d(channels, channels, 1, 1, 0, bias=True)
-        self.act = nn.Hardsigmoid(inplace=True)
+        if digit_version(torch.__version__) < (1, 7, 0):
+            self.act = nn.Hardsigmoid()
+        else:
+            self.act = nn.Hardsigmoid(inplace=True)
 
     def forward(self, x: Tensor) -> Tensor:
         """Forward function for ChannelAttention."""

@@ -30,13 +30,6 @@ class TestCityScapesMetric(unittest.TestCase):
         with self.assertRaises(AssertionError):
             CityScapesMetric(outfile_prefix=None)
 
-        # test with format_only=True, keep_results=False
-        with self.assertRaises(AssertionError):
-            CityScapesMetric(
-                outfile_prefix=self.tmp_dir.name + 'test',
-                format_only=True,
-                keep_results=False)
-
     @unittest.skipIf(cityscapesscripts is None,
                      'cityscapesscripts is not installed.')
     def test_evaluate(self):
@@ -86,7 +79,6 @@ class TestCityScapesMetric(unittest.TestCase):
         metric = CityScapesMetric(
             seg_prefix=self.seg_prefix,
             format_only=False,
-            keep_results=False,
             outfile_prefix=self.outfile_prefix)
         metric.dataset_meta = dict(
             classes=('person', 'rider', 'car', 'truck', 'bus', 'train',
@@ -101,7 +93,6 @@ class TestCityScapesMetric(unittest.TestCase):
         metric = CityScapesMetric(
             seg_prefix=self.seg_prefix,
             format_only=True,
-            keep_results=True,
             outfile_prefix=self.outfile_prefix)
         metric.dataset_meta = dict(
             classes=('person', 'rider', 'car', 'truck', 'bus', 'train',

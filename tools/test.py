@@ -2,13 +2,17 @@
 import argparse
 import os
 import os.path as osp
+import warnings
+from copy import deepcopy
 
+from mmengine import ConfigDict
 from mmengine.config import Config, DictAction
-from mmengine.evaluator import DumpResults
 from mmengine.runner import Runner
 
 from mmdet.engine.hooks.utils import trigger_visualization_hook
+from mmdet.evaluation import DumpDetResults
 from mmdet.registry import RUNNERS
+from mmdet.utils import setup_cache_size_limit_of_dynamo
 
 
 # TODO: support fuse_conv_bn and format_only
@@ -48,7 +52,11 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
-    parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--tta', action='store_true')
+    # When using PyTorch version >= 2.0.0, the `torch.distributed.launch`
+    # will pass the `--local-rank` parameter to `tools/train.py` instead
+    # of `--local_rank`.
+    parser.add_argument('--local_rank', '--local-rank', type=int, default=0)
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -57,6 +65,10 @@ def parse_args():
 
 def main():
     args = parse_args()
+
+    # Reduce the number of repeated compilations and improve
+    # testing speed.
+    setup_cache_size_limit_of_dynamo()
 
     # load config
     cfg = Config.fromfile(args.config)
@@ -78,6 +90,41 @@ def main():
     if args.show or args.show_dir:
         cfg = trigger_visualization_hook(cfg, args)
 
+    if args.tta:
+
+        if 'tta_model' not in cfg:
+            warnings.warn('Cannot find ``tta_model`` in config, '
+                          'we will set it as default.')
+            cfg.tta_model = dict(
+                type='DetTTAModel',
+                tta_cfg=dict(
+                    nms=dict(type='nms', iou_threshold=0.5), max_per_img=100))
+        if 'tta_pipeline' not in cfg:
+            warnings.warn('Cannot find ``tta_pipeline`` in config, '
+                          'we will set it as default.')
+            test_data_cfg = cfg.test_dataloader.dataset
+            while 'dataset' in test_data_cfg:
+                test_data_cfg = test_data_cfg['dataset']
+            cfg.tta_pipeline = deepcopy(test_data_cfg.pipeline)
+            flip_tta = dict(
+                type='TestTimeAug',
+                transforms=[
+                    [
+                        dict(type='RandomFlip', prob=1.),
+                        dict(type='RandomFlip', prob=0.)
+                    ],
+                    [
+                        dict(
+                            type='PackDetInputs',
+                            meta_keys=('img_id', 'img_path', 'ori_shape',
+                                       'img_shape', 'scale_factor', 'flip',
+                                       'flip_direction'))
+                    ],
+                ])
+            cfg.tta_pipeline[-1] = flip_tta
+        cfg.model = ConfigDict(**cfg.tta_model, module=cfg.model)
+        cfg.test_dataloader.dataset.pipeline = cfg.tta_pipeline
+
     # build the runner from config
     if 'runner_type' not in cfg:
         # build the default runner
@@ -92,7 +139,7 @@ def main():
         assert args.out.endswith(('.pkl', '.pickle')), \
             'The dump file must be a pkl file.'
         runner.test_evaluator.metrics.append(
-            DumpResults(out_file_path=args.out))
+            DumpDetResults(out_file_path=args.out))
 
     # start testing
     runner.test()

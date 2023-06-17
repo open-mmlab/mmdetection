@@ -578,7 +578,11 @@ class SparseRoIHead(CascadeRoIHead):
                     batch_img_metas=batch_img_metas,
                     batch_gt_instances=batch_gt_instances)
                 bbox_results.pop('loss_bbox')
-                all_stage_bbox_results.append((bbox_results, ))
+                # torch.jit does not support obj:SamplingResult
+                bbox_results.pop('results_list')
+                bbox_res = bbox_results.copy()
+                bbox_res.pop('sampling_results')
+                all_stage_bbox_results.append((bbox_res, ))
 
                 if self.with_mask:
                     attn_feats = bbox_results['attn_feats']

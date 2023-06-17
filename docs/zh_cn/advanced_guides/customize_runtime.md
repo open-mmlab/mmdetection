@@ -330,9 +330,9 @@ custom_hooks = [
 
 #### 例子: `NumClassCheckHook`
 
-我们实现了一个名为 [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/engine/hooks/num_class_check_hook.py) 的自定义钩子来检查 `num_classes` 是否在 head 中和 `dataset` 中的 `classes` 的长度相匹配。
+我们实现了一个名为 [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/main/mmdet/engine/hooks/num_class_check_hook.py) 的自定义钩子来检查 `num_classes` 是否在 head 中和 `dataset` 中的 `classes` 的长度相匹配。
 
-我们在 [default_runtime.py](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/_base_/default_runtime.py) 中设置它。
+我们在 [default_runtime.py](https://github.com/open-mmlab/mmdetection/blob/main/configs/_base_/default_runtime.py) 中设置它。
 
 ```python
 custom_hooks = [dict(type='NumClassCheckHook')]

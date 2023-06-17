@@ -252,7 +252,7 @@ backend = 'pillow'
 test_pipeline = [
     dict(
         type='LoadImageFromFile',
-        file_client_args=_base_.file_client_args,
+        backend_args=_base_.backend_args,
         imdecode_backend=backend),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True, backend=backend),
     dict(

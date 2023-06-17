@@ -21,6 +21,8 @@ class CSPNeXt(BaseModule):
     Args:
         arch (str): Architecture of CSPNeXt, from {P5, P6}.
             Defaults to P5.
+        expand_ratio (float): Ratio to adjust the number of channels of the
+            hidden layer. Defaults to 0.5.
         deepen_factor (float): Depth multiplier, multiply number of
             blocks in CSP layer by this amount. Defaults to 1.0.
         widen_factor (float): Width multiplier, multiply number of

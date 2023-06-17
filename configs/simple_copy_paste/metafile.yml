@@ -25,7 +25,7 @@ Collections:
 Models:
   - Name: mask-rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco
     In Collection: SimpleCopyPaste
-    Config: configs/simplecopypaste/mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_32xb2-ssj-270k_coco.py
+    Config: configs/simple_copy_paste/mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_32xb2-ssj-270k_coco.py
     Metadata:
       Training Memory (GB): 7.2
       Iterations: 270000
@@ -42,7 +42,7 @@ Models:
 
   - Name: mask-rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_90k_coco
     In Collection: SimpleCopyPaste
-    Config: configs/simplecopypaste/mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_32xb2-ssj-90k_coco.py
+    Config: configs/simple_copy_paste/mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_32xb2-ssj-90k_coco.py
     Metadata:
       Training Memory (GB): 7.2
       Iterations: 90000
@@ -59,7 +59,7 @@ Models:
 
   - Name: mask-rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco
     In Collection: SimpleCopyPaste
-    Config: configs/simplecopypaste/mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_32xb2-ssj-scp-270k_coco.py
+    Config: configs/simple_copy_paste/mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_32xb2-ssj-scp-270k_coco.py
     Metadata:
       Training Memory (GB): 7.2
       Iterations: 270000
@@ -76,7 +76,7 @@ Models:
 
   - Name: mask-rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_90k_coco
     In Collection: SimpleCopyPaste
-    Config: configs/simplecopypaste/mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_32xb2-ssj-scp-90k_coco.py
+    Config: configs/simple_copy_paste/mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_32xb2-ssj-scp-90k_coco.py
     Metadata:
       Training Memory (GB): 7.2
       Iterations: 90000

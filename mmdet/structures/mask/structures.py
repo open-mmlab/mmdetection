@@ -7,6 +7,7 @@ import cv2
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
+import shapely.geometry as geometry
 import torch
 from mmcv.ops.roi_align import roi_align
 
@@ -753,16 +754,46 @@ class PolygonMasks(BaseInstanceMasks):
         if len(self.masks) == 0:
             cropped_masks = PolygonMasks([], h, w)
         else:
+            # reference: https://github.com/facebookresearch/fvcore/blob/main/fvcore/transforms/transform.py  # noqa
+            crop_box = geometry.box(x1, y1, x2, y2).buffer(0.0)
             cropped_masks = []
+            # suppress shapely warnings util it incorporates GEOS>=3.11.2
+            # reference: https://github.com/shapely/shapely/issues/1345
+            initial_settings = np.seterr()
+            np.seterr(invalid='ignore')
             for poly_per_obj in self.masks:
                 cropped_poly_per_obj = []
                 for p in poly_per_obj:
-                    # pycocotools will clip the boundary
                     p = p.copy()
-                    p[0::2] = p[0::2] - bbox[0]
-                    p[1::2] = p[1::2] - bbox[1]
-                    cropped_poly_per_obj.append(p)
+                    p = geometry.Polygon(p.reshape(-1, 2)).buffer(0.0)
+                    # polygon must be valid to perform intersection.
+                    if not p.is_valid:
+                        continue
+                    cropped = p.intersection(crop_box)
+                    if cropped.is_empty:
+                        continue
+                    if isinstance(cropped,
+                                  geometry.collection.BaseMultipartGeometry):
+                        cropped = cropped.geoms
+                    else:
+                        cropped = [cropped]
+                    # one polygon may be cropped to multiple ones
+                    for poly in cropped:
+                        # ignore lines or points
+                        if not isinstance(
+                                poly, geometry.Polygon) or not poly.is_valid:
+                            continue
+                        coords = np.asarray(poly.exterior.coords)
+                        # remove an extra identical vertex at the end
+                        coords = coords[:-1]
+                        coords[:, 0] -= x1
+                        coords[:, 1] -= y1
+                        cropped_poly_per_obj.append(coords.reshape(-1))
+                # a dummy polygon to avoid misalignment between masks and boxes
+                if len(cropped_poly_per_obj) == 0:
+                    cropped_poly_per_obj = [np.array([0, 0, 0, 0, 0, 0])]
                 cropped_masks.append(cropped_poly_per_obj)
+            np.seterr(**initial_settings)
             cropped_masks = PolygonMasks(cropped_masks, h, w)
         return cropped_masks
 
