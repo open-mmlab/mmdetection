@@ -2,6 +2,7 @@
 import copy
 import inspect
 import math
+import warnings
 from typing import List, Optional, Sequence, Tuple, Union
 
 import cv2
@@ -2997,6 +2998,9 @@ class CopyPaste(BaseTransform):
             BitmapMasks: gt_masks, originally or generated based on bboxes.
         """
         if results.get('gt_masks', None) is not None:
+            if self.paste_by_box:
+                warnings.warn('gt_masks is already contained in results, '
+                              'so paste_by_box is disabled.')
             return results['gt_masks']
         else:
             if not self.paste_by_box:
