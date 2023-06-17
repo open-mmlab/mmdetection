@@ -430,7 +430,7 @@ class BaseIoULoss(nn.Module):
                 reduction != 'none'):
             if pred.dim() == weight.dim() + 1:
                 weight = weight.unsqueeze(1)
-            return (pred * weight).sum()  # 0
+            return (pred * weight).sum(), 0, 0, reduction  # 0
 
         if weight is not None and weight.dim() > 1:
             # TODO: remove this in the future
@@ -473,6 +473,8 @@ class BaseIoULoss(nn.Module):
         """
         pred, target, weight, reduction = self.prepare_bbox(
             pred, target, weight, reduction_override)
+        if weight == 0:
+            return pred
         # Calculate the actual IoU loss here.
 
         return NotImplementedError('Not implemented yet.')
@@ -534,6 +536,8 @@ class IoULoss(BaseIoULoss):
         """
         pred, target, weight, reduction = self.prepare_bbox(
             pred, target, weight, reduction_override)
+        if weight == 0:
+            return pred
 
         loss = self.loss_weight * iou_loss(
             pred,
@@ -591,6 +595,8 @@ class BoundedIoULoss(BaseIoULoss):
         """
         pred, target, weight, reduction = self.prepare_bbox(
             pred, target, weight, reduction_override)
+        if weight == 0:
+            return pred
 
         loss = self.loss_weight * bounded_iou_loss(
             pred,
@@ -643,6 +649,8 @@ class GIoULoss(BaseIoULoss):
         """
         pred, target, weight, reduction = self.prepare_bbox(
             pred, target, weight, reduction_override)
+        if weight == 0:
+            return pred
 
         loss = self.loss_weight * giou_loss(
             pred,
@@ -696,6 +704,8 @@ class DIoULoss(BaseIoULoss):
         """
         pred, target, weight, reduction = self.prepare_bbox(
             pred, target, weight, reduction_override)
+        if weight == 0:
+            return pred
 
         loss = self.loss_weight * diou_loss(
             pred,
@@ -750,6 +760,8 @@ class CIoULoss(BaseIoULoss):
         """
         pred, target, weight, reduction = self.prepare_bbox(
             pred, target, weight, reduction_override)
+        if weight == 0:
+            return pred
 
         loss = self.loss_weight * ciou_loss(
             pred,
@@ -809,6 +821,8 @@ class EIoULoss(BaseIoULoss):
         """
         pred, target, weight, reduction = self.prepare_bbox(
             pred, target, weight, reduction_override)
+        if weight == 0:
+            return pred
 
         loss = self.loss_weight * eiou_loss(
             pred,
@@ -869,6 +883,8 @@ class SIoULoss(BaseIoULoss):
 
         pred, target, weight, reduction = self.prepare_bbox(
             pred, target, weight, reduction_override)
+        if weight == 0:
+            return pred
 
         loss = self.loss_weight * siou_loss(
             pred,
