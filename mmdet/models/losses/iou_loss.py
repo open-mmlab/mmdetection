@@ -473,7 +473,7 @@ class BaseIoULoss(nn.Module):
         """
         pred, target, weight, reduction = self.prepare_bbox(
             pred, target, weight, reduction_override)
-        if weight == 0:
+        if isinstance(weight, int) and weight == 0:
             return pred
         # Calculate the actual IoU loss here.
 
