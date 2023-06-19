@@ -13,6 +13,7 @@ from .crowdhuman import CrowdHumanDataset
 from .dataset_wrappers import MultiImageMixDataset
 from .deepfashion import DeepFashionDataset
 from .dsdl import DSDLDetDataset
+from .isaid import iSAIDDataset
 from .lvis import LVISDataset, LVISV1Dataset, LVISV05Dataset
 from .mot_challenge_dataset import MOTChallengeDataset
 from .objects365 import Objects365V1Dataset, Objects365V2Dataset
@@ -40,5 +41,5 @@ __all__ = [
     'ReIDDataset', 'YouTubeVISDataset', 'TrackAspectRatioBatchSampler',
     'ADE20KPanopticDataset', 'CocoCaptionDataset', 'RefCocoDataset',
     'BaseSegDataset', 'ADE20KSegDataset', 'CocoSegDataset',
-    'ADE20KInstanceDataset'
+    'ADE20KInstanceDataset', 'iSAIDDataset'
 ]
