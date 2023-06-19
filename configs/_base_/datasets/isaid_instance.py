@@ -3,6 +3,7 @@ dataset_type = 'iSAIDDataset'
 data_root = 'data/iSAID/'
 backend_args = None
 
+# Please see  `projects/iSAID/README.md` for data preparation
 train_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
@@ -13,7 +14,6 @@ train_pipeline = [
 test_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='Resize', scale=(800, 800), keep_ratio=True),
-    # If you don't have a gt annotation, delete the pipeline
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='PackDetInputs',
