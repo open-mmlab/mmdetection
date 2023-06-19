@@ -60,8 +60,8 @@ class DetInferencer(BaseInferencer):
         scope (str, optional): The scope of the model. Defaults to mmdet.
         palette (str): Color palette used for visualization. The order of
             priority is palette -> config -> checkpoint. Defaults to 'none'.
-        show_progress (bool): Control whether to display the progress bar during
-            the inference process. Defaults to True.
+        show_progress (bool): Control whether to display the progress
+            bar during the inference process. Defaults to True.
     """
 
     preprocess_kwargs: set = set()
@@ -96,9 +96,9 @@ class DetInferencer(BaseInferencer):
         self.palette = palette
         init_default_scope(scope)
         super().__init__(
-            model=model, weights=weights, device=device, scope=scope,
-            show_progress=show_progress)
+            model=model, weights=weights, device=device, scope=scope)
         self.model = revert_sync_batchnorm(self.model)
+        self.show_progress = show_progress
 
     def _load_weights_to_model(self, model: nn.Module,
                                checkpoint: Optional[dict],
