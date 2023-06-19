@@ -10,12 +10,15 @@ isort==4.3.21
 kwarray
 memory_profiler
 -e git+https://github.com/open-mmlab/mmtracking@dev-1.x#egg=mmtrack
+nltk
 onnx==1.7.0
 onnxruntime>=1.8.0
 parameterized
+prettytable
 protobuf<=3.20.1
 psutil
 pytest
+transformers
 ubelt
 xdoctest>=0.10.0
 yapf

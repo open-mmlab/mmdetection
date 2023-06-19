@@ -465,3 +465,34 @@ def empty_box_as(boxes: Union[Tensor, BaseBoxes]) -> Union[Tensor, BaseBoxes]:
     else:
         # Tensor boxes will be treated as horizontal boxes by defaults
         return boxes.new_zeros(0, 4)
+
+
+def bbox_xyxy_to_cxcyah(bboxes: torch.Tensor) -> torch.Tensor:
+    """Convert bbox coordinates from (x1, y1, x2, y2) to (cx, cy, ratio, h).
+
+    Args:
+        bbox (Tensor): Shape (n, 4) for bboxes.
+
+    Returns:
+        Tensor: Converted bboxes.
+    """
+    cx = (bboxes[:, 2] + bboxes[:, 0]) / 2
+    cy = (bboxes[:, 3] + bboxes[:, 1]) / 2
+    w = bboxes[:, 2] - bboxes[:, 0]
+    h = bboxes[:, 3] - bboxes[:, 1]
+    xyah = torch.stack([cx, cy, w / h, h], -1)
+    return xyah
+
+
+def bbox_cxcyah_to_xyxy(bboxes: torch.Tensor) -> torch.Tensor:
+    """Convert bbox coordinates from (cx, cy, ratio, h) to (x1, y1, x2, y2).
+
+    Args:
+        bbox (Tensor): Shape (n, 4) for bboxes.
+    Returns:
+        Tensor: Converted bboxes.
+    """
+    cx, cy, ratio, h = bboxes.split((1, 1, 1, 1), dim=-1)
+    w = ratio * h
+    x1y1x2y2 = [cx - w / 2.0, cy - h / 2.0, cx + w / 2.0, cy + h / 2.0]
+    return torch.cat(x1y1x2y2, dim=-1)

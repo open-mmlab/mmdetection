@@ -1,0 +1,29 @@
+$dsdl-version: "0.5.0"
+ObjectDetectionSample:
+    $def: struct
+    $params: ["cdom"]
+    $fields:
+        media: ImageMedia
+        annotations: List[LocalObjectEntry[cdom=$cdom]]
+ImageMedia:
+    $def: struct
+    $fields:
+        media_path: Image
+        media_shape: ImageShape
+        date_captured: Str
+        id: Int
+        license: Int
+        flickr_url: Str
+        coco_url: Str
+    $optional: ["flickr_url"]
+LocalObjectEntry:
+    $def: struct
+    $params: ["cdom"]
+    $fields:
+        category_id: Label[dom=$cdom]
+        bbox: BBox
+        image_id: Int
+        id: Int
+        segmentation: Polygon
+        area: Num
+        iscrowd: Bool

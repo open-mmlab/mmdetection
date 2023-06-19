@@ -21,15 +21,15 @@
 [![PyPI](https://img.shields.io/pypi/v/mmdet)](https://pypi.org/project/mmdet)
 [![docs](https://img.shields.io/badge/docs-latest-blue)](https://mmdetection.readthedocs.io/en/latest/)
 [![badge](https://github.com/open-mmlab/mmdetection/workflows/build/badge.svg)](https://github.com/open-mmlab/mmdetection/actions)
-[![codecov](https://codecov.io/gh/open-mmlab/mmdetection/branch/master/graph/badge.svg)](https://codecov.io/gh/open-mmlab/mmdetection)
-[![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/master/LICENSE)
+[![codecov](https://codecov.io/gh/open-mmlab/mmdetection/branch/main/graph/badge.svg)](https://codecov.io/gh/open-mmlab/mmdetection)
+[![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/main/LICENSE)
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 [![issue resolution](https://isitmaintained.com/badge/resolution/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 
-[📘Documentation](https://mmdetection.readthedocs.io/en/3.x/) |
-[🛠️Installation](https://mmdetection.readthedocs.io/en/3.x/get_started.html) |
-[👀Model Zoo](https://mmdetection.readthedocs.io/en/3.x/model_zoo.html) |
-[🆕Update News](https://mmdetection.readthedocs.io/en/3.x/notes/changelog.html) |
+[📘Documentation](https://mmdetection.readthedocs.io/en/latest/) |
+[🛠️Installation](https://mmdetection.readthedocs.io/en/latest/get_started.html) |
+[👀Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html) |
+[🆕Update News](https://mmdetection.readthedocs.io/en/latest/notes/changelog.html) |
 [🚀Ongoing Projects](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔Reporting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -61,12 +61,16 @@ English | [简体中文](README_zh-CN.md)
     <img src="https://user-images.githubusercontent.com/25839884/219026120-ba71e48b-6e94-4bd4-b4e9-b7d175b5e362.png" width="3%" alt="" /></a>
 </div>
 
+<div align="center">
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/6c29886f-ae7a-4a55-8be4-352ee85b7d3e"/>
+</div>
+
 ## Introduction
 
 MMDetection is an open source object detection toolbox based on PyTorch. It is
 a part of the [OpenMMLab](https://openmmlab.com/) project.
 
-The master branch works with **PyTorch 1.6+**.
+The main branch works with **PyTorch 1.6+**.
 
 <img src="https://user-images.githubusercontent.com/12907710/187674113-2074d658-f2fb-42d1-ac15-9c4a695e64d7.png"/>
 
@@ -114,43 +118,40 @@ We are excited to announce our latest work on real-time object recognition tasks
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
 
-**v3.0.0rc6** was released in 24/2/2023:
+**v3.0.0** was released in 6/4/2023:
 
-- Support [Boxinst](configs/boxinst), [Objects365 Dataset](configs/objects365), and [Separated and Occluded COCO metric](docs/en/user_guides/useful_tools.md#coco-separated--occluded-mask-metric)
-- Support [ConvNeXt-V2](projects/ConvNeXt-V2), [DiffusionDet](projects/DiffusionDet), and inference of [EfficientDet](projects/EfficientDet) and [Detic](projects/Detic) in `Projects`
-- Refactor [DETR](configs/detr) series and support [Conditional-DETR](configs/conditional_detr), [DAB-DETR](configs/dab_detr), and [DINO](configs/dino)
-- Support `DetInferencer` for inference, Test Time Augmentation, and automatically importing modules from registry
-- Support RTMDet-Ins ONNXRuntime and TensorRT [deployment](configs/rtmdet/README.md#deployment-tutorial)
-- Support [calculating FLOPs of detectors](docs/en/user_guides/useful_tools.md#Model-Complexity)
+- Release MMDetection 3.0.0 official version
+- Support Semi-automatic annotation Base [Label-Studio](projects/LabelStudio) (#10039)
+- Support [EfficientDet](projects/EfficientDet) in projects (#9810)
 
 ## Installation
 
-Please refer to [Installation](https://mmdetection.readthedocs.io/en/3.x/get_started.html) for installation instructions.
+Please refer to [Installation](https://mmdetection.readthedocs.io/en/latest/get_started.html) for installation instructions.
 
 ## Getting Started
 
-Please see [Overview](https://mmdetection.readthedocs.io/en/3.x/get_started.html) for the general introduction of MMDetection.
+Please see [Overview](https://mmdetection.readthedocs.io/en/latest/get_started.html) for the general introduction of MMDetection.
 
-For detailed user guides and advanced guides, please refer to our [documentation](https://mmdetection.readthedocs.io/en/3.x/):
+For detailed user guides and advanced guides, please refer to our [documentation](https://mmdetection.readthedocs.io/en/latest/):
 
 - User Guides
 
   <details>
 
-  - [Train & Test](https://mmdetection.readthedocs.io/en/3.x/user_guides/index.html#train-test)
-    - [Learn about Configs](https://mmdetection.readthedocs.io/en/3.x/user_guides/config.html)
-    - [Inference with existing models](https://mmdetection.readthedocs.io/en/3.x/user_guides/inference.html)
-    - [Dataset Prepare](https://mmdetection.readthedocs.io/en/3.x/user_guides/dataset_prepare.html)
-    - [Test existing models on standard datasets](https://mmdetection.readthedocs.io/en/3.x/user_guides/test.html)
-    - [Train predefined models on standard datasets](https://mmdetection.readthedocs.io/en/3.x/user_guides/train.html)
-    - [Train with customized datasets](https://mmdetection.readthedocs.io/en/3.x/user_guides/train.html#train-with-customized-datasets)
-    - [Train with customized models and standard datasets](https://mmdetection.readthedocs.io/en/3.x/user_guides/new_model.html)
-    - [Finetuning Models](https://mmdetection.readthedocs.io/en/3.x/user_guides/finetune.html)
-    - [Test Results Submission](https://mmdetection.readthedocs.io/en/3.x/user_guides/test_results_submission.html)
-    - [Weight initialization](https://mmdetection.readthedocs.io/en/3.x/user_guides/init_cfg.html)
-    - [Use a single stage detector as RPN](https://mmdetection.readthedocs.io/en/3.x/user_guides/single_stage_as_rpn.html)
-    - [Semi-supervised Object Detection](https://mmdetection.readthedocs.io/en/3.x/user_guides/semi_det.html)
-  - [Useful Tools](https://mmdetection.readthedocs.io/en/3.x/user_guides/index.html#useful-tools)
+  - [Train & Test](https://mmdetection.readthedocs.io/en/latest/user_guides/index.html#train-test)
+    - [Learn about Configs](https://mmdetection.readthedocs.io/en/latest/user_guides/config.html)
+    - [Inference with existing models](https://mmdetection.readthedocs.io/en/latest/user_guides/inference.html)
+    - [Dataset Prepare](https://mmdetection.readthedocs.io/en/latest/user_guides/dataset_prepare.html)
+    - [Test existing models on standard datasets](https://mmdetection.readthedocs.io/en/latest/user_guides/test.html)
+    - [Train predefined models on standard datasets](https://mmdetection.readthedocs.io/en/latest/user_guides/train.html)
+    - [Train with customized datasets](https://mmdetection.readthedocs.io/en/latest/user_guides/train.html#train-with-customized-datasets)
+    - [Train with customized models and standard datasets](https://mmdetection.readthedocs.io/en/latest/user_guides/new_model.html)
+    - [Finetuning Models](https://mmdetection.readthedocs.io/en/latest/user_guides/finetune.html)
+    - [Test Results Submission](https://mmdetection.readthedocs.io/en/latest/user_guides/test_results_submission.html)
+    - [Weight initialization](https://mmdetection.readthedocs.io/en/latest/user_guides/init_cfg.html)
+    - [Use a single stage detector as RPN](https://mmdetection.readthedocs.io/en/latest/user_guides/single_stage_as_rpn.html)
+    - [Semi-supervised Object Detection](https://mmdetection.readthedocs.io/en/latest/user_guides/semi_det.html)
+  - [Useful Tools](https://mmdetection.readthedocs.io/en/latest/user_guides/index.html#useful-tools)
 
   </details>
 
@@ -158,15 +159,15 @@ For detailed user guides and advanced guides, please refer to our [documentation
 
   <details>
 
-  - [Basic Concepts](https://mmdetection.readthedocs.io/en/3.x/advanced_guides/index.html#basic-concepts)
-  - [Component Customization](https://mmdetection.readthedocs.io/en/3.x/advanced_guides/index.html#component-customization)
-  - [How to](https://mmdetection.readthedocs.io/en/3.x/advanced_guides/index.html#how-to)
+  - [Basic Concepts](https://mmdetection.readthedocs.io/en/latest/advanced_guides/index.html#basic-concepts)
+  - [Component Customization](https://mmdetection.readthedocs.io/en/latest/advanced_guides/index.html#component-customization)
+  - [How to](https://mmdetection.readthedocs.io/en/latest/advanced_guides/index.html#how-to)
 
   </details>
 
 We also provide object detection colab tutorial [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](demo/MMDet_Tutorial.ipynb) and instance segmentation colab tutorial [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](demo/MMDet_InstanceSeg_Tutorial.ipynb).
 
-To migrate from MMDetection 2.x, please refer to [migration](https://mmdetection.readthedocs.io/en/3.x/migration.html).
+To migrate from MMDetection 2.x, please refer to [migration](https://mmdetection.readthedocs.io/en/latest/migration.html).
 
 ## Overview of Benchmark and Model Zoo
 
@@ -233,6 +234,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/conditional_detr">Conditional DETR (ICCV'2021)</a></li>
             <li><a href="configs/dab_detr">DAB-DETR (ICLR'2022)</a></li>
             <li><a href="configs/dino">DINO (ICLR'2023)</a></li>
+            <li><a href="configs/glip">GLIP (CVPR'2022)</a></li>
             <li><a href="projects/DiffusionDet">DiffusionDet (ArXiv'2023)</a></li>
             <li><a href="projects/EfficientDet">EfficientDet (CVPR'2020)</a></li>
             <li><a href="projects/Detic">Detic (ECCV'2022)</a></li>
@@ -415,8 +417,8 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 - [MMEngine](https://github.com/open-mmlab/mmengine): OpenMMLab foundational library for training deep learning models.
 - [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab foundational library for computer vision.
-- [MIM](https://github.com/open-mmlab/mim): MIM installs OpenMMLab packages.
-- [MMClassification](https://github.com/open-mmlab/mmclassification): OpenMMLab image classification toolbox and benchmark.
+- [MMPreTrain](https://github.com/open-mmlab/mmpretrain): OpenMMLab pre-training toolbox and benchmark.
+- [MMagic](https://github.com/open-mmlab/mmagic): Open**MM**Lab **A**dvanced, **G**enerative and **I**ntelligent **C**reation toolbox.
 - [MMDetection](https://github.com/open-mmlab/mmdetection): OpenMMLab detection toolbox and benchmark.
 - [MMDetection3D](https://github.com/open-mmlab/mmdetection3d): OpenMMLab's next-generation platform for general 3D object detection.
 - [MMRotate](https://github.com/open-mmlab/mmrotate): OpenMMLab rotated object detection toolbox and benchmark.
@@ -434,3 +436,6 @@ This project is released under the [Apache 2.0 license](LICENSE).
 - [MMEditing](https://github.com/open-mmlab/mmediting): OpenMMLab image and video editing toolbox.
 - [MMGeneration](https://github.com/open-mmlab/mmgeneration): OpenMMLab image and video generative models toolbox.
 - [MMDeploy](https://github.com/open-mmlab/mmdeploy): OpenMMLab model deployment framework.
+- [MIM](https://github.com/open-mmlab/mim): MIM installs OpenMMLab packages.
+- [MMEval](https://github.com/open-mmlab/mmeval): A unified evaluation library for multiple machine learning libraries.
+- [Playground](https://github.com/open-mmlab/playground): A central hub for gathering and showcasing amazing projects built upon OpenMMLab.

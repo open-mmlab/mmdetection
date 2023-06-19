@@ -3,9 +3,9 @@
 MMDetection provides hundreds of pre-trained detection models in [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html).
 This note will show how to inference, which means using trained models to detect objects on images.
 
-In MMDetection, a model is defined by a [configuration file](https://mmdetection.readthedocs.io/en/3.x/user_guides/config.html) and existing model parameters are saved in a checkpoint file.
+In MMDetection, a model is defined by a [configuration file](https://mmdetection.readthedocs.io/en/latest/user_guides/config.html) and existing model parameters are saved in a checkpoint file.
 
-To start with, we recommend [RTMDet](https://github.com/open-mmlab/mmdetection/tree/3.x/configs/rtmdet) with this [configuration file](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/rtmdet/rtmdet_l_8xb32-300e_coco.py) and this [checkpoint file](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_l_8xb32-300e_coco/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth). It is recommended to download the checkpoint file to `checkpoints` directory.
+To start with, we recommend [RTMDet](https://github.com/open-mmlab/mmdetection/tree/main/configs/rtmdet) with this [configuration file](https://github.com/open-mmlab/mmdetection/blob/main/configs/rtmdet/rtmdet_l_8xb32-300e_coco.py) and this [checkpoint file](https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_l_8xb32-300e_coco/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth). It is recommended to download the checkpoint file to `checkpoints` directory.
 
 ## High-level APIs for inference
 
@@ -84,14 +84,14 @@ for frame in track_iter_progress(video_reader):
 cv2.destroyAllWindows()
 ```
 
-A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/3.x/demo/inference_demo.ipynb).
+A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/main/demo/inference_demo.ipynb).
 
 Note:  `inference_detector` only supports single-image inference for now.
 
 ## Demos
 
 We also provide three demo scripts, implemented with high-level APIs and supporting functionality codes.
-Source codes are available [here](https://github.com/open-mmlab/mmdetection/blob/3.x/demo).
+Source codes are available [here](https://github.com/open-mmlab/mmdetection/blob/main/demo).
 
 ### Image demo
 

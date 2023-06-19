@@ -44,7 +44,7 @@ We recommend that users follow our best practices to install MMDetection. Howeve
 ```shell
 pip install -U openmim
 mim install mmengine
-mim install "mmcv>=2.0.0rc1"
+mim install "mmcv>=2.0.0"
 ```
 
 **Note:** In MMCV-v2.x, `mmcv-full` is rename to `mmcv`, if you want to install `mmcv` without CUDA ops, you can use `mim install "mmcv-lite>=2.0.0rc1"` to install the lite version.
@@ -54,8 +54,7 @@ mim install "mmcv>=2.0.0rc1"
 Case a: If you develop and run mmdet directly, install it from source:
 
 ```shell
-git clone https://github.com/open-mmlab/mmdetection.git -b 3.x
-# "-b 3.x" means checkout to the `3.x` branch.
+git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 pip install -v -e .
 # "-v" means verbose, or more output
@@ -66,7 +65,7 @@ pip install -v -e .
 Case b: If you use mmdet as a dependency or third-party package, install it with MIM:
 
 ```shell
-mim install "mmdet>=3.0.0rc0"
+mim install mmdet
 ```
 
 ## Verify the installation
@@ -104,6 +103,69 @@ inference_detector(model, 'demo/demo.jpg')
 
 You will see a list of `DetDataSample`, and the predictions are in the `pred_instance`, indicating the detected bounding boxes, labels, and scores.
 
+## Tracking Installation
+
+We recommend that users follow our best practices to install MMDetection for for tracking task.
+
+### Best Practices
+
+**Step 0.** Install [MMEngine](https://github.com/open-mmlab/mmengine) and [MMCV](https://github.com/open-mmlab/mmcv) using [MIM](https://github.com/open-mmlab/mim).
+
+```shell
+pip install -U openmim
+mim install mmengine
+mim install "mmcv>=2.0.0"
+```
+
+**Step 1.** Install MMDetection.
+
+Case a: If you develop and run mmdet directly, install it from source:
+
+```shell
+git clone https://github.com/open-mmlab/mmdetection.git
+cd mmdetection
+pip install -v -e . -r requirements/tracking.txt
+# "-v" means verbose, or more output
+# "-e" means installing a project in editable mode,
+# thus any local modifications made to the code will take effect without reinstallation.
+```
+
+Case b: If you use mmdet as a dependency or third-party package, install it with MIM:
+
+```shell
+mim install mmdet[tracking]
+```
+
+**Step 2.** Install TrackEval.
+
+```shell
+pip install git+https://github.com/JonathonLuiten/TrackEval.git
+```
+
+## Verify the installation
+
+To verify whether MMDetection is installed correctly, we provide some sample codes to run an inference demo.
+
+**Step 1.** We need to download config and checkpoint files.
+
+```shell
+mim download mmdet --config bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval --dest .
+```
+
+The downloading will take several seconds or more, depending on your network environment. When it is done, you will find two files `bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py` and `bytetrack_yolox_x_crowdhuman_mot17-private-half_20211218_205500-1985c9f0.pth` in your current folder.
+
+**Step 2.** Verify the inference demo.
+
+Case a: If you install MMDetection from source, just run the following command.
+
+```shell
+python demo/mot_demo.py demo/demo_mot.mp4 bytetrack_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py --checkpoint bytetrack_yolox_x_crowdhuman_mot17-private-half_20211218_205500-1985c9f0.pth --out mot.mp4
+```
+
+You will see a new video `mot.mp4` on your folder, where bounding boxes are plotted on person.
+
+Case b: If you install MMDetection with MIM, open your python interpreter and demo/mot_demo.py, then run it like Case a.
+
 ### Customize Installation
 
 #### CUDA versions
@@ -138,7 +200,7 @@ To install MMCV with pip instead of MIM, please follow [MMCV installation guides
 For example, the following command installs MMCV built for PyTorch 1.12.x and CUDA 11.6.
 
 ```shell
-pip install "mmcv>=2.0.0rc1" -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12.0/index.html
+pip install "mmcv>=2.0.0" -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12.0/index.html
 ```
 
 #### Install on CPU-only platforms
@@ -180,13 +242,13 @@ thus we only need to install MMEngine, MMCV, and MMDetection with the following 
 ```shell
 !pip3 install openmim
 !mim install mmengine
-!mim install "mmcv>=2.0.0rc1,<2.1.0"
+!mim install "mmcv>=2.0.0,<2.1.0"
 ```
 
 **Step 2.** Install MMDetection from the source.
 
 ```shell
-!git clone https://github.com/open-mmlab/mmdetection.git -b 3.x
+!git clone https://github.com/open-mmlab/mmdetection.git
 %cd mmdetection
 !pip install -e .
 ```
@@ -196,7 +258,7 @@ thus we only need to install MMEngine, MMCV, and MMDetection with the following 
 ```python
 import mmdet
 print(mmdet.__version__)
-# Example output: 3.0.0rc0, or an another version.
+# Example output: 3.0.0, or an another version.
 ```
 
 ```{note}

@@ -4,6 +4,7 @@ import tempfile
 from functools import partial
 from pathlib import Path
 
+import numpy as np
 import torch
 from mmengine.config import Config, DictAction
 from mmengine.logging import MMLogger
@@ -24,11 +25,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Get a detector flops')
     parser.add_argument('config', help='train config file path')
     parser.add_argument(
-        '--shape',
+        '--num-images',
         type=int,
-        nargs='+',
-        default=[1280, 800],
-        help='input image size')
+        default=100,
+        help='num images of calculate model flops')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
@@ -56,8 +56,9 @@ def inference(args, logger):
         logger.error(f'{config_name} not found.')
 
     cfg = Config.fromfile(args.config)
+    cfg.val_dataloader.batch_size = 1
     cfg.work_dir = tempfile.TemporaryDirectory().name
-    cfg.log_level = 'WARN'
+
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 
@@ -74,56 +75,24 @@ def inference(args, logger):
         cfg['model']['roi_head']['mask_head']['norm_cfg'] = dict(
             type='SyncBN', requires_grad=True)
 
-    if len(args.shape) == 1:
-        h = w = args.shape[0]
-    elif len(args.shape) == 2:
-        h, w = args.shape
-    else:
-        raise ValueError('invalid input shape')
     result = {}
+    avg_flops = []
+    data_loader = Runner.build_dataloader(cfg.val_dataloader)
+    model = MODELS.build(cfg.model)
+    if torch.cuda.is_available():
+        model = model.cuda()
+    model = revert_sync_batchnorm(model)
+    model.eval()
+    _forward = model.forward
 
-    # Supports two ways to calculate flops,
-    # 1. randomly generate a picture
-    # 2. load a picture from the dataset
-    # In two stage detectors, _forward need batch_samples to get
-    # rpn_results_list, then use rpn_results_list to compute flops,
-    # so only the second way is supported
-    try:
-        model = MODELS.build(cfg.model)
-        if torch.cuda.is_available():
-            model.cuda()
-        model = revert_sync_batchnorm(model)
-        data_batch = {'inputs': [torch.rand(3, h, w)], 'batch_samples': [None]}
-        data = model.data_preprocessor(data_batch)
-        result['ori_shape'] = (h, w)
-        result['pad_shape'] = data['inputs'].shape[-2:]
-        model.eval()
-        outputs = get_model_complexity_info(
-            model,
-            None,
-            inputs=data['inputs'],
-            show_table=False,
-            show_arch=False)
-        flops = outputs['flops']
-        params = outputs['params']
-        result['compute_type'] = 'direct: randomly generate a picture'
-
-    except TypeError:
-        logger.warning(
-            'Failed to directly get FLOPs, try to get flops with real data')
-        data_loader = Runner.build_dataloader(cfg.val_dataloader)
-        data_batch = next(iter(data_loader))
-        model = MODELS.build(cfg.model)
-        if torch.cuda.is_available():
-            model = model.cuda()
-        model = revert_sync_batchnorm(model)
-        model.eval()
-        _forward = model.forward
+    for idx, data_batch in enumerate(data_loader):
+        if idx == args.num_images:
+            break
         data = model.data_preprocessor(data_batch)
         result['ori_shape'] = data['data_samples'][0].ori_shape
         result['pad_shape'] = data['data_samples'][0].pad_shape
-
-        del data_loader
+        if hasattr(data['data_samples'][0], 'batch_input_shape'):
+            result['pad_shape'] = data['data_samples'][0].batch_input_shape
         model.forward = partial(_forward, data_samples=data['data_samples'])
         outputs = get_model_complexity_info(
             model,
@@ -131,13 +100,14 @@ def inference(args, logger):
             inputs=data['inputs'],
             show_table=False,
             show_arch=False)
-        flops = outputs['flops']
+        avg_flops.append(outputs['flops'])
         params = outputs['params']
         result['compute_type'] = 'dataloader: load a picture from the dataset'
+    del data_loader
 
-    flops = _format_size(flops)
+    mean_flops = _format_size(int(np.average(avg_flops)))
     params = _format_size(params)
-    result['flops'] = flops
+    result['flops'] = mean_flops
     result['params'] = params
 
     return result

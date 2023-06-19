@@ -15,7 +15,7 @@ Collections:
       Title: 'Instances as Queries'
     README: configs/queryinst/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/detectors/queryinst.py
+      URL: https://github.com/open-mmlab/mmdetection/blob/main/mmdet/models/detectors/queryinst.py
       Version: v2.18.0
 
 Models:

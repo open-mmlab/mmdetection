@@ -44,30 +44,30 @@ train_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=True),
     batch_sampler=dict(type='AspectRatioBatchSampler'),
     dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='annotations/instances_train2017.json',
-        data_prefix=dict(img='train2017/'),
-        filter_cfg=dict(filter_empty_gt=True, min_size=32),
-        pipeline=train_pipeline,
-        backend_args=backend_args))
-val_dataloader = dict(
-    batch_size=2,
-    num_workers=2,
-    persistent_workers=True,
-    drop_last=False,
-    sampler=dict(type='DefaultSampler', shuffle=False),
-    dataset=dict(
         type='RepeatDataset',
         times=3,
         dataset=dict(
             type=dataset_type,
             data_root=data_root,
-            ann_file='annotations/instances_val2017.json',
-            data_prefix=dict(img='val2017/'),
-            test_mode=True,
-            pipeline=test_pipeline,
+            ann_file='annotations/instances_train2017.json',
+            data_prefix=dict(img='train2017/'),
+            filter_cfg=dict(filter_empty_gt=True, min_size=32),
+            pipeline=train_pipeline,
             backend_args=backend_args)))
+val_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        ann_file='annotations/instances_val2017.json',
+        data_prefix=dict(img='val2017/'),
+        test_mode=True,
+        pipeline=test_pipeline,
+        backend_args=backend_args))
 test_dataloader = val_dataloader
 
 val_evaluator = dict(

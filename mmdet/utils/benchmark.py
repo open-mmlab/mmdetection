@@ -50,15 +50,22 @@ def print_process_memory(p: psutil.Process,
     mem_used = gb_round(psutil.virtual_memory().used)
     memory_full_info = p.memory_full_info()
     uss_mem = gb_round(memory_full_info.uss)
-    pss_mem = gb_round(memory_full_info.pss)
+    if hasattr(memory_full_info, 'pss'):
+        pss_mem = gb_round(memory_full_info.pss)
+
     for children in p.children():
         child_mem_info = children.memory_full_info()
         uss_mem += gb_round(child_mem_info.uss)
-        pss_mem += gb_round(child_mem_info.pss)
+        if hasattr(child_mem_info, 'pss'):
+            pss_mem += gb_round(child_mem_info.pss)
+
     process_count = 1 + len(p.children())
-    print_log(
-        f'(GB) mem_used: {mem_used:.2f} | uss: {uss_mem:.2f} | '
-        f'pss: {pss_mem:.2f} | total_proc: {process_count}', logger)
+
+    log_msg = f'(GB) mem_used: {mem_used:.2f} | uss: {uss_mem:.2f} | '
+    if hasattr(memory_full_info, 'pss'):
+        log_msg += f'pss: {pss_mem:.2f} | '
+    log_msg += f'total_proc: {process_count}'
+    print_log(log_msg, logger)
 
 
 class BaseBenchmark:

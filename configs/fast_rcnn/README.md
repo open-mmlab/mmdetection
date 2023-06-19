@@ -59,7 +59,7 @@ The `pred_instance` is an `InstanceData` containing the sorted boxes and scores 
       8
   ```
 
-  Users can refer to [test tutorial](https://mmdetection.readthedocs.io/en/3.x/user_guides/test.html) for more details.
+  Users can refer to [test tutorial](https://mmdetection.readthedocs.io/en/latest/user_guides/test.html) for more details.
 
 - Then, modify the path of `proposal_file` in the dataset and using `ProposalBroadcaster` to process both ground truth bounding boxes and region proposals in pipelines.
   An example of Fast R-CNN important setting can be seen as below:

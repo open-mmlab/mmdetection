@@ -280,8 +280,8 @@ class YOLACTHead(AnchorHead):
                 (num_total_anchors,).
             label_weights (Tensor): Label weights of each anchor with shape
                 (num_total_anchors,)
-            bbox_targets (Tensor): BBox regression targets of each anchor
-                weight shape (num_total_anchors, 4).
+            bbox_targets (Tensor): BBox regression targets of each anchor with
+                shape (num_total_anchors, 4).
             bbox_weights (Tensor): BBox regression loss weights of each anchor
                 with shape (num_total_anchors, 4).
             avg_factor (int): Average factor that is used to average

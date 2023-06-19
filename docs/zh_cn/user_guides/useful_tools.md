@@ -296,7 +296,7 @@ Params: 37.74 M
 **注意**：这个工具还只是实验性质，我们不保证这个数值是绝对正确的。你可以将他用于简单的比较，但如果用于科技论文报告需要再三检查确认。
 
 1. FLOPs 与输入的形状大小相关，参数量没有这个关系，默认的输入形状大小为 (1, 3, 1280, 800) 。
-2. 一些算子并不计入 FLOPs，比如 GN 或其他自定义的算子。你可以参考 [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/dev-3.x/mmcv/cnn/utils/flops_counter.py) 查看更详细的说明。
+2. 一些算子并不计入 FLOPs，比如 GN 或其他自定义的算子。你可以参考 [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/2.x/mmcv/cnn/utils/flops_counter.py) 查看更详细的说明。
 3. 两阶段检测的 FLOPs 大小取决于 proposal 的数量。
 
 ## 模型转换

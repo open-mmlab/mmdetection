@@ -115,7 +115,7 @@ class CocoPanopticMetric(BaseMetric):
             raise RuntimeError(
                 'The `file_client_args` is deprecated, '
                 'please use `backend_args` instead, please refer to'
-                'https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/_base_/datasets/coco_detection.py'  # noqa: E501
+                'https://github.com/open-mmlab/mmdetection/blob/main/configs/_base_/datasets/coco_detection.py'  # noqa: E501
             )
 
         if ann_file:
@@ -268,12 +268,16 @@ class CocoPanopticMetric(BaseMetric):
         result['img_id'] = img_id
         # shape (1, H, W) -> (H, W)
         pan = pred['pred_panoptic_seg']['sem_seg'].cpu().numpy()[0]
+        ignore_index = pred['pred_panoptic_seg'].get(
+            'ignore_index', len(self.dataset_meta['classes']))
         pan_labels = np.unique(pan)
         segments_info = []
         for pan_label in pan_labels:
             sem_label = pan_label % INSTANCE_OFFSET
-            # We reserve the length of dataset_meta['classes'] for VOID label
-            if sem_label == len(self.dataset_meta['classes']):
+            # We reserve the length of dataset_meta['classes']
+            # and ignore_index for VOID label
+            if sem_label == len(
+                    self.dataset_meta['classes']) or sem_label == ignore_index:
                 continue
             mask = pan == pan_label
             area = mask.sum()
@@ -290,6 +294,8 @@ class CocoPanopticMetric(BaseMetric):
             })
         # evaluation script uses 0 for VOID label.
         pan[pan % INSTANCE_OFFSET == len(self.dataset_meta['classes'])] = VOID
+        pan[pan % INSTANCE_OFFSET == ignore_index] = VOID
+
         pan = id2rgb(pan).astype(np.uint8)
         mmcv.imwrite(pan[:, :, ::-1], osp.join(self.seg_out_dir, segm_file))
         result = {

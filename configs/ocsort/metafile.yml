@@ -1,0 +1,27 @@
+Collections:
+  - Name: OCSORT
+    Metadata:
+      Training Techniques:
+        - SGD with Momentum
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - YOLOX
+    Paper:
+        URL: https://arxiv.org/abs/2203.14360
+        Title: Observation-Centric SORT Rethinking SORT for Robust Multi-Object Tracking
+    README: configs/ocsort/README.md
+
+Models:
+  - Name: ocsort_yolox_x_crowdhuman_mot17-private-half
+    In Collection: OCSORT
+    Config: configs/ocsort/ocsort_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_test-mot17halfval.py
+    Metadata:
+      Training Data: CrowdHuman + MOT17-half-train
+    Results:
+      - Task: Multiple Object Tracking
+        Dataset: MOT17-half-val
+        Metrics:
+          HOTA: 67.5
+          MOTA: 77.5
+          IDF1: 78.2
+    Weights: https://download.openmmlab.com/mmtracking/mot/ocsort/mot_dataset/ocsort_yolox_x_crowdhuman_mot17-private-half_20220813_101618-fe150582.pth
