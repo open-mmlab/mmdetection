@@ -13,7 +13,9 @@ class DetDataSample(BaseDataElement):
         - ``proposals``(InstanceData): Region proposals used in two-stage
             detectors.
         - ``gt_instances``(InstanceData): Ground truth of instance annotations.
-        - ``pred_instances``(InstanceData): Instances of model predictions.
+        - ``pred_instances``(InstanceData): Instances of detection predictions.
+        - ``pred_track_instances``(InstanceData): Instances of tracking
+            predictions.
         - ``ignored_instances``(InstanceData): Instances to be ignored during
             training/testing.
         - ``gt_panoptic_seg``(PixelData): Ground truth of panoptic
@@ -66,6 +68,13 @@ class DetDataSample(BaseDataElement):
          >>> pred_instances.scores = torch.rand((5,))
          >>> data_sample = DetDataSample(pred_instances=pred_instances)
          >>> assert 'pred_instances' in data_sample
+
+         >>> pred_track_instances = InstanceData(metainfo=img_meta)
+         >>> pred_track_instances.bboxes = torch.rand((5, 4))
+         >>> pred_track_instances.scores = torch.rand((5,))
+         >>> data_sample = DetDataSample(
+         ...    pred_track_instances=pred_track_instances)
+         >>> assert 'pred_track_instances' in data_sample
 
          >>> data_sample = DetDataSample()
          >>> gt_instances_data = dict(
@@ -147,6 +156,21 @@ class DetDataSample(BaseDataElement):
     @pred_instances.deleter
     def pred_instances(self):
         del self._pred_instances
+
+    # directly add ``pred_track_instances`` in ``DetDataSample``
+    # so that the ``TrackDataSample`` does not bother to access the
+    # instance-level information.
+    @property
+    def pred_track_instances(self) -> InstanceData:
+        return self._pred_track_instances
+
+    @pred_track_instances.setter
+    def pred_track_instances(self, value: InstanceData):
+        self.set_field(value, '_pred_track_instances', dtype=InstanceData)
+
+    @pred_track_instances.deleter
+    def pred_track_instances(self):
+        del self._pred_track_instances
 
     @property
     def ignored_instances(self) -> InstanceData:

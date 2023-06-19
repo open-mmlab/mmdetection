@@ -10,11 +10,12 @@ from mmcv.transforms import LoadImageFromFile
 
 # yapf:disable
 from mmdet.datasets.transforms import (CopyPaste, CutOut, Expand,
-                                       FixShapeResize, MinIoURandomCrop, MixUp,
-                                       Mosaic, Pad, PhotoMetricDistortion,
-                                       RandomAffine, RandomCenterCropPad,
-                                       RandomCrop, RandomErasing, RandomFlip,
-                                       RandomShift, Resize, SegRescale,
+                                       FixScaleResize, FixShapeResize,
+                                       MinIoURandomCrop, MixUp, Mosaic, Pad,
+                                       PhotoMetricDistortion, RandomAffine,
+                                       RandomCenterCropPad, RandomCrop,
+                                       RandomErasing, RandomFlip, RandomShift,
+                                       Resize, ResizeShortestEdge, SegRescale,
                                        YOLOXHSVRandomAug)
 # yapf:enable
 from mmdet.evaluation import bbox_overlaps
@@ -42,38 +43,38 @@ class TestResize(unittest.TestCase):
         """
         rng = np.random.RandomState(0)
         self.data_info1 = dict(
-            img=np.random.random((1333, 800, 3)),
-            gt_seg_map=np.random.random((1333, 800, 3)),
+            img=np.random.random((400, 500, 3)),
+            gt_seg_map=np.random.random((400, 500, 3)),
             gt_bboxes=np.array([[0, 0, 112, 112]], dtype=np.float32),
-            gt_masks=BitmapMasks(
-                rng.rand(1, 1333, 800), height=1333, width=800))
+            gt_masks=BitmapMasks(rng.rand(1, 400, 500), height=400, width=500))
         self.data_info2 = dict(
-            img=np.random.random((300, 400, 3)),
-            gt_bboxes=np.array([[200, 150, 600, 450]], dtype=np.float32),
+            img=np.random.random((200, 100, 3)),
+            gt_bboxes=np.array([[20, 15, 60, 45]], dtype=np.float32),
             dtype=np.float32)
-        self.data_info3 = dict(img=np.random.random((300, 400, 3)))
+        self.data_info3 = dict(img=np.random.random((200, 100, 3)))
 
     def test_resize(self):
         # test keep_ratio is True
-        transform = Resize(scale=(2000, 2000), keep_ratio=True)
+        transform = Resize(scale=(100, 100), keep_ratio=True)
         results = transform(copy.deepcopy(self.data_info1))
-        self.assertEqual(results['img_shape'], (2000, 1200))
-        self.assertEqual(results['scale_factor'], (1200 / 800, 2000 / 1333))
+        self.assertEqual(results['img_shape'], (80, 100))
+        self.assertEqual(results['scale_factor'], (80 / 400, 100 / 500))
 
         # test resize_bboxes/seg/masks
         transform = Resize(scale_factor=(1.5, 2))
         results = transform(copy.deepcopy(self.data_info1))
-        self.assertTrue((results['gt_bboxes'] == np.array([[0, 0, 168,
-                                                            224]])).all())
-        self.assertEqual(results['gt_masks'].height, 2666)
-        self.assertEqual(results['gt_masks'].width, 1200)
-        self.assertEqual(results['gt_seg_map'].shape[:2], (2666, 1200))
+        self.assertTrue(
+            (results['gt_bboxes'] == np.array([[0., 0., 168., 224.]])).all())
+        self.assertEqual(results['gt_masks'].height, 800)
+        self.assertEqual(results['gt_masks'].width, 750)
+        self.assertEqual(results['gt_seg_map'].shape[:2], (800, 750))
 
         # test clip_object_border = False
         transform = Resize(scale=(200, 150), clip_object_border=False)
         results = transform(self.data_info2)
-        self.assertTrue((results['gt_bboxes'] == np.array([100, 75, 300,
-                                                           225])).all())
+        self.assertTrue(
+            (results['gt_bboxes'] == np.array([40., 11.25, 120.,
+                                               33.75])).all())
 
         # test only with image
         transform = Resize(scale=(200, 150), clip_object_border=False)
@@ -93,10 +94,10 @@ class TestResize(unittest.TestCase):
         data_info2 = copy.deepcopy(self.data_info2)
         data_info2['gt_bboxes'] = HorizontalBoxes(data_info2['gt_bboxes'])
         # test keep_ratio is True
-        transform = Resize(scale=(2000, 2000), keep_ratio=True)
+        transform = Resize(scale=(100, 150), keep_ratio=True)
         results = transform(copy.deepcopy(data_info1))
-        self.assertEqual(results['img_shape'], (2000, 1200))
-        self.assertEqual(results['scale_factor'], (1200 / 800, 2000 / 1333))
+        self.assertEqual(results['img_shape'], (100, 125))
+        self.assertEqual(results['scale_factor'], (100 / 400, 125 / 500))
 
         # test resize_bboxes/seg/masks
         transform = Resize(scale_factor=(1.5, 2))
@@ -104,16 +105,15 @@ class TestResize(unittest.TestCase):
         self.assertTrue(
             (results['gt_bboxes'].numpy() == np.array([[0, 0, 168,
                                                         224]])).all())
-        self.assertEqual(results['gt_masks'].height, 2666)
-        self.assertEqual(results['gt_masks'].width, 1200)
-        self.assertEqual(results['gt_seg_map'].shape[:2], (2666, 1200))
+        self.assertEqual(results['gt_masks'].height, 800)
+        self.assertEqual(results['gt_masks'].width, 750)
+        self.assertEqual(results['gt_seg_map'].shape[:2], (800, 750))
 
         # test clip_object_border = False
         transform = Resize(scale=(200, 150), clip_object_border=False)
         results = transform(data_info2)
-        self.assertTrue(
-            (results['gt_bboxes'].numpy() == np.array([100, 75, 300,
-                                                       225])).all())
+        self.assertTrue((results['gt_bboxes'].numpy() == np.array(
+            [40., 11.25, 120., 33.75])).all())
 
         # test geometric transformation with homography matrix
         transform = Resize(scale_factor=(1.5, 2))
@@ -124,15 +124,38 @@ class TestResize(unittest.TestCase):
                          ).all())
 
     def test_repr(self):
-        transform = Resize(scale=(2000, 2000), keep_ratio=True)
+        transform = Resize(scale=(100, 100), keep_ratio=True)
         self.assertEqual(
-            repr(transform), ('Resize(scale=(2000, 2000), '
+            repr(transform), ('Resize(scale=(100, 100), '
                               'scale_factor=None, keep_ratio=True, '
                               'clip_object_border=True), backend=cv2), '
                               'interpolation=bilinear)'))
 
 
-class TestFIXShapeResize(unittest.TestCase):
+class TestFixScaleResize(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod()
+        -> tearDown() -> cleanUp()
+        """
+        rng = np.random.RandomState(0)
+        self.data_info1 = dict(
+            img=np.random.random((200, 300, 3)),
+            gt_seg_map=np.random.random((200, 300, 3)),
+            gt_bboxes=np.array([[0, 0, 112, 112]], dtype=np.float32),
+            gt_masks=BitmapMasks(rng.rand(1, 200, 300), height=200, width=300))
+
+    def test_resize(self):
+        # test keep_ratio is True
+        transform = FixScaleResize(scale=(101, 201), keep_ratio=True)
+        results = transform(copy.deepcopy(self.data_info1))
+        self.assertEqual(results['img_shape'], (101, 151))
+        self.assertEqual(results['scale_factor'], (151 / 300, 101 / 200))
+
+
+class TestFixShapeResize(unittest.TestCase):
 
     def setUp(self):
         """Setup the model and optimizer which are used in every test method.
@@ -142,35 +165,32 @@ class TestFIXShapeResize(unittest.TestCase):
         """
         rng = np.random.RandomState(0)
         self.data_info1 = dict(
-            img=np.random.random((1333, 800, 3)),
-            gt_seg_map=np.random.random((1333, 800, 3)),
-            gt_bboxes=np.array([[0, 0, 112, 1333]], dtype=np.float32),
-            gt_masks=BitmapMasks(
-                rng.rand(1, 1333, 800), height=1333, width=800))
+            img=np.random.random((200, 300, 3)),
+            gt_seg_map=np.random.random((200, 300, 3)),
+            gt_bboxes=np.array([[0, 0, 112, 133]], dtype=np.float32),
+            gt_masks=BitmapMasks(rng.rand(1, 200, 300), height=200, width=300))
         self.data_info2 = dict(
             img=np.random.random((300, 400, 3)),
             gt_bboxes=np.array([[200, 150, 600, 450]], dtype=np.float32),
             dtype=np.float32)
         self.data_info3 = dict(img=np.random.random((300, 400, 3)))
         self.data_info4 = dict(
-            img=np.random.random((600, 800, 3)),
+            img=np.random.random((400, 450, 3)),
             gt_bboxes=np.array([[200, 150, 300, 400]], dtype=np.float32),
             dtype=np.float32)
 
     def test_resize(self):
         # test keep_ratio is True
-        transform = FixShapeResize(width=2000, height=800, keep_ratio=True)
+        transform = FixShapeResize(width=100, height=50, keep_ratio=True)
         results = transform(copy.deepcopy(self.data_info1))
-        self.assertEqual(results['img_shape'], (800, 2000))
-        self.assertEqual(results['scale_factor'], (800 / 1333, 800 / 1333))
+        self.assertEqual(results['img_shape'], (50, 100))
+        self.assertEqual(results['scale_factor'], (50 / 200, 50 / 200))
         # test resize_bboxes/seg/masks
-        transform = FixShapeResize(width=2000, height=800, keep_ratio=False)
+        transform = FixShapeResize(width=120, height=100, keep_ratio=False)
         results = transform(copy.deepcopy(self.data_info1))
-        self.assertTrue((results['gt_bboxes'] == np.array([[0, 0, 280,
-                                                            800]])).all())
-        self.assertEqual(results['gt_masks'].height, 800)
-        self.assertEqual(results['gt_masks'].width, 2000)
-        self.assertEqual(results['gt_seg_map'].shape[:2], (800, 2000))
+        self.assertEqual(results['gt_masks'].height, 100)
+        self.assertEqual(results['gt_masks'].width, 120)
+        self.assertEqual(results['gt_seg_map'].shape[:2], (100, 120))
 
         # test clip_object_border = False
         transform = FixShapeResize(
@@ -200,20 +220,20 @@ class TestFIXShapeResize(unittest.TestCase):
         data_info4 = copy.deepcopy(self.data_info4)
         data_info4['gt_bboxes'] = HorizontalBoxes(data_info4['gt_bboxes'])
         # test keep_ratio is True
-        transform = FixShapeResize(width=2000, height=800, keep_ratio=True)
+        transform = FixShapeResize(width=100, height=200, keep_ratio=True)
         results = transform(copy.deepcopy(data_info1))
-        self.assertEqual(results['img_shape'], (800, 2000))
-        self.assertEqual(results['scale_factor'], (800 / 1333, 800 / 1333))
+        self.assertEqual(results['img_shape'], (200, 100))
+        self.assertEqual(results['scale_factor'], (100 / 300, 100 / 300))
 
         # test resize_bboxes/seg/masks
-        transform = FixShapeResize(width=2000, height=800, keep_ratio=False)
+        transform = FixShapeResize(width=150, height=200, keep_ratio=False)
         results = transform(copy.deepcopy(data_info1))
         self.assertTrue(
-            (results['gt_bboxes'].numpy() == np.array([[0, 0, 280,
-                                                        800]])).all())
-        self.assertEqual(results['gt_masks'].height, 800)
-        self.assertEqual(results['gt_masks'].width, 2000)
-        self.assertEqual(results['gt_seg_map'].shape[:2], (800, 2000))
+            (results['gt_bboxes'].numpy() == np.array([[0, 0, 56,
+                                                        133]])).all())
+        self.assertEqual(results['gt_masks'].height, 200)
+        self.assertEqual(results['gt_masks'].width, 150)
+        self.assertEqual(results['gt_seg_map'].shape[:2], (200, 150))
 
         # test clip_object_border = False
         transform = FixShapeResize(
@@ -238,9 +258,9 @@ class TestFIXShapeResize(unittest.TestCase):
                          ).all())
 
     def test_repr(self):
-        transform = FixShapeResize(width=2000, height=2000, keep_ratio=True)
+        transform = FixShapeResize(width=100, height=50, keep_ratio=True)
         self.assertEqual(
-            repr(transform), ('FixShapeResize(width=2000, height=2000, '
+            repr(transform), ('FixShapeResize(width=100, height=50, '
                               'keep_ratio=True, '
                               'clip_object_border=True), backend=cv2), '
                               'interpolation=bilinear)'))
@@ -352,41 +372,41 @@ class TestPad(unittest.TestCase):
         """
         rng = np.random.RandomState(0)
         self.results = {
-            'img': np.random.random((1333, 800, 3)),
+            'img': np.random.random((100, 80, 3)),
             'gt_masks':
-            BitmapMasks(rng.rand(4, 1333, 800), height=1333, width=800)
+            BitmapMasks(rng.rand(4, 100, 80), height=100, width=80)
         }
 
     def test_transform(self):
         # test pad img/gt_masks with size
-        transform = Pad(size=(1200, 2000))
+        transform = Pad(size=(120, 110))
         results = transform(copy.deepcopy(self.results))
-        self.assertEqual(results['img'].shape[:2], (2000, 1200))
-        self.assertEqual(results['gt_masks'].masks.shape[1:], (2000, 1200))
+        self.assertEqual(results['img'].shape[:2], (110, 120))
+        self.assertEqual(results['gt_masks'].masks.shape[1:], (110, 120))
 
         # test pad img/gt_masks with size_divisor
         transform = Pad(size_divisor=11)
         results = transform(copy.deepcopy(self.results))
-        self.assertEqual(results['img'].shape[:2], (1342, 803))
-        self.assertEqual(results['gt_masks'].masks.shape[1:], (1342, 803))
+        self.assertEqual(results['img'].shape[:2], (110, 88))
+        self.assertEqual(results['gt_masks'].masks.shape[1:], (110, 88))
 
         # test pad img/gt_masks with pad_to_square
         transform = Pad(pad_to_square=True)
         results = transform(copy.deepcopy(self.results))
-        self.assertEqual(results['img'].shape[:2], (1333, 1333))
-        self.assertEqual(results['gt_masks'].masks.shape[1:], (1333, 1333))
+        self.assertEqual(results['img'].shape[:2], (100, 100))
+        self.assertEqual(results['gt_masks'].masks.shape[1:], (100, 100))
 
         # test pad img/gt_masks with pad_to_square and size_divisor
         transform = Pad(pad_to_square=True, size_divisor=11)
         results = transform(copy.deepcopy(self.results))
-        self.assertEqual(results['img'].shape[:2], (1342, 1342))
-        self.assertEqual(results['gt_masks'].masks.shape[1:], (1342, 1342))
+        self.assertEqual(results['img'].shape[:2], (110, 110))
+        self.assertEqual(results['gt_masks'].masks.shape[1:], (110, 110))
 
         # test pad img/gt_masks with pad_to_square and size_divisor
         transform = Pad(pad_to_square=True, size_divisor=11)
         results = transform(copy.deepcopy(self.results))
-        self.assertEqual(results['img'].shape[:2], (1342, 1342))
-        self.assertEqual(results['gt_masks'].masks.shape[1:], (1342, 1342))
+        self.assertEqual(results['img'].shape[:2], (110, 110))
+        self.assertEqual(results['gt_masks'].masks.shape[1:], (110, 110))
 
     def test_repr(self):
         transform = Pad(
@@ -622,7 +642,7 @@ class TestRandomCrop(unittest.TestCase):
         self.assertEqual(results['img_shape'], results['img'].shape[:2])
 
         # test with gt_bboxes, gt_bboxes_labels, gt_ignore_flags,
-        # gt_masks, gt_seg_map
+        # gt_masks, gt_seg_map, gt_instances_ids
         img = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
         gt_bboxes = np.array([[0, 0, 7, 7], [2, 3, 9, 9]], dtype=np.float32)
         gt_bboxes_labels = np.array([0, 1], dtype=np.int64)
@@ -632,13 +652,15 @@ class TestRandomCrop(unittest.TestCase):
         gt_masks_[1, 2:7, 3:8] = 1
         gt_masks = BitmapMasks(gt_masks_.copy(), height=10, width=10)
         gt_seg_map = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
+        gt_instances_ids = np.array([0, 1], dtype=np.int64)
         src_results = {
             'img': img,
             'gt_bboxes': gt_bboxes,
             'gt_bboxes_labels': gt_bboxes_labels,
             'gt_ignore_flags': gt_ignore_flags,
             'gt_masks': gt_masks,
-            'gt_seg_map': gt_seg_map
+            'gt_seg_map': gt_seg_map,
+            'gt_instances_ids': gt_instances_ids
         }
         transform = RandomCrop(
             crop_size=(7, 5),
@@ -654,6 +676,7 @@ class TestRandomCrop(unittest.TestCase):
         self.assertEqual(results['gt_ignore_flags'].shape[0], 2)
         self.assertTupleEqual(results['gt_seg_map'].shape[:2], (5, 7))
         self.assertEqual(results['img_shape'], results['img'].shape[:2])
+        self.assertEqual(results['gt_instances_ids'].shape[0], 2)
 
         # test geometric transformation with homography matrix
         bboxes = copy.deepcopy(src_results['gt_bboxes'])
@@ -718,13 +741,15 @@ class TestRandomCrop(unittest.TestCase):
         gt_masks_[1, 2:7, 3:8] = 1
         gt_masks = BitmapMasks(gt_masks_.copy(), height=10, width=10)
         gt_seg_map = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
+        gt_instances_ids = np.array([0, 1], dtype=np.int64)
         src_results = {
             'img': img,
             'gt_bboxes': HorizontalBoxes(gt_bboxes),
             'gt_bboxes_labels': gt_bboxes_labels,
             'gt_ignore_flags': gt_ignore_flags,
             'gt_masks': gt_masks,
-            'gt_seg_map': gt_seg_map
+            'gt_seg_map': gt_seg_map,
+            'gt_instances_ids': gt_instances_ids
         }
         transform = RandomCrop(
             crop_size=(7, 5),
@@ -739,6 +764,7 @@ class TestRandomCrop(unittest.TestCase):
         self.assertEqual(results['gt_bboxes_labels'].shape[0], 2)
         self.assertEqual(results['gt_ignore_flags'].shape[0], 2)
         self.assertTupleEqual(results['gt_seg_map'].shape[:2], (5, 7))
+        self.assertEqual(results['gt_instances_ids'].shape[0], 2)
 
         # test geometric transformation with homography matrix
         bboxes = copy.deepcopy(src_results['gt_bboxes'].numpy())
@@ -1418,6 +1444,26 @@ class TestCopyPaste(unittest.TestCase):
         }]
         results = transform(results)
 
+        # test copypaste with an empty mask results
+        transform = CopyPaste()
+        results = copy.deepcopy(self.dst_results)
+        results = {k: v for k, v in results.items() if 'mask' not in k}
+        results['mix_results'] = [copy.deepcopy(self.src_results)]
+        with self.assertRaises(RuntimeError):
+            results = transform(results)
+
+        # test copypaste with boxes as masks
+        transform = CopyPaste(paste_by_box=True)
+        results = copy.deepcopy(self.dst_results)
+        results = {k: v for k, v in results.items() if 'mask' not in k}
+        src_results = copy.deepcopy(self.src_results)
+        src_results = {k: v for k, v in src_results.items() if 'mask' not in k}
+        results['mix_results'] = [src_results]
+        results = transform(results)
+
+        self.assertEqual(results['img'].shape[:2],
+                         self.dst_results['img'].shape[:2])
+
     def test_transform_use_box_type(self):
         src_results = copy.deepcopy(self.src_results)
         src_results['gt_bboxes'] = HorizontalBoxes(src_results['gt_bboxes'])
@@ -1489,7 +1535,8 @@ class TestCopyPaste(unittest.TestCase):
             repr(transform), ('CopyPaste(max_num_pasted=100, '
                               'bbox_occluded_thr=10, '
                               'mask_occluded_thr=300, '
-                              'selected=True)'))
+                              'selected=True), '
+                              'paste_by_box=False)'))
 
 
 class TestAlbu(unittest.TestCase):
@@ -1709,3 +1756,35 @@ class TestRandomErasing(unittest.TestCase):
                               'img_border_value=128, '
                               'mask_border_value=0, '
                               'seg_ignore_label=255)'))
+
+
+class TestResizeShortestEdge(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod()
+        -> tearDown() -> cleanUp()
+        """
+        rng = np.random.RandomState(0)
+        self.data_info = dict(
+            img=np.random.random((220, 100, 3)),
+            gt_seg_map=np.random.random((220, 100, 3)),
+            gt_bboxes=np.array([[0, 0, 112, 12]], dtype=np.float32),
+            gt_masks=BitmapMasks(rng.rand(1, 220, 100), height=220, width=100))
+
+    def test_resize(self):
+        transform = ResizeShortestEdge(scale=200)
+        results = transform(copy.deepcopy(self.data_info))
+        self.assertEqual(results['img_shape'], (440, 200))
+        self.assertEqual(results['scale_factor'], (200 / 100, 440 / 220))
+
+        transform = ResizeShortestEdge(scale=200, max_size=301)
+        results = transform(copy.deepcopy(self.data_info))
+        self.assertEqual(results['img_shape'], (301, 137))
+        self.assertEqual(results['scale_factor'], (137 / 100, 301 / 220))
+
+        transform = ResizeShortestEdge(scale=201, keep_ratio=True)
+        results = transform(copy.deepcopy(self.data_info))
+        self.assertEqual(results['img_shape'], (442, 201))
+        self.assertEqual(results['scale_factor'], (201 / 100, 442 / 220))

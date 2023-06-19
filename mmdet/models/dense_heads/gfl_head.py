@@ -249,8 +249,8 @@ class GFLHead(AnchorHead):
                 (N, num_total_anchors).
             label_weights (Tensor): Label weights of each anchor with shape
                 (N, num_total_anchors)
-            bbox_targets (Tensor): BBox regression targets of each anchor
-                weight shape (N, num_total_anchors, 4).
+            bbox_targets (Tensor): BBox regression targets of each anchor with
+                shape (N, num_total_anchors, 4).
             stride (Tuple[int]): Stride in this scale level.
             avg_factor (int): Average factor that is used to average
                 the loss. When using sampling method, avg_factor is usually

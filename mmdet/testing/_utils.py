@@ -8,8 +8,9 @@ from mmengine.config import Config
 from mmengine.dataset import pseudo_collate
 from mmengine.structures import InstanceData, PixelData
 
+from mmdet.utils.util_random import ensure_rng
 from ..registry import TASK_UTILS
-from ..structures import DetDataSample
+from ..structures import DetDataSample, TrackDataSample
 from ..structures.bbox import HorizontalBoxes
 
 
@@ -94,7 +95,9 @@ def demo_mm_inputs(batch_size=2,
                    with_mask=False,
                    with_semantic=False,
                    use_box_type=False,
-                   device='cpu'):
+                   device='cpu',
+                   texts=None,
+                   custom_entities=False):
     """Create a superset of inputs needed to run test or train batches.
 
     Args:
@@ -121,6 +124,9 @@ def demo_mm_inputs(batch_size=2,
     if isinstance(num_items, list):
         assert len(num_items) == batch_size
 
+    if texts is not None:
+        assert batch_size == len(texts)
+
     packed_inputs = []
     for idx in range(batch_size):
         image_shape = image_shapes[idx]
@@ -141,6 +147,10 @@ def demo_mm_inputs(batch_size=2,
             'flip_direction': None,
             'border': [1, 1, 1, 1]  # Only used by CenterNet
         }
+
+        if texts:
+            img_meta['text'] = texts[idx]
+            img_meta['custom_entities'] = custom_entities
 
         data_sample = DetDataSample()
         data_sample.set_metainfo(img_meta)
@@ -270,6 +280,148 @@ def demo_mm_sampling_results(proposals_list,
         sampling_results.append(sampling_result)
 
     return sampling_results
+
+
+def demo_track_inputs(batch_size=1,
+                      num_frames=2,
+                      key_frames_inds=None,
+                      image_shapes=(3, 128, 128),
+                      num_items=None,
+                      num_classes=1,
+                      with_mask=False,
+                      with_semantic=False):
+    """Create a superset of inputs needed to run test or train batches.
+
+    Args:
+        batch_size (int): batch size. Default to 1.
+        num_frames (int): The number of frames.
+        key_frames_inds (List): The indices of key frames.
+        image_shapes (List[tuple], Optional): image shape.
+            Default to (3, 128, 128)
+        num_items (None | List[int]): specifies the number
+            of boxes in each batch item. Default to None.
+        num_classes (int): number of different labels a
+            box might have. Default to 1.
+        with_mask (bool): Whether to return mask annotation.
+            Defaults to False.
+        with_semantic (bool): whether to return semantic.
+            Default to False.
+    """
+    rng = np.random.RandomState(0)
+
+    # Make sure the length of image_shapes is equal to ``batch_size``
+    if isinstance(image_shapes, list):
+        assert len(image_shapes) == batch_size
+    else:
+        image_shapes = [image_shapes] * batch_size
+
+    packed_inputs = []
+    for idx in range(batch_size):
+        mm_inputs = dict(inputs=dict())
+        _, h, w = image_shapes[idx]
+
+        imgs = rng.randint(
+            0, 255, size=(num_frames, *image_shapes[idx]), dtype=np.uint8)
+        mm_inputs['inputs'] = torch.from_numpy(imgs)
+
+        img_meta = {
+            'img_id': idx,
+            'img_shape': image_shapes[idx][-2:],
+            'ori_shape': image_shapes[idx][-2:],
+            'filename': '<demo>.png',
+            'scale_factor': np.array([1.1, 1.2]),
+            'flip': False,
+            'flip_direction': None,
+            'is_video_data': True,
+        }
+
+        video_data_samples = []
+        for i in range(num_frames):
+            data_sample = DetDataSample()
+            img_meta['frame_id'] = i
+            data_sample.set_metainfo(img_meta)
+
+            # gt_instances
+            gt_instances = InstanceData()
+            if num_items is None:
+                num_boxes = rng.randint(1, 10)
+            else:
+                num_boxes = num_items[idx]
+
+            bboxes = _rand_bboxes(rng, num_boxes, w, h)
+            labels = rng.randint(0, num_classes, size=num_boxes)
+            instances_id = rng.randint(100, num_classes + 100, size=num_boxes)
+            gt_instances.bboxes = torch.FloatTensor(bboxes)
+            gt_instances.labels = torch.LongTensor(labels)
+            gt_instances.instances_ids = torch.LongTensor(instances_id)
+
+            if with_mask:
+                masks = _rand_masks(rng, num_boxes, bboxes, w, h)
+                gt_instances.masks = masks
+
+            data_sample.gt_instances = gt_instances
+            # ignore_instances
+            ignore_instances = InstanceData()
+            bboxes = _rand_bboxes(rng, num_boxes, w, h)
+            ignore_instances.bboxes = bboxes
+            data_sample.ignored_instances = ignore_instances
+
+            video_data_samples.append(data_sample)
+
+        track_data_sample = TrackDataSample()
+        track_data_sample.video_data_samples = video_data_samples
+        if key_frames_inds is not None:
+            assert isinstance(
+                key_frames_inds,
+                list) and len(key_frames_inds) < num_frames and max(
+                    key_frames_inds) < num_frames
+            ref_frames_inds = [
+                i for i in range(num_frames) if i not in key_frames_inds
+            ]
+            track_data_sample.set_metainfo(
+                dict(key_frames_inds=key_frames_inds))
+            track_data_sample.set_metainfo(
+                dict(ref_frames_inds=ref_frames_inds))
+        mm_inputs['data_samples'] = track_data_sample
+
+        # TODO: gt_ignore
+        packed_inputs.append(mm_inputs)
+    data = pseudo_collate(packed_inputs)
+    return data
+
+
+def random_boxes(num=1, scale=1, rng=None):
+    """Simple version of ``kwimage.Boxes.random``
+    Returns:
+        Tensor: shape (n, 4) in x1, y1, x2, y2 format.
+    References:
+        https://gitlab.kitware.com/computer-vision/kwimage/blob/master/kwimage/structs/boxes.py#L1390 # noqa: E501
+    Example:
+        >>> num = 3
+        >>> scale = 512
+        >>> rng = 0
+        >>> boxes = random_boxes(num, scale, rng)
+        >>> print(boxes)
+        tensor([[280.9925, 278.9802, 308.6148, 366.1769],
+                [216.9113, 330.6978, 224.0446, 456.5878],
+                [405.3632, 196.3221, 493.3953, 270.7942]])
+    """
+    rng = ensure_rng(rng)
+
+    tlbr = rng.rand(num, 4).astype(np.float32)
+
+    tl_x = np.minimum(tlbr[:, 0], tlbr[:, 2])
+    tl_y = np.minimum(tlbr[:, 1], tlbr[:, 3])
+    br_x = np.maximum(tlbr[:, 0], tlbr[:, 2])
+    br_y = np.maximum(tlbr[:, 1], tlbr[:, 3])
+
+    tlbr[:, 0] = tl_x * scale
+    tlbr[:, 1] = tl_y * scale
+    tlbr[:, 2] = br_x * scale
+    tlbr[:, 3] = br_y * scale
+
+    boxes = torch.from_numpy(tlbr)
+    return boxes
 
 
 # TODO: Support full ceph
