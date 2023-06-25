@@ -15,6 +15,11 @@ from .single_stage import SingleStageDetector
 
 def find_noun_phrases(caption: str) -> list:
     """Find noun phrases in a caption using nltk.
+    Args:
+        caption (str): The caption to analyze.
+
+    Returns:
+        list: List of noun phrases found in the caption.
 
     Examples:
         >>> caption = 'There is two cat and a remote in the picture'
@@ -45,7 +50,13 @@ def find_noun_phrases(caption: str) -> list:
 
 
 def remove_punctuation(text: str) -> str:
-    """Remove punctuation from a text."""
+    """Remove punctuation from a text.
+    Args:
+        text (str): The input text.
+
+    Returns:
+        str: The text with punctuation removed.
+    """
     punctuation = [
         '|', ':', ';', '@', '(', ')', '[', ']', '{', '}', '^', '\'', '\"', '’',
         '`', '?', '$', '%', '#', '!', '&', '*', '+', ',', '.'
@@ -56,7 +67,15 @@ def remove_punctuation(text: str) -> str:
 
 
 def run_ner(caption: str) -> Tuple[list, list]:
-    """Run NER on a caption and return the tokens and noun phrases."""
+    """Run NER on a caption and return the tokens and noun phrases.
+    Args:
+        caption (str): The input caption.
+
+    Returns:
+        Tuple[List, List]: A tuple containing the tokens and noun phrases.
+            - tokens_positive (List): A list of token positions.
+            - noun_phrases (List): A list of noun phrases.
+    """
     noun_phrases = find_noun_phrases(caption)
     noun_phrases = [remove_punctuation(phrase) for phrase in noun_phrases]
     noun_phrases = [phrase for phrase in noun_phrases if phrase != '']
@@ -81,7 +100,20 @@ def create_positive_map(tokenized,
                         tokens_positive: list,
                         max_num_entities: int = 256) -> Tensor:
     """construct a map such that positive_map[i,j] = True
-    if box i is associated to token j"""
+    if box i is associated to token j
+    Args:
+        tokenized: The tokenized input.
+        tokens_positive (list): A list of token ranges
+            associated with positive boxes.
+        max_num_entities (int, optional): The maximum number of entities.
+            Defaults to 256.
+
+    Returns:
+        torch.Tensor: The positive map.
+
+    Raises:
+        Exception: If an error occurs during token-to-char mapping.
+    """
     positive_map = torch.zeros((len(tokens_positive), max_num_entities),
                                dtype=torch.float)
 
@@ -118,7 +150,15 @@ def create_positive_map(tokenized,
 
 def create_positive_map_label_to_token(positive_map: Tensor,
                                        plus: int = 0) -> dict:
-    """Create a dictionary mapping the label to the token."""
+    """Create a dictionary mapping the label to the token.
+    Args:
+        positive_map (Tensor): The positive map tensor.
+        plus (int, optional): Value added to the label for indexing.
+            Defaults to 0.
+
+    Returns:
+        dict: The dictionary mapping the label to the token.
+    """
     positive_map_label_to_token = {}
     for i in range(len(positive_map)):
         positive_map_label_to_token[i + plus] = torch.nonzero(
@@ -128,7 +168,23 @@ def create_positive_map_label_to_token(positive_map: Tensor,
 
 @MODELS.register_module()
 class GLIP(SingleStageDetector):
-    """Implementation of `GLIP <https://arxiv.org/abs/2112.03857>`_"""
+    """Implementation of `GLIP <https://arxiv.org/abs/2112.03857>`_
+    Args:
+        backbone (:obj:`ConfigDict` or dict): The backbone config.
+        neck (:obj:`ConfigDict` or dict): The neck config.
+        bbox_head (:obj:`ConfigDict` or dict): The bbox head config.
+        language_model (:obj:`ConfigDict` or dict): The language model config.
+        train_cfg (:obj:`ConfigDict` or dict, optional): The training config
+            of GLIP. Defaults to None.
+        test_cfg (:obj:`ConfigDict` or dict, optional): The testing config
+            of GLIP. Defaults to None.
+        data_preprocessor (:obj:`ConfigDict` or dict, optional): Config of
+            :class:`DetDataPreprocessor` to process the input data.
+            Defaults to None.
+        init_cfg (:obj:`ConfigDict` or list[:obj:`ConfigDict`] or dict or
+            list[dict], optional): Initialization config dict.
+            Defaults to None.
+    """
 
     def __init__(self,
                  backbone: ConfigType,

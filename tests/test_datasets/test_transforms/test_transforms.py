@@ -1444,6 +1444,26 @@ class TestCopyPaste(unittest.TestCase):
         }]
         results = transform(results)
 
+        # test copypaste with an empty mask results
+        transform = CopyPaste()
+        results = copy.deepcopy(self.dst_results)
+        results = {k: v for k, v in results.items() if 'mask' not in k}
+        results['mix_results'] = [copy.deepcopy(self.src_results)]
+        with self.assertRaises(RuntimeError):
+            results = transform(results)
+
+        # test copypaste with boxes as masks
+        transform = CopyPaste(paste_by_box=True)
+        results = copy.deepcopy(self.dst_results)
+        results = {k: v for k, v in results.items() if 'mask' not in k}
+        src_results = copy.deepcopy(self.src_results)
+        src_results = {k: v for k, v in src_results.items() if 'mask' not in k}
+        results['mix_results'] = [src_results]
+        results = transform(results)
+
+        self.assertEqual(results['img'].shape[:2],
+                         self.dst_results['img'].shape[:2])
+
     def test_transform_use_box_type(self):
         src_results = copy.deepcopy(self.src_results)
         src_results['gt_bboxes'] = HorizontalBoxes(src_results['gt_bboxes'])
@@ -1515,7 +1535,8 @@ class TestCopyPaste(unittest.TestCase):
             repr(transform), ('CopyPaste(max_num_pasted=100, '
                               'bbox_occluded_thr=10, '
                               'mask_occluded_thr=300, '
-                              'selected=True)'))
+                              'selected=True), '
+                              'paste_by_box=False)'))
 
 
 class TestAlbu(unittest.TestCase):
