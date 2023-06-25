@@ -13,9 +13,29 @@ try:
     import mmpretrain
     from mmpretrain.models.utils.batch_augments import RandomBatchAugment
     from mmpretrain.structures import (batch_label_to_onehot, cat_batch_labels,
-                                       stack_batch_scores, tensor_split)
+                                       tensor_split)
 except ImportError:
     mmpretrain = None
+
+
+def stack_batch_scores(elements, device=None):
+    """Stack the ``score`` of a batch of :obj:`LabelData` to a tensor.
+
+    Args:
+        elements (List[LabelData]): A batch of :obj`LabelData`.
+        device (torch.device, optional): The output device of the batch label.
+            Defaults to None.
+    Returns:
+        torch.Tensor: The stacked score tensor.
+    """
+    item = elements[0]
+    if 'score' not in item._data_fields:
+        return None
+
+    batch_score = torch.stack([element.score for element in elements])
+    if device is not None:
+        batch_score = batch_score.to(device)
+    return batch_score
 
 
 @MODELS.register_module()
@@ -163,8 +183,8 @@ class ReIDDataPreprocessor(BaseDataPreprocessor):
         sample_item = data_samples[0] if data_samples is not None else None
         if 'gt_label' in sample_item:
             gt_labels = [sample.gt_label for sample in data_samples]
-            batch_label, label_indices = cat_batch_labels(
-                gt_labels, device=self.device)
+            batch_label, label_indices = cat_batch_labels(gt_labels)
+            batch_label = batch_label.to(self.device)
 
             batch_score = stack_batch_scores(gt_labels, device=self.device)
             if batch_score is None and self.to_onehot:

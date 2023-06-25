@@ -22,7 +22,7 @@ model = dict(
     detector=detector,
     reid=dict(
         type='BaseReID',
-        data_preprocessor=None,
+        data_preprocessor=dict(type='mmpretrain.ClsDataPreprocessor'),
         backbone=dict(
             type='mmpretrain.ResNet',
             depth=50,
