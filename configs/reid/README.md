@@ -1,6 +1,6 @@
 # Training a ReID Model
 
-You may want to train a ReID model for multiple object tracking or other applications. We support ReID model training in MMDetection, which is built upon [MMClassification](https://github.com/open-mmlab/mmclassification).
+You may want to train a ReID model for multiple object tracking or other applications. We support ReID model training in MMDetection, which is built upon [MMPretrain](https://github.com/open-mmlab/mmpretrain).
 
 ### 1. Development Environment Setup
 

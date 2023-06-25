@@ -1,4 +1,4 @@
-mmcls>=1.0.0rc0
+mmpretrain
 motmetrics
 numpy==1.23.5
 scikit-learn

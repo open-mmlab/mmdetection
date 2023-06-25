@@ -10,12 +10,12 @@ from mmengine.model import BaseDataPreprocessor, stack_batch
 from mmdet.registry import MODELS
 
 try:
-    import mmcls
-    from mmcls.models.utils.batch_augments import RandomBatchAugment
-    from mmcls.structures import (batch_label_to_onehot, cat_batch_labels,
-                                  stack_batch_scores, tensor_split)
+    import mmpretrain
+    from mmpretrain.models.utils.batch_augments import RandomBatchAugment
+    from mmpretrain.structures import (batch_label_to_onehot, cat_batch_labels,
+                                       stack_batch_scores, tensor_split)
 except ImportError:
-    mmcls = None
+    mmpretrain = None
 
 
 @MODELS.register_module()
@@ -54,7 +54,7 @@ class ReIDDataPreprocessor(BaseDataPreprocessor):
         num_classes (int, optional): The number of classes. Defaults to None.
         batch_augments (dict, optional): The batch augmentations settings,
             including "augments" and "probs". For more details, see
-            :class:`mmcls.models.RandomBatchAugment`.
+            :class:`mmpretrain.models.RandomBatchAugment`.
     """
 
     def __init__(self,
@@ -66,10 +66,10 @@ class ReIDDataPreprocessor(BaseDataPreprocessor):
                  to_onehot: bool = False,
                  num_classes: Optional[int] = None,
                  batch_augments: Optional[dict] = None):
-        if mmcls is None:
+        if mmpretrain is None:
             raise RuntimeError('Please run "pip install openmim" and '
-                               'run "mim install mmcls>=1.0.0rc0" tp '
-                               'install mmcls first.')
+                               'run "mim install mmpretrain" to '
+                               'install mmpretrain first.')
         super().__init__()
         self.pad_size_divisor = pad_size_divisor
         self.pad_value = pad_value

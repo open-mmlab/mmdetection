@@ -4,15 +4,15 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-# TODO: delete custom_imports after mmcls supports auto import
-# please install mmcls>=1.0
-# import mmcls.models to trigger register_module in mmcls
-custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
+# please install mmpretrain
+# import mmpretrain.models to trigger register_module in mmpretrain
+custom_imports = dict(
+    imports=['mmpretrain.models'], allow_failed_imports=False)
 
 model = dict(
     backbone=dict(
         _delete_=True,
-        type='mmcls.TIMMBackbone',
+        type='mmpretrain.TIMMBackbone',
         model_name='tv_resnet50',  # ResNet-50 with torchvision weights
         features_only=True,
         pretrained=True,
