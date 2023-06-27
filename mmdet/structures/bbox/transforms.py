@@ -312,6 +312,9 @@ def corner2bbox(corners: torch.Tensor) -> torch.Tensor:
     Returns:
         Tensor: Shape (n, 4) for bboxes.
     """
+    if corners.numel() == 0:
+        return corners.new_zeros((0, 4))
+
     corners = corners.reshape(-1, 4, 2)
     min_xy = corners.min(dim=1)[0]
     max_xy = corners.max(dim=1)[0]
