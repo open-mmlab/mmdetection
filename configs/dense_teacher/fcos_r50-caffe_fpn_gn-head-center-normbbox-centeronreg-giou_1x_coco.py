@@ -27,7 +27,6 @@ model = dict(
         add_extra_convs='on_output',  # use P5
         num_outs=5,
         relu_before_extra_convs=True),
-
     bbox_head=dict(
         type='FCOSHead',
         num_classes=80,
@@ -56,5 +55,3 @@ model = dict(
         score_thr=0.05,
         nms=dict(type='nms', iou_threshold=0.6),
         max_per_img=100))
-
-

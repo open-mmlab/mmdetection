@@ -13,6 +13,7 @@ processing method, thus retaining richer information. We also introduce a region
 pressing the noise carried by dense labels. We name our proposed SSOD algorithm that leverages the DPL as Dense Teacher. On COCO
 and VOC, Dense Teacher shows superior performance under various settings compared with the pseudo-box-based methods. Code is available
 at https://github.com/Megvii-BaseDetection/DenseTeacher
+
 <div align=center>
 <img src=""/>
 </div>

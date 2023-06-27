@@ -17,7 +17,8 @@ from .transforms import (Albu, CachedMixUp, CachedMosaic, CopyPaste, CutOut,
                          RandomCenterCropPad, RandomCrop, RandomErasing,
                          RandomFlip, RandomShift, Resize, SegRescale,
                          YOLOXHSVRandomAug)
-from .wrappers import MultiBranch, DenseMultiBranch, ProposalBroadcaster, RandomOrder
+from .wrappers import (DenseMultiBranch, MultiBranch, ProposalBroadcaster,
+                       RandomOrder)
 
 __all__ = [
     'PackDetInputs', 'ToTensor', 'ImageToTensor', 'Transpose',
@@ -30,7 +31,7 @@ __all__ = [
     'Mosaic', 'MixUp', 'RandomAffine', 'YOLOXHSVRandomAug', 'CopyPaste',
     'FilterAnnotations', 'Pad', 'GeomTransform', 'ColorTransform',
     'RandAugment', 'Sharpness', 'Solarize', 'SolarizeAdd', 'Posterize',
-    'AutoContrast', 'Invert', 'MultiBranch', 'DenseMultiBranch', 'RandomErasing',
-    'LoadEmptyAnnotations', 'RandomOrder', 'CachedMosaic', 'CachedMixUp',
-    'FixShapeResize', 'ProposalBroadcaster', 'InferencerLoader'
+    'AutoContrast', 'Invert', 'MultiBranch', 'DenseMultiBranch',
+    'RandomErasing', 'LoadEmptyAnnotations', 'RandomOrder', 'CachedMosaic',
+    'CachedMixUp', 'FixShapeResize', 'ProposalBroadcaster', 'InferencerLoader'
 ]

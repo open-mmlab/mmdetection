@@ -5,6 +5,7 @@ from typing import Callable, Dict, List, Optional, Union
 import numpy as np
 from mmcv.transforms import BaseTransform, Compose
 from mmcv.transforms.utils import cache_random_params, cache_randomness
+
 from mmdet.registry import TRANSFORMS
 
 
@@ -138,75 +139,12 @@ class DenseMultiBranch(MultiBranch):
     r"""Multiple branch pipeline wrapper.
 
     Generate multiple data-augmented versions of the same image.
-    `MultiBranch` needs to specify the branch names of all
-    pipelines of the dataset, perform corresponding data augmentation
-    for the current branch, and return None for other branches,
-    which ensures the consistency of return format across
-    different samples.
+    It's the method to generate unsupervised data of Dense Teacher.
 
     Args:
         branch_field (list): List of branch names.
         branch_pipelines (dict): Dict of different pipeline configs
             to be composed.
-
-    Examples:
-        >>> branch_field = ['sup', 'unsup_teacher', 'unsup_student']
-        >>> sup_pipeline = [
-        >>>     dict(type='LoadImageFromFile'),
-        >>>     dict(type='LoadAnnotations', with_bbox=True),
-        >>>     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
-        >>>     dict(type='RandomFlip', prob=0.5),
-        >>>     dict(
-        >>>         type='MultiBranch',
-        >>>         branch_field=branch_field,
-        >>>         sup=dict(type='PackDetInputs'))
-        >>>     ]
-        >>> weak_pipeline = [
-        >>>     dict(type='LoadImageFromFile'),
-        >>>     dict(type='LoadAnnotations', with_bbox=True),
-        >>>     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
-        >>>     dict(type='RandomFlip', prob=0.0),
-        >>>     dict(
-        >>>         type='MultiBranch',
-        >>>         branch_field=branch_field,
-        >>>         sup=dict(type='PackDetInputs'))
-        >>>     ]
-        >>> strong_pipeline = [
-        >>>     dict(type='LoadImageFromFile'),
-        >>>     dict(type='LoadAnnotations', with_bbox=True),
-        >>>     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
-        >>>     dict(type='RandomFlip', prob=1.0),
-        >>>     dict(
-        >>>         type='MultiBranch',
-        >>>         branch_field=branch_field,
-        >>>         sup=dict(type='PackDetInputs'))
-        >>>     ]
-        >>> unsup_pipeline = [
-        >>>     dict(type='LoadImageFromFile'),
-        >>>     dict(type='LoadEmptyAnnotations'),
-        >>>     dict(
-        >>>         type='MultiBranch',
-        >>>         branch_field=branch_field,
-        >>>         unsup_teacher=weak_pipeline,
-        >>>         unsup_student=strong_pipeline)
-        >>>     ]
-        >>> from mmcv.transforms import Compose
-        >>> sup_branch = Compose(sup_pipeline)
-        >>> unsup_branch = Compose(unsup_pipeline)
-        >>> print(sup_branch)
-        >>> Compose(
-        >>>     LoadImageFromFile(ignore_empty=False, to_float32=False, color_type='color', imdecode_backend='cv2') # noqa
-        >>>     LoadAnnotations(with_bbox=True, with_label=True, with_mask=False, with_seg=False, poly2mask=True, imdecode_backend='cv2') # noqa
-        >>>     Resize(scale=(1333, 800), scale_factor=None, keep_ratio=True, clip_object_border=True), backend=cv2), interpolation=bilinear) # noqa
-        >>>     RandomFlip(prob=0.5, direction=horizontal)
-        >>>     MultiBranch(branch_pipelines=['sup'])
-        >>> )
-        >>> print(unsup_branch)
-        >>> Compose(
-        >>>     LoadImageFromFile(ignore_empty=False, to_float32=False, color_type='color', imdecode_backend='cv2') # noqa
-        >>>     LoadEmptyAnnotations(with_bbox=True, with_label=True, with_mask=False, with_seg=False, seg_ignore_label=255) # noqa
-        >>>     MultiBranch(branch_pipelines=['unsup_teacher', 'unsup_student'])
-        >>> )
     """
 
     def __init__(self, branch_field: List[str],
@@ -217,8 +155,9 @@ class DenseMultiBranch(MultiBranch):
             for branch, pipeline in branch_pipelines.items()
         }
         self._valid_branch_field = ['unsup_teacher', 'unsup_student']
-        assert set(branch_pipelines.keys()) == set(self._valid_branch_field), 'The branch pipelines can only ' \
-                                                                              f'contain keys {self._valid_branch_field}'
+        assert set(branch_pipelines.keys()) == set(self._valid_branch_field), \
+            f'The branch pipelines can only contain keys ' \
+            f'{self._valid_branch_field}'
 
     def transform(self, results: dict) -> dict:
         """Transform function to apply transforms sequentially.
@@ -240,7 +179,7 @@ class DenseMultiBranch(MultiBranch):
             multi_results[branch] = {'inputs': None, 'data_samples': None}
 
         for branch in self._valid_branch_field:
-            pipeline=self.branch_pipelines[branch]
+            pipeline = self.branch_pipelines[branch]
             branch_results = pipeline(copy.deepcopy(results))
             # If one branch pipeline returns None,
             # it will sample another data from dataset.

@@ -64,7 +64,8 @@ class MeanTeacherHook(Hook):
                          data_batch: Optional[dict] = None,
                          outputs: Optional[dict] = None) -> None:
         """Update teacher's parameter every self.interval iterations."""
-        if runner.iter < self.start_steps or (runner.iter + 1) % self.interval != 0:
+        if runner.iter < self.start_steps or (runner.iter +
+                                              1) % self.interval != 0:
             return
         model = runner.model
         if is_model_wrapper(model):

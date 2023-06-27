@@ -44,8 +44,7 @@ train_dataloader = dict(
     batch_size=batch_size,
     num_workers=num_workers,
     dataset=dict(datasets=[labeled_dataset, unlabeled_dataset]),
-    sampler=dict(batch_size=batch_size,
-                 source_ratio=[2, 1]))
+    sampler=dict(batch_size=batch_size, source_ratio=[2, 1]))
 
 # training schedule for 180k
 train_cfg = dict(
@@ -56,7 +55,8 @@ test_cfg = dict(type='TestLoop')
 # learning rate policy
 param_scheduler = [
     dict(
-        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=1000),
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
+        end=1000),
     dict(
         type='MultiStepLR',
         begin=0,
@@ -76,4 +76,7 @@ default_hooks = dict(
 
 log_processor = dict(by_epoch=False)
 
-custom_hooks = [dict(type='MeanTeacherHook', start_steps=3000, momentum=0.0004), dict(type='SetEpochInfoHook')]
+custom_hooks = [
+    dict(type='MeanTeacherHook', start_steps=3000, momentum=0.0004),
+    dict(type='SetEpochInfoHook')
+]

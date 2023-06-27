@@ -1,17 +1,16 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 import torch
 import torch.nn.functional as F
 from torch import Tensor
 
-from mmdet.models.utils import (rename_loss_dict,
-                                reweight_loss_dict)
+from mmdet.models.utils import rename_loss_dict, reweight_loss_dict
 from mmdet.registry import MODELS
 from mmdet.structures import SampleList
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
+from ..losses import GIoULoss, QualityFocalLoss
 from .semi_base import SemiBaseDetector
-from ..losses import QualityFocalLoss, GIoULoss
 
 
 @MODELS.register_module()
@@ -61,7 +60,8 @@ class DenseTeacher(SemiBaseDetector):
 
     @staticmethod
     def permute_to_N_HWA_K(tensor: Tensor, K: int) -> Tensor:
-        """Transpose/reshape a tensor from (N, (A x K), H, W) to (N, (HxWxA), K)"""
+        """Transpose/reshape a tensor from (N, (A x K), H, W) to (N, (HxWxA),
+        K)"""
 
         assert tensor.dim() == 4, tensor.shape
         N, _, H, W = tensor.shape
@@ -94,31 +94,35 @@ class DenseTeacher(SemiBaseDetector):
         if self.iter <= burn_in_steps:
             return {}
         else:
-            teacher_logits, teacher_deltas, teacher_quality = batch_info['dense_predicts']
-            student_logits, student_deltas, student_quality = self.student(batch_inputs)
+            teacher_logits, teacher_deltas, teacher_quality = batch_info[
+                'dense_predicts']
+            student_logits, student_deltas, student_quality = self.student(
+                batch_inputs)
 
             num_classes = self.student.bbox_head.cls_out_channels
 
             student_logits = torch.cat([
                 self.permute_to_N_HWA_K(x, num_classes) for x in student_logits
-            ], dim=1).view(-1, num_classes)
+            ],
+                                       dim=1).view(-1, num_classes)
             teacher_logits = torch.cat([
                 self.permute_to_N_HWA_K(x, num_classes) for x in teacher_logits
-            ], dim=1).view(-1, num_classes)
+            ],
+                                       dim=1).view(-1, num_classes)
 
-            student_deltas = torch.cat([
-                self.permute_to_N_HWA_K(x, 4) for x in student_deltas
-            ], dim=1).view(-1, 4)
-            teacher_deltas = torch.cat([
-                self.permute_to_N_HWA_K(x, 4) for x in teacher_deltas
-            ], dim=1).view(-1, 4)
+            student_deltas = torch.cat(
+                [self.permute_to_N_HWA_K(x, 4) for x in student_deltas],
+                dim=1).view(-1, 4)
+            teacher_deltas = torch.cat(
+                [self.permute_to_N_HWA_K(x, 4) for x in teacher_deltas],
+                dim=1).view(-1, 4)
 
-            student_quality = torch.cat([
-                self.permute_to_N_HWA_K(x, 1) for x in student_quality
-            ], dim=1).view(-1, 1)
-            teacher_quality = torch.cat([
-                self.permute_to_N_HWA_K(x, 1) for x in teacher_quality
-            ], dim=1).view(-1, 1)
+            student_quality = torch.cat(
+                [self.permute_to_N_HWA_K(x, 1) for x in student_quality],
+                dim=1).view(-1, 1)
+            teacher_quality = torch.cat(
+                [self.permute_to_N_HWA_K(x, 1) for x in teacher_quality],
+                dim=1).view(-1, 1)
 
             with torch.no_grad():
                 # Region Selection
@@ -126,39 +130,40 @@ class DenseTeacher(SemiBaseDetector):
                 count_num = int(teacher_logits.size(0) * ratio)
                 teacher_probs = teacher_logits.sigmoid()
                 max_vals = torch.max(teacher_probs, 1)[0]
-                sorted_vals, sorted_inds = torch.topk(max_vals, teacher_logits.size(0))
+                sorted_vals, sorted_inds = torch.topk(max_vals,
+                                                      teacher_logits.size(0))
                 mask = torch.zeros_like(max_vals)
                 mask[sorted_inds[:count_num]] = 1.
                 fg_num = sorted_vals[:count_num].sum()
                 b_mask = mask > 0.
 
             loss_logits = self.quality_focal_loss(
-                student_logits,
-                teacher_logits,
-                weight=mask
-            ) / fg_num
+                student_logits, teacher_logits, weight=mask) / fg_num
 
-            loss_deltas = self.iou_loss(
-                student_deltas[b_mask],
-                teacher_deltas[b_mask]
-            )
+            loss_deltas = self.iou_loss(student_deltas[b_mask],
+                                        teacher_deltas[b_mask])
 
             loss_quality = F.binary_cross_entropy(
                 student_quality[b_mask].sigmoid(),
                 teacher_quality[b_mask].sigmoid(),
-                reduction='mean'
-            )
+                reduction='mean')
 
             losses = {
-                "distill_loss_logits": self.semi_train_cfg.get('logits_weight', 1.) * loss_logits,
-                "distill_loss_quality": self.semi_train_cfg.get('quality_weight', 1.) * loss_quality,
-                "distill_loss_deltas": self.semi_train_cfg.get('deltas_weight', 1.) * loss_deltas,
-                "fore_ground_sum": fg_num,
+                'distill_loss_logits':
+                self.semi_train_cfg.get('logits_weight', 1.) * loss_logits,
+                'distill_loss_quality':
+                self.semi_train_cfg.get('quality_weight', 1.) * loss_quality,
+                'distill_loss_deltas':
+                self.semi_train_cfg.get('deltas_weight', 1.) * loss_deltas,
+                'fore_ground_sum':
+                fg_num,
             }
 
             unsup_weight = self.semi_train_cfg.get('unsup_weight', 1.)
             target = burn_in_steps * 2
             if self.iter <= target:
-                unsup_weight *= (self.iter - burn_in_steps) / self.burn_in_steps
+                unsup_weight *= (self.iter -
+                                 burn_in_steps) / self.burn_in_steps
 
-            return rename_loss_dict('unsup_', reweight_loss_dict(losses, unsup_weight))
+            return rename_loss_dict('unsup_',
+                                    reweight_loss_dict(losses, unsup_weight))
