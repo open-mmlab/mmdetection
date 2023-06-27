@@ -57,3 +57,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.2
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/centernet/centernet-update_r50-caffe_fpn_ms-1x_coco/centernet-update_r50-caffe_fpn_ms-1x_coco_20230512_203845-8306baf2.pth

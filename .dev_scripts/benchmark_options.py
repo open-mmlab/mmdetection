@@ -7,6 +7,9 @@ third_part_libs = [
     'pip install timm',
     'pip install mmcls>=1.0.0rc0',
     'pip install git+https://github.com/lvis-dataset/lvis-api.git',
+    'pip install -r ../requirements/multimodal.txt',
+    'pip install -r ../requirements/tracking.txt',
+    'pip install git+https://github.com/JonathonLuiten/TrackEval.git',
 ]
 
 default_floating_range = 0.5

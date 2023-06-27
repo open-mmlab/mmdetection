@@ -13,7 +13,7 @@ from mmdet.datasets.transforms import (FilterAnnotations, LoadAnnotations,
                                        LoadEmptyAnnotations,
                                        LoadImageFromNDArray,
                                        LoadMultiChannelImageFromFiles,
-                                       LoadProposals)
+                                       LoadProposals, LoadTrackAnnotations)
 from mmdet.evaluation import INSTANCE_OFFSET
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 
@@ -109,6 +109,28 @@ class TestLoadAnnotations(unittest.TestCase):
         self.assertIn('gt_masks', results)
         self.assertEqual(len(results['gt_masks']), 3)
         self.assertIsInstance(results['gt_masks'], BitmapMasks)
+
+    def test_load_semseg(self):
+        transform = LoadAnnotations(
+            with_bbox=False, with_label=False, with_seg=True, with_mask=False)
+        results = transform(copy.deepcopy(self.results))
+        self.assertIn('gt_seg_map', results)
+        self.assertIn('ignore_index', results)
+        self.assertEqual(results['gt_seg_map'].shape, (288, 512))
+
+        # test reduce_zero_label and ignore_index
+        transform = LoadAnnotations(
+            with_bbox=False,
+            with_label=False,
+            with_seg=True,
+            with_mask=False,
+            reduce_zero_label=True,
+            ignore_index=10)
+        results = transform(copy.deepcopy(self.results))
+        self.assertIn('gt_seg_map', results)
+        self.assertIn('ignore_index', results)
+        self.assertEqual(results['ignore_index'], 10)
+        self.assertEqual(results['gt_seg_map'].shape, (288, 512))
 
     def test_repr(self):
         transform = LoadAnnotations(
@@ -472,3 +494,46 @@ class TestLoadEmptyAnnotations(unittest.TestCase):
             'with_mask=False, '
             'with_seg=False, '
             'seg_ignore_label=255)')
+
+
+class TestLoadTrackAnnotations(unittest.TestCase):
+
+    def setUp(self):
+        data_prefix = osp.join(osp.dirname(__file__), '../data')
+        seg_map = osp.join(data_prefix, 'grayscale.jpg')
+        self.results = {
+            'seg_map_path':
+            seg_map,
+            'instances': [{
+                'bbox': [0, 0, 10, 20],
+                'bbox_label': 1,
+                'instance_id': 100,
+                'keypoints': [1, 2, 3]
+            }, {
+                'bbox': [10, 10, 110, 120],
+                'bbox_label': 2,
+                'instance_id': 102,
+                'keypoints': [4, 5, 6]
+            }]
+        }
+
+    def test_load_instances_id(self):
+        transform = LoadTrackAnnotations(
+            with_bbox=False,
+            with_label=True,
+            with_seg=False,
+            with_keypoints=False,
+        )
+        results = transform(copy.deepcopy(self.results))
+        assert 'gt_instances_ids' in results
+        assert (results['gt_instances_ids'] == np.array([100, 102])).all()
+        assert results['gt_instances_ids'].dtype == np.int32
+
+    def test_repr(self):
+        transform = LoadTrackAnnotations(
+            with_bbox=True, with_label=False, with_seg=False, with_mask=False)
+        assert repr(transform) == ('LoadTrackAnnotations(with_bbox=True, '
+                                   'with_label=False, with_mask=False,'
+                                   ' with_seg=False, poly2mask=True,'
+                                   " imdecode_backend='cv2', "
+                                   'file_client_args=None)')

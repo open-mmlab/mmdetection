@@ -14,7 +14,7 @@ from .utils import MLP, coordinate_to_encoding, inverse_sigmoid
 
 
 class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
-    """Transformer encoder of DINO."""
+    """Transformer decoder of DINO."""
 
     def _init_layers(self) -> None:
         """Initialize decoder layers."""
@@ -27,8 +27,8 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
                 self_attn_mask: Tensor, reference_points: Tensor,
                 spatial_shapes: Tensor, level_start_index: Tensor,
                 valid_ratios: Tensor, reg_branches: nn.ModuleList,
-                **kwargs) -> Tensor:
-        """Forward function of Transformer encoder.
+                **kwargs) -> Tuple[Tensor]:
+        """Forward function of Transformer decoder.
 
         Args:
             query (Tensor): The input query, has shape (num_queries, bs, dim).
@@ -54,9 +54,19 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
                 regression results.
 
         Returns:
-            Tensor: Output queries of Transformer encoder, which is also
-            called 'encoder output embeddings' or 'memory', has shape
-            (num_queries, bs, dim)
+            tuple[Tensor]: Output queries and references of Transformer
+                decoder
+
+            - query (Tensor): Output embeddings of the last decoder, has
+              shape (num_queries, bs, embed_dims) when `return_intermediate`
+              is `False`. Otherwise, Intermediate output embeddings of all
+              decoder layers, has shape (num_decoder_layers, num_queries, bs,
+              embed_dims).
+            - reference_points (Tensor): The reference of the last decoder
+              layer, has shape (bs, num_queries, 4)  when `return_intermediate`
+              is `False`. Otherwise, Intermediate references of all decoder
+              layers, has shape (num_decoder_layers, bs, num_queries, 4). The
+              coordinates are arranged as (cx, cy, w, h)
         """
         intermediate = []
         intermediate_reference_points = [reference_points]

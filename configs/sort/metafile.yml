@@ -1,0 +1,35 @@
+Collections:
+  - Name: SORT
+    Metadata:
+      Training Techniques:
+        - SGD with Momentum
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - ResNet
+        - FPN
+    Paper:
+      URL: https://arxiv.org/abs/1602.00763
+      Title: Simple Online and Realtime Tracking
+    README: configs/sort/README.md
+
+Models:
+  - Name: sort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval
+    In Collection: SORT
+    Config: configs/mot/sort/sort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py
+    Metadata:
+      Training Data: MOT17-half-train
+      inference time (ms/im):
+        - value: 53.8
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (640, 1088)
+    Results:
+      - Task: Multiple Object Tracking
+        Dataset: MOT17-half-val
+        Metrics:
+          MOTA: 62.0
+          IDF1: 57.8
+          HOTA: 52.0
+    Weights: https://download.openmmlab.com/mmtracking/mot/faster_rcnn/faster-rcnn_r50_fpn_4e_mot17-half-64ee2ed4.pth

@@ -350,7 +350,7 @@ wget -P checkpoint https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet
 python tools/deploy.py \
   configs/mmdet/instance-seg/instance-seg_rtmdet-ins_tensorrt_static-640x640.py \
   ${PATH_TO_MMDET}/configs/rtmdet/rtmdet-ins_s_8xb32-300e_coco.py \
-  checkpoint/rtmdet-ins_s_8xb32-300e_coco/rtmdet-ins_s_8xb32-300e_coco_20221121_212604-fdc5d7ec.pth \
+  checkpoint/rtmdet-ins_s_8xb32-300e_coco_20221121_212604-fdc5d7ec.pth \
   demo/resources/det.jpg \
   --work-dir ./work_dirs/rtmdet-ins \
   --device cuda:0 \
