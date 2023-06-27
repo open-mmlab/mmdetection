@@ -192,21 +192,32 @@ python demo/video_gpuaccel_demo.py demo/demo.mp4 \
 
 ### 模型准备
 
+首先需要安装多模态依赖：
+
+```shell
+# if source
+pip install -r requirements/multimodal.txt
+
+# if wheel
+mim install mmdet[multimodal]
+```
+
 MMDetection 已经提供了模型转换脚本，所以对应 GLIP 算法模型，我们可以直接下载官方的预训练版本进行转换使用，具体操作如下：
 
 ```shell
 cd mmdetection
-wget https://penzhanwu2bbs.blob.core.windows.net/data/GLIPv1_Open/models/glip_a_tiny_o365.pth
+# 注意：官方已经把权重传至 huggingface ，故请确保使用环境中已经安装了 huggingface-cli ，并已经完成huggingface-cli login
+wget https://huggingface.co/GLIPModel/GLIP/blob/main/glip_a_tiny_o365.pth
 
-python tools/model_converters/glip_to_mmdet.py --src glip_a_tiny_o365.pth --dst glip_tiny_mmdet.pth
+python tools/model_converters/glip_to_mmdet.py --dst glip_tiny_mmdet.pth glip_a_tiny_o365.pth
 ```
 
 ### 推理演示
 
-在成功获得转换为 MMDetection 格式的模型后我们就可以利用多模态推理脚本完成 demo ：
+在成功获得转换为 MMDetection 格式的模型后我们就可以利用 `projects/XDecoder` 项目下的多模态推理脚本完成 demo ：
 
 ```shell
-python demo/multimodal_demo.py demo/demo.jpg bench configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_mmdet.pth
+python projects/XDecoder/demo.py demo/demo.jpg configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py --weights glip_tiny_mmdet.pth --texts bench
 ```
 
 demo 效果如下图所示：
@@ -215,10 +226,10 @@ demo 效果如下图所示：
 <img src="https://user-images.githubusercontent.com/17425982/234548156-ef9bbc2e-7605-4867-abe6-048b8578893d.png" height="300"/>
 </div>
 
-如果想进行多种类型的识别，需要使用 `"xx . xx ."` 的格式声明目标:
+如果想进行多种类型的识别，需要使用 `xx.xx` 的格式在 `--texts` 声明目标:
 
 ```shell
-python demo/multimodal_demo.py demo/demo.jpg "bench . car . " configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_mmdet.pth
+python projects/XDecoder/demo.py demo/demo.jpg configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py --wegiths glip_tiny_mmdet.pth --texts bench.car
 ```
 
 结果如下图所示：
