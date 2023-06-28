@@ -20,7 +20,7 @@ class TestLinearReIDHead(TestCase):
             fc_channels=64,
             out_channels=32,
             num_classes=2,
-            loss_cls=dict(type='mmcls.CrossEntropyLoss', loss_weight=1.0),
+            loss_cls=dict(type='mmpretrain.CrossEntropyLoss', loss_weight=1.0),
             loss_triplet=dict(type='TripletLoss', margin=0.3, loss_weight=1.0),
             norm_cfg=dict(type='BN1d'),
             act_cfg=dict(type='ReLU'))

@@ -123,7 +123,7 @@ class DetLocalVisualizer(Visualizer):
         """
         self.set_image(image)
 
-        if 'bboxes' in instances:
+        if 'bboxes' in instances and instances.bboxes.sum() > 0:
             bboxes = instances.bboxes
             labels = instances.labels
 
@@ -211,8 +211,11 @@ class DetLocalVisualizer(Visualizer):
                 scales = _get_adaptive_scales(areas)
 
                 for i, (pos, label) in enumerate(zip(positions, labels)):
-                    label_text = classes[
-                        label] if classes is not None else f'class {label}'
+                    if 'label_names' in instances:
+                        label_text = instances.label_names[i]
+                    else:
+                        label_text = classes[
+                            label] if classes is not None else f'class {label}'
                     if 'scores' in instances:
                         score = round(float(instances.scores[i]) * 100, 1)
                         label_text += f': {score}'
@@ -233,7 +236,8 @@ class DetLocalVisualizer(Visualizer):
 
     def _draw_panoptic_seg(self, image: np.ndarray,
                            panoptic_seg: ['PixelData'],
-                           classes: Optional[List[str]]) -> np.ndarray:
+                           classes: Optional[List[str]],
+                           palette: Optional[List]) -> np.ndarray:
         """Draw panoptic seg of GT or prediction.
 
         Args:
@@ -248,16 +252,28 @@ class DetLocalVisualizer(Visualizer):
         # TODO: Is there a way to bypass？
         num_classes = len(classes)
 
-        panoptic_seg = panoptic_seg.sem_seg[0]
-        ids = np.unique(panoptic_seg)[::-1]
-        legal_indices = ids != num_classes  # for VOID label
-        ids = ids[legal_indices]
+        panoptic_seg_data = panoptic_seg.sem_seg[0]
+
+        ids = np.unique(panoptic_seg_data)[::-1]
+
+        if 'label_names' in panoptic_seg:
+            # open set panoptic segmentation
+            classes = panoptic_seg.metainfo['label_names']
+            ignore_index = panoptic_seg.metainfo.get('ignore_index',
+                                                     len(classes))
+            ids = ids[ids != ignore_index]
+        else:
+            # for VOID label
+            ids = ids[ids != num_classes]
 
         labels = np.array([id % INSTANCE_OFFSET for id in ids], dtype=np.int64)
-        segms = (panoptic_seg[None] == ids[:, None, None])
+        segms = (panoptic_seg_data[None] == ids[:, None, None])
 
         max_label = int(max(labels) if len(labels) > 0 else 0)
-        mask_palette = get_palette(self.mask_color, max_label + 1)
+
+        mask_color = palette if self.mask_color is None \
+            else self.mask_color
+        mask_palette = get_palette(mask_color, max_label + 1)
         colors = [mask_palette[label] for label in labels]
 
         self.set_image(image)
@@ -300,6 +316,77 @@ class DetLocalVisualizer(Visualizer):
                     'edgecolor': 'none'
                 }],
                 horizontal_alignments='center')
+        return self.get_image()
+
+    def _draw_sem_seg(self, image: np.ndarray, sem_seg: PixelData,
+                      classes: Optional[List],
+                      palette: Optional[List]) -> np.ndarray:
+        """Draw semantic seg of GT or prediction.
+
+        Args:
+            image (np.ndarray): The image to draw.
+            sem_seg (:obj:`PixelData`): Data structure for pixel-level
+                annotations or predictions.
+            classes (list, optional): Input classes for result rendering, as
+                the prediction of segmentation model is a segment map with
+                label indices, `classes` is a list which includes items
+                responding to the label indices. If classes is not defined,
+                visualizer will take `cityscapes` classes by default.
+                Defaults to None.
+            palette (list, optional): Input palette for result rendering, which
+                is a list of color palette responding to the classes.
+                Defaults to None.
+
+        Returns:
+            np.ndarray: the drawn image which channel is RGB.
+        """
+        sem_seg_data = sem_seg.sem_seg
+        if isinstance(sem_seg_data, torch.Tensor):
+            sem_seg_data = sem_seg_data.numpy()
+
+        # 0 ~ num_class, the value 0 means background
+        ids = np.unique(sem_seg_data)
+        ignore_index = sem_seg.metainfo.get('ignore_index', 255)
+        ids = ids[ids != ignore_index]
+
+        if 'label_names' in sem_seg:
+            # open set semseg
+            label_names = sem_seg.metainfo['label_names']
+        else:
+            label_names = classes
+
+        labels = np.array(ids, dtype=np.int64)
+        colors = [palette[label] for label in labels]
+
+        self.set_image(image)
+
+        # draw semantic masks
+        for i, (label, color) in enumerate(zip(labels, colors)):
+            masks = sem_seg_data == label
+            self.draw_binary_masks(masks, colors=[color], alphas=self.alpha)
+            label_text = label_names[label]
+            _, _, stats, centroids = cv2.connectedComponentsWithStats(
+                masks[0].astype(np.uint8), connectivity=8)
+            if stats.shape[0] > 1:
+                largest_id = np.argmax(stats[1:, -1]) + 1
+                centroids = centroids[largest_id]
+
+                areas = stats[largest_id, -1]
+                scales = _get_adaptive_scales(areas)
+
+                self.draw_texts(
+                    label_text,
+                    centroids,
+                    colors=(255, 255, 255),
+                    font_sizes=int(13 * scales),
+                    horizontal_alignments='center',
+                    bboxes=[{
+                        'facecolor': 'black',
+                        'alpha': 0.8,
+                        'pad': 0.7,
+                        'edgecolor': 'none'
+                    }])
+
         return self.get_image()
 
     @master_only
@@ -359,6 +446,10 @@ class DetLocalVisualizer(Visualizer):
                 gt_img_data = self._draw_instances(image,
                                                    data_sample.gt_instances,
                                                    classes, palette)
+            if 'gt_sem_seg' in data_sample:
+                gt_img_data = self._draw_sem_seg(gt_img_data,
+                                                 data_sample.gt_sem_seg,
+                                                 classes, palette)
 
             if 'gt_panoptic_seg' in data_sample:
                 assert classes is not None, 'class information is ' \
@@ -366,7 +457,7 @@ class DetLocalVisualizer(Visualizer):
                                             'visualizing panoptic ' \
                                             'segmentation results.'
                 gt_img_data = self._draw_panoptic_seg(
-                    gt_img_data, data_sample.gt_panoptic_seg, classes)
+                    gt_img_data, data_sample.gt_panoptic_seg, classes, palette)
 
         if draw_pred and data_sample is not None:
             pred_img_data = image
@@ -376,6 +467,12 @@ class DetLocalVisualizer(Visualizer):
                     pred_instances.scores > pred_score_thr]
                 pred_img_data = self._draw_instances(image, pred_instances,
                                                      classes, palette)
+
+            if 'pred_sem_seg' in data_sample:
+                pred_img_data = self._draw_sem_seg(pred_img_data,
+                                                   data_sample.pred_sem_seg,
+                                                   classes, palette)
+
             if 'pred_panoptic_seg' in data_sample:
                 assert classes is not None, 'class information is ' \
                                             'not provided when ' \
@@ -383,7 +480,7 @@ class DetLocalVisualizer(Visualizer):
                                             'segmentation results.'
                 pred_img_data = self._draw_panoptic_seg(
                     pred_img_data, data_sample.pred_panoptic_seg.numpy(),
-                    classes)
+                    classes, palette)
 
         if gt_img_data is not None and pred_img_data is not None:
             drawn_img = np.concatenate((gt_img_data, pred_img_data), axis=1)

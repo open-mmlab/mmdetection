@@ -1,6 +1,6 @@
 # Model Deployment
 
-The deployment of OpenMMLab codebases, including MMDetection, MMClassification and so on are supported by [MMDeploy](https://github.com/open-mmlab/mmdeploy).
+The deployment of OpenMMLab codebases, including MMDetection, MMPretrain and so on are supported by [MMDeploy](https://github.com/open-mmlab/mmdeploy).
 The latest deployment guide for MMDetection can be found from [here](https://mmdeploy.readthedocs.io/en/dev-1.x/04-supported-codebases/mmdet.html).
 
 This tutorial is organized as follows:
