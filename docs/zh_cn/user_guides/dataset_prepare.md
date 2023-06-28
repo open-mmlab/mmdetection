@@ -277,3 +277,31 @@ data
 ```
 
 上述文件夹包括ADE20K的语义分割、实例分割和泛在分割的所有数据。
+
+### 从 OpenDataLab 中下载
+
+[OpenDataLab](https://opendatalab.com/) 为人工智能研究者提供免费开源的数据集，通过 OpenDataLab，研究者可以获得格式统一的各领域经典数据集。通过平台的搜索功能，研究者可以迅速便捷地找到自己所需数据集；通过平台的统一格式，研究者可以便捷地对跨数据集任务进行开发。
+
+目前，MIM 支持使用一条命令行从 OpenDataLab 中下载 VOC 和 COCO 数据集，后续将支持更多数据集。你也可以直接访问 OpenDataLab 平台下载你所需的数据集，然后将其转化为 MMDetection 所要求的格式。
+
+如果使用 MIM 下载，请确保版本大于 v0.3.8，你可以使用如下命令更新:
+
+```Bash
+pip install -U openmim
+```
+
+```Bash
+# install OpenDataLab CLI tools
+pip install -U opendatalab
+# log in OpenDataLab, registry
+odl login
+
+# download voc2007 and preprocess by MIM
+mim download mmdet --dataset voc2007
+
+# download voc2012 and preprocess by MIM
+mim download mmdet --dataset voc2012
+
+# download coco2017 and preprocess by MIM
+mim download mmdet --dataset coco2017
+```
