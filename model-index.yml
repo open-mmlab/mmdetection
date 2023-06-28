@@ -93,6 +93,7 @@ Import:
   - configs/ocsort/metafile.yml
   - configs/sort/metafile.yml
   - configs/deepsort/metafile.yml
+  - configs/qdtrack/metafile.yml
   - configs/mask2former_vis/metafile.yml
   - configs/masktrack_rcnn/metafile.yml
   - configs/glip/metafile.yml
