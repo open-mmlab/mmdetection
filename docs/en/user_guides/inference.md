@@ -189,7 +189,7 @@ python demo/video_gpuaccel_demo.py demo/demo.mp4 \
 
 ## Multi-modal algorithm inference demo and evaluation
 
-As multimodal vision algorithms continue to evolve, MMDetection has also supported such algorithms. This section demonstrates how to use the demo and eval scripts corresponding to multimodal algorithms using the GLIP algorithm and model as the example.
+As multimodal vision algorithms continue to evolve, MMDetection has also supported such algorithms. This section demonstrates how to use the demo and eval scripts corresponding to multimodal algorithms using the GLIP algorithm and model as the example. Moreover, MMDetection integrated a [gradio_demo project](../../../projects/gradio_demo/), which allows developers to quickly play with all image input tasks in MMDetection on their local devices. Check the [document](../../../projects/gradio_demo/README.md) for more details.
 
 ### Preparation
 
@@ -221,7 +221,7 @@ python demo/image_demo.py demo/demo.jpg glip_tiny_a_mmdet-b3654169.pth --texts b
 Demo result will be similar to this:
 
 <div align=center>
-<img src="https://user-images.githubusercontent.com/17425982/234548156-ef9bbc2e-7605-4867-abe6-048b8578893d.png" height="300"/>
+<img src="https://user-images.githubusercontent.com/17425982/234547841-266476c8-f987-4832-8642-34357be621c6.png" height="300"/>
 </div>
 
 If users would like to detect multiple targets, please declare them in the format of `xx . xx .` after the `--texts`.
@@ -231,6 +231,18 @@ python demo/image_demo.py demo/demo.jpg glip_tiny_a_mmdet-b3654169.pth --texts '
 ```
 
 And the result will be like this one:
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/17425982/234548156-ef9bbc2e-7605-4867-abe6-048b8578893d.png" height="300"/>
+</div>
+
+You can also use a sentence as the input prompt for the `--texts` field, for example:
+
+```shell
+python demo/image_demo.py demo/demo.jpg glip_tiny_a_mmdet-b3654169.pth --texts 'There are a lot of cars here.'
+```
+
+The result will be similar to this:
 
 <div align=center>
 <img src="https://user-images.githubusercontent.com/17425982/234548490-d2e0a16d-1aad-4708-aea0-c829634fabbd.png" height="300"/>
