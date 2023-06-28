@@ -185,3 +185,101 @@ python demo/video_gpuaccel_demo.py demo/demo.mp4 \
     checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
     --nvdecode --out result.mp4
 ```
+
+## 多模态算法的推理和验证
+
+随着多模态视觉算法的不断发展，MMDetection 也完成了对这类算法的支持。这一小节我们通过 GLIP 算法和模型来演示如何使用对应多模态算法的 demo 和 eval 脚本。同时 MMDetection 也在 projects 下完成了 [gradio_demo 项目](../../../projects/gradio_demo/)，用户可以参照[文档](../../../projects/gradio_demo/README.md)在本地快速体验 MMDetection 中支持的各类图片输入的任务。
+
+### 模型准备
+
+首先需要安装多模态依赖：
+
+```shell
+# if source
+pip install -r requirements/multimodal.txt
+
+# if wheel
+mim install mmdet[multimodal]
+```
+
+MMDetection 已经集成了 glip 算法和模型，可以直接使用链接下载使用：
+
+```shell
+cd mmdetection
+wget https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth
+```
+
+### 推理演示
+
+下载完成后我们就可以利用 `demo` 下的多模态推理脚本完成推理：
+
+```shell
+python demo/image_demo.py demo/demo.jpg glip_tiny_a_mmdet-b3654169.pth --texts bench
+```
+
+demo 效果如下图所示：
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/17425982/234547841-266476c8-f987-4832-8642-34357be621c6.png" height="300"/>
+</div>
+
+如果想进行多种类型的识别，需要使用 `xx . xx .` 的格式在 `--texts` 字段后声明目标类型:
+
+```shell
+python demo/image_demo.py demo/demo.jpg glip_tiny_a_mmdet-b3654169.pth --texts 'bench . car .'
+```
+
+结果如下图所示：
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/17425982/234548156-ef9bbc2e-7605-4867-abe6-048b8578893d.png" height="300"/>
+</div>
+
+推理脚本还支持输入一个句子作为 `--texts` 字段的输入：
+
+```shell
+python demo/image_demo.py demo/demo.jpg glip_tiny_a_mmdet-b3654169.pth --texts 'There are a lot of cars here.'
+```
+
+结果可以参考下图：
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/17425982/234548490-d2e0a16d-1aad-4708-aea0-c829634fabbd.png" height="300"/>
+</div>
+
+### 验证演示
+
+MMDetection 支持后的 GLIP 算法对比官方版本没有精度上的损失， benchmark 如下所示：
+
+| Model                   | official mAP | mmdet mAP |
+| ----------------------- | :----------: | :-------: |
+| glip_A_Swin_T_O365.yaml |     42.9     |   43.0    |
+| glip_Swin_T_O365.yaml   |     44.9     |   44.9    |
+| glip_Swin_L.yaml        |     51.4     |   51.3    |
+
+用户可以使用 `test.py` 脚本对模型精度进行验证，使用如下所示：
+
+```shell
+# 1 gpu
+python tools/test.py configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_a_mmdet-b3654169.pth
+
+# 8 GPU
+./tools/dist_test.sh configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_a_mmdet-b3654169.pth 8
+```
+
+验证结果大致如下：
+
+```shell
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.428
+Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=1000 ] = 0.594
+Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=1000 ] = 0.466
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.300
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.477
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.534
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.634
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=300 ] = 0.634
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=1000 ] = 0.634
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.473
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.690
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.789
+```
