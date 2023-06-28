@@ -189,25 +189,33 @@ python demo/video_gpuaccel_demo.py demo/demo.mp4 \
 
 ## Multi-modal algorithm inference demo and evaluation
 
-Thanks to the tremendous amount of work of different multi-modality researches, MMDetection has also supported some of them. In this section, we use GLIP as an example to show how users can run inference and evaluation on these algorithms.
+As multimodal vision algorithms continue to evolve, MMDetection has also supported such algorithms. This section demonstrates how to use the demo and eval scripts corresponding to multimodal algorithms using the GLIP algorithm and model as the example.
 
 ### Preparation
 
-MMDetection has already implemented some model converter scripts, so we can directly download the pre-trained GLIP models from the official repository. The code is as follows:
+Please first make sure that you have the correct dependencies installed:
+
+```shell
+# if source
+pip install -r requirements/multimodal.txt
+
+# if wheel
+mim install mmdet[multimodal]
+```
+
+MMDetection has already implemented GLIP algorithms and provided the weights, you can download directly from urls:
 
 ```shell
 cd mmdetection
-wget https://penzhanwu2bbs.blob.core.windows.net/data/GLIPv1_Open/models/glip_a_tiny_o365.pth
-
-python tools/model_converters/glip_to_mmdet.py --src glip_a_tiny_o365.pth --dst glip_tiny_mmdet.pth
+wget https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth
 ```
 
 ### Inference
 
-Once the model is successfully converted to the MMDetction format, users can use the `multimodal_demo.py` script to run inferences.
+Once the model is successfully downloaded, you can use the `demo/image_demo.py` script to run the inference.
 
 ```shell
-python demo/multimodal_demo.py demo/demo.jpg bench configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_mmdet.pth
+python demo/image_demo.py demo/demo.jpg glip_tiny_a_mmdet-b3654169.pth --texts bench
 ```
 
 Demo result will be similar to this:
@@ -216,10 +224,10 @@ Demo result will be similar to this:
 <img src="https://user-images.githubusercontent.com/17425982/234548156-ef9bbc2e-7605-4867-abe6-048b8578893d.png" height="300"/>
 </div>
 
-If users would like to detect multiple targets, please declare in the format of \`"xx . xx ."':
+If users would like to detect multiple targets, please declare them in the format of `xx . xx .` after the `--texts`.
 
 ```shell
-python demo/multimodal_demo.py demo/demo.jpg "bench . car . " configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_mmdet.pth
+python demo/image_demo.py demo/demo.jpg glip_tiny_a_mmdet-b3654169.pth --texts 'bench . car .'
 ```
 
 And the result will be like this one:
@@ -242,10 +250,10 @@ Users can use the test script we provided to run evaluation as well. Here is a b
 
 ```shell
 # 1 gpu
-python tools/test.py configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_mmdet.pth
+python tools/test.py configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_a_mmdet-b3654169.pth
 
 # 8 GPU
-./tools/dist_test.sh configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_mmdet.pth 8
+./tools/dist_test.sh configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_a_mmdet-b3654169.pth 8
 ```
 
 The result will be similar to this:

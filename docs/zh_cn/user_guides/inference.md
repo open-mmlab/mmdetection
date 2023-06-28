@@ -188,7 +188,7 @@ python demo/video_gpuaccel_demo.py demo/demo.mp4 \
 
 ## 多模态算法的推理和验证
 
-随着多模态视觉算法的不断完善，MMDetection 也完成了对这类算法的支持。这一个 section 我们通过 GLIP 算法和模型来演示如何使用对应多模态算法的 demo 和 eval 脚本。
+随着多模态视觉算法的不断发展，MMDetection 也完成了对这类算法的支持。这一小节我们通过 GLIP 算法和模型来演示如何使用对应多模态算法的 demo 和 eval 脚本。
 
 ### 模型准备
 
@@ -202,22 +202,19 @@ pip install -r requirements/multimodal.txt
 mim install mmdet[multimodal]
 ```
 
-MMDetection 已经提供了模型转换脚本，所以对应 GLIP 算法模型，我们可以直接下载官方的预训练版本进行转换使用，具体操作如下：
+MMDetection 已经集成了 glip 算法和模型，可以直接使用链接下载使用：
 
 ```shell
 cd mmdetection
-# 注意：官方已经把权重传至 huggingface ，故请确保使用环境中已经安装了 huggingface-cli ，并已经完成huggingface-cli login
-wget https://huggingface.co/GLIPModel/GLIP/blob/main/glip_a_tiny_o365.pth
-
-python tools/model_converters/glip_to_mmdet.py --dst glip_tiny_mmdet.pth glip_a_tiny_o365.pth
+wget https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth
 ```
 
 ### 推理演示
 
-在成功获得转换为 MMDetection 格式的模型后我们就可以利用 `projects/XDecoder` 项目下的多模态推理脚本完成 demo ：
+下载完成后我们就可以利用 `demo` 下的多模态推理脚本完成推理：
 
 ```shell
-python projects/XDecoder/demo.py demo/demo.jpg configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py --weights glip_tiny_mmdet.pth --texts bench
+python demo/image_demo.py demo/demo.jpg glip_tiny_a_mmdet-b3654169.pth --texts bench
 ```
 
 demo 效果如下图所示：
@@ -226,10 +223,10 @@ demo 效果如下图所示：
 <img src="https://user-images.githubusercontent.com/17425982/234548156-ef9bbc2e-7605-4867-abe6-048b8578893d.png" height="300"/>
 </div>
 
-如果想进行多种类型的识别，需要使用 `xx.xx` 的格式在 `--texts` 声明目标:
+如果想进行多种类型的识别，需要使用 `xx . xx .` 的格式在 `--texts` 字段后声明目标:
 
 ```shell
-python projects/XDecoder/demo.py demo/demo.jpg configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py --wegiths glip_tiny_mmdet.pth --texts bench.car
+python demo/image_demo.py demo/demo.jpg glip_tiny_a_mmdet-b3654169.pth --texts 'bench . car .'
 ```
 
 结果如下图所示：
@@ -248,14 +245,14 @@ MMDetection 支持后的 GLIP 算法对比官方版本没有精度上的损失�
 | glip_Swin_T_O365.yaml   |     44.9     |   44.9    |
 | glip_Swin_L.yaml        |     51.4     |   51.3    |
 
-用户可以使用 test 脚本对模型精度进行验证，使用如下所示：
+用户可以使用 `test.py` 脚本对模型精度进行验证，使用如下所示：
 
 ```shell
 # 1 gpu
-python tools/test.py configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_mmdet.pth
+python tools/test.py configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_a_mmdet-b3654169.pth
 
 # 8 GPU
-./tools/dist_test.sh configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_mmdet.pth 8
+./tools/dist_test.sh configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_a_mmdet-b3654169.pth 8
 ```
 
 验证结果大致如下：
