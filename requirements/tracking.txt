@@ -1,5 +1,5 @@
-mmcls>=1.0.0rc0
+mmpretrain
 motmetrics
-numpy==1.23.5
+numpy<1.24.0
 scikit-learn
 seaborn
