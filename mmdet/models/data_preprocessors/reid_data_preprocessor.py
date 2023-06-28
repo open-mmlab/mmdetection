@@ -183,7 +183,8 @@ class ReIDDataPreprocessor(BaseDataPreprocessor):
         sample_item = data_samples[0] if data_samples is not None else None
         if 'gt_label' in sample_item:
             gt_labels = [sample.gt_label for sample in data_samples]
-            batch_label, label_indices = cat_batch_labels(gt_labels)
+            gt_labels_tensor = [gt_label.label for gt_label in gt_labels]
+            batch_label, label_indices = cat_batch_labels(gt_labels_tensor)
             batch_label = batch_label.to(self.device)
 
             batch_score = stack_batch_scores(gt_labels, device=self.device)
