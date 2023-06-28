@@ -61,6 +61,10 @@ English | [简体中文](README_zh-CN.md)
     <img src="https://user-images.githubusercontent.com/25839884/219026120-ba71e48b-6e94-4bd4-b4e9-b7d175b5e362.png" width="3%" alt="" /></a>
 </div>
 
+<div align="center">
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/6c29886f-ae7a-4a55-8be4-352ee85b7d3e"/>
+</div>
+
 ## Introduction
 
 MMDetection is an open source object detection toolbox based on PyTorch. It is
@@ -230,6 +234,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/conditional_detr">Conditional DETR (ICCV'2021)</a></li>
             <li><a href="configs/dab_detr">DAB-DETR (ICLR'2022)</a></li>
             <li><a href="configs/dino">DINO (ICLR'2023)</a></li>
+            <li><a href="configs/glip">GLIP (CVPR'2022)</a></li>
             <li><a href="projects/DiffusionDet">DiffusionDet (ArXiv'2023)</a></li>
             <li><a href="projects/EfficientDet">EfficientDet (CVPR'2020)</a></li>
             <li><a href="projects/Detic">Detic (ECCV'2022)</a></li>

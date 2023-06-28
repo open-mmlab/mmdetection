@@ -555,7 +555,7 @@ class PyramidVisionTransformer(BaseModule):
             else:
                 state_dict = checkpoint
             if self.convert_weights:
-                # Because pvt backbones are not supported by mmcls,
+                # Because pvt backbones are not supported by mmpretrain,
                 # so we need to convert pre-trained weights to match this
                 # implementation.
                 state_dict = pvt_convert(state_dict)

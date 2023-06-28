@@ -4,10 +4,10 @@ from typing import List, Optional
 import torch
 
 try:
-    import mmcls
-    from mmcls.models.classifiers import ImageClassifier
+    import mmpretrain
+    from mmpretrain.models.classifiers import ImageClassifier
 except ImportError:
-    mmcls = None
+    mmpretrain = None
     ImageClassifier = object
 
 from mmdet.registry import MODELS
@@ -19,10 +19,10 @@ class BaseReID(ImageClassifier):
     """Base model for re-identification."""
 
     def __init__(self, *args, **kwargs):
-        if mmcls is None:
+        if mmpretrain is None:
             raise RuntimeError('Please run "pip install openmim" and '
-                               'run "mim install mmcls>=1.0.0rc0" tp '
-                               'install mmcls first.')
+                               'run "mim install mmpretrain" to '
+                               'install mmpretrain first.')
         super().__init__(*args, **kwargs)
 
     def forward(self,

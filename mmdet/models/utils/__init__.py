@@ -15,6 +15,7 @@ from .misc import (aligned_bilinear, center_of_mass, empty_instances,
 from .panoptic_gt_processing import preprocess_panoptic_gt
 from .point_sample import (get_uncertain_point_coords_with_randomness,
                            get_uncertainty)
+from .vlfuse_helper import BertEncoderLayer, VLFuse, permute_and_flatten
 
 __all__ = [
     'gaussian_radius', 'gen_gaussian_target', 'make_divisible',
@@ -27,5 +28,6 @@ __all__ = [
     'select_single_mlvl', 'unmap', 'images_to_levels',
     'samplelist_boxtype2tensor', 'filter_gt_instances', 'rename_loss_dict',
     'reweight_loss_dict', 'relative_coordinate_maps', 'aligned_bilinear',
-    'unfold_wo_center', 'imrenormalize'
+    'unfold_wo_center', 'imrenormalize', 'VLFuse', 'permute_and_flatten',
+    'BertEncoderLayer'
 ]

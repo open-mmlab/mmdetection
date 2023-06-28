@@ -1,10 +1,10 @@
 This tutorial collects answers to any `How to xxx with MMDetection`. Feel free to update this doc if you meet new questions about `How to` and find the answers!
 
-# Use backbone network through MMClassification
+# Use backbone network through MMPretrain
 
-The model registry in MMDet, MMCls, MMSeg all inherit from the root registry in MMEngine. This allows these repositories to directly use the modules already implemented by each other. Therefore, users can use backbone networks from MMClassification in MMDetection without implementing a network that already exists in MMClassification.
+The model registry in MMDet, MMPreTrain, MMSeg all inherit from the root registry in MMEngine. This allows these repositories to directly use the modules already implemented by each other. Therefore, users can use backbone networks from MMPretrain in MMDetection without implementing a network that already exists in MMPretrain.
 
-## Use backbone network implemented in MMClassification
+## Use backbone network implemented in MMPretrain
 
 Suppose you want to use `MobileNetV3-small` as the backbone network of `RetinaNet`, the example config is as the following.
 
@@ -14,27 +14,27 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-# please install mmcls>=1.0.0rc0
-# import mmcls.models to trigger register_module in mmcls
-custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
+# please install mmpretrain
+# import mmpretrain.models to trigger register_module in mmpretrain
+custom_imports = dict(imports=['mmpretrain.models'], allow_failed_imports=False)
 pretrained = 'https://download.openmmlab.com/mmclassification/v0/mobilenet_v3/convert/mobilenet_v3_small-8427ecf0.pth'
 model = dict(
     backbone=dict(
         _delete_=True, # Delete the backbone field in _base_
-        type='mmcls.MobileNetV3', # Using MobileNetV3 from mmcls
+        type='mmpretrain.MobileNetV3', # Using MobileNetV3 from mmpretrain
         arch='small',
         out_indices=(3, 8, 11), # Modify out_indices
         init_cfg=dict(
             type='Pretrained',
             checkpoint=pretrained,
-            prefix='backbone.')), # The pre-trained weights of backbone network in MMCls have prefix='backbone.'. The prefix in the keys will be removed so that these weights can be normally loaded.
+            prefix='backbone.')), # The pre-trained weights of backbone network in mmpretrain have prefix='backbone.'. The prefix in the keys will be removed so that these weights can be normally loaded.
     # Modify in_channels
     neck=dict(in_channels=[24, 48, 96], start_level=0))
 ```
 
-## Use backbone network in TIMM through MMClassification
+## Use backbone network in TIMM through MMPretrain
 
-MMClassification also provides a wrapper for the PyTorch Image Models (timm) backbone network, users can directly use the backbone network in timm through MMClassification. Suppose you want to use [EfficientNet-B1](../../../configs/timm_example/retinanet_timm-efficientnet-b1_fpn_1x_coco.py) as the backbone network of RetinaNet, the example config is as the following.
+MMPretrain also provides a wrapper for the PyTorch Image Models (timm) backbone network, users can directly use the backbone network in timm through MMPretrain. Suppose you want to use [EfficientNet-B1](../../../configs/timm_example/retinanet_timm-efficientnet-b1_fpn_1x_coco.py) as the backbone network of RetinaNet, the example config is as the following.
 
 ```python
 # https://github.com/open-mmlab/mmdetection/blob/main/configs/timm_example/retinanet_timm-efficientnet-b1_fpn_1x_coco.py
@@ -45,13 +45,13 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-# please install mmcls>=1.0.0rc0
-# import mmcls.models to trigger register_module in mmcls
-custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
+# please install mmpretrain
+# import mmpretrain.models to trigger register_module in mmpretrain
+custom_imports = dict(imports=['mmpretrain.models'], allow_failed_imports=False)
 model = dict(
     backbone=dict(
         _delete_=True, # Delete the backbone field in _base_
-        type='mmcls.TIMMBackbone', # Using timm from mmcls
+        type='mmpretrain.TIMMBackbone', # Using timm from mmpretrain
         model_name='efficientnet_b1',
         features_only=True,
         pretrained=True,
@@ -61,9 +61,9 @@ model = dict(
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 ```
 
-`type='mmcls.TIMMBackbone'` means use the `TIMMBackbone` class from MMClassification in MMDetection, and the model used is `EfficientNet-B1`, where `mmcls` means the MMClassification repo and `TIMMBackbone` means the TIMMBackbone wrapper implemented in MMClassification.
+`type='mmpretrain.TIMMBackbone'` means use the `TIMMBackbone` class from MMPretrain in MMDetection, and the model used is `EfficientNet-B1`, where `mmpretrain` means the MMPretrain repo and `TIMMBackbone` means the TIMMBackbone wrapper implemented in MMPretrain.
 
-For the principle of the Hierarchy Registry, please refer to the [MMEngine document](https://github.com/open-mmlab/mmengine/blob/main/docs/en/tutorials/config.md). For how to use other backbones in MMClassification, you can refer to the [MMClassification document](https://github.com/open-mmlab/mmclassification/blob/dev-1.x/docs/en/tutorials/config.md).
+For the principle of the Hierarchy Registry, please refer to the [MMEngine document](https://github.com/open-mmlab/mmengine/blob/main/docs/en/tutorials/config.md). For how to use other backbones in MMPretrain, you can refer to the [MMPretrain document](https://mmpretrain.readthedocs.io/en/latest/user_guides/config.html).
 
 # Use Mosaic augmentation
 

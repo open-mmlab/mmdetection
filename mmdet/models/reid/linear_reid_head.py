@@ -6,10 +6,10 @@ import torch
 import torch.nn as nn
 
 try:
-    import mmcls
-    from mmcls.evaluation.metrics import Accuracy
+    import mmpretrain
+    from mmpretrain.evaluation.metrics import Accuracy
 except ImportError:
-    mmcls = None
+    mmpretrain = None
 
 from mmengine.model import BaseModule
 
@@ -55,10 +55,10 @@ class LinearReIDHead(BaseModule):
                  topk: Union[int, Tuple[int]] = (1, ),
                  init_cfg: Union[dict, List[dict]] = dict(
                      type='Normal', layer='Linear', mean=0, std=0.01, bias=0)):
-        if mmcls is None:
+        if mmpretrain is None:
             raise RuntimeError('Please run "pip install openmim" and '
-                               'run "mim install mmcls>=1.0.0rc0" tp '
-                               'install mmcls first.')
+                               'run "mim install mmpretrain" to '
+                               'install mmpretrain first.')
         super(LinearReIDHead, self).__init__(init_cfg=init_cfg)
 
         assert isinstance(topk, (int, tuple))

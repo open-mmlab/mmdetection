@@ -15,7 +15,7 @@ Collections:
 Models:
   - Name: mask2former_r50_8xb2-8e_youtubevis2021
     In Collection: Mask2Former
-    Config: configs/vis/mask2former/mask2former_r50_8xb2-8e_youtubevis2021.py
+    Config: configs/mask2former_vis/mask2former_r50_8xb2-8e_youtubevis2021.py
     Metadata:
       Training Data: YouTube-VIS 2021
       Training Memory (GB): 6.0
@@ -28,7 +28,7 @@ Models:
 
   - Name: mask2former_r101_8xb2-8e_youtubevis2021
     In Collection: Mask2Former
-    Config: configs/vis/mask2former/mask2former_r101_8xb2-8e_youtubevis2021.py
+    Config: configs/mask2former_vis/mask2former_r101_8xb2-8e_youtubevis2021.py
     Metadata:
       Training Data: YouTube-VIS 2021
       Training Memory (GB): 7.5
@@ -41,7 +41,7 @@ Models:
 
   - Name: mask2former_swin-l-p4-w12-384-in21k_8xb2-8e_youtubevis2021.py
     In Collection: Mask2Former
-    Config: configs/vis/mask2former/mask2former_swin-l-p4-w12-384-in21k_8xb2-8e_youtubevis2021.py
+    Config: configs/mask2former_vis/mask2former_swin-l-p4-w12-384-in21k_8xb2-8e_youtubevis2021.py
     Metadata:
       Training Data: YouTube-VIS 2021
       Training Memory (GB): 18.5
