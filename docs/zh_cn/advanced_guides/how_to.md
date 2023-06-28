@@ -1,10 +1,10 @@
 本教程收集了任何如何使用 MMDetection 进行 xxx 的答案。 如果您遇到有关`如何做`的问题及答案，请随时更新此文档！
 
-## 使用 MMClassification 的骨干网络
+## 使用 MMPretrain 的骨干网络
 
-MMDet、MMCls、MMSeg 中的模型注册表都继承自 MMEngine 中的根注册表，允许这些存储库直接使用彼此已经实现的模块。 因此用户可以在 MMDetection 中使用来自 MMClassification 的骨干网络，而无需实现MMClassification 中已经存在的网络。
+MMDet、MMPretrain、MMSeg 中的模型注册表都继承自 MMEngine 中的根注册表，允许这些存储库直接使用彼此已经实现的模块。 因此用户可以在 MMDetection 中使用来自 MMPretrain 的骨干网络，而无需实现MMPretrain 中已经存在的网络。
 
-### 使用在 MMClassification 中实现的骨干网络
+### 使用在 MMPretrain 中实现的骨干网络
 
 假设想将 `MobileNetV3-small` 作为 `RetinaNet` 的骨干网络，则配置文件如下。
 
@@ -14,27 +14,27 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-# please install mmcls>=1.0.0rc0
-# import mmcls.models to trigger register_module in mmcls
-custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
+# please install mmpretrain
+# import mmpretrain.models to trigger register_module in mmpretrain
+custom_imports = dict(imports=['mmpretrain.models'], allow_failed_imports=False)
 pretrained = 'https://download.openmmlab.com/mmclassification/v0/mobilenet_v3/convert/mobilenet_v3_small-8427ecf0.pth'
 model = dict(
     backbone=dict(
         _delete_=True, # 将 _base_ 中关于 backbone 的字段删除
-        type='mmcls.MobileNetV3', # 使用 mmcls 中的 MobileNetV3
+        type='mmpretrain.MobileNetV3', # 使用 mmpretrain 中的 MobileNetV3
         arch='small',
         out_indices=(3, 8, 11), # 修改 out_indices
         init_cfg=dict(
             type='Pretrained',
             checkpoint=pretrained,
-            prefix='backbone.')), # MMCls 中骨干网络的预训练权重含义 prefix='backbone.'，为了正常加载权重，需要把这个 prefix 去掉。
+            prefix='backbone.')), # mmpretrain 中骨干网络的预训练权重含义 prefix='backbone.'，为了正常加载权重，需要把这个 prefix 去掉。
     # 修改 in_channels
     neck=dict(in_channels=[24, 48, 96], start_level=0))
 ```
 
-### 通过 MMClassification 使用 TIMM 中实现的骨干网络
+### 通过 MMPretrain 使用 TIMM 中实现的骨干网络
 
-由于 MMClassification 提供了 Py**T**orch **Im**age **M**odels (`timm`) 骨干网络的封装，用户也可以通过 MMClassification 直接使用 `timm` 中的骨干网络。假设想将 [`EfficientNet-B1`](../../../configs/timm_example/retinanet_timm-efficientnet-b1_fpn_1x_coco.py) 作为 `RetinaNet` 的骨干网络，则配置文件如下。
+由于 MMPretrain 提供了 Py**T**orch **Im**age **M**odels (`timm`) 骨干网络的封装，用户也可以通过 MMPretrain 直接使用 `timm` 中的骨干网络。假设想将 [`EfficientNet-B1`](../../../configs/timm_example/retinanet_timm-efficientnet-b1_fpn_1x_coco.py) 作为 `RetinaNet` 的骨干网络，则配置文件如下。
 
 ```python
 # https://github.com/open-mmlab/mmdetection/blob/main/configs/timm_example/retinanet_timm_efficientnet_b1_fpn_1x_coco.py
@@ -44,13 +44,13 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-# please install mmcls>=1.0.0rc0
-# import mmcls.models to trigger register_module in mmcls
-custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
+# please install mmpretrain
+# import mmpretrain.models to trigger register_module in mmpretrain
+custom_imports = dict(imports=['mmpretrain.models'], allow_failed_imports=False)
 model = dict(
     backbone=dict(
         _delete_=True, # 将 _base_ 中关于 backbone 的字段删除
-        type='mmcls.TIMMBackbone', # 使用 mmcls 中 timm 骨干网络
+        type='mmpretrain.TIMMBackbone', # 使用 mmpretrain 中 timm 骨干网络
         model_name='efficientnet_b1',
         features_only=True,
         pretrained=True,
@@ -60,9 +60,9 @@ model = dict(
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 ```
 
-`type='mmcls.TIMMBackbone'` 表示在 MMDetection 中使用 MMClassification 中的 `TIMMBackbone` 类，并且使用的模型为` EfficientNet-B1`，其中 `mmcls` 表示 MMClassification 库，而 `TIMMBackbone ` 表示 MMClassification 中实现的 TIMMBackbone 包装器。
+`type='mmpretrain.TIMMBackbone'` 表示在 MMDetection 中使用 MMPretrain 中的 `TIMMBackbone` 类，并且使用的模型为` EfficientNet-B1`，其中 `mmpretrain` 表示 MMPretrain 库，而 `TIMMBackbone ` 表示 MMPretrain 中实现的 TIMMBackbone 包装器。
 
-关于层次注册器的具体原理可以参考 [MMEngine 文档](https://mmengine.readthedocs.io/zh_cn/latest/tutorials/config.md#跨项目继承配置文件)，关于如何使用 MMClassification 中的其他 backbone，可以参考 [MMClassification 文档](https://github.com/open-mmlab/mmclassification/blob/dev-1.x/docs/en/tutorials/config.md)。
+关于层次注册器的具体原理可以参考 [MMEngine 文档](https://mmengine.readthedocs.io/zh_cn/latest/tutorials/config.md#跨项目继承配置文件)，关于如何使用 MMPretrain 中的其他 backbone，可以参考 [MMPretrain 文档](https://mmpretrain.readthedocs.io/en/latest/user_guides/config.html)。
 
 ## 使用马赛克数据增强
 

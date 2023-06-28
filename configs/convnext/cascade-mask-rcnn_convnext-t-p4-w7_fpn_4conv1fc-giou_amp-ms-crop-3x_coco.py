@@ -4,16 +4,16 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-# TODO: delete custom_imports after mmcls supports auto import
-# please install mmcls>=1.0
-# import mmcls.models to trigger register_module in mmcls
-custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
+# please install mmpretrain
+# import mmpretrain.models to trigger register_module in mmpretrain
+custom_imports = dict(
+    imports=['mmpretrain.models'], allow_failed_imports=False)
 checkpoint_file = 'https://download.openmmlab.com/mmclassification/v0/convnext/downstream/convnext-tiny_3rdparty_32xb128-noema_in1k_20220301-795e9634.pth'  # noqa
 
 model = dict(
     backbone=dict(
         _delete_=True,
-        type='mmcls.ConvNeXt',
+        type='mmpretrain.ConvNeXt',
         arch='tiny',
         out_indices=[0, 1, 2, 3],
         drop_path_rate=0.4,

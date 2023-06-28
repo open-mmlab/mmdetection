@@ -20,10 +20,10 @@ The "Roaring 20s" of visual recognition began with the introduction of Vision Tr
 
 **Note**:
 
-- ConvNeXt backbone needs to install [MMClassification](https://github.com/open-mmlab/mmclassification) first, which has abundant backbones for downstream tasks.
+- ConvNeXt backbone needs to install [MMPreTrain](https://github.com/open-mmlab/mmpretrain) first, which has abundant backbones for downstream tasks.
 
 ```shell
-pip install mmcls>=1.0
+pip install mmpretrain
 ```
 
 - The performance is unstable. `Cascade Mask R-CNN` may fluctuate about 0.2 mAP.
