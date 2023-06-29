@@ -52,9 +52,9 @@ def prefetch_batch_input_shape(model: nn.Module, ori_wh: Tuple[int,
     test_pipeline = Compose(cfg.test_dataloader.dataset.pipeline)
     data = {'img': np.zeros((h, w, 3), dtype=np.uint8), 'img_id': 0}
     data = test_pipeline(data)
-    data["inputs"] = [data["inputs"]]
-    data["data_samples"] = [data["data_samples"]]
-    data_sample = model.data_preprocessor(data, False)["data_samples"]
+    data['inputs'] = [data['inputs']]
+    data['data_samples'] = [data['data_samples']]
+    data_sample = model.data_preprocessor(data, False)['data_samples']
     batch_input_shape = data_sample[0].batch_input_shape
     return batch_input_shape
 
