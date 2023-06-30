@@ -17,7 +17,7 @@ from mmdet.datasets.transforms.formatting import PackDetInputs
 from mmdet.datasets.transforms.loading import LoadAnnotations
 from mmdet.datasets.transforms.transforms import (CachedMixUp, CachedMosaic,
                                                   Pad, RandomCrop, RandomFlip,
-                                                  YOLOXHSVRandomAug)
+                                                  Resize, YOLOXHSVRandomAug)
 from mmdet.engine.hooks.pipeline_switch_hook import PipelineSwitchHook
 from mmdet.models.layers.ema import ExpMomentumEMA
 
@@ -41,6 +41,7 @@ train_pipeline = [
         type=RandomResize,
         scale=(1280, 1280),
         ratio_range=(0.5, 2.0),
+        resize_type=Resize,
         keep_ratio=True),
     dict(type=RandomCrop, crop_size=(640, 640)),
     dict(type=YOLOXHSVRandomAug),
@@ -62,6 +63,7 @@ train_pipeline_stage2 = [
         type=RandomResize,
         scale=(640, 640),
         ratio_range=(0.5, 2.0),
+        resize_type=Resize,
         keep_ratio=True),
     dict(type=RandomCrop, crop_size=(640, 640)),
     dict(type=YOLOXHSVRandomAug),
