@@ -5,6 +5,7 @@
 ### Highlights
 
 - Supports tracking algorithms including multi-object tracking (MOT) algorithms SORT, DeepSORT, StrongSORT, OCSORT, ByteTrack, QDTrack, and video instance segmentation (VIS) algorithm MaskTrackRCNN, Mask2Former-VIS.
+- Support [ViTDet](../../../projects/ViTDet)
 - Supports inference and evaluation of multimodal algorithms [GLIP](../../../configs/glip) and [XDecoder](../../../projects/XDecoder), and also supports datasets such as COCO semantic segmentation, COCO Caption, ADE20k general segmentation, and RefCOCO. GLIP fine-tuning will be supported in the future.
 - Provides a [gradio demo](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/projects/gradio_demo/README.md) for image type tasks of MMDetection, making it easy for users to experience.
 

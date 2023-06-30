@@ -9,7 +9,7 @@ Note that if you use a folder as the input, the image names there must be  **sor
 This script can inference an input video / images with a multiple object tracking or video instance segmentation model.
 
 ```shell
-python demo/demo_mot.py \
+python demo/mot_demo.py \
     ${INPUTS}
     ${CONFIG_FILE} \
     [--checkpoint ${CHECKPOINT_FILE}] \
@@ -39,7 +39,7 @@ Optional arguments:
 
 ```shell
 # Example 1: do not specify --checkpoint to use --detector
-python demo/demo_mot.py \
+python demo/mot_demo.py \
     demo/demo_mot.mp4 \
     configs/sort/sort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py \
     --detector \
@@ -47,7 +47,7 @@ python demo/demo_mot.py \
     --out mot.mp4
 
 # Example 2: use --checkpoint
-python demo/demo_mot.py \
+python demo/mot_demo.py \
     demo/demo_mot.mp4 \
     configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py \
     --checkpoint https://download.openmmlab.com/mmtracking/mot/qdtrack/mot_dataset/qdtrack_faster-rcnn_r50_fpn_4e_mot17_20220315_145635-76f295ef.pth \

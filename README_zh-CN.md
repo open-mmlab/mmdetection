@@ -120,6 +120,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 **v3.1.0** 版本已经在 2023.6.30 发布：
 
 - 支持 Tracking 类算法，包括多目标跟踪 MOT 算法 SORT、DeepSORT、StrongSORT、OCSORT、ByteTrack、QDTrack 和视频实例分割 VIS 算法 MaskTrackRCNN、Mask2Former-VIS。
+- 支持 [ViTDet](projects/ViTDet)
 - 支持多模态开放检测算法 [GLIP](configs/glip) 和 [XDecoder](projects/XDecoder) 推理和评估，并同时支持了 COCO 语义分割、COCO Caption、ADE20k 通用分割、RefCOCO 等数据集。后续将支持 GLIP 微调
 - 提供了包括 MMDetection 图片任务的 [gradio demo](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/projects/gradio_demo/README.md)，方便用户快速体验
 
