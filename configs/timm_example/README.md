@@ -27,22 +27,22 @@ Py**T**orch **Im**age **M**odels (`timm`) is a collection of image models, layer
 
 ### Install additional requirements
 
-MMDetection supports timm backbones via `TIMMBackbone`, a wrapper class in MMClassification.
-Thus, you need to install `mmcls` in addition to timm.
+MMDetection supports timm backbones via `TIMMBackbone`, a wrapper class in MMPretrain.
+Thus, you need to install `mmpretrain` in addition to timm.
 If you have already installed requirements for mmdet, run
 
 ```shell
 pip install 'dataclasses; python_version<"3.7"'
 pip install timm
-pip install 'mmcls>=0.20.0'
+pip install mmpretrain
 ```
 
-See [this document](https://mmclassification.readthedocs.io/en/latest/install.html) for the details of MMClassification installation.
+See [this document](https://mmpretrain.readthedocs.io/en/latest/get_started.html#installation) for the details of MMPretrain installation.
 
 ### Edit config
 
 - See example configs for basic usage.
-- See the documents of [timm feature extraction](https://rwightman.github.io/pytorch-image-models/feature_extraction/#multi-scale-feature-maps-feature-pyramid) and [TIMMBackbone](https://mmclassification.readthedocs.io/en/latest/api.html#mmcls.models.backbones.TIMMBackbone) for details.
+- See the documents of [timm feature extraction](https://rwightman.github.io/pytorch-image-models/feature_extraction/#multi-scale-feature-maps-feature-pyramid) and [TIMMBackbone](https://mmpretrain.readthedocs.io/en/latest/api/generated/mmpretrain.models.backbones.TIMMBackbone.html#mmpretrain.models.backbones.TIMMBackbone) for details.
 - Which feature map is output depends on the backbone.
   Please check `backbone out_channels` and `backbone out_strides` in your log, and modify `model.neck.in_channels` and `model.backbone.out_indices` if necessary.
 - If you use Vision Transformer models that do not support `features_only=True`, add `custom_hooks = []` to your config to disable `NumClassCheckHook`.

@@ -61,11 +61,15 @@
     <img src="https://user-images.githubusercontent.com/25839884/219026120-ba71e48b-6e94-4bd4-b4e9-b7d175b5e362.png" width="3%" alt="" /></a>
 </div>
 
+<div align="center">
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/6c29886f-ae7a-4a55-8be4-352ee85b7d3e"/>
+</div>
+
 ## 简介
 
 MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [OpenMMLab](https://openmmlab.com/) 项目的一部分。
 
-主分支代码目前支持 PyTorch 1.6 以上的版本。
+主分支代码目前支持 PyTorch 1.8 及其以上的版本。
 
 <img src="https://user-images.githubusercontent.com/12907710/187674113-2074d658-f2fb-42d1-ac15-9c4a695e64d7.png"/>
 
@@ -113,11 +117,12 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
 
-**v3.0.0** 版本已经在 2023.4.6 发布：
+**v3.1.0** 版本已经在 2023.6.30 发布：
 
-- 发布 MMDetection 3.0.0 正式版
-- 基于 [Label-Studio](projects/LabelStudio) 支持半自动标注流程
-- projects 中支持了 [EfficientDet](projects/EfficientDet)
+- 支持 Tracking 类算法，包括多目标跟踪 MOT 算法 SORT、DeepSORT、StrongSORT、OCSORT、ByteTrack、QDTrack 和视频实例分割 VIS 算法 MaskTrackRCNN、Mask2Former-VIS。
+- 支持 [ViTDet](projects/ViTDet)
+- 支持多模态开放检测算法 [GLIP](configs/glip) 和 [XDecoder](projects/XDecoder) 推理和评估，并同时支持了 COCO 语义分割、COCO Caption、ADE20k 通用分割、RefCOCO 等数据集。后续将支持 GLIP 微调
+- 提供了包括 MMDetection 图片任务的 [gradio demo](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/projects/gradio_demo/README.md)，方便用户快速体验
 
 ## 安装
 
@@ -231,6 +236,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
             <li><a href="configs/conditional_detr">Conditional DETR (ICCV'2021)</a></li>
             <li><a href="configs/dab_detr">DAB-DETR (ICLR'2022)</a></li>
             <li><a href="configs/dino">DINO (ICLR'2023)</a></li>
+            <li><a href="configs/glip">GLIP (CVPR'2022)</a></li>
             <li><a href="projects/DiffusionDet">DiffusionDet (ArXiv'2023)</a></li>
             <li><a href="projects/EfficientDet">EfficientDet (CVPR'2020)</a></li>
             <li><a href="projects/Detic">Detic (ECCV'2022)</a></li>
@@ -412,8 +418,8 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 
 - [MMEngine](https://github.com/open-mmlab/mmengine): OpenMMLab 深度学习模型训练基础库
 - [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab 计算机视觉基础库
-- [MIM](https://github.com/open-mmlab/mim): MIM 是 OpenMMlab 项目、算法、模型的统一入口
-- [MMClassification](https://github.com/open-mmlab/mmclassification): OpenMMLab 图像分类工具箱
+- [MMPreTrain](https://github.com/open-mmlab/mmpretrain): OpenMMLab 深度学习预训练工具箱
+- [MMagic](https://github.com/open-mmlab/mmagic): OpenMMLab 新一代人工智能内容生成（AIGC）工具箱
 - [MMDetection](https://github.com/open-mmlab/mmdetection): OpenMMLab 目标检测工具箱
 - [MMDetection3D](https://github.com/open-mmlab/mmdetection3d): OpenMMLab 新一代通用 3D 目标检测平台
 - [MMRotate](https://github.com/open-mmlab/mmrotate): OpenMMLab 旋转框检测工具箱与测试基准
@@ -431,6 +437,9 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 - [MMEditing](https://github.com/open-mmlab/mmediting): OpenMMLab 图像视频编辑工具箱
 - [MMGeneration](https://github.com/open-mmlab/mmgeneration): OpenMMLab 图片视频生成模型工具箱
 - [MMDeploy](https://github.com/open-mmlab/mmdeploy): OpenMMLab 模型部署框架
+- [MIM](https://github.com/open-mmlab/mim): OpenMMlab 项目、算法、模型的统一入口
+- [MMEval](https://github.com/open-mmlab/mmeval): 统一开放的跨框架算法评测库
+- [Playground](https://github.com/open-mmlab/playground): 收集和展示 OpenMMLab 相关的前沿、有趣的社区项目
 
 ## 欢迎加入 OpenMMLab 社区
 

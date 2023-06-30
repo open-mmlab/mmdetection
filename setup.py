@@ -154,7 +154,9 @@ def add_mim_extension():
     else:
         return
 
-    filenames = ['tools', 'configs', 'demo', 'model-index.yml']
+    filenames = [
+        'tools', 'configs', 'demo', 'model-index.yml', 'dataset-index.yml'
+    ]
     repo_path = osp.dirname(__file__)
     mim_path = osp.join(repo_path, 'mmdet', '.mim')
     os.makedirs(mim_path, exist_ok=True)
@@ -214,6 +216,8 @@ if __name__ == '__main__':
             'build': parse_requirements('requirements/build.txt'),
             'optional': parse_requirements('requirements/optional.txt'),
             'mim': parse_requirements('requirements/mminstall.txt'),
+            'tracking': parse_requirements('requirements/tracking.txt'),
+            'multimodal': parse_requirements('requirements/multimodal.txt'),
         },
         ext_modules=[],
         cmdclass={'build_ext': BuildExtension},

@@ -19,6 +19,8 @@ class BaseDetDataset(BaseDataset):
             corresponding backend in mmdet <= 3.0.0rc6. Defaults to None.
         backend_args (dict, optional): Arguments to instantiate the
             corresponding backend. Defaults to None.
+        return_classes (bool): Whether to return class information
+            for open vocabulary-based algorithms. Defaults to False.
     """
 
     def __init__(self,
@@ -27,10 +29,12 @@ class BaseDetDataset(BaseDataset):
                  proposal_file: Optional[str] = None,
                  file_client_args: dict = None,
                  backend_args: dict = None,
+                 return_classes: bool = False,
                  **kwargs) -> None:
         self.seg_map_suffix = seg_map_suffix
         self.proposal_file = proposal_file
         self.backend_args = backend_args
+        self.return_classes = return_classes
         if file_client_args is not None:
             raise RuntimeError(
                 'The `file_client_args` is deprecated, '

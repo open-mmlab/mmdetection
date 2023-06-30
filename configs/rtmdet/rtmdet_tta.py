@@ -25,6 +25,7 @@ tta_pipeline = [
                     size=(960, 960),
                     pad_val=dict(img=(114, 114, 114))),
             ],
+            [dict(type='LoadAnnotations', with_bbox=True)],
             [
                 dict(
                     type='PackDetInputs',

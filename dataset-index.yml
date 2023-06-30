@@ -1,0 +1,17 @@
+voc2007:
+  dataset: PASCAL_VOC2007
+  download_root: data
+  data_root: data
+  script: tools/dataset_converters/scripts/preprocess_voc2007.sh
+
+voc2012:
+  dataset: PASCAL_VOC2012
+  download_root: data
+  data_root: data
+  script: tools/dataset_converters/scripts/preprocess_voc2012.sh
+
+coco2017:
+  dataset: COCO_2017
+  download_root: data
+  data_root: data/coco
+  script: tools/dataset_converters/scripts/preprocess_coco2017.sh
