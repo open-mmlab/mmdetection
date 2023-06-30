@@ -20,8 +20,7 @@ from mmdet.models.data_preprocessors.data_preprocessor import \
 from mmdet.models.detectors.panoptic_fpn import PanopticFPN
 from mmdet.models.losses.cross_entropy_loss import CrossEntropyLoss
 from mmdet.models.seg_heads.panoptic_fpn_head import PanopticFPNHead
-from mmdet.models.seg_heads.panoptic_fusion_heads.heuristic_fusion_head import \
-    HeuristicFusionHead
+from mmdet.models.seg_heads.panoptic_fusion_heads import HeuristicFusionHead
 
 model.update(
     dict(
