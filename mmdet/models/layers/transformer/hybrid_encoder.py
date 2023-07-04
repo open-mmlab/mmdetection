@@ -180,7 +180,7 @@ class CSPRepLayer(BaseModule):
                 hidden_channels,
                 out_channels,
                 kernel_size=1,
-                normn_cfg=norm_cfg,
+                norm_cfg=norm_cfg,
                 act_cfg=act_cfg)
         else:
             self.conv3 = nn.Identity()
