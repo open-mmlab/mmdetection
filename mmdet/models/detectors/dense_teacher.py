@@ -2,14 +2,14 @@
 from typing import Optional, Tuple
 
 import torch
-import torch.nn.functional as F
+from einops import rearrange
 from torch import Tensor
 
 from mmdet.models.utils import rename_loss_dict, reweight_loss_dict
 from mmdet.registry import MODELS
 from mmdet.structures import SampleList
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
-from ..losses import GIoULoss, QualityFocalLoss
+from ..losses import CrossEntropyLoss, GIoULoss, QualityFocalLoss
 from .semi_base import SemiBaseDetector
 
 
@@ -44,8 +44,15 @@ class DenseTeacher(SemiBaseDetector):
             semi_test_cfg=semi_test_cfg,
             data_preprocessor=data_preprocessor,
             init_cfg=init_cfg)
-        self.quality_focal_loss = QualityFocalLoss(reduction='sum')
-        self.iou_loss = GIoULoss()
+        self.num_classes = self.student.bbox_head.cls_out_channels
+        self.quality_focal_loss = QualityFocalLoss(
+            reduction='sum',
+            loss_weight=self.semi_train_cfg.get('logits_weight', 1.))
+        self.iou_loss = GIoULoss(
+            loss_weight=self.semi_train_cfg.get('deltas_weight', 1.))
+        self.bce_loss = CrossEntropyLoss(
+            use_sigmoid=True,
+            loss_weight=self.semi_train_cfg.get('quality_weight', 1.))
 
     @torch.no_grad()
     def get_pseudo_instances(
@@ -64,10 +71,7 @@ class DenseTeacher(SemiBaseDetector):
         K)"""
 
         assert tensor.dim() == 4, tensor.shape
-        N, _, H, W = tensor.shape
-        tensor = tensor.view(N, -1, K, H, W)
-        tensor = tensor.permute(0, 3, 4, 1, 2)
-        tensor = tensor.reshape(N, -1, K)  # Size=(N,HWA,K)
+        tensor = rearrange(tensor, 'N (A K) H W -> N (H W A) K', K=K)
         return tensor
 
     def loss_by_pseudo_instances(self,
@@ -99,16 +103,16 @@ class DenseTeacher(SemiBaseDetector):
             student_logits, student_deltas, student_quality = self.student(
                 batch_inputs)
 
-            num_classes = self.student.bbox_head.cls_out_channels
-
             student_logits = torch.cat([
-                self.permute_to_N_HWA_K(x, num_classes) for x in student_logits
+                self.permute_to_N_HWA_K(x, self.num_classes)
+                for x in student_logits
             ],
-                                       dim=1).view(-1, num_classes)
+                                       dim=1).view(-1, self.num_classes)
             teacher_logits = torch.cat([
-                self.permute_to_N_HWA_K(x, num_classes) for x in teacher_logits
+                self.permute_to_N_HWA_K(x, self.num_classes)
+                for x in teacher_logits
             ],
-                                       dim=1).view(-1, num_classes)
+                                       dim=1).view(-1, self.num_classes)
 
             student_deltas = torch.cat(
                 [self.permute_to_N_HWA_K(x, 4) for x in student_deltas],
@@ -143,23 +147,18 @@ class DenseTeacher(SemiBaseDetector):
             loss_deltas = self.iou_loss(student_deltas[b_mask],
                                         teacher_deltas[b_mask])
 
-            loss_quality = F.binary_cross_entropy(
-                student_quality[b_mask].sigmoid(),
-                teacher_quality[b_mask].sigmoid(),
-                reduction='mean')
+            loss_quality = self.bce_loss(student_quality[b_mask],
+                                         teacher_quality[b_mask])
 
             losses = {
-                'distill_loss_logits':
-                self.semi_train_cfg.get('logits_weight', 1.) * loss_logits,
-                'distill_loss_quality':
-                self.semi_train_cfg.get('quality_weight', 1.) * loss_quality,
-                'distill_loss_deltas':
-                self.semi_train_cfg.get('deltas_weight', 1.) * loss_deltas,
-                'fore_ground_sum':
-                fg_num,
+                'distill_loss_logits': loss_logits,
+                'distill_loss_quality': loss_quality,
+                'distill_loss_deltas': loss_deltas,
             }
 
             unsup_weight = self.semi_train_cfg.get('unsup_weight', 1.)
+
+            # apply burnin strategy to reweight the unsupervised weights
             target = burn_in_steps * 2
             if self.iter <= target:
                 unsup_weight *= (self.iter -

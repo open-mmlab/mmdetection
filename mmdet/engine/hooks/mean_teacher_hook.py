@@ -54,9 +54,6 @@ class MeanTeacherHook(Hook):
             model = model.module
         assert hasattr(model, 'teacher')
         assert hasattr(model, 'student')
-        # only do it at initial stage
-        if runner.iter == self.start_steps:
-            self.momentum_update(model, 1)
 
     def after_train_iter(self,
                          runner: Runner,
@@ -64,13 +61,13 @@ class MeanTeacherHook(Hook):
                          data_batch: Optional[dict] = None,
                          outputs: Optional[dict] = None) -> None:
         """Update teacher's parameter every self.interval iterations."""
-        if runner.iter < self.start_steps or (runner.iter +
-                                              1) % self.interval != 0:
-            return
         model = runner.model
         if is_model_wrapper(model):
             model = model.module
-        self.momentum_update(model, self.momentum)
+        if runner.iter <= self.start_steps:
+            self.momentum_update(model, 1)
+        elif (runner.iter + 1) % self.interval != 0:
+            self.momentum_update(model, self.momentum)
 
     def momentum_update(self, model: nn.Module, momentum: float) -> None:
         """Compute the moving average of the parameters using exponential

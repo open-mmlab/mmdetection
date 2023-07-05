@@ -59,7 +59,7 @@ param_scheduler = [
         end=1000),
     dict(
         type='MultiStepLR',
-        begin=0,
+        begin=1000,
         end=180000,
         by_epoch=False,
         milestones=[179995],
