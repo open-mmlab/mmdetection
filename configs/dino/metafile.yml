@@ -40,7 +40,7 @@ Models:
       - Task: Object Detection
         Dataset: COCO
 
-  - Name:  dino-4scale_r50_8xb2-24e_coco
+  - Name:  dino-4scale_r50_8xb2-36e_coco
     In Collection: DINO
     Config: configs/dino/dino-4scale_r50_8xb2-36e_coco.py
     Metadata:
