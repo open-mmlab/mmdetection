@@ -182,6 +182,10 @@ class Resize(MMCV_Resize):
             to 'bilinear'.
     """
 
+    def __init__(self, *args, random_interpolation=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.random_interpolation = random_interpolation
+
     def _resize_masks(self, results: dict) -> None:
         """Resize masks with ``results['scale']``"""
         if results.get('gt_masks', None) is not None:
@@ -222,6 +226,13 @@ class Resize(MMCV_Resize):
             'scale', 'scale_factor', 'height', 'width', and 'keep_ratio' keys
             are updated in result dict.
         """
+        if self.random_interpolation:
+            interpolations = [
+                'nearest', 'bilinear', 'bicubic', 'area', 'lanczos'
+            ]
+            self.interpolation = interpolations[random.randint(
+                len(interpolations))]
+
         if self.scale:
             results['scale'] = self.scale
         else:
@@ -773,7 +784,8 @@ class RandomCrop(BaseTransform):
                  crop_type: str = 'absolute',
                  allow_negative_crop: bool = False,
                  recompute_bbox: bool = False,
-                 bbox_clip_border: bool = True) -> None:
+                 bbox_clip_border: bool = True,
+                 prob: float = 1.0) -> None:
         if crop_type not in [
                 'relative_range', 'relative', 'absolute', 'absolute_range'
         ]:
@@ -791,6 +803,7 @@ class RandomCrop(BaseTransform):
         self.allow_negative_crop = allow_negative_crop
         self.bbox_clip_border = bbox_clip_border
         self.recompute_bbox = recompute_bbox
+        self.prob = prob
 
     def _crop_data(self, results: dict, crop_size: Tuple[int, int],
                    allow_negative_crop: bool) -> Union[dict, None]:
@@ -936,6 +949,8 @@ class RandomCrop(BaseTransform):
                 key in result dict is updated according to crop size. None will
                 be returned when there is no valid bbox after cropping.
         """
+        if random.uniform(0, 1) > self.prob:
+            return results
         image_size = results['img'].shape[:2]
         crop_size = self._get_crop_size(image_size)
         results = self._crop_data(results, crop_size, self.allow_negative_crop)
@@ -1030,17 +1045,20 @@ class PhotoMetricDistortion(BaseTransform):
         contrast_range (sequence): range of contrast.
         saturation_range (sequence): range of saturation.
         hue_delta (int): delta of hue.
+        prob (float): probability of applying this transformation
     """
 
     def __init__(self,
                  brightness_delta: int = 32,
                  contrast_range: Sequence[Number] = (0.5, 1.5),
                  saturation_range: Sequence[Number] = (0.5, 1.5),
-                 hue_delta: int = 18) -> None:
+                 hue_delta: int = 18,
+                 prob: float = 1.0) -> None:
         self.brightness_delta = brightness_delta
         self.contrast_lower, self.contrast_upper = contrast_range
         self.saturation_lower, self.saturation_upper = saturation_range
         self.hue_delta = hue_delta
+        self.prob = prob
 
     @cache_randomness
     def _random_flags(self) -> Sequence[Number]:
@@ -1071,6 +1089,9 @@ class PhotoMetricDistortion(BaseTransform):
         Returns:
             dict: Result dict with images distorted.
         """
+        if random.uniform(0, 1) > self.prob:
+            return results
+
         assert 'img' in results, '`img` is not found in results'
         img = results['img']
         img = img.astype(np.float32)

@@ -21,7 +21,7 @@ model = dict(
         depth=50,
         num_stages=4,
         out_indices=(1, 2, 3),
-        frozen_stages=0,
+        frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
         style='pytorch',
@@ -29,7 +29,6 @@ model = dict(
     neck=dict(
         type='HybridEncoder',
         num_encoder_layers=1,
-        use_encoder_idx=[2],
         layer_cfg=dict(
             self_attn_cfg=dict(embed_dims=256, num_heads=8,
                                dropout=0.0),  # 0.1 for DeformDETR
@@ -70,20 +69,20 @@ model = dict(
     bbox_head=dict(
         type='RTDETRHead',
         num_classes=80,
-        sync_cls_avg_factor=True,
         loss_cls=dict(
             type='VarifocalLoss',
             use_sigmoid=True,
             use_rtdetr=True,
             gamma=2.0,
-            alpha=0.75,  # 0.25 in DINO
+            alpha=0.75, # 0.25 in DINO
             loss_weight=1.0),  # 2.0 in DeformDETR
         loss_bbox=dict(type='L1Loss', loss_weight=5.0),
         loss_iou=dict(type='GIoULoss', loss_weight=2.0)),
-    dn_cfg=dict(
+    dn_cfg=dict(  # TODO: Move to model.train_cfg ?
         label_noise_scale=0.5,
         box_noise_scale=1.0,  # 0.4 for DN-DETR
-        group_cfg=dict(dynamic=True, num_groups=None, num_dn_queries=100)),
+        group_cfg=dict(dynamic=True, num_groups=None,
+                       num_dn_queries=100)),  # TODO: half num_dn_queries
     # training and testing settings
     train_cfg=dict(
         assigner=dict(
@@ -100,26 +99,21 @@ model = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='PhotoMetricDistortion', prob=0.8),
-    dict(
-        type='Expand',
-        mean=[103.53, 116.28, 123.675],
-        to_rgb=True,
-        ratio_range=(1, 4),
-        prob=0.5),
-    dict(
-        type='RandomCrop',
-        crop_size=(0.3, 1.0),
-        crop_type='relative_range',
-        prob=0.8),
-    dict(type='RandomFlip', prob=0.5),
     dict(
         type='RandomChoiceResize',
         scales=[(480, 480), (512, 512), (544, 544), (576, 576), (608, 608),
                 (640, 640), (640, 640), (640, 640), (672, 672), (704, 704),
                 (736, 736), (768, 768), (800, 800)],
-        keep_ratio=False,
-        random_interpolation=True),
+        keep_ratio=False),
+    dict(type='PhotoMetricDistortion'),
+    dict(
+        type='Expand',
+        mean=[123.675, 116.28, 103.53],
+        to_rgb=True,
+        ratio_range=(1, 2)),
+    dict(type='RandomCrop', crop_size=(640, 640)),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='Pad', size=(640, 640), pad_val=dict(img=(114, 114, 114))),
     dict(type='PackDetInputs')
 ]
 
@@ -189,3 +183,4 @@ custom_hooks = [
         update_buffers=True,
         priority=49),
 ]
+find_unused_parameters = True

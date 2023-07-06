@@ -1,7 +1,8 @@
 _base_ = [
     '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
 ]
-pretrained = 'https://github.com/nijkah/storage/releases/download/v0.0.1/resnet50vd_ssld_v2_pretrained.pth'  # noqa
+# pretrained = 'https://github.com/nijkah/storage/releases/download/v0.0.1/resnet50vd_ssld_v2_pretrained.pth'  # noqa
+pretrained = './resnet18vd_pretrained.pth'  # noqa
 
 eval_size = (640, 640)
 model = dict(
@@ -18,20 +19,23 @@ model = dict(
         pad_size_divisor=32),
     backbone=dict(
         type='ResNetV1d',
-        depth=50,
+        depth=18,
         num_stages=4,
         out_indices=(1, 2, 3),
-        frozen_stages=0,
-        norm_cfg=dict(type='BN', requires_grad=False),
-        norm_eval=True,
+        frozen_stages=-1,
+        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_eval=False,
         style='pytorch',
         init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     neck=dict(
         type='HybridEncoder',
-        num_encoder_layers=1,
-        use_encoder_idx=[2],
+        num_encoder_layers = 1,
+        in_channels=[128, 256, 512],
+        use_encoder_idx = [2],
+        expansion=0.5,
         layer_cfg=dict(
-            self_attn_cfg=dict(embed_dims=256, num_heads=8,
+            self_attn_cfg=dict(embed_dims=256,
+                               num_heads=8,
                                dropout=0.0),  # 0.1 for DeformDETR
             ffn_cfg=dict(
                 embed_dims=256,
@@ -48,15 +52,14 @@ model = dict(
             num_outs=3)),  # 0.1 for DeformDETR
     encoder=None,
     decoder=dict(
-        num_layers=6,
+        num_layers=3,
         eval_idx=-1,
         layer_cfg=dict(
             self_attn_cfg=dict(embed_dims=256, num_heads=8,
                                dropout=0.0),  # 0.1 for DeformDETR
-            cross_attn_cfg=dict(
-                embed_dims=256,
-                num_levels=3,  # 4 for DeformDETR
-                dropout=0.0),  # 0.1 for DeformDETR
+            cross_attn_cfg=dict(embed_dims=256,
+                                num_levels=3,  #  4 for DeformDETR
+                                dropout=0.0),  # 0.1 for DeformDETR
             ffn_cfg=dict(
                 embed_dims=256,
                 feedforward_channels=1024,  # 2048 for DINO
@@ -76,14 +79,15 @@ model = dict(
             use_sigmoid=True,
             use_rtdetr=True,
             gamma=2.0,
-            alpha=0.75,  # 0.25 in DINO
+            alpha=0.75, # 0.25 in DINO
             loss_weight=1.0),  # 2.0 in DeformDETR
         loss_bbox=dict(type='L1Loss', loss_weight=5.0),
         loss_iou=dict(type='GIoULoss', loss_weight=2.0)),
-    dn_cfg=dict(
+    dn_cfg=dict( 
         label_noise_scale=0.5,
         box_noise_scale=1.0,  # 0.4 for DN-DETR
-        group_cfg=dict(dynamic=True, num_groups=None, num_dn_queries=100)),
+        group_cfg=dict(dynamic=True, num_groups=None,
+                       num_dn_queries=100)), 
     # training and testing settings
     train_cfg=dict(
         assigner=dict(
@@ -100,36 +104,29 @@ model = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='PhotoMetricDistortion', prob=0.8),
+        dict(type='PhotoMetricDistortion', prob=0.8),
     dict(
         type='Expand',
         mean=[103.53, 116.28, 123.675],
         to_rgb=True,
         ratio_range=(1, 4),
         prob=0.5),
-    dict(
-        type='RandomCrop',
-        crop_size=(0.3, 1.0),
-        crop_type='relative_range',
+    dict(type='RandomCrop', crop_size=(0.3, 1.0), crop_type='relative_range',
         prob=0.8),
     dict(type='RandomFlip', prob=0.5),
-    dict(
-        type='RandomChoiceResize',
-        scales=[(480, 480), (512, 512), (544, 544), (576, 576), (608, 608),
-                (640, 640), (640, 640), (640, 640), (672, 672), (704, 704),
-                (736, 736), (768, 768), (800, 800)],
-        keep_ratio=False,
-        random_interpolation=True),
+    dict(type='RandomChoiceResize',
+         scales=[(480, 480),  (512, 512), (544, 544), (576, 576),
+                 (608, 608), (640, 640), (640, 640), (640, 640), 
+                 (672, 672), (704, 704), (736, 736), (768, 768),
+                 (800, 800)],
+                 keep_ratio=False,
+                 random_interpolation=True),
     dict(type='PackDetInputs')
 ]
 
 test_pipeline = [
     dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
-    dict(
-        type='Resize',
-        scale=eval_size,
-        keep_ratio=False,
-        interpolation='bicubic'),
+    dict(type='Resize', scale=eval_size, keep_ratio=False, interpolation='bicubic'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PackDetInputs',
@@ -141,8 +138,11 @@ train_dataloader = dict(
     batch_size=4,
     dataset=dict(
         filter_cfg=dict(filter_empty_gt=False), pipeline=train_pipeline))
-val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
-test_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+val_dataloader = dict(
+    dataset=dict(
+        pipeline=test_pipeline))
+test_dataloader = dict(
+    dataset=dict(pipeline=test_pipeline))
 
 # optimizer
 optim_wrapper = dict(
@@ -158,7 +158,7 @@ optim_wrapper = dict(
 # learning policy
 max_epochs = 72
 train_cfg = dict(
-    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=6)
+    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
 
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
