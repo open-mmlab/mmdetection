@@ -74,7 +74,7 @@ model = dict(
             use_sigmoid=True,
             use_rtdetr=True,
             gamma=2.0,
-            alpha=0.75, # 0.25 in DINO
+            alpha=0.75,  # 0.25 in DINO
             loss_weight=1.0),  # 2.0 in DeformDETR
         loss_bbox=dict(type='L1Loss', loss_weight=5.0),
         loss_iou=dict(type='GIoULoss', loss_weight=2.0)),
