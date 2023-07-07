@@ -30,7 +30,7 @@ train_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='annotations/v3det_2023_v1_val.json',
+        ann_file='annotations/v3det_2023_v1_train.json',
         data_prefix=dict(img=''),
         filter_cfg=dict(filter_empty_gt=True, min_size=32),
         pipeline=train_pipeline,
@@ -58,5 +58,5 @@ val_evaluator = dict(
     format_only=False,
     backend_args=backend_args,
     use_mp_eval=True,
-    proposal_nums=[300], )
+    proposal_nums=[300])
 test_evaluator = val_evaluator
