@@ -19,7 +19,7 @@ V3DET_CLASSES = tuple(
 
 @DATASETS.register_module()
 class V3DetDataset(CocoDataset):
-    """Dataset for COCO."""
+    """Dataset for V3Det."""
 
     METAINFO = {
         'classes': V3DET_CLASSES,

@@ -1,4 +1,3 @@
-__author__ = 'tsungyi'
 import copy
 import itertools
 import time
