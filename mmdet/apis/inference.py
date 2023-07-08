@@ -58,7 +58,10 @@ def init_detector(
         config.merge_from_dict(cfg_options)
     elif 'init_cfg' in config.model.backbone:
         config.model.backbone.init_cfg = None
-    init_default_scope(config.get('default_scope', 'mmdet'))
+
+    scope = config.get('default_scope', 'mmdet')
+    if scope is not None:
+        init_default_scope(config.get('default_scope', 'mmdet'))
 
     model = MODELS.build(config.model)
     model = revert_sync_batchnorm(model)

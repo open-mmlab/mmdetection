@@ -280,3 +280,31 @@ data
 ```
 
 The above folders include all data of ADE20K's semantic segmentation, instance segmentation, and panoptic segmentation.
+
+### Download from OpenDataLab
+
+By using [OpenDataLab](https://opendatalab.com/), researchers can obtain free formatted datasets in various fields. Through the search function of the platform, researchers may address the dataset they look for quickly and easily. Using the formatted datasets from the platform, researchers can efficiently conduct tasks across datasets.
+
+Currently, MIM supports downloading VOC and COCO datasets from OpenDataLab with one command line. More datasets will be supported in the future. You can also directly download the datasets you need from the OpenDataLab platform and then convert them to the format required by MMDetection.
+
+If you use MIM to download, make sure that the version is greater than v0.3.8. You can use the following command to update:
+
+```Bash
+pip install -U openmim
+```
+
+```Bash
+# install OpenDataLab CLI tools
+pip install -U opendatalab
+# log in OpenDataLab, registry
+odl login
+
+# download voc2007 and preprocess by MIM
+mim download mmdet --dataset voc2007
+
+# download voc2012 and preprocess by MIM
+mim download mmdet --dataset voc2012
+
+# download coco2017 and preprocess by MIM
+mim download mmdet --dataset coco2017
+```

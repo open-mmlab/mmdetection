@@ -1,5 +1,45 @@
 # Changelog of v3.x
 
+## v3.1.0 (30/6/2023)
+
+### Highlights
+
+- Supports tracking algorithms including multi-object tracking (MOT) algorithms SORT, DeepSORT, StrongSORT, OCSORT, ByteTrack, QDTrack, and video instance segmentation (VIS) algorithm MaskTrackRCNN, Mask2Former-VIS.
+- Support [ViTDet](../../../projects/ViTDet)
+- Supports inference and evaluation of multimodal algorithms [GLIP](../../../configs/glip) and [XDecoder](../../../projects/XDecoder), and also supports datasets such as COCO semantic segmentation, COCO Caption, ADE20k general segmentation, and RefCOCO. GLIP fine-tuning will be supported in the future.
+- Provides a [gradio demo](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/projects/gradio_demo/README.md) for image type tasks of MMDetection, making it easy for users to experience.
+
+### New Features
+
+- Support DSDL Dataset (#9801)
+- Support iSAID dataset (#10028)
+- Support VISION dataset (#10530)
+- Release SoftTeacher checkpoints (#10119)
+- Release `centernet-update_r50-caffe_fpn_ms-1x_coco` checkpoints  (#10327)
+- Support SIoULoss (#10290)
+- Support Eqlv2 loss (#10120)
+- Support CopyPaste when mask is not available (#10509)
+- Support MIM to download ODL dataset (#10460)
+- Support new config (#10566)
+
+### Bug Fixes
+
+- Fix benchmark scripts error in windows (#10128)
+- Fix error of `YOLOXModeSwitchHook` does not switch the mode when resumed from the checkpoint after switched (#10116)
+- Fix pred and weight dims unmatch in SmoothL1Loss (#10423)
+
+### Improvements
+
+- Update MMDet_Tutorial.ipynb (#10081)
+- Support to hide inference progress (#10519)
+- Replace mmcls with mmpretrain  (#10545)
+
+### Contributors
+
+A total of 29 developers contributed to this release.
+
+Thanks @lovelykite, @minato-ellie, @freepoet, @wufan-tb, @yalibian, @keyakiluo, @gihanjayatilaka, @i-aki-y, @xin-li-67, @RangeKing, @JingweiZhang12, @MambaWong, @lucianovk, @tall-josh, @xiuqhou, @jamiechoi1995, @YQisme, @yechenzhi, @bjzhb666, @xiexinch, @jamiechoi1995, @yarkable, @Renzhihan, @nijkah, @amaizr, @Lum1104, @zwhus, @Czm369, @hhaAndroid
+
 ## v3.0.0 (6/4/2023)
 
 ### Highlights
