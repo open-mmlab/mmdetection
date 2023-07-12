@@ -604,7 +604,7 @@ class MultiInstanceBBoxHead(BBoxHead):
 
         keep = keep.to(bboxes.device)
         ruler = ruler.to(bboxes.device)
-        
+
         while ruler.shape[0] > 0:
             basement = ruler[0]
             ruler = ruler[1:]
