@@ -84,7 +84,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
    ```
 
 4. Test Mask R-CNN with 8 GPUs, and evaluate.
-   Config and checkpoint files are available arguments: [here](../../../configs/mask_rcnn).
+   Config and checkpoint files are available [here](../../../configs/mask_rcnn).
 
    ```shell
    ./tools/dist_test.sh \
