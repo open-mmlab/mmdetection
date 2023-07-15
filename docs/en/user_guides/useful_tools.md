@@ -71,7 +71,7 @@ Description of all arguments:
 - `config` : The path of a model config file.
 - `prediction_path`:  Output result file in pickle format from `tools/test.py`
 - `show_dir`: Directory where painted GT and detection images will be saved
-- `--show`：Determines whether to show painted images, If not specified, it will be set to `False`
+- `--show`: Determines whether to show painted images, If not specified, it will be set to `False`
 - `--wait-time`: The interval of show (s), 0 is block
 - `--topk`: The number of saved images that have the highest and lowest `topk` scores after sorting. If not specified, it will be set to `20`.
 - `--show-score-thr`:  Show score threshold. If not specified, it will be set to `0`.
