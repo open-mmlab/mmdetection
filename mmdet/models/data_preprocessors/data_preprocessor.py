@@ -179,7 +179,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         else:
             raise TypeError('Output of `cast_data` should be a dict '
                             'or a tuple with inputs and data_samples, but got'
-                            f'{type(data)}： {data}')
+                            f'{type(data)}: {data}')
         return batch_pad_shape
 
     def pad_gt_masks(self,
