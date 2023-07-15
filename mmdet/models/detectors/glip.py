@@ -58,7 +58,7 @@ def remove_punctuation(text: str) -> str:
         str: The text with punctuation removed.
     """
     punctuation = [
-        '|', ':', ';', '@', '(', ')', '[', ']', '{', '}', '^', '\'', '\"', '’',
+        '|', ':', ';', '@', '(', ')', '[', ']', '{', '}', '^', '\'', '\"', ''',
         '`', '?', '$', '%', '#', '!', '&', '*', '+', ',', '.'
     ]
     for p in punctuation:

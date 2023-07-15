@@ -179,7 +179,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
                 # [x1, y1, ..., xn, yn] (n≥3). The Xs and Ys are absolute
                 # coordinates in unit of pixels.
                 # 2. If dict, it represents the per-pixel segmentation mask in
-                # COCO’s compressed RLE format. The dict should have keys
+                # COCO's compressed RLE format. The dict should have keys
                 # “size” and “counts”.  Can be loaded by pycocotools
                 'mask': list[list[float]] or dict,
 
