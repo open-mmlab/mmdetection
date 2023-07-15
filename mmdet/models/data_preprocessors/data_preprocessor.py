@@ -108,7 +108,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         self.boxtype2tensor = boxtype2tensor
 
     def forward(self, data: dict, training: bool = False) -> dict:
-        """Perform normalization、padding and bgr2rgb conversion based on
+        """Perform normalization,padding and bgr2rgb conversion based on
         ``BaseDataPreprocessor``.
 
         Args:
@@ -474,7 +474,7 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
         self.data_preprocessor = MODELS.build(data_preprocessor)
 
     def forward(self, data: dict, training: bool = False) -> dict:
-        """Perform normalization、padding and bgr2rgb conversion based on
+        """Perform normalization,padding and bgr2rgb conversion based on
         ``BaseDataPreprocessor`` for multi-branch data.
 
         Args:
