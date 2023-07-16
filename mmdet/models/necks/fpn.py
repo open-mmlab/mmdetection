@@ -218,4 +218,9 @@ class FPN(BaseModule):
                         outs.append(self.fpn_convs[i](F.relu(outs[-1])))
                     else:
                         outs.append(self.fpn_convs[i](outs[-1]))
+
+        if self.start_level != 0:
+            # for grad safe
+            grad_safe = sum([input_data.sum() * 0 for input_data in inputs]) * 0
+            outs = [out + grad_safe for out in outs]
         return tuple(outs)

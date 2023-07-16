@@ -1,5 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
 from typing import Optional, Union
+
 
 import torch
 from mmengine.structures import InstanceData
@@ -8,6 +10,44 @@ from torch import Tensor
 from mmdet.registry import TASK_UTILS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
+
+def _perm_box(boxes, iou_calculator, iou_thr=0.97, perm_range=0.01, counter=0, max_iter=5):
+    ori_boxes = copy.deepcopy(boxes)
+    is_valid = True
+    N = boxes.size(0)
+    perm_factor = boxes.new_empty(N, 4).uniform_(1 - perm_range,
+                                                 1 + perm_range)
+    boxes *= perm_factor
+    new_wh = boxes[:, 2:] - boxes[:, :2]
+    if (new_wh <= 0).any():
+        is_valid = False
+    iou = iou_calculator(ori_boxes.unique(dim=0), boxes)
+    if (iou < iou_thr).any():
+        is_valid = False
+    if not is_valid and counter < max_iter:
+        return _perm_box(
+            ori_boxes,
+            iou_calculator,
+            perm_range=max(perm_range - counter * 0.001, 1e-3),
+            counter=counter + 1)
+    return boxes
+
+
+def perm_boxes(boxes, iou_calculator=None):
+    # boxes (tensor): [n, 4]
+    assert isinstance(boxes, torch.Tensor)
+    if iou_calculator is None:
+        import torchvision
+        iou_calculator = torchvision.ops.box_iou
+    boxes = copy.deepcopy(boxes)
+    unique_boxes = boxes.unique(dim=0)
+    for box in unique_boxes:
+        inds = (boxes == box).sum(-1).float() == 4
+        if inds.float().sum().item() == 1:
+            continue
+        boxes[inds] = _perm_box(boxes[inds], iou_calculator, counter=0)
+
+    return boxes
 
 
 @TASK_UTILS.register_module()
@@ -137,6 +177,10 @@ class MaxIoUAssigner(BaseAssigner):
             if gt_bboxes_ignore is not None:
                 gt_bboxes_ignore = gt_bboxes_ignore.cpu()
 
+        if priors.numel() > 0:
+            gt_bboxes_unique = perm_boxes(gt_bboxes, self.iou_calculator)
+        else:
+            gt_bboxes_unique = gt_bboxes
         overlaps = self.iou_calculator(gt_bboxes, priors)
 
         if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None

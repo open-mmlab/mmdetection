@@ -7,6 +7,7 @@ import torch.nn.functional as F
 
 from mmdet.registry import MODELS
 from .utils import weight_reduce_loss
+from .accuracy import accuracy
 
 
 def cross_entropy(pred,
@@ -288,6 +289,158 @@ class CrossEntropyLoss(nn.Module):
                 self.class_weight, device=cls_score.device)
         else:
             class_weight = None
+        loss_cls = self.loss_weight * self.cls_criterion(
+            cls_score,
+            label,
+            weight,
+            class_weight=class_weight,
+            reduction=reduction,
+            avg_factor=avg_factor,
+            ignore_index=ignore_index,
+            avg_non_ignore=self.avg_non_ignore,
+            **kwargs)
+        return loss_cls
+
+
+@MODELS.register_module()
+class CrossEntropyV3DetLoss(nn.Module):
+
+    def __init__(self,
+                 use_sigmoid=False,
+                 use_mask=False,
+                 reduction='mean',
+                 num_classes=-1,
+                 class_weight=None,
+                 ignore_index=None,
+                 loss_weight=1.0,
+                 avg_non_ignore=False):
+        """CrossEntropyV3DetLoss.
+
+        Args:
+            use_sigmoid (bool, optional): Whether the prediction uses sigmoid
+                of softmax. Defaults to False.
+            use_mask (bool, optional): Whether to use mask cross entropy loss.
+                Defaults to False.
+            reduction (str, optional): . Defaults to 'mean'.
+                Options are "none", "mean" and "sum".
+            num_classes (int): Number of classes to classify. 
+            class_weight (list[float], optional): Weight of each class.
+                Defaults to None.
+            ignore_index (int | None): The label index to be ignored.
+                Defaults to None.
+            loss_weight (float, optional): Weight of the loss. Defaults to 1.0.
+            avg_non_ignore (bool): The flag decides to whether the loss is
+                only averaged over non-ignored targets. Default: False.
+        """
+        super(CrossEntropyV3DetLoss, self).__init__()
+        assert (use_sigmoid is False) or (use_mask is False)
+        self.use_sigmoid = use_sigmoid
+        self.use_mask = use_mask
+        self.reduction = reduction
+        self.loss_weight = loss_weight
+        self.class_weight = class_weight
+        self.ignore_index = ignore_index
+        self.avg_non_ignore = avg_non_ignore
+        if ((ignore_index is not None) and not self.avg_non_ignore
+                and self.reduction == 'mean'):
+            warnings.warn(
+                'Default ``avg_non_ignore`` is False, if you would like to '
+                'ignore the certain label and average loss over non-ignore '
+                'labels, which is the same with PyTorch official '
+                'cross_entropy, set ``avg_non_ignore=True``.')
+
+        if self.use_sigmoid:
+            self.cls_criterion = binary_cross_entropy
+        elif self.use_mask:
+            self.cls_criterion = mask_cross_entropy
+        else:
+            self.cls_criterion = cross_entropy
+
+        self.num_classes = num_classes
+
+        assert self.num_classes != -1
+
+        # custom output channels of the classifier
+        self.custom_cls_channels = True
+        # custom activation of cls_score
+        self.custom_activation = True
+        # custom accuracy of the classsifier
+        self.custom_accuracy = True
+
+    def extra_repr(self):
+        """Extra repr."""
+        s = f'avg_non_ignore={self.avg_non_ignore}'
+        return s
+
+    def get_cls_channels(self, num_classes):
+        assert num_classes == self.num_classes
+        if not self.use_sigmoid:
+            return num_classes + 1
+        else:
+            return num_classes
+
+    def get_activation(self, cls_score):
+
+        fine_cls_score = cls_score[:, :self.num_classes]
+        
+        if not self.use_sigmoid:
+            bg_score = cls_score[:, [-1]]
+            new_score = torch.cat([fine_cls_score, bg_score], dim=-1)
+            scores = F.softmax(new_score, dim=-1)
+        else:
+            score_classes = fine_cls_score.sigmoid()
+            score_neg = 1 - score_classes.sum(dim=1, keepdim=True)
+            score_neg = score_neg.clamp(min=0, max=1)
+            scores = torch.cat([score_classes, score_neg], dim=1)
+
+        return scores
+
+    def get_accuracy(self, cls_score, labels):
+
+        fine_cls_score = cls_score[:, :self.num_classes]
+
+        pos_inds = labels < self.num_classes
+        acc_classes = accuracy(fine_cls_score[pos_inds], labels[pos_inds])
+        acc = dict()
+        acc['acc_classes'] = acc_classes
+        return acc
+
+    def forward(self,
+                cls_score,
+                label,
+                weight=None,
+                avg_factor=None,
+                reduction_override=None,
+                ignore_index=None,
+                **kwargs):
+        """Forward function.
+
+        Args:
+            cls_score (torch.Tensor): The prediction.
+            label (torch.Tensor): The learning label of the prediction.
+            weight (torch.Tensor, optional): Sample-wise loss weight.
+            avg_factor (int, optional): Average factor that is used to average
+                the loss. Defaults to None.
+            reduction_override (str, optional): The method used to reduce the
+                loss. Options are "none", "mean" and "sum".
+            ignore_index (int | None): The label index to be ignored.
+                If not None, it will override the default value. Default: None.
+        Returns:
+            torch.Tensor: The calculated loss.
+        """
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
+        if ignore_index is None:
+            ignore_index = self.ignore_index
+
+        if self.class_weight is not None:
+            class_weight = cls_score.new_tensor(
+                self.class_weight, device=cls_score.device)
+        else:
+            class_weight = cls_score.new_ones(
+                (cls_score.size(1), ), device=cls_score.device)
+
         loss_cls = self.loss_weight * self.cls_criterion(
             cls_score,
             label,
