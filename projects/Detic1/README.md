@@ -82,17 +82,17 @@ python tools/test.py path/to/config.py /path/to/weight.pth
 
 ### Open-vocabulary LVIS
 
-| Backbone |          Training data          | mask mAP | mask mAP_novel |                                  Config                                   | Download |
-| :------: | :-----------------------------: | :------: | :------------: | :-----------------------------------------------------------------------: | :------: |
-| ResNet50 | LVIS-Base  &  ImageNet-21K-LVIS |   32.4   |      25.2      |  [config](./configs/detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis.py)   |          |
-|  Swin-B  | LVIS-Base  &  ImageNet-21K-LVIS |   40.7   |      34.0      | [config](./configs/detic_centernet2_swin-b_fpn_4x_lvisbase_in21k-lvis.py) |          |
+| Backbone |          Training data          | mask mAP | mask mAP_novel |                                   Config                                   | Download |
+| :------: | :-----------------------------: | :------: | :------------: | :------------------------------------------------------------------------: | :------: |
+| ResNet50 | LVIS-Base  &  ImageNet-21K-LVIS |   32.4   |      25.2      |  [config](./configs/detic_centernet2_r50_fpn_4x_lvis-base_in21k-lvis.py)   |          |
+|  Swin-B  | LVIS-Base  &  ImageNet-21K-LVIS |   40.7   |      34.0      | [config](./configs/detic_centernet2_swin-b_fpn_4x_lvis-base_in21k-lvis.py) |          |
 
 ### Standard LVIS
 
-| Backbone |      Training data       | mask mAP | mask mAP_novel |                                 Config                                 | Download |
-| :------: | :----------------------: | :------: | :------------: | :--------------------------------------------------------------------: | :------: |
-| ResNet50 | LVIS & ImageNet-21K-LVIS |   33.2   |      29.7      | [config](./configs/detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis.py) |          |
-|  Swin-B  | LVIS & ImageNet-21K-LVIS |   41.7   |      41.7      | [config](./configs/detic_centernet2_swin-b_fpn_4x_lvis_in21k-lvis.py)  |          |
+| Backbone |      Training data       | mask mAP | mask mAP_novel |                                Config                                 | Download |
+| :------: | :----------------------: | :------: | :------------: | :-------------------------------------------------------------------: | :------: |
+| ResNet50 | LVIS & ImageNet-21K-LVIS |   33.2   |      29.7      |  [config](./configs/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis.py)   |          |
+|  Swin-B  | LVIS & ImageNet-21K-LVIS |   41.7   |      41.7      | [config](./configs/detic_centernet2_swin-b_fpn_4x_lvis_in21k-lvis.py) |          |
 
 #### Note:
 
