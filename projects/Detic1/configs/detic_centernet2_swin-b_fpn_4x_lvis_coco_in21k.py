@@ -1,6 +1,6 @@
 _base_ = 'mmdet::common/lsj-200e_coco-detection.py'
 dataset_type = 'LVISV1Dataset'
-data_root = 'datasets/coco/'
+data_root = 'data/coco/'
 custom_imports = dict(
     imports=['projects.Detic1.detic'], allow_failed_imports=False)
 
@@ -20,7 +20,7 @@ reg_layer = [
     dict(type='Linear', in_features=1024, out_features=4)
 ]
 
-num_classes = 1203
+num_classes = 22047
 
 model = dict(
     type='Detic',
@@ -97,7 +97,7 @@ model = dict(
                 cls_predictor_cfg=cls_layer,
                 reg_predictor_cfg=reg_layer,
                 use_fed_loss=True,
-                cat_freq_path='datasets/metadata/lvis_v1_train_cat_info.json',
+                cat_freq_path='data/metadata/lvis_v1_train_cat_info.json',
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -117,7 +117,7 @@ model = dict(
                 cls_predictor_cfg=cls_layer,
                 reg_predictor_cfg=reg_layer,
                 use_fed_loss=True,
-                cat_freq_path='datasets/metadata/lvis_v1_train_cat_info.json',
+                cat_freq_path='data/metadata/lvis_v1_train_cat_info.json',
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -137,7 +137,7 @@ model = dict(
                 cls_predictor_cfg=cls_layer,
                 reg_predictor_cfg=reg_layer,
                 use_fed_loss=True,
-                cat_freq_path='datasets/metadata/lvis_v1_train_cat_info.json',
+                cat_freq_path='data/metadata/lvis_v1_train_cat_info.json',
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],

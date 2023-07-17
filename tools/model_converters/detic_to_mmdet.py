@@ -165,7 +165,7 @@ def main():
     # The dst path must be a full path of the new checkpoint.
     parser.add_argument(
         '--dst',
-        default='detic_centernet2_swin-b_fpn_4x_lvisbase-in21klvis.pth',
+        default='detic_centernet2_swin-b_fpn_4x_lvis-base_in21k-lvis.pth',
         help='save path')
     args = parser.parse_args()
 

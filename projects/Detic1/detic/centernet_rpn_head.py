@@ -3,14 +3,12 @@ import copy
 from typing import List, Sequence, Tuple
 
 import torch
-import torch.nn as nn
 from mmcv.cnn import Scale
 from mmengine import ConfigDict
 from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.models.dense_heads import CenterNetUpdateHead
-from mmdet.models.utils import multi_apply
 from mmdet.registry import MODELS
 
 INF = 1000000000
@@ -28,30 +26,6 @@ class CenterNetRPNHead(CenterNetUpdateHead):
         """Initialize layers of the head."""
         self._init_reg_convs()
         self._init_predictor()
-
-    def _init_predictor(self) -> None:
-        """Initialize predictor layers of the head."""
-        self.conv_cls = nn.Conv2d(
-            self.feat_channels, self.num_classes, 3, padding=1)
-        self.conv_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
-
-    def forward(self, x: Tuple[Tensor]) -> Tuple[List[Tensor], List[Tensor]]:
-        """Forward features from the upstream network.
-
-        Args:
-            x (tuple[Tensor]): Features from the upstream network, each is
-                a 4D-tensor.
-
-        Returns:
-            tuple: A tuple of each level outputs.
-
-            - cls_scores (list[Tensor]): Box scores for each scale level, \
-            each is a 4D-tensor, the channel number is num_classes.
-            - bbox_preds (list[Tensor]): Box energies / deltas for each \
-            scale level, each is a 4D-tensor, the channel number is 4.
-        """
-        res = multi_apply(self.forward_single, x, self.scales, self.strides)
-        return res
 
     def forward_single(self, x: Tensor, scale: Scale,
                        stride: int) -> Tuple[Tensor, Tensor]:

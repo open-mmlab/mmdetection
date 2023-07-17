@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import warnings
 from typing import List, Union
 
 import numpy as np
@@ -69,14 +68,9 @@ class CLIPTextEncoder(nn.Module):
         return text_features
 
 
-def get_class_weight(original_caption, custom_entities, prompt_prefix='a '):
+def get_class_weight(original_caption, prompt_prefix='a '):
     if isinstance(original_caption, str):
-        if custom_entities:
-            if not original_caption.endswith('.'):
-                original_caption = original_caption + ' . '
-            original_caption = original_caption.split(' . ')
-            class_names = list(filter(lambda x: len(x) > 0, original_caption))
-        elif original_caption == 'coco':
+        if original_caption == 'coco':
             from mmdet.datasets import CocoDataset
             class_names = CocoDataset.METAINFO['classes']
         elif original_caption == 'cityscapes':
@@ -92,8 +86,10 @@ def get_class_weight(original_caption, custom_entities, prompt_prefix='a '):
             from mmdet.datasets import LVISV1Dataset
             class_names = LVISV1Dataset.METAINFO['classes']
         else:
-            raise TypeError(
-                f'Invalid type for dataset name: {type(original_caption)}')
+            if not original_caption.endswith('.'):
+                original_caption = original_caption + ' . '
+            original_caption = original_caption.split(' . ')
+            class_names = list(filter(lambda x: len(x) > 0, original_caption))
 
     # for test.py
     else:
@@ -189,14 +185,7 @@ class Detic(CascadeRCNN):
         text_prompts = text_prompts[0]
         if text_prompts != self._text_prompts:
             self._text_prompts = text_prompts
-            if 'custom_entities' in batch_data_samples[0]:
-                # Assuming that the `custom_entities` flag
-                # inside a batch is always the same. For single image inference
-                custom_entities = batch_data_samples[0].custom_entities
-            else:
-                custom_entities = False
-            class_names, zs_weight = get_class_weight(text_prompts,
-                                                      custom_entities)
+            class_names, zs_weight = get_class_weight(text_prompts)
             self._entities = class_names
             reset_cls_layer_weight(self.roi_head, zs_weight)
 
@@ -220,15 +209,7 @@ class Detic(CascadeRCNN):
             if len(pred_instances) > 0:
                 label_names = []
                 for labels in pred_instances.labels:
-                    if labels >= len(self._entities):
-                        warnings.warn(
-                            'The unexpected output indicates an issue with '
-                            'named entity recognition. You can try '
-                            'setting custom_entities=True and running '
-                            'again to see if it helps.')
-                        label_names.append('unobject')
-                    else:
-                        label_names.append(self._entities[labels])
+                    label_names.append(self._entities[labels])
                 # for visualization
                 pred_instances.label_names = label_names
             data_sample.pred_instances = pred_instances

@@ -22,11 +22,23 @@ Detic requires to install CLIP.
 pip install git+https://github.com/openai/CLIP.git
 ```
 
-### Demo
+## Demo
 
-#### Inference with existing dataset vocabulary
+Here we provide the Detic model for the open vocabulary demo.  This model is trained on combined LVIS-COCO and ImageNet-21K for better demo purposes. LVIS models do not detect persons well due to its federated annotation protocol. LVIS+COCO models give better visual results.
 
-You can run demo like this:
+| Backbone |         Training data          |                                Config                                 |                                                                                      Download                                                                                      |
+| :------: | :----------------------------: | :-------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|  Swin-B  | LVIS  &  COCO  &  ImageNet-21K | [config](./configs/detic_centernet2_swin-b_fpn_4x_lvis_coco_in21k.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_swin-b_fpn_4x_lvis-coco-in21k/detic_centernet2_swin-b_fpn_4x_lvis-coco-in21k_20230120-0d301978.pth) |
+
+You can also download other models from  [official model zoo](https://github.com/facebookresearch/Detic/blob/main/docs/MODEL_ZOO.md), and convert the format by run
+
+```shell
+python tools/model_converters/detic_to_mmdet.py --src /path/to/detic_weight.pth --dst /path/to/mmdet_weight.pth
+```
+
+### Inference with existing dataset vocabulary
+
+You can detect classes of existing dataset  with `--texts` command:
 
 ```shell
 python demo/image_demo.py \
@@ -40,20 +52,17 @@ python demo/image_demo.py \
 
 ![image](https://user-images.githubusercontent.com/12907710/213624759-f0a2ba0c-0f5c-4424-a350-5ba5349e5842.png)
 
-#### Inference with custom vocabularies
+### Inference with custom vocabularies
 
-- Detic can detects any class given class names by using CLIP.
+Detic can detects any class given class names by using CLIP. You can detect customized classes with `--texts` command:
 
-You can detect custom classes with `--texts` and `--custom-entities`command:
-
-```
+```shell
 python demo/image_demo.py \
   ${IMAGE_PATH} \
   ${CONFIG_PATH} \
   ${MODEL_PATH} \
   --texts 'headphone . webcam . paper . coffe.' \
-  --custom-entities \
-  --pred-score-thr 0.5 \
+  --pred-score-thr 0.3 \
   --palette 'random'
 ```
 
@@ -63,13 +72,32 @@ Note that `headphone`, `paper` and `coffe` (typo intended) are not LVIS classes.
 
 ## Results
 
-Here we only provide the Detic Swin-B model for the open vocabulary demo. Multi-dataset training and open-vocabulary testing will be supported in the future.
+### Testing
 
-To find more variants, please visit the [official model zoo](https://github.com/facebookresearch/Detic/blob/main/docs/MODEL_ZOO.md).
+To evaluate a model with a trained model, run
 
-| Backbone |       Training data        |                                Config                                 |                                                                                      Download                                                                                      |
-| :------: | :------------------------: | :-------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|  Swin-B  | ImageNet-21K & LVIS & COCO | [config](./configs/detic_centernet2_swin-b_fpn_4x_lvis-coco-in21k.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_swin-b_fpn_4x_lvis-coco-in21k/detic_centernet2_swin-b_fpn_4x_lvis-coco-in21k_20230120-0d301978.pth) |
+```shell
+python tools/test.py path/to/config.py /path/to/weight.pth
+```
+
+### Open-vocabulary LVIS
+
+| Backbone |          Training data          | mask mAP | mask mAP_novel |                                  Config                                   | Download |
+| :------: | :-----------------------------: | :------: | :------------: | :-----------------------------------------------------------------------: | :------: |
+| ResNet50 | LVIS-Base  &  ImageNet-21K-LVIS |   32.4   |      25.2      |  [config](./configs/detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis.py)   |          |
+|  Swin-B  | LVIS-Base  &  ImageNet-21K-LVIS |   40.7   |      34.0      | [config](./configs/detic_centernet2_swin-b_fpn_4x_lvisbase_in21k-lvis.py) |          |
+
+### Standard LVIS
+
+| Backbone |      Training data       | mask mAP | mask mAP_novel |                                 Config                                 | Download |
+| :------: | :----------------------: | :------: | :------------: | :--------------------------------------------------------------------: | :------: |
+| ResNet50 | LVIS & ImageNet-21K-LVIS |   33.2   |      29.7      | [config](./configs/detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis.py) |          |
+|  Swin-B  | LVIS & ImageNet-21K-LVIS |   41.7   |      41.7      | [config](./configs/detic_centernet2_swin-b_fpn_4x_lvis_in21k-lvis.py)  |          |
+
+#### Note:
+
+- The open-vocabulary LVIS setup is LVIS without rare class annotations in training, termed `LVIS-Base`. We evaluate rare classes as novel classes in testing.
+- ` ImageNet-21K-LVIS` denotes that the model use the overlap classes between ImageNet-21K and LVIS as image-labeled data.
 
 ## Citation
 
@@ -82,5 +110,4 @@ If you find Detic is useful in your research or applications, please consider gi
   booktitle={ECCV},
   year={2022}
 }
-
 ```
