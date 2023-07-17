@@ -121,11 +121,3 @@ work_dirs/
 *.pth
 *.py~
 *.sh~
-
-
-# luozhaochuan
-datasets/*
-projects/Detic/*
-datasets
-outputs
-debug.py
