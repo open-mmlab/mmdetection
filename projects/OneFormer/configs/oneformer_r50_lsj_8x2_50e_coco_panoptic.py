@@ -22,12 +22,12 @@ data_preprocessor = dict(
     mean=[123.675, 116.28, 103.53],
     std=[58.395, 57.12, 57.375],
     bgr_to_rgb=True,
-    pad_size_divisor=32,
-    pad_mask=True,
-    mask_pad_value=0,
-    pad_seg=True,
-    seg_pad_value=255,
-    batch_augments=batch_augments)
+    pad_size_divisor=32,)
+    # pad_mask=True,
+    # mask_pad_value=0,
+    # pad_seg=True,
+    # seg_pad_value=255,
+    # batch_augments=batch_augments)
 
 model = dict(
     type='OneFormer',
@@ -51,7 +51,7 @@ model = dict(
         num_things_classes=num_things_classes,
         num_stuff_classes=num_stuff_classes,
         num_queries=100,
-        task='instance',
+        task='panoptic',
         max_seq_len=77,
         task_seq_len=77,
         task_mlp=dict(
@@ -162,13 +162,14 @@ model = dict(
         semantic_on=False,
         instance_on=True,
         # max_per_image is for instance segmentation.
-        max_per_image=100,
+        max_per_image=150,
         iou_thr=0.8,
         # In Mask2Former's panoptic postprocessing,
         # it will filter mask area where score is less than 0.5 .
         filter_low_score=True),
     init_cfg=None)
 
+backend_args=None
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
@@ -176,6 +177,7 @@ train_pipeline = [
     dict(
         type='LoadImageFromFile',
         to_float32=True,
+        # imdecode_backend='pillow',
         backend_args={{_base_.backend_args}}),
     dict(
         type='LoadPanopticAnnotations',
@@ -200,6 +202,29 @@ train_pipeline = [
 ]
 train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
 
+test_pipeline = [
+    dict(type='LoadImageFromFile',
+         imdecode_backend='pillow', 
+         backend_args=backend_args),
+    dict(
+        type='ResizeShortestEdge', 
+        scale=800, max_size=1333,
+        backend='pillow', 
+        interpolation='bilinear'),
+    dict(type='LoadPanopticAnnotations', imdecode_backend='pillow', backend_args=backend_args),
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
+]
+
+val_dataloader = dict(
+    batch_size=16,
+    num_workers=4,
+    dataset=dict(
+        pipeline=test_pipeline
+    )
+)
 val_evaluator = [
     dict(
         type='CocoPanopticMetric',

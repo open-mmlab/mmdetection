@@ -23,6 +23,8 @@ from .layers.oneformer_transformer_layers import MLP
 from .layers.text_transformer import TextTransformer
 from .layers.tokenizer import SimpleTokenizer, Tokenize
 from .layers.transformer import Transformer
+from mmdet.models.utils import multi_apply
+# from einops import rearrange
 
 
 
@@ -175,7 +177,7 @@ class OneFormerHead(Mask2FormerHead):
             self.oversample_ratio = self.train_cfg.get('oversample_ratio', 3.0)
             self.importance_sample_ratio = self.train_cfg.get(
                 'importance_sample_ratio', 0.75)
-            self.task = None
+            
             self.text_encoder = TextTransformer(**text_encoder)
             self.text_projector = MLP(**text_projector)
 
@@ -419,6 +421,112 @@ class OneFormerHead(Mask2FormerHead):
 
         return cls_pred, mask_pred, attn_mask
 
+    def loss_by_feat(self, all_cls_scores: Tensor, all_mask_preds: Tensor,
+                     batch_gt_instances: List[InstanceData],
+                     batch_img_metas: List[dict]) -> Dict[str, Tensor]:
+        """Loss function.
+
+        Args:
+            all_cls_scores (Tensor): Classification scores for all decoder
+                layers with shape (num_decoder, batch_size, num_queries,
+                cls_out_channels). Note `cls_out_channels` should includes
+                background.
+            all_mask_preds (Tensor): Mask scores for all decoder layers with
+                shape (num_decoder, batch_size, num_queries, h, w).
+            batch_gt_instances (list[obj:`InstanceData`]): each contains
+                ``labels`` and ``masks``.
+            batch_img_metas (list[dict]): List of image meta information.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
+        num_dec_layers = len(all_cls_scores)
+        batch_gt_instances_list = [
+            batch_gt_instances for _ in range(num_dec_layers)
+        ]
+        img_metas_list = [batch_img_metas for _ in range(num_dec_layers)]
+        losses_cls, losses_mask, losses_dice = multi_apply(
+            self._loss_by_feat_single, all_cls_scores, all_mask_preds,
+            batch_gt_instances_list, img_metas_list)
+
+        loss_dict = dict()
+        # loss from the last decoder layer
+        loss_dict['loss_cls'] = losses_cls[-1]
+        loss_dict['loss_mask'] = losses_mask[-1]
+        loss_dict['loss_dice'] = losses_dice[-1]
+        # loss from other decoder layers
+        num_dec_layer = 0
+        for loss_cls_i, loss_mask_i, loss_dice_i in zip(
+                losses_cls[:-1], losses_mask[:-1], losses_dice[:-1]):
+            loss_dict[f'd{num_dec_layer}.loss_cls'] = loss_cls_i
+            loss_dict[f'd{num_dec_layer}.loss_mask'] = loss_mask_i
+            loss_dict[f'd{num_dec_layer}.loss_dice'] = loss_dice_i
+            num_dec_layer += 1
+        return loss_dict
+    
+    # def _encode_text(self, text):
+    #     assert text.ndim in [2, 3], text.ndim
+    #     b = text.shape[0]
+    #     squeeze_dim = False
+    #     num_text = 1
+    #     if text.ndim == 3:
+    #         num_text = text.shape[1]
+    #         text = rearrange(text, 'b n l -> (b n) l', n=num_text)
+    #         squeeze_dim = True
+
+    #     x = self.text_encoder(text)
+
+    #     text_x = self.text_projector(x)
+
+    #     if squeeze_dim:
+    #         text_x = rearrange(text_x, '(b n) c -> b n c', n=num_text)
+    #         if self.prompt_ctx is not None:
+    #             text_ctx = self.prompt_ctx.weight.unsqueeze(0).repeat(text_x.shape[0], 1, 1)
+    #             text_x = torch.cat([text_x, text_ctx], dim=1)
+        
+    #     return {"texts": text_x}
+
+    def loss(
+        self,
+        x: Tuple[Tensor],
+        batch_data_samples: SampleList,
+    ) -> Dict[str, Tensor]:
+        """Perform forward propagation and loss calculation of the panoptic
+        head on the features of the upstream network.
+
+        Args:
+            x (tuple[Tensor]): Multi-level features from the upstream
+                network, each is a 4D-tensor.
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+
+        Returns:
+            dict[str, Tensor]: a dictionary of loss components
+        """
+        batch_img_metas = []
+        batch_gt_instances = []
+        batch_gt_semantic_segs = []
+        for data_sample in batch_data_samples:
+            batch_img_metas.append(data_sample.metainfo)
+            batch_gt_instances.append(data_sample.gt_instances)
+            if 'gt_sem_seg' in data_sample:
+                batch_gt_semantic_segs.append(data_sample.gt_sem_seg)
+            else:
+                batch_gt_semantic_segs.append(None)
+
+        # forward
+        all_cls_scores, all_mask_preds = self(x, batch_data_samples)
+
+        # preprocess ground truth
+        batch_gt_instances = self.preprocess_gt(batch_gt_instances,
+                                                batch_gt_semantic_segs)
+
+        # loss
+        losses = self.loss_by_feat(all_cls_scores, all_mask_preds,
+                                   batch_gt_instances, batch_img_metas)
+
+        return losses
 
     def forward(self, x: Tuple[Tensor],
                 batch_data_samples: SampleList) -> Tuple[Tensor]:
@@ -446,8 +554,6 @@ class OneFormerHead(Mask2FormerHead):
             data_sample.metainfo for data_sample in batch_data_samples
         ]
         batch_size = len(batch_img_metas)
-        # batch_size = x[0].cpu().numpy().tolist()[0]
-        # batch_size = 1
 
         # TODO: 如何判断当前forward是train还是test，train从batch_img_metas读tasks， test直接使用self.task
         # tasks = torch.cat([

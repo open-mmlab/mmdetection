@@ -15,5 +15,11 @@ model = dict(
         num_queries=150,
         in_channels=[192, 384, 768, 1536],
         task='panoptic'
-        )
+        ),
+    test_cfg=dict(
+        panoptic_on=True,
+        semantic_on=False,
+        instance_on=True,
+        ),
 )
+

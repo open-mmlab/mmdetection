@@ -15,5 +15,20 @@ model = dict(
         num_queries=150, 
         in_channels=[192, 384, 768, 1536],
         task='instance'
-        )
+        ),
+    test_cfg=dict(
+        panoptic_on=False,
+        semantic_on=False,
+        instance_on=True,
+        ),
     )
+
+data_root='data/coco/'
+val_evaluator = [
+    dict(
+        type='CocoMetric',
+        ann_file=data_root + 'annotations/instances_val2017.json',
+        metric=['bbox', 'segm'],
+        backend_args={{_base_.backend_args}})
+]
+test_evaluator = val_evaluator

@@ -19,9 +19,9 @@
 module load anaconda/2021.11 
 source activate openmmlab
 #python 运行程序
-python tools/test.py projects/OneFormer/configs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco.py 150_16_swin_l_oneformer_coco_100ep.pth
+# python tools/test.py projects/OneFormer/configs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco.py 150_16_swin_l_oneformer_coco_100ep.pth
 
-python tools/test.py projects/OneFormer/configs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco_panoptic.py 150_16_swin_l_oneformer_coco_100ep.pth
-# tools/dist_test.sh projects/OneFormer/configs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco.py 150_16_swin_l_oneformer_coco_100ep.pth
+# python tools/test.py projects/OneFormer/configs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco_panoptic.py 150_16_swin_l_oneformer_coco_100ep.pth
+tools/dist_test.sh projects/OneFormer/configs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco.py 150_16_swin_l_oneformer_coco_100ep.pth 8
 
-# tools/dist_test.sh projects/OneFormer/configs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco_panoptic.py 150_16_swin_l_oneformer_coco_100ep.pth 8
+tools/dist_test.sh projects/OneFormer/configs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco_panoptic.py 150_16_swin_l_oneformer_coco_100ep.pth 8

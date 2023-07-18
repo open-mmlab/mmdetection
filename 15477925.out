@@ -1,0 +1,2060 @@
+anaconda/2021.11(14):ERROR:150: Module 'anaconda/2021.11' conflicts with the currently loaded module(s) 'anaconda/2020.11'
+anaconda/2021.11(14):ERROR:102: Tcl command execution failed: conflict anaconda
+
+/home/bingxing2/gpuuser206/mmdetection/test.sh: line 20: activate: No such file or directory
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/distributed/launch.py:178: FutureWarning: The module torch.distributed.launch is deprecated
+and will be removed in future. Use torchrun.
+Note that --use_env is set by default in torchrun.
+If your script expects `--local_rank` argument to be set, please
+change it to read from `os.environ['LOCAL_RANK']` instead. See 
+https://pytorch.org/docs/stable/distributed.html#launch-utility for 
+further instructions
+
+  warnings.warn(
+WARNING:torch.distributed.run:
+*****************************************
+Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+*****************************************
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+07/15 20:55:44 - mmengine - INFO - 
+------------------------------------------------------------
+System environment:
+    sys.platform: linux
+    Python: 3.8.17 (default, Jul  5 2023, 21:04:15) [GCC 11.2.0]
+    CUDA available: True
+    numpy_random_seed: 156625462
+    GPU 0,1,2,3,4,5,6,7: NVIDIA A100-PCIE-40GB
+    CUDA_HOME: /usr/local/cuda
+    NVCC: Cuda compilation tools, release 11.6, V11.6.124
+    GCC: gcc (GCC) 4.8.5 20150623 (Red Hat 4.8.5-39)
+    PyTorch: 1.10.1
+    PyTorch compiling details: PyTorch built with:
+  - GCC 7.3
+  - C++ Version: 201402
+  - Intel(R) oneAPI Math Kernel Library Version 2023.1-Product Build 20230303 for Intel(R) 64 architecture applications
+  - Intel(R) MKL-DNN v2.2.3 (Git Hash 7336ca9f055cf1bfa13efb658fe15dc9b41f0740)
+  - OpenMP 201511 (a.k.a. OpenMP 4.5)
+  - LAPACK is enabled (usually provided by MKL)
+  - NNPACK is enabled
+  - CPU capability usage: AVX512
+  - CUDA Runtime 11.3
+  - NVCC architecture flags: -gencode;arch=compute_37,code=sm_37;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_61,code=sm_61;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_80,code=sm_80;-gencode;arch=compute_86,code=sm_86;-gencode;arch=compute_37,code=compute_37
+  - CuDNN 8.2
+  - Magma 2.5.2
+  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=11.3, CUDNN_VERSION=8.2.0, CXX_COMPILER=/opt/rh/devtoolset-7/root/usr/bin/c++, CXX_FLAGS= -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -DEDGE_PROFILER_USE_KINETO -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-unused-local-typedefs -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.10.1, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, 
+
+    TorchVision: 0.11.2
+    OpenCV: 4.7.0
+    MMEngine: 0.8.1
+
+Runtime environment:
+    cudnn_benchmark: False
+    mp_cfg: {'mp_start_method': 'fork', 'opencv_num_threads': 0}
+    dist_cfg: {'backend': 'nccl'}
+    seed: 156625462
+    Distributed launcher: pytorch
+    Distributed training: True
+    GPU number: 8
+------------------------------------------------------------
+
+07/15 20:55:45 - mmengine - INFO - Config:
+dataset_type = 'CocoDataset'
+data_root = 'data/coco/'
+backend_args = None
+train_pipeline = [
+    dict(type='LoadImageFromFile', to_float32=True, backend_args=None),
+    dict(
+        type='LoadPanopticAnnotations',
+        with_bbox=True,
+        with_mask=True,
+        with_seg=True,
+        backend_args=None),
+    dict(type='RandomFlip', prob=0.5),
+    dict(
+        type='RandomResize',
+        scale=(
+            1024,
+            1024,
+        ),
+        ratio_range=(
+            0.1,
+            2.0,
+        ),
+        keep_ratio=True),
+    dict(
+        type='RandomCrop',
+        crop_size=(
+            1024,
+            1024,
+        ),
+        crop_type='absolute',
+        recompute_bbox=True,
+        allow_negative_crop=True),
+    dict(type='PackDetInputs'),
+]
+test_pipeline = [
+    dict(
+        type='LoadImageFromFile', imdecode_backend='pillow',
+        backend_args=None),
+    dict(type='Resize', scale=(
+        1333,
+        800,
+    ), keep_ratio=True),
+    dict(type='LoadPanopticAnnotations', backend_args=None),
+    dict(
+        type='PackDetInputs',
+        meta_keys=(
+            'img_id',
+            'img_path',
+            'ori_shape',
+            'img_shape',
+            'scale_factor',
+        )),
+]
+train_dataloader = dict(
+    batch_size=2,
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(type='DefaultSampler', shuffle=True),
+    batch_sampler=dict(type='AspectRatioBatchSampler'),
+    dataset=dict(
+        type='CocoPanopticDataset',
+        data_root='data/coco/',
+        ann_file='annotations/panoptic_train2017.json',
+        data_prefix=dict(
+            img='train2017/', seg='annotations/panoptic_train2017/'),
+        filter_cfg=dict(filter_empty_gt=True, min_size=32),
+        pipeline=[
+            dict(type='LoadImageFromFile', to_float32=True, backend_args=None),
+            dict(
+                type='LoadPanopticAnnotations',
+                with_bbox=True,
+                with_mask=True,
+                with_seg=True,
+                backend_args=None),
+            dict(type='RandomFlip', prob=0.5),
+            dict(
+                type='RandomResize',
+                scale=(
+                    1024,
+                    1024,
+                ),
+                ratio_range=(
+                    0.1,
+                    2.0,
+                ),
+                keep_ratio=True),
+            dict(
+                type='RandomCrop',
+                crop_size=(
+                    1024,
+                    1024,
+                ),
+                crop_type='absolute',
+                recompute_bbox=True,
+                allow_negative_crop=True),
+            dict(type='PackDetInputs'),
+        ],
+        backend_args=None))
+val_dataloader = dict(
+    batch_size=16,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type='CocoPanopticDataset',
+        data_root='data/coco/',
+        ann_file='annotations/panoptic_val2017.json',
+        data_prefix=dict(img='val2017/', seg='annotations/panoptic_val2017/'),
+        test_mode=True,
+        pipeline=[
+            dict(
+                type='LoadImageFromFile',
+                imdecode_backend='pillow',
+                backend_args=None),
+            dict(type='Resize', scale=(
+                1333,
+                800,
+            ), keep_ratio=True),
+            dict(type='LoadPanopticAnnotations', backend_args=None),
+            dict(
+                type='PackDetInputs',
+                meta_keys=(
+                    'img_id',
+                    'img_path',
+                    'ori_shape',
+                    'img_shape',
+                    'scale_factor',
+                )),
+        ],
+        backend_args=None))
+test_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type='CocoPanopticDataset',
+        data_root='data/coco/',
+        ann_file='annotations/panoptic_val2017.json',
+        data_prefix=dict(img='val2017/', seg='annotations/panoptic_val2017/'),
+        test_mode=True,
+        pipeline=[
+            dict(type='LoadImageFromFile', backend_args=None),
+            dict(type='Resize', scale=(
+                1333,
+                800,
+            ), keep_ratio=True),
+            dict(type='LoadPanopticAnnotations', backend_args=None),
+            dict(
+                type='PackDetInputs',
+                meta_keys=(
+                    'img_id',
+                    'img_path',
+                    'ori_shape',
+                    'img_shape',
+                    'scale_factor',
+                )),
+        ],
+        backend_args=None))
+val_evaluator = [
+    dict(
+        type='CocoPanopticMetric',
+        ann_file='data/coco/annotations/panoptic_val2017.json',
+        seg_prefix='data/coco/annotations/panoptic_val2017/',
+        backend_args=None),
+    dict(
+        type='CocoMetric',
+        ann_file='data/coco/annotations/instances_val2017.json',
+        metric=[
+            'bbox',
+            'segm',
+        ],
+        backend_args=None),
+]
+test_evaluator = [
+    dict(
+        type='CocoPanopticMetric',
+        ann_file='data/coco/annotations/panoptic_val2017.json',
+        seg_prefix='data/coco/annotations/panoptic_val2017/',
+        backend_args=None),
+    dict(
+        type='CocoMetric',
+        ann_file='data/coco/annotations/instances_val2017.json',
+        metric=[
+            'bbox',
+            'segm',
+        ],
+        backend_args=None),
+]
+default_scope = 'mmdet'
+default_hooks = dict(
+    timer=dict(type='IterTimerHook'),
+    logger=dict(type='LoggerHook', interval=50),
+    param_scheduler=dict(type='ParamSchedulerHook'),
+    checkpoint=dict(
+        type='CheckpointHook',
+        interval=5000,
+        by_epoch=False,
+        save_last=True,
+        max_keep_ckpts=3),
+    sampler_seed=dict(type='DistSamplerSeedHook'),
+    visualization=dict(type='DetVisualizationHook'))
+env_cfg = dict(
+    cudnn_benchmark=False,
+    mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0),
+    dist_cfg=dict(backend='nccl'))
+vis_backends = [
+    dict(type='LocalVisBackend'),
+]
+visualizer = dict(
+    type='DetLocalVisualizer',
+    vis_backends=[
+        dict(type='LocalVisBackend'),
+    ],
+    name='visualizer')
+log_processor = dict(type='LogProcessor', window_size=50, by_epoch=False)
+log_level = 'INFO'
+load_from = '150_16_swin_l_oneformer_coco_100ep.pth'
+resume = False
+num_things_classes = 80
+num_stuff_classes = 53
+num_classes = 133
+image_size = (
+    1024,
+    1024,
+)
+batch_augments = [
+    dict(
+        type='BatchFixedSizePad',
+        size=(
+            1024,
+            1024,
+        ),
+        img_pad_value=0,
+        pad_mask=True,
+        mask_pad_value=0,
+        pad_seg=True,
+        seg_pad_value=255),
+]
+data_preprocessor = dict(
+    type='DetDataPreprocessor',
+    mean=[
+        123.675,
+        116.28,
+        103.53,
+    ],
+    std=[
+        58.395,
+        57.12,
+        57.375,
+    ],
+    bgr_to_rgb=True,
+    pad_size_divisor=32,
+    pad_mask=True,
+    mask_pad_value=0,
+    pad_seg=True,
+    seg_pad_value=255,
+    batch_augments=[
+        dict(
+            type='BatchFixedSizePad',
+            size=(
+                1024,
+                1024,
+            ),
+            img_pad_value=0,
+            pad_mask=True,
+            mask_pad_value=0,
+            pad_seg=True,
+            seg_pad_value=255),
+    ])
+model = dict(
+    type='OneFormer',
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[
+            123.675,
+            116.28,
+            103.53,
+        ],
+        std=[
+            58.395,
+            57.12,
+            57.375,
+        ],
+        bgr_to_rgb=True,
+        pad_size_divisor=32,
+        pad_mask=True,
+        mask_pad_value=0,
+        pad_seg=True,
+        seg_pad_value=255,
+        batch_augments=[
+            dict(
+                type='BatchFixedSizePad',
+                size=(
+                    1024,
+                    1024,
+                ),
+                img_pad_value=0,
+                pad_mask=True,
+                mask_pad_value=0,
+                pad_seg=True,
+                seg_pad_value=255),
+        ]),
+    backbone=dict(
+        type='SwinTransformer',
+        embed_dims=192,
+        depths=[
+            2,
+            2,
+            18,
+            2,
+        ],
+        num_heads=[
+            6,
+            12,
+            24,
+            48,
+        ],
+        window_size=12,
+        mlp_ratio=4,
+        qkv_bias=True,
+        qk_scale=None,
+        drop_rate=0.0,
+        attn_drop_rate=0.0,
+        drop_path_rate=0.3,
+        patch_norm=True,
+        out_indices=(
+            0,
+            1,
+            2,
+            3,
+        ),
+        with_cp=False,
+        convert_weights=True,
+        frozen_stages=-1,
+        init_cfg=dict(
+            type='Pretrained',
+            checkpoint=
+            'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'
+        ),
+        pretrain_img_size=384),
+    panoptic_head=dict(
+        type='OneFormerHead',
+        in_channels=[
+            192,
+            384,
+            768,
+            1536,
+        ],
+        strides=[
+            4,
+            8,
+            16,
+            32,
+        ],
+        feat_channels=256,
+        out_channels=256,
+        num_things_classes=80,
+        num_stuff_classes=53,
+        num_queries=150,
+        task='instance',
+        max_seq_len=77,
+        task_seq_len=77,
+        task_mlp=dict(
+            input_dim=77, hidden_dim=256, output_dim=256, num_layers=2),
+        text_encoder=dict(
+            context_length=77, width=256, layers=6, vocab_size=49408),
+        text_projector=dict(
+            input_dim=256, hidden_dim=256, output_dim=256, num_layers=2),
+        prompt_ctx=dict(num_embeddings=16, embedding_dim=256),
+        num_transformer_feat_level=3,
+        pixel_decoder=dict(
+            type='MSDeformAttnPixelDecoder',
+            num_outs=3,
+            norm_cfg=dict(type='GN', num_groups=32),
+            act_cfg=dict(type='ReLU'),
+            encoder=dict(
+                num_layers=6,
+                layer_cfg=dict(
+                    self_attn_cfg=dict(
+                        embed_dims=256,
+                        num_heads=8,
+                        num_levels=3,
+                        num_points=4,
+                        dropout=0.1,
+                        batch_first=True),
+                    ffn_cfg=dict(
+                        embed_dims=256,
+                        feedforward_channels=1024,
+                        num_fcs=2,
+                        ffn_drop=0.1,
+                        act_cfg=dict(type='ReLU', inplace=True)))),
+            positional_encoding=dict(num_feats=128, normalize=True)),
+        enforce_decoder_input_project=False,
+        positional_encoding=dict(num_feats=128, normalize=True),
+        transformer_decoder=dict(
+            return_intermediate=True,
+            num_layers=9,
+            layer_cfg=dict(
+                self_attn_cfg=dict(
+                    embed_dims=256, num_heads=8, dropout=0.0,
+                    batch_first=True),
+                cross_attn_cfg=dict(
+                    embed_dims=256, num_heads=8, dropout=0.0,
+                    batch_first=True),
+                ffn_cfg=dict(
+                    embed_dims=256,
+                    feedforward_channels=2048,
+                    num_fcs=2,
+                    ffn_drop=0.0,
+                    act_cfg=dict(type='ReLU', inplace=True))),
+            init_cfg=None),
+        class_transformer=dict(
+            d_model=256,
+            nhead=8,
+            num_encoder_layers=0,
+            num_decoder_layers=2,
+            dim_feedforward=2048,
+            dropout=0.1,
+            normalize_before=False,
+            return_intermediate_dec=False),
+        use_task_norm=True,
+        loss_cls=dict(
+            type='CrossEntropyLoss',
+            use_sigmoid=False,
+            loss_weight=2.0,
+            reduction='mean',
+            class_weight=[
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.1,
+            ]),
+        loss_mask=dict(
+            type='CrossEntropyLoss',
+            use_sigmoid=True,
+            reduction='mean',
+            loss_weight=5.0),
+        loss_dice=dict(
+            type='DiceLoss',
+            use_sigmoid=True,
+            activate=True,
+            reduction='mean',
+            naive_dice=True,
+            eps=1.0,
+            loss_weight=5.0)),
+    panoptic_fusion_head=dict(
+        type='MaskFormerFusionHead',
+        num_things_classes=80,
+        num_stuff_classes=53,
+        loss_panoptic=None,
+        init_cfg=None),
+    train_cfg=dict(
+        num_points=12544,
+        oversample_ratio=3.0,
+        importance_sample_ratio=0.75,
+        assigner=dict(
+            type='HungarianAssigner',
+            match_costs=[
+                dict(type='ClassificationCost', weight=2.0),
+                dict(
+                    type='CrossEntropyLossCost', weight=5.0, use_sigmoid=True),
+                dict(type='DiceCost', weight=5.0, pred_act=True, eps=1.0),
+            ]),
+        sampler=dict(type='MaskPseudoSampler')),
+    test_cfg=dict(
+        panoptic_on=True,
+        semantic_on=False,
+        instance_on=True,
+        max_per_image=150,
+        iou_thr=0.8,
+        filter_low_score=True),
+    init_cfg=None)
+embed_multi = dict(lr_mult=1.0, decay_mult=0.0)
+optim_wrapper = dict(
+    type='OptimWrapper',
+    optimizer=dict(
+        type='AdamW',
+        lr=0.0001,
+        weight_decay=0.05,
+        eps=1e-08,
+        betas=(
+            0.9,
+            0.999,
+        )),
+    paramwise_cfg=dict(
+        custom_keys=dict(
+            backbone=dict(lr_mult=0.1, decay_mult=1.0),
+            query_embed=dict(lr_mult=1.0, decay_mult=0.0),
+            query_feat=dict(lr_mult=1.0, decay_mult=0.0),
+            level_embed=dict(lr_mult=1.0, decay_mult=0.0)),
+        norm_decay_mult=0.0),
+    clip_grad=dict(max_norm=0.01, norm_type=2))
+max_iters = 368750
+param_scheduler = dict(
+    type='MultiStepLR',
+    begin=0,
+    end=368750,
+    by_epoch=False,
+    milestones=[
+        327778,
+        355092,
+    ],
+    gamma=0.1)
+interval = 5000
+dynamic_intervals = [
+    (
+        365001,
+        368750,
+    ),
+]
+train_cfg = dict(
+    type='IterBasedTrainLoop',
+    max_iters=368750,
+    val_interval=5000,
+    dynamic_intervals=[
+        (
+            365001,
+            368750,
+        ),
+    ])
+val_cfg = dict(type='ValLoop')
+test_cfg = dict(type='TestLoop')
+auto_scale_lr = dict(enable=False, base_batch_size=16)
+pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'
+depths = [
+    2,
+    2,
+    18,
+    2,
+]
+launcher = 'pytorch'
+work_dir = './work_dirs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco'
+
+07/15 20:55:54 - mmengine - INFO - Hooks will be executed in the following order:
+before_run:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+before_train:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_train_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(NORMAL      ) DistSamplerSeedHook                
+ -------------------- 
+before_train_iter:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_train_iter:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+after_train_epoch:
+(NORMAL      ) IterTimerHook                      
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_val_epoch:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+before_val_iter:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_val_iter:
+(NORMAL      ) IterTimerHook                      
+(NORMAL      ) DetVisualizationHook               
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_val_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+after_train:
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_test_epoch:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+before_test_iter:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_test_iter:
+(NORMAL      ) IterTimerHook                      
+(NORMAL      ) DetVisualizationHook               
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_test_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_run:
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+loading annotations into memory...
+loading annotations into memory...
+loading annotations into memory...
+loading annotations into memory...loading annotations into memory...
+
+loading annotations into memory...
+loading annotations into memory...
+Done (t=0.43s)
+creating index...
+Done (t=0.43s)
+creating index...
+Done (t=0.37s)
+creating index...
+index created!
+index created!
+Done (t=0.44s)
+creating index...
+index created!
+Done (t=0.36s)
+creating index...
+Done (t=0.45s)
+creating index...
+Done (t=0.38s)
+creating index...
+index created!
+index created!
+index created!
+index created!
+loading annotations into memory...
+loading annotations into memory...
+loading annotations into memory...
+loading annotations into memory...
+loading annotations into memory...
+loading annotations into memory...
+Done (t=0.22s)
+creating index...
+Done (t=0.21s)
+creating index...
+loading annotations into memory...
+Done (t=0.21s)
+creating index...
+Done (t=0.21s)
+creating index...
+index created!
+loading annotations into memory...
+index created!
+loading annotations into memory...
+index created!
+loading annotations into memory...
+Done (t=0.21s)
+creating index...
+Done (t=0.22s)
+creating index...
+loading annotations into memory...
+index created!
+index created!
+index created!
+loading annotations into memory...
+loading annotations into memory...
+Done (t=0.24s)
+creating index...
+index created!
+loading annotations into memory...
+Done (t=0.28s)
+creating index...
+index created!
+loading annotations into memory...
+loading annotations into memory...
+Done (t=0.74s)
+creating index...
+index created!
+Done (t=0.84s)
+creating index...
+Done (t=0.83s)
+creating index...
+Done (t=0.21s)
+creating index...
+Done (t=0.70s)
+creating index...
+index created!
+index created!
+Done (t=0.72s)
+creating index...
+index created!
+index created!
+index created!
+loading annotations into memory...
+Done (t=0.80s)
+creating index...
+index created!
+Done (t=0.72s)
+creating index...
+index created!
+Done (t=0.67s)
+creating index...
+index created!
+Loads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pth
+Loads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pthLoads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pth
+
+Loads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pth
+Loads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pth
+Loads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pth
+Loads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pth
+Loads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pth
+07/15 20:56:01 - mmengine - INFO - Load checkpoint from 150_16_swin_l_oneformer_coco_100ep.pth
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+07/15 20:56:23 - mmengine - INFO - Iter(test) [ 50/625]    eta: 0:04:17  time: 0.4475  data_time: 0.1101  memory: 3413  
+07/15 20:56:38 - mmengine - INFO - Iter(test) [100/625]    eta: 0:03:14  time: 0.2937  data_time: 0.0168  memory: 3449  
+07/15 20:56:51 - mmengine - INFO - Iter(test) [150/625]    eta: 0:02:40  time: 0.2734  data_time: 0.0129  memory: 3437  
+07/15 20:57:06 - mmengine - INFO - Iter(test) [200/625]    eta: 0:02:18  time: 0.2859  data_time: 0.0132  memory: 3447  
+07/15 20:57:20 - mmengine - INFO - Iter(test) [250/625]    eta: 0:01:59  time: 0.2865  data_time: 0.0163  memory: 3434  
+07/15 20:57:34 - mmengine - INFO - Iter(test) [300/625]    eta: 0:01:41  time: 0.2813  data_time: 0.0122  memory: 3434  
+07/15 20:57:48 - mmengine - INFO - Iter(test) [350/625]    eta: 0:01:24  time: 0.2872  data_time: 0.0131  memory: 3434  
+07/15 20:58:03 - mmengine - INFO - Iter(test) [400/625]    eta: 0:01:08  time: 0.2935  data_time: 0.0171  memory: 3345  
+07/15 20:58:17 - mmengine - INFO - Iter(test) [450/625]    eta: 0:00:53  time: 0.2836  data_time: 0.0141  memory: 3443  
+07/15 20:58:32 - mmengine - INFO - Iter(test) [500/625]    eta: 0:00:37  time: 0.2931  data_time: 0.0140  memory: 3440  
+07/15 20:58:46 - mmengine - INFO - Iter(test) [550/625]    eta: 0:00:22  time: 0.2919  data_time: 0.0169  memory: 3434  
+07/15 20:59:00 - mmengine - INFO - Iter(test) [600/625]    eta: 0:00:07  time: 0.2771  data_time: 0.0124  memory: 3415  
+07/15 20:59:09 - mmengine - INFO - Panoptic Evaluation Results:
++--------+--------+--------+--------+------------+
+|        | PQ     | SQ     | RQ     | categories |
++--------+--------+--------+--------+------------+
+| All    | 38.635 | 50.991 | 45.319 | 133        |
+| Things | 64.231 | 84.773 | 75.343 | 80         |
+| Stuff  | 0.000  | 0.000  | 0.000  | 53         |
++--------+--------+--------+--------+------------+
+07/15 20:59:40 - mmengine - INFO - Evaluating bbox...
+Loading and preparing results...
+DONE (t=1.60s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *bbox*
+DONE (t=45.97s).
+Accumulating evaluation results...
+DONE (t=17.88s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.525
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=1000 ] = 0.732
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=1000 ] = 0.568
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.345
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.566
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.699
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.695
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=300 ] = 0.696
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=1000 ] = 0.696
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.534
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.738
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.862
+07/15 21:00:49 - mmengine - INFO - bbox_mAP_copypaste: 0.525 0.732 0.568 0.345 0.566 0.699
+07/15 21:00:49 - mmengine - INFO - Evaluating segm...
+Loading and preparing results...
+DONE (t=6.33s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *segm*
+DONE (t=54.10s).
+Accumulating evaluation results...
+DONE (t=17.67s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.489
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=1000 ] = 0.735
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=1000 ] = 0.530
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.291
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.535
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.701
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.628
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=300 ] = 0.628
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=1000 ] = 0.628
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.464
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.667
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.797
+07/15 21:02:18 - mmengine - INFO - segm_mAP_copypaste: 0.489 0.735 0.530 0.291 0.535 0.701
+07/15 21:02:20 - mmengine - INFO - Iter(test) [625/625]    coco_panoptic/PQ: 38.6352  coco_panoptic/SQ: 50.9910  coco_panoptic/RQ: 45.3190  coco_panoptic/PQ_th: 64.2310  coco_panoptic/SQ_th: 84.7726  coco_panoptic/RQ_th: 75.3428  coco_panoptic/PQ_st: 0.0000  coco_panoptic/SQ_st: 0.0000  coco_panoptic/RQ_st: 0.0000  coco/bbox_mAP: 0.5250  coco/bbox_mAP_50: 0.7320  coco/bbox_mAP_75: 0.5680  coco/bbox_mAP_s: 0.3450  coco/bbox_mAP_m: 0.5660  coco/bbox_mAP_l: 0.6990  coco/segm_mAP: 0.4890  coco/segm_mAP_50: 0.7350  coco/segm_mAP_75: 0.5300  coco/segm_mAP_s: 0.2910  coco/segm_mAP_m: 0.5350  coco/segm_mAP_l: 0.7010  data_time: 0.0221  time: 0.2992
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/distributed/launch.py:178: FutureWarning: The module torch.distributed.launch is deprecated
+and will be removed in future. Use torchrun.
+Note that --use_env is set by default in torchrun.
+If your script expects `--local_rank` argument to be set, please
+change it to read from `os.environ['LOCAL_RANK']` instead. See 
+https://pytorch.org/docs/stable/distributed.html#launch-utility for 
+further instructions
+
+  warnings.warn(
+WARNING:torch.distributed.run:
+*****************************************
+Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+*****************************************
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+07/15 21:03:00 - mmengine - INFO - 
+------------------------------------------------------------
+System environment:
+    sys.platform: linux
+    Python: 3.8.17 (default, Jul  5 2023, 21:04:15) [GCC 11.2.0]
+    CUDA available: True
+    numpy_random_seed: 957531991
+    GPU 0,1,2,3,4,5,6,7: NVIDIA A100-PCIE-40GB
+    CUDA_HOME: /usr/local/cuda
+    NVCC: Cuda compilation tools, release 11.6, V11.6.124
+    GCC: gcc (GCC) 4.8.5 20150623 (Red Hat 4.8.5-39)
+    PyTorch: 1.10.1
+    PyTorch compiling details: PyTorch built with:
+  - GCC 7.3
+  - C++ Version: 201402
+  - Intel(R) oneAPI Math Kernel Library Version 2023.1-Product Build 20230303 for Intel(R) 64 architecture applications
+  - Intel(R) MKL-DNN v2.2.3 (Git Hash 7336ca9f055cf1bfa13efb658fe15dc9b41f0740)
+  - OpenMP 201511 (a.k.a. OpenMP 4.5)
+  - LAPACK is enabled (usually provided by MKL)
+  - NNPACK is enabled
+  - CPU capability usage: AVX512
+  - CUDA Runtime 11.3
+  - NVCC architecture flags: -gencode;arch=compute_37,code=sm_37;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_61,code=sm_61;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_80,code=sm_80;-gencode;arch=compute_86,code=sm_86;-gencode;arch=compute_37,code=compute_37
+  - CuDNN 8.2
+  - Magma 2.5.2
+  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=11.3, CUDNN_VERSION=8.2.0, CXX_COMPILER=/opt/rh/devtoolset-7/root/usr/bin/c++, CXX_FLAGS= -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -DEDGE_PROFILER_USE_KINETO -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-unused-local-typedefs -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.10.1, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, 
+
+    TorchVision: 0.11.2
+    OpenCV: 4.7.0
+    MMEngine: 0.8.1
+
+Runtime environment:
+    cudnn_benchmark: False
+    mp_cfg: {'mp_start_method': 'fork', 'opencv_num_threads': 0}
+    dist_cfg: {'backend': 'nccl'}
+    seed: 957531991
+    Distributed launcher: pytorch
+    Distributed training: True
+    GPU number: 8
+------------------------------------------------------------
+
+07/15 21:03:01 - mmengine - INFO - Config:
+dataset_type = 'CocoDataset'
+data_root = 'data/coco/'
+backend_args = None
+train_pipeline = [
+    dict(type='LoadImageFromFile', to_float32=True, backend_args=None),
+    dict(
+        type='LoadPanopticAnnotations',
+        with_bbox=True,
+        with_mask=True,
+        with_seg=True,
+        backend_args=None),
+    dict(type='RandomFlip', prob=0.5),
+    dict(
+        type='RandomResize',
+        scale=(
+            1024,
+            1024,
+        ),
+        ratio_range=(
+            0.1,
+            2.0,
+        ),
+        keep_ratio=True),
+    dict(
+        type='RandomCrop',
+        crop_size=(
+            1024,
+            1024,
+        ),
+        crop_type='absolute',
+        recompute_bbox=True,
+        allow_negative_crop=True),
+    dict(type='PackDetInputs'),
+]
+test_pipeline = [
+    dict(
+        type='LoadImageFromFile', imdecode_backend='pillow',
+        backend_args=None),
+    dict(type='Resize', scale=(
+        1333,
+        800,
+    ), keep_ratio=True),
+    dict(type='LoadPanopticAnnotations', backend_args=None),
+    dict(
+        type='PackDetInputs',
+        meta_keys=(
+            'img_id',
+            'img_path',
+            'ori_shape',
+            'img_shape',
+            'scale_factor',
+        )),
+]
+train_dataloader = dict(
+    batch_size=2,
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(type='DefaultSampler', shuffle=True),
+    batch_sampler=dict(type='AspectRatioBatchSampler'),
+    dataset=dict(
+        type='CocoPanopticDataset',
+        data_root='data/coco/',
+        ann_file='annotations/panoptic_train2017.json',
+        data_prefix=dict(
+            img='train2017/', seg='annotations/panoptic_train2017/'),
+        filter_cfg=dict(filter_empty_gt=True, min_size=32),
+        pipeline=[
+            dict(type='LoadImageFromFile', to_float32=True, backend_args=None),
+            dict(
+                type='LoadPanopticAnnotations',
+                with_bbox=True,
+                with_mask=True,
+                with_seg=True,
+                backend_args=None),
+            dict(type='RandomFlip', prob=0.5),
+            dict(
+                type='RandomResize',
+                scale=(
+                    1024,
+                    1024,
+                ),
+                ratio_range=(
+                    0.1,
+                    2.0,
+                ),
+                keep_ratio=True),
+            dict(
+                type='RandomCrop',
+                crop_size=(
+                    1024,
+                    1024,
+                ),
+                crop_type='absolute',
+                recompute_bbox=True,
+                allow_negative_crop=True),
+            dict(type='PackDetInputs'),
+        ],
+        backend_args=None))
+val_dataloader = dict(
+    batch_size=16,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type='CocoPanopticDataset',
+        data_root='data/coco/',
+        ann_file='annotations/panoptic_val2017.json',
+        data_prefix=dict(img='val2017/', seg='annotations/panoptic_val2017/'),
+        test_mode=True,
+        pipeline=[
+            dict(
+                type='LoadImageFromFile',
+                imdecode_backend='pillow',
+                backend_args=None),
+            dict(type='Resize', scale=(
+                1333,
+                800,
+            ), keep_ratio=True),
+            dict(type='LoadPanopticAnnotations', backend_args=None),
+            dict(
+                type='PackDetInputs',
+                meta_keys=(
+                    'img_id',
+                    'img_path',
+                    'ori_shape',
+                    'img_shape',
+                    'scale_factor',
+                )),
+        ],
+        backend_args=None))
+test_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type='CocoPanopticDataset',
+        data_root='data/coco/',
+        ann_file='annotations/panoptic_val2017.json',
+        data_prefix=dict(img='val2017/', seg='annotations/panoptic_val2017/'),
+        test_mode=True,
+        pipeline=[
+            dict(type='LoadImageFromFile', backend_args=None),
+            dict(type='Resize', scale=(
+                1333,
+                800,
+            ), keep_ratio=True),
+            dict(type='LoadPanopticAnnotations', backend_args=None),
+            dict(
+                type='PackDetInputs',
+                meta_keys=(
+                    'img_id',
+                    'img_path',
+                    'ori_shape',
+                    'img_shape',
+                    'scale_factor',
+                )),
+        ],
+        backend_args=None))
+val_evaluator = [
+    dict(
+        type='CocoPanopticMetric',
+        ann_file='data/coco/annotations/panoptic_val2017.json',
+        seg_prefix='data/coco/annotations/panoptic_val2017/',
+        backend_args=None),
+    dict(
+        type='CocoMetric',
+        ann_file='data/coco/annotations/instances_val2017.json',
+        metric=[
+            'bbox',
+            'segm',
+        ],
+        backend_args=None),
+]
+test_evaluator = [
+    dict(
+        type='CocoPanopticMetric',
+        ann_file='data/coco/annotations/panoptic_val2017.json',
+        seg_prefix='data/coco/annotations/panoptic_val2017/',
+        backend_args=None),
+    dict(
+        type='CocoMetric',
+        ann_file='data/coco/annotations/instances_val2017.json',
+        metric=[
+            'bbox',
+            'segm',
+        ],
+        backend_args=None),
+]
+default_scope = 'mmdet'
+default_hooks = dict(
+    timer=dict(type='IterTimerHook'),
+    logger=dict(type='LoggerHook', interval=50),
+    param_scheduler=dict(type='ParamSchedulerHook'),
+    checkpoint=dict(
+        type='CheckpointHook',
+        interval=5000,
+        by_epoch=False,
+        save_last=True,
+        max_keep_ckpts=3),
+    sampler_seed=dict(type='DistSamplerSeedHook'),
+    visualization=dict(type='DetVisualizationHook'))
+env_cfg = dict(
+    cudnn_benchmark=False,
+    mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0),
+    dist_cfg=dict(backend='nccl'))
+vis_backends = [
+    dict(type='LocalVisBackend'),
+]
+visualizer = dict(
+    type='DetLocalVisualizer',
+    vis_backends=[
+        dict(type='LocalVisBackend'),
+    ],
+    name='visualizer')
+log_processor = dict(type='LogProcessor', window_size=50, by_epoch=False)
+log_level = 'INFO'
+load_from = '150_16_swin_l_oneformer_coco_100ep.pth'
+resume = False
+num_things_classes = 80
+num_stuff_classes = 53
+num_classes = 133
+image_size = (
+    1024,
+    1024,
+)
+batch_augments = [
+    dict(
+        type='BatchFixedSizePad',
+        size=(
+            1024,
+            1024,
+        ),
+        img_pad_value=0,
+        pad_mask=True,
+        mask_pad_value=0,
+        pad_seg=True,
+        seg_pad_value=255),
+]
+data_preprocessor = dict(
+    type='DetDataPreprocessor',
+    mean=[
+        123.675,
+        116.28,
+        103.53,
+    ],
+    std=[
+        58.395,
+        57.12,
+        57.375,
+    ],
+    bgr_to_rgb=True,
+    pad_size_divisor=32,
+    pad_mask=True,
+    mask_pad_value=0,
+    pad_seg=True,
+    seg_pad_value=255,
+    batch_augments=[
+        dict(
+            type='BatchFixedSizePad',
+            size=(
+                1024,
+                1024,
+            ),
+            img_pad_value=0,
+            pad_mask=True,
+            mask_pad_value=0,
+            pad_seg=True,
+            seg_pad_value=255),
+    ])
+model = dict(
+    type='OneFormer',
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[
+            123.675,
+            116.28,
+            103.53,
+        ],
+        std=[
+            58.395,
+            57.12,
+            57.375,
+        ],
+        bgr_to_rgb=True,
+        pad_size_divisor=32,
+        pad_mask=True,
+        mask_pad_value=0,
+        pad_seg=True,
+        seg_pad_value=255,
+        batch_augments=[
+            dict(
+                type='BatchFixedSizePad',
+                size=(
+                    1024,
+                    1024,
+                ),
+                img_pad_value=0,
+                pad_mask=True,
+                mask_pad_value=0,
+                pad_seg=True,
+                seg_pad_value=255),
+        ]),
+    backbone=dict(
+        type='SwinTransformer',
+        embed_dims=192,
+        depths=[
+            2,
+            2,
+            18,
+            2,
+        ],
+        num_heads=[
+            6,
+            12,
+            24,
+            48,
+        ],
+        window_size=12,
+        mlp_ratio=4,
+        qkv_bias=True,
+        qk_scale=None,
+        drop_rate=0.0,
+        attn_drop_rate=0.0,
+        drop_path_rate=0.3,
+        patch_norm=True,
+        out_indices=(
+            0,
+            1,
+            2,
+            3,
+        ),
+        with_cp=False,
+        convert_weights=True,
+        frozen_stages=-1,
+        init_cfg=dict(
+            type='Pretrained',
+            checkpoint=
+            'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'
+        ),
+        pretrain_img_size=384),
+    panoptic_head=dict(
+        type='OneFormerHead',
+        in_channels=[
+            192,
+            384,
+            768,
+            1536,
+        ],
+        strides=[
+            4,
+            8,
+            16,
+            32,
+        ],
+        feat_channels=256,
+        out_channels=256,
+        num_things_classes=80,
+        num_stuff_classes=53,
+        num_queries=150,
+        task='panoptic',
+        max_seq_len=77,
+        task_seq_len=77,
+        task_mlp=dict(
+            input_dim=77, hidden_dim=256, output_dim=256, num_layers=2),
+        text_encoder=dict(
+            context_length=77, width=256, layers=6, vocab_size=49408),
+        text_projector=dict(
+            input_dim=256, hidden_dim=256, output_dim=256, num_layers=2),
+        prompt_ctx=dict(num_embeddings=16, embedding_dim=256),
+        num_transformer_feat_level=3,
+        pixel_decoder=dict(
+            type='MSDeformAttnPixelDecoder',
+            num_outs=3,
+            norm_cfg=dict(type='GN', num_groups=32),
+            act_cfg=dict(type='ReLU'),
+            encoder=dict(
+                num_layers=6,
+                layer_cfg=dict(
+                    self_attn_cfg=dict(
+                        embed_dims=256,
+                        num_heads=8,
+                        num_levels=3,
+                        num_points=4,
+                        dropout=0.1,
+                        batch_first=True),
+                    ffn_cfg=dict(
+                        embed_dims=256,
+                        feedforward_channels=1024,
+                        num_fcs=2,
+                        ffn_drop=0.1,
+                        act_cfg=dict(type='ReLU', inplace=True)))),
+            positional_encoding=dict(num_feats=128, normalize=True)),
+        enforce_decoder_input_project=False,
+        positional_encoding=dict(num_feats=128, normalize=True),
+        transformer_decoder=dict(
+            return_intermediate=True,
+            num_layers=9,
+            layer_cfg=dict(
+                self_attn_cfg=dict(
+                    embed_dims=256, num_heads=8, dropout=0.0,
+                    batch_first=True),
+                cross_attn_cfg=dict(
+                    embed_dims=256, num_heads=8, dropout=0.0,
+                    batch_first=True),
+                ffn_cfg=dict(
+                    embed_dims=256,
+                    feedforward_channels=2048,
+                    num_fcs=2,
+                    ffn_drop=0.0,
+                    act_cfg=dict(type='ReLU', inplace=True))),
+            init_cfg=None),
+        class_transformer=dict(
+            d_model=256,
+            nhead=8,
+            num_encoder_layers=0,
+            num_decoder_layers=2,
+            dim_feedforward=2048,
+            dropout=0.1,
+            normalize_before=False,
+            return_intermediate_dec=False),
+        use_task_norm=True,
+        loss_cls=dict(
+            type='CrossEntropyLoss',
+            use_sigmoid=False,
+            loss_weight=2.0,
+            reduction='mean',
+            class_weight=[
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.1,
+            ]),
+        loss_mask=dict(
+            type='CrossEntropyLoss',
+            use_sigmoid=True,
+            reduction='mean',
+            loss_weight=5.0),
+        loss_dice=dict(
+            type='DiceLoss',
+            use_sigmoid=True,
+            activate=True,
+            reduction='mean',
+            naive_dice=True,
+            eps=1.0,
+            loss_weight=5.0)),
+    panoptic_fusion_head=dict(
+        type='MaskFormerFusionHead',
+        num_things_classes=80,
+        num_stuff_classes=53,
+        loss_panoptic=None,
+        init_cfg=None),
+    train_cfg=dict(
+        num_points=12544,
+        oversample_ratio=3.0,
+        importance_sample_ratio=0.75,
+        assigner=dict(
+            type='HungarianAssigner',
+            match_costs=[
+                dict(type='ClassificationCost', weight=2.0),
+                dict(
+                    type='CrossEntropyLossCost', weight=5.0, use_sigmoid=True),
+                dict(type='DiceCost', weight=5.0, pred_act=True, eps=1.0),
+            ]),
+        sampler=dict(type='MaskPseudoSampler')),
+    test_cfg=dict(
+        panoptic_on=True,
+        semantic_on=False,
+        instance_on=True,
+        max_per_image=150,
+        iou_thr=0.8,
+        filter_low_score=True),
+    init_cfg=None)
+embed_multi = dict(lr_mult=1.0, decay_mult=0.0)
+optim_wrapper = dict(
+    type='OptimWrapper',
+    optimizer=dict(
+        type='AdamW',
+        lr=0.0001,
+        weight_decay=0.05,
+        eps=1e-08,
+        betas=(
+            0.9,
+            0.999,
+        )),
+    paramwise_cfg=dict(
+        custom_keys=dict(
+            backbone=dict(lr_mult=0.1, decay_mult=1.0),
+            query_embed=dict(lr_mult=1.0, decay_mult=0.0),
+            query_feat=dict(lr_mult=1.0, decay_mult=0.0),
+            level_embed=dict(lr_mult=1.0, decay_mult=0.0)),
+        norm_decay_mult=0.0),
+    clip_grad=dict(max_norm=0.01, norm_type=2))
+max_iters = 368750
+param_scheduler = dict(
+    type='MultiStepLR',
+    begin=0,
+    end=368750,
+    by_epoch=False,
+    milestones=[
+        327778,
+        355092,
+    ],
+    gamma=0.1)
+interval = 5000
+dynamic_intervals = [
+    (
+        365001,
+        368750,
+    ),
+]
+train_cfg = dict(
+    type='IterBasedTrainLoop',
+    max_iters=368750,
+    val_interval=5000,
+    dynamic_intervals=[
+        (
+            365001,
+            368750,
+        ),
+    ])
+val_cfg = dict(type='ValLoop')
+test_cfg = dict(type='TestLoop')
+auto_scale_lr = dict(enable=False, base_batch_size=16)
+pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'
+depths = [
+    2,
+    2,
+    18,
+    2,
+]
+launcher = 'pytorch'
+work_dir = './work_dirs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco_panoptic'
+
+loading annotations into memory...
+07/15 21:03:08 - mmengine - INFO - Hooks will be executed in the following order:
+before_run:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+before_train:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_train_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(NORMAL      ) DistSamplerSeedHook                
+ -------------------- 
+before_train_iter:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_train_iter:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+after_train_epoch:
+(NORMAL      ) IterTimerHook                      
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_val_epoch:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+before_val_iter:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_val_iter:
+(NORMAL      ) IterTimerHook                      
+(NORMAL      ) DetVisualizationHook               
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_val_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+after_train:
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_test_epoch:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+before_test_iter:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_test_iter:
+(NORMAL      ) IterTimerHook                      
+(NORMAL      ) DetVisualizationHook               
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_test_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_run:
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+loading annotations into memory...
+loading annotations into memory...
+loading annotations into memory...
+loading annotations into memory...loading annotations into memory...
+
+loading annotations into memory...
+Done (t=0.39s)
+creating index...
+index created!
+Done (t=0.32s)
+creating index...
+Done (t=0.32s)
+creating index...
+Done (t=0.35s)
+creating index...
+Done (t=0.36s)
+creating index...
+index created!
+index created!
+index created!
+index created!
+Done (t=0.44s)
+creating index...
+index created!
+Done (t=0.64s)
+creating index...
+loading annotations into memory...
+index created!
+loading annotations into memory...
+Done (t=0.22s)
+creating index...
+loading annotations into memory...
+loading annotations into memory...
+loading annotations into memory...
+loading annotations into memory...
+Done (t=0.21s)
+creating index...
+index created!
+loading annotations into memory...
+index created!
+loading annotations into memory...
+Done (t=0.21s)Done (t=0.21s)
+
+creating index...creating index...
+
+Done (t=0.21s)
+creating index...
+Done (t=0.21s)
+creating index...
+index created!
+index created!
+loading annotations into memory...
+loading annotations into memory...
+index created!
+loading annotations into memory...
+index created!
+loading annotations into memory...
+Done (t=0.21s)
+creating index...
+loading annotations into memory...
+index created!
+loading annotations into memory...
+Done (t=0.22s)
+creating index...
+index created!
+loading annotations into memory...
+loading annotations into memory...
+Done (t=0.22s)
+creating index...
+Done (t=0.79s)
+creating index...
+index created!
+Done (t=0.70s)
+creating index...
+Done (t=0.71s)
+creating index...
+index created!
+loading annotations into memory...
+index created!
+index created!
+Done (t=0.70s)
+creating index...
+Done (t=0.75s)
+creating index...
+index created!
+index created!
+Done (t=0.69s)
+creating index...
+index created!
+Done (t=0.74s)
+creating index...
+index created!
+Done (t=0.69s)
+creating index...
+index created!
+Loads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pth
+Loads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pth
+Loads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pth
+Loads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pthLoads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pth
+
+Loads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pth
+Loads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pth
+Loads checkpoint by local backend from path: 150_16_swin_l_oneformer_coco_100ep.pth
+07/15 21:03:15 - mmengine - INFO - Load checkpoint from 150_16_swin_l_oneformer_coco_100ep.pth
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/layers/positional_encoding.py:84: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
+/home/bingxing2/gpuuser206/.conda/envs/openmmlab/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1639180588308/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/home/bingxing2/gpuuser206/mmdetection/mmdet/models/seg_heads/panoptic_fusion_heads/maskformer_fusion_head.py:160: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  query_indices = top_indices // self.num_classes
+07/15 21:03:31 - mmengine - INFO - Iter(test) [ 50/625]    eta: 0:03:01  time: 0.3160  data_time: 0.0976  memory: 3258  
+07/15 21:03:42 - mmengine - INFO - Iter(test) [100/625]    eta: 0:02:21  time: 0.2228  data_time: 0.0134  memory: 3337  
+07/15 21:03:52 - mmengine - INFO - Iter(test) [150/625]    eta: 0:01:57  time: 0.2034  data_time: 0.0098  memory: 3090  
+07/15 21:04:02 - mmengine - INFO - Iter(test) [200/625]    eta: 0:01:39  time: 0.1991  data_time: 0.0101  memory: 3360  
+07/15 21:04:12 - mmengine - INFO - Iter(test) [250/625]    eta: 0:01:26  time: 0.2141  data_time: 0.0110  memory: 3148  
+07/15 21:04:23 - mmengine - INFO - Iter(test) [300/625]    eta: 0:01:14  time: 0.2141  data_time: 0.0202  memory: 3186  
+07/15 21:04:34 - mmengine - INFO - Iter(test) [350/625]    eta: 0:01:01  time: 0.2083  data_time: 0.0111  memory: 3223  
+07/15 21:04:44 - mmengine - INFO - Iter(test) [400/625]    eta: 0:00:50  time: 0.2108  data_time: 0.0171  memory: 3261  
+07/15 21:04:55 - mmengine - INFO - Iter(test) [450/625]    eta: 0:00:38  time: 0.2078  data_time: 0.0166  memory: 3127  
+07/15 21:05:05 - mmengine - INFO - Iter(test) [500/625]    eta: 0:00:27  time: 0.2076  data_time: 0.0109  memory: 3175  
+07/15 21:05:16 - mmengine - INFO - Iter(test) [550/625]    eta: 0:00:16  time: 0.2253  data_time: 0.0266  memory: 3262  
+07/15 21:05:27 - mmengine - INFO - Iter(test) [600/625]    eta: 0:00:05  time: 0.2175  data_time: 0.0259  memory: 3173  
+07/15 21:05:33 - mmengine - INFO - Panoptic Evaluation Results:
++--------+--------+--------+--------+------------+
+|        | PQ     | SQ     | RQ     | categories |
++--------+--------+--------+--------+------------+
+| All    | 57.884 | 83.728 | 68.394 | 133        |
+| Things | 64.416 | 84.886 | 75.468 | 80         |
+| Stuff  | 48.023 | 81.981 | 57.715 | 53         |
++--------+--------+--------+--------+------------+
+07/15 21:05:47 - mmengine - INFO - Evaluating bbox...
+Loading and preparing results...
+DONE (t=0.81s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *bbox*
+DONE (t=26.07s).
+Accumulating evaluation results...
+DONE (t=7.99s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.523
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=1000 ] = 0.729
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=1000 ] = 0.565
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.342
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.563
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.697
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.669
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=300 ] = 0.669
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=1000 ] = 0.669
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.497
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.711
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.835
+07/15 21:06:24 - mmengine - INFO - bbox_mAP_copypaste: 0.523 0.729 0.565 0.342 0.563 0.697
+07/15 21:06:24 - mmengine - INFO - Evaluating segm...
+Loading and preparing results...
+DONE (t=2.16s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *segm*
+DONE (t=32.30s).
+Accumulating evaluation results...
+DONE (t=7.93s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.487
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=1000 ] = 0.732
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=1000 ] = 0.527
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.288
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.532
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.698
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.609
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=300 ] = 0.609
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=1000 ] = 0.609
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.437
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.649
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.778
+07/15 21:07:09 - mmengine - INFO - segm_mAP_copypaste: 0.487 0.732 0.527 0.288 0.532 0.698
+07/15 21:07:10 - mmengine - INFO - Iter(test) [625/625]    coco_panoptic/PQ: 57.8838  coco_panoptic/SQ: 83.7283  coco_panoptic/RQ: 68.3936  coco_panoptic/PQ_th: 64.4165  coco_panoptic/SQ_th: 84.8857  coco_panoptic/RQ_th: 75.4680  coco_panoptic/PQ_st: 48.0232  coco_panoptic/SQ_st: 81.9813  coco_panoptic/RQ_st: 57.7154  coco/bbox_mAP: 0.5230  coco/bbox_mAP_50: 0.7290  coco/bbox_mAP_75: 0.5650  coco/bbox_mAP_s: 0.3420  coco/bbox_mAP_m: 0.5630  coco/bbox_mAP_l: 0.6970  coco/segm_mAP: 0.4870  coco/segm_mAP_50: 0.7320  coco/segm_mAP_75: 0.5270  coco/segm_mAP_s: 0.2880  coco/segm_mAP_m: 0.5320  coco/segm_mAP_l: 0.6980  data_time: 0.0220  time: 0.2198
