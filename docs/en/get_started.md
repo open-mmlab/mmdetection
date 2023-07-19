@@ -105,7 +105,7 @@ You will see a list of `DetDataSample`, and the predictions are in the `pred_ins
 
 ## Tracking Installation
 
-We recommend that users follow our best practices to install MMDetection for for tracking task.
+We recommend that users follow our best practices to install MMDetection for tracking task.
 
 ### Best Practices
 
