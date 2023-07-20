@@ -1,6 +1,5 @@
 _base_ = [
-    '/home/bingxing2/gpuuser206/mmdetection/configs/_base_/datasets/coco_panoptic.py', 
-    '/home/bingxing2/gpuuser206/mmdetection/configs/_base_/default_runtime.py'
+    'mmdet::_base_/default_runtime.py'
 ]
 
 num_things_classes = 80
@@ -11,7 +10,7 @@ batch_augments = [
     dict(
         type='BatchFixedSizePad',
         size=image_size,
-        img_pad_value=0,
+        img_pad_value=128,
         pad_mask=True,
         mask_pad_value=0,
         pad_seg=True,
@@ -169,71 +168,34 @@ model = dict(
         filter_low_score=True),
     init_cfg=None)
 
-backend_args=None
-# dataset settings
-dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
-train_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        to_float32=True,
-        # imdecode_backend='pillow',
-        backend_args=backend_args),
-    dict(
-        type='LoadPanopticAnnotations',
-        with_bbox=True,
-        with_mask=True,
-        with_seg=True,
-        backend_args=backend_args),
-    dict(type='RandomFlip', prob=0.5),
-    # large scale jittering
-    dict(
-        type='RandomResize',
-        scale=image_size,
-        ratio_range=(0.1, 2.0),
-        keep_ratio=True),
-    dict(
-        type='RandomCrop',
-        crop_size=image_size,
-        crop_type='absolute',
-        recompute_bbox=True,
-        allow_negative_crop=True),
-    dict(type='PackDetInputs')
-]
-train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
-
-test_pipeline = [
-    dict(type='LoadImageFromFile',
-         imdecode_backend='pillow', 
-         backend_args=backend_args),
-    dict(type='Resize', scale=(1333, 800), keep_ratio=True),
-    dict(type='LoadPanopticAnnotations', backend_args=backend_args),
-    dict(
-        type='PackDetInputs',
-        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor'))
-]
-
-val_dataloader = dict(
-    batch_size=16,
-    num_workers=4,
-    dataset=dict(
-        pipeline=test_pipeline
-    )
-)
-val_evaluator = [
-    dict(
-        type='CocoPanopticMetric',
-        ann_file=data_root + 'annotations/panoptic_val2017.json',
-        seg_prefix=data_root + 'annotations/panoptic_val2017/',
-        backend_args={{_base_.backend_args}}),
-    dict(
-        type='CocoMetric',
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        metric=['bbox', 'segm'],
-        backend_args={{_base_.backend_args}})
-]
-test_evaluator = val_evaluator
+# train_pipeline = [
+#     dict(
+#         type='LoadImageFromFile',
+#         to_float32=True,
+#         # imdecode_backend='pillow',
+#         backend_args=None),
+#     dict(
+#         type='LoadPanopticAnnotations',
+#         with_bbox=True,
+#         with_mask=True,
+#         with_seg=True,
+#         backend_args=None),
+#     dict(type='RandomFlip', prob=0.5),
+#     # large scale jittering
+#     dict(
+#         type='RandomResize',
+#         scale=image_size,
+#         ratio_range=(0.1, 2.0),
+#         keep_ratio=True),
+#     dict(
+#         type='RandomCrop',
+#         crop_size=image_size,
+#         crop_type='absolute',
+#         recompute_bbox=True,
+#         allow_negative_crop=True),
+#     dict(type='PackDetInputs')
+# ]
+# train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
 
 # optimizer
 embed_multi = dict(lr_mult=1.0, decay_mult=0.0)
@@ -264,10 +226,6 @@ param_scheduler = dict(
     by_epoch=False,
     milestones=[327778, 355092],
     gamma=0.1)
-
-# Before 365001th iteration, we do evaluation every 5000 iterations.
-# After 365000th iteration, we do evaluation every 368750 iterations,
-# which means that we do evaluation at the end of training.
 interval = 5000
 dynamic_intervals = [(max_iters // interval * interval + 1, max_iters)]
 train_cfg = dict(
@@ -277,18 +235,3 @@ train_cfg = dict(
     dynamic_intervals=dynamic_intervals)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
-
-default_hooks = dict(
-    checkpoint=dict(
-        type='CheckpointHook',
-        by_epoch=False,
-        save_last=True,
-        max_keep_ckpts=3,
-        interval=interval))
-log_processor = dict(type='LogProcessor', window_size=50, by_epoch=False)
-
-# Default setting for scaling LR automatically
-#   - `enable` means enable scaling LR automatically
-#       or not by default.
-#   - `base_batch_size` = (8 GPUs) x (2 samples per GPU).
-auto_scale_lr = dict(enable=False, base_batch_size=16)

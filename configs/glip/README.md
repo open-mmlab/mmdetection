@@ -31,7 +31,7 @@ wget https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b365
 
 python demo/image_demo.py demo/demo.jpg \
 configs/glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py \
-glip_tiny_a_mmdet-b3654169.pth \
+--weights glip_tiny_a_mmdet-b3654169.pth \
 --texts 'bench . car .'
 ```
 

@@ -1,25 +1,51 @@
-_base_ = ['./oneformer_swin-t-p4-w7-224_lsj_8x2_50e_coco_panoptic.py']
-pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'  # noqa
+_base_ = [
+    './_base_/oneformer_swin-l-p4-w12-384-in21k-lsj_panoptic.py', 
+    'mmdet::_base_/datasets/coco_panoptic.py'
+    ]
 
-depths = [2, 2, 18, 2]
 model = dict(
-    backbone=dict(
-        pretrain_img_size=384,
-        embed_dims=192,
-        depths=depths,
-        num_heads=[6, 12, 24, 48],
-        window_size=12,
-        init_cfg=dict(type='Pretrained', checkpoint=pretrained)
-        ),
-    panoptic_head=dict(
-        num_queries=150,
-        in_channels=[192, 384, 768, 1536],
-        task='panoptic'
-        ),
     test_cfg=dict(
         panoptic_on=True,
         semantic_on=False,
         instance_on=True,
         ),
 )
+backend_args=None
+dataset_type = 'CocoDataset'
+data_root='data/coco/'
+test_pipeline = [
+    dict(type='LoadImageFromFile',
+         imdecode_backend='pillow', 
+         backend_args=backend_args),
+    dict(
+        type='ResizeShortestEdge', scale=800, max_size=1333, backend='pillow'),
+    dict(type='LoadPanopticAnnotations', backend_args=backend_args),
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
+]
 
+val_dataloader = dict(
+    batch_size=2,
+    num_workers=4,
+    dataset=dict(
+        pipeline=test_pipeline
+    )
+)
+
+test_dataloader = val_dataloader
+
+val_evaluator = [
+    dict(
+        type='CocoPanopticMetric',
+        ann_file=data_root + 'annotations/panoptic_val2017.json',
+        seg_prefix=data_root + 'annotations/panoptic_val2017/',
+        backend_args=backend_args),
+    dict(
+        type='CocoMetric',
+        ann_file=data_root + 'annotations/instances_val2017.json',
+        metric=['bbox', 'segm'],
+        backend_args=backend_args)
+]
+test_evaluator = val_evaluator

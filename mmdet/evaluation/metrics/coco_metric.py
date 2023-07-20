@@ -541,7 +541,7 @@ class CocoMetric(BaseMetric):
                                 ap = np.mean(precision)
                             else:
                                 ap = float('nan')
-                            t.append(f'{round(ap, 3)}')
+                            t.append(f'{round(ap, 7)}')
 
                         # indexes of area of small, median and large
                         for area in [1, 2, 3]:
@@ -551,7 +551,7 @@ class CocoMetric(BaseMetric):
                                 ap = np.mean(precision)
                             else:
                                 ap = float('nan')
-                            t.append(f'{round(ap, 3)}')
+                            t.append(f'{round(ap, 7)}')
                         results_per_category.append(tuple(t))
 
                     num_columns = len(results_per_category[0])
@@ -581,9 +581,9 @@ class CocoMetric(BaseMetric):
                     eval_results[key] = float(f'{round(val, 3)}')
 
                 ap = coco_eval.stats[:6]
-                logger.info(f'{metric}_mAP_copypaste: {ap[0]:.3f} '
-                            f'{ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
-                            f'{ap[4]:.3f} {ap[5]:.3f}')
+                logger.info(f'{metric}_mAP_copypaste: {ap[0]:.7f} '
+                            f'{ap[1]:.7f} {ap[2]:.7f} {ap[3]:.7f} '
+                            f'{ap[4]:.7f} {ap[5]:.7f}')
 
         if tmp_dir is not None:
             tmp_dir.cleanup()

@@ -16,12 +16,14 @@
 #DSUB -e %J.out
 #DSUB -o %J.out
 #加载环境，此处加载 anaconda 环境以及通过 anaconda 创建的名为 pytorch 的环境(pytorch 环境需要自己部署)
-module load anaconda/2021.11 
+module load anaconda/2020.11 
 source activate openmmlab
 #python 运行程序
 # python tools/test.py projects/OneFormer/configs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco.py 150_16_swin_l_oneformer_coco_100ep.pth
 
 # python tools/test.py projects/OneFormer/configs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco_panoptic.py 150_16_swin_l_oneformer_coco_100ep.pth
-tools/dist_test.sh projects/OneFormer/configs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco.py 150_16_swin_l_oneformer_coco_100ep.pth 8
+tools/dist_test.sh projects/OneFormer/configs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco_instance.py 150_16_swin_l_oneformer_coco_100ep.pth 8
 
 tools/dist_test.sh projects/OneFormer/configs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco_panoptic.py 150_16_swin_l_oneformer_coco_100ep.pth 8
+
+tools/dist_test.sh projects/OneFormer/configs/oneformer_swin-l-p4-w12-384-in21k_16xb1-lsj-100e_coco_semantic.py 150_16_swin_l_oneformer_coco_100ep.pth 8
