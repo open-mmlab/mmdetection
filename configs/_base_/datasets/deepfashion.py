@@ -2,23 +2,30 @@
 dataset_type = 'DeepFashionDataset'
 data_root = 'data/DeepFashion/In-shop/'
 
-# file_client_args = dict(
+# Example to use different file client
+# Method 1: simply set the data root and let the file I/O module
+# automatically infer from prefix (not support LMDB and Memcache yet)
+
+# data_root = 's3://openmmlab/datasets/detection/coco/'
+
+# Method 2: Use `backend_args`, `file_client_args` in versions before 3.0.0rc6
+# backend_args = dict(
 #     backend='petrel',
 #     path_mapping=dict({
 #         './data/': 's3://openmmlab/datasets/detection/',
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
-file_client_args = dict(backend='disk')
+backend_args = None
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(type='Resize', scale=(750, 1101), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='Resize', scale=(750, 1101), keep_ratio=True),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
@@ -41,7 +48,8 @@ train_dataloader = dict(
             ann_file='Anno/segmentation/DeepFashion_segmentation_train.json',
             data_prefix=dict(img='Img/'),
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
-            pipeline=train_pipeline)))
+            pipeline=train_pipeline,
+            backend_args=backend_args)))
 val_dataloader = dict(
     batch_size=1,
     num_workers=2,
@@ -54,7 +62,8 @@ val_dataloader = dict(
         ann_file='Anno/segmentation/DeepFashion_segmentation_query.json',
         data_prefix=dict(img='Img/'),
         test_mode=True,
-        pipeline=test_pipeline))
+        pipeline=test_pipeline,
+        backend_args=backend_args))
 test_dataloader = dict(
     batch_size=1,
     num_workers=2,
@@ -67,17 +76,20 @@ test_dataloader = dict(
         ann_file='Anno/segmentation/DeepFashion_segmentation_gallery.json',
         data_prefix=dict(img='Img/'),
         test_mode=True,
-        pipeline=test_pipeline))
+        pipeline=test_pipeline,
+        backend_args=backend_args))
 
 val_evaluator = dict(
     type='CocoMetric',
     ann_file=data_root +
     'Anno/segmentation/DeepFashion_segmentation_query.json',
     metric=['bbox', 'segm'],
-    format_only=False)
+    format_only=False,
+    backend_args=backend_args)
 test_evaluator = dict(
     type='CocoMetric',
     ann_file=data_root +
     'Anno/segmentation/DeepFashion_segmentation_gallery.json',
     metric=['bbox', 'segm'],
-    format_only=False)
+    format_only=False,
+    backend_args=backend_args)

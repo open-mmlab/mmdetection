@@ -41,9 +41,7 @@ albu_train_transforms = [
         p=0.1),
 ]
 train_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     dict(

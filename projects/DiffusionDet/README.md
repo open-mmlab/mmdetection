@@ -1,6 +1,6 @@
 ## Description
 
-This is an implementation of [DiffusionDet](https://github.com/ShoufaChen/DiffusionDet) based on [MMDetection](https://github.com/open-mmlab/mmdetection/tree/3.x), [MMCV](https://github.com/open-mmlab/mmcv), and [MMEngine](https://github.com/open-mmlab/mmengine).
+This is an implementation of [DiffusionDet](https://github.com/ShoufaChen/DiffusionDet) based on [MMDetection](https://github.com/open-mmlab/mmdetection/tree/main), [MMCV](https://github.com/open-mmlab/mmcv), and [MMEngine](https://github.com/open-mmlab/mmengine).
 
 <center>
 <img src="https://user-images.githubusercontent.com/48282753/211472911-c84d658a-952b-4608-8b91-9ac932cbf2e2.png">
@@ -39,8 +39,8 @@ We give a table to compare the inference results on `ResNet50-500-proposals` bet
 |       [MMDetection](configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py) (random seed)       |  1   | 45.6~45.8 |
 | [DiffusionDet](https://github.com/ShoufaChen/DiffusionDet/blob/main/configs/diffdet.coco.res50.yaml) (released results) |  4   |   46.1    |
 |      [DiffusionDet](https://github.com/ShoufaChen/DiffusionDet/blob/main/configs/diffdet.coco.res50.yaml) (seed=0)      |  4   |   46.38   |
-|         [MMDetection](configs/diffusiondet_r50_fpn_500-proposals_4-steps_crop-ms-480-800-450k_coco.py) (seed=0)         |  4   |   46.4    |
-|      [MMDetection](configs/diffusiondet_r50_fpn_500-proposals_4-steps_crop-ms-480-800-450k_coco.py) (random seed)       |  4   | 46.2~46.4 |
+|         [MMDetection](configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py) (seed=0)          |  4   |   46.4    |
+|       [MMDetection](configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py) (random seed)       |  4   | 46.2~46.4 |
 
 - `seed=0` means hard set seed before generating random boxes.
   ```python
@@ -60,15 +60,34 @@ We give a table to compare the inference results on `ResNet50-500-proposals` bet
 
 ### Training commands
 
-MMDetection currently does not fully support training DiffusionDet.
+In MMDetection's root directory, run the following command to train the model:
+
+```bash
+python tools/train.py projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py
+```
+
+For multi-gpu training, run:
+
+```bash
+python -m torch.distributed.launch --nnodes=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} --master_port=29506 --master_addr="127.0.0.1" tools/train.py projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py
+```
 
 ### Testing commands
 
 In MMDetection's root directory, run the following command to test the model:
 
 ```bash
-python tools/test.py projects/DiffusionDet/configs/${CONFIG_PATH} ${CHECKPOINT_PATH}
+# for 1 step inference
+# test command
+python tools/test.py projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py ${CHECKPOINT_PATH}
+
+# for 4 steps inference
+
+# test command
+python tools/test.py projects/DiffusionDet/configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py ${CHECKPOINT_PATH} --cfg-options model.bbox_head.sampling_timesteps=4
 ```
+
+**Note:** There is no difference between 1 step or 4 steps (or other multi-step) during training. Users can set different steps during inference through `--cfg-options model.bbox_head.sampling_timesteps=${STEPS}`, but larger `sampling_timesteps` will affect the inference time.
 
 ## Results
 
@@ -76,9 +95,9 @@ Here we provide the baseline version of DiffusionDet with ResNet50 backbone.
 
 To find more variants, please visit the [official model zoo](https://github.com/ShoufaChen/DiffusionDet#models).
 
-| Backbone |  Style  | Lr schd | Mem (GB) | FPS | AP  |    Config    |         Download         |
-| :------: | :-----: | :-----: | :------: | :-: | :-: | :----------: | :----------------------: |
-|   R-50   | PyTorch |         |          |     |     | [config](<>) | [model](<>) \| [log](<>) |
+| Backbone |  Style  | Lr schd | AP (Step=1) | AP (Step=4) |                                           Config                                           |                                                                                                                                                                                                                                      Download                                                                                                                                                                                                                                      |
+| :------: | :-----: | :-----: | :---------: | :---------: | :----------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|   R-50   | PyTorch |  450k   |    44.5     |    46.2     | [config](./configs/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/diffusiondet/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco_20230215_090925-7d6ed504.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/diffusiondet/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco/diffusiondet_r50_fpn_500-proposals_1-step_crop-ms-480-800-450k_coco_20230215_090925.log.json) |
 
 ## License
 
@@ -122,9 +141,9 @@ A project does not necessarily have to be finished in a single PR, but it's esse
 
     <!-- As this template does. -->
 
-- [ ] Milestone 2: Indicates a successful model implementation.
+- [x] Milestone 2: Indicates a successful model implementation.
 
-  - [ ] Training-time correctness
+  - [x] Training-time correctness
 
     <!-- If you are reproducing the result from a paper, checking this item means that you should have trained your model from scratch based on the original paper's specification and verified that the final result matches the report within a minor error range. -->
 
@@ -144,10 +163,10 @@ A project does not necessarily have to be finished in a single PR, but it's esse
 
   - [ ] Metafile.yml
 
-    <!-- It will be parsed by MIM and Inferencer. [Example](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/metafile.yml) -->
+    <!-- It will be parsed by MIM and Inferencer. [Example](https://github.com/open-mmlab/mmdetection/blob/main/configs/faster_rcnn/metafile.yml) -->
 
 - [ ] Move your modules into the core package following the codebase's file hierarchy structure.
 
-  <!-- In particular, you may have to refactor this README into a standard one. [Example](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/README.md) -->
+  <!-- In particular, you may have to refactor this README into a standard one. [Example](https://github.com/open-mmlab/mmdetection/blob/main/configs/faster_rcnn/README.md) -->
 
 - [ ] Refactor your modules into the core package following the codebase's file hierarchy structure.

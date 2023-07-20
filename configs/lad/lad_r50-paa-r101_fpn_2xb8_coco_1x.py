@@ -124,6 +124,3 @@ model = dict(
         max_per_img=100))
 train_dataloader = dict(batch_size=8, num_workers=4)
 optim_wrapper = dict(type='AmpOptimWrapper', optimizer=dict(lr=0.01))
-
-# TODO: MMEngine does not support fp16 yet.
-# fp16 = dict(loss_scale=512.)

@@ -5,16 +5,17 @@ _base_ = [
     'mmdet::_base_/default_runtime.py'
 ]
 
-# please install the mmclassification dev-1.x branch
-# import mmcls.models to trigger register_module in mmcls
-custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
+# please install the mmpretrain
+# import mmpretrain.models to trigger register_module in mmpretrain
+custom_imports = dict(
+    imports=['mmpretrain.models'], allow_failed_imports=False)
 checkpoint_file = 'https://download.openmmlab.com/mmclassification/v0/convnext-v2/convnext-v2-base_3rdparty-fcmae_in1k_20230104-8a798eaf.pth'  # noqa
 image_size = (1024, 1024)
 
 model = dict(
     backbone=dict(
         _delete_=True,
-        type='mmcls.ConvNeXt',
+        type='mmpretrain.ConvNeXt',
         arch='base',
         out_indices=[0, 1, 2, 3],
         # TODO: verify stochastic depth rate {0.1, 0.2, 0.3, 0.4}
@@ -31,7 +32,7 @@ model = dict(
         rcnn=dict(nms=dict(type='soft_nms'))))
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=_base_.file_client_args),
+    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='RandomResize',

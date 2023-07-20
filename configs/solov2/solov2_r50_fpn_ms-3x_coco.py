@@ -1,9 +1,7 @@
 _base_ = './solov2_r50_fpn_1x_coco.py'
 
 train_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='RandomChoiceResize',
@@ -17,7 +15,7 @@ train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
 
 # training schedule for 3x
 max_epochs = 36
-train_cfg = dict(by_epoch=True, max_epochs=max_epochs)
+train_cfg = dict(max_epochs=max_epochs)
 
 # learning rate
 param_scheduler = [

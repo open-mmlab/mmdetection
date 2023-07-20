@@ -1,10 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional, Sequence, Tuple, Union
+
 import numpy as np
 import torch
 import torch.nn.functional as F
+from torch import Tensor
 
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import HorizontalBoxes, bbox_rescale, get_box_tensor
+from mmdet.structures.bbox import (BaseBoxes, HorizontalBoxes, bbox_rescale,
+                                   get_box_tensor)
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -32,13 +36,13 @@ class BucketingBBoxCoder(BaseBBoxCoder):
     """
 
     def __init__(self,
-                 num_buckets,
-                 scale_factor,
-                 offset_topk=2,
-                 offset_upperbound=1.0,
-                 cls_ignore_neighbor=True,
-                 clip_border=True,
-                 **kwargs):
+                 num_buckets: int,
+                 scale_factor: int,
+                 offset_topk: int = 2,
+                 offset_upperbound: float = 1.0,
+                 cls_ignore_neighbor: bool = True,
+                 clip_border: bool = True,
+                 **kwargs) -> None:
         super().__init__(**kwargs)
         self.num_buckets = num_buckets
         self.scale_factor = scale_factor
@@ -47,7 +51,8 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         self.cls_ignore_neighbor = cls_ignore_neighbor
         self.clip_border = clip_border
 
-    def encode(self, bboxes, gt_bboxes):
+    def encode(self, bboxes: Union[Tensor, BaseBoxes],
+               gt_bboxes: Union[Tensor, BaseBoxes]) -> Tuple[Tensor]:
         """Get bucketing estimation and fine regression targets during
         training.
 
@@ -71,7 +76,12 @@ class BucketingBBoxCoder(BaseBBoxCoder):
                                      self.cls_ignore_neighbor)
         return encoded_bboxes
 
-    def decode(self, bboxes, pred_bboxes, max_shape=None):
+    def decode(
+        self,
+        bboxes: Union[Tensor, BaseBoxes],
+        pred_bboxes: Tensor,
+        max_shape: Optional[Tuple[int]] = None
+    ) -> Tuple[Union[Tensor, BaseBoxes], Tensor]:
         """Apply transformation `pred_bboxes` to `boxes`.
         Args:
             boxes (torch.Tensor or :obj:`BaseBoxes`): Basic boxes.
@@ -97,7 +107,9 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         return bboxes, loc_confidence
 
 
-def generat_buckets(proposals, num_buckets, scale_factor=1.0):
+def generat_buckets(proposals: Tensor,
+                    num_buckets: int,
+                    scale_factor: float = 1.0) -> Tuple[Tensor]:
     """Generate buckets w.r.t bucket number and scale factor of proposals.
 
     Args:
@@ -145,13 +157,13 @@ def generat_buckets(proposals, num_buckets, scale_factor=1.0):
     return bucket_w, bucket_h, l_buckets, r_buckets, t_buckets, d_buckets
 
 
-def bbox2bucket(proposals,
-                gt,
-                num_buckets,
-                scale_factor,
-                offset_topk=2,
-                offset_upperbound=1.0,
-                cls_ignore_neighbor=True):
+def bbox2bucket(proposals: Tensor,
+                gt: Tensor,
+                num_buckets: int,
+                scale_factor: float,
+                offset_topk: int = 2,
+                offset_upperbound: float = 1.0,
+                cls_ignore_neighbor: bool = True) -> Tuple[Tensor]:
     """Generate buckets estimation and fine regression targets.
 
     Args:
@@ -268,13 +280,14 @@ def bbox2bucket(proposals,
     return offsets, offsets_weights, bucket_labels, bucket_cls_weights
 
 
-def bucket2bbox(proposals,
-                cls_preds,
-                offset_preds,
-                num_buckets,
-                scale_factor=1.0,
-                max_shape=None,
-                clip_border=True):
+def bucket2bbox(proposals: Tensor,
+                cls_preds: Tensor,
+                offset_preds: Tensor,
+                num_buckets: int,
+                scale_factor: float = 1.0,
+                max_shape: Optional[Union[Sequence[int], Tensor,
+                                          Sequence[Sequence[int]]]] = None,
+                clip_border: bool = True) -> Tuple[Tensor]:
     """Apply bucketing estimation (cls preds) and fine regression (offset
     preds) to generate det bboxes.
 

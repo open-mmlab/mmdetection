@@ -24,7 +24,7 @@ Welcome to MMDetection's documentation!
    :maxdepth: 1
    :caption: Migration
 
-   migration.md
+   migration/migration.md
 
 .. toctree::
    :maxdepth: 1

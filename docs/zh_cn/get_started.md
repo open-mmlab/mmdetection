@@ -4,7 +4,7 @@
 
 本节中，我们将演示如何用 PyTorch 准备一个环境。
 
-MMDetection 支持在 Linux，Windows 和 macOS 上运行。它需要 Python 3.7 以上，CUDA 9.2 以上和 PyTorch 1.6 以上。
+MMDetection 支持在 Linux，Windows 和 macOS 上运行。它需要 Python 3.7 以上，CUDA 9.2 以上和 PyTorch 1.8 及其以上。
 
 ```{note}
 如果你对 PyTorch 有经验并且已经安装了它，你可以直接跳转到[下一小节](#安装流程)。否则，你可以按照下述步骤进行准备。
@@ -44,7 +44,7 @@ conda install pytorch torchvision cpuonly -c pytorch
 ```shell
 pip install -U openmim
 mim install mmengine
-mim install "mmcv>=2.0.0rc1"
+mim install "mmcv>=2.0.0"
 ```
 
 **注意：** 在 MMCV-v2.x 中，`mmcv-full` 改名为 `mmcv`，如果你想安装不包含 CUDA 算子精简版，可以通过 `mim install "mmcv-lite>=2.0.0rc1"` 来安装。
@@ -54,8 +54,7 @@ mim install "mmcv>=2.0.0rc1"
 方案 a：如果你开发并直接运行 mmdet，从源码安装它：
 
 ```shell
-git clone https://github.com/open-mmlab/mmdetection.git -b 3.x
-# "-b 3.x" 表示切换到 `3.x` 分支。
+git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 pip install -v -e .
 # "-v" 指详细说明，或更多的输出
@@ -65,7 +64,7 @@ pip install -v -e .
 方案 b：如果你将 mmdet 作为依赖或第三方 Python 包，使用 MIM 安装：
 
 ```shell
-mim install "mmdet>=3.0.0rc0"
+mim install mmdet
 ```
 
 ## 验证安装
@@ -75,28 +74,28 @@ mim install "mmdet>=3.0.0rc0"
 **步骤 1.** 我们需要下载配置文件和模型权重文件。
 
 ```shell
-mim download mmdet --config yolov3_mobilenetv2_8xb24-320-300e_coco --dest .
+mim download mmdet --config rtmdet_tiny_8xb32-300e_coco --dest .
 ```
 
-下载将需要几秒钟或更长时间，这取决于你的网络环境。完成后，你会在当前文件夹中发现两个文件 `yolov3_mobilenetv2_8xb24-320-300e_coco.py` 和 `yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth`。
+下载将需要几秒钟或更长时间，这取决于你的网络环境。完成后，你会在当前文件夹中发现两个文件 `rtmdet_tiny_8xb32-300e_coco.py` 和 `rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth`。
 
 **步骤 2.** 推理验证。
 
 方案 a：如果你通过源码安装的 MMDetection，那么直接运行以下命令进行验证：
 
 ```shell
-python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
+python demo/image_demo.py demo/demo.jpg rtmdet_tiny_8xb32-300e_coco.py --weights rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth --device cpu
 ```
 
-你会在当前文件夹中看到一个新的图像 `result.jpg`，图像中包含有网络预测的检测框。
+你会在当前文件夹中的 `outputs/vis` 文件夹中看到一个新的图像 `demo.jpg`，图像中包含有网络预测的检测框。
 
 方案 b：如果你通过 MIM 安装的 MMDetection，那么可以打开你的 Python 解析器，复制并粘贴以下代码：
 
 ```python
 from mmdet.apis import init_detector, inference_detector
 
-config_file = 'yolov3_mobilenetv2_8xb24-320-300e_coco.py'
-checkpoint_file = 'yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth'
+config_file = 'rtmdet_tiny_8xb32-300e_coco.py'
+checkpoint_file = 'rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth'
 model = init_detector(config_file, checkpoint_file, device='cpu')  # or device='cuda:0'
 inference_detector(model, 'demo/demo.jpg')
 ```
@@ -137,7 +136,7 @@ MMCV 包含 C++ 和 CUDA 扩展，因此其对 PyTorch 的依赖比较复杂。M
 例如，下述命令将会安装基于 PyTorch 1.12.x 和 CUDA 11.6 编译的 MMCV。
 
 ```shell
-pip install "mmcv>=2.0.0rc1" -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12.0/index.html
+pip install "mmcv>=2.0.0" -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12.0/index.html
 ```
 
 #### 在 CPU 环境中安装
@@ -177,13 +176,13 @@ MMDetection 可以在 CPU 环境中构建。在 CPU 模式下，可以进行模�
 ```shell
 !pip3 install openmim
 !mim install mmengine
-!mim install "mmcv>=2.0.0rc1,<2.1.0"
+!mim install "mmcv>=2.0.0,<2.1.0"
 ```
 
 **步骤 2.** 使用源码安装 MMDetection。
 
 ```shell
-!git clone https://github.com/open-mmlab/mmdetection.git -b 3.x
+!git clone https://github.com/open-mmlab/mmdetection.git
 %cd mmdetection
 !pip install -e .
 ```
@@ -193,7 +192,7 @@ MMDetection 可以在 CPU 环境中构建。在 CPU 模式下，可以进行模�
 ```python
 import mmdet
 print(mmdet.__version__)
-# 预期输出：3.0.0rc0 或其他版本号
+# 预期输出：3.0.0 或其他版本号
 ```
 
 ```{note}

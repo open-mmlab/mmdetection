@@ -29,11 +29,11 @@ RUN apt-get update \
 
 # Install MMEngine and MMCV
 RUN pip install openmim && \
-    mim install "mmengine==0.3.0" "mmcv>=2.0.0rc1"
+    mim install "mmengine>=0.7.1" "mmcv>=2.0.0rc4"
 
 # Install MMDetection
 RUN conda clean --all \
-    && git clone https://github.com/open-mmlab/mmdetection.git -b 3.x /mmdetection \
+    && git clone https://github.com/open-mmlab/mmdetection.git /mmdetection \
     && cd /mmdetection \
     && pip install --no-cache-dir -e .
 

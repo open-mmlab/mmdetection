@@ -14,7 +14,7 @@ Tianheng Cheng, <a href="https://xinggangw.info/">Xinggang Wang</a><sup><span>&#
 
 ## Description
 
-This is an implementation of [SparseInst](https://github.com/hustvl/SparseInst) based on [MMDetection](https://github.com/open-mmlab/mmdetection/tree/3.x), [MMCV](https://github.com/open-mmlab/mmcv), and [MMEngine](https://github.com/open-mmlab/mmengine).
+This is an implementation of [SparseInst](https://github.com/hustvl/SparseInst) based on [MMDetection](https://github.com/open-mmlab/mmdetection/tree/main), [MMCV](https://github.com/open-mmlab/mmcv), and [MMEngine](https://github.com/open-mmlab/mmengine).
 
 **SparseInst** is a conceptually novel, efficient, and fully convolutional framework for real-time instance segmentation.
 In contrast to region boxes or anchors (centers), SparseInst adopts a sparse set of **instance activation maps** as object representation, to highlight informative regions for each foreground objects.
@@ -122,10 +122,10 @@ A project does not necessarily have to be finished in a single PR, but it's esse
 
   - [ ] Metafile.yml
 
-    <!-- It will be parsed by MIM and Inferencer. [Example](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/metafile.yml) -->
+    <!-- It will be parsed by MIM and Inferencer. [Example](https://github.com/open-mmlab/mmdetection/blob/main/configs/faster_rcnn/metafile.yml) -->
 
 - [ ] Move your modules into the core package following the codebase's file hierarchy structure.
 
-  <!-- In particular, you may have to refactor this README into a standard one. [Example](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/faster_rcnn/README.md) -->
+  <!-- In particular, you may have to refactor this README into a standard one. [Example](https://github.com/open-mmlab/mmdetection/blob/main/configs/faster_rcnn/README.md) -->
 
 - [ ] Refactor your modules into the core package following the codebase's file hierarchy structure.

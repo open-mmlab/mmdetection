@@ -150,12 +150,16 @@ model = dict(
 # dataset settings
 data_root = 'data/coco/'
 train_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True),
+    dict(
+        type='LoadImageFromFile',
+        to_float32=True,
+        backend_args={{_base_.backend_args}}),
     dict(
         type='LoadPanopticAnnotations',
         with_bbox=True,
         with_mask=True,
-        with_seg=True),
+        with_seg=True,
+        backend_args={{_base_.backend_args}}),
     dict(type='RandomFlip', prob=0.5),
     # large scale jittering
     dict(
@@ -179,12 +183,12 @@ val_evaluator = [
         type='CocoPanopticMetric',
         ann_file=data_root + 'annotations/panoptic_val2017.json',
         seg_prefix=data_root + 'annotations/panoptic_val2017/',
-    ),
+        backend_args={{_base_.backend_args}}),
     dict(
         type='CocoMetric',
         ann_file=data_root + 'annotations/instances_val2017.json',
         metric=['bbox', 'segm'],
-    )
+        backend_args={{_base_.backend_args}})
 ]
 test_evaluator = val_evaluator
 

@@ -3,6 +3,8 @@ import copy
 import os.path as osp
 from typing import List, Union
 
+from mmengine.fileio import get_local_path
+
 from mmdet.registry import DATASETS
 from .api_wrappers import COCO
 from .base_det_dataset import BaseDetDataset
@@ -60,7 +62,8 @@ class CocoDataset(BaseDetDataset):
         Returns:
             List[dict]: A list of annotation.
         """  # noqa: E501
-        with self.file_client.get_local_path(self.ann_file) as local_path:
+        with get_local_path(
+                self.ann_file, backend_args=self.backend_args) as local_path:
             self.coco = self.COCOAPI(local_path)
         # The order of returned `cat_ids` will not
         # change with the order of the `classes`
@@ -123,6 +126,10 @@ class CocoDataset(BaseDetDataset):
         data_info['seg_map_path'] = seg_map_path
         data_info['height'] = img_info['height']
         data_info['width'] = img_info['width']
+
+        if self.return_classes:
+            data_info['text'] = self.metainfo['classes']
+            data_info['custom_entities'] = True
 
         instances = []
         for i, ann in enumerate(ann_info):

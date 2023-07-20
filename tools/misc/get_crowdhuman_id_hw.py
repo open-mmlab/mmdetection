@@ -15,7 +15,7 @@ from multiprocessing import Pool
 
 import mmcv
 from mmengine.config import Config
-from mmengine.fileio import FileClient, dump
+from mmengine.fileio import dump, get, get_text
 from mmengine.logging import print_log
 
 
@@ -37,11 +37,10 @@ def parse_args():
 
 def get_image_metas(anno_str, img_prefix):
     id_hw = {}
-    file_client = FileClient(backend='disk')
     anno_dict = json.loads(anno_str)
     img_path = osp.join(img_prefix, f"{anno_dict['ID']}.jpg")
     img_id = anno_dict['ID']
-    img_bytes = file_client.get(img_path)
+    img_bytes = get(img_path)
     img = mmcv.imfrombytes(img_bytes, backend='cv2')
     id_hw[img_id] = img.shape[:2]
     return id_hw
@@ -52,8 +51,6 @@ def main():
 
     # get ann_file and img_prefix from config files
     cfg = Config.fromfile(args.config)
-    file_client_args = cfg.get('file_client_args', dict(backend='disk'))
-    file_client = FileClient(**file_client_args)
     dataset = args.dataset
     dataloader_cfg = cfg.get(f'{dataset}_dataloader')
     ann_file = osp.join(dataloader_cfg.dataset.data_root,
@@ -64,7 +61,7 @@ def main():
     # load image metas
     print_log(
         f'loading CrowdHuman {dataset} annotation...', level=logging.INFO)
-    anno_strs = file_client.get_text(ann_file).strip().split('\n')
+    anno_strs = get_text(ann_file).strip().split('\n')
     pool = Pool(args.nproc)
     # get image metas with multiple processes
     id_hw_temp = pool.starmap(

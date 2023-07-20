@@ -27,9 +27,7 @@ model = dict(
         num_outs=5))
 
 train_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='RandomChoiceResize',

@@ -11,9 +11,7 @@ dataset_type = 'OpenImagesDataset'
 data_root = 'data/OpenImages/'
 input_size = 300
 train_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PhotoMetricDistortion',
@@ -35,7 +33,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='Resize', scale=(input_size, input_size), keep_ratio=False),
     # avoid bboxes being resized
     dict(type='LoadAnnotations', with_bbox=True),

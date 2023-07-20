@@ -5,7 +5,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional
 
 import numpy as np
-from mmengine.fileio import load
+from mmengine.fileio import get_local_path, load
 from mmengine.utils import is_abs
 
 from mmdet.registry import DATASETS
@@ -25,9 +25,8 @@ class OpenImagesDataset(BaseDetDataset):
         hierarchy_file (str): The file path of the class hierarchy.
         image_level_ann_file (str): Human-verified image level annotation,
             which is used in evaluation.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmengine.fileio.FileClient` for details.
-            Defaults to ``dict(backend='disk')``.
+        backend_args (dict, optional): Arguments to instantiate the
+            corresponding backend. Defaults to None.
     """
 
     METAINFO: dict = dict(dataset_type='oid_v6')
@@ -66,7 +65,8 @@ class OpenImagesDataset(BaseDetDataset):
         self._metainfo['RELATION_MATRIX'] = relation_matrix
 
         data_list = []
-        with self.file_client.get_local_path(self.ann_file) as local_path:
+        with get_local_path(
+                self.ann_file, backend_args=self.backend_args) as local_path:
             with open(local_path, 'r') as f:
                 reader = csv.reader(f)
                 last_img_id = None
@@ -123,9 +123,7 @@ class OpenImagesDataset(BaseDetDataset):
 
         # add image metas to data list
         img_metas = load(
-            self.meta_file,
-            file_format='pkl',
-            file_client_args=self.file_client_args)
+            self.meta_file, file_format='pkl', backend_args=self.backend_args)
         assert len(img_metas) == len(data_list)
         for i, meta in enumerate(img_metas):
             img_id = data_list[i]['img_id']
@@ -167,7 +165,8 @@ class OpenImagesDataset(BaseDetDataset):
 
         index_list = []
         classes_names = []
-        with self.file_client.get_local_path(label_file) as local_path:
+        with get_local_path(
+                label_file, backend_args=self.backend_args) as local_path:
             with open(local_path, 'r') as f:
                 reader = csv.reader(f)
                 for line in reader:
@@ -201,7 +200,9 @@ class OpenImagesDataset(BaseDetDataset):
         """
 
         item_lists = defaultdict(list)
-        with self.file_client.get_local_path(img_level_ann_file) as local_path:
+        with get_local_path(
+                img_level_ann_file,
+                backend_args=self.backend_args) as local_path:
             with open(local_path, 'r') as f:
                 reader = csv.reader(f)
                 for i, line in enumerate(reader):
@@ -230,9 +231,7 @@ class OpenImagesDataset(BaseDetDataset):
         """  # noqa
 
         hierarchy = load(
-            hierarchy_file,
-            file_format='json',
-            file_client_args=self.file_client_args)
+            hierarchy_file, file_format='json', backend_args=self.backend_args)
         class_num = len(self._metainfo['classes'])
         relation_matrix = np.eye(class_num, class_num)
         relation_matrix = self._convert_hierarchy_tree(hierarchy,
@@ -336,7 +335,8 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         self._metainfo['RELATION_MATRIX'] = relation_matrix
 
         data_list = []
-        with self.file_client.get_local_path(self.ann_file) as local_path:
+        with get_local_path(
+                self.ann_file, backend_args=self.backend_args) as local_path:
             with open(local_path, 'r') as f:
                 lines = f.readlines()
         i = 0
@@ -368,9 +368,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
 
         # add image metas to data list
         img_metas = load(
-            self.meta_file,
-            file_format='pkl',
-            file_client_args=self.file_client_args)
+            self.meta_file, file_format='pkl', backend_args=self.backend_args)
         assert len(img_metas) == len(data_list)
         for i, meta in enumerate(img_metas):
             img_id = osp.split(data_list[i]['img_path'])[-1][:-4]
@@ -413,7 +411,8 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         label_list = []
         id_list = []
         index_mapping = {}
-        with self.file_client.get_local_path(label_file) as local_path:
+        with get_local_path(
+                label_file, backend_args=self.backend_args) as local_path:
             with open(local_path, 'r') as f:
                 reader = csv.reader(f)
                 for line in reader:
@@ -445,8 +444,9 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         """
 
         item_lists = defaultdict(list)
-        with self.file_client.get_local_path(
-                image_level_ann_file) as local_path:
+        with get_local_path(
+                image_level_ann_file,
+                backend_args=self.backend_args) as local_path:
             with open(local_path, 'r') as f:
                 reader = csv.reader(f)
                 i = -1
@@ -478,6 +478,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
             relationship between the parent class and the child class,
             of shape (class_num, class_num).
         """
-        with self.file_client.get_local_path(hierarchy_file) as local_path:
+        with get_local_path(
+                hierarchy_file, backend_args=self.backend_args) as local_path:
             class_label_tree = np.load(local_path, allow_pickle=True)
         return class_label_tree[1:, 1:]
