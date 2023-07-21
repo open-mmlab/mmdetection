@@ -194,7 +194,7 @@ val_evaluator = dict(
 test_evaluator = val_evaluator
 
 # training schedule for 1x
-max_iter = 68760
+max_iter = 68760 * 2
 train_cfg = dict(
     type='IterBasedTrainLoop', max_iters=max_iter, val_interval=max_iter)
 val_cfg = dict(type='ValLoop')
@@ -209,7 +209,7 @@ param_scheduler = [
         begin=0,
         end=max_iter,
         by_epoch=False,
-        milestones=[45840, 63030],
+        milestones=[45840 * 2, 63030 * 2],
         gamma=0.1)
 ]
 

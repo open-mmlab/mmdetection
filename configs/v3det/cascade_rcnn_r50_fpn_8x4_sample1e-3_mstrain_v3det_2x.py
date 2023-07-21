@@ -8,25 +8,18 @@ model = dict(
         bgr_to_rgb=True,
         pad_size_divisor=32),
     backbone=dict(
-        type='SwinTransformer',
-        embed_dims=128,
-        depths=[2, 2, 18, 2],
-        num_heads=[4, 8, 16, 32],
-        window_size=7,
-        mlp_ratio=4,
-        qkv_bias=True,
-        qk_scale=None,
-        drop_rate=0.,
-        attn_drop_rate=0.,
-        drop_path_rate=0.3,
-        patch_norm=True,
+        type='ResNet',
+        depth=50,
+        num_stages=4,
         out_indices=(0, 1, 2, 3),
-        with_cp=False,
-        convert_weights=True,
-        init_cfg=dict(type='Pretrained', checkpoint='./swin_base_patch4_window7_224.pth')),
+        frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_eval=True,
+        style='pytorch',
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     neck=dict(
         type='FPN',
-        in_channels=[128, 256, 512, 1024],
+        in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         num_outs=5),
     rpn_head=dict(
@@ -267,7 +260,7 @@ val_evaluator = dict(
 test_evaluator = val_evaluator
 
 # training schedule for 1x
-max_iter = 68760
+max_iter = 68760 * 2
 train_cfg = dict(
     type='IterBasedTrainLoop', max_iters=max_iter, val_interval=max_iter)
 val_cfg = dict(type='ValLoop')
@@ -282,7 +275,7 @@ param_scheduler = [
         begin=0,
         end=max_iter,
         by_epoch=False,
-        milestones=[45840, 63030],
+        milestones=[45840 * 2, 63030 * 2],
         gamma=0.1)
 ]
 
