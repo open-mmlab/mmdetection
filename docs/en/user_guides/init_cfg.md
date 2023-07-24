@@ -111,7 +111,7 @@ init_cfg = [dict(type='Constant', layer='Conv1d', val=1),
 - When initializing some specific part with its attribute name, we can use `override` key, and the value in `override` will ignore the value in init_cfg.
 
   ```python
-  # layers：
+  # layers:
   # self.feat = nn.Conv1d(3, 1, 3)
   # self.reg = nn.Conv2d(3, 3, 3)
   # self.cls = nn.Linear(1,2)
@@ -126,7 +126,7 @@ init_cfg = [dict(type='Constant', layer='Conv1d', val=1),
 - If `layer` is None in init_cfg, only sub-module with the name in override will be initialized, and type and other args in override can be omitted.
 
   ```python
-  # layers：
+  # layers:
   # self.feat = nn.Conv1d(3, 1, 3)
   # self.reg = nn.Conv2d(3, 3, 3)
   # self.cls = nn.Linear(1,2)

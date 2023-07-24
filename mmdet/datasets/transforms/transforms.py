@@ -56,7 +56,7 @@ def _fixed_scale_size(
     if isinstance(scale, (float, int)):
         scale = (scale, scale)
     w, h = size
-    # don’t need o.5 offset
+    # don't need o.5 offset
     return int(w * float(scale[0])), int(h * float(scale[1]))
 
 
