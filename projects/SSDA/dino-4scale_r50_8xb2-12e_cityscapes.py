@@ -1,6 +1,8 @@
 _base_ = [
     'mmdet::_base_/datasets/cityscapes_detection.py', 'mmdet::_base_/default_runtime.py'
 ]
+batch_size=4
+
 model = dict(
     type='DINO',
     num_queries=900,  # num_matching_queries
@@ -124,9 +126,17 @@ train_pipeline = [
         ]),
     dict(type='PackDetInputs')
 ]
-train_dataloader = dict(
-    dataset=dict(
-        filter_cfg=dict(filter_empty_gt=False), pipeline=train_pipeline))
+train_dataloader = dict(batch_size=batch_size,
+                        dataset=dict(dataset=dict(
+                            data_prefix=dict(img='leftImg8bit_trainvaltest/leftImg8bit/train/'))
+                        ))
+
+val_dataloader = dict(batch_size=1,
+                        dataset=dict(
+                            data_prefix=dict(img='leftImg8bit_trainvaltest/leftImg8bit/val/'))
+                        )
+# gloo - multi-gpu
+env_cfg = dict(dist_cfg=dict(backend='gloo'))
 
 # optimizer
 optim_wrapper = dict(
@@ -161,3 +171,15 @@ param_scheduler = [
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (2 samples per GPU)
 auto_scale_lr = dict(base_batch_size=16)
+
+vis_backends = [
+            dict(type='LocalVisBackend', _scope_='mmdet'),
+                dict(type='WandbVisBackend', _scope_='mmdet')
+                ]
+visualizer = dict(
+            type='DetLocalVisualizer',
+                vis_backends=[dict(type='LocalVisBackend'),
+                                      dict(type='WandbVisBackend')],
+                    name='visualizer',
+                        _scope_='mmdet')
+
