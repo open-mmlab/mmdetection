@@ -49,18 +49,11 @@ class MaskDINOFusionHead(MaskFormerFusionHead):
         batch_img_metas = [
             data_sample.metainfo for data_sample in batch_data_samples
         ]
-        panoptic_on = self.test_cfg.get('panoptic_on', True)
-        semantic_on = self.test_cfg.get('semantic_on', False)
-        instance_on = self.test_cfg.get('instance_on', False)
-
         batch_input_shape = batch_data_samples[0].metainfo['batch_input_shape']
-        # upsample masks
-        mask_pred_results = F.interpolate(
-            mask_pred_results,
-            size=(batch_input_shape[-2], batch_input_shape[-1]),
-            mode="bilinear",
-            align_corners=False,
-        )
+
+        panoptic_on = self.test_cfg.get('panoptic_on', True)
+        semantic_on = self.test_cfg.get('semantic_on', True)
+        instance_on = self.test_cfg.get('instance_on', True)
 
         results = []
         for mask_cls_result, mask_pred_result, mask_box_result, meta in zip(

@@ -14,6 +14,14 @@ from mmdet.models.layers import MLP, coordinate_to_encoding, inverse_sigmoid
 from mmdet.structures.bbox import bbox_xyxy_to_cxcywh
 from mmdet.structures.mask import mask2bbox
 
+def setup_seed(seed):
+    import numpy as np
+    import random
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
 
 class MaskDINODecoder(nn.Module):
 
@@ -189,7 +197,8 @@ class MaskDINODecoder(nn.Module):
             known_bboxs = boxes.repeat(scalar, 1)
             known_labels_expaned = known_labels.clone()
             known_bbox_expand = known_bboxs.clone()
-
+            
+            # setup_seed(20)
             # noise on the label
             if noise_scale > 0:
                 p = torch.rand_like(known_labels_expaned.float())

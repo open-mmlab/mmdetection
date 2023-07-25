@@ -14,7 +14,7 @@ from typing import List
 import torch
 import torch.nn.functional as F
 from torch import nn
-from torchvision.ops import generalized_box_iou
+#from torchvision.ops import generalized_box_iou
 
 from mmengine.dist import get_world_size
 from mmcv.ops import point_sample
@@ -120,6 +120,54 @@ def calculate_uncertainty(logits):
     gt_class_logits = logits.clone()
     return -(torch.abs(gt_class_logits))
 
+def setup_seed(seed):
+    import numpy as np
+    import random
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+
+from torchvision.ops.boxes import box_area
+
+def box_iou(boxes1, boxes2):
+    area1 = box_area(boxes1)
+    area2 = box_area(boxes2)
+
+    lt = torch.max(boxes1[:, None, :2], boxes2[:, :2])  # [N,M,2]
+    rb = torch.min(boxes1[:, None, 2:], boxes2[:, 2:])  # [N,M,2]
+
+    wh = (rb - lt).clamp(min=0)  # [N,M,2]
+    inter = wh[:, :, 0] * wh[:, :, 1]  # [N,M]
+
+    union = area1[:, None] + area2 - inter
+
+    iou = inter / (union + 1e-6)
+    return iou, union
+
+def generalized_box_iou(boxes1, boxes2):
+    """
+    Generalized IoU from https://giou.stanford.edu/
+
+    The boxes should be in [x0, y0, x1, y1] format
+
+    Returns a [N, M] pairwise matrix, where N = len(boxes1)
+    and M = len(boxes2)
+    """
+    # degenerate boxes gives inf / nan results
+    # so do an early check
+    assert (boxes1[:, 2:] >= boxes1[:, :2]).all()
+    assert (boxes2[:, 2:] >= boxes2[:, :2]).all()
+    iou, union = box_iou(boxes1, boxes2)
+
+    lt = torch.min(boxes1[:, None, :2], boxes2[:, :2])
+    rb = torch.max(boxes1[:, None, 2:], boxes2[:, 2:])
+
+    wh = (rb - lt).clamp(min=0)  # [N,M,2]
+    area = wh[:, :, 0] * wh[:, :, 1]
+
+    return iou - (area - union) / (area + 1e-6) # diff
 
 class SetCriterion(nn.Module):
     """This class computes the loss for DETR.
@@ -293,6 +341,7 @@ class SetCriterion(nn.Module):
 
         with torch.no_grad():
             # sample point_coords
+            # setup_seed(20)
             point_coords = get_uncertain_point_coords_with_randomness(
                 src_masks,
                 lambda logits: calculate_uncertainty(logits),

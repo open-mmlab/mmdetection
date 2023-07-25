@@ -73,7 +73,7 @@ model = dict(
             two_stage=True,
             dn='seg',
             noise_scale=0.4,
-            dn_num=20,
+            dn_num=100,
             initialize_box_type='no',
             initial_pred=True,
             learn_tgt=False,
@@ -97,7 +97,7 @@ model = dict(
         num_classes=num_things_classes + num_stuff_classes,
         matcher=dict(
             cost_class=4.0, cost_box=5.0, cost_giou=2.0,
-            cost_mask=5.0, cost_dice=5.0, num_points=100),
+            cost_mask=5.0, cost_dice=5.0, num_points=12544),
         class_weight=4.0,
         box_weight=5.0,
         giou_weight=2.0,
@@ -108,7 +108,7 @@ model = dict(
         box_loss=True,
         two_stage=True,
         eos_coef=0.1,
-        num_points=100,
+        num_points=12544,
         oversample_ratio=3.0,
         importance_sample_ratio=0.75,
         semantic_ce_loss=False,
@@ -132,12 +132,16 @@ model = dict(
 # dataset settings
 data_root = 'data/coco/'
 train_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True, imdecode_backend='pillow'),
+    dict(type='LoadImageFromFile', to_float32=True, 
+         imdecode_backend='pillow', 
+         backend_args=_base_.backend_args),
     dict(
         type='LoadPanopticAnnotations',
         with_bbox=True,
         with_mask=True,
-        with_seg=True),
+        with_seg=True,
+        backend_args=_base_.backend_args, 
+        imdecode_backend='pillow'),
     dict(type='RandomFlip', prob=0.5),
     # large scale jittering
     dict(

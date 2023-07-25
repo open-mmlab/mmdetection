@@ -14,7 +14,7 @@ from torch.cuda.amp import autocast
 from mmcv.cnn import ConvModule
 from mmdet.models.layers import SinePositionalEncoding, DeformableDetrTransformerEncoder
 from mmcv.ops import MultiScaleDeformableAttention
-
+from mmengine.model import caffe2_xavier_init
 
 class MaskDINOEncoder(nn.Module):
     """
@@ -175,6 +175,8 @@ class MaskDINOEncoder(nn.Module):
             # output_conv.bias = output_conv.conv.bias
             # weight_init.c2_xavier_fill(lateral_conv)  # TODO: Ask Mask2Former whether fvcore is essential
             # weight_init.c2_xavier_fill(output_conv)  # TODO: Ask Mask2Former whether fvcore is essential
+            caffe2_xavier_init(lateral_conv.conv, bias=0)
+            caffe2_xavier_init(output_conv.conv, bias=0)
 
             self.add_module("adapter_{}".format(idx + 1), lateral_conv)
             self.add_module("layer_{}".format(idx + 1), output_conv)
