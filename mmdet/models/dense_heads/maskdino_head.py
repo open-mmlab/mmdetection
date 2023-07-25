@@ -97,7 +97,7 @@ class MaskDINOHead(nn.Module):
         for data_sample in batch_data_samples:
             # pad gt
             device = data_sample.gt_instances.bboxes.device
-            h, w, _ = data_sample.img_shape
+            h, w = data_sample.img_shape[:2]
             image_size_xyxy = torch.as_tensor([w, h, w, h], dtype=torch.float, device=device)
 
             gt_masks = torch.from_numpy(data_sample.gt_instances.masks.masks).bool().to(device)
