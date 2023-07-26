@@ -111,21 +111,21 @@ class MaskDINOHead(nn.Module):
     def prepare_targets(self, batch_data_samples):
         # h_pad, w_pad = images.tensor.shape[-2:]  # TODO: Here is confusing
         h_pad, w_pad = batch_data_samples[0].batch_input_shape  # TODO: make a check
+        # h, w = data_sample.img_shape[:2]
+        h, w = h_pad, w_pad
         new_targets = []
         for data_sample in batch_data_samples:
-            # pad gt
-            device = data_sample.gt_instances.bboxes.device
-            # h, w = data_sample.img_shape[:2]
-            h, w = h_pad, w_pad
-            image_size_xyxy = torch.as_tensor([w, h, w, h], dtype=torch.float, device=device)
-
-            gt_masks = torch.from_numpy(data_sample.gt_instances.masks.masks).bool().to(device)
-            gt_labels = data_sample.gt_instances.labels
-            gt_bboxes = data_sample.gt_instances.bboxes
+            if 'bboxes' in data_sample.gt_instances:
+                # pad gt
+                device = data_sample.gt_instances.bboxes.device
+                gt_masks = torch.from_numpy(data_sample.gt_instances.masks.masks).bool().to(device)
+                gt_labels = data_sample.gt_instances.labels
+                gt_bboxes = data_sample.gt_instances.bboxes
 
             if "gt_sem_seg" in data_sample:
                 gt_semantic_seg=data_sample.gt_sem_seg.sem_seg
                 gt_semantic_seg = gt_semantic_seg.squeeze(0)
+                device = gt_semantic_seg.device
                 semantic_labels = torch.unique(
                     gt_semantic_seg,
                     sorted=False,
@@ -143,14 +143,24 @@ class MaskDINOHead(nn.Module):
                     stuff_masks = torch.stack(stuff_masks_list, dim=0)
                     stuff_bboxes=get_bounding_boxes(stuff_masks)
                     stuff_labels = torch.stack(stuff_labels_list, dim=0)
+                    
+                    if 'bboxes' in data_sample.gt_instances:
+                        gt_labels = torch.cat([gt_labels, stuff_labels], dim=0)
+                        gt_masks = torch.cat([gt_masks, stuff_masks], dim=0)
+                        gt_bboxes = torch.cat([gt_bboxes, stuff_bboxes], dim=0)
+                    else:
+                        gt_labels=stuff_labels.long()
+                        gt_masks=stuff_masks
+                        gt_bboxes=stuff_bboxes
+                else:
+                    gt_masks = torch.zeros((0, h_pad, w_pad), dtype=torch.bool, device=device)
+                    gt_bboxes=torch.zeros((0, 4), dtype=torch.float, device=device)
+                    gt_labels=torch.zeros((0,), dtype=torch.long, device=device)
 
-                    gt_labels = torch.cat([gt_labels, stuff_labels], dim=0)
-                    gt_masks = torch.cat([gt_masks, stuff_masks], dim=0)
-                    gt_bboxes = torch.cat([gt_bboxes, stuff_bboxes], dim=0)
-           
             padded_masks = torch.zeros((gt_masks.shape[0], h_pad, w_pad), dtype=gt_masks.dtype, device=device)
             padded_masks[:, : gt_masks.shape[1], : gt_masks.shape[2]] = gt_masks
-            
+            image_size_xyxy = torch.as_tensor([w, h, w, h], dtype=torch.float, device=device)
+
             new_targets.append(
                 {
                     "labels": gt_labels,
