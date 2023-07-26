@@ -79,8 +79,10 @@ def mapping_state_dict(state_dict: OrderedDict) -> OrderedDict:
     out = OrderedDict()
     for name, param in state_dict.items():
         new_name = get_mapped_name(name)
-        assert new_name not in out, f'{name}-->{new_name}'
-        out[new_name] = param
+        print(name,new_name)
+        # assert new_name not in out, f'{name}-->{new_name}'
+        if new_name not in out:
+            out[new_name] = param
     return out
 
 
@@ -99,10 +101,12 @@ def delete_duplicated_items(state_dict: OrderedDict) -> OrderedDict:
 
 
 if __name__ == '__main__':
-#     cfg_3x = Path(['configs/maskdino/maskdino_r50_8xb2-lsj-50e_coco-panoptic.py',][INDEX])
-#     ckpt_2x = Path(['../MaskDINO/maskdino_r50_50ep_300q_hid2048_3sd1_panoptic_pq53.0.pth',][INDEX])
-    cfg_3x = Path(['configs/maskdino/maskdino_r50_8xb2-lsj-50e_coco.py',][INDEX])
-    ckpt_2x = Path(['../MaskDINO/maskdino_r50_50ep_300q_hid2048_3sd1_instance_maskenhanced_mask46.3ap_box51.7ap.pth',][INDEX])
+    # cfg_3x = Path(['configs/maskdino/maskdino_r50_8xb2-lsj-50e_coco-panoptic.py',][INDEX])
+    # ckpt_2x = Path(['../MaskDINO/maskdino_r50_50ep_300q_hid2048_3sd1_panoptic_pq53.0.pth',][INDEX])
+    # cfg_3x = Path(['configs/maskdino/maskdino_r50_8xb2-lsj-50e_coco.py',][INDEX])
+    # ckpt_2x = Path(['../MaskDINO/maskdino_r50_50ep_300q_hid2048_3sd1_instance_maskenhanced_mask46.3ap_box51.7ap.pth',][INDEX])
+    cfg_3x = Path(['configs/maskdino/maskdino_r50_8xb2-160k_ade20k-512x512.py',][INDEX])
+    ckpt_2x = Path(['../MaskDINO/maskdino_r50_50ep_100q_celoss_hid1024_3s_semantic_ade20k_48.7miou.pth',][INDEX])
     save_path = str(ckpt_2x.parent) + f'/aligned_{ckpt_2x.name}'
 
     cfg_3x = Config.fromfile(cfg_3x)

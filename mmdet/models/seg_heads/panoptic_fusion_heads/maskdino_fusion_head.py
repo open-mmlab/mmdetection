@@ -24,6 +24,7 @@ class MaskDINOFusionHead(MaskFormerFusionHead):
     def __init__(self,
                  num_things_classes: int = 80,
                  num_stuff_classes: int = 53,
+                 semantic_ce_loss: bool=False,
                  test_cfg: OptConfigType = None,
                  loss_panoptic: OptConfigType = None,
                  init_cfg: OptMultiConfig = None,
@@ -35,7 +36,7 @@ class MaskDINOFusionHead(MaskFormerFusionHead):
             loss_panoptic=loss_panoptic,
             init_cfg=init_cfg,
             **kwargs)
-        self.semantic_ce_loss=False # TODO 
+        self.semantic_ce_loss=semantic_ce_loss
 
     def predict(self,
                 mask_cls_results: Tensor,
@@ -55,6 +56,8 @@ class MaskDINOFusionHead(MaskFormerFusionHead):
         semantic_on = self.test_cfg.get('semantic_on', True)
         instance_on = self.test_cfg.get('instance_on', True)
 
+        sem_seg_postprocess_before_inference = instance_on or panoptic_on
+
         results = []
         for mask_cls_result, mask_pred_result, mask_box_result, meta in zip(
                 mask_cls_results, mask_pred_results, mask_box_results, batch_img_metas):
@@ -62,17 +65,12 @@ class MaskDINOFusionHead(MaskFormerFusionHead):
             ori_height, ori_width = meta['ori_shape'][:2]
             # shape of image after pipeline and before padding divisibly
             img_height, img_width = meta['img_shape'][:2]
-
-            # remove padding
-            mask_pred_result = mask_pred_result[:, :img_height, :img_width]
-
-            if rescale:
-                # return result in original resolution
-                mask_pred_result = F.interpolate(
-                    mask_pred_result[:, None],
-                    size=(ori_height, ori_width),
-                    mode='bilinear',
-                    align_corners=False)[:, 0]
+            
+            # whether to resize the prediction back to original input size before semantic segmentation inference or after.
+            # For high-resolution dataset like Mapillary, resizing predictions before
+            # inference will cause OOM error.
+            if sem_seg_postprocess_before_inference:
+                mask_pred_result = self.mask_postprocess(mask_pred_result, meta['img_shape'][:2], ori_height, ori_width)
 
             result = dict()
             if panoptic_on:
@@ -89,15 +87,44 @@ class MaskDINOFusionHead(MaskFormerFusionHead):
                     mask_cls_result, mask_pred_result, mask_box_result)
 
             if semantic_on:
-                result['sem_results'] = self.semantic_postprocess(
-                    mask_cls_result, mask_pred_result)
-
+                semseg = self.semantic_inference(mask_cls_result, mask_pred_result)
+                if not sem_seg_postprocess_before_inference:
+                    semseg = self.mask_postprocess(semseg, meta['img_shape'][:2], ori_height, ori_width)
+                
+                semseg = semseg.max(0)[1]
+                result['sem_results']= PixelData(sem_seg=semseg[None])
             results.append(result)
 
         return results
     
     @AvoidCUDAOOM.retry_if_cuda_oom
-    def semantic_postprocess(self, mask_cls: Tensor,
+    def mask_postprocess(self,result, img_size, output_height, output_width):
+        """
+        Return semantic segmentation predictions in the original resolution.
+
+        The input images are often resized when entering semantic segmentor. Moreover, in same
+        cases, they also padded inside segmentor to be divisible by maximum network stride.
+        As a result, we often need the predictions of the segmentor in a different
+        resolution from its inputs.
+
+        Args:
+            result (Tensor): semantic segmentation prediction logits. A tensor of shape (C, H, W),
+                where C is the number of classes, and H, W are the height and width of the prediction.
+            img_size (tuple): image size that segmentor is taking as input.
+            output_height, output_width: the desired output resolution.
+
+        Returns:
+            semantic segmentation prediction (Tensor): A tensor of the shape
+                (C, output_height, output_width) that contains per-pixel soft predictions.
+        """
+        result = result[:, :img_size[0], :img_size[1]].expand(1, -1, -1, -1)
+        result = F.interpolate(
+            result, size=(output_height, output_width), mode="bilinear", align_corners=False
+        )[0]
+        return result
+
+    @AvoidCUDAOOM.retry_if_cuda_oom
+    def semantic_inference(self, mask_cls: Tensor,
                              mask_pred: Tensor) -> PixelData:
         """Semantic segmengation postprocess.
 
@@ -129,10 +156,7 @@ class MaskDINOFusionHead(MaskFormerFusionHead):
                 mask_cls = F.softmax(mask_cls / panoptic_temperature, dim=-1)  # already sigmoid
             mask_pred = mask_pred.sigmoid()
             semseg = torch.einsum("qc,qhw->chw", mask_cls, mask_pred)
-        
-        semseg = semseg.max(0)[1]
-        pred_sem_seg = PixelData(sem_seg=semseg[None])
-        return pred_sem_seg
+        return semseg
         
     @AvoidCUDAOOM.retry_if_cuda_oom
     def panoptic_postprocess(self, mask_cls: Tensor,

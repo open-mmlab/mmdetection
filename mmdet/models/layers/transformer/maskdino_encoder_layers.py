@@ -288,6 +288,7 @@ class MSDeformAttnTransformerEncoderOnly(nn.Module):
                     embed_dims=d_model,
                     num_heads=nhead,
                     dropout=dropout,
+                    num_levels=num_feature_levels,
                     num_points=enc_n_points),
                 ffn_cfg=dict(
                     embed_dims=d_model,
