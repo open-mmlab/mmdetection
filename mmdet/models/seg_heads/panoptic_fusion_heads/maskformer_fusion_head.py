@@ -121,7 +121,12 @@ class MaskFormerFusionHead(BasePanopticFusionHead):
             :obj:`PixelData`: Semantic segment result.
         """
         # TODO add semantic segmentation result
-        raise NotImplementedError
+        mask_cls = F.softmax(mask_cls, dim=-1)[..., :-1]
+        mask_pred = mask_pred.sigmoid()
+        semseg = torch.einsum('qc,qhw->chw', mask_cls, mask_pred)
+        semseg = semseg.max(0)[1].unsqueeze(0)
+        return PixelData(sem_seg=semseg)
+        # raise NotImplementedError
 
     def instance_postprocess(self, mask_cls: Tensor,
                              mask_pred: Tensor) -> InstanceData:
@@ -226,8 +231,8 @@ class MaskFormerFusionHead(BasePanopticFusionHead):
         panoptic_on = self.test_cfg.get('panoptic_on', True)
         semantic_on = self.test_cfg.get('semantic_on', False)
         instance_on = self.test_cfg.get('instance_on', False)
-        assert not semantic_on, 'segmantic segmentation '\
-            'results are not supported yet.'
+        # assert not semantic_on, 'segmantic segmentation '\
+        #     'results are not supported yet.'
 
         results = []
         for mask_cls_result, mask_pred_result, meta in zip(

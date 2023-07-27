@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from projects.OneFormer.oneformer.oneformer import OneFormer
 from .atss import ATSS
 from .autoassign import AutoAssign
 from .base import BaseDetector
@@ -68,5 +69,6 @@ __all__ = [
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
     'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector', 'SoftTeacher',
     'RTMDet', 'Detectron2Wrapper', 'CrowdDet', 'CondInst', 'BoxInst',
-    'DetectionTransformer', 'ConditionalDETR', 'DINO', 'DABDETR', 'GLIP'
+    'DetectionTransformer', 'ConditionalDETR', 'DINO', 'DABDETR', 'GLIP',
+    'OneFormer'
 ]
