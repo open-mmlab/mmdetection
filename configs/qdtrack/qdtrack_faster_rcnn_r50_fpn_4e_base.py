@@ -4,7 +4,7 @@ with read_base():
     from .._base_.models.faster_rcnn_r50_fpn import *
     from .._base_.default_runtime import *
 
-import mmcv.ops.roi_align
+from mmcv.ops import RoIAlign
 from mmengine.hooks import LoggerHook, SyncBuffersHook
 from mmengine.model.weight_init import PretrainedInit
 from mmengine.optim import MultiStepLR, OptimWrapper
@@ -63,7 +63,7 @@ model = dict(
         roi_extractor=dict(
             type=SingleRoIExtractor,
             roi_layer=dict(
-                type=mmcv.ops.roi_align, output_size=7, sampling_ratio=0),
+                type=RoIAlign, output_size=7, sampling_ratio=0),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32]),
         embed_head=dict(
