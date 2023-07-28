@@ -3,8 +3,9 @@ from typing import Sequence, Tuple
 
 import torch
 from mmcv.ops import batched_nms
-from mmdet.structures import DetDataSample, SampleList
 from mmengine.structures import InstanceData
+
+from mmdet.structures import DetDataSample, SampleList
 
 
 def shift_rbboxes(bboxes: torch.Tensor, offset: Sequence[int]):

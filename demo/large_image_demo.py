@@ -18,10 +18,11 @@ from pathlib import Path
 
 import mmcv
 import numpy as np
-from mmdet.apis import inference_detector, init_detector
 from mmengine.config import Config, ConfigDict
 from mmengine.logging import print_log
 from mmengine.utils import ProgressBar
+
+from mmdet.apis import inference_detector, init_detector
 
 try:
     from sahi.slicing import slice_image
@@ -117,8 +118,7 @@ def main():
             test_data_cfg.batch_shapes_cfg = None
         test_data_cfg.pipeline = config.tta_pipeline
 
-    model = init_detector(
-        config, args.checkpoint, device=args.device)
+    model = init_detector(config, args.checkpoint, device=args.device)
 
     if not os.path.exists(args.out_dir) and not args.show:
         os.mkdir(args.out_dir)

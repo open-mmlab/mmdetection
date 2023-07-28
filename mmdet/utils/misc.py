@@ -2,17 +2,18 @@
 import glob
 import os
 import os.path as osp
+import urllib
 import warnings
 from typing import Union
-import urllib
-import torch
 
-from mmengine.utils import scandir
+import torch
 from mmengine.config import Config, ConfigDict
 from mmengine.logging import print_log
+from mmengine.utils import scandir
 
 IMG_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif',
                   '.tiff', '.webp')
+
 
 def find_latest_checkpoint(path, suffix='pth'):
     """Find the latest checkpoint from the working directory.
