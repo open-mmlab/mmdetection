@@ -5,7 +5,9 @@ import os.path as osp
 import warnings
 from typing import Union
 import urllib
+import torch
 
+from mmengine.utils import scandir
 from mmengine.config import Config, ConfigDict
 from mmengine.logging import print_log
 
