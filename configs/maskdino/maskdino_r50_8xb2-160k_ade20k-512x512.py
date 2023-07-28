@@ -194,16 +194,14 @@ optim_wrapper = dict(
     clip_grad=dict(max_norm=0.01, norm_type=2))
 
 max_iters = 160000
-# learning policy
-param_scheduler = [
-    dict(
-        type='PolyLR',
-        eta_min=0,
-        power=0.9,
-        begin=0,
-        end=max_iters,
-        by_epoch=False)
-]
+param_scheduler = dict(
+    type='MultiStepLR',
+    begin=0,
+    end=max_iters,
+    by_epoch=False,
+    milestones=[135000, 150000],
+    gamma=0.1)
+
 interval = 5000
 dynamic_intervals = [(max_iters // interval * interval + 1, max_iters)]
 train_cfg = dict(
