@@ -3,6 +3,7 @@ from mmengine.config import read_base
 
 with read_base():
     from .._base_.models.faster_rcnn_r50_fpn import *
+    from .._base_.models.faster_rcnn_r50_fpn import model
     from .._base_.default_runtime import *
 
 from mmcv.ops import RoIAlign
