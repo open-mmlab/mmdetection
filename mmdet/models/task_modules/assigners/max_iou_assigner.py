@@ -165,7 +165,7 @@ class MaxIoUAssigner(BaseAssigner):
 
         Args:
             overlaps (Tensor): Overlaps between k gt_bboxes and n bboxes,
-                shape(k, n).
+                shape(k, n, 1).
             gt_labels (Tensor): Labels of k gt_bboxes, shape (k, ).
 
         Returns:

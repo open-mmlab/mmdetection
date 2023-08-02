@@ -101,7 +101,7 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
             stability. Default 1e-6.
 
     Returns:
-        Tensor: shape (m, n) if ``is_aligned`` is False else shape (m,)
+        Tensor: shape (m, n, 1) if ``is_aligned`` is False else shape (m, 1)
 
     Example:
         >>> bboxes1 = torch.FloatTensor([
