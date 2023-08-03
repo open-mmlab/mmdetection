@@ -4,23 +4,23 @@ In this folder, we provide the imagenet pre-training config of RTMDet's backbone
 
 ## Requirements
 
-To train with these configs, please install [MMClassification 1.x](https://github.com/open-mmlab/mmclassification/tree/1.x) first.
+To train with these configs, please install [MMPreTrain](https://github.com/open-mmlab/mmpretrain) first.
 
 Install by MIM:
 
 ```shell
-mim install mmcls>=1.0.0rc0
+mim install mmpretrain
 ```
 
 or install by pip:
 
 ```shell
-pip install mmcls>=1.0.0rc0
+pip install mmpretrain
 ```
 
 ## Prepare Dataset
 
-To pre-train on ImageNet, you need to prepare the dataset first. Please refer to the [guide](https://mmclassification.readthedocs.io/en/1.x/user_guides/dataset_prepare.html#imagenet).
+To pre-train on ImageNet, you need to prepare the dataset first. Please refer to the [guide](https://mmpretrain.readthedocs.io/en/latest/user_guides/dataset_prepare.html#imagenet).
 
 ## How to Train
 

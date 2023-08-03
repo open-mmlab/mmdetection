@@ -1,6 +1,6 @@
 # 模型部署
 
-[MMDeploy](https://github.com/open-mmlab/mmdeploy) 是 OpenMMLab 的部署仓库，负责包括 MMClassification、MMDetection 等在内的各算法库的部署工作。
+[MMDeploy](https://github.com/open-mmlab/mmdeploy) 是 OpenMMLab 的部署仓库，负责包括 MMPretrain、MMDetection 等在内的各算法库的部署工作。
 你可以从[这里](https://mmdeploy.readthedocs.io/zh_CN/1.x/04-supported-codebases/mmdet.html)获取 MMDeploy 对 MMDetection 部署支持的最新文档。
 
 本文的结构如下：

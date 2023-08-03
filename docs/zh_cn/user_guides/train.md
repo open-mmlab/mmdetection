@@ -1,4 +1,4 @@
-# 在标准数据集上训练预定义的模型（待更新）
+# 在标准数据集上训练预定义的模型
 
 MMDetection 也为训练检测模型提供了开盖即食的工具。本节将展示在标准数据集（比如 COCO）上如何训练一个预定义的模型。
 
@@ -11,12 +11,12 @@ MMDetection 也为训练检测模型提供了开盖即食的工具。本节将�
 
 ### 学习率自动缩放
 
-**注意**：在配置文件中的学习率是在 8 块 GPU，每块 GPU 有 2 张图像（批大小为 8\*2=16）的情况下设置的。其已经设置在`config/_base_/schedules/schedule_1x.py` 中的 `auto_scale_lr.base_batch_size`。当配置文件的批次大小为`16`时，学习率会基于该值进行自动缩放。同时，为了不影响其他基于 mmdet 的 codebase，启用自动缩放标志 `auto_scale_lr.enable` 默认设置为 `False`。
+**注意**：在配置文件中的学习率是在 8 块 GPU，每块 GPU 有 2 张图像（批大小为 8\*2=16）的情况下设置的。其已经设置在 `config/_base_/schedules/schedule_1x.py` 中的 `auto_scale_lr.base_batch_size`。学习率会基于批次大小为 `16`时的值进行自动缩放。同时，为了不影响其他基于 mmdet 的 codebase，启用自动缩放标志 `auto_scale_lr.enable` 默认设置为 `False`。
 
 如果要启用此功能，需在命令添加参数 `--auto-scale-lr`。并且在启动命令之前，请检查下即将使用的配置文件的名称，因为配置名称指示默认的批处理大小。
 在默认情况下，批次大小是 `8 x 2 = 16`，例如：`faster_rcnn_r50_caffe_fpn_90k_coco.py` 或者 `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`；若不是默认批次，你可以在配置文件看到像 `_NxM_` 字样的，例如：`cornernet_hourglass104_mstest_32x3_210e_coco.py` 的批次大小是 `32 x 3 = 96`, 或者 `scnet_x101_64x4d_fpn_8x1_20e_coco.py` 的批次大小是 `8 x 1 = 8`。
 
-**请记住：如果使用不是默认批次大小为`16`的配置文件，请检查配置文件中的底部，会有 `auto_scale_lr.base_batch_size`。如果找不到，可以在其继承的 `_base_=[xxx]` 文件中找到。另外，如果想使用自动缩放学习率的功能，请不要修改这些值。**
+**请记住：如果使用不是默认批次大小为 `16`的配置文件，请检查配置文件中的底部，会有 `auto_scale_lr.base_batch_size`。如果找不到，可以在其继承的 `_base_=[xxx]` 文件中找到。另外，如果想使用自动缩放学习率的功能，请不要修改这些值。**
 
 学习率自动缩放基本用法如下：
 
@@ -27,7 +27,7 @@ python tools/train.py \
     [optional arguments]
 ```
 
-执行命令之后，会根据机器的GPU数量和训练的批次大小对学习率进行自动缩放，缩放方式详见 [线性扩展规则](https://arxiv.org/abs/1706.02677) ，比如：在 4 块 GPU 并且每张 GPU 上有 2 张图片的情况下 `lr=0.01`，那么在 16 块 GPU 并且每张 GPU 上有 4 张图片的情况下, LR 会自动缩放至`lr=0.08`。
+执行命令之后，会根据机器的GPU数量和训练的批次大小对学习率进行自动缩放，缩放方式详见 [线性扩展规则](https://arxiv.org/abs/1706.02677) ，比如：在 4 块 GPU 并且每张 GPU 上有 2 张图片的情况下 `lr=0.01`，那么在 16 块 GPU 并且每张 GPU 上有 4 张图片的情况下, LR 会自动缩放至 `lr=0.08`。
 
 如果不启用该功能，则需要根据 [线性扩展规则](https://arxiv.org/abs/1706.02677) 来手动计算并修改配置文件里面 `optimizer.lr` 的值。
 
@@ -47,20 +47,20 @@ python tools/train.py \
 
 ```python
 # 每 12 轮迭代进行一次测试评估
-evaluation = dict(interval=12)
+train_cfg = dict(val_interval=12)
 ```
 
 这个工具接受以下参数：
 
-- `--no-validate` (**不建议**): 在训练期间关闭测试.
 - `--work-dir ${WORK_DIR}`: 覆盖工作目录.
-- `--resume-from ${CHECKPOINT_FILE}`: 从某个 checkpoint 文件继续训练.
-- `--options 'Key=value'`: 覆盖使用的配置文件中的其他设置.
+- `--resume`：自动从work_dir中的最新检查点恢复.
+- `--resume ${CHECKPOINT_FILE}`: 从某个 checkpoint 文件继续训练.
+- `--cfg-options 'Key=value'`: 覆盖使用的配置文件中的其他设置.
 
 **注意**：
-`resume-from` 和 `load-from` 的区别：
+`resume` 和 `load-from` 的区别：
 
-`resume-from` 既加载了模型的权重和优化器的状态，也会继承指定 checkpoint 的迭代次数，不会重新开始训练。`load-from` 则是只加载模型的权重，它的训练是从头开始的，经常被用于微调模型。
+`resume` 既加载了模型的权重和优化器的状态，也会继承指定 checkpoint 的迭代次数，不会重新开始训练。`load-from` 则是只加载模型的权重，它的训练是从头开始的，经常被用于微调模型。其中load-from需要写入配置文件中，而resume作为命令行参数传入。
 
 ### 使用 CPU 训练
 
@@ -141,8 +141,8 @@ GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco
 1. 通过 `--options` 来设置端口。我们非常建议用这种方法，因为它无需改变原始的配置文件。
 
    ```shell
-   CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR} --options 'dist_params.port=29500'
-   CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR} --options 'dist_params.port=29501'
+   CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR} --cfg-options 'dist_params.port=29500'
+   CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR} --cfg-options 'dist_params.port=29501'
    ```
 
 2. 修改配置文件来设置不同的交流端口。
@@ -387,7 +387,7 @@ if __name__ == '__main__':
 
 ## 准备配置文件
 
-第二步需要准备一个配置文件来成功加载数据集。假设我们想要用 balloon dataset 来训练配备了 FPN 的 Mask R-CNN ，如下是我们的配置文件。假设配置文件命名为 `mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py`，相应保存路径为 `configs/balloon/`，配置文件内容如下所示。
+第二步需要准备一个配置文件来成功加载数据集。假设我们想要用 balloon dataset 来训练配备了 FPN 的 Mask R-CNN ，如下是我们的配置文件。假设配置文件命名为 `mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py`，相应保存路径为 `configs/balloon/`，配置文件内容如下所示。详细的配置文件方法可以参考[学习配置文件 — MMDetection 3.0.0 文档](https://mmdetection.readthedocs.io/zh_CN/latest/user_guides/config.html#base)。
 
 ```python
 # 新配置继承了基本配置，并做了必要的修改
