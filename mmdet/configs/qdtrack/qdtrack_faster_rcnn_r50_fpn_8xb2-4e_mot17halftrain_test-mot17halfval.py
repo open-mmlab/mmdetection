@@ -12,7 +12,3 @@ val_evaluator = [
     dict(type=CocoVideoMetric, metric=['bbox'], classwise=True),
     dict(type=MOTChallengeMetric, metric=['HOTA', 'CLEAR', 'Identity'])
 ]
-
-test_evaluator = val_evaluator
-# The fluctuation of HOTA is about +-1.
-randomness = dict(seed=6)
