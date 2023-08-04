@@ -263,172 +263,46 @@ class CoDETR(BaseDetector):
             - bboxes (Tensor): Has a shape (num_instances, 4),
               the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        img_feats = self.extract_feat(batch_inputs)
         assert self.eval_module in ['detr', 'one-stage', 'two-stage']
-        if self.eval_module=='detr':
+        img_feats = self.extract_feat(batch_inputs)
+        if self.with_bbox and self.eval_module=='one-stage':
+            results_list = self.predict_bbox_head(img_feats, batch_data_samples, rescale=rescale)  
+        if self.with_roi_head and self.eval_module=='two-stage':
+            results_list = self.predict_roi_head(img_feats, batch_data_samples, rescale=rescale)  
+        else: # default
             results_list = self.predict_query_head(img_feats, batch_data_samples, rescale=rescale)
-        batch_data_samples = self.add_pred_to_datasample(
-            batch_data_samples, results_list)
+        
+        batch_data_samples = self.add_pred_to_datasample(batch_data_samples, results_list)
         return batch_data_samples
     
-    def simple_test_roi_head(self, img, img_metas, proposals=None, rescale=False):
-        """Test without augmentation."""
-
+    def predict_query_head(self,
+                            mlvl_feats: List[Tensor],
+                            batch_data_samples: SampleList,
+                            rescale: bool = True) -> SampleList:
+        return self.query_head.predict(
+            mlvl_feats,
+            batch_data_samples=batch_data_samples,
+            rescale=rescale)
+    
+    def predict_roi_head(self,
+                        mlvl_feats: List[Tensor],
+                        batch_data_samples: SampleList,
+                        rescale: bool = True) -> SampleList:
         assert self.with_bbox, 'Bbox head must be implemented.'
-        batch_input_shape = tuple(img[0].size()[-2:])
-        for img_meta in img_metas:
-            img_meta['batch_input_shape'] = batch_input_shape
-        if not self.with_attn_mask: # remove attn mask for LSJ
-            for i in range(len(img_metas)):
-                input_img_h, input_img_w = img_metas[i]['batch_input_shape']
-                img_metas[i]['img_shape'] = [input_img_h, input_img_w, 3]
-
-        x = self.extract_feat(img, img_metas)
         if self.with_query_head:
-            results = self.query_head.forward(x, img_metas)
-            x = results[-2]
-        if proposals is None:
-            proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
-        else:
-            proposal_list = proposals
-
-        return self.roi_head[self.eval_index].simple_test(
-            x, proposal_list, img_metas, rescale=rescale)
-
-    def simple_test_query_head(self, img, img_metas, proposals=None, rescale=False):
-        """Test function without test-time augmentation.
-
-        Args:
-            img (torch.Tensor): Images with shape (N, C, H, W).
-            img_metas (list[dict]): List of image information.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
-
-        Returns:
-            list[list[np.ndarray]]: BBox results of each image and classes.
-                The outer list corresponds to each image. The inner list
-                corresponds to each class.
-        """
-        index = 0
-        batch_input_shape = tuple(img[0].size()[-2:])
-        for img_meta in img_metas:
-            img_meta['batch_input_shape'] = batch_input_shape
-        if not self.with_attn_mask: # remove attn mask for LSJ
-            for i in range(len(img_metas)):
-                input_img_h, input_img_w = img_metas[i]['batch_input_shape']
-                img_metas[i]['img_shape'] = [input_img_h, input_img_w, 3]
-
-        x = self.extract_feat(img, img_metas)
-        results_list = self.query_head.simple_test(
-            x, img_metas, rescale=rescale)
-        bbox_results = [
-            bbox2result(det_bboxes, det_labels, self.query_head.num_classes)
-            for det_bboxes, det_labels in results_list
-        ]
-        return bbox_results
-
-    def simple_test_bbox_head(self, img, img_metas, proposals=None, rescale=False):
-        """Test function without test-time augmentation.
-
-        Args:
-            img (torch.Tensor): Images with shape (N, C, H, W).
-            img_metas (list[dict]): List of image information.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
-
-        Returns:
-            list[list[np.ndarray]]: BBox results of each image and classes.
-                The outer list corresponds to each image. The inner list
-                corresponds to each class.
-        """
-        batch_input_shape = tuple(img[0].size()[-2:])
-        for img_meta in img_metas:
-            img_meta['batch_input_shape'] = batch_input_shape
-        if not self.with_attn_mask: # remove attn mask for LSJ
-            for i in range(len(img_metas)):
-                input_img_h, input_img_w = img_metas[i]['batch_input_shape']
-                img_metas[i]['img_shape'] = [input_img_h, input_img_w, 3]
-
-        x = self.extract_feat(img, img_metas)
+            results = self.query_head.forward(mlvl_feats, batch_data_samples)
+            mlvl_feats = results[-2]
+        rpn_results_list = self.rpn_head.predict(mlvl_feats, batch_data_samples, rescale=False)
+        return self.roi_head[self.eval_index].predict(
+            mlvl_feats, rpn_results_list, batch_data_samples, rescale=rescale)
+    
+    def predict_bbox_head(self,
+                        mlvl_feats: List[Tensor],
+                        batch_data_samples: SampleList,
+                        rescale: bool = True) -> SampleList:
+        assert self.with_bbox, 'Bbox head must be implemented.'
         if self.with_query_head:
-            results = self.query_head.forward(x, img_metas)
-            x = results[-2]
-        results_list = self.bbox_head[self.eval_index].simple_test(
-            x, img_metas, rescale=rescale)
-        bbox_results = [
-            bbox2result(det_bboxes, det_labels, self.bbox_head[self.eval_index].num_classes)
-            for det_bboxes, det_labels in results_list
-        ]
-        return bbox_results
-
-    def simple_test(self, img, img_metas, proposals=None, rescale=False):
-        """Test without augmentation."""
-        assert self.eval_module in ['detr', 'one-stage', 'two-stage']
-        if self.with_bbox and self.eval_module=='one-stage':
-            return self.simple_test_query_head(img, img_metas, proposals, rescale)
-        if self.with_roi_head and self.eval_module=='two-stage':
-            return self.simple_test_roi_head(img, img_metas, proposals, rescale)
-        return self.simple_test_query_head(img, img_metas, proposals, rescale)
-
-    def aug_test(self, imgs, img_metas, rescale=False):
-        """Test function with test time augmentation.
-
-        Args:
-            imgs (list[Tensor]): the outer list indicates test-time
-                augmentations and inner Tensor should have a shape NxCxHxW,
-                which contains all images in the batch.
-            img_metas (list[list[dict]]): the outer list indicates test-time
-                augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch. each dict has image information.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
-
-        Returns:
-            list[list[np.ndarray]]: BBox results of each image and classes.
-                The outer list corresponds to each image. The inner list
-                corresponds to each class.
-        """
-        assert hasattr(self.query_head, 'aug_test'), \
-            f'{self.query_head.__class__.__name__}' \
-            ' does not support test-time augmentation'
-
-        feats = self.extract_feats(imgs)
-        results_list = self.query_head.aug_test(
-            feats, img_metas, rescale=rescale)
-        bbox_results = [
-            bbox2result(det_bboxes, det_labels, self.query_head.num_classes)
-            for det_bboxes, det_labels in results_list
-        ]
-        return bbox_results
-
-    def onnx_export(self, img, img_metas, with_nms=True):
-        """Test function without test time augmentation.
-
-        Args:
-            img (torch.Tensor): input images.
-            img_metas (list[dict]): List of image information.
-
-        Returns:
-            tuple[Tensor, Tensor]: dets of shape [N, num_det, 5]
-                and class labels of shape [N, num_det].
-        """
-        x = self.extract_feat(img)
-        outs = self.query_head(x)
-        # get origin input shape to support onnx dynamic shape
-
-        # get shape as tensor
-        img_shape = torch._shape_as_tensor(img)[2:]
-        img_metas[0]['img_shape_for_onnx'] = img_shape
-        # get pad input shape to support onnx dynamic shape for exporting
-        # `CornerNet` and `CentripetalNet`, which 'pad_shape' is used
-        # for inference
-        img_metas[0]['pad_shape_for_onnx'] = img_shape
-
-        if len(outs) == 2:
-            # add dummy score_factor
-            outs = (*outs, None)
-        # TODO Can we change to `get_bboxes` when `onnx_export` fail
-        det_bboxes, det_labels = self.query_head.onnx_export(
-            *outs, img_metas, with_nms=with_nms)
-
-        return det_bboxes, det_labels
+            results = self.query_head.forward(mlvl_feats, batch_data_samples)
+            mlvl_feats = results[-2]
+        return self.bbox_head[self.eval_index].predict(
+            mlvl_feats, batch_data_samples, rescale=rescale)
