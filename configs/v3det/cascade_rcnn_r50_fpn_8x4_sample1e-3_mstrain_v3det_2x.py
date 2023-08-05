@@ -37,7 +37,7 @@ model = dict(
             target_stds=[1.0, 1.0, 1.0, 1.0]),
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-        loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)),
+        loss_bbox=dict(type='L1Loss', loss_weight=1.0)),
     roi_head=dict(
         type='CascadeRoIHead',
         num_stages=3,
@@ -53,7 +53,7 @@ model = dict(
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
-                num_classes=13216,
+                num_classes=13204,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -62,17 +62,16 @@ model = dict(
                 cls_predictor_cfg=dict(type='NormedLinear', tempearture=50, bias=True),
                 loss_cls=dict(
                     type='CrossEntropyV3DetLoss',
-                    num_classes=13216,
+                    num_classes=13204,
                     use_sigmoid=True,
                     loss_weight=1.0),
-                loss_bbox=dict(type='SmoothL1Loss', beta=1.0,
-                               loss_weight=1.0)),
+                loss_bbox=dict(type='L1Loss', loss_weight=1.0)),
             dict(
                 type='Shared2FCBBoxHead',
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
-                num_classes=13216,
+                num_classes=13204,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -81,17 +80,16 @@ model = dict(
                 cls_predictor_cfg=dict(type='NormedLinear', tempearture=50, bias=True),
                 loss_cls=dict(
                     type='CrossEntropyV3DetLoss',
-                    num_classes=13216,
+                    num_classes=13204,
                     use_sigmoid=True,
                     loss_weight=1.0),
-                loss_bbox=dict(type='SmoothL1Loss', beta=1.0,
-                               loss_weight=1.0)),
+                loss_bbox=dict(type='L1Loss', loss_weight=1.0)),
             dict(
                 type='Shared2FCBBoxHead',
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
-                num_classes=13216,
+                num_classes=13204,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -100,10 +98,10 @@ model = dict(
                 cls_predictor_cfg=dict(type='NormedLinear', tempearture=50, bias=True),
                 loss_cls=dict(
                     type='CrossEntropyV3DetLoss',
-                    num_classes=13216,
+                    num_classes=13204,
                     use_sigmoid=True,
                     loss_weight=1.0),
-                loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))
+                loss_bbox=dict(type='L1Loss', loss_weight=1.0))
         ]),
     # model training and testing settings
     train_cfg=dict(
@@ -297,7 +295,7 @@ default_hooks = dict(
     timer=dict(type='IterTimerHook'),
     logger=dict(type='LoggerHook', interval=50),
     param_scheduler=dict(type='ParamSchedulerHook'),
-    checkpoint=dict(type='CheckpointHook', by_epoch=False, interval=5730),
+    checkpoint=dict(type='CheckpointHook', by_epoch=False, interval=5730 * 2),
     sampler_seed=dict(type='DistSamplerSeedHook'),
     visualization=dict(type='DetVisualizationHook'))
 

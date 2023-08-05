@@ -23,12 +23,12 @@ Recent advances in detecting arbitrary objects in the real world are trained and
 
 | Backbone |    Model    | Lr schd | box AP |                     Config                      |                                                                                                                                                     Download                                                                                                                                                      |
 | :------: | :---------: | :-----: | :----: | :---------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|   R-50   | Faster R-CNN |   2x   |  25.4  |  [config](./faster_rcnn_r50_fpn_8x4_sample1e-3_mstrain_v3det_2x.py)   |    [model](https://download.openxlab.org.cn/models/V3Det/V3Det/weight/faster_rcnn_r50_fpn_8x4_sample1e-3_mstrain_v3det_2x)
-|   R-50   | Cascade R-CNN |   2x   |  31.6  |  [config](./cascade_rcnn_r50_fpn_8x4_sample1e-3_mstrain_v3det_2x.py)   |    [model](https://download.openxlab.org.cn/models/V3Det/V3Det/weight/cascade_rcnn_r50_fpn_8x4_sample1e-3_mstrain_v3det_2x)
-|   R-50   | FCOS |   2x   |  10  |  [config](./fcos_r50_fpn_8x4_sample1e-3_mstrain_v3det_2x.py)   |    [model](https://download.openxlab.org.cn/models/V3Det/V3Det/weight/fcos_r50_fpn_8x4_sample1e-3_mstrain_v3det_2x)
-|   Swin-B   | Faster R-CNN |   2x   |  42.5  |  [config](./faster_rcnn_swinb_fpn_8x4_sample1e-3_mstrain_v3det_2x.py)   |    [model](https://download.openxlab.org.cn/models/V3Det/V3Det/weight/faster_rcnn_swinb_fpn_8x4_sample1e-3_mstrain_v3det_2x)
-|   Swin-B   | Cascade R-CNN |   2x   |  37.5  |  [config](./cascade_rcnn_swinb_fpn_8x4_sample1e-3_mstrain_v3det_2x.py)   |    [model](https://download.openxlab.org.cn/models/V3Det/V3Det/weight/cascade_rcnn_swinb_fpn_8x4_sample1e-3_mstrain_v3det_2x)
-|   Swin-B   | FCOS |   2x   |  21.5  |  [config](./fcos_swinb_fpn_8x4_sample1e-3_mstrain_v3det_2x.py)   |    [model](https://download.openxlab.org.cn/models/V3Det/V3Det/weight/fcos_swinb_fpn_8x4_sample1e-3_mstrain_v3det_2x)
+|   R-50   | Faster R-CNN |   2x   |  25.4  |  [config](./faster_rcnn_r50_fpn_8x4_sample1e-3_mstrain_v3det_2x.py)   |    [model]()
+|   R-50   | Cascade R-CNN |   2x   |  31.6  |  [config](./cascade_rcnn_r50_fpn_8x4_sample1e-3_mstrain_v3det_2x.py)   |    [model]()
+|   R-50   | FCOS |   2x   |  10  |  [config](./fcos_r50_fpn_8x4_sample1e-3_mstrain_v3det_2x.py)   |    [model]()
+|   Swin-B   | Faster R-CNN |   2x   |  37.5  |  [config](./faster_rcnn_swinb_fpn_8x4_sample1e-3_mstrain_v3det_2x.py)   |    [model]()
+|   Swin-B   | Cascade R-CNN |   2x   |  42.5  |  [config](./cascade_rcnn_swinb_fpn_8x4_sample1e-3_mstrain_v3det_2x.py)   |    [model]()
+|   Swin-B   | FCOS |   2x   |  21.5  |  [config](./fcos_swinb_fpn_8x4_sample1e-3_mstrain_v3det_2x.py)   |    [model]()
 
 
 
