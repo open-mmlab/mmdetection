@@ -28,8 +28,8 @@ class DDQDETRHead(DINOHead):
         <https://arxiv.org/abs/2303.12776>`_ .
 
     Args:
-        aux_num_pos (int): Number of samples selected with the smallest
-            cost of each ground truth as positive samples.
+        aux_num_pos (int): Number of positive targets assigned to a
+            perdicted object.
             Defaults to 4.
     """
 
@@ -238,10 +238,9 @@ class DDQDETRHead(DINOHead):
             all_layers_cls_scores (Tensor): Classification scores of all
                 decoder layers, has shape (num_decoder_layers, bs,
                 num_queries_total, cls_out_channels).
-            all_layers_bbox_preds (Tensor): Regression outputs of all decoder
-                layers. Each is a 4D-tensor with normalized coordinate format
-                (cx, cy, w, h) and has shape (num_decoder_layers, bs,
-                num_queries_total, 4) with the last dimension arranged as
+            all_layers_bbox_preds (Tensor): Bbox coordinates of all decoder
+                layers. Each has shape (num_decoder_layers, bs,
+                num_queries_total, 4) with normalized coordinate format
                 (cx, cy, w, h).
             enc_cls_scores (Tensor): The top k score of each point on
                 encoder feature map, has shape (bs, num_queries,
@@ -253,11 +252,11 @@ class DDQDETRHead(DINOHead):
                 gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
             batch_img_metas (list[dict]): Meta information of each image,
-            e.g., image size, scaling factor, etc.
+                e.g., image size, scaling factor, etc.
             dn_meta (Dict[str, int]): The dictionary saves information about
-              group collation, including 'num_denoising_queries' and
-              'num_denoising_groups'. It will be used for split outputs of
-              denoising and matching parts and loss calculation.
+                group collation, including 'num_denoising_queries' and
+                'num_denoising_groups'. It will be used for split outputs of
+                denoising and matching parts and loss calculation.
             batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
                 Batch of gt_instances_ignore. It includes ``bboxes`` attribute
                 data that is ignored during training and testing.
@@ -353,7 +352,7 @@ class DDQDETRHead(DINOHead):
             all_layers_cls_scores (Tensor): Classification scores of all
                 decoder layers, has shape (num_decoder_layers, bs,
                 num_queries, cls_out_channels).
-            all_layers_bbox_preds (Tensor): Regression outputs of all decoder
+            all_layers_bbox_preds (Tensor): Bbox coordinates of all decoder
                 layers. It has shape (num_decoder_layers, bs,
                 num_queries, 4) with the last dimension arranged as
                 (cx, cy, w, h).
@@ -406,7 +405,7 @@ class DDQDETRHead(DINOHead):
         Args:
             cls_scores (Tensor): Classification scores of a single
                 decoder layer, has shape (bs, num_queries, cls_out_channels).
-            bbox_preds (Tensor): Regression outputs of a single decoder
+            bbox_preds (Tensor): Bbox coordinates of a single decoder
                 layer. It has shape (bs, num_queries, 4) with the last
                 dimension arranged as (cx, cy, w, h).
             l_id (int): Decoder layer index for these outputs.
@@ -505,12 +504,11 @@ class DDQDETRHead(DINOHead):
 
         Args:
             layer_cls_scores (Tensor): Classification scores of all
-                decoder layers, has shape (num_decoder_layers, bs, num_queries,
-                cls_out_channels).
-            layer_bbox_preds (Tensor): Regression outputs of all decoder
-                layers. Each is a 4D-tensor with normalized coordinate format
-                (cx, cy, w, h) and shape (num_decoder_layers, bs, num_queries,
-                4) with the last dimension arranged as (cx, cy, w, h).
+                decoder layers, has shape (num_decoder_layers, bs,
+                num_queries, cls_out_channels).
+            layer_bbox_preds (Tensor): Bbox coordinates of all decoder layers.
+                Each has shape (num_decoder_layers, bs, num_queries, 4)
+                with normalized coordinate format (cx, cy, w, h).
             batch_img_metas (list[dict]): Meta information of each image.
             rescale (bool, optional): If `True`, return boxes in original
                 image space. Default `False`.

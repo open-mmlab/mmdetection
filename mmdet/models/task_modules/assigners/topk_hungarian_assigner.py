@@ -10,6 +10,25 @@ from .task_aligned_assigner import TaskAlignedAssigner
 
 @TASK_UTILS.register_module()
 class TopkHungarianAssigner(TaskAlignedAssigner):
+    """Computes k-to-1 matching between predictions and ground truth.
+
+    This class computes an assignment between the targets and the predictions
+    based on the costs. The costs are weighted sum of some components.
+    For DETR the costs are weighted sum of classification cost, regression L1
+    cost and regression iou cost. The targets don't include the no_object, so
+    generally there are more predictions than targets. After the k-to-1
+    matching, the un-matched are treated as backgrounds. Thus each query
+    prediction will be assigned with `0` or a positive integer indicating the
+    ground truth index:
+
+    - 0: negative sample, no assigned gt
+    - positive integer: positive sample, index (1-based) of assigned gt
+
+    Args:
+        cls_cost (dict): Classification cost configuration.
+        reg_cost (dict): Regression L1  cost configuration.
+        iou_cost (dict): Regression iou cost configuration.
+    """
 
     def __init__(self,
                  *args,
@@ -32,6 +51,49 @@ class TopkHungarianAssigner(TaskAlignedAssigner):
                alpha=1,
                beta=6,
                **kwargs):
+        """Computes k-to-1 matching based on the weighted costs.
+
+        This method assign each query prediction to a ground truth or
+        background. The `assigned_gt_inds` with -1 means don't care,
+        0 means negative sample, and positive number is the index (1-based)
+        of assigned gt.
+        The assignment is done in the following steps, the order matters.
+
+        1. Assign every prediction to -1.
+        2. Compute the weighted costs, each cost has shape (num_pred, num_gt).
+        3. Update topk to be min(topk, int(num_pred / num_gt)), then repeat
+            costs topk times to shape: (num_pred, num_gt * topk), so that each
+            gt will match topk predictions.
+        3. Do Hungarian matching on CPU based on the costs.
+        4. Assign all to 0 (background) first, then for each matched pair
+           between predictions and gts, treat this prediction as foreground
+           and assign the corresponding gt index (plus 1) to it.
+        5. Calculate alignment metrics and overlaps of each matched pred-gt
+            pair.
+
+        Args:
+            pred_scores (Tensor): Predicted normalized classification
+                scores for one image, has shape (num_dense_queries,
+                cls_out_channels).
+            decode_bboxes (Tensor): Predicted unnormalized bbox coordinates
+                for one image, has shape (num_dense_queries, 4) with the
+                last dimension arranged as (x1, y1, x2, y2).
+            gt_bboxes (Tensor): Unnormalized ground truth
+                bboxes for one image, has shape (num_gt, 4) with the
+                last dimension arranged as (x1, y1, x2, y2).
+                NOTE: num_gt is dynamic for each image.
+            gt_labels (Tensor): Ground truth classification
+                    index for the image, has shape (num_gt,).
+                    NOTE: num_gt is dynamic for each image.
+            img_meta (dict): Meta information for one image.
+            alpha (int): Hyper-parameters related to alignment_metrics.
+                Defaults to 1.
+            beta (int): Hyper-parameters related to alignment_metrics.
+                Defaults to 6.
+
+        Returns:
+            :obj:`AssignResult`: The assigned result.
+        """
         pred_scores = pred_scores.detach()
         decode_bboxes = decode_bboxes.detach()
         temp_overlaps = self.iou_calculator(decode_bboxes, gt_bboxes).detach()
@@ -59,9 +121,9 @@ class TopkHungarianAssigner(TaskAlignedAssigner):
                                                     0,
                                                     dtype=torch.long)
             select_cost = all_cost
-            # num anchor * (num_gt * topk)
+
             topk = min(self.topk, int(len(select_cost) / num_gt))
-            # num_anchors * (num_gt * topk)
+
             repeat_select_cost = select_cost[...,
                                              None].repeat(1, 1, topk).view(
                                                  select_cost.size(0), -1)
