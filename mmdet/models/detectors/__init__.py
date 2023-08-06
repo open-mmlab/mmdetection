@@ -13,6 +13,7 @@ from .crowddet import CrowdDet
 from .d2_wrapper import Detectron2Wrapper
 from .dab_detr import DABDETR
 from .ddod import DDOD
+from .ddq_detr import DDQDETR
 from .deformable_detr import DeformableDETR
 from .detr import DETR
 from .dino import DINO
@@ -68,5 +69,6 @@ __all__ = [
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
     'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector', 'SoftTeacher',
     'RTMDet', 'Detectron2Wrapper', 'CrowdDet', 'CondInst', 'BoxInst',
-    'DetectionTransformer', 'ConditionalDETR', 'DINO', 'DABDETR', 'GLIP'
+    'DetectionTransformer', 'ConditionalDETR', 'DINO', 'DABDETR', 'GLIP',
+    'DDQDETR'
 ]
