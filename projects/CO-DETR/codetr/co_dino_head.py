@@ -3,18 +3,22 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import copy 
-
+from typing import Dict, List, Tuple
+from torch import Tensor
+from mmengine.structures import InstanceData
+from mmcv.ops import batched_nms
+from mmdet.utils import InstanceList, reduce_mean
+from mmdet.structures import SampleList
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh, bbox_overlaps)
-from mmdet.models.utils import multi_apply, reduce_mean
+from mmdet.models.utils import multi_apply
 from mmdet.models.layers.transformer import inverse_sigmoid
 from mmcv.ops import batched_nms
 from mmdet.models.task_modules.samplers import PseudoSampler
 from mmengine.model import BaseModule
-from mmcv.cnn import Linear, bias_init_with_prob, constant_init
+from mmcv.cnn import Linear
 
-from mmdet.models.layers import (CdnQueryGenerator, DeformableDetrTransformerEncoder,
-                      DinoTransformerDecoder, SinePositionalEncoding)
+from mmdet.models.layers import CdnQueryGenerator
 
 
 @MODELS.register_module()
@@ -54,6 +58,9 @@ class CoDINOHead(BaseModule):
                  test_cfg=dict(max_per_img=100),
                  init_cfg=None):
         super().__init__(init_cfg=init_cfg)
+        self.with_box_refine=True
+        self.mixed_selection=mixed_selection
+        self.with_attn_mask=False
 
         if 'two_stage_num_proposals' in transformer:
             assert transformer['two_stage_num_proposals'] == num_query, \
@@ -66,7 +73,7 @@ class CoDINOHead(BaseModule):
 
         self.max_pos_coords = max_pos_coords
         self.lambda_1 = lambda_1
-        self.mixed_selection = mixed_selection
+        self.as_two_stage = True
         self.use_zero_padding = use_zero_padding
         self.sync_cls_avg_factor = sync_cls_avg_factor
 
@@ -161,9 +168,9 @@ class CoDINOHead(BaseModule):
     def init_denoising(self, dn_cfg):
         if dn_cfg is not None:
             dn_cfg['num_classes'] = self.num_classes
-            dn_cfg['num_queries'] = self.num_query
-            dn_cfg['hidden_dim'] = self.embed_dims
-        self.dn_generator = CdnQueryGenerator(dn_cfg)
+            dn_cfg['num_matching_queries'] = self.num_query
+            dn_cfg['embed_dims'] = self.embed_dims
+        self.dn_generator = CdnQueryGenerator(**dn_cfg)
 
     def forward_train(self,
                       x,
@@ -198,7 +205,7 @@ class CoDINOHead(BaseModule):
         img_masks = mlvl_feats[0].new_ones(
             (batch_size, input_img_h, input_img_w))
         for img_id in range(batch_size):
-            img_h, img_w, _ = img_metas[img_id]['img_shape']
+            img_h, img_w = img_metas[img_id]['img_shape']
             img_masks[img_id, :img_h, :img_w] = 0
 
         mlvl_masks = []
@@ -263,6 +270,161 @@ class CoDINOHead(BaseModule):
         outputs_coords = torch.stack(outputs_coords)
 
         return outputs_classes, outputs_coords, topk_score, topk_anchor, outs
+    
+    def predict(self,
+                feats: List[Tensor],
+                batch_data_samples: SampleList,
+                rescale: bool = True) -> InstanceList:
+        """Perform forward propagation of the detection head and predict
+        detection results on the features of the upstream network. Over-write
+        because img_metas are needed as inputs for bbox_head.
+
+        Args:
+            hidden_states (tuple[Tensor]): Multi-level features from the
+                upstream network, each is a 4D-tensor.
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to True.
+
+        Returns:
+            list[obj:`InstanceData`]: Detection results of each image
+            after the post process.
+        """
+        batch_img_metas = [
+            data_samples.metainfo for data_samples in batch_data_samples
+        ]
+        outs = self.forward(feats, batch_img_metas)
+
+        predictions = self.predict_by_feat(
+            *outs, batch_img_metas=batch_img_metas, rescale=rescale)
+
+        return predictions
+
+    def predict_by_feat(self,
+                        all_cls_scores,
+                        all_bbox_preds,
+                        enc_cls_scores,
+                        enc_bbox_preds,
+                        enc_outputs,
+                        batch_img_metas,
+                        rescale=True):
+        """Transform network outputs for a batch into bbox predictions.
+
+        Args:
+            all_cls_scores (Tensor): Classification score of all
+                decoder layers, has shape
+                [nb_dec, bs, num_query, cls_out_channels].
+            all_bbox_preds (Tensor): Sigmoid regression
+                outputs of all decode layers. Each is a 4D-tensor with
+                normalized coordinate format (cx, cy, w, h) and shape
+                [nb_dec, bs, num_query, 4].
+            img_metas (list[dict]): Meta information of each image.
+            rescale (bool, optional): If True, return boxes in original
+                image space. Default False.
+
+        Returns:
+            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
+                The first item is an (n, 5) tensor, where the first 4 columns \
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
+                5-th column is a score between 0 and 1. The second item is a \
+                (n,) tensor where each item is the predicted class label of \
+                the corresponding box.
+        """
+        cls_scores = all_cls_scores[-1]
+        bbox_preds = all_bbox_preds[-1]
+
+        result_list = []
+        for img_id in range(len(batch_img_metas)):
+            cls_score = cls_scores[img_id]
+            bbox_pred = bbox_preds[img_id]
+            img_meta = batch_img_metas[img_id]
+            results = self._predict_by_feat_single(cls_score, bbox_pred,
+                                                   img_meta, rescale)
+            result_list.append(results)
+        return result_list
+
+    def _predict_by_feat_single(self,
+                                cls_score: Tensor,
+                                bbox_pred: Tensor,
+                                img_meta: dict,
+                                rescale: bool = True) -> InstanceData:
+        """Transform outputs from the last decoder layer into bbox predictions
+        for each image.
+
+        Args:
+            cls_score (Tensor): Box score logits from the last decoder layer
+                for each image. Shape [num_queries, cls_out_channels].
+            bbox_pred (Tensor): Sigmoid outputs from the last decoder layer
+                for each image, with coordinate format (cx, cy, w, h) and
+                shape [num_queries, 4].
+            img_meta (dict): Image meta info.
+            rescale (bool): If True, return boxes in original image
+                space. Default True.
+
+        Returns:
+            :obj:`InstanceData`: Detection results of each image
+            after the post process.
+            Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
+        """
+        assert len(cls_score) == len(bbox_pred)  # num_queries
+        max_per_img = self.test_cfg.get('max_per_img', self.num_query)
+        score_thr = self.test_cfg.get('score_thr', 0)
+        with_nms = self.test_cfg.get('nms', None)
+
+        img_shape = img_meta['img_shape']
+        # exclude background
+        if self.loss_cls.use_sigmoid:
+            cls_score = cls_score.sigmoid()
+            scores, indexes = cls_score.view(-1).topk(max_per_img)
+            det_labels = indexes % self.num_classes
+            bbox_index = indexes // self.num_classes
+            bbox_pred = bbox_pred[bbox_index]
+        else:
+            scores, det_labels = F.softmax(cls_score, dim=-1)[..., :-1].max(-1)
+            scores, bbox_index = scores.topk(max_per_img)
+            bbox_pred = bbox_pred[bbox_index]
+            det_labels = det_labels[bbox_index]
+        
+        if score_thr > 0:
+            valid_mask = scores > score_thr
+            scores = scores[valid_mask]
+            bbox_pred = bbox_pred[valid_mask]
+            det_labels = det_labels[valid_mask]
+        
+        det_bboxes = bbox_cxcywh_to_xyxy(bbox_pred)
+        det_bboxes[:, 0::2] = det_bboxes[:, 0::2] * img_shape[1]
+        det_bboxes[:, 1::2] = det_bboxes[:, 1::2] * img_shape[0]
+        det_bboxes[:, 0::2].clamp_(min=0, max=img_shape[1])
+        det_bboxes[:, 1::2].clamp_(min=0, max=img_shape[0])
+        if rescale:
+            assert img_meta.get('scale_factor') is not None
+            det_bboxes /= det_bboxes.new_tensor(
+                img_meta['scale_factor']).repeat((1, 2))
+
+        results = InstanceData()
+        results.bboxes = det_bboxes
+        results.scores = scores
+        results.labels = det_labels
+
+        if with_nms and results.bboxes.numel() > 0:
+            det_bboxes, keep_idxs = batched_nms(results.bboxes, 
+                                                results.scores,
+                                                results.labels, 
+                                                self.test_cfg.nms)
+            results = results[keep_idxs]
+            results.scores = det_bboxes[:, -1]
+            results = results[:max_per_img]
+
+        return results
 
     def loss(self,
              all_cls_scores,

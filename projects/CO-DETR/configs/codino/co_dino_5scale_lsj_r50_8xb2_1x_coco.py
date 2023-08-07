@@ -14,14 +14,15 @@ batch_augments = [
 model = dict(
     type='CoDETR',
     with_attn_mask=False, # lsj is False 
+    # detr: 52.1
+    # one-stage: 49.4
+    # two-stage: 47.9
+    eval_module='two-stage', # in ['detr', 'one-stage', 'two-stage']
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
         std=[58.395, 57.12, 57.375],
         bgr_to_rgb=True,
-        # pad_size_divisor=32 is unnecessary in training but necessary
-        # in testing.
-        pad_size_divisor=32,
         pad_mask=True,
         batch_augments=batch_augments),
     backbone=dict(
@@ -63,16 +64,14 @@ model = dict(
         type='CoDINOHead',
         num_query=900,
         num_classes=80,
-        num_feature_levels=5,
         in_channels=2048,
         sync_cls_avg_factor=True,
-        as_two_stage=True,
-        with_box_refine=True,
         mixed_selection=True,
-        dn_cfg=dict(
-            type='CdnQueryGenerator',
-            noise_scale=dict(label=0.5, box=1.0),  # 0.5, 0.4 for DN-DETR
-            group_cfg=dict(dynamic=True, num_groups=None, num_dn_queries=100)),
+        dn_cfg=dict( 
+            label_noise_scale=0.5,
+            box_noise_scale=1.0,  # 0.4 for DN-DETR
+            group_cfg=dict(dynamic=True, num_groups=None,
+                        num_dn_queries=100)),  # TODO: half num_dn_queries
         transformer=dict(
             type='CoDinoTransformer',
             with_pos_coord=True,
@@ -177,9 +176,11 @@ model = dict(
         dict(
             assigner=dict(
                 type='HungarianAssigner',
-                cls_cost=dict(type='FocalLossCost', weight=2.0),
-                reg_cost=dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
-                iou_cost=dict(type='IoUCost', iou_mode='giou', weight=2.0))),
+                match_costs=[
+                    dict(type='FocalLossCost', weight=2.0),
+                    dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
+                    dict(type='IoUCost', iou_mode='giou', weight=2.0)
+                ])),    
         dict(
             rpn=dict(
                 assigner=dict(
@@ -223,10 +224,11 @@ model = dict(
             assigner=dict(type='ATSSAssigner', topk=9),
             allowed_border=-1,
             pos_weight=-1,
-            debug=False),],
+            debug=False)],
     test_cfg=[
         dict(
             max_per_img=300,
+            # NMS can improve the mAP by 0.2.
             nms=dict(type='soft_nms', iou_threshold=0.8)),
         dict(
             rpn=dict(
@@ -239,6 +241,7 @@ model = dict(
                 nms=dict(type='nms', iou_threshold=0.5),
                 max_per_img=100)),
         dict(
+            # atss bbox head: 
             nms_pre=1000,
             min_bbox_size=0,
             score_thr=0.0,
@@ -275,6 +278,21 @@ train_pipeline = [
 
 train_dataloader=dict(dataset=dict(dataset=dict(filter_cfg=dict(filter_empty_gt=False,pipeline=train_pipeline))))
 
+# follow ViTDet
+test_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='Resize', scale=image_size, keep_ratio=True), # diff
+    dict(type='Pad', size=image_size, pad_val=dict(img=(114, 114, 114))),
+    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
+]
+
+val_dataloader=dict(dataset=dict(pipeline=test_pipeline))
+test_dataloader = val_dataloader
+
 optim_wrapper = dict(
     type='OptimWrapper',
     optimizer=dict(
@@ -285,9 +303,12 @@ optim_wrapper = dict(
     paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)})
 )  # custom_keys contains sampling_offsets and reference_points in DeformDETR  # noqa
 
+val_evaluator = dict(metric='bbox')
+test_evaluator = val_evaluator
 
 max_epochs = 12
 train_cfg = dict(
+    _delete_=True,
     type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
 
 param_scheduler = [
@@ -299,6 +320,9 @@ param_scheduler = [
         milestones=[11],
         gamma=0.1)
 ]
+
+default_hooks = dict(checkpoint=dict(by_epoch=True, interval=1))
+log_processor = dict(by_epoch=True)
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.

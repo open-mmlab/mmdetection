@@ -5,7 +5,8 @@ from mmdet.models.task_modules.prior_generators import (AnchorGenerator,
                                              anchor_inside_flags)
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.models.dense_heads import AnchorHead
-from mmdet.models.utils import images_to_levels, multi_apply, unmap, reduce_mean
+from mmdet.models.utils import images_to_levels, multi_apply, unmap
+from mmdet.utils import reduce_mean
 from mmdet.models.task_modules.samplers import PseudoSampler
 
 

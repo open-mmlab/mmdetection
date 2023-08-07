@@ -22,7 +22,7 @@ class CoDETR(BaseDetector):
                  bbox_head=[None], # one-stage
                  train_cfg=[None, None],
                  test_cfg=[None, None],
-                 with_pos_coord=True,
+                 with_pos_coord=False,
                  with_attn_mask=False, # TODO: Delete
                  eval_module='detr', # TODO: Delete
                  eval_index=0,
@@ -32,17 +32,16 @@ class CoDETR(BaseDetector):
                                      init_cfg=init_cfg)
         self.with_pos_coord = with_pos_coord
         self.with_attn_mask = with_attn_mask
-        # Module for evaluation, ['detr', 'one-stage', 'two-stage']
+
+        assert eval_module in ['detr', 'one-stage', 'two-stage']
         self.eval_module = eval_module
-        # Module index for evaluation
-        self.eval_index = eval_index
+
         self.backbone = MODELS.build(backbone)
-
-        head_idx = 0
-
         if neck is not None:
             self.neck = MODELS.build(neck)
-
+        # Module index for evaluation
+        self.eval_index = eval_index
+        head_idx = 0
         if query_head is not None:
             query_head.update(train_cfg=train_cfg[head_idx] if (train_cfg is not None and train_cfg[head_idx] is not None) else None)
             query_head.update(test_cfg=test_cfg[head_idx])
@@ -118,8 +117,13 @@ class CoDETR(BaseDetector):
         if self.with_neck:
             x = self.neck(x)
         return x
+    
+    def _forward(self,
+                 batch_inputs: Tensor,
+                 batch_data_samples: OptSampleList = None):
+        pass
 
-    def forward_train(self,
+    def loss(self,
                       img,
                       img_metas,
                       gt_bboxes,
@@ -264,10 +268,17 @@ class CoDETR(BaseDetector):
               the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         assert self.eval_module in ['detr', 'one-stage', 'two-stage']
+
+        if not self.with_attn_mask: # remove attn mask for LSJ
+            for data_samples in batch_data_samples:
+                img_metas = data_samples.metainfo
+                input_img_h, input_img_w = img_metas['batch_input_shape']
+                img_metas['img_shape'] = [input_img_h, input_img_w]
+
         img_feats = self.extract_feat(batch_inputs)
         if self.with_bbox and self.eval_module=='one-stage':
             results_list = self.predict_bbox_head(img_feats, batch_data_samples, rescale=rescale)  
-        if self.with_roi_head and self.eval_module=='two-stage':
+        elif self.with_roi_head and self.eval_module=='two-stage':
             results_list = self.predict_roi_head(img_feats, batch_data_samples, rescale=rescale)  
         else: # default
             results_list = self.predict_query_head(img_feats, batch_data_samples, rescale=rescale)
@@ -290,8 +301,11 @@ class CoDETR(BaseDetector):
                         rescale: bool = True) -> SampleList:
         assert self.with_bbox, 'Bbox head must be implemented.'
         if self.with_query_head:
-            results = self.query_head.forward(mlvl_feats, batch_data_samples)
-            mlvl_feats = results[-2]
+            batch_img_metas = [
+                data_samples.metainfo for data_samples in batch_data_samples
+                ]
+            results = self.query_head.forward(mlvl_feats, batch_img_metas)
+            mlvl_feats = results[-1]
         rpn_results_list = self.rpn_head.predict(mlvl_feats, batch_data_samples, rescale=False)
         return self.roi_head[self.eval_index].predict(
             mlvl_feats, rpn_results_list, batch_data_samples, rescale=rescale)
@@ -302,7 +316,10 @@ class CoDETR(BaseDetector):
                         rescale: bool = True) -> SampleList:
         assert self.with_bbox, 'Bbox head must be implemented.'
         if self.with_query_head:
-            results = self.query_head.forward(mlvl_feats, batch_data_samples)
-            mlvl_feats = results[-2]
+            batch_img_metas = [
+                data_samples.metainfo for data_samples in batch_data_samples
+                ]
+            results = self.query_head.forward(mlvl_feats, batch_img_metas)
+            mlvl_feats = results[-1]
         return self.bbox_head[self.eval_index].predict(
             mlvl_feats, batch_data_samples, rescale=rescale)

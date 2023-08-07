@@ -5,13 +5,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmengine.model import BaseModule
-from mmcv.cnn import xavier_init
+from mmengine.model.weight_init import xavier_init
 from mmdet.registry import MODELS
-from mmcv.cnn.bricks.transformer import TransformerLayerSequence
 from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
                                          TransformerLayerSequence,
                                          build_transformer_layer_sequence)
-from mmdet.models.layers import DeformableDetrTransformer, DeformableDetrTransformerDecoder
 from mmdet.models.layers.transformer import inverse_sigmoid
 from mmcv.ops import MultiScaleDeformableAttention
 from torch.nn.init import normal_
@@ -1284,3 +1282,76 @@ class CoDinoTransformer(CoDeformableDetrTransformer):
         inter_references_out = inter_references
 
         return inter_states, inter_references_out
+
+
+from mmcv.cnn import build_norm_layer
+
+@MODELS.register_module()
+class DetrTransformerEncoder(TransformerLayerSequence):
+    """TransformerEncoder of DETR.
+
+    Args:
+        post_norm_cfg (dict): Config of last normalization layer. Default：
+            `LN`. Only used when `self.pre_norm` is `True`
+    """
+
+    def __init__(self, *args, post_norm_cfg=dict(type='LN'), with_cp=-1, **kwargs):
+        super(DetrTransformerEncoder, self).__init__(*args, **kwargs)
+        if post_norm_cfg is not None:
+            self.post_norm = build_norm_layer(
+                post_norm_cfg, self.embed_dims)[1] if self.pre_norm else None
+        else:
+            assert not self.pre_norm, f'Use prenorm in ' \
+                                      f'{self.__class__.__name__},' \
+                                      f'Please specify post_norm_cfg'
+            self.post_norm = None
+        self.with_cp = with_cp
+        # if self.with_cp > 0:
+        #     for i in range(self.with_cp):
+        #         self.layers[i] = checkpoint_wrapper(self.layers[i])
+
+@MODELS.register_module()
+class DetrTransformerDecoderLayer(BaseTransformerLayer):
+    """Implements decoder layer in DETR transformer.
+
+    Args:
+        attn_cfgs (list[`mmcv.ConfigDict`] | list[dict] | dict )):
+            Configs for self_attention or cross_attention, the order
+            should be consistent with it in `operation_order`. If it is
+            a dict, it would be expand to the number of attention in
+            `operation_order`.
+        feedforward_channels (int): The hidden dimension for FFNs.
+        ffn_dropout (float): Probability of an element to be zeroed
+            in ffn. Default 0.0.
+        operation_order (tuple[str]): The execution order of operation
+            in transformer. Such as ('self_attn', 'norm', 'ffn', 'norm').
+            Default：None
+        act_cfg (dict): The activation config for FFNs. Default: `LN`
+        norm_cfg (dict): Config dict for normalization layer.
+            Default: `LN`.
+        ffn_num_fcs (int): The number of fully-connected layers in FFNs.
+            Default：2.
+    """
+
+    def __init__(self,
+                 attn_cfgs,
+                 feedforward_channels,
+                 ffn_dropout=0.0,
+                 operation_order=None,
+                 act_cfg=dict(type='ReLU', inplace=True),
+                 norm_cfg=dict(type='LN'),
+                 ffn_num_fcs=2,
+                 **kwargs):
+        super(DetrTransformerDecoderLayer, self).__init__(
+            attn_cfgs=attn_cfgs,
+            feedforward_channels=feedforward_channels,
+            ffn_dropout=ffn_dropout,
+            operation_order=operation_order,
+            act_cfg=act_cfg,
+            norm_cfg=norm_cfg,
+            ffn_num_fcs=ffn_num_fcs,
+            **kwargs)
+        assert len(operation_order) == 6
+        assert set(operation_order) == set(
+            ['self_attn', 'norm', 'cross_attn', 'ffn'])
+
