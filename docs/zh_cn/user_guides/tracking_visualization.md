@@ -12,7 +12,7 @@ default_hooks = dict(visualization=dict(type='TrackVisualizationHook', draw=True
 
 特别地，`TrackVisualizationHook`有如下参数：
 
-- `draw`:是否画出预测结果，如果该参数被设置为False，就不会画出图像。该参数默认设置为False。 
+- `draw`:是否画出预测结果，如果该参数被设置为False，就不会画出图像。该参数默认设置为False。
 
 - `interval`: 可视化图的间隔。默认值为30。
 
@@ -22,7 +22,7 @@ default_hooks = dict(visualization=dict(type='TrackVisualizationHook', draw=True
 
 - `wait_time`: 展示的时间间隔。默认为0。
 
-- `test_out_dir`:在测试过程中保存绘制图像的目录。 
+- `test_out_dir`:在测试过程中保存绘制图像的目录。
 
 - `backend_args`:实例化文件客户机的参数。默认值为`None `。
 
@@ -42,8 +42,8 @@ default_hooks = dict(visualization=dict(type='TrackVisualizationHook', draw=True
 
   - `name`: 选择实例的名称。默认值为'visualizer'。Name of the instance. Defaults to 'visualizer'.
   - `image`: 需要处理的原图。默认为None。
-  - `vis_backends`:可视化后端配置列表。默认为None。 
-  - `save_dir`:为所有存储后端保存文件目录。如果文件夹为空，后端储存仓将不会储存任何数据。 
+  - `vis_backends`:可视化后端配置列表。默认为None。
+  - `save_dir`:为所有存储后端保存文件目录。如果文件夹为空，后端储存仓将不会储存任何数据。
   - `line_width`:线的线宽。默认值为3。
   - `alpha`: bboxes或者mask的透明度。默认为0.8。
 

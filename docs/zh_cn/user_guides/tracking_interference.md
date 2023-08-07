@@ -38,7 +38,7 @@ python demo/mot_demo.py \
 **运行mot model的示例:**
 
 ```shell
-#示例 1：不指定 -- 使用checkpoint --detector 
+#示例 1：不指定 -- 使用checkpoint --detector
 python demo/mot_demo.py \
     demo/demo_mot.mp4 \
     configs/sort/sort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py \
@@ -53,4 +53,3 @@ python demo/mot_demo.py \
     --checkpoint https://download.openmmlab.com/mmtracking/mot/qdtrack/mot_dataset/qdtrack_faster-rcnn_r50_fpn_4e_mot17_20220315_145635-76f295ef.pth \
     --out mot.mp4
 ```
-
