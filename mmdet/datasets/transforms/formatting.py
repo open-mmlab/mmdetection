@@ -134,7 +134,7 @@ class PackDetInputs(BaseTransform):
         img_meta = {}
         for key in self.meta_keys:
             if key in results:
-                img_meta[key] = results[key])
+                img_meta[key] = results[key]
             
         data_sample.set_metainfo(img_meta)
         packed_results['data_samples'] = data_sample
