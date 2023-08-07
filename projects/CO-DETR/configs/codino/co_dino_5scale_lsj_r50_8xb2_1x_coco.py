@@ -17,7 +17,7 @@ model = dict(
     # detr: 52.1
     # one-stage: 49.4
     # two-stage: 47.9
-    eval_module='two-stage', # in ['detr', 'one-stage', 'two-stage']
+    eval_module='detr', # in ['detr', 'one-stage', 'two-stage']
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
@@ -43,30 +43,12 @@ model = dict(
         act_cfg=None,
         norm_cfg=dict(type='GN', num_groups=32),
         num_outs=5),
-    rpn_head=dict(
-        type='RPNHead',
-        in_channels=256,
-        feat_channels=256,
-        anchor_generator=dict(
-            type='AnchorGenerator',
-            octave_base_scale=4,
-            scales_per_octave=3,
-            ratios=[0.5, 1.0, 2.0],
-            strides=[4, 8, 16, 32, 64, 128]),
-        bbox_coder=dict(
-            type='DeltaXYWHBBoxCoder',
-            target_means=[.0, .0, .0, .0],
-            target_stds=[1.0, 1.0, 1.0, 1.0]),
-        loss_cls=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0*num_dec_layer*lambda_2),
-        loss_bbox=dict(type='L1Loss', loss_weight=1.0*num_dec_layer*lambda_2)),
     query_head=dict(
         type='CoDINOHead',
         num_query=900,
         num_classes=80,
         in_channels=2048,
-        sync_cls_avg_factor=True,
-        mixed_selection=True,
+        as_two_stage=True,
         dn_cfg=dict( 
             label_noise_scale=0.5,
             box_noise_scale=1.0,  # 0.4 for DN-DETR
@@ -123,6 +105,23 @@ model = dict(
             loss_weight=1.0),
         loss_bbox=dict(type='L1Loss', loss_weight=5.0),
         loss_iou=dict(type='GIoULoss', loss_weight=2.0)),
+    rpn_head=dict(
+        type='RPNHead',
+        in_channels=256,
+        feat_channels=256,
+        anchor_generator=dict(
+            type='AnchorGenerator',
+            octave_base_scale=4,
+            scales_per_octave=3,
+            ratios=[0.5, 1.0, 2.0],
+            strides=[4, 8, 16, 32, 64, 128]),
+        bbox_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0]),
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0*num_dec_layer*lambda_2),
+        loss_bbox=dict(type='L1Loss', loss_weight=1.0*num_dec_layer*lambda_2)),
     roi_head=[dict(
         type='CoStandardRoIHead',
         bbox_roi_extractor=dict(

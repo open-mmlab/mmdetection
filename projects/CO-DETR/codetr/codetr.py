@@ -1,5 +1,6 @@
 import warnings
 from typing import Dict, List, Tuple, Union
+import copy 
 
 import torch
 import torch.nn as nn
@@ -123,53 +124,17 @@ class CoDETR(BaseDetector):
                  batch_data_samples: OptSampleList = None):
         pass
 
-    def loss(self,
-                      img,
-                      img_metas,
-                      gt_bboxes,
-                      gt_labels,
-                      gt_bboxes_ignore=None,
-                      gt_masks=None,
-                      proposals=None,
-                      **kwargs):
-        """
-        Args:
-            img (Tensor): of shape (N, C, H, W) encoding input images.
-                Typically these should be mean centered and std scaled.
-
-            img_metas (list[dict]): list of image info dict where each dict
-                has: 'img_shape', 'scale_factor', 'flip', and may also contain
-                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
-                `mmdet/datasets/pipelines/formatting.py:Collect`.
-
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-
-            gt_labels (list[Tensor]): class indices corresponding to each box
-
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.
-
-            gt_masks (None | Tensor) : true segmentation masks for each box
-                used if the architecture supports a segmentation task.
-
-            proposals : override rpn proposals with custom proposals. Use when
-                `with_rpn` is False.
-
-        Returns:
-            dict[str, Tensor]: a dictionary of loss components
-        """
-        batch_input_shape = tuple(img[0].size()[-2:])
-        for img_meta in img_metas:
-            img_meta['batch_input_shape'] = batch_input_shape
-
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> Union[dict, list]:
+        
+        batch_input_shape = batch_data_samples[0].batch_input_shape
         if not self.with_attn_mask: # remove attn mask for LSJ
-            for i in range(len(img_metas)):
-                input_img_h, input_img_w = img_metas[i]['batch_input_shape']
-                img_metas[i]['img_shape'] = [input_img_h, input_img_w, 3]
+            for data_samples in batch_data_samples:
+                img_metas = data_samples.metainfo
+                input_img_h, input_img_w = batch_input_shape
+                img_metas['img_shape'] = [input_img_h, input_img_w]
 
-        x = self.extract_feat(img, img_metas)
+        x = self.extract_feat(batch_inputs)
 
         losses = dict()
         def upd_loss(losses, idx, weight=1):
@@ -183,53 +148,61 @@ class CoDETR(BaseDetector):
 
         # DETR encoder and decoder forward
         if self.with_query_head:
-            bbox_losses, x = self.query_head.forward_train(x, img_metas, gt_bboxes,
-                                                          gt_labels, gt_bboxes_ignore)
+            bbox_losses, x = self.query_head.loss(x, batch_data_samples)
             losses.update(bbox_losses)
             
-
         # RPN forward and loss
         if self.with_rpn:
             proposal_cfg = self.train_cfg[self.head_idx].get('rpn_proposal',
                                               self.test_cfg[self.head_idx].rpn)
-            rpn_losses, proposal_list = self.rpn_head.forward_train(
-                x,
-                img_metas,
-                gt_bboxes,
-                gt_labels=None,
-                gt_bboxes_ignore=gt_bboxes_ignore,
-                proposal_cfg=proposal_cfg,
-                **kwargs)
+            
+            rpn_data_samples = copy.deepcopy(batch_data_samples)
+            # set cat_id of gt_labels to 0 in RPN
+            for data_sample in rpn_data_samples:
+                data_sample.gt_instances.labels = \
+                    torch.zeros_like(data_sample.gt_instances.labels)
+                
+            rpn_losses, proposal_list = self.rpn_head.loss_and_predict(
+                x, rpn_data_samples, proposal_cfg=proposal_cfg)
+            
+            # avoid get same name with roi_head loss
+            keys = rpn_losses.keys()
+            for key in list(keys):
+                if 'loss' in key and 'rpn' not in key:
+                    rpn_losses[f'rpn_{key}'] = rpn_losses.pop(key)
+
             losses.update(rpn_losses)
         else:
-            proposal_list = proposals
+            assert batch_data_samples[0].get('proposals', None) is not None
+            # use pre-defined proposals in InstanceData for the second stage
+            # to extract ROI features.
+            proposal_list = [
+                data_sample.proposals for data_sample in batch_data_samples
+            ]
 
         positive_coords = []
         for i in range(len(self.roi_head)):
-            roi_losses = self.roi_head[i].forward_train(x, img_metas, proposal_list,
-                                                    gt_bboxes, gt_labels,
-                                                    gt_bboxes_ignore, gt_masks,
-                                                    **kwargs)
+            roi_losses = self.roi_head[i].loss(x, proposal_list, batch_data_samples)
             if self.with_pos_coord:
                 positive_coords.append(roi_losses.pop('pos_coords'))
             else: 
                 if 'pos_coords' in roi_losses.keys():
-                    tmp = roi_losses.pop('pos_coords')     
+                    roi_losses.pop('pos_coords')     
             roi_losses = upd_loss(roi_losses, idx=i)
             losses.update(roi_losses)
             
         for i in range(len(self.bbox_head)):
-            bbox_losses = self.bbox_head[i].forward_train(x, img_metas, gt_bboxes,
-                                                        gt_labels, gt_bboxes_ignore)
+            bbox_losses = self.bbox_head[i].loss(x, batch_data_samples)
             if self.with_pos_coord:
                 pos_coords = bbox_losses.pop('pos_coords')
                 positive_coords.append(pos_coords)
             else:
                 if 'pos_coords' in bbox_losses.keys():
-                    tmp = bbox_losses.pop('pos_coords')          
+                    bbox_losses.pop('pos_coords')          
             bbox_losses = upd_loss(bbox_losses, idx=i+len(self.roi_head))
             losses.update(bbox_losses)
-
+        
+        # TODO
         if self.with_pos_coord and len(positive_coords)>0:
             for i in range(len(positive_coords)):
                 bbox_losses = self.query_head.forward_train_aux(x, img_metas, gt_bboxes,
@@ -239,7 +212,6 @@ class CoDETR(BaseDetector):
 
         return losses
 
-    
     def predict(self,
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
