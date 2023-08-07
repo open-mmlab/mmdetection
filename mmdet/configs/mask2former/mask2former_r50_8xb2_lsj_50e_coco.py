@@ -1,14 +1,20 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from mmengine.config import read_base
+
 with read_base():
     from .mask2former_r50_8xb2_lsj_50e_coco_panoptic import *
-from mmdet.models.data_preprocessors.data_preprocessor import BatchFixedSizePad, DetDataPreprocessor
+
 from mmcv.transforms.loading import LoadImageFromFile
-from mmdet.datasets.transforms.loading import LoadAnnotations, FilterAnnotations
-from mmdet.datasets.transforms.transforms import Resize, RandomCrop, RandomFlip
 from mmcv.transforms.processing import RandomResize
-from mmdet.datasets.transforms.formatting import PackDetInputs
+
 from mmdet.datasets.coco import CocoDataset
+from mmdet.datasets.transforms.formatting import PackDetInputs
+from mmdet.datasets.transforms.loading import (FilterAnnotations,
+                                               LoadAnnotations)
+from mmdet.datasets.transforms.transforms import RandomCrop, RandomFlip, Resize
 from mmdet.evaluation.metrics.coco_metric import CocoMetric
+from mmdet.models.data_preprocessors.data_preprocessor import (
+    BatchFixedSizePad, DetDataPreprocessor)
 
 num_things_classes = 80
 num_stuff_classes = 0

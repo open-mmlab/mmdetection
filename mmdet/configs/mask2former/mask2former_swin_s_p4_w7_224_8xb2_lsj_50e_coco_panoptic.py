@@ -1,4 +1,6 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from mmengine.config import read_base
+
 with read_base():
     from .mask2former_swin_t_p4_w7_224_8xb2_lsj_50e_coco_panoptic import *
 
@@ -28,14 +30,12 @@ custom_keys = {
     'level_embed': embed_multi
 }
 custom_keys.update({
-    f'backbone.stages.{stage_id}.blocks.{block_id}.norm':
-    backbone_norm_multi
+    f'backbone.stages.{stage_id}.blocks.{block_id}.norm': backbone_norm_multi
     for stage_id, num_blocks in enumerate(depths)
     for block_id in range(num_blocks)
 })
 custom_keys.update({
-    f'backbone.stages.{stage_id}.downsample.norm':
-    backbone_norm_multi
+    f'backbone.stages.{stage_id}.downsample.norm': backbone_norm_multi
     for stage_id in range(len(depths) - 1)
 })
 # optimizer

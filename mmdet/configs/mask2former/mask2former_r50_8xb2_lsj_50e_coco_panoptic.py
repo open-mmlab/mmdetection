@@ -1,32 +1,42 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from mmengine.config import read_base
+
 with read_base():
     from .._base_.datasets.coco_panoptic import *
     from .._base_.default_runtime import *
-from mmdet.models.data_preprocessors.data_preprocessor import BatchFixedSizePad, DetDataPreprocessor
-from mmdet.models.detectors.mask2former import Mask2Former
-from mmdet.models.backbones.resnet import ResNet
-from mmdet.models.dense_heads.mask2former_head import Mask2FormerHead
-from mmdet.models.layers.msdeformattn_pixel_decoder import MSDeformAttnPixelDecoder
-from torch.nn.modules.activation import ReLU
-from mmdet.models.losses.cross_entropy_loss import CrossEntropyLoss
-from mmdet.models.losses.dice_loss import DiceLoss
-from mmdet.models.seg_heads.panoptic_fusion_heads.maskformer_fusion_head import MaskFormerFusionHead
-from mmdet.models.task_modules.assigners.hungarian_assigner import HungarianAssigner
-from mmdet.models.task_modules.assigners.match_cost import ClassificationCost, DiceCost, CrossEntropyLossCost
-from mmdet.models.task_modules.samplers.mask_pseudo_sampler import MaskPseudoSampler
+
 from mmcv.transforms.loading import LoadImageFromFile
+from mmcv.transforms.processing import RandomResize
+from mmengine.hooks.checkpoint_hook import CheckpointHook
+from mmengine.optim.optimizer.optimizer_wrapper import OptimWrapper
+from mmengine.optim.scheduler.lr_scheduler import MultiStepLR
+from mmengine.runner.log_processor import LogProcessor
+from mmengine.runner.loops import IterBasedTrainLoop, TestLoop, ValLoop
+from torch.nn.modules.activation import ReLU
+from torch.optim.adamw import AdamW
+
+from mmdet.datasets.transforms.formatting import PackDetInputs
 from mmdet.datasets.transforms.loading import LoadPanopticAnnotations
 from mmdet.datasets.transforms.transforms import RandomCrop, RandomFlip
-from mmcv.transforms.processing import RandomResize
-from mmdet.datasets.transforms.formatting import PackDetInputs
-from mmdet.evaluation.metrics.coco_panoptic_metric import CocoPanopticMetric
 from mmdet.evaluation.metrics.coco_metric import CocoMetric
-from mmengine.optim.optimizer.optimizer_wrapper import OptimWrapper
-from torch.optim.adamw import AdamW
-from mmengine.optim.scheduler.lr_scheduler import MultiStepLR
-from mmengine.runner.loops import ValLoop, TestLoop, IterBasedTrainLoop
-from mmengine.hooks.checkpoint_hook import CheckpointHook
-from mmengine.runner.log_processor import LogProcessor
+from mmdet.evaluation.metrics.coco_panoptic_metric import CocoPanopticMetric
+from mmdet.models.backbones.resnet import ResNet
+from mmdet.models.data_preprocessors.data_preprocessor import (
+    BatchFixedSizePad, DetDataPreprocessor)
+from mmdet.models.dense_heads.mask2former_head import Mask2FormerHead
+from mmdet.models.detectors.mask2former import Mask2Former
+from mmdet.models.layers.msdeformattn_pixel_decoder import \
+    MSDeformAttnPixelDecoder
+from mmdet.models.losses.cross_entropy_loss import CrossEntropyLoss
+from mmdet.models.losses.dice_loss import DiceLoss
+from mmdet.models.seg_heads.panoptic_fusion_heads.maskformer_fusion_head import \
+    MaskFormerFusionHead
+from mmdet.models.task_modules.assigners.hungarian_assigner import \
+    HungarianAssigner
+from mmdet.models.task_modules.assigners.match_cost import (
+    ClassificationCost, CrossEntropyLossCost, DiceCost)
+from mmdet.models.task_modules.samplers.mask_pseudo_sampler import \
+    MaskPseudoSampler
 
 image_size = (1024, 1024)
 batch_augments = [

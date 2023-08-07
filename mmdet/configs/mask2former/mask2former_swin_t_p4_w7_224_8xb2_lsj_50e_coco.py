@@ -1,9 +1,12 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from mmengine.config import read_base
+
 with read_base():
     from .mask2former_r50_8xb2_lsj_50e_coco import *
-from mmdet.models.detectors.mask2former import Mask2Former
+
 from mmdet.models.backbones.swin import SwinTransformer
 from mmdet.models.dense_heads.mask2former_head import Mask2FormerHead
+from mmdet.models.detectors.mask2former import Mask2Former
 
 pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_tiny_patch4_window7_224.pth'  # noqa
 depths = [2, 2, 6, 2]
@@ -50,14 +53,12 @@ custom_keys = {
     'level_embed': embed_multi
 }
 custom_keys.update({
-    f'backbone.stages.{stage_id}.blocks.{block_id}.norm':
-    backbone_norm_multi
+    f'backbone.stages.{stage_id}.blocks.{block_id}.norm': backbone_norm_multi
     for stage_id, num_blocks in enumerate(depths)
     for block_id in range(num_blocks)
 })
 custom_keys.update({
-    f'backbone.stages.{stage_id}.downsample.norm':
-    backbone_norm_multi
+    f'backbone.stages.{stage_id}.downsample.norm': backbone_norm_multi
     for stage_id in range(len(depths) - 1)
 })
 # optimizer
