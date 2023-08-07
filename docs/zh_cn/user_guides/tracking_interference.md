@@ -30,7 +30,7 @@ python demo/mot_demo.py \
 - `CHECKPOINT_FILE`: 可选择 checkpoint。
 - `DETECTOR_FILE`:  可选择 detector。
 - `REID_FILE`:  可选择 reid。
-- `SCORE_THR`:  bboxes 的得分阈值。
+- `SCORE_THR`:  规律检测框的置信度阈值。
 - `DEVICE`: 推理所需配置。可以选择  `cpu`  ，  `cuda:0` , 或者其他。
 - `OUTPUT`: 输出结果可视化的示例。如果未指定， `--show`  将强制显示动态视频。
 - `--show`: 是否即时显示视频。
