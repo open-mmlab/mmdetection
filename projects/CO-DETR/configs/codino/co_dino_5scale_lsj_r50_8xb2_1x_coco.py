@@ -276,7 +276,9 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 
-train_dataloader=dict(dataset=dict(dataset=dict(filter_cfg=dict(filter_empty_gt=False, pipeline=train_pipeline))))
+train_dataloader=dict(
+    sampler=dict(type='DefaultSampler', shuffle=True),
+    dataset=dict(dataset=dict(filter_cfg=dict(filter_empty_gt=False, pipeline=train_pipeline))))
 
 # follow ViTDet
 test_pipeline = [
