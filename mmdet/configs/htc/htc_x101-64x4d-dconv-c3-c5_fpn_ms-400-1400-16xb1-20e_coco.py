@@ -1,10 +1,9 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 from mmengine.config import read_base
 
 with read_base():
     from .htc_x101_64x4d_fpn_16xb1_20e_coco import *
 
-from mmcv.cnn.bricks.wrappers import ConvTranspose2d as DCN
+from mmcv.ops.deform_conv import deform_conv2d as DCN
 from mmcv.transforms.processing import RandomResize
 
 model.update(
