@@ -9,6 +9,7 @@ from mmdet.models.roi_heads import StandardRoIHead
 from mmdet.registry import MODELS
 from mmdet.utils import InstanceList
 from mmdet.models.utils import  unpack_gt_instances
+from mmdet.models.task_modules.samplers import SamplingResult
 
 
 @MODELS.register_module()
@@ -90,3 +91,35 @@ class CoStandardRoIHead(StandardRoIHead):
             losses.update(pos_coords=pos_coords)
 
         return losses
+    
+    def bbox_loss(self, x: Tuple[Tensor],
+                  sampling_results: List[SamplingResult]) -> dict:
+        """Perform forward propagation and loss calculation of the bbox head on
+        the features of the upstream network.
+
+        Args:
+            x (tuple[Tensor]): List of multi-level img features.
+            sampling_results (list["obj:`SamplingResult`]): Sampling results.
+
+        Returns:
+            dict[str, Tensor]: Usually returns a dictionary with keys:
+
+                - `cls_score` (Tensor): Classification scores.
+                - `bbox_pred` (Tensor): Box energies / deltas.
+                - `bbox_feats` (Tensor): Extract bbox RoI features.
+                - `loss_bbox` (dict): A dictionary of bbox loss components.
+        """
+        rois = bbox2roi([res.priors for res in sampling_results])
+        bbox_results = self._bbox_forward(x, rois)
+
+        bbox_loss_and_target = self.bbox_head.loss_and_target(
+            cls_score=bbox_results['cls_score'],
+            bbox_pred=bbox_results['bbox_pred'],
+            rois=rois,
+            sampling_results=sampling_results,
+            rcnn_train_cfg=self.train_cfg)
+
+        bbox_results.update(loss_bbox=bbox_loss_and_target['loss_bbox'])
+        # diff
+        bbox_results.update(bbox_targets=bbox_loss_and_target['bbox_targets'])
+        return bbox_results

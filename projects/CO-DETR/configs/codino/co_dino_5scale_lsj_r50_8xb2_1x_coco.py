@@ -13,6 +13,7 @@ batch_augments = [
 ]
 model = dict(
     type='CoDETR',
+    with_pos_coord=True,
     with_attn_mask=False, # lsj is False 
     # detr: 52.1
     # one-stage: 49.4
@@ -275,7 +276,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 
-train_dataloader=dict(dataset=dict(dataset=dict(filter_cfg=dict(filter_empty_gt=False,pipeline=train_pipeline))))
+train_dataloader=dict(dataset=dict(dataset=dict(filter_cfg=dict(filter_empty_gt=False, pipeline=train_pipeline))))
 
 # follow ViTDet
 test_pipeline = [
@@ -293,6 +294,7 @@ val_dataloader=dict(dataset=dict(pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
 optim_wrapper = dict(
+    _delete_=True,
     type='OptimWrapper',
     optimizer=dict(
         type='AdamW',
@@ -327,7 +329,3 @@ log_processor = dict(by_epoch=True)
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (2 samples per GPU)
 auto_scale_lr = dict(base_batch_size=16)
-
-
-
-

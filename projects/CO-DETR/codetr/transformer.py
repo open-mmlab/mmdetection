@@ -14,6 +14,12 @@ from mmdet.models.layers.transformer import inverse_sigmoid
 from mmcv.ops import MultiScaleDeformableAttention
 from torch.nn.init import normal_
 
+
+try:
+    from fairscale.nn.checkpoint import checkpoint_wrapper
+except:
+    checkpoint_wrapper = None
+
 class Transformer(BaseModule):
     """Implements the DETR transformer.
 
@@ -1306,9 +1312,14 @@ class DetrTransformerEncoder(TransformerLayerSequence):
                                       f'Please specify post_norm_cfg'
             self.post_norm = None
         self.with_cp = with_cp
-        # if self.with_cp > 0:
-        #     for i in range(self.with_cp):
-        #         self.layers[i] = checkpoint_wrapper(self.layers[i])
+        if self.with_cp > 0:
+            if checkpoint_wrapper is None:
+                warnings.warn('If you want to reduce GPU memory usage, \
+                              please install fairscale by executing the \
+                              following command: pip install fairscale.')
+                return
+            for i in range(self.with_cp):
+                self.layers[i] = checkpoint_wrapper(self.layers[i])
 
 @MODELS.register_module()
 class DetrTransformerDecoderLayer(BaseTransformerLayer):

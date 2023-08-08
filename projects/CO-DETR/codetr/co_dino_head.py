@@ -34,6 +34,7 @@ class CoDINOHead(DINOHead):
                  max_pos_coords=300,
                  lambda_1=1,
                  dn_cfg=None,
+                 use_zero_padding=False,
                  positional_encoding=dict(
                      type='SinePositionalEncoding',
                      num_feats=128,
@@ -47,6 +48,7 @@ class CoDINOHead(DINOHead):
         self.lambda_1 = lambda_1
         self.positional_encoding = positional_encoding
         self.num_query=num_query
+        self.use_zero_padding=use_zero_padding
 
         if 'two_stage_num_proposals' in transformer:
             assert transformer['two_stage_num_proposals'] == num_query, \
@@ -395,7 +397,7 @@ class CoDINOHead(DINOHead):
         img_masks = mlvl_feats[0].new_ones(
             (batch_size, input_img_h, input_img_w))
         for img_id in range(batch_size):
-            img_h, img_w, _ = img_metas[img_id]['img_shape']
+            img_h, img_w = img_metas[img_id]['img_shape']
             img_masks[img_id, :img_h, :img_w] = 0
 
         mlvl_masks = []
@@ -445,7 +447,229 @@ class CoDINOHead(DINOHead):
 
         return outputs_classes, outputs_coords, \
                 None, None
+    
+    def loss_aux(self,
+                x,
+                pos_coords=None,
+                head_idx=0,
+                batch_data_samples=None):
+        """Forward function for training mode.
 
+        Args:
+            x (list[Tensor]): Features from backbone.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes (Tensor): Ground truth bboxes of the image,
+                shape (num_gts, 4).
+            gt_labels (Tensor): Ground truth labels of each box,
+                shape (num_gts,).
+            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
+                ignored, shape (num_ignored_gts, 4).
+            proposal_cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
+        batch_gt_instances = []
+        batch_img_metas = []
+        for data_sample in batch_data_samples:
+            batch_img_metas.append(data_sample.metainfo)
+            batch_gt_instances.append(data_sample.gt_instances)
+        
+        gt_bboxes= [b.bboxes for b in batch_gt_instances]
+        gt_labels= [b.labels for b in batch_gt_instances]
+
+        aux_targets = self.get_aux_targets(pos_coords, batch_img_metas, x, head_idx)
+        outs = self.forward_aux(x[:-1], batch_img_metas, aux_targets, head_idx)
+        outs = outs + aux_targets
+        if gt_labels is None:
+            loss_inputs = outs + (gt_bboxes, batch_img_metas)
+        else:
+            loss_inputs = outs + (gt_bboxes, gt_labels, batch_img_metas)
+        losses = self.loss_aux_by_feat(*loss_inputs)
+        return losses
+    
+    def get_aux_targets(self, pos_coords, img_metas, mlvl_feats, head_idx):
+        coords, labels, targets = pos_coords[:3]
+        head_name = pos_coords[-1]
+        bs, c = len(coords), mlvl_feats[0].shape[1]
+        max_num_coords = 0
+        all_feats = []
+        for i in range(bs):
+            label = labels[i]
+            feats = [feat[i].reshape(c, -1).transpose(1, 0) for feat in mlvl_feats]
+            feats = torch.cat(feats, dim=0)
+            bg_class_ind = self.num_classes
+            pos_inds = ((label >= 0)
+                        & (label < bg_class_ind)).nonzero().squeeze(1)  
+            max_num_coords = max(max_num_coords, len(pos_inds))
+            all_feats.append(feats)
+        max_num_coords = min(self.max_pos_coords, max_num_coords)
+        max_num_coords = max(9, max_num_coords)
+
+        if self.use_zero_padding:
+            attn_masks = []
+            label_weights = coords[0].new_zeros([bs, max_num_coords])
+        else:
+            attn_masks = None
+            label_weights = coords[0].new_ones([bs, max_num_coords])
+        bbox_weights = coords[0].new_zeros([bs, max_num_coords, 4])
+
+        aux_coords, aux_labels, aux_targets, aux_feats = [], [], [], []
+
+        for i in range(bs):
+            coord, label, target = coords[i], labels[i], targets[i]
+            feats = all_feats[i]
+            if 'rcnn' in head_name:
+                feats = pos_coords[-2][i]
+                num_coords_per_point = 1
+            else:
+                num_coords_per_point = coord.shape[0] // feats.shape[0]
+            feats = feats.unsqueeze(1).repeat(1, num_coords_per_point, 1)
+            feats = feats.reshape(feats.shape[0]*num_coords_per_point, feats.shape[-1])
+            img_meta = img_metas[i]
+            img_h, img_w = img_meta['img_shape']
+            factor = coord.new_tensor([img_w, img_h, img_w,
+                                           img_h]).unsqueeze(0)
+            bg_class_ind = self.num_classes
+            pos_inds = ((label >= 0)
+                        & (label < bg_class_ind)).nonzero().squeeze(1)
+            neg_inds = ((label == bg_class_ind)).nonzero().squeeze(1)
+            if pos_inds.shape[0] > max_num_coords:
+                indices = torch.randperm(pos_inds.shape[0])[:max_num_coords].cuda()
+                pos_inds = pos_inds[indices]
+
+            coord = bbox_xyxy_to_cxcywh(coord[pos_inds] / factor)
+            label = label[pos_inds]
+            target = bbox_xyxy_to_cxcywh(target[pos_inds] / factor)
+            feat = feats[pos_inds]
+
+            if self.use_zero_padding:
+                label_weights[i][:len(label)] = 1
+                bbox_weights[i][:len(label)] = 1
+                attn_mask = torch.zeros([max_num_coords, max_num_coords,]).bool().to(coord.device)
+            else:
+                bbox_weights[i][:len(label)] = 1
+
+            if coord.shape[0] < max_num_coords:
+                padding_shape = max_num_coords-coord.shape[0]
+                if self.use_zero_padding:
+                    padding_coord = coord.new_zeros([padding_shape, 4])
+                    padding_label = label.new_ones([padding_shape]) * self.num_classes
+                    padding_target = target.new_zeros([padding_shape, 4])
+                    padding_feat = feat.new_zeros([padding_shape, c])
+                    attn_mask[coord.shape[0] :, 0 : coord.shape[0],] = True
+                    attn_mask[:, coord.shape[0] :,] = True
+                else:
+                    indices = torch.randperm(neg_inds.shape[0])[:padding_shape].cuda()
+                    neg_inds = neg_inds[indices]
+                    padding_coord = bbox_xyxy_to_cxcywh(coords[i][neg_inds] / factor)
+                    padding_label = labels[i][neg_inds]
+                    padding_target = bbox_xyxy_to_cxcywh(targets[i][neg_inds] / factor)
+                    padding_feat = feats[neg_inds]
+                coord = torch.cat((coord, padding_coord), dim=0)
+                label = torch.cat((label, padding_label), dim=0)
+                target = torch.cat((target, padding_target), dim=0)
+                feat = torch.cat((feat, padding_feat), dim=0)
+            if self.use_zero_padding:
+                attn_masks.append(attn_mask.unsqueeze(0))
+            aux_coords.append(coord.unsqueeze(0))
+            aux_labels.append(label.unsqueeze(0))
+            aux_targets.append(target.unsqueeze(0))
+            aux_feats.append(feat.unsqueeze(0))
+
+        if self.use_zero_padding:
+            attn_masks = torch.cat(attn_masks, dim=0).unsqueeze(1).repeat(1, 8, 1, 1)
+            attn_masks = attn_masks.reshape(bs*8, max_num_coords, max_num_coords)
+        else:
+            attn_mask = None
+
+        aux_coords = torch.cat(aux_coords, dim=0)
+        aux_labels = torch.cat(aux_labels, dim=0)
+        aux_targets = torch.cat(aux_targets, dim=0)
+        aux_feats = torch.cat(aux_feats, dim=0)
+        aux_label_weights = label_weights
+        aux_bbox_weights = bbox_weights
+        return (aux_coords, aux_labels, aux_targets, aux_label_weights, aux_bbox_weights, aux_feats, attn_masks)
+
+    def loss_aux_by_feat(self,
+                 all_cls_scores,
+                 all_bbox_preds,
+                 enc_cls_scores,
+                 enc_bbox_preds,
+                 aux_coords, 
+                 aux_labels, 
+                 aux_targets, 
+                 aux_label_weights, 
+                 aux_bbox_weights,
+                 aux_feats,
+                 attn_masks,
+                 gt_bboxes_list,
+                 gt_labels_list,
+                 img_metas,
+                 gt_bboxes_ignore=None):
+        """"Loss function.
+
+        Args:
+            all_cls_scores (Tensor): Classification score of all
+                decoder layers, has shape
+                [nb_dec, bs, num_query, cls_out_channels].
+            all_bbox_preds (Tensor): Sigmoid regression
+                outputs of all decode layers. Each is a 4D-tensor with
+                normalized coordinate format (cx, cy, w, h) and shape
+                [nb_dec, bs, num_query, 4].
+            enc_cls_scores (Tensor): Classification scores of
+                points on encode feature map , has shape
+                (N, h*w, num_classes). Only be passed when as_two_stage is
+                True, otherwise is None.
+            enc_bbox_preds (Tensor): Regression results of each points
+                on the encode feature map, has shape (N, h*w, 4). Only be
+                passed when as_two_stage is True, otherwise is None.
+            gt_bboxes_list (list[Tensor]): Ground truth bboxes for each image
+                with shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels_list (list[Tensor]): Ground truth class indices for each
+                image with shape (num_gts, ).
+            img_metas (list[dict]): List of image meta information.
+            gt_bboxes_ignore (list[Tensor], optional): Bounding boxes
+                which can be ignored for each image. Default None.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
+        num_dec_layers = len(all_cls_scores)
+        all_labels = [aux_labels for _ in range(num_dec_layers)]
+        all_label_weights = [aux_label_weights for _ in range(num_dec_layers)]
+        all_bbox_targets = [aux_targets for _ in range(num_dec_layers)]
+        all_bbox_weights = [aux_bbox_weights for _ in range(num_dec_layers)]
+        img_metas_list = [img_metas for _ in range(num_dec_layers)]
+        all_gt_bboxes_ignore_list = [
+            gt_bboxes_ignore for _ in range(num_dec_layers)
+        ]
+
+        losses_cls, losses_bbox, losses_iou = multi_apply(
+            self.loss_single_aux, all_cls_scores, all_bbox_preds,
+            all_labels, all_label_weights, all_bbox_targets, 
+            all_bbox_weights, img_metas_list, all_gt_bboxes_ignore_list)
+
+        loss_dict = dict()
+        # loss of proposal generated from encode feature map.
+
+        # loss from the last decoder layer
+        loss_dict['loss_cls_aux'] = losses_cls[-1]
+        loss_dict['loss_bbox_aux'] = losses_bbox[-1]
+        loss_dict['loss_iou_aux'] = losses_iou[-1]
+        # loss from other decoder layers
+        num_dec_layer = 0
+        for loss_cls_i, loss_bbox_i, loss_iou_i in zip(losses_cls[:-1],
+                                                       losses_bbox[:-1],
+                                                       losses_iou[:-1]):
+            loss_dict[f'd{num_dec_layer}.loss_cls_aux'] = loss_cls_i
+            loss_dict[f'd{num_dec_layer}.loss_bbox_aux'] = loss_bbox_i
+            loss_dict[f'd{num_dec_layer}.loss_iou_aux'] = loss_iou_i
+            num_dec_layer += 1
+        return loss_dict
+    
     def loss_single_aux(self,
                         cls_scores,
                         bbox_preds,
@@ -525,7 +749,7 @@ class CoDINOHead(DINOHead):
         # construct factors used for rescale bboxes
         factors = []
         for img_meta, bbox_pred in zip(img_metas, bbox_preds):
-            img_h, img_w, _ = img_meta['img_shape']
+            img_h, img_w = img_meta['img_shape']
             factor = bbox_pred.new_tensor([img_w, img_h, img_w,
                                            img_h]).unsqueeze(0).repeat(
                                                bbox_pred.size(0), 1)

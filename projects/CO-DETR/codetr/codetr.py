@@ -23,7 +23,7 @@ class CoDETR(BaseDetector):
                  bbox_head=[None], # one-stage
                  train_cfg=[None, None],
                  test_cfg=[None, None],
-                 with_pos_coord=False,
+                 with_pos_coord=True,
                  with_attn_mask=False, # TODO: Delete
                  eval_module='detr', # TODO: Delete
                  eval_index=0,
@@ -202,11 +202,9 @@ class CoDETR(BaseDetector):
             bbox_losses = upd_loss(bbox_losses, idx=i+len(self.roi_head))
             losses.update(bbox_losses)
         
-        # TODO
         if self.with_pos_coord and len(positive_coords)>0:
             for i in range(len(positive_coords)):
-                bbox_losses = self.query_head.forward_train_aux(x, img_metas, gt_bboxes,
-                                                            gt_labels, gt_bboxes_ignore, positive_coords[i], i)
+                bbox_losses = self.query_head.loss_aux(x, positive_coords[i], i, batch_data_samples)
                 bbox_losses = upd_loss(bbox_losses, idx=i)
                 losses.update(bbox_losses)                    
 
