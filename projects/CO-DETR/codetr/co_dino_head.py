@@ -96,13 +96,6 @@ class CoDINOHead(DINOHead):
         self.cls_branches = _get_clones(fc_cls, num_pred)
         self.reg_branches = _get_clones(reg_branch, num_pred)
 
-        self.query_embedding = None
-        # NOTE The original repo of DINO set the num_embeddings 92 for coco,
-        # 91 (0~90) of which represents target classes and the 92 (91)
-        # indicates [Unknown] class. However, the embedding of unknown class
-        # is not used in the original DINO
-        self.label_embedding = nn.Embedding(self.cls_out_channels,
-                                            self.embed_dims)
         self.downsample = nn.Sequential(
             nn.Conv2d(self.embed_dims, self.embed_dims, kernel_size=3, stride=2, padding=1),
             nn.GroupNorm(32, self.embed_dims)
@@ -168,7 +161,7 @@ class CoDINOHead(DINOHead):
             # NOTE: If there is no target in the image, the parameters of
             # label_embedding won't be used in producing loss, which raises
             # RuntimeError when using distributed mode.
-            hs[0] += self.label_embedding.weight[0, 0] * 0.0
+            hs[0] += self.dn_generator.label_embedding.weight[0, 0] * 0.0
 
         outputs_classes = []
         outputs_coords = []
