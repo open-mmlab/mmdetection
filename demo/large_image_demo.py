@@ -112,13 +112,13 @@ def main():
         while 'dataset' in test_data_cfg:
             test_data_cfg = test_data_cfg['dataset']
 
-        # batch_shapes_cfg will force control the size of the output image,
-        # it is not compatible with tta.
-        if 'batch_shapes_cfg' in test_data_cfg:
-            test_data_cfg.batch_shapes_cfg = None
         test_data_cfg.pipeline = config.tta_pipeline
 
-    model = init_detector(config, args.checkpoint, device=args.device)
+    # TODO: TTA mode will error if cfg_options is not set.
+    #  This is an mmdet issue and needs to be fixed later.
+    # build the model from a config file and a checkpoint file
+    model = init_detector(
+        config, args.checkpoint, device=args.device, cfg_options={})
 
     if not os.path.exists(args.out_dir) and not args.show:
         os.mkdir(args.out_dir)
