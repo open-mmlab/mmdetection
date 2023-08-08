@@ -90,7 +90,7 @@ Note:  `inference_detector` only supports single-image inference for now.
 
 ## Demos
 
-We also provide three demo scripts, implemented with high-level APIs and supporting functionality codes.
+We also provide four demo scripts, implemented with high-level APIs and supporting functionality codes.
 Source codes are available [here](https://github.com/open-mmlab/mmdetection/blob/main/demo).
 
 ### Image demo
@@ -115,7 +115,7 @@ python demo/image_demo.py demo/demo.jpg \
     --device cpu
 ```
 
-#### Webcam demo
+### Webcam demo
 
 This is a live demo from a webcam.
 
@@ -185,6 +185,49 @@ python demo/video_gpuaccel_demo.py demo/demo.mp4 \
     configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
     checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
     --nvdecode --out result.mp4
+```
+
+### Large-image inference demo
+
+This is a script for slicing inference on large images.
+
+```
+python demo/large_image_demo.py \
+	${IMG_PATH} \
+	${CONFIG_FILE} \
+	${CHECKPOINT_FILE} \
+	--device ${GPU_ID}  \
+	--show \
+	--tta  \
+	--score-thr ${SCORE_THR} \
+	--patch-size ${PATCH_SIZE} \
+	--patch-overlap-ratio ${PATCH_OVERLAP_RATIO} \
+	--merge-iou-thr ${MERGE_IOU_THR} \
+	--merge-nms-type ${MERGE_NMS_TYPE} \
+	--batch-size ${BATCH_SIZE} \
+	--debug \
+	--save-patch
+```
+
+Examples:
+
+```shell
+# inferecnce without tta
+wget -P checkpoint https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r101_fpn_2x_coco/faster_rcnn_r101_fpn_2x_coco_bbox_mAP-0.398_20200504_210455-1d2dac9c.pth
+
+python demo/large_image_demo.py \
+    demo/large_image.jpg \
+    configs/faster_rcnn/faster-rcnn_r101_fpn_2x_coco.py \
+    checkpoint/faster_rcnn_r101_fpn_2x_coco_bbox_mAP-0.398_20200504_210455-1d2dac9c.pth
+
+# inference with tta
+wget -P checkpoint https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth
+
+python demo/large_image_demo.py \
+    demo/large_image.jpg \
+    configs/retinanet/retinanet_r50_fpn_1x_coco.py \
+    checkpoint/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth --tta
+
 ```
 
 ## Multi-modal algorithm inference demo and evaluation
