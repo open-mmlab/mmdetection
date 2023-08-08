@@ -4,7 +4,7 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-vis_backends = [dict(type='LocalVisBackend'), dict(type='WandBVisBackend')]
+vis_backends = [dict(type='LocalVisBackend'), dict(type='WandbVisBackend')]
 visualizer = dict(vis_backends=vis_backends)
 
 # MMEngine support the following two ways, users can choose
