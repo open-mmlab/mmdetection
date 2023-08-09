@@ -4,7 +4,7 @@
 
 若输入为文件夹格式，你需要标明这点。并且，图片命名应该**易于整理**，以便于你根据文件名字中包含的数字信息来重新调整图片的顺序。我们现在只支持`.jpg`，`.jpeg`和`.png`格式的图片。
 
-## MOT models的推理
+## MOT models 的推理
 
 该脚本能够使用多任务跟踪或者视频实例分割方法来推理一段输入的视频/一张图片。
 
@@ -28,17 +28,17 @@ python demo/mot_demo.py \
 输入参数：
 
 - `CHECKPOINT_FILE`: 可选择 checkpoint。
-- `DETECTOR_FILE`:  可选择 detector。
-- `REID_FILE`:  可选择 reid。
-- `SCORE_THR`:  规律检测框的置信度阈值。
-- `DEVICE`: 推理所需配置。可以选择  `cpu`  ，  `cuda:0` , 或者其他。
-- `OUTPUT`: 输出结果可视化的示例。如果未指定， `--show`  将强制显示动态视频。
+- `DETECTOR_FILE`: 可选择 detector。
+- `REID_FILE`: 可选择 reid。
+- `SCORE_THR`: bboxes 的得分阈值。
+- `DEVICE`: 推理所需配置。可以选择  `cpu`，`cuda:0` ,或者其他。
+- `OUTPUT`: 输出结果可视化的示例。如果未指定，`--show` 将强制显示动态视频。
 - `--show`: 是否即时显示视频。
 
-**运行mot model的示例:**
+**运行 mot model 的示例:**
 
 ```shell
-#示例 1：不指定 -- 使用checkpoint --detector
+# 示例 1：不指定 -- 使用 checkpoint--detector 
 python demo/mot_demo.py \
     demo/demo_mot.mp4 \
     configs/sort/sort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py \
@@ -53,3 +53,4 @@ python demo/mot_demo.py \
     --checkpoint https://download.openmmlab.com/mmtracking/mot/qdtrack/mot_dataset/qdtrack_faster-rcnn_r50_fpn_4e_mot17_20220315_145635-76f295ef.pth \
     --out mot.mp4
 ```
+
