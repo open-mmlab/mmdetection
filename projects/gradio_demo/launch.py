@@ -435,7 +435,7 @@ class ImageCaptionTab:
         ic_inferencer = ImageCaptionInferencer(
             **self.model_info[model], scope='mmdet', device=get_free_device())
         results_dict = ic_inferencer(
-            image, return_vis=False, no_save_vis=True, return_datasample=True)
+            image, return_vis=False, no_save_vis=True, return_datasamples=True)
         return results_dict['predictions'][0].pred_caption
 
 
