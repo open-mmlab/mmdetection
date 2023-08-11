@@ -19,6 +19,7 @@ class TestDDQDETRHead(TestCase):
         num_distinct_queries = 900
         num_decoder_layers = 6
         embed_dims = 256
+        num_attention_heads = 8
 
         batch_data_samples = self.get_batch_data_samples()
         batch_size = len(batch_data_samples)
@@ -74,6 +75,14 @@ class TestDDQDETRHead(TestCase):
             as_two_stage=True,
             train_cfg=train_cfg,
             test_cfg=dict(max_per_img=300))
+
+        bbox_head.cache_dict = dict(
+            distinct_query_mask=torch.rand([
+                batch_size * num_attention_heads, num_distinct_queries,
+                num_distinct_queries
+            ]) < 0.5,
+            num_heads=num_attention_heads,
+            num_dense_queries=num_dense_queries)
 
         # query
         hidden_states = torch.randn(

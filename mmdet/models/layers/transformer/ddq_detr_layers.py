@@ -137,8 +137,8 @@ class DDQTransformerDecoder(DeformableDetrTransformerDecoder):
         intermediate_reference_points = [reference_points]
         self.cache_dict['distinct_query_mask'] = []
         if self_attn_mask is None:
-            self_attn_mask = torch.zeros(
-                (query.size(1), query.size(1))).bool().cuda()
+            self_attn_mask = torch.zeros((query.size(1), query.size(1)),
+                                         device=query.device).bool()
         # shape is (batch*number_heads, num_queries, num_queries)
         self_attn_mask = self_attn_mask[None].repeat(
             len(query) * self.cache_dict['num_heads'], 1, 1)

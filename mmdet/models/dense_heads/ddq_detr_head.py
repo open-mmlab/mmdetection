@@ -428,7 +428,8 @@ class DDQDETRHead(DINOHead):
             ]
         else:
             batch_mask = [
-                torch.ones(len(cls_scores[i])).bool().cuda()
+                torch.ones(len(cls_scores[i]),
+                           device=cls_scores.device).bool()
                 for i in range(num_imgs)
             ]
         # only select the distinct queries in decoder for loss

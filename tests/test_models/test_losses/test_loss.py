@@ -334,7 +334,13 @@ def test_ddq_aux_loss(loss_class):
     aux_loss_for_dense = loss_class(
         train_cfg=dict(assigner=dict(type='TopkHungarianAssigner', topk=4)))
 
-    loss = aux_loss_for_dense.loss(pred_classes, pred_bboxes, gt_bboxes,
-                                   gt_labels, img_metas)
+    aux_loss = aux_loss_for_dense.loss(pred_classes, pred_bboxes, gt_bboxes,
+                                       gt_labels, img_metas)
 
-    assert isinstance(loss, torch.Tensor)
+    assert isinstance(aux_loss, dict)
+
+    for loss_name, batch_losses in aux_loss.items():
+        assert isinstance(batch_losses, list)
+
+        for loss in batch_losses:
+            assert isinstance(loss, torch.Tensor)

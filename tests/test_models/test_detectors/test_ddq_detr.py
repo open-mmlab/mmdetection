@@ -26,6 +26,8 @@ class TestDDQDETR(TestCase):
             model = MODELS.build(config)
             model.init_weights()
 
+            batch_data_samples = self.get_batch_data_samples()
+
             random_images = torch.rand([1, 3, 800, 1067])
 
             # Test that empty ground truth encourages the network to
@@ -34,6 +36,7 @@ class TestDDQDETR(TestCase):
             gt_instances.bboxes = torch.empty((0, 4))
             gt_instances.labels = torch.LongTensor([])
             data_sample = DetDataSample()
+            data_sample.set_metainfo(batch_data_samples[0].metainfo)
             data_sample.gt_instances = gt_instances
 
             batch_data_samples_1 = [data_sample]
@@ -56,7 +59,7 @@ class TestDDQDETR(TestCase):
 
             # When truth is non-empty then both cls and box loss should
             # be nonzero for random inputs.
-            batch_data_samples_2 = self.get_batch_data_samples()
+            batch_data_samples_2 = batch_data_samples
             one_gt_losses = model.loss(
                 random_images, batch_data_samples=batch_data_samples_2)
             for loss in one_gt_losses.values():

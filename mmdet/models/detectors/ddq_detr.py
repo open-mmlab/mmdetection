@@ -154,16 +154,20 @@ class DDQDETR(DINO):
         for img_id in range(num_imgs):
             single_proposals = proposals[img_id]
             single_scores = scores[img_id]
-            _, keep_idxs = batched_nms(single_proposals, single_scores,
-                                       torch.ones(len(single_scores)),
-                                       self.cache_dict['dqs_cfg'])
+            _, keep_idxs = batched_nms(
+                single_proposals, single_scores,
+                torch.ones(len(single_scores), device=single_scores.device),
+                self.cache_dict['dqs_cfg'])
+
             if self.training:
                 dense_single_proposals = dense_proposals[img_id]
                 dense_single_scores = dense_scores[img_id]
                 # sort according the score
                 _, dense_keep_idxs = batched_nms(
                     dense_single_proposals, dense_single_scores,
-                    torch.ones(len(dense_single_scores)), None)
+                    torch.ones(
+                        len(dense_single_scores),
+                        device=dense_single_scores.device), None)
 
                 dense_topk_score.append(dense_enc_outputs_class[img_id]
                                         [dense_keep_idxs][:dense_topk])
