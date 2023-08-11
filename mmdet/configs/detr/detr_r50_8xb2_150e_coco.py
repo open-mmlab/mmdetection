@@ -1,11 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from mmcv.transforms import RandomChoice, RandomChoiceResize
+from mmcv.transforms.loading import LoadImageFromFile
 from mmengine.config import read_base
 from mmengine.model.weight_init import PretrainedInit
 from mmengine.optim.optimizer.optimizer_wrapper import OptimWrapper
 from mmengine.optim.scheduler.lr_scheduler import MultiStepLR
 from mmengine.runner.loops import EpochBasedTrainLoop, TestLoop, ValLoop
 from torch.nn.modules.activation import ReLU
+from torch.nn.modules.batchnorm import BatchNorm2d
 from torch.optim.adamw import AdamW
 
 from mmdet.datasets.transforms import (LoadAnnotations, PackDetInputs,
@@ -37,7 +39,7 @@ model = dict(
         num_stages=4,
         out_indices=(3, ),
         frozen_stages=1,
-        norm_cfg=dict(type=BN, requires_grad=False),
+        norm_cfg=dict(type=BatchNorm2d, requires_grad=False),
         norm_eval=True,
         style='pytorch',
         init_cfg=dict(
@@ -144,7 +146,7 @@ train_pipeline = [
                     ]]),
     dict(type=PackDetInputs)
 ]
-train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
+train_dataloader.update(dataset=dict(pipeline=train_pipeline))
 
 # optimizer
 optim_wrapper = dict(
