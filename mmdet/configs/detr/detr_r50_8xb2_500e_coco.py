@@ -1,14 +1,19 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-_base_ = './detr_r50_8xb2-150e_coco.py'
+from mmengine.config import read_base
+from mmengine.optim.scheduler.lr_scheduler import MultiStepLR
+from mmengine.runner.loops import EpochBasedTrainLoop
+
+with read_base():
+    from .detr_r50_8xb2_150e_coco import *
 
 # learning policy
 max_epochs = 500
-train_cfg = dict(
-    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=10)
+train_cfg.update(
+    type=EpochBasedTrainLoop, max_epochs=max_epochs, val_interval=10)
 
 param_scheduler = [
     dict(
-        type='MultiStepLR',
+        type=MultiStepLR,
         begin=0,
         end=max_epochs,
         by_epoch=True,
@@ -17,9 +22,4 @@ param_scheduler = [
 ]
 
 # only keep latest 2 checkpoints
-default_hooks = dict(checkpoint=dict(max_keep_ckpts=2))
-
-# NOTE: `auto_scale_lr` is for automatically scaling LR,
-# USER SHOULD NOT CHANGE ITS VALUES.
-# base_batch_size = (8 GPUs) x (2 samples per GPU)
-auto_scale_lr = dict(base_batch_size=16)
+default_hooks.update(checkpoint=dict(max_keep_ckpts=2))

@@ -11,7 +11,7 @@ from torch.nn.modules.batchnorm import BatchNorm2d
 from torch.optim.adamw import AdamW
 
 from mmdet.datasets.transforms import (LoadAnnotations, PackDetInputs,
-                                       RandomCrop, RandomFlip)
+                                       RandomCrop, RandomFlip, Resize)
 from mmdet.models import (DETR, ChannelMapper, DetDataPreprocessor, DETRHead,
                           ResNet)
 from mmdet.models.losses.cross_entropy_loss import CrossEntropyLoss
@@ -121,6 +121,7 @@ train_pipeline = [
         transforms=[[
             dict(
                 type=RandomChoiceResize,
+                resize_type=Resize,
                 scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
                         (608, 1333), (640, 1333), (672, 1333), (704, 1333),
                         (736, 1333), (768, 1333), (800, 1333)],
@@ -129,6 +130,7 @@ train_pipeline = [
                     [
                         dict(
                             type=RandomChoiceResize,
+                            resize_type=Resize,
                             scales=[(400, 1333), (500, 1333), (600, 1333)],
                             keep_ratio=True),
                         dict(
@@ -138,6 +140,7 @@ train_pipeline = [
                             allow_negative_crop=True),
                         dict(
                             type=RandomChoiceResize,
+                            resize_type=Resize,
                             scales=[(480, 1333), (512, 1333), (544, 1333),
                                     (576, 1333), (608, 1333), (640, 1333),
                                     (672, 1333), (704, 1333), (736, 1333),
