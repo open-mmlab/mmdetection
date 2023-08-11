@@ -1,12 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import json
+
 import pytest
 import torch
 import torch.nn.functional as F
 from mmengine.utils import digit_version
 
-from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DiceLoss,
-                                 DistributionFocalLoss, EQLV2Loss, FocalLoss,
-                                 GaussianFocalLoss,
+from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DDQAuxLoss,
+                                 DiceLoss, DistributionFocalLoss, EQLV2Loss,
+                                 FocalLoss, GaussianFocalLoss,
                                  KnowledgeDistillationKLDivLoss, L1Loss,
                                  MarginL2Loss, MSELoss, QualityFocalLoss,
                                  SeesawLoss, SmoothL1Loss, VarifocalLoss)
@@ -300,4 +302,39 @@ def test_eqlv2_loss(loss_class, reduction):
     weight = None
 
     loss = loss_class()(cls_score, label, weight)
+    assert isinstance(loss, torch.Tensor)
+
+
+@pytest.mark.parametrize('loss_class', [DDQAuxLoss])
+def test_ddq_aux_loss(loss_class):
+    data_sample_file_path = 'tests/data/coco_batched_sample.json'
+    num_classes = 80
+    num_pred = 1350
+
+    with open(data_sample_file_path, 'r') as file_stream:
+        data_sample_infos = json.load(file_stream)
+
+    gt_bboxes = []
+    img_metas = []
+    gt_labels = []
+
+    for data_sample_info in data_sample_infos:
+        metainfo = data_sample_info['metainfo']
+        labels = torch.LongTensor(data_sample_info['labels'])
+        bboxes = torch.Tensor(data_sample_info['bboxes'])
+
+        img_metas.append(metainfo)
+        gt_labels.append(labels)
+        gt_bboxes.append(bboxes)
+
+    batch_size = len(data_sample_infos)
+    pred_classes = torch.rand([batch_size, num_pred, num_classes])
+    pred_bboxes = torch.rand([batch_size, num_pred, 4])
+
+    aux_loss_for_dense = loss_class(
+        train_cfg=dict(assigner=dict(type='TopkHungarianAssigner', topk=4)))
+
+    loss = aux_loss_for_dense.loss(pred_classes, pred_bboxes, gt_bboxes,
+                                   gt_labels, img_metas)
+
     assert isinstance(loss, torch.Tensor)
