@@ -278,7 +278,8 @@ train_pipeline = [
 
 train_dataloader=dict(
     sampler=dict(type='DefaultSampler', shuffle=True),
-    dataset=dict(dataset=dict(filter_cfg=dict(filter_empty_gt=False, pipeline=train_pipeline))))
+    dataset=dict(pipeline=train_pipeline,
+                dataset=dict(filter_cfg=dict(filter_empty_gt=False, pipeline=load_pipeline))))
 
 # follow ViTDet
 test_pipeline = [
@@ -332,4 +333,4 @@ log_processor = dict(by_epoch=True)
 # base_batch_size = (8 GPUs) x (2 samples per GPU)
 auto_scale_lr = dict(base_batch_size=16)
 
-# find_unused_parameters = True
+default_hooks = dict(checkpoint=dict(max_keep_ckpts=3))
