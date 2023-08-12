@@ -19,7 +19,9 @@ class TestDDQDETR(TestCase):
     def test_ddq_detr_head_loss(self):
         """Tests DDQ DETR head loss when truth is empty and non-empty."""
         configs = [
-            get_detector_cfg('ddq_detr/ddq-detr-4scale_r50_8xb2-12e_coco.py')
+            get_detector_cfg('ddq_detr/ddq-detr-4scale_r50_8xb2-12e_coco.py'),
+            get_detector_cfg('ddq_detr/ddq-detr-5scale_r50_8xb2-12e_coco.py'),
+            get_detector_cfg('ddq_detr/ddq-detr-4scale_swinl_8xb2-30e_coco.py')
         ]  # noqa E501
 
         for config in configs:
