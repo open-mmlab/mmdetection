@@ -77,10 +77,11 @@ class TestDDQDETRHead(TestCase):
             test_cfg=dict(max_per_img=300))
 
         bbox_head.cache_dict = dict(
-            distinct_query_mask=torch.rand([
-                batch_size * num_attention_heads, num_distinct_queries,
-                num_distinct_queries
-            ]) < 0.5,
+            distinct_query_mask=list(
+                torch.rand([
+                    num_decoder_layers - 1, batch_size * num_attention_heads,
+                    num_distinct_queries, num_distinct_queries
+                ]) < 0.5),
             num_heads=num_attention_heads,
             num_dense_queries=num_dense_queries)
 
@@ -98,7 +99,7 @@ class TestDDQDETRHead(TestCase):
         enc_outputs_class = torch.randn([batch_size, 900, 80])
 
         # normalized cx, cy, w, h
-        enc_outputs_coord = torch.rand([batch_size, 900, 40])
+        enc_outputs_coord = torch.rand([batch_size, 900, 4])
 
         # Test that empty ground truth encourages the network to predict
         # background

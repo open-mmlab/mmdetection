@@ -44,10 +44,27 @@ class TestDDQDETR(TestCase):
                 random_images, batch_data_samples=batch_data_samples_1)
             # When there is no truth, the cls loss should be nonzero but there
             # should be no box or aux loss.
-            zero_loss_keywords = ['bbox', 'iou', 'dn', 'aux']
+            zero_loss_keywords = ['bbox', 'iou', 'dn']
 
             for key, loss in empty_gt_losses.items():
+                if 'aux' in key:
+                    self.assertEqual(
+                        len(loss), len(batch_data_samples_1),
+                        (r'Actual aux loss count for {} is {},' +
+                         r'it should be {}').format(key, len(loss),
+                                                    len(batch_data_samples_1)))
+
+                    for image_loss in loss:
+                        _image_loss = image_loss.item()
+                        self.assertEqual(
+                            _image_loss, 0,
+                            f'there should be no {key}({_image_loss}) '
+                            f'when no ground true boxes')
+
+                    continue
+
                 _loss = loss.item()
+
                 if any(zero_loss_keyword in key
                        for zero_loss_keyword in zero_loss_keywords):
                     self.assertEqual(
@@ -59,10 +76,26 @@ class TestDDQDETR(TestCase):
 
             # When truth is non-empty then both cls and box loss should
             # be nonzero for random inputs.
+            random_images = torch.rand([len(batch_data_samples), 3, 800, 1067])
             batch_data_samples_2 = batch_data_samples
-            one_gt_losses = model.loss(
+            gt_losses = model.loss(
                 random_images, batch_data_samples=batch_data_samples_2)
-            for loss in one_gt_losses.values():
+            for loss in gt_losses.values():
+                if 'aux' in key:
+                    self.assertEqual(
+                        len(loss), len(batch_data_samples_2),
+                        (r'Actual aux loss count for {} is {},' +
+                         r'it should be {}').format(key, len(loss),
+                                                    len(batch_data_samples_2)))
+
+                    for image_loss in loss:
+                        self.assertGreater(
+                            image_loss.item(), 0,
+                            'cls loss, or box loss, or iou loss should be' +
+                            ' non-zero')
+
+                    continue
+
                 self.assertGreater(
                     loss.item(), 0,
                     'cls loss, or box loss, or iou loss should be non-zero')
