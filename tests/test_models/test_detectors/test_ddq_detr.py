@@ -27,8 +27,9 @@ class TestDDQDETR(TestCase):
             model.init_weights()
 
             batch_data_samples = self.get_batch_data_samples()
-
-            random_images = torch.rand([1, 3, 800, 1067])
+            batch_input_shape = batch_data_samples[0].metainfo[
+                'batch_input_shape']
+            random_images = torch.rand([1, 3, *batch_input_shape])
 
             # Test that empty ground truth encourages the network to
             # predict background
@@ -76,11 +77,12 @@ class TestDDQDETR(TestCase):
 
             # When truth is non-empty then both cls and box loss should
             # be nonzero for random inputs.
-            random_images = torch.rand([len(batch_data_samples), 3, 800, 1067])
+            random_images = torch.rand(
+                [len(batch_data_samples), 3, *batch_input_shape])
             batch_data_samples_2 = batch_data_samples
             gt_losses = model.loss(
                 random_images, batch_data_samples=batch_data_samples_2)
-            for loss in gt_losses.values():
+            for key, loss in gt_losses.items():
                 if 'aux' in key:
                     self.assertEqual(
                         len(loss), len(batch_data_samples_2),

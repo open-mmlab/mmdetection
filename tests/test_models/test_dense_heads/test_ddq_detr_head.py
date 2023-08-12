@@ -120,8 +120,8 @@ class TestDDQDETRHead(TestCase):
 
         # When there is no truth, the cls loss should be nonzero but there
         # should be no box loss.
-        empty_cls_loss = sum(empty_gt_losses['loss_cls'])
-        empty_box_loss = sum(empty_gt_losses['loss_bbox'])
+        empty_cls_loss = empty_gt_losses['loss_cls']
+        empty_box_loss = empty_gt_losses['loss_bbox']
         self.assertGreater(empty_cls_loss.item(), 0,
                            'cls loss should be non-zero')
         self.assertEqual(
@@ -136,8 +136,8 @@ class TestDDQDETRHead(TestCase):
                                         batch_gt_instances, batch_img_metas,
                                         dn_meta)
 
-        cls_loss = sum(losses['loss_cls'])
-        box_loss = sum(losses['loss_bbox'])
+        cls_loss = losses['loss_cls']
+        box_loss = losses['loss_bbox']
         self.assertGreater(cls_loss.item(), 0, 'cls loss should be non-zero')
         self.assertGreater(box_loss.item(), 0, 'box loss should be non-zero')
 
