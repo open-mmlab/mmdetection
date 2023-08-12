@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from functools import partial
-from typing import List, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -652,7 +652,7 @@ def unfold_wo_center(x, kernel_size: int, dilation: int) -> Tensor:
     return unfolded_x
 
 
-def padding_to(input_tensor, max_len=300):
+def padding_to(input_tensor: Tensor, max_len: int = 300) -> Tensor:
     """Pad the first dimension of `input_tensor` to `max_len`.
 
     Args:
@@ -675,7 +675,8 @@ def padding_to(input_tensor, max_len=300):
     return output_tensor
 
 
-def align_tensor(inputs, max_len=None):
+def align_tensor(inputs: List[Tensor],
+                 max_len: Optional[int] = None) -> Tensor:
     """Pad each input to `max_len`, then stack them. If `max_len` is None, then
     it is the max size of the first dimension of each input.
 

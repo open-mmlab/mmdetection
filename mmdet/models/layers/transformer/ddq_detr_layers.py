@@ -71,6 +71,22 @@ class DDQTransformerDecoder(DeformableDetrTransformerDecoder):
 
             attn_mask = torch.ones_like(dis_mask[0]).bool()
             # such a attn_mask give best result
+            # If it requires to keep index i, then all cells in row or column
+            #   i should be kept in `attn_mask` . For example, if
+            #   `real_keep_index` = [1, 4], and `attn_mask` size = [8, 8],
+            #   then all cells at rows or columns [1, 4] should be kept, and
+            #   all the other cells should be masked out. So the value of
+            #  `attn_mask` should be:
+            #
+            # target\source   0 1 2 3 4 5 6 7
+            #             0 [ 0 1 0 0 1 0 0 0 ]
+            #             1 [ 1 1 1 1 1 1 1 1 ]
+            #             2 [ 0 1 0 0 1 0 0 0 ]
+            #             3 [ 0 1 0 0 1 0 0 0 ]
+            #             4 [ 1 1 1 1 1 1 1 1 ]
+            #             5 [ 0 1 0 0 1 0 0 0 ]
+            #             6 [ 0 1 0 0 1 0 0 0 ]
+            #             7 [ 0 1 0 0 1 0 0 0 ]
             attn_mask[real_keep_index] = False
             attn_mask[:, real_keep_index] = False
 

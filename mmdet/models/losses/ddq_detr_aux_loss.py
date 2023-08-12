@@ -243,7 +243,7 @@ class DDQAuxLoss(nn.Module):
                     norm_alignment_metrics)
 
         assign_result = self.assigner.assign(cls_scores, bbox_preds, gt_bboxes,
-                                             gt_labels, img_meta, 1, 6)
+                                             gt_labels, img_meta)
         assign_ious = assign_result.max_overlaps
         assign_metrics = assign_result.assign_metrics
 

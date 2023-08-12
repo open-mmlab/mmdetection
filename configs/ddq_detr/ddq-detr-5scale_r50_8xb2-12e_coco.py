@@ -6,6 +6,7 @@ model = dict(
     num_queries=900,  # num_matching_queries
     with_box_refine=True,
     as_two_stage=True,
+    num_feature_levels=5,
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
@@ -16,7 +17,7 @@ model = dict(
         type='ResNet',
         depth=50,
         num_stages=4,
-        out_indices=(1, 2, 3),
+        out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
@@ -24,17 +25,17 @@ model = dict(
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     neck=dict(
         type='ChannelMapper',
-        in_channels=[512, 1024, 2048],
+        in_channels=[256, 512, 1024, 2048],
         kernel_size=1,
         out_channels=256,
         act_cfg=None,
         norm_cfg=dict(type='GN', num_groups=32),
-        num_outs=4),
+        num_outs=5),
     # encoder class name: DeformableDetrTransformerEncoder
     encoder=dict(
         num_layers=6,
         layer_cfg=dict(
-            self_attn_cfg=dict(embed_dims=256, num_levels=4,
+            self_attn_cfg=dict(embed_dims=256, num_levels=5,
                                dropout=0.0),  # 0.1 for DeformDETR
             ffn_cfg=dict(
                 embed_dims=256,
@@ -47,7 +48,7 @@ model = dict(
         layer_cfg=dict(
             self_attn_cfg=dict(embed_dims=256, num_heads=8,
                                dropout=0.0),  # 0.1 for DeformDETR
-            cross_attn_cfg=dict(embed_dims=256, num_levels=4,
+            cross_attn_cfg=dict(embed_dims=256, num_levels=5,
                                 dropout=0.0),  # 0.1 for DeformDETR
             ffn_cfg=dict(
                 embed_dims=256,
@@ -87,6 +88,8 @@ model = dict(
             ])),
     test_cfg=dict(max_per_img=300))
 
+# train_pipeline, NOTE the img_scale and the Pad's size_divisor is different
+# from the default setting in mmdet.
 train_pipeline = [
     dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
     dict(type='LoadAnnotations', with_bbox=True),

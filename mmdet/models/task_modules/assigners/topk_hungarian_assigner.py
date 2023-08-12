@@ -10,16 +10,16 @@ from .task_aligned_assigner import TaskAlignedAssigner
 
 @TASK_UTILS.register_module()
 class TopkHungarianAssigner(TaskAlignedAssigner):
-    """Computes k-to-1 matching between predictions and ground truth.
+    """Computes 1-to-k matching between ground truth and predictions.
 
     This class computes an assignment between the targets and the predictions
     based on the costs. The costs are weighted sum of some components.
     For DETR the costs are weighted sum of classification cost, regression L1
     cost and regression iou cost. The targets don't include the no_object, so
-    generally there are more predictions than targets. After the k-to-1
-    matching, the un-matched are treated as backgrounds. Thus each query
-    prediction will be assigned with `0` or a positive integer indicating the
-    ground truth index:
+    generally there are more predictions than targets. After the 1-to-k
+    gt-pred matching, the un-matched are treated as backgrounds. Thus each
+    query prediction will be assigned with `0` or a positive integer
+    indicating the ground truth index:
 
     - 0: negative sample, no assigned gt
     - positive integer: positive sample, index (1-based) of assigned gt
@@ -51,7 +51,7 @@ class TopkHungarianAssigner(TaskAlignedAssigner):
                alpha=1,
                beta=6,
                **kwargs):
-        """Computes k-to-1 matching based on the weighted costs.
+        """Computes 1-to-k gt-pred matching based on the weighted costs.
 
         This method assign each query prediction to a ground truth or
         background. The `assigned_gt_inds` with -1 means don't care,
@@ -124,6 +124,12 @@ class TopkHungarianAssigner(TaskAlignedAssigner):
 
             topk = min(self.topk, int(len(select_cost) / num_gt))
 
+            # Repeat the ground truth `topk` times to perform 1-to-k gt-pred
+            #   matching. For example, if `num_pred` = 900, `num_gt` = 3, then
+            #   there are only 3 gt-pred pairs in sum for 1-1 matching.
+            #   However, for 1-k gt-pred matching, if `topk` = 4, then each
+            #   gt is assigned 4 unique predictions, so there would be 12
+            #   gt-pred pairs in sum.
             repeat_select_cost = select_cost[...,
                                              None].repeat(1, 1, topk).view(
                                                  select_cost.size(0), -1)
