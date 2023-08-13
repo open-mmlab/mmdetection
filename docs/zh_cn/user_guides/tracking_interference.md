@@ -21,7 +21,7 @@ python demo/mot_demo.py \
     [--show]
 ```
 
-`输入内容`和`输出内容`支持 _mp4 video_ 格式和文件格式。
+`INPUTS` 和 `OUTPUT` 参数支持 _mp4 视频_ 格式和_文件夹_格式。
 
 **特别注意**：对于 `DeepSORT`、`SORT`、`StrongSORT`，他们需要单独加载 `reid` 和 `detector` 的权重。因此，我们会使用 `--detector` 和 `--reid` 来加载权重参数。其他的例如 `ByteTrack`、`OCSORT`、`QDTrack`、`MaskTrackRCNN` 以及 `Mask2Former` 这样的算法则使用 `--checkpoint` 来加载权重参数。
 
@@ -38,7 +38,7 @@ python demo/mot_demo.py \
 **运行 mot model 的示例:**
 
 ```shell
-# 示例 1：不指定 -- 使用checkpoint--detector
+# 示例 1：不指定 --checkpoint 使用 --detector
 python demo/mot_demo.py \
     demo/demo_mot.mp4 \
     configs/sort/sort_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py \
