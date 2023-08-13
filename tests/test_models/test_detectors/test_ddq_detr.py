@@ -19,12 +19,17 @@ class TestDDQDETR(TestCase):
     def test_ddq_detr_head_loss(self):
         """Tests DDQ DETR head loss when truth is empty and non-empty."""
         configs = [
-            get_detector_cfg('ddq_detr/ddq-detr-4scale_r50_8xb2-12e_coco.py'),
-            get_detector_cfg('ddq_detr/ddq-detr-5scale_r50_8xb2-12e_coco.py'),
-            get_detector_cfg('ddq_detr/ddq-detr-4scale_swinl_8xb2-30e_coco.py')
+            get_detector_cfg('ddq_detr/ddq-detr-4scale_r50_8xb2-12e_coco.py')
         ]  # noqa E501
 
         for config in configs:
+            config.backbone.depth = 18
+            config.backbone.init_cfg = None
+            config.neck.in_channels = [128, 256, 512]
+            config.encoder.num_layers = 1
+            # `num_layers` >= 2, because attention masks of the last
+            #   `num_layers` - 1 layers are used for distinct query selection
+            config.decoder.num_layers = 2
             model = MODELS.build(config)
             model.init_weights()
 

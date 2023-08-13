@@ -42,6 +42,8 @@ model = dict(
                 ffn_drop=0.0))),  # 0.1 for DeformDETR
     # decoder class name: DDQTransformerDecoder
     decoder=dict(
+        # `num_layers` >= 2, because attention masks of the last
+        #   `num_layers` - 1 layers are used for distinct query selection
         num_layers=6,
         return_intermediate=True,
         layer_cfg=dict(

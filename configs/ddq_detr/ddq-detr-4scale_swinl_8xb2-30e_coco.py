@@ -173,26 +173,3 @@ param_scheduler = [
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (2 samples per GPU)
 auto_scale_lr = dict(base_batch_size=16)
-
-dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
-
-test_dataloader = dict(
-    batch_size=1,
-    num_workers=2,
-    persistent_workers=True,
-    drop_last=False,
-    sampler=dict(type='DefaultSampler', shuffle=False),
-    dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='annotations/image_info_test-dev2017.json',
-        data_prefix=dict(img='test2017/'),
-        test_mode=True))
-
-test_evaluator = dict(
-    type='CocoMetric',
-    metric='bbox',
-    format_only=True,
-    ann_file=data_root + 'annotations/image_info_test-dev2017.json',
-    outfile_prefix='./work_dirs/coco_detection/test')
