@@ -279,7 +279,8 @@ train_pipeline = [
 train_dataloader=dict(
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=dict(pipeline=train_pipeline,
-                dataset=dict(filter_cfg=dict(filter_empty_gt=False, pipeline=load_pipeline))))
+                dataset=dict(filter_cfg=dict(filter_empty_gt=False),
+                             pipeline=load_pipeline)))
 
 # follow ViTDet
 test_pipeline = [
@@ -325,12 +326,10 @@ param_scheduler = [
         gamma=0.1)
 ]
 
-default_hooks = dict(checkpoint=dict(by_epoch=True, interval=1))
+default_hooks = dict(checkpoint=dict(by_epoch=True, interval=1, max_keep_ckpts=3))
 log_processor = dict(by_epoch=True)
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (2 samples per GPU)
 auto_scale_lr = dict(base_batch_size=16)
-
-default_hooks = dict(checkpoint=dict(max_keep_ckpts=3))
