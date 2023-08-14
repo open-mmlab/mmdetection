@@ -4,6 +4,7 @@ import torch
 from mmengine.config import ConfigDict
 
 from mmdet.models.layers.transformer import (AdaptivePadding,
+                                             DDQTransformerDecoder,
                                              DetrTransformerDecoder,
                                              DetrTransformerEncoder,
                                              PatchEmbed, PatchMerging)
@@ -502,3 +503,22 @@ def test_detr_transformer_encoder_decoder():
                     act_cfg=dict(type='ReLU', inplace=True)))))
     assert len(DetrTransformerEncoder(**config).layers) == 6
     assert DetrTransformerEncoder(**config)
+
+
+def test_ddq_transformer_decoder():
+    num_layers = 2
+    config = ConfigDict(
+        num_layers=num_layers,
+        return_intermediate=True,
+        layer_cfg=dict(
+            self_attn_cfg=dict(embed_dims=256, num_heads=8,
+                               dropout=0.0),  # 0.1 for DeformDETR
+            cross_attn_cfg=dict(embed_dims=256, num_levels=4,
+                                dropout=0.0),  # 0.1 for DeformDETR
+            ffn_cfg=dict(
+                embed_dims=256,
+                feedforward_channels=2048,  # 1024 for DeformDETR
+                ffn_drop=0.0)),  # 0.1 for DeformDETR
+        post_norm_cfg=None)
+    assert len(DDQTransformerDecoder(**config).layers) == num_layers
+    assert DDQTransformerDecoder(**config)
