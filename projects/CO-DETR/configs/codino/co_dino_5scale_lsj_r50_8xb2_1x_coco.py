@@ -14,11 +14,11 @@ batch_augments = [
 model = dict(
     type='CoDETR',
     with_pos_coord=True,
-    with_attn_mask=False, # lsj is False 
+    with_attn_mask=False,  # lsj is False
     # detr: 52.1
     # one-stage: 49.4
     # two-stage: 47.9
-    eval_module='detr', # in ['detr', 'one-stage', 'two-stage']
+    eval_module='detr',  # in ['detr', 'one-stage', 'two-stage']
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
@@ -50,11 +50,11 @@ model = dict(
         num_classes=80,
         in_channels=2048,
         as_two_stage=True,
-        dn_cfg=dict( 
+        dn_cfg=dict(
             label_noise_scale=0.5,
             box_noise_scale=1.0,  # 0.4 for DN-DETR
             group_cfg=dict(dynamic=True, num_groups=None,
-                        num_dn_queries=100)),  # TODO: half num_dn_queries
+                           num_dn_queries=100)),  # TODO: half num_dn_queries
         transformer=dict(
             type='CoDinoTransformer',
             with_pos_coord=True,
@@ -64,7 +64,7 @@ model = dict(
             encoder=dict(
                 type='DetrTransformerEncoder',
                 num_layers=6,
-                with_cp=4, # number of layers that use checkpoint
+                with_cp=4,  # number of layers that use checkpoint
                 transformerlayers=dict(
                     type='BaseTransformerLayer',
                     attn_cfgs=dict(
@@ -121,8 +121,8 @@ model = dict(
             target_means=[.0, .0, .0, .0],
             target_stds=[1.0, 1.0, 1.0, 1.0]),
         loss_cls=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0*num_dec_layer*lambda_2),
-        loss_bbox=dict(type='L1Loss', loss_weight=1.0*num_dec_layer*lambda_2)),
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0 * num_dec_layer * lambda_2),
+        loss_bbox=dict(type='L1Loss', loss_weight=1.0 * num_dec_layer * lambda_2)),
     roi_head=[dict(
         type='CoStandardRoIHead',
         bbox_roi_extractor=dict(
@@ -144,8 +144,8 @@ model = dict(
             reg_class_agnostic=False,
             reg_decoded_bbox=True,
             loss_cls=dict(
-                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0*num_dec_layer*lambda_2),
-            loss_bbox=dict(type='GIoULoss', loss_weight=10.0*num_dec_layer*lambda_2)))],
+                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0 * num_dec_layer * lambda_2),
+            loss_bbox=dict(type='GIoULoss', loss_weight=10.0 * num_dec_layer * lambda_2)))],
     bbox_head=[dict(
         type='CoATSSHead',
         num_classes=80,
@@ -167,10 +167,10 @@ model = dict(
             use_sigmoid=True,
             gamma=2.0,
             alpha=0.25,
-            loss_weight=1.0*num_dec_layer*lambda_2),
-        loss_bbox=dict(type='GIoULoss', loss_weight=2.0*num_dec_layer*lambda_2),
+            loss_weight=1.0 * num_dec_layer * lambda_2),
+        loss_bbox=dict(type='GIoULoss', loss_weight=2.0 * num_dec_layer * lambda_2),
         loss_centerness=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0*num_dec_layer*lambda_2)),],
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0 * num_dec_layer * lambda_2)), ],
     # model training and testing settings
     train_cfg=[
         dict(
@@ -180,7 +180,7 @@ model = dict(
                     dict(type='FocalLossCost', weight=2.0),
                     dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
                     dict(type='IoUCost', iou_mode='giou', weight=2.0)
-                ])),    
+                ])),
         dict(
             rpn=dict(
                 assigner=dict(
@@ -255,10 +255,9 @@ load_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
-        type='Resize',
-        img_scale=image_size,
+        type='RandomResize',
+        scale=image_size,
         ratio_range=(0.1, 2.0),
-        multiscale_mode='range',
         keep_ratio=True),
     dict(
         type='RandomCrop',
@@ -276,16 +275,16 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 
-train_dataloader=dict(
+train_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=dict(pipeline=train_pipeline,
-                dataset=dict(filter_cfg=dict(filter_empty_gt=False),
-                             pipeline=load_pipeline)))
+                 dataset=dict(filter_cfg=dict(filter_empty_gt=False),
+                              pipeline=load_pipeline)))
 
 # follow ViTDet
 test_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='Resize', scale=image_size, keep_ratio=True), # diff
+    dict(type='Resize', scale=image_size, keep_ratio=True),  # diff
     dict(type='Pad', size=image_size, pad_val=dict(img=(114, 114, 114))),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
@@ -294,7 +293,7 @@ test_pipeline = [
                    'scale_factor'))
 ]
 
-val_dataloader=dict(dataset=dict(pipeline=test_pipeline))
+val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
 optim_wrapper = dict(
