@@ -266,7 +266,7 @@ load_pipeline = [
         recompute_bbox=True,
         allow_negative_crop=True),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
-    dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='RandomFlip', prob=0.5),
     dict(type='Pad', size=image_size, pad_val=dict(img=(114, 114, 114))),
 ]
 
