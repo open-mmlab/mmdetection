@@ -29,8 +29,7 @@ class DDQDETRHead(DINOHead):
 
     Args:
         aux_num_pos (int): Number of positive targets assigned to a
-            perdicted object.
-            Defaults to 4.
+            perdicted object. Defaults to 4.
     """
 
     def __init__(self, *args, aux_num_pos=4, **kwargs):
@@ -39,16 +38,26 @@ class DDQDETRHead(DINOHead):
             train_cfg=dict(
                 assigner=dict(type='TopkHungarianAssigner', topk=aux_num_pos),
                 alpha=1,
-                beta=6), )
+                beta=6))
 
     def _init_layers(self) -> None:
         """Initialize classification branch and regression branch of aux head
         for dense queries."""
         super(DDQDETRHead, self)._init_layers()
+        # If decoder `num_layers` = 6 and `as_two_stage` = True, then:
+        #   1) 6 main heads are required for
+        #       each decoder output of distinct queries.
+        #   2) 1 main head is required for `output_memory` of distinct queries.
+        #   3) 1 aux head is required for `output_memory` of dense queries,
+        #       which is done by code below this comment.
+        # So 8 heads are required in sum.
         # aux head for dense queries on encoder feature map
         self.cls_branches.append(copy.deepcopy(self.cls_branches[-1]))
         self.reg_branches.append(copy.deepcopy(self.reg_branches[-1]))
 
+        # If decoder `num_layers` = 6 and `as_two_stage` = True, then:
+        #   6 aux heads are required for each decoder output of dense queries.
+        # So 8 + 6 = 14 heads and heads are requires in sum.
         # self.num_pred_layer is 7
         # aux head for dense queries in decoder
         self.aux_cls_branches = nn.ModuleList([

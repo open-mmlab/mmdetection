@@ -19,7 +19,7 @@ class TestDDQDETR(TestCase):
     def test_ddq_detr_head_loss(self):
         """Tests DDQ DETR head loss when truth is empty and non-empty."""
         configs = [
-            get_detector_cfg('ddq_detr/ddq-detr-4scale_r50_8xb2-12e_coco.py')
+            get_detector_cfg('ddq/ddq-detr-4scale_r50_8xb2-12e_coco.py')
         ]  # noqa E501
 
         for config in configs:
@@ -30,6 +30,10 @@ class TestDDQDETR(TestCase):
             # `num_layers` >= 2, because attention masks of the last
             #   `num_layers` - 1 layers are used for distinct query selection
             config.decoder.num_layers = 2
+            config.bbox_head.num_classes = 2
+            config.num_queries = 10
+            config.dense_topk_ratio = 1.0
+            config.dn_cfg.group_cfg.num_dn_queries = 10
             model = MODELS.build(config)
             model.init_weights()
 

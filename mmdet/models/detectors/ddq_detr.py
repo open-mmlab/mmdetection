@@ -26,14 +26,19 @@ class DDQDETR(DINO):
     <https://github.com/jshilong/DDQ>`_.
 
     Args:
+        dense_topk_ratio (float): Ratio of num_dense queries to num_queries.
+            Defaults to 1.5.
         dqs_cfg (:obj:`ConfigDict` or dict, optional): Config of
-            Distinct Queries Selection.
+            Distinct Queries Selection. Defaults to nms with
+            `iou_threshold` = 0.8.
     """
 
     def __init__(self,
                  *args,
+                 dense_topk_ratio: float = 1.5,
                  dqs_cfg: OptConfigType = dict(type='nms', iou_threshold=0.8),
                  **kwargs):
+        self.dense_topk_ratio = dense_topk_ratio
         self.decoder_cfg = kwargs['decoder']
         self.dqs_cfg = dqs_cfg
         super().__init__(*args, **kwargs)
@@ -124,6 +129,8 @@ class DDQDETR(DINO):
             self.decoder.num_layers](output_memory) + output_proposals
 
         if self.training:
+            # aux dense branch particularly in DDQ DETR, which doesn't exist
+            #   in DINO.
             # -1 is the aux head for the encoder
             dense_enc_outputs_class = self.bbox_head.cls_branches[-1](
                 output_memory)
@@ -131,13 +138,15 @@ class DDQDETR(DINO):
                 output_memory) + output_proposals
 
         topk = self.num_queries
-        dense_topk = int(topk * 1.5)
+        dense_topk = int(topk * self.dense_topk_ratio)
 
         proposals = enc_outputs_coord_unact.sigmoid()
         proposals = bbox_cxcywh_to_xyxy(proposals)
         scores = enc_outputs_class.max(-1)[0].sigmoid()
 
         if self.training:
+            # aux dense branch particularly in DDQ DETR, which doesn't exist
+            #   in DINO.
             dense_proposals = dense_enc_outputs_coord_unact.sigmoid()
             dense_proposals = bbox_cxcywh_to_xyxy(dense_proposals)
             dense_scores = dense_enc_outputs_class.max(-1)[0].sigmoid()
@@ -145,6 +154,7 @@ class DDQDETR(DINO):
         num_imgs = len(scores)
         topk_score = []
         topk_coords_unact = []
+        # Distinct query.
         query = []
 
         dense_topk_score = []
@@ -154,15 +164,23 @@ class DDQDETR(DINO):
         for img_id in range(num_imgs):
             single_proposals = proposals[img_id]
             single_scores = scores[img_id]
+
+            # `batched_nms` of class scores and bbox coordinations is used
+            #   particularly by DDQ DETR for region proposal generation,
+            #   instead of `topk` of class scores by DINO.
             _, keep_idxs = batched_nms(
                 single_proposals, single_scores,
                 torch.ones(len(single_scores), device=single_scores.device),
                 self.cache_dict['dqs_cfg'])
 
             if self.training:
+                # aux dense branch particularly in DDQ DETR, which doesn't
+                #   exist in DINO.
                 dense_single_proposals = dense_proposals[img_id]
                 dense_single_scores = dense_scores[img_id]
                 # sort according the score
+                # Only sort by classification score, neither nms nor topk is
+                #   required. So input parameter `nms_cfg` = None.
                 _, dense_keep_idxs = batched_nms(
                     dense_single_proposals, dense_single_scores,
                     torch.ones(
@@ -176,12 +194,19 @@ class DDQDETR(DINO):
                     [:dense_topk])
 
             topk_score.append(enc_outputs_class[img_id][keep_idxs][:topk])
+
+            # Instead of initializing the content part with transformed
+            #   coordinates in Deformable DETR, we fuse the feature map
+            #   embedding of distinct positions as the content part, which
+            #   makes the initial queries more distinct.
             topk_coords_unact.append(
                 enc_outputs_coord_unact[img_id][keep_idxs][:topk])
 
             map_memory = self.query_map(memory[img_id].detach())
             query.append(map_memory[keep_idxs][:topk])
             if self.training:
+                # aux dense branch particularly in DDQ DETR, which doesn't
+                # exist in DINO.
                 dense_query.append(map_memory[dense_keep_idxs][:dense_topk])
 
         topk_score = align_tensor(topk_score, topk)
@@ -211,9 +236,10 @@ class DDQDETR(DINO):
             query = torch.cat([dn_label_query, query], dim=1)
             reference_points = torch.cat([dn_bbox_query, topk_coords_unact],
                                          dim=1)
+
+            # Update `dn_mask` to add mask for dense queries.
             ori_size = dn_mask.size(-1)
             new_size = dn_mask.size(-1) + num_dense_queries
-
             new_dn_mask = dn_mask.new_ones((new_size, new_size)).bool()
             dense_mask = torch.zeros(num_dense_queries,
                                      num_dense_queries).bool()

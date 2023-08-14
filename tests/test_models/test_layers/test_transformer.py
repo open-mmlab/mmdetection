@@ -506,8 +506,9 @@ def test_detr_transformer_encoder_decoder():
 
 
 def test_ddq_transformer_decoder():
+    num_layers = 2
     config = ConfigDict(
-        num_layers=6,
+        num_layers=num_layers,
         return_intermediate=True,
         layer_cfg=dict(
             self_attn_cfg=dict(embed_dims=256, num_heads=8,
@@ -519,5 +520,5 @@ def test_ddq_transformer_decoder():
                 feedforward_channels=2048,  # 1024 for DeformDETR
                 ffn_drop=0.0)),  # 0.1 for DeformDETR
         post_norm_cfg=None)
-    assert len(DDQTransformerDecoder(**config).layers) == 6
+    assert len(DDQTransformerDecoder(**config).layers) == num_layers
     assert DDQTransformerDecoder(**config)

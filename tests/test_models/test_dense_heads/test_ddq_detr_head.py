@@ -14,10 +14,11 @@ class TestDDQDETRHead(TestCase):
 
     def test_ddq_detr_head_loss(self):
         """Tests DDQDETRHead loss when truth is empty and non-empty."""
-        num_classes = 80
-        num_dn_queries = 100
-        num_distinct_queries = 900
-        num_decoder_layers = 6
+        num_classes = 2
+        num_dn_queries = 10
+        num_distinct_queries = 10
+        dense_topk_ratio = 1.0
+        num_decoder_layers = 2
         embed_dims = 256
         num_attention_heads = 8
 
@@ -38,7 +39,7 @@ class TestDDQDETRHead(TestCase):
         num_denoising_groups = max(num_dn_queries // max_num_target, 1)
         num_denoising_queries = num_denoising_groups * 2 * max_num_target
 
-        num_dense_queries = int(num_distinct_queries * 1.5)
+        num_dense_queries = int(num_distinct_queries * dense_topk_ratio)
 
         num_total_queries = (
             num_denoising_queries + num_distinct_queries + num_dense_queries)
@@ -96,10 +97,11 @@ class TestDDQDETRHead(TestCase):
             bbox_head.forward(hidden_states, references)
 
         # logits
-        enc_outputs_class = torch.randn([batch_size, 900, 80])
+        enc_outputs_class = torch.randn(
+            [batch_size, num_distinct_queries, num_classes])
 
         # normalized cx, cy, w, h
-        enc_outputs_coord = torch.rand([batch_size, 900, 4])
+        enc_outputs_coord = torch.rand([batch_size, num_distinct_queries, 4])
 
         # Test that empty ground truth encourages the network to predict
         # background

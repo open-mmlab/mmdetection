@@ -5,6 +5,8 @@ pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.
 model = dict(
     type='DDQDETR',
     num_queries=900,  # num_matching_queries
+    # ratio of num_dense queries to num_queries
+    dense_topk_ratio=1.5,
     with_box_refine=True,
     as_two_stage=True,
     data_preprocessor=dict(
