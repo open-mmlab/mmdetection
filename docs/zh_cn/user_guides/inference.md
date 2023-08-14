@@ -35,7 +35,7 @@ inferencer('demo/demo.jpg', show=True)
 </div>
 
 ```{note}
-如果你在没有 GUI 的服务器上，或者通过禁用 X11 转发的 SSH 隧道运行以上命令，`show` 选项将不起作用。然而，你仍然可以通过设置 `out_dir` 和 `save_vis=True` 参数将可视化数据保存到文件。阅读 [储存结果](#储存结果) 了解详情。
+如果你在没有 GUI 的服务器上，或者通过禁用 X11 转发的 SSH 隧道运行以上命令，`show` 选项将不起作用。然而，你仍然可以通过设置 `out_dir` 参数将可视化数据保存到文件。阅读 [储存结果](#储存结果) 了解详情。
 ```
 
 ### 初始化
@@ -47,21 +47,26 @@ inferencer('demo/demo.jpg', show=True)
 - 要用 MMDetection 的预训练模型进行推理，只需要把它的名字传给参数 `model`，权重将自动从 OpenMMLab 的模型库中下载和加载。
 
   ```python
-  DetInferencer(model='rtmdet_tiny_8xb32-300e_coco')
+  inferencer = DetInferencer(model='rtmdet_tiny_8xb32-300e_coco')
   ```
 
-- 在 MMDetection 中有一个非常容易的方法，可以列出所有模型名称。
+  在 MMDetection 中有一个非常容易的方法，可以列出所有模型名称。
 
   ```python
-  from det.apis import DetInferencer
   # models 是一个模型名称列表，它们将自动打印
   models = DetInferencer.list_models('mmdet')
+  ```
+
+  你可以通过将权重的路径或 URL 传递给 `weights` 来让推理器加载自定义的权重。
+
+  ```python
+  inferencer = DetInferencer(model='rtmdet_tiny_8xb32-300e_coco', weights='path/to/rtmdet.pth')
   ```
 
 - 要加载自定义的配置和权重，你可以把配置文件的路径传给 `model`，把权重的路径传给 `weights`。
 
   ```python
-  DetInferencer(model='path/to/rtmdet_config.py', weights='path/to/rtmdet.pth')
+  inferencer = DetInferencer(model='path/to/rtmdet_config.py', weights='path/to/rtmdet.pth')
   ```
 
 - 传递配置文件到 `model` 而不指定 `weights` 则会产生一个随机初始化的模型。
@@ -115,7 +120,7 @@ inferencer = DetInferencer(model='rtmdet_tiny_8xb32-300e_coco', device='cpu')
 - str: 目录的路径。目录中的所有图像都将被处理。
 
   ```python
-  >>> inferencer('path/to/your_imgs/')
+  inferencer('path/to/your_imgs/')
   ```
 
 #### 输出
@@ -124,7 +129,7 @@ inferencer = DetInferencer(model='rtmdet_tiny_8xb32-300e_coco', device='cpu')
 
 - `visualization` 包含可视化的预测结果。但默认情况下，它是一个空列表，除非 `return_vis=True`。
 
-- `predictions` 包含以 json-可序列化格式返回的预测结果。如下所示，内容因任务类型而异。
+- `predictions` 包含以 json-可序列化格式返回的预测结果。
 
 ```python
 {
@@ -132,7 +137,7 @@ inferencer = DetInferencer(model='rtmdet_tiny_8xb32-300e_coco', device='cpu')
         # 每个实例都对应于一个输入图像
         {
           'labels': [...],  # 整数列表，长度为 (N, )
-          'scores': [...],  # 浮点列表，长度为（N, ）
+          'scores': [...],  # 浮点列表，长度为 (N, )
           'bboxes': [...],  # 2d 列表，形状为 (N, 4)，格式为 [min_x, min_y, max_x, max_y]
         },
         ...
@@ -147,7 +152,7 @@ inferencer = DetInferencer(model='rtmdet_tiny_8xb32-300e_coco', device='cpu')
 
 #### 储存结果
 
-除了从返回值中获取预测结果，你还可以通过设置 `out_dir` 参数将预测结果和可视化结果导出到文件中。
+除了从返回值中获取预测结果，你还可以通过设置 `out_dir` 和 `no_save_pred`/`no_save_vis` 参数将预测结果和可视化结果导出到文件中。
 
 ```python
 inferencer('demo/demo.jpg', out_dir='outputs/', no_save_pred=False)
@@ -173,24 +178,22 @@ outputs
 
 - **DetInferencer.\_\_init\_\_():**
 
-| 参数            | 类型              | 默认值  | 描述                                                                                                                           |
-| --------------- | ----------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `model`         | str 或 权重, 可选 | None    | 预训练的文本检测算法。它是配置文件的路径或者是 metafile 中定义的模型名称。                                                     |
-| `weights`       | str, 可选         | None    | det 模型的权重文件的路径。                                                                                                     |
-| `device`        | str, 可选         | None    | 推理使用的设备，接受 `torch.device` 允许的所有字符串。例如，'cuda:0' 或 'cpu'。如果为 None，将自动使用可用设备。 默认为 None。 |
-| `scope`         | str, 可选         | 'mmdet' | 推理使用的设备，接受 `torch.device` 允许的所有字符串。例如，'cuda:0' 或 'cpu'。如果为 None，将自动使用可用设备。 默认为 None。 |
-| `palette`       | str               | 'none'  | 推理使用的设备，接受 `torch.device` 允许的所有字符串。例如，'cuda:0' 或 'cpu'。如果为 None，将自动使用可用设备。 默认为 None。 |
-| `show_progress` | bool              | True    | 推理使用的设备，接受 `torch.device` 允许的所有字符串。例如，'cuda:0' 或 'cpu'。如果为 None，将自动使用可用设备。 默认为 None。 |
+| 参数            | 类型       | 默认值  | 描述                                                                                                                                                                                                                        |
+| --------------- | ---------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model`         | str , 可选 | None    | 配置文件的路径或 metafile 中定义的模型名称。例如，可以是 'rtmdet-s' 或 'rtmdet_s_8xb32-300e_coco' 或 'configs/rtmdet/rtmdet_s_8xb32-300e_coco.py'。如果未指定模型，用户必须提供 MMEngine 保存的包含配置字符串的 "weights"。 |
+| `weights`       | str, 可选  | None    | 模型权重文件的路径。如果未指定且 `model` 是 metafile 中的模型名称，权重将从 metafile 中加载。                                                                                                                               |
+| `device`        | str, 可选  | None    | 推理使用的设备，接受 `torch.device` 允许的所有字符串。例如，'cuda:0' 或 'cpu'。如果为 None，将自动使用可用设备。 默认为 None。                                                                                              |
+| `scope`         | str, 可选  | 'mmdet' | 模型的”域名“。                                                                                                                                                                                                              |
+| `palette`       | str        | 'none'  | 用于可视化的配色。优先顺序为 palette -> config -> checkpoint。                                                                                                                                                              |
+| `show_progress` | bool       | True    | 控制是否在推理过程中显示进度条。                                                                                                                                                                                            |
 
 - **DetInferencer.\_\_call\_\_()**
 
 | 参数                 | 类型                    | 默认值   | 描述                                                                                                                                                                                                                            |
 | -------------------- | ----------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `inputs`             | str/list/tuple/np.array | **必需** | 它可以是一个图片/文件夹的路径，一个 numpy 数组，或者是一个包含图片路径或 numpy 数组的列表/元组                                                                                                                                  |
-| `return_datasamples` | bool                    | False    | 是否将结果作为 DataSample 返回。如果为 False，结果将被打包成一个字典。                                                                                                                                                          |
 | `batch_size`         | int                     | 1        | 推理的批大小。                                                                                                                                                                                                                  |
 | `return_vis`         | bool                    | False    | 是否返回可视化结果。                                                                                                                                                                                                            |
-| `print_result`       | bool                    | False    | 是否将推理结果打印到控制台。                                                                                                                                                                                                    |
 | `show`               | bool                    | False    | 是否在弹出窗口中显示可视化结果。                                                                                                                                                                                                |
 | `wait_time`          | float                   | 0        | 弹窗展示可视化结果的时间间隔。                                                                                                                                                                                                  |
 | `no_save_vis`        | bool                    | False    | 是否将可视化结果保存到 `out_dir`。默认为保存。                                                                                                                                                                                  |
