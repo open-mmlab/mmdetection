@@ -89,7 +89,7 @@ Jupyter notebook 上的演示样例在 [demo/inference_demo.ipynb](https://githu
 
 ## 演示样例
 
-我们还提供了三个演示脚本，它们是使用高层编程接口实现的。[源码在此](https://github.com/open-mmlab/mmdetection/blob/main/demo) 。
+我们还提供了四个演示脚本，它们是使用高层编程接口实现的。[源码在此](https://github.com/open-mmlab/mmdetection/blob/main/demo) 。
 
 ### 图片样例
 
@@ -159,7 +159,7 @@ python demo/video_demo.py demo/demo.mp4 \
     --out result.mp4
 ```
 
-### 视频样例，显卡加速版本
+#### 视频样例，显卡加速版本
 
 这是在视频样例上进行推理的脚本，使用显卡加速。
 
@@ -184,6 +184,48 @@ python demo/video_gpuaccel_demo.py demo/demo.mp4 \
     configs/rtmdet/rtmdet_l_8xb32-300e_coco.py \
     checkpoints/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth \
     --nvdecode --out result.mp4
+```
+
+### 大图推理样例
+
+这是在大图上进行切片推理的脚本。
+
+```shell
+python demo/large_image_demo.py \
+	${IMG_PATH} \
+	${CONFIG_FILE} \
+	${CHECKPOINT_FILE} \
+	--device ${GPU_ID}  \
+	--show \
+	--tta  \
+	--score-thr ${SCORE_THR} \
+	--patch-size ${PATCH_SIZE} \
+	--patch-overlap-ratio ${PATCH_OVERLAP_RATIO} \
+	--merge-iou-thr ${MERGE_IOU_THR} \
+	--merge-nms-type ${MERGE_NMS_TYPE} \
+	--batch-size ${BATCH_SIZE} \
+	--debug \
+	--save-patch
+```
+
+运行样例:
+
+```shell
+# inferecnce without tta
+wget -P checkpoint https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r101_fpn_2x_coco/faster_rcnn_r101_fpn_2x_coco_bbox_mAP-0.398_20200504_210455-1d2dac9c.pth
+
+python demo/large_image_demo.py \
+    demo/large_image.jpg \
+    configs/faster_rcnn/faster-rcnn_r101_fpn_2x_coco.py \
+    checkpoint/faster_rcnn_r101_fpn_2x_coco_bbox_mAP-0.398_20200504_210455-1d2dac9c.pth
+
+# inference with tta
+wget -P checkpoint https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth
+
+python demo/large_image_demo.py \
+    demo/large_image.jpg \
+    configs/retinanet/retinanet_r50_fpn_1x_coco.py \
+    checkpoint/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth --tta
 ```
 
 ## 多模态算法的推理和验证
