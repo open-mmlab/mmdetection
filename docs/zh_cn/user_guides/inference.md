@@ -69,6 +69,13 @@ inferencer('demo/demo.jpg', show=True)
   inferencer = DetInferencer(model='path/to/rtmdet_config.py', weights='path/to/rtmdet.pth')
   ```
 
+- 默认情况下，[MMEngine](https://github.com/open-mmlab/mmengine/) 会在训练模型时自动将配置文件转储到权重文件中。如果你有一个在 MMEngine 上训练的权重，你也可以将权重文件的路径传递给 `weights`，而不需要指定 `model`：
+
+  ```python
+  # 如果无法在权重中找到配置文件，则会引发错误。目前 MMDetection 模型库中只有 ddq-detr-4scale_r50 的权重可以这样加载。
+  inferencer = DetInferencer(weights='https://download.openmmlab.com/mmdetection/v3.0/ddq/ddq-detr-4scale_r50_8xb2-12e_coco/ddq-detr-4scale_r50_8xb2-12e_coco_20230809_170711-42528127.pth')
+  ```
+
 - 传递配置文件到 `model` 而不指定 `weights` 则会产生一个随机初始化的模型。
 
 #### 推理设备

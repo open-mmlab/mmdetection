@@ -67,6 +67,13 @@ Each Inferencer must be initialized with a model. You can also choose the infere
   inferencer = DetInferencer(model='path/to/rtmdet_config.py', weights='path/to/rtmdet.pth')
   ```
 
+- By default, [MMEngine](https://github.com/open-mmlab/mmengine/) dumps config to the weight. If you have a weight trained on MMEngine, you can also pass the path to the weight file to `weights` without specifying `model`:
+
+  ```python
+  # It will raise an error if the config file cannot be found in the weight. Currently, within the MMDetection model repository, only the weights of ddq-detr-4scale_r50 can be loaded in this manner.
+  inferencer = DetInferencer(weights='https://download.openmmlab.com/mmdetection/v3.0/ddq/ddq-detr-4scale_r50_8xb2-12e_coco/ddq-detr-4scale_r50_8xb2-12e_coco_20230809_170711-42528127.pth')
+  ```
+
 - Passing config file to `model` without specifying `weight` will result in a randomly initialized model.
 
 ### Device
