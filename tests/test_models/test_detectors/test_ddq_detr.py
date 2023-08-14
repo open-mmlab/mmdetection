@@ -34,6 +34,7 @@ class TestDDQDETR(TestCase):
             config.num_queries = 10
             config.dense_topk_ratio = 1.0
             config.dn_cfg.group_cfg.num_dn_queries = 10
+            config.test_cfg.max_per_img = 2
             model = MODELS.build(config)
             model.init_weights()
 
