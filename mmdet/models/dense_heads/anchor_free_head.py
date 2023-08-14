@@ -59,6 +59,7 @@ class AnchorFreeHead(BaseDenseHead):
         feat_channels: int = 256,
         stacked_convs: int = 4,
         strides: StrideType = (4, 8, 16, 32, 64),
+        prior_offset: float = 0.5,
         dcn_on_last_conv: bool = False,
         conv_bias: Union[bool, str] = 'auto',
         loss_cls: ConfigType = dict(
@@ -98,7 +99,7 @@ class AnchorFreeHead(BaseDenseHead):
         self.loss_bbox = MODELS.build(loss_bbox)
         self.bbox_coder = TASK_UTILS.build(bbox_coder)
 
-        self.prior_generator = MlvlPointGenerator(strides)
+        self.prior_generator = MlvlPointGenerator(strides, offset=prior_offset)
 
         # In order to keep a more general interface and be consistent with
         # anchor_head. We can think of point like one anchor

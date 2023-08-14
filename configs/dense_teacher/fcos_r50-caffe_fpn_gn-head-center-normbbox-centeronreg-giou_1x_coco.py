@@ -47,7 +47,8 @@ model = dict(
         conv_bias=True,
         loss_bbox=dict(type='GIoULoss', loss_weight=1.0),
         loss_centerness=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        prior_offset=0),
     # testing settings
     test_cfg=dict(
         nms_pre=1000,

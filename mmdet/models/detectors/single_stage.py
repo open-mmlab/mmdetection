@@ -43,6 +43,8 @@ class SingleStageDetector(BaseDetector):
                               error_msgs: Union[List[str], str]) -> None:
         """Exchange bbox_head key to rpn_head key when loading two-stage
         weights into single-stage model."""
+        if prefix and prefix[-1] == '.':
+            prefix = prefix[:-1]
         bbox_head_prefix = prefix + '.bbox_head' if prefix else 'bbox_head'
         bbox_head_keys = [
             k for k in state_dict.keys() if k.startswith(bbox_head_prefix)
