@@ -1,4 +1,4 @@
-# 学会训练和测试
+# 学习训练和测试
 
 ## 训练
 
@@ -7,7 +7,7 @@
 
 - CPU
 - 单 GPU
-- 单节点 多 GPU
+- 单节点多 GPU
 - 多节点
 
 您还可以使用 Slurm 管理作业。
@@ -40,9 +40,9 @@ CUDA_VISIBLE_DEVICES=-1 python tools/train.py ${CONFIG_FILE} [optional arguments
 CUDA_VISIBLE_DEVICES=-1 python tools/train.py configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py
 ```
 
-#### 2. 在单GPU上训练
+#### 2. 在单 GPU 上训练
 
-如果您想在单GPU上训练模型, 您可以按照如下方法直接使用 `tools/train.py`.
+如果您想在单 GPU 上训练模型, 您可以按照如下方法直接使用 `tools/train.py`.
 
 ```shell 脚本
 python tools/train.py ${CONFIG_FILE} [optional arguments]
@@ -132,7 +132,7 @@ configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17hal
 
 - CPU
 - 单 GPU
-- 单节点 多 GPU
+- 单节点多 GPU
 - 多节点
 
 您还可以使用 Slurm 管理作业。
