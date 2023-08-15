@@ -27,7 +27,7 @@
 
 该模型默认放在 cuda 设备上。
 仅当没有 cuda 设备时，该模型才会放在 CPU 上。
-因此，如果要在 CPU 上训练模型，则需要先`export CUDA_VISIBLE_DEVICES=-1`以禁用 GPU 可见性。
+因此，如果要在 CPU 上训练模型，则需要先 `export CUDA_VISIBLE_DEVICES=-1` 以禁用 GPU 可见性。
 更多细节参见 [MMEngine](https://github.com/open-mmlab/mmengine/blob/ca282aee9e402104b644494ca491f73d93a9544f/mmengine/runner/runner.py#L849-L850).
 
 ```shell 脚本
