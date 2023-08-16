@@ -291,10 +291,10 @@ pip install -U openmim
 ```
 
 ```Bash
-# install OpenDataLab CLI tools
-pip install -U opendatalab
-# log in OpenDataLab, registry
-odl login
+# install OpenXLab CLI tools
+pip install -U openxlab
+# log in OpenXLab, registry
+openxlab login
 
 # download voc2007 and preprocess by MIM
 mim download mmdet --dataset voc2007
