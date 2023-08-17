@@ -16,21 +16,21 @@
 
 `test_dataloader`：测试数据集的配置，与训练数据集的配置类似；
 
-`val_evaluator`：验证评估器的配置，例如type='MOTChallengeMetrics'是MOT任务里面的测量标准；
+`val_evaluator`：验证评估器的配置，例如`type='MOTChallengeMetrics'`是MOT任务里面的测量标准；
 
 `test_evaluator`：测试评估器的配置，与验证评估器的配置类似；
 
-`train_cfg`：训练循环的配置，例如type='EpochBasedTrainLoop'；
+`train_cfg`：训练循环的配置，例如`type='EpochBasedTrainLoop'`；
 
-`val_cfg`：验证循环的配置，例如type='VideoValLoop'；
+`val_cfg`：验证循环的配置，例如`type='VideoValLoop'`；
 
-`test_cfg`：测试循环的配置，例如type='VideoTestLoop'；
+`test_cfg`：测试循环的配置，例如`type='VideoTestLoop'`；
 
 `default_hooks`：默认鱼钩的配置，包含计时器、日志、参数调度程序、检查点、样本种子、可视化；
 
-`vis_backends`：可视化后端的配置，默认使用type='LocalVisBackend'；
+`vis_backends`：可视化后端的配置，默认使用`type='LocalVisBackend'`；
 
-`visualizer`：可视化工具的配置，例如MOT任务使用type='TrackLocalVisualizer'；
+`visualizer`：可视化工具的配置，例如MOT任务使用`type='TrackLocalVisualizer'`；
 
 `param_scheduler`：参数调度程序的配置，通常里面设置学习率调度程序；
 
