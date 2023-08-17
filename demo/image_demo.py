@@ -14,6 +14,20 @@ Example:
         configs/rtmdet/rtmdet_s_8xb32-300e_coco.py \
         --weights rtmdet_s_8xb32-300e_coco_20220905_161602-387a891e.pth
 
+        python demo/image_demo.py demo/demo.jpg \
+        glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365 --texts bench
+
+        python demo/image_demo.py demo/demo.jpg \
+        glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365 --texts 'bench . car .'
+
+        python demo/image_demo.py demo/demo.jpg \
+        glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365
+        --texts 'bench . car .' -c
+
+        python demo/image_demo.py demo/demo.jpg \
+        glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365 \
+        --texts 'There are a lot of cars here.'
+
     Visualize prediction results::
 
         python demo/image_demo.py demo/demo.jpg rtmdet-ins-s --show
@@ -46,6 +60,7 @@ def parse_args():
         type=str,
         default='outputs',
         help='Output directory of images or prediction results.')
+    parser.add_argument('--texts', help='text prompt')
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
@@ -76,6 +91,14 @@ def parse_args():
         default='none',
         choices=['coco', 'voc', 'citys', 'random', 'none'],
         help='Color palette used for visualization')
+    # only for GLIP
+    parser.add_argument(
+        '--custom-entities',
+        '-c',
+        action='store_true',
+        help='Whether to customize entity names? '
+        'If so, the input text should be '
+        '"cls_name1 . cls_name2 . cls_name3 ." format')
 
     call_args = vars(parser.parse_args())
 

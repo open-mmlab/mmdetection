@@ -138,7 +138,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
 
 MMDetection supports to test models without ground-truth annotations using `CocoDataset`. If your dataset format is not in COCO format, please convert them to COCO format. For example, if your dataset format is VOC, you can directly convert it to COCO format by the [script in tools.](../../../tools/dataset_converters/pascal_voc.py) If your dataset format is Cityscapes, you can directly convert it to COCO format by the [script in tools.](../../../tools/dataset_converters/cityscapes.py) The rest of the formats can be converted using [this script](../../../tools/dataset_converters/images2coco.py).
 
-```shel
+```shell
 python tools/dataset_converters/images2coco.py \
     ${IMG_PATH} \
     ${CLASSES} \
@@ -146,7 +146,7 @@ python tools/dataset_converters/images2coco.py \
     [--exclude-extensions]
 ```
 
-arguments：
+arguments:
 
 - `IMG_PATH`: The root path of images.
 - `CLASSES`: The text file with a list of categories.

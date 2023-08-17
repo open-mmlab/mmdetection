@@ -110,6 +110,28 @@ class TestLoadAnnotations(unittest.TestCase):
         self.assertEqual(len(results['gt_masks']), 3)
         self.assertIsInstance(results['gt_masks'], BitmapMasks)
 
+    def test_load_semseg(self):
+        transform = LoadAnnotations(
+            with_bbox=False, with_label=False, with_seg=True, with_mask=False)
+        results = transform(copy.deepcopy(self.results))
+        self.assertIn('gt_seg_map', results)
+        self.assertIn('ignore_index', results)
+        self.assertEqual(results['gt_seg_map'].shape, (288, 512))
+
+        # test reduce_zero_label and ignore_index
+        transform = LoadAnnotations(
+            with_bbox=False,
+            with_label=False,
+            with_seg=True,
+            with_mask=False,
+            reduce_zero_label=True,
+            ignore_index=10)
+        results = transform(copy.deepcopy(self.results))
+        self.assertIn('gt_seg_map', results)
+        self.assertIn('ignore_index', results)
+        self.assertEqual(results['ignore_index'], 10)
+        self.assertEqual(results['gt_seg_map'].shape, (288, 512))
+
     def test_repr(self):
         transform = LoadAnnotations(
             with_bbox=True,

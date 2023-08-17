@@ -169,7 +169,7 @@ bash tools/dist_test.sh \
     8
 ```
 
-这行命令生成两个 JSON 文件 `./work_dirs/coco_instance/test.bbox.jso` 和 `./work_dirs/coco_instance/test.segm.jsonn`。
+这行命令生成两个 JSON 文件 `./work_dirs/coco_instance/test.bbox.json` 和 `./work_dirs/coco_instance/test.segm.json`。
 
 ### 批量推理
 

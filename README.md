@@ -61,12 +61,16 @@ English | [简体中文](README_zh-CN.md)
     <img src="https://user-images.githubusercontent.com/25839884/219026120-ba71e48b-6e94-4bd4-b4e9-b7d175b5e362.png" width="3%" alt="" /></a>
 </div>
 
+<div align="center">
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/6c29886f-ae7a-4a55-8be4-352ee85b7d3e"/>
+</div>
+
 ## Introduction
 
 MMDetection is an open source object detection toolbox based on PyTorch. It is
 a part of the [OpenMMLab](https://openmmlab.com/) project.
 
-The main branch works with **PyTorch 1.6+**.
+The main branch works with **PyTorch 1.8+**.
 
 <img src="https://user-images.githubusercontent.com/12907710/187674113-2074d658-f2fb-42d1-ac15-9c4a695e64d7.png"/>
 
@@ -114,11 +118,12 @@ We are excited to announce our latest work on real-time object recognition tasks
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
 
-**v3.0.0** was released in 6/4/2023:
+**v3.1.0** was released in 30/6/2023:
 
-- Release MMDetection 3.0.0 official version
-- Support Semi-automatic annotation Base [Label-Studio](projects/LabelStudio) (#10039)
-- Support [EfficientDet](projects/EfficientDet) in projects (#9810)
+- Supports tracking algorithms including multi-object tracking (MOT) algorithms SORT, DeepSORT, StrongSORT, OCSORT, ByteTrack, QDTrack, and video instance segmentation (VIS) algorithm MaskTrackRCNN, Mask2Former-VIS.
+- Support [ViTDet](projects/ViTDet)
+- Supports inference and evaluation of multimodal algorithms [GLIP](configs/glip) and [XDecoder](projects/XDecoder), and also supports datasets such as COCO semantic segmentation, COCO Caption, ADE20k general segmentation, and RefCOCO. GLIP fine-tuning will be supported in the future.
+- Provides a [gradio demo](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/projects/gradio_demo/README.md) for image type tasks of MMDetection, making it easy for users to experience.
 
 ## Installation
 

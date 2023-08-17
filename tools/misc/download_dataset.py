@@ -188,7 +188,7 @@ def main():
             # training images and semantic segmentation annotations
             'http://data.csail.mit.edu/places/ADEchallenge/ADEChallengeData2016.zip',  # noqa
             # instance segmentation annotations
-            'http://sceneparsing.csail.mit.edu/data/ChallengeData2017/annotations_instance.tar'  # noqa
+            'http://sceneparsing.csail.mit.edu/data/ChallengeData2017/annotations_instance.tar',  # noqa
             # img categories ids
             'https://raw.githubusercontent.com/CSAILVision/placeschallenge/master/instancesegmentation/imgCatIds.json',  # noqa
             # category mapping
@@ -206,7 +206,8 @@ def main():
         ])
     url = data2url.get(args.dataset_name, None)
     if url is None:
-        print('Only support COCO, VOC, LVIS, balloon, and Objects365v2 now!')
+        print('Only support ADE20K, COCO, RefCOCO, VOC, LVIS, '
+              'balloon, and Objects365v2 now!')
         return
     if args.dataset_name == 'objects365v2':
         download_objects365v2(

@@ -72,7 +72,7 @@ class TrackDataPreprocessor(DetDataPreprocessor):
                                  torch.tensor(std).view(1, -1, 1, 1), False)
 
     def forward(self, data: dict, training: bool = False) -> Dict:
-        """Perform normalization、padding and bgr2rgb conversion based on
+        """Perform normalization,padding and bgr2rgb conversion based on
         ``TrackDataPreprocessor``.
 
         Args:

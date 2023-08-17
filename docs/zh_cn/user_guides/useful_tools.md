@@ -116,7 +116,7 @@ python tools/analysis_tools/analyze_results.py \
 `tools/analysis_tools/browse_dataset.py` 可帮助使用者检查所使用的检测数据集（包括图像和标注），或保存图像至指定目录。
 
 ```shell
-python tools/misc/browse_dataset.py ${CONFIG} [-h] [--skip-type ${SKIP_TYPE[SKIP_TYPE...]}] [--output-dir ${OUTPUT_DIR}] [--not-show] [--show-interval ${SHOW_INTERVAL}]
+python tools/analysis_tools/browse_dataset.py ${CONFIG} [-h] [--skip-type ${SKIP_TYPE[SKIP_TYPE...]}] [--output-dir ${OUTPUT_DIR}] [--not-show] [--show-interval ${SHOW_INTERVAL}]
 ```
 
 ### 可视化模型
