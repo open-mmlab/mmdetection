@@ -3,22 +3,23 @@ import warnings
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from mmengine.model import BaseModule
-from mmengine.model.weight_init import xavier_init
-from mmdet.registry import MODELS
+from mmcv.cnn import build_norm_layer
 from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
                                          TransformerLayerSequence,
                                          build_transformer_layer_sequence)
-from mmdet.models.layers.transformer import inverse_sigmoid
 from mmcv.ops import MultiScaleDeformableAttention
+from mmengine.model import BaseModule
+from mmengine.model.weight_init import xavier_init
 from torch.nn.init import normal_
 
+from mmdet.models.layers.transformer import inverse_sigmoid
+from mmdet.registry import MODELS
 
 try:
     from fairscale.nn.checkpoint import checkpoint_wrapper
-except:
+except Exception:
     checkpoint_wrapper = None
+
 
 class Transformer(BaseModule):
     """Implements the DETR transformer.
@@ -103,6 +104,7 @@ class Transformer(BaseModule):
         out_dec = out_dec.transpose(1, 2)
         memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
         return out_dec, memory
+
 
 @MODELS.register_module(force=True)
 class DeformableDetrTransformerDecoder(TransformerLayerSequence):
@@ -552,9 +554,14 @@ class CoDeformableDetrTransformerDecoder(TransformerLayerSequence):
             `LN`.
     """
 
-    def __init__(self, *args, return_intermediate=False, look_forward_twice=False, **kwargs):
+    def __init__(self,
+                 *args,
+                 return_intermediate=False,
+                 look_forward_twice=False,
+                 **kwargs):
 
-        super(CoDeformableDetrTransformerDecoder, self).__init__(*args, **kwargs)
+        super(CoDeformableDetrTransformerDecoder,
+              self).__init__(*args, **kwargs)
         self.return_intermediate = return_intermediate
         self.look_forward_twice = look_forward_twice
 
@@ -623,10 +630,8 @@ class CoDeformableDetrTransformerDecoder(TransformerLayerSequence):
             if self.return_intermediate:
                 intermediate.append(output)
                 intermediate_reference_points.append(
-                    new_reference_points
-                    if self.look_forward_twice
-                    else reference_points
-                )
+                    new_reference_points if self.
+                    look_forward_twice else reference_points)
         if self.return_intermediate:
             return torch.stack(intermediate), torch.stack(
                 intermediate_reference_points)
@@ -664,19 +669,27 @@ class CoDeformableDetrTransformer(DeformableDetrTransformer):
         """Initialize layers of the DeformableDetrTransformer."""
         if self.with_pos_coord:
             if self.num_co_heads > 0:
-                # bug: this code should be 'self.head_pos_embed = nn.Embedding(self.num_co_heads, self.embed_dims)', we keep this bug for reproducing our results with ResNet-50.
-                # You can fix this bug when reproducing results with swin transformer.
-                self.head_pos_embed = nn.Embedding(self.num_co_heads, 1, 1, self.embed_dims)
+                # bug: this code should be 'self.head_pos_embed =
+                # nn.Embedding(self.num_co_heads, self.embed_dims)',
+                # we keep this bug for reproducing our results with ResNet-50.
+                # You can fix this bug when reproducing results with
+                # swin transformer.
+                self.head_pos_embed = nn.Embedding(self.num_co_heads, 1, 1,
+                                                   self.embed_dims)
                 self.aux_pos_trans = nn.ModuleList()
                 self.aux_pos_trans_norm = nn.ModuleList()
                 self.pos_feats_trans = nn.ModuleList()
                 self.pos_feats_norm = nn.ModuleList()
                 for i in range(self.num_co_heads):
-                    self.aux_pos_trans.append(nn.Linear(self.embed_dims*2, self.embed_dims*2))
-                    self.aux_pos_trans_norm.append(nn.LayerNorm(self.embed_dims*2))
+                    self.aux_pos_trans.append(
+                        nn.Linear(self.embed_dims * 2, self.embed_dims * 2))
+                    self.aux_pos_trans_norm.append(
+                        nn.LayerNorm(self.embed_dims * 2))
                     if self.with_coord_feat:
-                        self.pos_feats_trans.append(nn.Linear(self.embed_dims, self.embed_dims))
-                        self.pos_feats_norm.append(nn.LayerNorm(self.embed_dims))
+                        self.pos_feats_trans.append(
+                            nn.Linear(self.embed_dims, self.embed_dims))
+                        self.pos_feats_norm.append(
+                            nn.LayerNorm(self.embed_dims))
 
     def get_proposal_pos_embed(self,
                                proposals,
@@ -864,7 +877,7 @@ class CoDeformableDetrTransformer(DeformableDetrTransformer):
             if return_encoder_output:
                 return inter_states, init_reference_out,\
                     inter_references_out, enc_outputs_class,\
-                    enc_outputs_coord_unact, memory                
+                    enc_outputs_coord_unact, memory
             return inter_states, init_reference_out,\
                 inter_references_out, enc_outputs_class,\
                 enc_outputs_coord_unact
@@ -909,21 +922,22 @@ class CoDeformableDetrTransformer(DeformableDetrTransformer):
             [self.get_valid_ratio(m) for m in mlvl_masks], 1)
 
         feat_flatten = feat_flatten.permute(1, 0, 2)  # (H*W, bs, embed_dims)
-        
+
         memory = feat_flatten
         memory = memory.permute(1, 0, 2)
         bs, _, c = memory.shape
 
-        topk = pos_anchors.shape[1]
         topk_coords_unact = inverse_sigmoid((pos_anchors))
         reference_points = pos_anchors
         init_reference_out = reference_points
         if self.num_co_heads > 0:
             pos_trans_out = self.aux_pos_trans_norm[head_idx](
-                self.aux_pos_trans[head_idx](self.get_proposal_pos_embed(topk_coords_unact)))
+                self.aux_pos_trans[head_idx](
+                    self.get_proposal_pos_embed(topk_coords_unact)))
             query_pos, query = torch.split(pos_trans_out, c, dim=2)
             if self.with_coord_feat:
-                query = query + self.pos_feats_norm[head_idx](self.pos_feats_trans[head_idx](pos_feats))
+                query = query + self.pos_feats_norm[head_idx](
+                    self.pos_feats_trans[head_idx](pos_feats))
                 query_pos = query_pos + self.head_pos_embed.weight[head_idx]
 
         # decoder
@@ -950,8 +964,6 @@ class CoDeformableDetrTransformer(DeformableDetrTransformer):
 
 
 def build_MLP(input_dim, hidden_dim, output_dim, num_layers):
-    # TODO: It can be implemented by add an out_channel arg of
-    #  mmcv.cnn.bricks.transformer.FFN
     assert num_layers > 1, \
         f'num_layers should be greater than 1 but got {num_layers}'
     h = [hidden_dim] * (num_layers - 1)
@@ -1035,7 +1047,7 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
                     reference_points[:, :, None] * valid_ratios[:, None]
 
             query_sine_embed = self.gen_sineembed_for_position(
-                reference_points_input[:, :, 0, :], self.embed_dims//2)
+                reference_points_input[:, :, 0, :], self.embed_dims // 2)
             query_pos = self.ref_point_head(query_sine_embed)
 
             query_pos = query_pos.permute(1, 0, 2)
@@ -1050,7 +1062,6 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
             if reg_branches is not None:
                 tmp = reg_branches[lid](output)
                 assert reference_points.shape[-1] == 4
-                # TODO: should do earlier
                 new_reference_points = tmp + inverse_sigmoid(
                     reference_points, eps=1e-3)
                 new_reference_points = new_reference_points.sigmoid()
@@ -1084,7 +1095,7 @@ class CoDinoTransformer(CoDeformableDetrTransformer):
         self.enc_output_norm = nn.LayerNorm(self.embed_dims)
         self.query_embed = nn.Embedding(self.two_stage_num_proposals,
                                         self.embed_dims)
-    
+
     def _init_layers(self):
         if self.with_pos_coord:
             if self.num_co_heads > 0:
@@ -1093,11 +1104,15 @@ class CoDinoTransformer(CoDeformableDetrTransformer):
                 self.pos_feats_trans = nn.ModuleList()
                 self.pos_feats_norm = nn.ModuleList()
                 for i in range(self.num_co_heads):
-                    self.aux_pos_trans.append(nn.Linear(self.embed_dims*2, self.embed_dims))
-                    self.aux_pos_trans_norm.append(nn.LayerNorm(self.embed_dims))
+                    self.aux_pos_trans.append(
+                        nn.Linear(self.embed_dims * 2, self.embed_dims))
+                    self.aux_pos_trans_norm.append(
+                        nn.LayerNorm(self.embed_dims))
                     if self.with_coord_feat:
-                        self.pos_feats_trans.append(nn.Linear(self.embed_dims, self.embed_dims))
-                        self.pos_feats_norm.append(nn.LayerNorm(self.embed_dims))
+                        self.pos_feats_trans.append(
+                            nn.Linear(self.embed_dims, self.embed_dims))
+                        self.pos_feats_norm.append(
+                            nn.LayerNorm(self.embed_dims))
 
     def init_weights(self):
         super().init_weights()
@@ -1171,7 +1186,7 @@ class CoDinoTransformer(CoDeformableDetrTransformer):
             output_memory) + output_proposals
         cls_out_features = cls_branches[self.decoder.num_layers].out_features
         topk = self.two_stage_num_proposals
-        # NOTE In DeformDETR, enc_outputs_class[..., 0] is used for topk TODO
+        # NOTE In DeformDETR, enc_outputs_class[..., 0] is used for topk
         topk_indices = torch.topk(enc_outputs_class.max(-1)[0], topk, dim=1)[1]
 
         topk_score = torch.gather(
@@ -1214,8 +1229,8 @@ class CoDinoTransformer(CoDeformableDetrTransformer):
 
         inter_references_out = inter_references
 
-        return inter_states, inter_references_out, topk_score, topk_anchor, memory
-
+        return inter_states, inter_references_out, \
+            topk_score, topk_anchor, memory
 
     def forward_aux(self,
                     mlvl_feats,
@@ -1252,22 +1267,21 @@ class CoDinoTransformer(CoDeformableDetrTransformer):
             [self.get_valid_ratio(m) for m in mlvl_masks], 1)
 
         feat_flatten = feat_flatten.permute(1, 0, 2)  # (H*W, bs, embed_dims)
-        
+
         memory = feat_flatten
-            #enc_inter = [feat.permute(1, 2, 0) for feat in enc_inter]
         memory = memory.permute(1, 0, 2)
         bs, _, c = memory.shape
 
-        topk = pos_anchors.shape[1]
         topk_coords_unact = inverse_sigmoid((pos_anchors))
-        reference_points = (pos_anchors)
-        init_reference_out = reference_points
+        reference_points = pos_anchors
         if self.num_co_heads > 0:
             pos_trans_out = self.aux_pos_trans_norm[head_idx](
-                self.aux_pos_trans[head_idx](self.get_proposal_pos_embed(topk_coords_unact)))
+                self.aux_pos_trans[head_idx](
+                    self.get_proposal_pos_embed(topk_coords_unact)))
             query = pos_trans_out
             if self.with_coord_feat:
-                query = query + self.pos_feats_norm[head_idx](self.pos_feats_trans[head_idx](pos_feats))
+                query = query + self.pos_feats_norm[head_idx](
+                    self.pos_feats_trans[head_idx](pos_feats))
 
         # decoder
         query = query.permute(1, 0, 2)
@@ -1290,8 +1304,6 @@ class CoDinoTransformer(CoDeformableDetrTransformer):
         return inter_states, inter_references_out
 
 
-from mmcv.cnn import build_norm_layer
-
 @MODELS.register_module()
 class DetrTransformerEncoder(TransformerLayerSequence):
     """TransformerEncoder of DETR.
@@ -1301,7 +1313,11 @@ class DetrTransformerEncoder(TransformerLayerSequence):
             `LN`. Only used when `self.pre_norm` is `True`
     """
 
-    def __init__(self, *args, post_norm_cfg=dict(type='LN'), with_cp=-1, **kwargs):
+    def __init__(self,
+                 *args,
+                 post_norm_cfg=dict(type='LN'),
+                 with_cp=-1,
+                 **kwargs):
         super(DetrTransformerEncoder, self).__init__(*args, **kwargs)
         if post_norm_cfg is not None:
             self.post_norm = build_norm_layer(
@@ -1320,6 +1336,7 @@ class DetrTransformerEncoder(TransformerLayerSequence):
                 return
             for i in range(self.with_cp):
                 self.layers[i] = checkpoint_wrapper(self.layers[i])
+
 
 @MODELS.register_module()
 class DetrTransformerDecoderLayer(BaseTransformerLayer):
@@ -1365,4 +1382,3 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
         assert len(operation_order) == 6
         assert set(operation_order) == set(
             ['self_attn', 'norm', 'cross_attn', 'ffn'])
-

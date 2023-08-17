@@ -12,11 +12,13 @@ from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures import SampleList
-from mmdet.structures.bbox import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh, bbox_overlaps
+from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_overlaps,
+                                   bbox_xyxy_to_cxcywh)
 from mmdet.utils import (ConfigType, InstanceList, OptInstanceList,
                          OptMultiConfig, reduce_mean)
-from ..utils import multi_apply
 from ..losses import QualityFocalLoss
+from ..utils import multi_apply
+
 
 @MODELS.register_module()
 class DETRHead(BaseModule):
@@ -289,7 +291,7 @@ class DETRHead(BaseModule):
             cls_avg_factor = reduce_mean(
                 cls_scores.new_tensor([cls_avg_factor]))
         cls_avg_factor = max(cls_avg_factor, 1)
-        
+
         if isinstance(self.loss_cls, QualityFocalLoss):
             bg_class_ind = self.num_classes
             pos_inds = ((labels >= 0)
@@ -304,8 +306,10 @@ class DETRHead(BaseModule):
                 pos_decode_bbox_targets,
                 is_aligned=True)
             loss_cls = self.loss_cls(
-                cls_scores, (labels, scores), label_weights, avg_factor=cls_avg_factor)
-        else:    
+                cls_scores, (labels, scores),
+                label_weights,
+                avg_factor=cls_avg_factor)
+        else:
             loss_cls = self.loss_cls(
                 cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
 

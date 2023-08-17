@@ -5,7 +5,7 @@ custom_imports = dict(
 
 # model settings
 num_dec_layer = 6
-lambda_2 = 2.0
+loss_lambda = 2.0
 
 image_size = (1024, 1024)
 batch_augments = [
@@ -14,7 +14,7 @@ batch_augments = [
 model = dict(
     type='CoDETR',
     with_pos_coord=True,
-    with_attn_mask=False,  # lsj is False
+    use_lsj=True,
     # detr: 52.1
     # one-stage: 49.4
     # two-stage: 47.9
@@ -53,8 +53,7 @@ model = dict(
         dn_cfg=dict(
             label_noise_scale=0.5,
             box_noise_scale=1.0,  # 0.4 for DN-DETR
-            group_cfg=dict(dynamic=True, num_groups=None,
-                           num_dn_queries=100)),  # TODO: half num_dn_queries
+            group_cfg=dict(dynamic=True, num_groups=None, num_dn_queries=100)),
         transformer=dict(
             type='CoDinoTransformer',
             with_pos_coord=True,
@@ -68,7 +67,10 @@ model = dict(
                 transformerlayers=dict(
                     type='BaseTransformerLayer',
                     attn_cfgs=dict(
-                        type='MultiScaleDeformableAttention', embed_dims=256, num_levels=5, dropout=0.0),
+                        type='MultiScaleDeformableAttention',
+                        embed_dims=256,
+                        num_levels=5,
+                        dropout=0.0),
                     feedforward_channels=2048,
                     ffn_dropout=0.0,
                     operation_order=('self_attn', 'norm', 'ffn', 'norm'))),
@@ -121,56 +123,72 @@ model = dict(
             target_means=[.0, .0, .0, .0],
             target_stds=[1.0, 1.0, 1.0, 1.0]),
         loss_cls=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0 * num_dec_layer * lambda_2),
-        loss_bbox=dict(type='L1Loss', loss_weight=1.0 * num_dec_layer * lambda_2)),
-    roi_head=[dict(
-        type='CoStandardRoIHead',
-        bbox_roi_extractor=dict(
-            type='SingleRoIExtractor',
-            roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
-            out_channels=256,
-            featmap_strides=[4, 8, 16, 32, 64],
-            finest_scale=56),
-        bbox_head=dict(
-            type='Shared2FCBBoxHead',
-            in_channels=256,
-            fc_out_channels=1024,
-            roi_feat_size=7,
+            type='CrossEntropyLoss',
+            use_sigmoid=True,
+            loss_weight=1.0 * num_dec_layer * loss_lambda),
+        loss_bbox=dict(
+            type='L1Loss', loss_weight=1.0 * num_dec_layer * loss_lambda)),
+    roi_head=[
+        dict(
+            type='CoStandardRoIHead',
+            bbox_roi_extractor=dict(
+                type='SingleRoIExtractor',
+                roi_layer=dict(
+                    type='RoIAlign', output_size=7, sampling_ratio=0),
+                out_channels=256,
+                featmap_strides=[4, 8, 16, 32, 64],
+                finest_scale=56),
+            bbox_head=dict(
+                type='Shared2FCBBoxHead',
+                in_channels=256,
+                fc_out_channels=1024,
+                roi_feat_size=7,
+                num_classes=80,
+                bbox_coder=dict(
+                    type='DeltaXYWHBBoxCoder',
+                    target_means=[0., 0., 0., 0.],
+                    target_stds=[0.1, 0.1, 0.2, 0.2]),
+                reg_class_agnostic=False,
+                reg_decoded_bbox=True,
+                loss_cls=dict(
+                    type='CrossEntropyLoss',
+                    use_sigmoid=False,
+                    loss_weight=1.0 * num_dec_layer * loss_lambda),
+                loss_bbox=dict(
+                    type='GIoULoss',
+                    loss_weight=10.0 * num_dec_layer * loss_lambda)))
+    ],
+    bbox_head=[
+        dict(
+            type='CoATSSHead',
             num_classes=80,
+            in_channels=256,
+            stacked_convs=1,
+            feat_channels=256,
+            anchor_generator=dict(
+                type='AnchorGenerator',
+                ratios=[1.0],
+                octave_base_scale=8,
+                scales_per_octave=1,
+                strides=[4, 8, 16, 32, 64, 128]),
             bbox_coder=dict(
                 type='DeltaXYWHBBoxCoder',
-                target_means=[0., 0., 0., 0.],
+                target_means=[.0, .0, .0, .0],
                 target_stds=[0.1, 0.1, 0.2, 0.2]),
-            reg_class_agnostic=False,
-            reg_decoded_bbox=True,
             loss_cls=dict(
-                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0 * num_dec_layer * lambda_2),
-            loss_bbox=dict(type='GIoULoss', loss_weight=10.0 * num_dec_layer * lambda_2)))],
-    bbox_head=[dict(
-        type='CoATSSHead',
-        num_classes=80,
-        in_channels=256,
-        stacked_convs=1,
-        feat_channels=256,
-        anchor_generator=dict(
-            type='AnchorGenerator',
-            ratios=[1.0],
-            octave_base_scale=8,
-            scales_per_octave=1,
-            strides=[4, 8, 16, 32, 64, 128]),
-        bbox_coder=dict(
-            type='DeltaXYWHBBoxCoder',
-            target_means=[.0, .0, .0, .0],
-            target_stds=[0.1, 0.1, 0.2, 0.2]),
-        loss_cls=dict(
-            type='FocalLoss',
-            use_sigmoid=True,
-            gamma=2.0,
-            alpha=0.25,
-            loss_weight=1.0 * num_dec_layer * lambda_2),
-        loss_bbox=dict(type='GIoULoss', loss_weight=2.0 * num_dec_layer * lambda_2),
-        loss_centerness=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0 * num_dec_layer * lambda_2)), ],
+                type='FocalLoss',
+                use_sigmoid=True,
+                gamma=2.0,
+                alpha=0.25,
+                loss_weight=1.0 * num_dec_layer * loss_lambda),
+            loss_bbox=dict(
+                type='GIoULoss',
+                loss_weight=2.0 * num_dec_layer * loss_lambda),
+            loss_centerness=dict(
+                type='CrossEntropyLoss',
+                use_sigmoid=True,
+                loss_weight=1.0 * num_dec_layer * loss_lambda)),
+    ],
     # model training and testing settings
     train_cfg=[
         dict(
@@ -224,7 +242,8 @@ model = dict(
             assigner=dict(type='ATSSAssigner', topk=9),
             allowed_border=-1,
             pos_weight=-1,
-            debug=False)],
+            debug=False)
+    ],
     test_cfg=[
         dict(
             max_per_img=300,
@@ -241,7 +260,7 @@ model = dict(
                 nms=dict(type='nms', iou_threshold=0.5),
                 max_per_img=100)),
         dict(
-            # atss bbox head: 
+            # atss bbox head:
             nms_pre=1000,
             min_bbox_size=0,
             score_thr=0.0,
@@ -277,9 +296,10 @@ train_pipeline = [
 
 train_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=True),
-    dataset=dict(pipeline=train_pipeline,
-                 dataset=dict(filter_cfg=dict(filter_empty_gt=False),
-                              pipeline=load_pipeline)))
+    dataset=dict(
+        pipeline=train_pipeline,
+        dataset=dict(
+            filter_cfg=dict(filter_empty_gt=False), pipeline=load_pipeline)))
 
 # follow ViTDet
 test_pipeline = [
@@ -313,7 +333,9 @@ test_evaluator = val_evaluator
 max_epochs = 12
 train_cfg = dict(
     _delete_=True,
-    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
+    type='EpochBasedTrainLoop',
+    max_epochs=max_epochs,
+    val_interval=1)
 
 param_scheduler = [
     dict(
@@ -325,7 +347,8 @@ param_scheduler = [
         gamma=0.1)
 ]
 
-default_hooks = dict(checkpoint=dict(by_epoch=True, interval=1, max_keep_ckpts=3))
+default_hooks = dict(
+    checkpoint=dict(by_epoch=True, interval=1, max_keep_ckpts=3))
 log_processor = dict(by_epoch=True)
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,

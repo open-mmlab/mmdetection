@@ -1,26 +1,24 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
+from typing import List
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import copy 
-from typing import Dict, List, Tuple
-from torch import Tensor
-from mmengine.structures import InstanceData
-from mmcv.ops import batched_nms
-from mmdet.utils import InstanceList, reduce_mean
-from mmdet.structures import SampleList
-from mmdet.registry import MODELS, TASK_UTILS
-from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh, bbox_overlaps)
-from mmdet.models.utils import multi_apply, unpack_gt_instances
-from mmdet.models.layers.transformer import inverse_sigmoid
-from mmcv.ops import batched_nms
-from mmdet.models.task_modules.samplers import PseudoSampler
 from mmcv.cnn import Linear
+from mmcv.ops import batched_nms
+from mmengine.structures import InstanceData
+from torch import Tensor
 
-from mmdet.utils import (ConfigType, InstanceList, MultiConfig, OptConfigType,
-                         OptInstanceList, reduce_mean)
-from mmdet.models.layers import CdnQueryGenerator
 from mmdet.models import DINOHead
+from mmdet.models.layers import CdnQueryGenerator
+from mmdet.models.layers.transformer import inverse_sigmoid
+from mmdet.models.utils import multi_apply
+from mmdet.registry import MODELS
+from mmdet.structures import SampleList
+from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_overlaps,
+                                   bbox_xyxy_to_cxcywh)
+from mmdet.utils import InstanceList, reduce_mean
 
 
 @MODELS.register_module()
@@ -32,23 +30,20 @@ class CoDINOHead(DINOHead):
                  transformer=None,
                  in_channels=2048,
                  max_pos_coords=300,
-                 lambda_1=1,
                  dn_cfg=None,
                  use_zero_padding=False,
                  positional_encoding=dict(
                      type='SinePositionalEncoding',
                      num_feats=128,
                      normalize=True),
-                **kwargs):
-        self.with_box_refine=True
-        self.mixed_selection=True
-        self.with_attn_mask=False
-        self.in_channels=in_channels
+                 **kwargs):
+        self.with_box_refine = True
+        self.mixed_selection = True
+        self.in_channels = in_channels
         self.max_pos_coords = max_pos_coords
-        self.lambda_1 = lambda_1
         self.positional_encoding = positional_encoding
-        self.num_query=num_query
-        self.use_zero_padding=use_zero_padding
+        self.num_query = num_query
+        self.use_zero_padding = use_zero_padding
 
         if 'two_stage_num_proposals' in transformer:
             assert transformer['two_stage_num_proposals'] == num_query, \
@@ -59,23 +54,23 @@ class CoDINOHead(DINOHead):
         if self.mixed_selection:
             transformer['mixed_selection'] = self.mixed_selection
         self.transformer = transformer
-        self.act_cfg = transformer.get('act_cfg', dict(type='ReLU', inplace=True))
+        self.act_cfg = transformer.get('act_cfg',
+                                       dict(type='ReLU', inplace=True))
 
         super().__init__(*args, **kwargs)
 
         self.activate = MODELS.build(self.act_cfg)
         self.positional_encoding = MODELS.build(self.positional_encoding)
         self.init_denoising(dn_cfg)
-    
+
     def _init_layers(self):
         self.transformer = MODELS.build(self.transformer)
         self.embed_dims = self.transformer.embed_dims
-        assert hasattr( self.positional_encoding, 'num_feats')
+        assert hasattr(self.positional_encoding, 'num_feats')
         num_feats = self.positional_encoding.num_feats
         assert num_feats * 2 == self.embed_dims, 'embed_dims should' \
             f' be exactly 2 times of num_feats. Found {self.embed_dims}' \
             f' and {num_feats}.'
-    
         """Initialize classification branch and regression branch of head."""
         fc_cls = Linear(self.embed_dims, self.cls_out_channels)
         reg_branch = []
@@ -97,9 +92,12 @@ class CoDINOHead(DINOHead):
         self.reg_branches = _get_clones(reg_branch, num_pred)
 
         self.downsample = nn.Sequential(
-            nn.Conv2d(self.embed_dims, self.embed_dims, kernel_size=3, stride=2, padding=1),
-            nn.GroupNorm(32, self.embed_dims)
-        )
+            nn.Conv2d(
+                self.embed_dims,
+                self.embed_dims,
+                kernel_size=3,
+                stride=2,
+                padding=1), nn.GroupNorm(32, self.embed_dims))
 
     def init_denoising(self, dn_cfg):
         if dn_cfg is not None:
@@ -149,7 +147,7 @@ class CoDINOHead(DINOHead):
         start = 0
         for lvl in range(num_level):
             bs, c, h, w = mlvl_feats[lvl].shape
-            end = start + h*w
+            end = start + h * w
             feat = enc_outputs[start:end].permute(1, 2, 0).contiguous()
             start = end
             outs.append(feat.reshape(bs, c, h, w))
@@ -184,7 +182,7 @@ class CoDINOHead(DINOHead):
         outputs_coords = torch.stack(outputs_coords)
 
         return outputs_classes, outputs_coords, topk_score, topk_anchor, outs
-    
+
     def predict(self,
                 feats: List[Tensor],
                 batch_data_samples: SampleList,
@@ -307,13 +305,13 @@ class CoDINOHead(DINOHead):
             scores, bbox_index = scores.topk(max_per_img)
             bbox_pred = bbox_pred[bbox_index]
             det_labels = det_labels[bbox_index]
-        
+
         if score_thr > 0:
             valid_mask = scores > score_thr
             scores = scores[valid_mask]
             bbox_pred = bbox_pred[valid_mask]
             det_labels = det_labels[valid_mask]
-        
+
         det_bboxes = bbox_cxcywh_to_xyxy(bbox_pred)
         det_bboxes[:, 0::2] = det_bboxes[:, 0::2] * img_shape[1]
         det_bboxes[:, 1::2] = det_bboxes[:, 1::2] * img_shape[0]
@@ -330,16 +328,15 @@ class CoDINOHead(DINOHead):
         results.labels = det_labels
 
         if with_nms and results.bboxes.numel() > 0:
-            det_bboxes, keep_idxs = batched_nms(results.bboxes, 
-                                                results.scores,
-                                                results.labels, 
+            det_bboxes, keep_idxs = batched_nms(results.bboxes, results.scores,
+                                                results.labels,
                                                 self.test_cfg.nms)
             results = results[keep_idxs]
             results.scores = det_bboxes[:, -1]
             results = results[:max_per_img]
 
         return results
-    
+
     def loss(self, x, batch_data_samples):
         assert self.dn_generator is not None, '"dn_cfg" must be set'
 
@@ -348,13 +345,15 @@ class CoDINOHead(DINOHead):
         for data_sample in batch_data_samples:
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
-        
+
         dn_label_query, dn_bbox_query, attn_mask, dn_meta = \
             self.dn_generator(batch_data_samples)
-        
-        outs = self(x, batch_img_metas, dn_label_query, dn_bbox_query, attn_mask)
 
-        loss_inputs = outs[:-1] + (batch_gt_instances, batch_img_metas, dn_meta)
+        outs = self(x, batch_img_metas, dn_label_query, dn_bbox_query,
+                    attn_mask)
+
+        loss_inputs = outs[:-1] + (batch_gt_instances, batch_img_metas,
+                                   dn_meta)
         losses = self.loss_by_feat(*loss_inputs)
         enc_outputs = outs[-1]
         return losses, enc_outputs
@@ -384,7 +383,8 @@ class CoDINOHead(DINOHead):
                 as_two_stage is True it would be returned, otherwise \
                 `None` would be returned.
         """
-        aux_coords, aux_labels, aux_targets, aux_label_weights, aux_bbox_weights, aux_feats, attn_masks = aux_targets
+        aux_coords, aux_labels, aux_targets, aux_label_weights, \
+            aux_bbox_weights, aux_feats, attn_masks = aux_targets
         batch_size = mlvl_feats[0].size(0)
         input_img_h, input_img_w = img_metas[0]['batch_input_shape']
         img_masks = mlvl_feats[0].new_ones(
@@ -404,18 +404,19 @@ class CoDINOHead(DINOHead):
 
         query_embeds = None
         hs, inter_references = self.transformer.forward_aux(
-                    mlvl_feats,
-                    mlvl_masks,
-                    query_embeds,
-                    mlvl_positional_encodings,
-                    aux_coords,
-                    pos_feats=aux_feats,
-                    reg_branches=self.reg_branches if self.with_box_refine else None,  # noqa:E501
-                    cls_branches=self.cls_branches if self.as_two_stage else None,  # noqa:E501
-                    return_encoder_output=True,
-                    attn_masks=attn_masks,
-                    head_idx=head_idx
-            )
+            mlvl_feats,
+            mlvl_masks,
+            query_embeds,
+            mlvl_positional_encodings,
+            aux_coords,
+            pos_feats=aux_feats,
+            reg_branches=self.reg_branches
+            if self.with_box_refine else None,  # noqa:E501
+            cls_branches=self.cls_branches
+            if self.as_two_stage else None,  # noqa:E501
+            return_encoder_output=True,
+            attn_masks=attn_masks,
+            head_idx=head_idx)
 
         hs = hs.permute(0, 2, 1, 3)
         outputs_classes = []
@@ -438,14 +439,13 @@ class CoDINOHead(DINOHead):
         outputs_classes = torch.stack(outputs_classes)
         outputs_coords = torch.stack(outputs_coords)
 
-        return outputs_classes, outputs_coords, \
-                None, None
-    
+        return outputs_classes, outputs_coords, None, None
+
     def loss_aux(self,
-                x,
-                pos_coords=None,
-                head_idx=0,
-                batch_data_samples=None):
+                 x,
+                 pos_coords=None,
+                 head_idx=0,
+                 batch_data_samples=None):
         """Forward function for training mode.
 
         Args:
@@ -469,11 +469,12 @@ class CoDINOHead(DINOHead):
         for data_sample in batch_data_samples:
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
-        
-        gt_bboxes= [b.bboxes for b in batch_gt_instances]
-        gt_labels= [b.labels for b in batch_gt_instances]
 
-        aux_targets = self.get_aux_targets(pos_coords, batch_img_metas, x, head_idx)
+        gt_bboxes = [b.bboxes for b in batch_gt_instances]
+        gt_labels = [b.labels for b in batch_gt_instances]
+
+        aux_targets = self.get_aux_targets(pos_coords, batch_img_metas, x,
+                                           head_idx)
         outs = self.forward_aux(x[:-1], batch_img_metas, aux_targets, head_idx)
         outs = outs + aux_targets
         if gt_labels is None:
@@ -482,7 +483,7 @@ class CoDINOHead(DINOHead):
             loss_inputs = outs + (gt_bboxes, gt_labels, batch_img_metas)
         losses = self.loss_aux_by_feat(*loss_inputs)
         return losses
-    
+
     def get_aux_targets(self, pos_coords, img_metas, mlvl_feats, head_idx):
         coords, labels, targets = pos_coords[:3]
         head_name = pos_coords[-1]
@@ -491,11 +492,13 @@ class CoDINOHead(DINOHead):
         all_feats = []
         for i in range(bs):
             label = labels[i]
-            feats = [feat[i].reshape(c, -1).transpose(1, 0) for feat in mlvl_feats]
+            feats = [
+                feat[i].reshape(c, -1).transpose(1, 0) for feat in mlvl_feats
+            ]
             feats = torch.cat(feats, dim=0)
             bg_class_ind = self.num_classes
             pos_inds = ((label >= 0)
-                        & (label < bg_class_ind)).nonzero().squeeze(1)  
+                        & (label < bg_class_ind)).nonzero().squeeze(1)
             max_num_coords = max(max_num_coords, len(pos_inds))
             all_feats.append(feats)
         max_num_coords = min(self.max_pos_coords, max_num_coords)
@@ -520,17 +523,19 @@ class CoDINOHead(DINOHead):
             else:
                 num_coords_per_point = coord.shape[0] // feats.shape[0]
             feats = feats.unsqueeze(1).repeat(1, num_coords_per_point, 1)
-            feats = feats.reshape(feats.shape[0]*num_coords_per_point, feats.shape[-1])
+            feats = feats.reshape(feats.shape[0] * num_coords_per_point,
+                                  feats.shape[-1])
             img_meta = img_metas[i]
             img_h, img_w = img_meta['img_shape']
             factor = coord.new_tensor([img_w, img_h, img_w,
-                                           img_h]).unsqueeze(0)
+                                       img_h]).unsqueeze(0)
             bg_class_ind = self.num_classes
             pos_inds = ((label >= 0)
                         & (label < bg_class_ind)).nonzero().squeeze(1)
             neg_inds = ((label == bg_class_ind)).nonzero().squeeze(1)
             if pos_inds.shape[0] > max_num_coords:
-                indices = torch.randperm(pos_inds.shape[0])[:max_num_coords].cuda()
+                indices = torch.randperm(
+                    pos_inds.shape[0])[:max_num_coords].cuda()
                 pos_inds = pos_inds[indices]
 
             coord = bbox_xyxy_to_cxcywh(coord[pos_inds] / factor)
@@ -541,25 +546,32 @@ class CoDINOHead(DINOHead):
             if self.use_zero_padding:
                 label_weights[i][:len(label)] = 1
                 bbox_weights[i][:len(label)] = 1
-                attn_mask = torch.zeros([max_num_coords, max_num_coords,]).bool().to(coord.device)
+                attn_mask = torch.zeros([
+                    max_num_coords,
+                    max_num_coords,
+                ]).bool().to(coord.device)
             else:
                 bbox_weights[i][:len(label)] = 1
 
             if coord.shape[0] < max_num_coords:
-                padding_shape = max_num_coords-coord.shape[0]
+                padding_shape = max_num_coords - coord.shape[0]
                 if self.use_zero_padding:
                     padding_coord = coord.new_zeros([padding_shape, 4])
-                    padding_label = label.new_ones([padding_shape]) * self.num_classes
+                    padding_label = label.new_ones([padding_shape
+                                                    ]) * self.num_classes
                     padding_target = target.new_zeros([padding_shape, 4])
                     padding_feat = feat.new_zeros([padding_shape, c])
-                    attn_mask[coord.shape[0] :, 0 : coord.shape[0],] = True
-                    attn_mask[:, coord.shape[0] :,] = True
+                    attn_mask[coord.shape[0]:, 0:coord.shape[0], ] = True
+                    attn_mask[:, coord.shape[0]:, ] = True
                 else:
-                    indices = torch.randperm(neg_inds.shape[0])[:padding_shape].cuda()
+                    indices = torch.randperm(
+                        neg_inds.shape[0])[:padding_shape].cuda()
                     neg_inds = neg_inds[indices]
-                    padding_coord = bbox_xyxy_to_cxcywh(coords[i][neg_inds] / factor)
+                    padding_coord = bbox_xyxy_to_cxcywh(coords[i][neg_inds] /
+                                                        factor)
                     padding_label = labels[i][neg_inds]
-                    padding_target = bbox_xyxy_to_cxcywh(targets[i][neg_inds] / factor)
+                    padding_target = bbox_xyxy_to_cxcywh(targets[i][neg_inds] /
+                                                         factor)
                     padding_feat = feats[neg_inds]
                 coord = torch.cat((coord, padding_coord), dim=0)
                 label = torch.cat((label, padding_label), dim=0)
@@ -573,8 +585,10 @@ class CoDINOHead(DINOHead):
             aux_feats.append(feat.unsqueeze(0))
 
         if self.use_zero_padding:
-            attn_masks = torch.cat(attn_masks, dim=0).unsqueeze(1).repeat(1, 8, 1, 1)
-            attn_masks = attn_masks.reshape(bs*8, max_num_coords, max_num_coords)
+            attn_masks = torch.cat(
+                attn_masks, dim=0).unsqueeze(1).repeat(1, 8, 1, 1)
+            attn_masks = attn_masks.reshape(bs * 8, max_num_coords,
+                                            max_num_coords)
         else:
             attn_mask = None
 
@@ -584,24 +598,25 @@ class CoDINOHead(DINOHead):
         aux_feats = torch.cat(aux_feats, dim=0)
         aux_label_weights = label_weights
         aux_bbox_weights = bbox_weights
-        return (aux_coords, aux_labels, aux_targets, aux_label_weights, aux_bbox_weights, aux_feats, attn_masks)
+        return (aux_coords, aux_labels, aux_targets, aux_label_weights,
+                aux_bbox_weights, aux_feats, attn_masks)
 
     def loss_aux_by_feat(self,
-                 all_cls_scores,
-                 all_bbox_preds,
-                 enc_cls_scores,
-                 enc_bbox_preds,
-                 aux_coords, 
-                 aux_labels, 
-                 aux_targets, 
-                 aux_label_weights, 
-                 aux_bbox_weights,
-                 aux_feats,
-                 attn_masks,
-                 gt_bboxes_list,
-                 gt_labels_list,
-                 img_metas,
-                 gt_bboxes_ignore=None):
+                         all_cls_scores,
+                         all_bbox_preds,
+                         enc_cls_scores,
+                         enc_bbox_preds,
+                         aux_coords,
+                         aux_labels,
+                         aux_targets,
+                         aux_label_weights,
+                         aux_bbox_weights,
+                         aux_feats,
+                         attn_masks,
+                         gt_bboxes_list,
+                         gt_labels_list,
+                         img_metas,
+                         gt_bboxes_ignore=None):
         """"Loss function.
 
         Args:
@@ -641,9 +656,9 @@ class CoDINOHead(DINOHead):
         ]
 
         losses_cls, losses_bbox, losses_iou = multi_apply(
-            self.loss_single_aux, all_cls_scores, all_bbox_preds,
-            all_labels, all_label_weights, all_bbox_targets, 
-            all_bbox_weights, img_metas_list, all_gt_bboxes_ignore_list)
+            self.loss_single_aux, all_cls_scores, all_bbox_preds, all_labels,
+            all_label_weights, all_bbox_targets, all_bbox_weights,
+            img_metas_list, all_gt_bboxes_ignore_list)
 
         loss_dict = dict()
         # loss of proposal generated from encode feature map.
@@ -662,7 +677,7 @@ class CoDINOHead(DINOHead):
             loss_dict[f'd{num_dec_layer}.loss_iou_aux'] = loss_iou_i
             num_dec_layer += 1
         return loss_dict
-    
+
     def loss_single_aux(self,
                         cls_scores,
                         bbox_preds,
@@ -700,12 +715,14 @@ class CoDINOHead(DINOHead):
             label_weights = label_weights.reshape(num_imgs * num_q)
             bbox_targets = bbox_targets.reshape(num_imgs * num_q, 4)
             bbox_weights = bbox_weights.reshape(num_imgs * num_q, 4)
-        except:
-            return cls_scores.mean()*0, cls_scores.mean()*0, cls_scores.mean()*0
+        except Exception:
+            return cls_scores.mean() * 0, cls_scores.mean(
+            ) * 0, cls_scores.mean() * 0
 
         bg_class_ind = self.num_classes
-        num_total_pos = len(((labels >= 0) & (labels < bg_class_ind)).nonzero().squeeze(1))
-        num_total_neg = num_imgs*num_q - num_total_pos
+        num_total_pos = len(
+            ((labels >= 0) & (labels < bg_class_ind)).nonzero().squeeze(1))
+        num_total_neg = num_imgs * num_q - num_total_pos
 
         # classification loss
         cls_scores = cls_scores.reshape(-1, self.cls_out_channels)
@@ -763,4 +780,4 @@ class CoDINOHead(DINOHead):
         # regression L1 loss
         loss_bbox = self.loss_bbox(
             bbox_preds, bbox_targets, bbox_weights, avg_factor=num_total_pos)
-        return loss_cls*self.lambda_1, loss_bbox*self.lambda_1, loss_iou*self.lambda_1
+        return loss_cls, loss_bbox, loss_iou

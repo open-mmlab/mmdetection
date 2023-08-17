@@ -3,13 +3,13 @@ from typing import List, Tuple
 import torch
 from torch import Tensor
 
-from mmdet.structures.bbox import bbox2roi
-from mmdet.structures import DetDataSample
 from mmdet.models.roi_heads import StandardRoIHead
-from mmdet.registry import MODELS
-from mmdet.utils import InstanceList
-from mmdet.models.utils import  unpack_gt_instances
 from mmdet.models.task_modules.samplers import SamplingResult
+from mmdet.models.utils import unpack_gt_instances
+from mmdet.registry import MODELS
+from mmdet.structures import DetDataSample
+from mmdet.structures.bbox import bbox2roi
+from mmdet.utils import InstanceList
 
 
 @MODELS.register_module()
@@ -37,10 +37,12 @@ class CoStandardRoIHead(StandardRoIHead):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
+        max_proposal = 2000
+
         assert len(rpn_results_list) == len(batch_data_samples)
         outputs = unpack_gt_instances(batch_data_samples)
         batch_gt_instances, batch_gt_instances_ignore, _ = outputs
-      
+
         # assign gts and sample proposals
         num_imgs = len(batch_data_samples)
         sampling_results = []
@@ -66,20 +68,20 @@ class CoStandardRoIHead(StandardRoIHead):
             losses.update(bbox_results['loss_bbox'])
 
             bbox_targets = bbox_results['bbox_targets']
-            max_proposal = 2000
             for res in sampling_results:
-                max_proposal =  min(max_proposal, res.bboxes.shape[0])
+                max_proposal = min(max_proposal, res.bboxes.shape[0])
             ori_coords = bbox2roi([res.bboxes for res in sampling_results])
-            ori_proposals, ori_labels, ori_bbox_targets, ori_bbox_feats = [], [], [], []
+            ori_proposals, ori_labels, \
+                ori_bbox_targets, ori_bbox_feats = [], [], [], []
             for i in range(num_imgs):
-                idx = (ori_coords[:,0]==i).nonzero().squeeze(1)
+                idx = (ori_coords[:, 0] == i).nonzero().squeeze(1)
                 idx = idx[:max_proposal]
                 ori_proposal = ori_coords[idx][:, 1:].unsqueeze(0)
                 ori_label = bbox_targets[0][idx].unsqueeze(0)
                 ori_bbox_target = bbox_targets[2][idx].unsqueeze(0)
                 ori_bbox_feat = bbox_results['bbox_feats'].mean(-1).mean(-1)
                 ori_bbox_feat = ori_bbox_feat[idx].unsqueeze(0)
-                ori_proposals.append(ori_proposal) 
+                ori_proposals.append(ori_proposal)
                 ori_labels.append(ori_label)
                 ori_bbox_targets.append(ori_bbox_target)
                 ori_bbox_feats.append(ori_bbox_feat)
@@ -87,11 +89,12 @@ class CoStandardRoIHead(StandardRoIHead):
             ori_labels = torch.cat(ori_labels, dim=0)
             ori_bbox_targets = torch.cat(ori_bbox_targets, dim=0)
             ori_bbox_feats = torch.cat(ori_bbox_feats, dim=0)
-            pos_coords = (ori_coords, ori_labels, ori_bbox_targets, ori_bbox_feats, 'rcnn')
+            pos_coords = (ori_coords, ori_labels, ori_bbox_targets,
+                          ori_bbox_feats, 'rcnn')
             losses.update(pos_coords=pos_coords)
 
         return losses
-    
+
     def bbox_loss(self, x: Tuple[Tensor],
                   sampling_results: List[SamplingResult]) -> dict:
         """Perform forward propagation and loss calculation of the bbox head on

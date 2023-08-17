@@ -7,11 +7,12 @@ from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.structures import SampleList
-from mmdet.structures.bbox import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh, bbox_overlaps
+from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_overlaps,
+                                   bbox_xyxy_to_cxcywh)
 from mmdet.utils import InstanceList, OptInstanceList, reduce_mean
+from ..losses import QualityFocalLoss
 from ..utils import multi_apply
 from .deformable_detr_head import DeformableDETRHead
-from ..losses import QualityFocalLoss
 
 
 @MODELS.register_module()
@@ -247,7 +248,7 @@ class DINOHead(DeformableDETRHead):
             cls_avg_factor = reduce_mean(
                 cls_scores.new_tensor([cls_avg_factor]))
         cls_avg_factor = max(cls_avg_factor, 1)
-        
+
         if len(cls_scores) > 0:
             if isinstance(self.loss_cls, QualityFocalLoss):
                 bg_class_ind = self.num_classes
@@ -266,9 +267,12 @@ class DINOHead(DeformableDETRHead):
                     cls_scores, (labels, scores),
                     weight=label_weights,
                     avg_factor=cls_avg_factor)
-            else: 
+            else:
                 loss_cls = self.loss_cls(
-                    cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
+                    cls_scores,
+                    labels,
+                    label_weights,
+                    avg_factor=cls_avg_factor)
         else:
             loss_cls = torch.zeros(
                 1, dtype=cls_scores.dtype, device=cls_scores.device)
