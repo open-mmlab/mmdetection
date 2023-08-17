@@ -13,6 +13,7 @@
 您还可以使用 Slurm 管理作业。
 
 重要：
+
 - 在训练过程中，您可以通过修改 `train_cfg` 来改变评估间隔。
   `train_cfg = dict(val_interval=10)`。这意味着每 10 个 epoch 对模型进行一次评估。
 - 所有配置文件中的默认学习率为 8 个 GPU。
@@ -64,6 +65,7 @@ CUDA_VISIBLE_DEVICES=2 python tools/train.py configs/qdtrack/qdtrack_faster-rcnn
 ```shell 脚本
 bash ./tools/dist_train.sh ${CONFIG_FILE} ${GPU_NUM} [optional arguments]
 ```
+
 如果您想在一台机器上启动多个作业、
 例如，在拥有 8 个 GPU 的机器上启动 2 个 4-GPU 训练作业、
 需要为每个作业指定不同的端口（默认为 29500），以避免通信冲突。
@@ -144,7 +146,7 @@ configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17hal
 - 我们提供了两种评估和测试模型的方法，即基于视频的测试和基于图像的测试。 有些算法如 `StrongSORT`, `Mask2former` 只支持基于视频的测试. 如果您的 GPU 内存无法容纳整个视频，您可以通过设置采样器类型来切换测试方式。
   例如
   基于视频的测试：`sampler=dict(type='DefaultSampler', shuffle=False, round_up=False)`
-  基于图像的测试：`sampler=dict（type='TrackImgSampler'）` 
+  基于图像的测试：`sampler=dict（type='TrackImgSampler'）`
 - 您可以通过修改 evaluator 中的关键字 `outfile_prefix` 来设置结果保存路径。
   例如，`val_evaluator = dict(outfile_prefix='results/sort_mot17')`。
   否则，将创建一个临时文件，并在评估后删除。
@@ -210,6 +212,7 @@ bash ./tools/dist_test_tracking.sh configs/qdtrack/qdtrack_faster-rcnn_r50_fpn_8
 它支持单节点和多节点测试。
 
 基本用法如下。
+
 ```shell 脚本
 [GPUS=${GPUS}] bash tools/slurm_test_tracking.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} [optional arguments]
 ```
