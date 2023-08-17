@@ -331,7 +331,6 @@ class DeformableDetrTransformer(Transformer):
         """
         reference_points_list = []
         for lvl, (H, W) in enumerate(spatial_shapes):
-            #  TODO  check this 0.5
             ref_y, ref_x = torch.meshgrid(
                 torch.linspace(
                     0.5, H - 0.5, H, dtype=torch.float32, device=device),
@@ -927,7 +926,7 @@ class CoDeformableDetrTransformer(DeformableDetrTransformer):
         memory = memory.permute(1, 0, 2)
         bs, _, c = memory.shape
 
-        topk_coords_unact = inverse_sigmoid((pos_anchors))
+        topk_coords_unact = inverse_sigmoid(pos_anchors)
         reference_points = pos_anchors
         init_reference_out = reference_points
         if self.num_co_heads > 0:
@@ -1272,7 +1271,7 @@ class CoDinoTransformer(CoDeformableDetrTransformer):
         memory = memory.permute(1, 0, 2)
         bs, _, c = memory.shape
 
-        topk_coords_unact = inverse_sigmoid((pos_anchors))
+        topk_coords_unact = inverse_sigmoid(pos_anchors)
         reference_points = pos_anchors
         if self.num_co_heads > 0:
             pos_trans_out = self.aux_pos_trans_norm[head_idx](

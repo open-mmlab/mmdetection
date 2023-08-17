@@ -603,6 +603,7 @@ class CoDINOHead(DINOHead):
                         gt_bboxes_ignore_list=None):
         num_imgs = cls_scores.size(0)
         num_q = cls_scores.size(1)
+
         try:
             labels = labels.reshape(num_imgs * num_q)
             label_weights = label_weights.reshape(num_imgs * num_q)
