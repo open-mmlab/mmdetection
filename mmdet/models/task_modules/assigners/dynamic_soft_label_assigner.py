@@ -56,7 +56,7 @@ class DynamicSoftLabelAssigner(BaseAssigner):
         soft_center_radius: float = 3.0,
         topk: int = 13,
         iou_weight: float = 3.0,
-        iou_calculator: ConfigType = dict(type='BboxOverlaps2D')
+        iou_calculator: ConfigType = dict(type='mmdet.BboxOverlaps2D')
     ) -> None:
         self.soft_center_radius = soft_center_radius
         self.topk = topk
