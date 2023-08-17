@@ -1,5 +1,5 @@
 import copy
-from typing import List, Tuple, Union
+from typing import Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -8,7 +8,7 @@ from torch import Tensor
 from mmdet.models.detectors.base import BaseDetector
 from mmdet.registry import MODELS
 from mmdet.structures import OptSampleList, SampleList
-from mmdet.utils import OptConfigType, OptMultiConfig
+from mmdet.utils import InstanceList, OptConfigType, OptMultiConfig
 
 
 @MODELS.register_module()
@@ -280,16 +280,16 @@ class CoDETR(BaseDetector):
         return batch_data_samples
 
     def predict_query_head(self,
-                           mlvl_feats: List[Tensor],
+                           mlvl_feats: Tuple[Tensor],
                            batch_data_samples: SampleList,
-                           rescale: bool = True) -> SampleList:
+                           rescale: bool = True) -> InstanceList:
         return self.query_head.predict(
             mlvl_feats, batch_data_samples=batch_data_samples, rescale=rescale)
 
     def predict_roi_head(self,
-                         mlvl_feats: List[Tensor],
+                         mlvl_feats: Tuple[Tensor],
                          batch_data_samples: SampleList,
-                         rescale: bool = True) -> SampleList:
+                         rescale: bool = True) -> InstanceList:
         assert self.with_bbox, 'Bbox head must be implemented.'
         if self.with_query_head:
             batch_img_metas = [
@@ -303,9 +303,9 @@ class CoDETR(BaseDetector):
             mlvl_feats, rpn_results_list, batch_data_samples, rescale=rescale)
 
     def predict_bbox_head(self,
-                          mlvl_feats: List[Tensor],
+                          mlvl_feats: Tuple[Tensor],
                           batch_data_samples: SampleList,
-                          rescale: bool = True) -> SampleList:
+                          rescale: bool = True) -> InstanceList:
         assert self.with_bbox, 'Bbox head must be implemented.'
         if self.with_query_head:
             batch_img_metas = [

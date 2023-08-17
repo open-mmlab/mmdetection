@@ -187,23 +187,6 @@ class CoDINOHead(DINOHead):
                 feats: List[Tensor],
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> InstanceList:
-        """Perform forward propagation of the detection head and predict
-        detection results on the features of the upstream network. Over-write
-        because img_metas are needed as inputs for bbox_head.
-
-        Args:
-            hidden_states (tuple[Tensor]): Multi-level features from the
-                upstream network, each is a 4D-tensor.
-            batch_data_samples (List[:obj:`DetDataSample`]): The Data
-                Samples. It usually includes information such as
-                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to True.
-
-        Returns:
-            list[obj:`InstanceData`]: Detection results of each image
-            after the post process.
-        """
         batch_img_metas = [
             data_samples.metainfo for data_samples in batch_data_samples
         ]
@@ -222,28 +205,7 @@ class CoDINOHead(DINOHead):
                         enc_outputs,
                         batch_img_metas,
                         rescale=True):
-        """Transform network outputs for a batch into bbox predictions.
 
-        Args:
-            all_cls_scores (Tensor): Classification score of all
-                decoder layers, has shape
-                [nb_dec, bs, num_query, cls_out_channels].
-            all_bbox_preds (Tensor): Sigmoid regression
-                outputs of all decode layers. Each is a 4D-tensor with
-                normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, bs, num_query, 4].
-            img_metas (list[dict]): Meta information of each image.
-            rescale (bool, optional): If True, return boxes in original
-                image space. Default False.
-
-        Returns:
-            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
-                The first item is an (n, 5) tensor, where the first 4 columns \
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
-                5-th column is a score between 0 and 1. The second item is a \
-                (n,) tensor where each item is the predicted class label of \
-                the corresponding box.
-        """
         cls_scores = all_cls_scores[-1]
         bbox_preds = all_bbox_preds[-1]
 
@@ -410,10 +372,8 @@ class CoDINOHead(DINOHead):
             mlvl_positional_encodings,
             aux_coords,
             pos_feats=aux_feats,
-            reg_branches=self.reg_branches
-            if self.with_box_refine else None,  # noqa:E501
-            cls_branches=self.cls_branches
-            if self.as_two_stage else None,  # noqa:E501
+            reg_branches=self.reg_branches if self.with_box_refine else None,
+            cls_branches=self.cls_branches if self.as_two_stage else None,
             return_encoder_output=True,
             attn_masks=attn_masks,
             head_idx=head_idx)
@@ -446,24 +406,6 @@ class CoDINOHead(DINOHead):
                  pos_coords=None,
                  head_idx=0,
                  batch_data_samples=None):
-        """Forward function for training mode.
-
-        Args:
-            x (list[Tensor]): Features from backbone.
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
-            proposal_cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used.
-
-        Returns:
-            dict[str, Tensor]: A dictionary of loss components.
-        """
         batch_gt_instances = []
         batch_img_metas = []
         for data_sample in batch_data_samples:
@@ -532,7 +474,7 @@ class CoDINOHead(DINOHead):
             bg_class_ind = self.num_classes
             pos_inds = ((label >= 0)
                         & (label < bg_class_ind)).nonzero().squeeze(1)
-            neg_inds = ((label == bg_class_ind)).nonzero().squeeze(1)
+            neg_inds = (label == bg_class_ind).nonzero().squeeze(1)
             if pos_inds.shape[0] > max_num_coords:
                 indices = torch.randperm(
                     pos_inds.shape[0])[:max_num_coords].cuda()
@@ -590,7 +532,7 @@ class CoDINOHead(DINOHead):
             attn_masks = attn_masks.reshape(bs * 8, max_num_coords,
                                             max_num_coords)
         else:
-            attn_mask = None
+            attn_masks = None
 
         aux_coords = torch.cat(aux_coords, dim=0)
         aux_labels = torch.cat(aux_labels, dim=0)
@@ -617,34 +559,6 @@ class CoDINOHead(DINOHead):
                          gt_labels_list,
                          img_metas,
                          gt_bboxes_ignore=None):
-        """"Loss function.
-
-        Args:
-            all_cls_scores (Tensor): Classification score of all
-                decoder layers, has shape
-                [nb_dec, bs, num_query, cls_out_channels].
-            all_bbox_preds (Tensor): Sigmoid regression
-                outputs of all decode layers. Each is a 4D-tensor with
-                normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, bs, num_query, 4].
-            enc_cls_scores (Tensor): Classification scores of
-                points on encode feature map , has shape
-                (N, h*w, num_classes). Only be passed when as_two_stage is
-                True, otherwise is None.
-            enc_bbox_preds (Tensor): Regression results of each points
-                on the encode feature map, has shape (N, h*w, 4). Only be
-                passed when as_two_stage is True, otherwise is None.
-            gt_bboxes_list (list[Tensor]): Ground truth bboxes for each image
-                with shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels_list (list[Tensor]): Ground truth class indices for each
-                image with shape (num_gts, ).
-            img_metas (list[dict]): List of image meta information.
-            gt_bboxes_ignore (list[Tensor], optional): Bounding boxes
-                which can be ignored for each image. Default None.
-
-        Returns:
-            dict[str, Tensor]: A dictionary of loss components.
-        """
         num_dec_layers = len(all_cls_scores)
         all_labels = [aux_labels for _ in range(num_dec_layers)]
         all_label_weights = [aux_label_weights for _ in range(num_dec_layers)]
@@ -687,27 +601,6 @@ class CoDINOHead(DINOHead):
                         bbox_weights,
                         img_metas,
                         gt_bboxes_ignore_list=None):
-        """"Loss function for outputs from a single decoder layer of a single
-        feature level.
-
-        Args:
-            cls_scores (Tensor): Box score logits from a single decoder layer
-                for all images. Shape [bs, num_query, cls_out_channels].
-            bbox_preds (Tensor): Sigmoid outputs from a single decoder layer
-                for all images, with normalized coordinate (cx, cy, w, h) and
-                shape [bs, num_query, 4].
-            gt_bboxes_list (list[Tensor]): Ground truth bboxes for each image
-                with shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels_list (list[Tensor]): Ground truth class indices for each
-                image with shape (num_gts, ).
-            img_metas (list[dict]): List of image meta information.
-            gt_bboxes_ignore_list (list[Tensor], optional): Bounding
-                boxes which can be ignored for each image. Default None.
-
-        Returns:
-            dict[str, Tensor]: A dictionary of loss components for outputs from
-                a single decoder layer.
-        """
         num_imgs = cls_scores.size(0)
         num_q = cls_scores.size(1)
         try:
