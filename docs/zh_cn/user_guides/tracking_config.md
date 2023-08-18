@@ -2,7 +2,7 @@
 
 我们用 python 文档作为我们的配置系统。你可以在 `MMDetection/configs` 底下找到所有已提供的配置文件。
 
-我们把模块化和继承化设计融入我们的配置系统，这使我们很方便去进行各种实验。如果你想查看相关的配置文件，你可以跑 `python tools/misc/print_config.py/PATH/TO/CONFIG` 去看完整的详细配置。
+我们把模块化和继承化设计融入我们的配置系统，这使我们很方便去进行各种实验。如果你想查看相关的配置文件，你可以跑 `python tools/misc/print_config.py /PATH/TO/CONFIG` 去看完整的详细配置。
 
 ## 完整配置的简要说明
 
