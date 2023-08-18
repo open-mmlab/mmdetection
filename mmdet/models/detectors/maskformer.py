@@ -64,7 +64,7 @@ class MaskFormer(SingleStageDetector):
         # pth = torch.load('/nvme/data/huanghaian/code/MaskDINO/maskdino.pth')
         # image=pth['image']
         # batched_inputs=pth['batched_inputs']
-        
+
         # from mmengine.structures import InstanceData
         # from mmdet.structures import DetDataSample
         # batch_data_samples=[]
@@ -168,7 +168,7 @@ class MaskFormer(SingleStageDetector):
                 data_sample.pred_instances = pred_results['ins_results']
 
             if 'sem_results' in pred_results:
-                data_sample.pred_sem_seg=pred_results['sem_results']
+                data_sample.pred_sem_seg = pred_results['sem_results']
 
         return data_samples
 

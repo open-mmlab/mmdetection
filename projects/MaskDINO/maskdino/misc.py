@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # Modified by Bowen Cheng from https://github.com/facebookresearch/detr/blob/master/util/misc.py
-"""
-Misc functions, including distributed helpers.
+"""Misc functions, including distributed helpers.
 
 Mostly copy-paste from torchvision references.
 """
@@ -23,6 +22,7 @@ def _max_by_axis(the_list):
 
 
 class NestedTensor(object):
+
     def __init__(self, tensors, mask: Optional[Tensor]):
         self.tensors = tensors
         self.mask = mask
@@ -63,22 +63,23 @@ def nested_tensor_from_tensor_list(tensor_list: List[Tensor]):
         tensor = torch.zeros(batch_shape, dtype=dtype, device=device)
         mask = torch.ones((b, h, w), dtype=torch.bool, device=device)
         for img, pad_img, m in zip(tensor_list, tensor, mask):
-            pad_img[: img.shape[0], : img.shape[1], : img.shape[2]].copy_(img)
-            m[: img.shape[1], : img.shape[2]] = False
+            pad_img[:img.shape[0], :img.shape[1], :img.shape[2]].copy_(img)
+            m[:img.shape[1], :img.shape[2]] = False
     else:
-        raise ValueError("not supported")
+        raise ValueError('not supported')
     return NestedTensor(tensor, mask)
 
 
 # _onnx_nested_tensor_from_tensor_list() is an implementation of
 # nested_tensor_from_tensor_list() that is supported by ONNX tracing.
 @torch.jit.unused
-def _onnx_nested_tensor_from_tensor_list(tensor_list: List[Tensor]) -> NestedTensor:
+def _onnx_nested_tensor_from_tensor_list(
+        tensor_list: List[Tensor]) -> NestedTensor:
     max_size = []
     for i in range(tensor_list[0].dim()):
         max_size_i = torch.max(
-            torch.stack([img.shape[i] for img in tensor_list]).to(torch.float32)
-        ).to(torch.int64)
+            torch.stack([img.shape[i] for img in tensor_list
+                         ]).to(torch.float32)).to(torch.int64)
         max_size.append(max_size_i)
     max_size = tuple(max_size)
 
@@ -90,11 +91,14 @@ def _onnx_nested_tensor_from_tensor_list(tensor_list: List[Tensor]) -> NestedTen
     padded_masks = []
     for img in tensor_list:
         padding = [(s1 - s2) for s1, s2 in zip(max_size, tuple(img.shape))]
-        padded_img = torch.nn.functional.pad(img, (0, padding[2], 0, padding[1], 0, padding[0]))
+        padded_img = torch.nn.functional.pad(
+            img, (0, padding[2], 0, padding[1], 0, padding[0]))
         padded_imgs.append(padded_img)
 
         m = torch.zeros_like(img[0], dtype=torch.int, device=img.device)
-        padded_mask = torch.nn.functional.pad(m, (0, padding[2], 0, padding[1]), "constant", 1)
+        padded_mask = torch.nn.functional.pad(m,
+                                              (0, padding[2], 0, padding[1]),
+                                              'constant', 1)
         padded_masks.append(padded_mask.to(torch.bool))
 
     tensor = torch.stack(padded_imgs)
@@ -110,9 +114,12 @@ def is_dist_avail_and_initialized():
         return False
     return True
 
+
 def masks_to_boxes(masks):
-    """Compute the bounding boxes around the provided masks
-    The masks should be in format [N, H, W] where N is the number of masks, (H, W) are the spatial dimensions.
+    """Compute the bounding boxes around the provided masks The masks should be
+    in format [N, H, W] where N is the number of masks, (H, W) are the spatial
+    dimensions.
+
     Returns a [N, 4] tensors, with the boxes in xyxy format
     """
     if masks.numel() == 0:

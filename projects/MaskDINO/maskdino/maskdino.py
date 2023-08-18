@@ -1,9 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet.registry import MODELS
-from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
-from .maskformer import MaskFormer
 from torch import Tensor
-from ...structures import SampleList
+
+from mmdet.models import MaskFormer
+from mmdet.registry import MODELS
+from mmdet.structures import SampleList
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 
 
 @MODELS.register_module()
@@ -39,8 +40,11 @@ class MaskDINO(MaskFormer):
         mask_cls_results, mask_pred_results, mask_box_results = self.panoptic_head.predict(
             feats, batch_data_samples)
         results_list = self.panoptic_fusion_head.predict(
-            mask_cls_results, mask_pred_results, mask_box_results,
-            batch_data_samples, rescale=rescale)
+            mask_cls_results,
+            mask_pred_results,
+            mask_box_results,
+            batch_data_samples,
+            rescale=rescale)
         results = self.add_pred_to_datasample(batch_data_samples, results_list)
 
         return results

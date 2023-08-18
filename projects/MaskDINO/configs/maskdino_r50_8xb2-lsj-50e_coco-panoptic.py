@@ -1,6 +1,10 @@
 _base_ = [
-    '../_base_/datasets/coco_panoptic.py', '../_base_/default_runtime.py'
-]
+    '../../../configs/_base_/datasets/coco_panoptic.py',
+    '../../../configs/_base_/default_runtime.py'
+]  # TODO: mmdet::
+
+custom_imports = dict(
+    imports=['projects.MaskDINO.maskdino'], allow_failed_imports=False)
 
 image_size = (1024, 1024)
 batch_augments = [
@@ -62,7 +66,7 @@ model = dict(
             feature_order='low2high'),
         decoder=dict(
             in_channels=256,
-            num_classes=num_things_classes+num_stuff_classes,
+            num_classes=num_things_classes + num_stuff_classes,
             hidden_dim=256,
             num_queries=300,
             nheads=8,
@@ -96,8 +100,12 @@ model = dict(
     train_cfg=dict(  # corresponds to SetCriterion
         num_classes=num_things_classes + num_stuff_classes,
         matcher=dict(
-            cost_class=4.0, cost_box=5.0, cost_giou=2.0,
-            cost_mask=5.0, cost_dice=5.0, num_points=12544),
+            cost_class=4.0,
+            cost_box=5.0,
+            cost_giou=2.0,
+            cost_mask=5.0,
+            cost_dice=5.0,
+            num_points=12544),
         class_weight=4.0,
         box_weight=5.0,
         giou_weight=2.0,
@@ -121,26 +129,27 @@ model = dict(
         panoptic_postprocess_cfg=dict(
             object_mask_thr=0.25,  # 0.8 for MaskFormer
             iou_thr=0.8,
-            filter_low_score=True,  # it will filter mask area where score is less than 0.5.
+            filter_low_score=
+            True,  # it will filter mask area where score is less than 0.5.
             panoptic_temperature=0.06,
             transform_eval=True),
-        instance_postprocess_cfg=dict(
-            max_per_image=100,
-            focus_on_box=False)),
+        instance_postprocess_cfg=dict(max_per_image=100, focus_on_box=False)),
     init_cfg=None)
 
 # dataset settings
 data_root = 'data/coco/'
 train_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True, 
-         imdecode_backend='pillow', 
-         backend_args=_base_.backend_args),
+    dict(
+        type='LoadImageFromFile',
+        to_float32=True,
+        imdecode_backend='pillow',
+        backend_args=_base_.backend_args),
     dict(
         type='LoadPanopticAnnotations',
         with_bbox=True,
         with_mask=True,
         with_seg=True,
-        backend_args=_base_.backend_args, 
+        backend_args=_base_.backend_args,
         imdecode_backend='pillow'),
     dict(type='RandomFlip', prob=0.5),
     # large scale jittering
@@ -159,9 +168,15 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', backend_args=_base_.backend_args, imdecode_backend='pillow'),
+    dict(
+        type='LoadImageFromFile',
+        backend_args=_base_.backend_args,
+        imdecode_backend='pillow'),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True, backend='pillow'),
-    dict(type='LoadPanopticAnnotations', backend_args=_base_.backend_args, imdecode_backend='pillow'),
+    dict(
+        type='LoadPanopticAnnotations',
+        backend_args=_base_.backend_args,
+        imdecode_backend='pillow'),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
@@ -176,13 +191,11 @@ val_evaluator = [
     dict(
         type='CocoPanopticMetric',
         ann_file=data_root + 'annotations/panoptic_val2017.json',
-        seg_prefix=data_root + 'annotations/panoptic_val2017/'
-    ),
+        seg_prefix=data_root + 'annotations/panoptic_val2017/'),
     dict(
         type='CocoMetric',
         ann_file=data_root + 'annotations/instances_val2017.json',
-        metric=['bbox', 'segm']
-    ),
+        metric=['bbox', 'segm']),
     dict(type='SemSegMetric', iou_metrics=['mIoU'])
 ]
 test_evaluator = val_evaluator

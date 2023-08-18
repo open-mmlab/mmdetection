@@ -1,9 +1,10 @@
 # script of converting detr ckpt of mmdet-2.x to mmdet-3.x
-import json
+from collections import OrderedDict
 from pathlib import Path
-from typing import OrderedDict
+
 import torch
 from mmengine import Config, build_model_from_cfg
+
 from mmdet.registry import MODELS
 from mmdet.utils import register_all_modules
 
@@ -42,7 +43,8 @@ def get_mapped_name(name: str):
 
 def convert_backbone_keys(name: str):
     if 'backbone.stem' in name:
-        name = name.replace('backbone.stem.conv1.weight', 'backbone.conv1.weight')
+        name = name.replace('backbone.stem.conv1.weight',
+                            'backbone.conv1.weight')
         name = name.replace('backbone.stem.conv1.norm', 'backbone.bn1')
     elif 'backbone.res' in name:
         key_name_split = name.split('.')
@@ -59,7 +61,7 @@ def convert_backbone_keys(name: str):
                        f'{key_name_split[2]}.downsample.1.' \
                        f'{key_name_split[-1]}'
             else:
-                print(f'Unvalid key {k}')
+                print(f'Unvalid key {key_name_split}')
         # deal with conv
         elif 'conv' in key_name_split[-2]:
             conv_id = int(key_name_split[-2][-1])
@@ -71,7 +73,7 @@ def convert_backbone_keys(name: str):
             name = f'backbone.layer{res_id}.{key_name_split[2]}.' \
                    f'bn{conv_id}.{key_name_split[-1]}'
         else:
-            print(f'{k} is invalid')
+            print(f'{key_name_split} is invalid')
     return name
 
 
@@ -79,7 +81,7 @@ def mapping_state_dict(state_dict: OrderedDict) -> OrderedDict:
     out = OrderedDict()
     for name, param in state_dict.items():
         new_name = get_mapped_name(name)
-        print(name,new_name)
+        print(name, new_name)
         # assert new_name not in out, f'{name}-->{new_name}'
         if new_name not in out:
             out[new_name] = param
@@ -105,8 +107,12 @@ if __name__ == '__main__':
     # ckpt_2x = Path(['../MaskDINO/maskdino_r50_50ep_300q_hid2048_3sd1_panoptic_pq53.0.pth',][INDEX])
     # cfg_3x = Path(['configs/maskdino/maskdino_r50_8xb2-lsj-50e_coco.py',][INDEX])
     # ckpt_2x = Path(['../MaskDINO/maskdino_r50_50ep_300q_hid2048_3sd1_instance_maskenhanced_mask46.3ap_box51.7ap.pth',][INDEX])
-    cfg_3x = Path(['configs/maskdino/maskdino_r50_8xb2-160k_ade20k-512x512.py',][INDEX])
-    ckpt_2x = Path(['../MaskDINO/maskdino_r50_50ep_100q_celoss_hid1024_3s_semantic_ade20k_48.7miou.pth',][INDEX])
+    cfg_3x = Path([
+        'configs/maskdino/maskdino_r50_8xb2-160k_ade20k-512x512.py',
+    ][INDEX])
+    ckpt_2x = Path([
+        '../MaskDINO/maskdino_r50_50ep_100q_celoss_hid1024_3s_semantic_ade20k_48.7miou.pth',
+    ][INDEX])
     save_path = str(ckpt_2x.parent) + f'/aligned_{ckpt_2x.name}'
 
     cfg_3x = Config.fromfile(cfg_3x)
@@ -120,12 +126,5 @@ if __name__ == '__main__':
     # convert
     sd_2x = preprocess_state_dict(sd_2x)
     sd_2x = mapping_state_dict(sd_2x)
-    
-    # name_3x = sorted(list(sd_3x.keys()))
-    # name_2x = sorted(list(sd_2x.keys()))
-    # json.dump(name_3x, open(
-    #     r'./model_converters/names_1.json', 'w'), indent=0)
-    # json.dump(name_2x, open(
-    #     r'./model_converters/names_2.json', 'w'), indent=0)
 
     torch.save(sd_2x, save_path)

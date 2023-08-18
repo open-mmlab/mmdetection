@@ -30,21 +30,19 @@ model = dict(
     panoptic_head=dict(
         num_things_classes=num_things_classes,
         num_stuff_classes=num_stuff_classes,
-        decoder=dict(num_classes=num_classes,
-                     initialize_box_type='mask2box')),
+        decoder=dict(num_classes=num_classes, initialize_box_type='mask2box')),
     panoptic_fusion_head=dict(
         num_things_classes=num_things_classes,
         num_stuff_classes=num_stuff_classes),
     train_cfg=dict(num_classes=num_classes),
-    test_cfg=dict(panoptic_on=False, 
-                  semantic_on=False))
+    test_cfg=dict(panoptic_on=False, semantic_on=False))
 
 # dataset settings
 train_pipeline = [
     dict(
         type='LoadImageFromFile',
         to_float32=True,
-        imdecode_backend='pillow', 
+        imdecode_backend='pillow',
         backend_args=_base_.backend_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(type='RandomFlip', prob=0.5),
@@ -68,7 +66,7 @@ train_pipeline = [
 test_pipeline = [
     dict(
         type='LoadImageFromFile',
-        imdecode_backend='pillow', 
+        imdecode_backend='pillow',
         backend_args=_base_.backend_args),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True, backend='pillow'),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),

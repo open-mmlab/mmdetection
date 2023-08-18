@@ -1,6 +1,10 @@
 _base_ = [
-    '../_base_/datasets/ade20k_semantic.py', '../_base_/default_runtime.py'
+    '../../../configs/_base_/datasets/ade20k_semantic.py',
+    '../../../configs/_base_/default_runtime.py'
 ]
+
+custom_imports = dict(
+    imports=['projects.MaskDINO.maskdino'], allow_failed_imports=False)
 
 image_size = (512, 512)
 batch_augments = [
@@ -39,14 +43,14 @@ model = dict(
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     panoptic_head=dict(
         type='MaskDINOHead',
-        num_stuff_classes=num_classes, # TODO
-        num_things_classes=0, # fake
+        num_stuff_classes=num_classes,  # TODO
+        num_things_classes=0,  # fake
         encoder=dict(
             in_channels=[256, 512, 1024, 2048],
             in_strides=[4, 8, 16, 32],
             transformer_dropout=0.0,
             transformer_nheads=8,
-            transformer_dim_feedforward=1024, # diff
+            transformer_dim_feedforward=1024,  # diff
             transformer_enc_layers=6,
             conv_dim=256,
             mask_dim=256,
@@ -54,26 +58,26 @@ model = dict(
             transformer_in_features=['res3', 'res4', 'res5'],
             common_stride=4,
             num_feature_levels=3,
-            total_num_feature_levels=3, # diff 
-            feature_order='high2low2'), # diff
+            total_num_feature_levels=3,  # diff
+            feature_order='high2low2'),  # diff
         decoder=dict(
             in_channels=256,
             num_classes=num_classes,
             hidden_dim=256,
-            num_queries=100, # diff
+            num_queries=100,  # diff
             nheads=8,
             dim_feedforward=2048,
             dec_layers=9,
             mask_dim=256,
             enforce_input_project=False,
-            two_stage=False, # diff
+            two_stage=False,  # diff
             dn='seg',
             noise_scale=0.4,
             dn_num=100,
             initialize_box_type='no',
             initial_pred=True,
             learn_tgt=False,
-            total_num_feature_levels=3, # diff
+            total_num_feature_levels=3,  # diff
             dropout=0.0,
             activation='relu',
             nhead=8,
@@ -82,19 +86,23 @@ model = dict(
             return_intermediate_dec=True,
             query_dim=4,
             dec_layer_share=False,
-            semantic_ce_loss=True)), # diff
+            semantic_ce_loss=True)),  # diff
     panoptic_fusion_head=dict(
         type='MaskDINOFusionHead',
-        num_things_classes=0, # fake
+        num_things_classes=0,  # fake
         num_stuff_classes=0,  # fake
-        semantic_ce_loss=True, # diff
+        semantic_ce_loss=True,  # diff
         loss_panoptic=None,  # MaskDINOFusionHead has no training loss
         init_cfg=None),  # MaskDINOFusionHead has no module
     train_cfg=dict(  # corresponds to SetCriterion
         num_classes=num_classes,
         matcher=dict(
-            cost_class=4.0, cost_box=5.0, cost_giou=2.0,
-            cost_mask=5.0, cost_dice=5.0, num_points=12544),
+            cost_class=4.0,
+            cost_box=5.0,
+            cost_giou=2.0,
+            cost_mask=5.0,
+            cost_dice=5.0,
+            num_points=12544),
         class_weight=4.0,
         box_weight=5.0,
         giou_weight=2.0,
@@ -108,7 +116,7 @@ model = dict(
         num_points=12544,
         oversample_ratio=3.0,
         importance_sample_ratio=0.75,
-        semantic_ce_loss=True, # diff
+        semantic_ce_loss=True,  # diff
         panoptic_on=False,  # TODO: Why?
         deep_supervision=True),
     test_cfg=dict(
@@ -118,18 +126,18 @@ model = dict(
         panoptic_postprocess_cfg=dict(
             object_mask_thr=0.8,  # diff
             iou_thr=0.8,
-            filter_low_score=True,  # it will filter mask area where score is less than 0.5.
+            filter_low_score=
+            True,  # it will filter mask area where score is less than 0.5.
             panoptic_temperature=0.06,
             transform_eval=True),
-        instance_postprocess_cfg=dict(
-            max_per_image=100,
-            focus_on_box=False)),
+        instance_postprocess_cfg=dict(max_per_image=100, focus_on_box=False)),
     init_cfg=None)
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', 
-         backend_args=_base_.backend_args, 
-         imdecode_backend='pillow'),
+    dict(
+        type='LoadImageFromFile',
+        backend_args=_base_.backend_args,
+        imdecode_backend='pillow'),
     dict(
         type='LoadAnnotations',
         with_bbox=False,
@@ -141,20 +149,21 @@ train_pipeline = [
         scales=[int(image_size[0] * x * 0.1) for x in range(5, 21)],
         resize_type='ResizeShortestEdge',
         max_size=2048),
-    dict(
-        type='RandomCrop',
-        crop_size=image_size,
-        crop_type='absolute'),
+    dict(type='RandomCrop', crop_size=image_size, crop_type='absolute'),
     dict(type='PhotoMetricDistortion'),
     dict(type='RandomFlip', prob=0.5),
-    dict(type='PackDetInputs',
-         meta_keys=('img_path', 'ori_shape', 'img_shape',
-                    'scale_factor', 'flip', 'flip_direction'))
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_path', 'ori_shape', 'img_shape', 'scale_factor',
+                   'flip', 'flip_direction'))
 ]
 train_dataloader = dict(batch_size=2, dataset=dict(pipeline=train_pipeline))
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', backend_args=_base_.backend_args,imdecode_backend='pillow'),
+    dict(
+        type='LoadImageFromFile',
+        backend_args=_base_.backend_args,
+        imdecode_backend='pillow'),
     dict(type='Resize', scale=(2048, 512), keep_ratio=True, backend='pillow'),
     dict(
         type='LoadAnnotations',
@@ -163,8 +172,7 @@ test_pipeline = [
         with_seg=True,
         reduce_zero_label=True),
     dict(
-        type='PackDetInputs',
-        meta_keys=('img_path', 'ori_shape', 'img_shape'))
+        type='PackDetInputs', meta_keys=('img_path', 'ori_shape', 'img_shape'))
 ]
 
 val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
