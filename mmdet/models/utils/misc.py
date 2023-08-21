@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from functools import partial
-from typing import List, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -650,3 +650,48 @@ def unfold_wo_center(x, kernel_size: int, dilation: int) -> Tensor:
         dim=2)
 
     return unfolded_x
+
+
+def padding_to(input_tensor: Tensor, max_len: int = 300) -> Tensor:
+    """Pad the first dimension of `input_tensor` to `max_len`.
+
+    Args:
+        input_tensor (Tensor): The tensor to be padded,
+        max_len (int): Padding target size in the first dimension.
+            Default: 300
+    https://github.com/jshilong/DDQ/blob/ddq_detr/projects/models/utils.py#L19
+    Returns:
+        Tensor: The tensor padded with the first dimension size `max_len`.
+    """
+    if max_len is None:
+        return input_tensor
+    num_padding = max_len - len(input_tensor)
+    if input_tensor.dim() > 1:
+        padding = input_tensor.new_zeros(
+            num_padding, *input_tensor.size()[1:], dtype=input_tensor.dtype)
+    else:
+        padding = input_tensor.new_zeros(num_padding, dtype=input_tensor.dtype)
+    output_tensor = torch.cat([input_tensor, padding], dim=0)
+    return output_tensor
+
+
+def align_tensor(inputs: List[Tensor],
+                 max_len: Optional[int] = None) -> Tensor:
+    """Pad each input to `max_len`, then stack them. If `max_len` is None, then
+    it is the max size of the first dimension of each input.
+
+        https://github.com/jshilong/DDQ/blob/ddq_detr/projects/models/\
+        utils.py#L12
+
+    Args:
+        inputs (list[Tensor]): The tensors to be padded,
+            Each input should have the same shape except the first dimension.
+        max_len (int): Padding target size in the first dimension.
+            Default: None
+    Returns:
+        Tensor: Stacked inputs after padding in the first dimension.
+    """
+    if max_len is None:
+        max_len = max([len(item) for item in inputs])
+
+    return torch.stack([padding_to(item, max_len) for item in inputs])

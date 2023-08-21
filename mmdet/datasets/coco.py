@@ -127,8 +127,8 @@ class CocoDataset(BaseDetDataset):
         data_info['height'] = img_info['height']
         data_info['width'] = img_info['width']
 
-        if self.return_caption:
-            data_info['caption'] = self.metainfo['classes']
+        if self.return_classes:
+            data_info['text'] = self.metainfo['classes']
             data_info['custom_entities'] = True
 
         instances = []

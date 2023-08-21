@@ -19,7 +19,7 @@ Collections:
       Version: v3.0.0rc6
 
 Models:
-  - Name: dab-detr_r50_8xb2-50e_coco.py
+  - Name: dab-detr_r50_8xb2-50e_coco
     In Collection: DAB-DETR
     Config: configs/dab_detr/dab-detr_r50_8xb2-50e_coco.py
     Metadata:

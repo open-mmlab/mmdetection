@@ -15,4 +15,6 @@ mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py
 swin/mask-rcnn_swin-t-p4-w7_fpn_1x_coco.py
 condinst/condinst_r50_fpn_ms-poly-90k_coco_instance.py
 lvis/mask-rcnn_r50_fpn_sample1e-3_ms-1x_lvis-v1.py
-convnext/mask-rcnn_convnext-t-p4-w7_fpn_amp-ms-crop-3x_coco.py
+mask2former_vis/mask2former_r50_8xb2-8e_youtubevis2021.py
+masktrack_rcnn/masktrack-rcnn_mask-rcnn_r50_fpn_8xb1-12e_youtubevis2021.py
+qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17halftrain_test-mot17halfval.py

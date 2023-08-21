@@ -19,7 +19,7 @@ Collections:
       Version: v3.0.0rc6
 
 Models:
-  - Name: conditional-detr_r50_8xb2-50e_coco.py
+  - Name: conditional-detr_r50_8xb2-50e_coco
     In Collection: Conditional DETR
     Config: configs/conditional_detr/conditional-detr_r50_8xb2-50e_coco.py
     Metadata:

@@ -52,7 +52,7 @@ Due to the influence of parameters such as learning rate in default configuratio
 ```shell
 # Training Mask2Former on YouTube-VIS-2021 dataset with following command.
 # The number after config file represents the number of GPUs used. Here we use 8 GPUs.
-bash tools/dist_train.sh configs/mask2former_vis/mask2former_r50_8xb2-8e_youtubevis202.py 8
+bash tools/dist_train.sh configs/mask2former_vis/mask2former_r50_8xb2-8e_youtubevis2021.py 8
 ```
 
 If you want to know about more detailed usage of `train.py/dist_train.sh/slurm_train.sh`,

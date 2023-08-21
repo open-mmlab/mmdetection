@@ -2,10 +2,12 @@
 import copy
 import inspect
 import math
+import warnings
 from typing import List, Optional, Sequence, Tuple, Union
 
 import cv2
 import mmcv
+import numpy
 import numpy as np
 from mmcv.image import imresize
 from mmcv.image.geometric import _scale_size
@@ -54,7 +56,7 @@ def _fixed_scale_size(
     if isinstance(scale, (float, int)):
         scale = (scale, scale)
     w, h = size
-    # don’t need o.5 offset
+    # don't need o.5 offset
     return int(w * float(scale[0])), int(h * float(scale[1]))
 
 
@@ -286,6 +288,83 @@ class FixScaleResize(Resize):
             results['img_shape'] = img.shape[:2]
             results['scale_factor'] = (w_scale, h_scale)
             results['keep_ratio'] = self.keep_ratio
+
+
+@TRANSFORMS.register_module()
+class ResizeShortestEdge(BaseTransform):
+    """Resize the image and mask while keeping the aspect ratio unchanged.
+
+    Modified from https://github.com/facebookresearch/detectron2/blob/main/detectron2/data/transforms/augmentation_impl.py#L130 # noqa:E501
+
+    This transform attempts to scale the shorter edge to the given
+    `scale`, as long as the longer edge does not exceed `max_size`.
+    If `max_size` is reached, then downscale so that the longer
+    edge does not exceed `max_size`.
+
+    Required Keys:
+        - img
+        - gt_seg_map (optional)
+    Modified Keys:
+        - img
+        - img_shape
+        - gt_seg_map (optional))
+    Added Keys:
+        - scale
+        - scale_factor
+        - keep_ratio
+
+    Args:
+        scale (Union[int, Tuple[int, int]]): The target short edge length.
+            If it's tuple, will select the min value as the short edge length.
+        max_size (int): The maximum allowed longest edge length.
+    """
+
+    def __init__(self,
+                 scale: Union[int, Tuple[int, int]],
+                 max_size: Optional[int] = None,
+                 resize_type: str = 'Resize',
+                 **resize_kwargs) -> None:
+        super().__init__()
+        self.scale = scale
+        self.max_size = max_size
+
+        self.resize_cfg = dict(type=resize_type, **resize_kwargs)
+        self.resize = TRANSFORMS.build({'scale': 0, **self.resize_cfg})
+
+    def _get_output_shape(
+            self, img: np.ndarray,
+            short_edge_length: Union[int, Tuple[int, int]]) -> Tuple[int, int]:
+        """Compute the target image shape with the given `short_edge_length`.
+
+        Args:
+            img (np.ndarray): The input image.
+            short_edge_length (Union[int, Tuple[int, int]]): The target short
+                edge length. If it's tuple, will select the min value as the
+                short edge length.
+        """
+        h, w = img.shape[:2]
+        if isinstance(short_edge_length, int):
+            size = short_edge_length * 1.0
+        elif isinstance(short_edge_length, tuple):
+            size = min(short_edge_length) * 1.0
+        scale = size / min(h, w)
+        if h < w:
+            new_h, new_w = size, scale * w
+        else:
+            new_h, new_w = scale * h, size
+
+        if self.max_size and max(new_h, new_w) > self.max_size:
+            scale = self.max_size * 1.0 / max(new_h, new_w)
+            new_h *= scale
+            new_w *= scale
+
+        new_h = int(new_h + 0.5)
+        new_w = int(new_w + 0.5)
+        return new_w, new_h
+
+    def transform(self, results: dict) -> dict:
+        self.resize.scale = self._get_output_shape(results['img'], self.scale)
+        return self.resize(results)
 
 
 @TRANSFORMS.register_module()
@@ -2244,7 +2323,7 @@ class Mosaic(BaseTransform):
     - gt_ignore_flags (optional)
 
     Args:
-        img_scale (Sequence[int]): Image size after mosaic pipeline of single
+        img_scale (Sequence[int]): Image size before mosaic pipeline of single
             image. The shape order should be (width, height).
             Defaults to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
@@ -2573,7 +2652,7 @@ class MixUp(BaseTransform):
         retrieve_img = retrieve_results['img']
 
         jit_factor = random.uniform(*self.ratio_range)
-        is_filp = random.uniform(0, 1) > self.flip_ratio
+        is_flip = random.uniform(0, 1) > self.flip_ratio
 
         if len(retrieve_img.shape) == 3:
             out_img = np.ones(
@@ -2600,7 +2679,7 @@ class MixUp(BaseTransform):
                                           int(out_img.shape[0] * jit_factor)))
 
         # 4. flip
-        if is_filp:
+        if is_flip:
             out_img = out_img[:, ::-1, :]
 
         # 5. random crop
@@ -2626,7 +2705,7 @@ class MixUp(BaseTransform):
         if self.bbox_clip_border:
             retrieve_gt_bboxes.clip_([origin_h, origin_w])
 
-        if is_filp:
+        if is_flip:
             retrieve_gt_bboxes.flip_([origin_h, origin_w],
                                      direction='horizontal')
 
@@ -2951,6 +3030,9 @@ class CopyPaste(BaseTransform):
             all objects of the source image will be pasted to the
             destination image.
             Defaults to True.
+        paste_by_box (bool): Whether use boxes as masks when masks are not
+            available.
+            Defaults to False.
     """
 
     def __init__(
@@ -2959,11 +3041,13 @@ class CopyPaste(BaseTransform):
         bbox_occluded_thr: int = 10,
         mask_occluded_thr: int = 300,
         selected: bool = True,
+        paste_by_box: bool = False,
     ) -> None:
         self.max_num_pasted = max_num_pasted
         self.bbox_occluded_thr = bbox_occluded_thr
         self.mask_occluded_thr = mask_occluded_thr
         self.selected = selected
+        self.paste_by_box = paste_by_box
 
     @cache_randomness
     def get_indexes(self, dataset: BaseDataset) -> int:
@@ -3002,11 +3086,31 @@ class CopyPaste(BaseTransform):
         num_pasted = np.random.randint(0, max_num_pasted)
         return np.random.choice(num_bboxes, size=num_pasted, replace=False)
 
+    def get_gt_masks(self, results: dict) -> BitmapMasks:
+        """Get gt_masks originally or generated based on bboxes.
+
+        If gt_masks is not contained in results,
+        it will be generated based on gt_bboxes.
+        Args:
+            results (dict): Result dict.
+        Returns:
+            BitmapMasks: gt_masks, originally or generated based on bboxes.
+        """
+        if results.get('gt_masks', None) is not None:
+            if self.paste_by_box:
+                warnings.warn('gt_masks is already contained in results, '
+                              'so paste_by_box is disabled.')
+            return results['gt_masks']
+        else:
+            if not self.paste_by_box:
+                raise RuntimeError('results does not contain masks.')
+            return results['gt_bboxes'].create_masks(results['img'].shape[:2])
+
     def _select_object(self, results: dict) -> dict:
         """Select some objects from the source results."""
         bboxes = results['gt_bboxes']
         labels = results['gt_bboxes_labels']
-        masks = results['gt_masks']
+        masks = self.get_gt_masks(results)
         ignore_flags = results['gt_ignore_flags']
 
         selected_inds = self._get_selected_inds(bboxes.shape[0])
@@ -3034,7 +3138,7 @@ class CopyPaste(BaseTransform):
         dst_img = dst_results['img']
         dst_bboxes = dst_results['gt_bboxes']
         dst_labels = dst_results['gt_bboxes_labels']
-        dst_masks = dst_results['gt_masks']
+        dst_masks = self.get_gt_masks(dst_results)
         dst_ignore_flags = dst_results['gt_ignore_flags']
 
         src_img = src_results['img']
@@ -3092,7 +3196,8 @@ class CopyPaste(BaseTransform):
         repr_str += f'(max_num_pasted={self.max_num_pasted}, '
         repr_str += f'bbox_occluded_thr={self.bbox_occluded_thr}, '
         repr_str += f'mask_occluded_thr={self.mask_occluded_thr}, '
-        repr_str += f'selected={self.selected})'
+        repr_str += f'selected={self.selected}), '
+        repr_str += f'paste_by_box={self.paste_by_box})'
         return repr_str
 
 
@@ -3305,7 +3410,7 @@ class CachedMosaic(Mosaic):
     - gt_ignore_flags (optional)
 
     Args:
-        img_scale (Sequence[int]): Image size after mosaic pipeline of single
+        img_scale (Sequence[int]): Image size before mosaic pipeline of single
             image. The shape order should be (width, height).
             Defaults to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
@@ -3644,7 +3749,7 @@ class CachedMixUp(BaseTransform):
         with_mask = True if 'gt_masks' in results else False
 
         jit_factor = random.uniform(*self.ratio_range)
-        is_filp = random.uniform(0, 1) > self.flip_ratio
+        is_flip = random.uniform(0, 1) > self.flip_ratio
 
         if len(retrieve_img.shape) == 3:
             out_img = np.ones(
@@ -3671,7 +3776,7 @@ class CachedMixUp(BaseTransform):
                                           int(out_img.shape[0] * jit_factor)))
 
         # 4. flip
-        if is_filp:
+        if is_flip:
             out_img = out_img[:, ::-1, :]
 
         # 5. random crop
@@ -3701,7 +3806,7 @@ class CachedMixUp(BaseTransform):
         if self.bbox_clip_border:
             retrieve_gt_bboxes.clip_([origin_h, origin_w])
 
-        if is_filp:
+        if is_flip:
             retrieve_gt_bboxes.flip_([origin_h, origin_w],
                                      direction='horizontal')
             if with_mask:
