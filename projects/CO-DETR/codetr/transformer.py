@@ -20,6 +20,9 @@ try:
 except Exception:
     checkpoint_wrapper = None
 
+# In order to save the cost and effort of reproduction,
+# I did not refactor it into the style of mmdet 3.x DETR.
+
 
 class Transformer(BaseModule):
     """Implements the DETR transformer.
@@ -640,16 +643,6 @@ class CoDeformableDetrTransformerDecoder(TransformerLayerSequence):
 
 @MODELS.register_module()
 class CoDeformableDetrTransformer(DeformableDetrTransformer):
-    """Implements the DeformableDETR transformer.
-
-    Args:
-        as_two_stage (bool): Generate query from encoder features.
-            Default: False.
-        num_feature_levels (int): Number of feature maps from FPN:
-            Default: 4.
-        two_stage_num_proposals (int): Number of proposals when set
-            `as_two_stage` as True. Default: 300.
-    """
 
     def __init__(self,
                  mixed_selection=True,
@@ -665,7 +658,7 @@ class CoDeformableDetrTransformer(DeformableDetrTransformer):
         self._init_layers()
 
     def _init_layers(self):
-        """Initialize layers of the DeformableDetrTransformer."""
+        """Initialize layers of the CoDeformableDetrTransformer."""
         if self.with_pos_coord:
             if self.num_co_heads > 0:
                 # bug: this code should be 'self.head_pos_embed =

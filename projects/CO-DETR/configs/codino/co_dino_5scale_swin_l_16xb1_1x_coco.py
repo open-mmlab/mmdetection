@@ -26,10 +26,6 @@ model = dict(
         convert_weights=True,
         init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     neck=dict(in_channels=[192, 384, 768, 1536]),
-    query_head=dict(
-        transformer=dict(
-            encoder=dict(
-                # number of layers that use checkpoint
-                with_cp=6))))
+    query_head=dict(transformer=dict(encoder=dict(with_cp=6))))
 
 train_dataloader = dict(batch_size=1, num_workers=1)

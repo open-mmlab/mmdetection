@@ -6,6 +6,7 @@ custom_imports = dict(
 # model settings
 num_dec_layer = 6
 loss_lambda = 2.0
+num_classes = 80
 
 image_size = (1024, 1024)
 batch_augments = [
@@ -13,7 +14,8 @@ batch_augments = [
 ]
 model = dict(
     type='CoDETR',
-    with_pos_coord=True,
+    # If using the lsj augmentation,
+    # it is recommended to set it to True.
     use_lsj=True,
     # detr: 52.1
     # one-stage: 49.4
@@ -47,23 +49,25 @@ model = dict(
     query_head=dict(
         type='CoDINOHead',
         num_query=900,
-        num_classes=80,
+        num_classes=num_classes,
         in_channels=2048,
         as_two_stage=True,
         dn_cfg=dict(
             label_noise_scale=0.5,
-            box_noise_scale=1.0,  # 0.4 for DN-DETR
+            box_noise_scale=1.0,
             group_cfg=dict(dynamic=True, num_groups=None, num_dn_queries=100)),
         transformer=dict(
             type='CoDinoTransformer',
-            with_pos_coord=True,
             with_coord_feat=False,
-            num_co_heads=2,
+            num_co_heads=2,  # ATSS Aux Head + Faster RCNN Aux Head
             num_feature_levels=5,
             encoder=dict(
                 type='DetrTransformerEncoder',
                 num_layers=6,
-                with_cp=4,  # number of layers that use checkpoint
+                # number of layers that use checkpoint.
+                # The maximum value for the setting is num_layers.
+                # FairScale must be installed for it to work.
+                with_cp=4,
                 transformerlayers=dict(
                     type='BaseTransformerLayer',
                     attn_cfgs=dict(
@@ -101,7 +105,7 @@ model = dict(
             num_feats=128,
             temperature=20,
             normalize=True),
-        loss_cls=dict(
+        loss_cls=dict(  # Different from the DINO
             type='QualityFocalLoss',
             use_sigmoid=True,
             beta=2.0,
@@ -143,7 +147,7 @@ model = dict(
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
-                num_classes=80,
+                num_classes=num_classes,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -161,7 +165,7 @@ model = dict(
     bbox_head=[
         dict(
             type='CoATSSHead',
-            num_classes=80,
+            num_classes=num_classes,
             in_channels=256,
             stacked_convs=1,
             feat_channels=256,
@@ -245,6 +249,7 @@ model = dict(
             debug=False)
     ],
     test_cfg=[
+        # Deferent from the DINO, we use the NMS.
         dict(
             max_per_img=300,
             # NMS can improve the mAP by 0.2.
@@ -270,6 +275,7 @@ model = dict(
         # e.g., nms=dict(type='soft_nms', iou_threshold=0.5, min_score=0.05)
     ])
 
+# LSJ + CopyPaste
 load_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
@@ -319,13 +325,9 @@ test_dataloader = val_dataloader
 optim_wrapper = dict(
     _delete_=True,
     type='OptimWrapper',
-    optimizer=dict(
-        type='AdamW',
-        lr=2e-4,  # diff dino
-        weight_decay=0.0001),
+    optimizer=dict(type='AdamW', lr=2e-4, weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
-    paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)})
-)  # custom_keys contains sampling_offsets and reference_points in DeformDETR  # noqa
+    paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)}))
 
 val_evaluator = dict(metric='bbox')
 test_evaluator = val_evaluator

@@ -570,8 +570,8 @@ class CoDINOHead(DINOHead):
         ]
 
         losses_cls, losses_bbox, losses_iou = multi_apply(
-            self.loss_single_aux, all_cls_scores, all_bbox_preds, all_labels,
-            all_label_weights, all_bbox_targets, all_bbox_weights,
+            self._loss_aux_by_feat_single, all_cls_scores, all_bbox_preds,
+            all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
             img_metas_list, all_gt_bboxes_ignore_list)
 
         loss_dict = dict()
@@ -592,15 +592,15 @@ class CoDINOHead(DINOHead):
             num_dec_layer += 1
         return loss_dict
 
-    def loss_single_aux(self,
-                        cls_scores,
-                        bbox_preds,
-                        labels,
-                        label_weights,
-                        bbox_targets,
-                        bbox_weights,
-                        img_metas,
-                        gt_bboxes_ignore_list=None):
+    def _loss_aux_by_feat_single(self,
+                                 cls_scores,
+                                 bbox_preds,
+                                 labels,
+                                 label_weights,
+                                 bbox_targets,
+                                 bbox_weights,
+                                 img_metas,
+                                 gt_bboxes_ignore_list=None):
         num_imgs = cls_scores.size(0)
         num_q = cls_scores.size(1)
 

@@ -24,9 +24,12 @@ class CoDETR(BaseDetector):
             bbox_head=[None],  # one-stage
             train_cfg=[None, None],
             test_cfg=[None, None],
+            # Control whether to consider positive samples
+            # from the auxiliary head as additional positive queries.
             with_pos_coord=True,
             use_lsj=True,
             eval_module='detr',
+            # Evaluate the Nth head.
             eval_index=0,
             data_preprocessor: OptConfigType = None,
             init_cfg: OptMultiConfig = None):
@@ -271,7 +274,7 @@ class CoDETR(BaseDetector):
         elif self.with_roi_head and self.eval_module == 'two-stage':
             results_list = self.predict_roi_head(
                 img_feats, batch_data_samples, rescale=rescale)
-        else:  # default
+        else:
             results_list = self.predict_query_head(
                 img_feats, batch_data_samples, rescale=rescale)
 
