@@ -1,4 +1,4 @@
-_base_ = ['co_dino_5scale_r50_lsj_1x_coco.py']
+_base_ = ['co_dino_5scale_r50_lsj_8xb2_1x_coco.py']
 
 image_size = (1280, 1280)
 batch_augments = [
