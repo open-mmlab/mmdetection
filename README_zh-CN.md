@@ -237,9 +237,12 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
             <li><a href="configs/dab_detr">DAB-DETR (ICLR'2022)</a></li>
             <li><a href="configs/dino">DINO (ICLR'2023)</a></li>
             <li><a href="configs/glip">GLIP (CVPR'2022)</a></li>
+            <li><a href="configs/ddq">DDQ (CVPR'2023)</a></li>
             <li><a href="projects/DiffusionDet">DiffusionDet (ArXiv'2023)</a></li>
             <li><a href="projects/EfficientDet">EfficientDet (CVPR'2020)</a></li>
+            <li><a href="projects/ViTDet">ViTDet (ECCV'2022)</a></li>
             <li><a href="projects/Detic">Detic (ECCV'2022)</a></li>
+            <li><a href="projects/CO-DETR">CO-DETR (ICCV'2023)</a></li>
       </ul>
       </td>
       <td>
@@ -261,6 +264,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="projects/SparseInst">SparseInst (CVPR'2022)</a></li>
           <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
           <li><a href="configs/boxinst">BoxInst (CVPR'2021)</a></li>
+          <li><a href="projects/ConvNeXt-V2">ConvNeXt-V2 (Arxiv'2023)</a></li>
         </ul>
       </td>
       <td>
@@ -268,6 +272,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
           <li><a href="configs/maskformer">MaskFormer (NeurIPS'2021)</a></li>
           <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
+          <li><a href="configs/XDecoder">XDecoder (CVPR'2023)</a></li>
         </ul>
       </td>
       <td>
