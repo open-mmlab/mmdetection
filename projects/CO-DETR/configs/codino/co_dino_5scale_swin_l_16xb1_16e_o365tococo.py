@@ -1,7 +1,7 @@
 _base_ = ['co_dino_5scale_r50_8xb2_1x_coco.py']
 
 pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'  # noqa
-load_from = 'co_dino_5scale_swin_large_22e_o365.pth'  # from official
+load_from = 'https://download.openmmlab.com/mmdetection/v3.0/codetr/co_dino_5scale_swin_large_22e_o365-0a33e247.pth'  # noqa
 
 # model settings
 model = dict(
@@ -28,14 +28,11 @@ model = dict(
         init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     neck=dict(in_channels=[192, 384, 768, 1536]),
     query_head=dict(
-        transformer=dict(
-            encoder=dict(with_cp=6),
-            dn_cfg=dict(
-                box_noise_scale=0.4, group_cfg=dict(num_dn_queries=500)),
-        )))
+        dn_cfg=dict(box_noise_scale=0.4, group_cfg=dict(num_dn_queries=500)),
+        transformer=dict(encoder=dict(with_cp=6))))
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
+    dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomFlip', prob=0.5),
     dict(
