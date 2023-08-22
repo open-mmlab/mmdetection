@@ -2,7 +2,7 @@
 import copy
 from typing import Optional
 
-import fvcore.nn.weight_init as weight_init
+from mmengine.model import caffe2_xavier_init
 import torch
 from mmcv.cnn import ConvModule
 from mmcv.ops import MultiScaleDeformableAttention
@@ -144,7 +144,8 @@ class MaskDINODecoder(nn.Module):
                 self.input_proj.append(
                     ConvModule(
                         in_channels, hidden_dim, kernel_size=1, act_cfg=None))
-                weight_init.c2_xavier_fill(self.input_proj[-1])
+                # weight_init.c2_xavier_fill(self.input_proj[-1])
+                caffe2_xavier_init(self.input_proj[-1].conv)
             else:
                 self.input_proj.append(nn.Sequential())
         self.num_classes = num_classes
