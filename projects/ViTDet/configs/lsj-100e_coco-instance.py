@@ -77,7 +77,7 @@ test_evaluator = val_evaluator
 
 optim_wrapper = dict(
     type='AmpOptimWrapper',
-    constructor='LayerDecayOptimizerConstructor',
+    constructor='ViTLayerDecayOptimizerConstructor',
     paramwise_cfg={
         'decay_rate': 0.7,
         'decay_type': 'layer_wise',

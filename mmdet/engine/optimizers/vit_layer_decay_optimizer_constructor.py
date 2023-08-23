@@ -34,7 +34,7 @@ def get_layer_id_for_vit(var_name, max_layer_id):
 
 
 @OPTIM_WRAPPER_CONSTRUCTORS.register_module()
-class LayerDecayOptimizerConstructor(DefaultOptimWrapperConstructor):
+class ViTLayerDecayOptimizerConstructor(DefaultOptimWrapperConstructor):
     # Different learning rates are set for different layers of backbone.
     # Note: Currently, this optimizer constructor is built for ViT.
 
