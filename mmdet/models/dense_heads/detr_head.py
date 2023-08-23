@@ -445,8 +445,8 @@ class DETRHead(BaseModule):
         label_weights = gt_bboxes.new_ones(num_bboxes)
 
         # bbox targets
-        bbox_targets = torch.zeros_like(bbox_pred)
-        bbox_weights = torch.zeros_like(bbox_pred)
+        bbox_targets = torch.zeros_like(bbox_pred, dtype=gt_bboxes.dtype)
+        bbox_weights = torch.zeros_like(bbox_pred, dtype=gt_bboxes.dtype)
         bbox_weights[pos_inds] = 1.0
 
         # DETR regress the relative position of boxes (cxcywh) in the image.
