@@ -272,9 +272,9 @@ class FocalLossCost(BaseMatchCost):
         """
         cls_pred = cls_pred.sigmoid()
         neg_cost = -(1 - cls_pred + self.eps).log() * (
-                1 - self.alpha) * cls_pred.pow(self.gamma)
+            1 - self.alpha) * cls_pred.pow(self.gamma)
         pos_cost = -(cls_pred + self.eps).log() * self.alpha * (
-                1 - cls_pred).pow(self.gamma)
+            1 - cls_pred).pow(self.gamma)
 
         cls_cost = pos_cost[:, gt_labels] - neg_cost[:, gt_labels]
         return cls_cost * self.weight
@@ -296,12 +296,12 @@ class FocalLossCost(BaseMatchCost):
         n = cls_pred.shape[1]
         cls_pred = cls_pred.sigmoid()
         neg_cost = -(1 - cls_pred + self.eps).log() * (
-                1 - self.alpha) * cls_pred.pow(self.gamma)
+            1 - self.alpha) * cls_pred.pow(self.gamma)
         pos_cost = -(cls_pred + self.eps).log() * self.alpha * (
-                1 - cls_pred).pow(self.gamma)
+            1 - cls_pred).pow(self.gamma)
 
         cls_cost = torch.einsum('nc,mc->nm', pos_cost, gt_labels) + \
-                   torch.einsum('nc,mc->nm', neg_cost, (1 - gt_labels))
+            torch.einsum('nc,mc->nm', neg_cost, (1 - gt_labels))
         return cls_cost / n * self.weight
 
     def __call__(self,
@@ -442,7 +442,7 @@ class CrossEntropyLossCost(BaseMatchCost):
         neg = F.binary_cross_entropy_with_logits(
             cls_pred, torch.zeros_like(cls_pred), reduction='none')
         cls_cost = torch.einsum('nc,mc->nm', pos, gt_labels) + \
-                   torch.einsum('nc,mc->nm', neg, 1 - gt_labels)
+            torch.einsum('nc,mc->nm', neg, 1 - gt_labels)
         cls_cost = cls_cost / n
 
         return cls_cost
