@@ -17,7 +17,7 @@ from mmdet.datasets.transforms.loading import (FilterAnnotations,
                                                LoadAnnotations)
 from mmdet.datasets.transforms.transforms import (CachedMixUp, CachedMosaic,
                                                   Pad, RandomCrop, RandomFlip,
-                                                  YOLOXHSVRandomAug)
+                                                  Resize, YOLOXHSVRandomAug)
 
 checkpoint = 'https://download.openmmlab.com/mmdetection/v3.0/rtmdet/cspnext_rsb_pretrain/cspnext-tiny_imagenet_600e.pth'  # noqa
 
@@ -46,6 +46,7 @@ train_pipeline = [
         type=RandomResize,
         scale=(1280, 1280),
         ratio_range=(0.5, 2.0),
+        resize_type=Resize,
         keep_ratio=True),
     dict(type=RandomCrop, crop_size=(640, 640)),
     dict(type=YOLOXHSVRandomAug),
