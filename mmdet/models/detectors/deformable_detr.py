@@ -3,12 +3,11 @@ import math
 from typing import Dict, Tuple
 
 import torch
-import torch.nn.functional as F
 from mmcv.cnn.bricks.transformer import MultiScaleDeformableAttention
+from mmcv.ops import interpolate
 from mmengine.model import xavier_init
 from torch import Tensor, nn
 from torch.nn.init import normal_
-from mmcv.ops import interpolate
 
 from mmdet.registry import MODELS
 from mmdet.structures import OptSampleList
@@ -166,8 +165,9 @@ class DeformableDETR(DetectionTransformer):
         for feat in mlvl_feats:
             mlvl_masks.append(
                 interpolate(masks[None],
-                              size=feat.shape[-2:]).to(torch.bool).squeeze(0))
-            mlvl_pos_embeds.append(self.positional_encoding(mlvl_masks[-1]).to(dtype=feat.dtype))
+                            size=feat.shape[-2:]).to(torch.bool).squeeze(0))
+            mlvl_pos_embeds.append(
+                self.positional_encoding(mlvl_masks[-1]).to(dtype=feat.dtype))
 
         feat_flatten = []
         lvl_pos_embed_flatten = []
@@ -203,7 +203,8 @@ class DeformableDETR(DetectionTransformer):
             spatial_shapes.new_zeros((1, )),  # (num_level)
             spatial_shapes.prod(1).cumsum(0)[:-1]))
         valid_ratios = torch.stack(  # (bs, num_level, 2)
-            [self.get_valid_ratio(m) for m in mlvl_masks], 1).to(dtype=feat_flatten.dtype)
+            [self.get_valid_ratio(m) for m in mlvl_masks],
+            1).to(dtype=feat_flatten.dtype)
 
         encoder_inputs_dict = dict(
             feat=feat_flatten,
