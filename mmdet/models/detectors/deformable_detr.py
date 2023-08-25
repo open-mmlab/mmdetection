@@ -8,6 +8,7 @@ from mmcv.cnn.bricks.transformer import MultiScaleDeformableAttention
 from mmengine.model import xavier_init
 from torch import Tensor, nn
 from torch.nn.init import normal_
+from mmcv.ops import interpolate
 
 from mmdet.registry import MODELS
 from mmdet.structures import OptSampleList
@@ -164,9 +165,9 @@ class DeformableDETR(DetectionTransformer):
         mlvl_pos_embeds = []
         for feat in mlvl_feats:
             mlvl_masks.append(
-                F.interpolate(masks[None],
+                interpolate(masks[None],
                               size=feat.shape[-2:]).to(torch.bool).squeeze(0))
-            mlvl_pos_embeds.append(self.positional_encoding(mlvl_masks[-1]))
+            mlvl_pos_embeds.append(self.positional_encoding(mlvl_masks[-1]).to(dtype=feat.dtype))
 
         feat_flatten = []
         lvl_pos_embed_flatten = []
@@ -202,7 +203,7 @@ class DeformableDETR(DetectionTransformer):
             spatial_shapes.new_zeros((1, )),  # (num_level)
             spatial_shapes.prod(1).cumsum(0)[:-1]))
         valid_ratios = torch.stack(  # (bs, num_level, 2)
-            [self.get_valid_ratio(m) for m in mlvl_masks], 1)
+            [self.get_valid_ratio(m) for m in mlvl_masks], 1).to(dtype=feat_flatten.dtype)
 
         encoder_inputs_dict = dict(
             feat=feat_flatten,
@@ -502,6 +503,7 @@ class DeformableDETR(DetectionTransformer):
                                                   float(0))
         output_memory = self.memory_trans_fc(output_memory)
         output_memory = self.memory_trans_norm(output_memory)
+        output_proposals = output_proposals.type_as(output_memory)
         # [bs, sum(hw), 2]
         return output_memory, output_proposals
 

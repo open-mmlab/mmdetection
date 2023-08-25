@@ -493,12 +493,13 @@ class CdnQueryGenerator(BaseModule):
         mapper = (batch_idx_expand, map_query_index)
 
         batched_label_query = torch.zeros(
-            batch_size, num_denoising_queries, self.embed_dims, device=device)
+            batch_size, num_denoising_queries, self.embed_dims, device=device, dtype=input_label_query.dtype)
         batched_bbox_query = torch.zeros(
-            batch_size, num_denoising_queries, 4, device=device)
+            batch_size, num_denoising_queries, 4, device=device, dtype=input_label_query.dtype)
 
         batched_label_query[mapper] = input_label_query
-        batched_bbox_query[mapper] = input_bbox_query
+        batched_bbox_query[mapper] = input_bbox_query.to(
+            dtype=input_label_query.dtype)
         return batched_label_query, batched_bbox_query
 
     def generate_dn_mask(self, max_num_target: int, num_groups: int,
