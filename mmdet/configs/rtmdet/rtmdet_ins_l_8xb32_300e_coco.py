@@ -31,7 +31,7 @@ from mmdet.models.task_modules.coders.distance_point_bbox_coder import \
 from mmdet.models.task_modules.prior_generators.point_generator import \
     MlvlPointGenerator
 
-model.update(
+model.merge(
     dict(
         bbox_head=dict(
             _delete_=True,
