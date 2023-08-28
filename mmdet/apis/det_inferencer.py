@@ -2,12 +2,13 @@
 import copy
 import os.path as osp
 import warnings
-from typing import Dict, Iterable, List, Optional, Sequence, Union
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 import mmcv
 import mmengine
 import numpy as np
 import torch.nn as nn
+from mmcv.transforms import LoadImageFromFile
 from mmengine.dataset import Compose
 from mmengine.fileio import (get_file_backend, isdir, join_path,
                              list_dir_or_file)
@@ -165,21 +166,22 @@ class DetInferencer(BaseInferencer):
                 meta_key for meta_key in pipeline_cfg[-1]['meta_keys']
                 if meta_key != 'img_id')
 
-        load_img_idx = self._get_transform_idx(pipeline_cfg,
-                                               'LoadImageFromFile')
+        load_img_idx = self._get_transform_idx(
+            pipeline_cfg, ('LoadImageFromFile', LoadImageFromFile))
         if load_img_idx == -1:
             raise ValueError(
                 'LoadImageFromFile is not found in the test pipeline')
         pipeline_cfg[load_img_idx]['type'] = 'mmdet.InferencerLoader'
         return Compose(pipeline_cfg)
 
-    def _get_transform_idx(self, pipeline_cfg: ConfigType, name: str) -> int:
+    def _get_transform_idx(self, pipeline_cfg: ConfigType,
+                           name: Union[str, Tuple[str, type]]) -> int:
         """Returns the index of the transform in a pipeline.
 
         If the transform is not found, returns -1.
         """
         for i, transform in enumerate(pipeline_cfg):
-            if transform['type'] == name:
+            if transform['type'] in name:
                 return i
         return -1
 
