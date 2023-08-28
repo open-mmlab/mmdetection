@@ -4,6 +4,7 @@ from functools import partial
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mmengine.runner.amp import autocast
 
 from mmdet.models.losses.utils import weighted_loss
 from mmdet.registry import MODELS
@@ -120,11 +121,13 @@ def quality_focal_loss_with_prob(pred, target, beta=2.0):
     label, score = target
 
     # negatives are supervised by 0 quality score
+    pred = pred.to(score.dtype)
     pred_sigmoid = pred
     scale_factor = pred_sigmoid
     zerolabel = scale_factor.new_zeros(pred.shape)
-    loss = F.binary_cross_entropy(
-        pred, zerolabel, reduction='none') * scale_factor.pow(beta)
+    with autocast(enabled=False):
+        loss = F.binary_cross_entropy(
+            pred, zerolabel, reduction='none') * scale_factor.pow(beta)
 
     # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
     bg_class_ind = pred.size(1)
@@ -132,9 +135,10 @@ def quality_focal_loss_with_prob(pred, target, beta=2.0):
     pos_label = label[pos].long()
     # positives are supervised by bbox quality (IoU) score
     scale_factor = score[pos] - pred_sigmoid[pos, pos_label]
-    loss[pos, pos_label] = F.binary_cross_entropy(
-        pred[pos, pos_label], score[pos],
-        reduction='none') * scale_factor.abs().pow(beta)
+    with autocast(enabled=False):
+        loss[pos, pos_label] = F.binary_cross_entropy(
+            pred[pos, pos_label], score[pos],
+            reduction='none') * scale_factor.abs().pow(beta)
 
     loss = loss.sum(dim=1, keepdim=False)
     return loss
