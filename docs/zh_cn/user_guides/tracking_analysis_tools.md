@@ -66,10 +66,10 @@ python tools/analysis_tools/mot/mot_error_visualize.py \
 
 可选参数：
 
-- `OUTPUT`: 可视化演示的输出。如果未指定，`--show` 是必选的，用于即时显示视频。
-- `FPS`: 输出视频的帧率。
-- `--show`: 是否即时显示视频。
-- `BACKEND`: 用于可视化边界框的后端。选项包括 `cv2` 和 `plt`。
+- `OUTPUT`：可视化演示的输出。如果未指定，`--show` 是必选的，用于即时显示视频。
+- `FPS`：输出视频的帧率。
+- `--show`：是否即时显示视频。
+- `BACKEND`：用于可视化边界框的后端。选项包括 `cv2` 和 `plt`。
 
 ## 浏览数据集
 

@@ -6,6 +6,7 @@
 
   - [MOT Challenge](https://motchallenge.net/)
   - [CrowdHuman](https://www.crowdhuman.org/)
+
 - 视频实例分割
 
   - [YouTube-VIS](https://youtube-vos.org/dataset/vis/)
@@ -17,6 +18,7 @@
 #### 1.1 多目标跟踪
 
 - 对于多目标跟踪任务的训练和测试，需要下载MOT Challenge数据集之一（例如MOT17、MOT20），CrowdHuman数据集可以作为补充数据集。
+
 - 对于中国的用户，可以从 [OpenDataLab](https://opendatalab.com/) 上高速下载如下数据集：
 
   - [MOT17](https://opendatalab.com/MOT17/download)
@@ -229,15 +231,15 @@ MOT17-02-FRCNN_000009/000081.jpg 3
 
 `data/crowdhuman/annotations` 文件夹下有两个JSON文件：
 
-`crowdhuman_train.json`:  包含 CrowdHuman 数据集训练集的注释信息的JSON文件。
-`crowdhuman_val.json`:  包含 CrowdHuman 数据集验证集的注释信息的JSON文件。
+`crowdhuman_train.json`：包含 CrowdHuman 数据集训练集的注释信息的JSON文件。
+`crowdhuman_val.json`：包含 CrowdHuman 数据集验证集的注释信息的JSON文件。
 
 #### youtube_vis_2019/youtube_vis2021 中的 annotations 文件夹
 
-There are 3 JSON files in `data/youtube_vis_2019/annotations` or `data/youtube_vis_2021/annotations`:
+There are 3 JSON files in `data/youtube_vis_2019/annotations` or `data/youtube_vis_2021/annotations`：
 
-`youtube_vis_2019_train.json`/`youtube_vis_2021_train.json`: 包含 youtube_vis_2019/youtube_vis2021 数据集训练集的注释信息的JSON文件。
+`youtube_vis_2019_train.json`/`youtube_vis_2021_train.json`：包含 youtube_vis_2019/youtube_vis2021 数据集训练集的注释信息的JSON文件。
 
-`youtube_vis_2019_valid.json`/`youtube_vis_2021_valid.json`: 包含 youtube_vis_2019/youtube_vis2021 数据集验证集的注释信息的JSON文件。
+`youtube_vis_2019_valid.json`/`youtube_vis_2021_valid.json`：包含 youtube_vis_2019/youtube_vis2021 数据集验证集的注释信息的JSON文件。
 
-`youtube_vis_2019_test.json`/`youtube_vis_2021_test.json`: 包含 youtube_vis_2019/youtube_vis2021 数据集测试集的注释信息的JSON文件。
+`youtube_vis_2019_test.json`/`youtube_vis_2021_test.json`：包含 youtube_vis_2019/youtube_vis2021 数据集测试集的注释信息的JSON文件。
