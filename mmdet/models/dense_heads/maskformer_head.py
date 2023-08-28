@@ -477,7 +477,7 @@ class MaskFormerHead(AnchorFreeHead):
         batch_img_metas = [
             data_sample.metainfo for data_sample in batch_data_samples
         ]
-        batch_size = len(batch_img_metas)
+        batch_size = x[0].shape[0]
         input_img_h, input_img_w = batch_img_metas[0]['batch_input_shape']
         padding_mask = x[-1].new_ones((batch_size, input_img_h, input_img_w),
                                       dtype=torch.float32)

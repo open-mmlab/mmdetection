@@ -164,8 +164,19 @@ class IoUCost(BaseMatchCost):
         pred_bboxes = pred_instances.bboxes
         gt_bboxes = gt_instances.bboxes
 
+        # avoid fp16 overflow
+        if pred_bboxes.dtype == torch.float16:
+            fp16 = True
+            pred_bboxes = pred_bboxes.to(torch.float32)
+        else:
+            fp16 = False
+
         overlaps = bbox_overlaps(
             pred_bboxes, gt_bboxes, mode=self.iou_mode, is_aligned=False)
+
+        if fp16:
+            overlaps = overlaps.to(torch.float16)
+
         # The 1 is a constant that doesn't change the matching, so omitted.
         iou_cost = -overlaps
         return iou_cost * self.weight
@@ -362,10 +373,10 @@ class DiceCost(BaseMatchCost):
         numerator = 2 * torch.einsum('nc,mc->nm', mask_preds, gt_masks)
         if self.naive_dice:
             denominator = mask_preds.sum(-1)[:, None] + \
-                gt_masks.sum(-1)[None, :]
+                          gt_masks.sum(-1)[None, :]
         else:
             denominator = mask_preds.pow(2).sum(1)[:, None] + \
-                gt_masks.pow(2).sum(1)[None, :]
+                          gt_masks.pow(2).sum(1)[None, :]
         loss = 1 - (numerator + self.eps) / (denominator + self.eps)
         return loss
 

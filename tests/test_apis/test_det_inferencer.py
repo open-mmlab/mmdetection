@@ -120,7 +120,7 @@ class TestDetInferencer(TestCase):
         'rtmdet-t', 'mask-rcnn_r50_fpn_1x_coco', 'panoptic_fpn_r50_fpn_1x_coco'
     ])
     def test_postprocess(self, model):
-        # return_datasample
+        # return_datasamples
         img_path = 'tests/data/color.jpg'
 
         mock_load = Mock(return_value=None)
@@ -135,7 +135,7 @@ class TestDetInferencer(TestCase):
                 'palette': 'random'
             }
 
-        res = inferencer(img_path, return_datasample=True)
+        res = inferencer(img_path, return_datasamples=True)
         self.assertTrue(is_list_of(res['predictions'], DetDataSample))
 
         with tempfile.TemporaryDirectory() as tmp_dir:
