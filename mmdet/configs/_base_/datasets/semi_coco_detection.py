@@ -1,21 +1,22 @@
+# Copyright (c) OpenMMLab. All rights reserved.
+from mmengine.config import read_base
+
+with read_base():
+    from mmdet.datasets.transforms import *
+
 from mmcv import RandomResize
 from mmcv.transforms import LoadImageFromFile
 from mmengine.dataset import ConcatDataset
 from mmengine.dataset.sampler import DefaultSampler
 
-from mmdet.datasets import AspectRatioBatchSampler, CocoDataset, GroupMultiSourceSampler
-from mmdet.datasets.transforms import (LoadAnnotations, PackDetInputs,
-                                       RandomFlip, Resize, FilterAnnotations, MultiBranch,
-                                       RandomOrder, RandomErasing,
-                                       LoadEmptyAnnotations, AutoContrast, ColorTransform, Equalize, Sharpness,
-                                       Posterize, Solarize, Color, Contrast, Brightness, Rotate, ShearX, ShearY,
-                                       TranslateX, TranslateY)
+from mmdet.datasets import (AspectRatioBatchSampler, CocoDataset,
+                            GroupMultiSourceSampler)
 from mmdet.datasets.transforms.augment_wrappers import RandAugment
 from mmdet.evaluation import CocoMetric
 
 # dataset settings
 dataset_type = CocoDataset
-data_root = '/root/coco/'
+data_root = 'data/coco/'
 
 # Example to use different file client
 # Method 1: simply set the data root and let the file I/O module
@@ -60,7 +61,7 @@ branch_field = ['sup', 'unsup_teacher', 'unsup_student']
 sup_pipeline = [
     dict(type=LoadImageFromFile, backend_args=backend_args),
     dict(type=LoadAnnotations, with_bbox=True),
-      dict(
+    dict(
         type=RandomResize,
         scale=scale,
         ratio_range=(0.1, 2.0),
@@ -78,7 +79,7 @@ sup_pipeline = [
 # pipeline used to augment unlabeled data weakly,
 # which will be sent to teacher model for predicting pseudo instances.
 weak_pipeline = [
-      dict(
+    dict(
         type=RandomResize,
         scale=scale,
         ratio_range=(0.1, 2.0),
@@ -95,7 +96,7 @@ weak_pipeline = [
 # pipeline used to augment unlabeled data strongly,
 # which will be sent to student model for unsupervised training.
 strong_pipeline = [
-      dict(
+    dict(
         type=RandomResize,
         scale=scale,
         ratio_range=(0.1, 2.0),
