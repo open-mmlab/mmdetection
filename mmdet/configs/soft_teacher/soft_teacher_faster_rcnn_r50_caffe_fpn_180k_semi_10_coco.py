@@ -89,6 +89,10 @@ param_scheduler = [
 ]
 
 # optimizer
+# The learning rate in the old configuration was 0.01,
+# but there was a loss cls error during runtime.
+# Because the process of calculating losses is too close to zero,
+# the learning rate is adjusted to 0.001.
 optim_wrapper = dict(
     type=OptimWrapper,
     optimizer=dict(type=SGD, lr=0.001, momentum=0.9, weight_decay=0.0001))
