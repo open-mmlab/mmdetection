@@ -1,20 +1,22 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+
 import warnings
+from typing import Tuple
 
 import numpy as np
 import torch
-from mmengine.structures import InstanceData
-
-from mmdet.structures import DetDataSample
+from torch import Tensor
 
 
-def weighted_boxes_fusion(inference_results: list,
-                          img_shape: tuple,
-                          weights: list = None,
-                          iou_thr: float = 0.55,
-                          skip_box_thr: float = 0.0,
-                          conf_type: str = 'avg',
-                          allows_overflow: bool = False) -> DetDataSample:
+def weighted_boxes_fusion(
+        bboxes_list: list,
+        scores_list: list,
+        labels_list: list,
+        weights: list = None,
+        iou_thr: float = 0.55,
+        skip_box_thr: float = 0.0,
+        conf_type: str = 'avg',
+        allows_overflow: bool = False) -> Tuple[Tensor, Tensor, Tensor]:
     """weighted boxes fusion (<https://arxiv.org/abs/1910.13302> or <https://ww
     w.sciencedirect.com/science/article/abs/pii/S0262885621000226>) is a method
     for fusing predictions from different object detection models, which
@@ -22,9 +24,10 @@ def weighted_boxes_fusion(inference_results: list,
     averaged boxes.
 
     Args:
-        inference_results (list): list of DetDataSample which are results
-            produced by several models.
-        img_shape: image shape, (h, w, 3)
+        bboxes_list(list): list of boxes predictions from each model,
+                                    each box is 4 numbers.
+        scores_list(list): list of scores for each model
+        labels_list(list): list of labels for each model
         weights: list of weights for each model.
                 Default: None, which means weight == 1 for each model
         iou_thr: IoU value for boxes to be a match
@@ -38,25 +41,21 @@ def weighted_boxes_fusion(inference_results: list,
         allows_overflow: false if we want confidence score not exceed 1.0.
 
     Returns:
-        DetDataSample: fusion result
+        bboxes(Tensor): boxes coordinates (Order of boxes: x1, y1, x2, y2).
+        scores(Tensor): confidence scores
+        labels(Tensor): boxes labels
+
+    References:
+        https://github.com/ZFTurbo/Weighted-Boxes-Fusion
     """
 
-    boxes_list = []
-    scores_list = []
-    labels_list = []
-
-    for model_result in inference_results:
-        boxes_list.append(model_result.pred_instances.bboxes)
-        scores_list.append(model_result.pred_instances.scores)
-        labels_list.append(model_result.pred_instances.labels)
-
     if weights is None:
-        weights = np.ones(len(boxes_list))
-    if len(weights) != len(boxes_list):
+        weights = np.ones(len(bboxes_list))
+    if len(weights) != len(bboxes_list):
         print('Warning: incorrect number of weights {}. Must be: '
               '{}. Set weights equal to 1.'.format(
-                  len(weights), len(boxes_list)))
-        weights = np.ones(len(boxes_list))
+                  len(weights), len(bboxes_list)))
+        weights = np.ones(len(bboxes_list))
     weights = np.array(weights)
 
     if conf_type not in [
@@ -67,10 +66,10 @@ def weighted_boxes_fusion(inference_results: list,
               'or "absent_model_aware_avg"'.format(conf_type))
         exit()
 
-    filtered_boxes = prefilter_boxes(boxes_list, scores_list, labels_list,
-                                     img_shape, weights, skip_box_thr)
+    filtered_boxes = prefilter_boxes(bboxes_list, scores_list, labels_list,
+                                     weights, skip_box_thr)
     if len(filtered_boxes) == 0:
-        return DetDataSample()
+        return torch.Tensor(), torch.Tensor(), torch.Tensor()
 
     overall_boxes = []
 
@@ -132,22 +131,12 @@ def weighted_boxes_fusion(inference_results: list,
     scores = torch.Tensor(overall_boxes[:, 1])
     labels = torch.Tensor(overall_boxes[:, 0]).int()
 
-    pred_instances = InstanceData()
-    pred_instances.bboxes = bboxes
-    pred_instances.scores = scores
-    pred_instances.labels = labels
-
-    fusion_result = DetDataSample(pred_instances=pred_instances)
-
-    return fusion_result
+    return bboxes, scores, labels
 
 
-def prefilter_boxes(boxes, scores, labels, img_shape, weights, thr):
+def prefilter_boxes(boxes, scores, labels, weights, thr):
 
     new_boxes = dict()
-
-    h = float(img_shape[0])
-    w = float(img_shape[1])
 
     for t in range(len(boxes)):
 
@@ -181,34 +170,6 @@ def prefilter_boxes(boxes, scores, labels, img_shape, weights, thr):
             if y2 < y1:
                 warnings.warn('Y2 < Y1 value in box. Swap them.')
                 y1, y2 = y2, y1
-            if x1 < 0:
-                warnings.warn('X1 < 0 in box. Set it to 0.')
-                x1 = 0
-            if x1 > w:
-                warnings.warn(
-                    'X1 > image_width in box. Set it to image_width.')
-                x1 = w
-            if x2 < 0:
-                warnings.warn('X2 < 0 in box. Set it to 0.')
-                x2 = 0
-            if x2 > w:
-                warnings.warn(
-                    'X2 > image_width in box. Set it to image_width.')
-                x2 = w
-            if y1 < 0:
-                warnings.warn('Y1 < 0 in box. Set it to 0.')
-                y1 = 0
-            if y1 > h:
-                warnings.warn(
-                    'Y1 > image_heigth in box. Set it to image_heigth.')
-                y1 = h
-            if y2 < 0:
-                warnings.warn('Y2 < 0 in box. Set it to 0.')
-                y2 = 0
-            if y2 > h:
-                warnings.warn(
-                    'Y2 > image_heigth in box. Set it to image_heigth.')
-                y2 = h
             if (x2 - x1) * (y2 - y1) == 0.0:
                 warnings.warn('Zero area box skipped: {}.'.format(box_part))
                 continue
