@@ -33,9 +33,9 @@ MAX_CLAMP_VALUE = 50000
 
 def permute_and_flatten(layer: Tensor, N: int, A: int, C: int, H: int,
                         W: int) -> Tensor:
-    """Permute and then flatten a tensor of.
+    """Permute and then flatten a tensor,
 
-    size (N, A, C, H, W) to (N, H * W * A, C).
+       from size (N, A, C, H, W) to (N, H * W * A, C).
 
     Args:
         layer (Tensor): Tensor of shape (N, C, H, W).
