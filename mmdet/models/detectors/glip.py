@@ -2,7 +2,7 @@
 import copy
 import re
 import warnings
-from typing import Tuple
+from typing import Tuple, Union
 
 import torch
 from torch import Tensor
@@ -249,6 +249,42 @@ class GLIP(SingleStageDetector):
         positive_map_label_to_token = create_positive_map_label_to_token(
             positive_map, plus=1)
         return positive_map_label_to_token, caption_string
+
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> Union[dict, list]:
+        # TODO: Only open vocabulary tasks are supported for training now.
+        text_prompts = [
+            data_samples.text for data_samples in batch_data_samples
+        ]
+
+        if len(set(text_prompts)) == 1:
+            # All the text prompts are the same,
+            # so there is no need to calculate them multiple times.
+            _positive_maps_and_prompts = [
+                self.get_tokens_positive_and_prompts(
+                    text_prompts[0], True)
+            ] * len(batch_inputs)
+        else:
+            _positive_maps_and_prompts = [
+                self.get_tokens_positive_and_prompts(
+                    text_prompt, True)
+                for text_prompt in text_prompts
+            ]
+
+        positive_maps, text_prompts = zip(
+            *_positive_maps_and_prompts)
+        language_dict_features = self.language_model(text_prompts)
+
+        for i, data_samples in enumerate(batch_data_samples):
+            data_samples.token_positive_map = positive_maps[i]
+
+        visual_features = self.extract_feat(batch_inputs)
+
+        losses = self.bbox_head.loss(
+            visual_features,
+            language_dict_features,
+            batch_data_samples)
+        return losses
 
     def predict(self,
                 batch_inputs: Tensor,

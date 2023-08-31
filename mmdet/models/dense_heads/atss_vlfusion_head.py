@@ -22,9 +22,10 @@ from mmdet.registry import MODELS
 from mmdet.structures.bbox import cat_boxes
 from mmdet.utils import InstanceList
 from ..utils import (BertEncoderLayer, VLFuse, filter_scores_and_topk,
-                     permute_and_flatten, select_single_mlvl)
+                     permute_and_flatten, select_single_mlvl, unpack_gt_instances, unmap)
 from ..utils.vlfuse_helper import MAX_CLAMP_VALUE
 from .atss_head import ATSSHead
+from ..task_modules.prior_generators import anchor_inside_flags
 
 
 def convert_grounding_to_cls_scores(logits: Tensor,
@@ -40,14 +41,14 @@ def convert_grounding_to_cls_scores(logits: Tensor,
             positive_map = positive_maps[0]
             for label_j in positive_map:
                 scores[:, :, label_j -
-                       1] = logits[:, :,
-                                   torch.LongTensor(positive_map[label_j]
-                                                    )].mean(-1)
+                             1] = logits[:, :,
+                                  torch.LongTensor(positive_map[label_j]
+                                                   )].mean(-1)
         else:
             for i, positive_map in enumerate(positive_maps):
                 for label_j in positive_map:
                     scores[i, :, label_j - 1] = logits[
-                        i, :, torch.LongTensor(positive_map[label_j])].mean(-1)
+                                                i, :, torch.LongTensor(positive_map[label_j])].mean(-1)
     return scores
 
 
@@ -358,9 +359,9 @@ class VLFusionModule(BaseModel):
             bias = dot_product_proj_tokens_bias.unsqueeze(1).repeat(
                 1, self.num_base_priors, 1)
             dot_product_logit = (
-                torch.matmul(dot_product_proj_queries,
-                             dot_product_proj_tokens.transpose(-1, -2)) /
-                self.log_scale.exp()) + bias
+                                        torch.matmul(dot_product_proj_queries,
+                                                     dot_product_proj_tokens.transpose(-1, -2)) /
+                                        self.log_scale.exp()) + bias
             dot_product_logit = torch.clamp(
                 dot_product_logit, max=MAX_CLAMP_VALUE)
             dot_product_logit = torch.clamp(
@@ -409,7 +410,136 @@ class ATSSVLFusionHead(ATSSHead):
         """Forward function."""
         bbox_preds, centerness, cls_logits = self.head(visual_feats,
                                                        language_feats)
-        return bbox_preds, centerness, cls_logits
+        return cls_logits, bbox_preds, centerness
+
+    def loss(self, visual_feats: Tuple[Tensor], language_feats: dict, batch_data_samples):
+        outputs = unpack_gt_instances(batch_data_samples)
+        (batch_gt_instances, batch_gt_instances_ignore,
+         batch_img_metas) = outputs
+
+        batch_token_positive_maps = [
+            data_samples.token_positive_map
+            for data_samples in batch_data_samples
+        ]
+
+        for gt_instance, positive_map in zip(batch_gt_instances, batch_token_positive_maps):
+            gt_instance.set_metainfo({'positive_map': positive_map})
+
+        outs = self(visual_feats, language_feats)
+
+        loss_inputs = outs + (batch_gt_instances, batch_img_metas,
+                              batch_gt_instances_ignore)
+        losses = self.loss_by_feat(*loss_inputs)
+        return losses
+
+    def _get_targets_single(self,
+                            flat_anchors: Tensor,
+                            valid_flags: Tensor,
+                            num_level_anchors: List[int],
+                            gt_instances: InstanceData,
+                            img_meta: dict,
+                            gt_instances_ignore: Optional[InstanceData] = None,
+                            unmap_outputs: bool = True) -> tuple:
+        """Compute regression, classification targets for anchors in a single
+        image.
+
+        Args:
+            flat_anchors (Tensor): Multi-level anchors of the image, which are
+                concatenated into a single tensor of shape (num_anchors ,4)
+            valid_flags (Tensor): Multi level valid flags of the image,
+                which are concatenated into a single tensor of
+                    shape (num_anchors,).
+            num_level_anchors (List[int]): Number of anchors of each scale
+                level.
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            img_meta (dict): Meta information for current image.
+            gt_instances_ignore (:obj:`InstanceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
+            unmap_outputs (bool): Whether to map outputs back to the original
+                set of anchors.
+
+        Returns:
+            tuple: N is the number of total anchors in the image.
+                labels (Tensor): Labels of all anchors in the image with shape
+                    (N,).
+                label_weights (Tensor): Label weights of all anchor in the
+                    image with shape (N,).
+                bbox_targets (Tensor): BBox targets of all anchors in the
+                    image with shape (N, 4).
+                bbox_weights (Tensor): BBox weights of all anchors in the
+                    image with shape (N, 4)
+                pos_inds (Tensor): Indices of positive anchor with shape
+                    (num_pos,).
+                neg_inds (Tensor): Indices of negative anchor with shape
+                    (num_neg,).
+                sampling_result (:obj:`SamplingResult`): Sampling results.
+        """
+        inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
+                                           img_meta['img_shape'][:2],
+                                           self.train_cfg['allowed_border'])
+        if not inside_flags.any():
+            raise ValueError(
+                'There is no valid anchor inside the image boundary. Please '
+                'check the image size and anchor sizes, or set '
+                '``allowed_border`` to -1 to skip the condition.')
+        # assign gt and sample anchors
+        anchors = flat_anchors[inside_flags, :]
+
+        num_level_anchors_inside = self.get_num_level_anchors_inside(
+            num_level_anchors, inside_flags)
+        pred_instances = InstanceData(priors=anchors)
+        assign_result = self.assigner.assign(pred_instances,
+                                             num_level_anchors_inside,
+                                             gt_instances, gt_instances_ignore)
+
+        sampling_result = self.sampler.sample(assign_result, pred_instances,
+                                              gt_instances)
+
+        num_valid_anchors = anchors.shape[0]
+        bbox_targets = torch.zeros_like(anchors)
+        bbox_weights = torch.zeros_like(anchors)
+        labels = anchors.new_full((num_valid_anchors, ),
+                                  self.num_classes,
+                                  dtype=torch.long)
+        label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
+
+        pos_inds = sampling_result.pos_inds
+        neg_inds = sampling_result.neg_inds
+        if len(pos_inds) > 0:
+            if self.reg_decoded_bbox:
+                pos_bbox_targets = sampling_result.pos_gt_bboxes
+            else:
+                pos_bbox_targets = self.bbox_coder.encode(
+                    sampling_result.pos_priors, sampling_result.pos_gt_bboxes)
+
+            bbox_targets[pos_inds, :] = pos_bbox_targets
+            bbox_weights[pos_inds, :] = 1.0
+
+            labels[pos_inds] = sampling_result.pos_gt_labels
+            if self.train_cfg['pos_weight'] <= 0:
+                label_weights[pos_inds] = 1.0
+            else:
+                label_weights[pos_inds] = self.train_cfg['pos_weight']
+        if len(neg_inds) > 0:
+            label_weights[neg_inds] = 1.0
+
+        # map up to original set of anchors
+        if unmap_outputs:
+            num_total_anchors = flat_anchors.size(0)
+            anchors = unmap(anchors, num_total_anchors, inside_flags)
+            labels = unmap(
+                labels, num_total_anchors, inside_flags, fill=self.num_classes)
+            label_weights = unmap(label_weights, num_total_anchors,
+                                  inside_flags)
+            bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
+            bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
+
+        return (anchors, labels, label_weights, bbox_targets, bbox_weights,
+                pos_inds, neg_inds, sampling_result)
 
     def predict(self,
                 visual_feats: Tuple[Tensor],
@@ -450,9 +580,9 @@ class ATSSVLFusionHead(ATSSHead):
         return predictions
 
     def predict_by_feat(self,
+                        cls_logits: List[Tensor],
                         bbox_preds: List[Tensor],
                         score_factors: List[Tensor],
-                        cls_logits: List[Tensor],
                         batch_img_metas: Optional[List[dict]] = None,
                         batch_token_positive_maps: Optional[List[dict]] = None,
                         cfg: Optional[ConfigDict] = None,
@@ -466,15 +596,15 @@ class ATSSVLFusionHead(ATSSHead):
         such as CenterNess in FCOS, IoU branch in ATSS.
 
         Args:
+            cls_logits (list[Tensor]): Classification scores for all
+                scale levels, each is a 4D-tensor, has shape
+                (batch_size, num_priors * num_classes, H, W).
             bbox_preds (list[Tensor]): Box energies / deltas for all
                 scale levels, each is a 4D-tensor, has shape
                 (batch_size, num_priors * 4, H, W).
             score_factors (list[Tensor], optional): Score factor for
                 all scale level, each is a 4D-tensor, has shape
                 (batch_size, num_priors * 1, H, W). Defaults to None.
-            cls_logits (list[Tensor]): Classification scores for all
-                scale levels, each is a 4D-tensor, has shape
-                (batch_size, num_priors * num_classes, H, W).
             batch_img_metas (list[dict], Optional): Batch image meta info.
                 Defaults to None.
             batch_token_positive_maps (list[dict], Optional): Batch token
