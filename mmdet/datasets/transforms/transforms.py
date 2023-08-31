@@ -7,7 +7,6 @@ from typing import List, Optional, Sequence, Tuple, Union
 
 import cv2
 import mmcv
-import numpy
 import numpy as np
 from mmcv.image import imresize
 from mmcv.image.geometric import _scale_size
@@ -3853,3 +3852,22 @@ class CachedMixUp(BaseTransform):
         repr_str += f'random_pop={self.random_pop}, '
         repr_str += f'prob={self.prob})'
         return repr_str
+
+
+@TRANSFORMS.register_module()
+class ProcessClassForOpenSet(BaseTransform):
+
+    def transform(self, results: dict) -> dict:
+        assert 'text' in results
+        class_names = results['text']
+        gt_bboxes_labels = results['gt_bboxes_labels']
+
+        if 'gt_ignore_flags' in results:
+            valid_idx = np.where(results['gt_ignore_flags'] == 0)[0]
+            gt_bboxes_labels = gt_bboxes_labels[valid_idx]
+
+        gt_labels_names = []
+        for label in gt_bboxes_labels:
+            gt_labels_names.append(class_names[label])
+        results['text'] = gt_labels_names
+        return results

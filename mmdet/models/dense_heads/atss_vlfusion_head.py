@@ -21,11 +21,12 @@ except ImportError:
 from mmdet.registry import MODELS
 from mmdet.structures.bbox import cat_boxes
 from mmdet.utils import InstanceList
+from ..task_modules.prior_generators import anchor_inside_flags
 from ..utils import (BertEncoderLayer, VLFuse, filter_scores_and_topk,
-                     permute_and_flatten, select_single_mlvl, unpack_gt_instances, unmap)
+                     permute_and_flatten, select_single_mlvl, unmap,
+                     unpack_gt_instances)
 from ..utils.vlfuse_helper import MAX_CLAMP_VALUE
 from .atss_head import ATSSHead
-from ..task_modules.prior_generators import anchor_inside_flags
 
 
 def convert_grounding_to_cls_scores(logits: Tensor,
@@ -41,14 +42,14 @@ def convert_grounding_to_cls_scores(logits: Tensor,
             positive_map = positive_maps[0]
             for label_j in positive_map:
                 scores[:, :, label_j -
-                             1] = logits[:, :,
-                                  torch.LongTensor(positive_map[label_j]
-                                                   )].mean(-1)
+                       1] = logits[:, :,
+                                   torch.LongTensor(positive_map[label_j]
+                                                    )].mean(-1)
         else:
             for i, positive_map in enumerate(positive_maps):
                 for label_j in positive_map:
                     scores[i, :, label_j - 1] = logits[
-                                                i, :, torch.LongTensor(positive_map[label_j])].mean(-1)
+                        i, :, torch.LongTensor(positive_map[label_j])].mean(-1)
     return scores
 
 
@@ -359,9 +360,9 @@ class VLFusionModule(BaseModel):
             bias = dot_product_proj_tokens_bias.unsqueeze(1).repeat(
                 1, self.num_base_priors, 1)
             dot_product_logit = (
-                                        torch.matmul(dot_product_proj_queries,
-                                                     dot_product_proj_tokens.transpose(-1, -2)) /
-                                        self.log_scale.exp()) + bias
+                torch.matmul(dot_product_proj_queries,
+                             dot_product_proj_tokens.transpose(-1, -2)) /
+                self.log_scale.exp()) + bias
             dot_product_logit = torch.clamp(
                 dot_product_logit, max=MAX_CLAMP_VALUE)
             dot_product_logit = torch.clamp(
@@ -390,8 +391,9 @@ class ATSSVLFusionHead(ATSSHead):
                  use_checkpoint: bool = False,
                  num_dyhead_blocks: int = 6,
                  lang_model_name: str = 'bert-base-uncased',
+                 init_cfg=None,
                  **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs, init_cfg=init_cfg)
         self.head = VLFusionModule(
             in_channels=self.in_channels,
             feat_channels=self.feat_channels,
@@ -400,6 +402,7 @@ class ATSSVLFusionHead(ATSSHead):
             use_checkpoint=use_checkpoint,
             num_dyhead_blocks=num_dyhead_blocks,
             lang_model_name=lang_model_name)
+        self.text_masks = None
 
     def _init_layers(self) -> None:
         """No need to initialize the ATSS head layer."""
@@ -412,25 +415,101 @@ class ATSSVLFusionHead(ATSSHead):
                                                        language_feats)
         return cls_logits, bbox_preds, centerness
 
-    def loss(self, visual_feats: Tuple[Tensor], language_feats: dict, batch_data_samples):
+    def loss(self, visual_feats: Tuple[Tensor], language_feats: dict,
+             batch_data_samples):
         outputs = unpack_gt_instances(batch_data_samples)
         (batch_gt_instances, batch_gt_instances_ignore,
          batch_img_metas) = outputs
 
-        batch_token_positive_maps = [
-            data_samples.token_positive_map
-            for data_samples in batch_data_samples
-        ]
-
-        for gt_instance, positive_map in zip(batch_gt_instances, batch_token_positive_maps):
-            gt_instance.set_metainfo({'positive_map': positive_map})
-
         outs = self(visual_feats, language_feats)
-
+        self.text_masks = language_feats['masks']
         loss_inputs = outs + (batch_gt_instances, batch_img_metas,
                               batch_gt_instances_ignore)
         losses = self.loss_by_feat(*loss_inputs)
         return losses
+
+    def loss_by_feat_single(self, anchors: Tensor, cls_score: Tensor,
+                            bbox_pred: Tensor, centerness: Tensor,
+                            labels: Tensor, label_weights: Tensor,
+                            bbox_targets: Tensor, avg_factor: float) -> dict:
+        """Calculate the loss of a single scale level based on the features
+        extracted by the detection head.
+
+        Args:
+            cls_score (Tensor): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W).
+            bbox_pred (Tensor): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W).
+            anchors (Tensor): Box reference for each scale level with shape
+                (N, num_total_anchors, 4).
+            labels (Tensor): Labels of each anchors with shape
+                (N, num_total_anchors).
+            label_weights (Tensor): Label weights of each anchor with shape
+                (N, num_total_anchors)
+            bbox_targets (Tensor): BBox regression targets of each anchor with
+                shape (N, num_total_anchors, 4).
+            avg_factor (float): Average factor that is used to average
+                the loss. When using sampling method, avg_factor is usually
+                the sum of positive and negative priors. When using
+                `PseudoSampler`, `avg_factor` is usually equal to the number
+                of positive priors.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
+
+        anchors = anchors.reshape(-1, 4)
+
+        # ===== this change =====
+        pos_inds = (labels.sum(-1) > 0).reshape(-1)
+
+        # Loss is not computed for the padded regions of the text.
+        assert (self.text_masks.dim() == 2)
+        text_mask = (self.text_masks > 0).unsqueeze(1)
+        text_mask = text_mask.repeat(1, cls_score.size(1), 1)
+        cls_score = torch.masked_select(cls_score, text_mask).contiguous()
+        labels = torch.masked_select(labels, text_mask)
+        label_weights = label_weights[...,
+                                      None].repeat(1, 1, text_mask.size(-1))
+        label_weights = torch.masked_select(label_weights, text_mask)
+
+        bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
+        centerness = centerness.permute(0, 2, 3, 1).reshape(-1)
+        bbox_targets = bbox_targets.reshape(-1, 4)
+        labels = labels.reshape(-1)
+        label_weights = label_weights.reshape(-1)
+
+        # classification loss
+        loss_cls = self.loss_cls(
+            cls_score, labels, label_weights, avg_factor=avg_factor)
+
+        if pos_inds.sum() > 0:
+            pos_bbox_targets = bbox_targets[pos_inds]
+            pos_bbox_pred = bbox_pred[pos_inds]
+            pos_anchors = anchors[pos_inds]
+            pos_centerness = centerness[pos_inds]
+
+            centerness_targets = self.centerness_target(
+                pos_anchors, pos_bbox_targets)
+            pos_decode_bbox_pred = self.bbox_coder.decode(
+                pos_anchors, pos_bbox_pred)
+
+            # regression loss
+            loss_bbox = self.loss_bbox(
+                pos_decode_bbox_pred,
+                pos_bbox_targets,
+                weight=centerness_targets,
+                avg_factor=1.0)
+
+            # centerness loss
+            loss_centerness = self.loss_centerness(
+                pos_centerness, centerness_targets, avg_factor=avg_factor)
+        else:
+            loss_bbox = bbox_pred.sum() * 0
+            loss_centerness = centerness.sum() * 0
+            centerness_targets = bbox_targets.new_tensor(0.)
+
+        return loss_cls, loss_bbox, loss_centerness, centerness_targets.sum()
 
     def _get_targets_single(self,
                             flat_anchors: Tensor,
@@ -502,11 +581,12 @@ class ATSSVLFusionHead(ATSSHead):
         num_valid_anchors = anchors.shape[0]
         bbox_targets = torch.zeros_like(anchors)
         bbox_weights = torch.zeros_like(anchors)
-        labels = anchors.new_full((num_valid_anchors, ),
-                                  self.num_classes,
-                                  dtype=torch.long)
-        label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
 
+        # ===== this change =====
+        labels = anchors.new_full((num_valid_anchors, self.feat_channels),
+                                  0,
+                                  dtype=torch.float32)
+        label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
@@ -519,7 +599,9 @@ class ATSSVLFusionHead(ATSSHead):
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
 
-            labels[pos_inds] = sampling_result.pos_gt_labels
+            # ===== this change =====
+            labels[pos_inds] = gt_instances.positive_maps[
+                sampling_result.pos_assigned_gt_inds]
             if self.train_cfg['pos_weight'] <= 0:
                 label_weights[pos_inds] = 1.0
             else:
@@ -531,8 +613,8 @@ class ATSSVLFusionHead(ATSSHead):
         if unmap_outputs:
             num_total_anchors = flat_anchors.size(0)
             anchors = unmap(anchors, num_total_anchors, inside_flags)
-            labels = unmap(
-                labels, num_total_anchors, inside_flags, fill=self.num_classes)
+            # this change
+            labels = unmap(labels, num_total_anchors, inside_flags, fill=0)
             label_weights = unmap(label_weights, num_total_anchors,
                                   inside_flags)
             bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)

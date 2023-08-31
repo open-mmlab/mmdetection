@@ -2,7 +2,7 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
 ]
-
+load_from = 'https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth'  # noqa
 lang_model_name = 'bert-base-uncased'
 
 model = dict(
@@ -62,8 +62,7 @@ model = dict(
             loss_weight=1.0),
         loss_bbox=dict(type='GIoULoss', loss_weight=2.0),
         loss_centerness=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)
-    ),
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     language_model=dict(type='BertModel', name=lang_model_name),
     train_cfg=dict(
         assigner=dict(type='ATSSAssigner', topk=9),
@@ -79,9 +78,10 @@ model = dict(
 
 # dataset settings
 train_pipeline = [
-    dict(type='LoadImageFromFile',
-         imdecode_backend='pillow',
-         backend_args=_base_.backend_args),
+    dict(
+        type='LoadImageFromFile',
+        imdecode_backend='pillow',
+        backend_args=_base_.backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
     # dict(
     #     type='RandomResize',
@@ -90,13 +90,17 @@ train_pipeline = [
     #     backend='pillow'),
     dict(
         type='RandomChoiceResize',
-        scales=[(1333, 480), (1333, 560), (1333, 640), (1333, 720), (1333, 800)],
+        scales=[(1333, 480), (1333, 560), (1333, 640), (1333, 720),
+                (1333, 800)],
         keep_ratio=True,
         backend='pillow'),
     dict(type='RandomFlip', prob=0.5),
-    dict(type='PackDetInputs',
-         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                    'scale_factor', 'flip', 'flip_direction', 'text', 'custom_entities'))
+    dict(type='ProcessClassForOpenSet'),
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor', 'flip', 'flip_direction', 'text',
+                   'custom_entities'))
 ]
 
 test_pipeline = [
@@ -116,11 +120,17 @@ test_pipeline = [
                    'scale_factor', 'text', 'custom_entities'))
 ]
 
-train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
+train_dataloader = dict(
+    dataset=dict(pipeline=train_pipeline, return_classes=True))
 
 val_dataloader = dict(
     dataset=dict(pipeline=test_pipeline, return_classes=True))
 test_dataloader = val_dataloader
 
 optim_wrapper = dict(
-    optimizer=dict(_delete_=True, type='AdamW', lr=0.00001, weight_decay=0.0001, betas=(0.9, 0.999)))
+    optimizer=dict(
+        _delete_=True,
+        type='AdamW',
+        lr=0.00001,
+        weight_decay=0.0001,
+        betas=(0.9, 0.999)))
