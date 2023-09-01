@@ -16,10 +16,10 @@ from .loading import (FilterAnnotations, InferencerLoader, LoadAnnotations,
 from .transforms import (Albu, CachedMixUp, CachedMosaic, CopyPaste, CutOut,
                          Expand, FixScaleResize, FixShapeResize,
                          MinIoURandomCrop, MixUp, Mosaic, Pad,
-                         PhotoMetricDistortion, ProcessClassForOpenSet,
-                         RandomAffine, RandomCenterCropPad, RandomCrop,
-                         RandomErasing, RandomFlip, RandomShift, Resize,
-                         ResizeShortestEdge, SegRescale, YOLOXHSVRandomAug)
+                         PhotoMetricDistortion, RandomAffine,
+                         RandomCenterCropPad, RandomCrop, RandomErasing,
+                         RandomFlip, RandomShift, Resize, ResizeShortestEdge,
+                         SegRescale, YOLOXHSVRandomAug)
 from .wrappers import MultiBranch, ProposalBroadcaster, RandomOrder
 
 __all__ = [
@@ -37,6 +37,5 @@ __all__ = [
     'LoadEmptyAnnotations', 'RandomOrder', 'CachedMosaic', 'CachedMixUp',
     'FixShapeResize', 'ProposalBroadcaster', 'InferencerLoader',
     'LoadTrackAnnotations', 'BaseFrameSample', 'UniformRefFrameSample',
-    'PackTrackInputs', 'PackReIDInputs', 'FixScaleResize',
-    'ResizeShortestEdge', 'ProcessClassForOpenSet'
+    'PackTrackInputs', 'PackReIDInputs', 'FixScaleResize', 'ResizeShortestEdge'
 ]

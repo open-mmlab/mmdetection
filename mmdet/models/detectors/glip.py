@@ -210,10 +210,10 @@ class GLIP(SingleStageDetector):
         self._language_dict_features = None
         self._entities = None
 
-    def get_tokens_positive_and_prompts(
+    def get_tokens_and_prompts(
             self,
-            original_caption: str,
-            custom_entities: bool = False) -> Tuple[dict, str, Tensor]:
+            original_caption: Union[str, list, tuple],
+            custom_entities: bool = False) -> Tuple[dict, str, list]:
         """Get the tokens positive and prompts for the caption."""
         if isinstance(original_caption, (list, tuple)) or custom_entities:
             if custom_entities and isinstance(original_caption, str):
@@ -245,9 +245,23 @@ class GLIP(SingleStageDetector):
             self._entities = noun_phrases
             caption_string = original_caption
 
+        return tokenized, caption_string, tokens_positive
+
+    def get_positive_map(self, tokenized, tokens_positive):
         positive_map = create_positive_map(tokenized, tokens_positive)
         positive_map_label_to_token = create_positive_map_label_to_token(
             positive_map, plus=1)
+        return positive_map_label_to_token, positive_map
+
+    def get_tokens_positive_and_prompts(
+            self,
+            original_caption: Union[str, list, tuple],
+            custom_entities: bool = False) -> Tuple[dict, str, Tensor]:
+        tokenized, caption_string, tokens_positive = \
+            self.get_tokens_and_prompts(
+                original_caption, custom_entities)
+        positive_map_label_to_token, positive_map = self.get_positive_map(
+            tokenized, tokens_positive)
         return positive_map_label_to_token, caption_string, positive_map
 
     def loss(self, batch_inputs: Tensor,
@@ -256,13 +270,42 @@ class GLIP(SingleStageDetector):
         text_prompts = [
             data_samples.text for data_samples in batch_data_samples
         ]
-        _positive_maps_and_prompts = [
-            self.get_tokens_positive_and_prompts(text_prompt, True)
-            for text_prompt in text_prompts
+
+        gt_labels = [
+            data_samples.gt_instances.labels
+            for data_samples in batch_data_samples
         ]
 
-        _, text_prompts, positive_maps = zip(*_positive_maps_and_prompts)
-        language_dict_features = self.language_model(text_prompts)
+        new_text_prompts = []
+        positive_maps = []
+        if len(set(text_prompts)) == 1:
+            # All the text prompts are the same,
+            # so there is no need to calculate them multiple times.
+            tokenized, caption_string, tokens_positive = \
+                self.get_tokens_and_prompts(
+                    text_prompts[0], True)
+            new_text_prompts = [caption_string] * len(batch_inputs)
+            for gt_label in gt_labels:
+                new_tokens_positive = [
+                    tokens_positive[label] for label in gt_label
+                ]
+                _, positive_map = self.get_positive_map(
+                    tokenized, new_tokens_positive)
+                positive_maps.append(positive_map)
+        else:
+            for text_prompt, gt_label in zip(text_prompts, gt_labels):
+                tokenized, caption_string, tokens_positive = \
+                    self.get_tokens_and_prompts(
+                        text_prompt, True)
+                new_tokens_positive = [
+                    tokens_positive[label] for label in gt_label
+                ]
+                _, positive_map = self.get_positive_map(
+                    tokenized, new_tokens_positive)
+                positive_maps.append(positive_map)
+                new_text_prompts.append(caption_string)
+
+        language_dict_features = self.language_model(new_text_prompts)
         for i, data_samples in enumerate(batch_data_samples):
             positive_map = positive_maps[i].to(batch_inputs.device)
             data_samples.gt_instances.positive_maps = positive_map

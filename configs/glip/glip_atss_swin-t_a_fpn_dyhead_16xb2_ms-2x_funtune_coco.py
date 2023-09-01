@@ -95,7 +95,6 @@ train_pipeline = [
         keep_ratio=True,
         backend='pillow'),
     dict(type='RandomFlip', prob=0.5),
-    dict(type='ProcessClassForOpenSet'),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
@@ -128,9 +127,24 @@ val_dataloader = dict(
 test_dataloader = val_dataloader
 
 optim_wrapper = dict(
+    clip_grad=dict(max_norm=1, norm_type=2),
     optimizer=dict(
         _delete_=True,
         type='AdamW',
         lr=0.00001,
         weight_decay=0.0001,
-        betas=(0.9, 0.999)))
+        betas=(0.9, 0.999)),
+    paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
+
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
+        end=2000),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=24,
+        by_epoch=True,
+        milestones=[16, 22],
+        gamma=0.1)
+]
