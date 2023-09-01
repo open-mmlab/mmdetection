@@ -1,3 +1,13 @@
+from mmcv.transforms.loading import LoadImageFromFile
+from mmengine.dataset.sampler import DefaultSampler
+
+from mmdet.datasets.transforms.loading import LoadAnnotations
+from mmdet.datasets.transforms.transforms import RandomFlip, Resize
+from mmdet.datasets.transforms.formatting import PackDetInputs
+from mmdet.datasets.samplers.batch_sampler import AspectRatioBatchSampler
+from mmdet.evaluation.metrics.coco_metric import CocoMetric
+
+
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
@@ -18,19 +28,19 @@ data_root = 'data/coco/'
 backend_args = None
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', backend_args=backend_args),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', scale=(1333, 800), keep_ratio=True),
-    dict(type='RandomFlip', prob=0.5),
-    dict(type='PackDetInputs')
+    dict(type=LoadImageFromFile, backend_args=backend_args),
+    dict(type=LoadAnnotations, with_bbox=True),
+    dict(type=Resize, scale=(1333, 800), keep_ratio=True),
+    dict(type=RandomFlip, prob=0.5),
+    dict(type=PackDetInputs)
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', backend_args=backend_args),
-    dict(type='Resize', scale=(1333, 800), keep_ratio=True),
+    dict(type=LoadImageFromFile, backend_args=backend_args),
+    dict(type=Resize, scale=(1333, 800), keep_ratio=True),
     # If you don't have a gt annotation, delete the pipeline
-    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type=LoadAnnotations, with_bbox=True),
     dict(
-        type='PackDetInputs',
+        type=PackDetInputs,
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
                    'scale_factor'))
 ]
@@ -38,8 +48,8 @@ train_dataloader = dict(
     batch_size=2,
     num_workers=2,
     persistent_workers=True,
-    sampler=dict(type='DefaultSampler', shuffle=True),
-    batch_sampler=dict(type='AspectRatioBatchSampler'),
+    sampler=dict(type=DefaultSampler, shuffle=True),
+    batch_sampler=dict(type=AspectRatioBatchSampler),
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
@@ -53,7 +63,7 @@ val_dataloader = dict(
     num_workers=2,
     persistent_workers=True,
     drop_last=False,
-    sampler=dict(type='DefaultSampler', shuffle=False),
+    sampler=dict(type=DefaultSampler, shuffle=False),
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
@@ -65,7 +75,7 @@ val_dataloader = dict(
 test_dataloader = val_dataloader
 
 val_evaluator = dict(
-    type='CocoMetric',
+    type=CocoMetric,
     ann_file=data_root + 'annotations/instances_val2017.json',
     metric='bbox',
     format_only=False,
