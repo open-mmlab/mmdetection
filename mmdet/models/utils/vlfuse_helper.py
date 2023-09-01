@@ -76,7 +76,7 @@ class BiMultiHeadAttention(nn.Module):
         l_dim (int): The dimension of the language input.
         embed_dim (int): The embedding dimension for the attention operation.
         num_heads (int): The number of attention heads.
-        dropout (float, optional): The dropout probability. Default: 0.1.
+        dropout (float, optional): The dropout probability. Defaults to 0.1.
     """
 
     def __init__(self,
@@ -414,12 +414,12 @@ class BertEncoderLayer(BertPreTrainedModel):
         config (:class:`~transformers.BertConfig`):
             The configuration object that
             contains various parameters for the model.
-        clamp_min_for_underflow (`bool`, optional, defaults to `False`):
-            Whether to clamp the minimum value
-            of the hidden states to prevent underflow.
-        clamp_max_for_overflow (`bool`, optional, defaults to `False`):
-            Whether to clamp the maximum value
-            of the hidden states to prevent overflow.
+        clamp_min_for_underflow (bool, optional):
+            Whether to clamp the minimum value of the hidden states
+             to prevent underflow. Defaults to `False`.
+        clamp_max_for_overflow (bool, optional):
+            Whether to clamp the maximum value of the hidden states
+            to prevent overflow. Defaults to `False`.
     """
 
     def __init__(self,
@@ -492,12 +492,12 @@ class BertSelfAttention(nn.Module):
         config (:class:`~transformers.BertConfig`):
             The configuration object that
             contains various parameters for the model.
-        clamp_min_for_underflow (`bool`, optional, defaults to `False`):
-            Whether to clamp the minimum value
-            of the hidden states to prevent underflow.
-        clamp_max_for_overflow (`bool`, optional, defaults to `False`):
-            Whether to clamp the maximum value
-            of the hidden states to prevent overflow.
+        clamp_min_for_underflow (bool, optional):
+            Whether to clamp the minimum value of the hidden states
+             to prevent underflow. Defaults to `False`.
+        clamp_max_for_overflow (bool, optional):
+            Whether to clamp the maximum value of the hidden states
+            to prevent overflow. Defaults to `False`.
     """
 
     def __init__(self,
@@ -672,12 +672,12 @@ class BertAttention(HFBertAttention):
         config (:class:`~transformers.BertConfig`):
             The configuration object that
             contains various parameters for the model.
-        clamp_min_for_underflow (`bool`, optional, defaults to `False`):
-            Whether to clamp the minimum value
-            of the hidden states to prevent underflow.
-        clamp_max_for_overflow (`bool`, optional, defaults to `False`):
-            Whether to clamp the maximum value
-            of the hidden states to prevent overflow.
+        clamp_min_for_underflow (bool, optional):
+            Whether to clamp the minimum value of the hidden states
+             to prevent underflow. Defaults to `False`.
+        clamp_max_for_overflow (bool, optional):
+            Whether to clamp the maximum value of the hidden states
+            to prevent overflow. Defaults to `False`.
     """
 
     def __init__(self,
