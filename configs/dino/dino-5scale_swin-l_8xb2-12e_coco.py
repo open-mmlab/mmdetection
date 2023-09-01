@@ -1,9 +1,4 @@
-from mmengine.config import read_base
-
-with read_base():
-    from .dino_4scale_r50_8xb2_12e_coco import *
-
-from mmdet.models.backbones.swin import SwinTransformer
+_base_ = './dino-4scale_r50_8xb2-12e_coco.py'
 
 fp16 = dict(loss_scale=512.)
 pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'  # noqa
@@ -12,7 +7,7 @@ model = dict(
     num_feature_levels=num_levels,
     backbone=dict(
         _delete_=True,
-        type=SwinTransformer,
+        type='SwinTransformer',
         pretrain_img_size=384,
         embed_dims=192,
         depths=[2, 2, 18, 2],
