@@ -10,7 +10,7 @@ from mmcv.transforms.processing import RandomChoiceResize
 from mmengine.optim.optimizer.optimizer_wrapper import OptimWrapper
 from mmengine.optim.scheduler.lr_scheduler import MultiStepLR
 from mmengine.runner.loops import EpochBasedTrainLoop, ValLoop, TestLoop
-from torch.nn import BatchNorm2d,GroupNorm
+from torch.nn import BatchNorm2d, GroupNorm
 from mmdet.models.detectors.dino import DINO
 from mmdet.models.data_preprocessors.data_preprocessor import \
     DetDataPreprocessor
@@ -30,7 +30,7 @@ from mmdet.datasets.transforms.formatting import PackDetInputs
 
 model = dict(
     type=DINO,
-    num_queries=900,  # num_matching_queries
+    num_queries=900,   # num_matching_queries
     with_box_refine=True,
     as_two_stage=True,
     data_preprocessor=dict(
