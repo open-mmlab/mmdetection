@@ -55,6 +55,7 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
                  num_queries: int = 100,
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None,
+                 use_lsj: bool = False,
                  data_preprocessor: OptConfigType = None,
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
@@ -68,6 +69,7 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
         self.decoder = decoder
         self.positional_encoding = positional_encoding
         self.num_queries = num_queries
+        self.use_lsj = use_lsj
 
         # init model layers
         self.backbone = MODELS.build(backbone)
@@ -95,6 +97,13 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
         Returns:
             dict: A dictionary of loss components
         """
+        if self.use_lsj:
+            batch_input_shape = batch_data_samples[0].batch_input_shape
+            for data_samples in batch_data_samples:
+                img_metas = data_samples.metainfo
+                input_img_h, input_img_w = batch_input_shape
+                img_metas['img_shape'] = [input_img_h, input_img_w]
+
         img_feats = self.extract_feat(batch_inputs)
         head_inputs_dict = self.forward_transformer(img_feats,
                                                     batch_data_samples)
@@ -130,6 +139,13 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
             - bboxes (Tensor): Has a shape (num_instances, 4),
               the last dimension 4 arrange as (x1, y1, x2, y2).
         """
+        if self.use_lsj:
+            batch_input_shape = batch_data_samples[0].batch_input_shape
+            for data_samples in batch_data_samples:
+                img_metas = data_samples.metainfo
+                input_img_h, input_img_w = batch_input_shape
+                img_metas['img_shape'] = [input_img_h, input_img_w]
+
         img_feats = self.extract_feat(batch_inputs)
         head_inputs_dict = self.forward_transformer(img_feats,
                                                     batch_data_samples)
@@ -158,6 +174,13 @@ class DetectionTransformer(BaseDetector, metaclass=ABCMeta):
         Returns:
             tuple[Tensor]: A tuple of features from ``bbox_head`` forward.
         """
+        if self.use_lsj:
+            batch_input_shape = batch_data_samples[0].batch_input_shape
+            for data_samples in batch_data_samples:
+                img_metas = data_samples.metainfo
+                input_img_h, input_img_w = batch_input_shape
+                img_metas['img_shape'] = [input_img_h, input_img_w]
+
         img_feats = self.extract_feat(batch_inputs)
         head_inputs_dict = self.forward_transformer(img_feats,
                                                     batch_data_samples)

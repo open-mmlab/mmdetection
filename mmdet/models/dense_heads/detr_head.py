@@ -16,7 +16,7 @@ from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_overlaps,
                                    bbox_xyxy_to_cxcywh)
 from mmdet.utils import (ConfigType, InstanceList, OptInstanceList,
                          OptMultiConfig, reduce_mean)
-from ..losses import QualityFocalLoss
+from ..losses import QualityFocalLoss, VarifocalLoss
 from ..utils import multi_apply
 
 
@@ -292,7 +292,7 @@ class DETRHead(BaseModule):
                 cls_scores.new_tensor([cls_avg_factor]))
         cls_avg_factor = max(cls_avg_factor, 1)
 
-        if isinstance(self.loss_cls, QualityFocalLoss):
+        if isinstance(self.loss_cls, (QualityFocalLoss, VarifocalLoss)):
             bg_class_ind = self.num_classes
             pos_inds = ((labels >= 0)
                         & (labels < bg_class_ind)).nonzero().squeeze(1)
@@ -305,6 +305,9 @@ class DETRHead(BaseModule):
                 pos_decode_bbox_pred.detach(),
                 pos_decode_bbox_targets,
                 is_aligned=True)
+            if isinstance(self.loss_cls, VarifocalLoss):
+                label_weights = None
+
             loss_cls = self.loss_cls(
                 cls_scores, (labels, scores),
                 label_weights,

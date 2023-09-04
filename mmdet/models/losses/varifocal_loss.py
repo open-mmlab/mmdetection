@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional
+from typing import Optional, Union
 
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
@@ -100,7 +101,7 @@ class VarifocalLoss(nn.Module):
 
     def forward(self,
                 pred: Tensor,
-                target: Tensor,
+                target: Union[Tensor, tuple],
                 weight: Optional[Tensor] = None,
                 avg_factor: Optional[int] = None,
                 reduction_override: Optional[str] = None) -> Tensor:
@@ -126,6 +127,17 @@ class VarifocalLoss(nn.Module):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
+
+        # Ensure VarifocalLoss can be used for any head.
+        if isinstance(target, tuple):
+            # n, n
+            label, score = target
+            num_classes = pred.size(1)
+            pos_inds = (label >= 0) & (label < num_classes)
+            target = torch.zeros_like(
+                pred, device=score.device, dtype=score.dtype)
+            target[pos_inds, label[pos_inds]] = score[pos_inds]
+
         if self.use_sigmoid:
             loss_cls = self.loss_weight * varifocal_loss(
                 pred,

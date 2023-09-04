@@ -3,8 +3,6 @@ _base_ = [
     './lsj-100e_coco-instance.py',
 ]
 
-custom_imports = dict(imports=['projects.ViTDet.vitdet'])
-
 backbone_norm_cfg = dict(type='LN', requires_grad=True)
 norm_cfg = dict(type='LN2d', requires_grad=True)
 image_size = (1024, 1024)
