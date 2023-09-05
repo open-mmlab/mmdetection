@@ -478,9 +478,6 @@ class ATSSVLFusionHead(ATSSHead):
             torch.tensor(avg_factor, dtype=torch.float, device=device)).item()
 
         anchors = torch.cat(anchor_list, dim=1)
-        # Align the official implementation
-        anchors[:, 2:] -= 1
-
         labels = torch.cat(labels_list, dim=1)
         label_weights = torch.cat(label_weights_list, dim=1)
         bbox_targets = torch.cat(bbox_targets_list, dim=1)
@@ -630,6 +627,9 @@ class ATSSVLFusionHead(ATSSHead):
                 sampling_result (:obj:`SamplingResult`): Sampling results.
         """
         anchors = flat_anchors
+        # Align the official implementation
+        anchors[:, 2:] -= 1
+
         num_level_anchors_inside = num_level_anchors
         pred_instances = InstanceData(priors=anchors)
         assign_result = self.assigner.assign(pred_instances,
