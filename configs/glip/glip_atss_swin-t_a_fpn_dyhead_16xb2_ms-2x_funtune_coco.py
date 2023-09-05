@@ -151,6 +151,5 @@ param_scheduler = [
 ]
 
 default_hooks = dict(
-    checkpoint=dict(
-        max_keep_ckpts=3  # only keep latest 3 checkpoints
-    ))
+    checkpoint=dict(max_keep_ckpts=3  # only keep latest 3 checkpoints
+                    ))
