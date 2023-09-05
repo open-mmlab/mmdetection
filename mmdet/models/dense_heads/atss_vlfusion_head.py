@@ -20,10 +20,9 @@ except ImportError:
 
 from mmdet.registry import MODELS
 from mmdet.structures.bbox import cat_boxes
-from mmdet.utils import InstanceList
-from ..task_modules.prior_generators import anchor_inside_flags
+from mmdet.utils import InstanceList, OptInstanceList, reduce_mean
 from ..utils import (BertEncoderLayer, VLFuse, filter_scores_and_topk,
-                     permute_and_flatten, select_single_mlvl, unmap,
+                     permute_and_flatten, select_single_mlvl,
                      unpack_gt_instances)
 from ..utils.vlfuse_helper import MAX_CLAMP_VALUE
 from .atss_head import ATSSHead
@@ -428,31 +427,101 @@ class ATSSVLFusionHead(ATSSHead):
         losses = self.loss_by_feat(*loss_inputs)
         return losses
 
-    def loss_by_feat_single(self, anchors: Tensor, cls_score: Tensor,
-                            bbox_pred: Tensor, centerness: Tensor,
-                            labels: Tensor, label_weights: Tensor,
-                            bbox_targets: Tensor, avg_factor: float) -> dict:
-        """Calculate the loss of a single scale level based on the features
-        extracted by the detection head.
+    def loss_by_feat(
+            self,
+            cls_scores: List[Tensor],
+            bbox_preds: List[Tensor],
+            centernesses: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
 
         Args:
-            cls_score (Tensor): Box scores for each scale level
-                Has shape (N, num_anchors * num_classes, H, W).
-            bbox_pred (Tensor): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W).
-            anchors (Tensor): Box reference for each scale level with shape
-                (N, num_total_anchors, 4).
-            labels (Tensor): Labels of each anchors with shape
-                (N, num_total_anchors).
-            label_weights (Tensor): Label weights of each anchor with shape
-                (N, num_total_anchors)
-            bbox_targets (Tensor): BBox regression targets of each anchor with
-                shape (N, num_total_anchors, 4).
-            avg_factor (float): Average factor that is used to average
-                the loss. When using sampling method, avg_factor is usually
-                the sum of positive and negative priors. When using
-                `PseudoSampler`, `avg_factor` is usually equal to the number
-                of positive priors.
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W)
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W)
+            centernesses (list[Tensor]): Centerness for each scale
+                level with shape (N, num_anchors * 1, H, W)
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], Optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
+        featmap_sizes = [featmap.size()[-2:] for featmap in bbox_preds]
+        assert len(featmap_sizes) == self.prior_generator.num_levels
+
+        device = cls_scores[0].device
+        anchor_list, valid_flag_list = self.get_anchors(
+            featmap_sizes, batch_img_metas, device=device)
+
+        cls_reg_targets = self.get_targets(
+            anchor_list,
+            valid_flag_list,
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore=batch_gt_instances_ignore)
+
+        (anchor_list, labels_list, label_weights_list, bbox_targets_list,
+         bbox_weights_list, avg_factor) = cls_reg_targets
+        avg_factor = reduce_mean(
+            torch.tensor(avg_factor, dtype=torch.float, device=device)).item()
+
+        anchors = torch.cat(anchor_list, dim=1)
+        # Align the official implementation
+        anchors[:, 2:] -= 1
+
+        labels = torch.cat(labels_list, dim=1)
+        label_weights = torch.cat(label_weights_list, dim=1)
+        bbox_targets = torch.cat(bbox_targets_list, dim=1)
+        cls_scores = torch.cat(cls_scores, dim=1)
+
+        centernesses_ = []
+        bbox_preds_ = []
+        for bbox_pred, centerness in zip(bbox_preds, centernesses):
+            centernesses_.append(
+                centerness.permute(0, 2, 3,
+                                   1).reshape(cls_scores.size(0), -1, 1))
+            bbox_preds_.append(
+                bbox_pred.permute(0, 2, 3,
+                                  1).reshape(cls_scores.size(0), -1, 4))
+        bbox_preds = torch.cat(bbox_preds_, dim=1)
+        centernesses = torch.cat(centernesses_, dim=1)
+
+        losses_cls, losses_bbox, loss_centerness, bbox_avg_factor = \
+            self._loss_by_feat(
+                anchors,
+                cls_scores,
+                bbox_preds,
+                centernesses,
+                labels,
+                label_weights,
+                bbox_targets,
+                avg_factor=avg_factor)
+
+        bbox_avg_factor = reduce_mean(bbox_avg_factor).clamp_(min=1).item()
+        losses_bbox = losses_bbox / bbox_avg_factor
+        return dict(
+            loss_cls=losses_cls,
+            loss_bbox=losses_bbox,
+            loss_centerness=loss_centerness)
+
+    def _loss_by_feat(self, anchors: Tensor, cls_score: Tensor,
+                      bbox_pred: Tensor, centerness: Tensor, labels: Tensor,
+                      label_weights: Tensor, bbox_targets: Tensor,
+                      avg_factor: float) -> dict:
+        """Calculate the loss of all scale level based on the features
+        extracted by the detection head.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -473,8 +542,8 @@ class ATSSVLFusionHead(ATSSHead):
                                       None].repeat(1, 1, text_mask.size(-1))
         label_weights = torch.masked_select(label_weights, text_mask)
 
-        bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
-        centerness = centerness.permute(0, 2, 3, 1).reshape(-1)
+        bbox_pred = bbox_pred.reshape(-1, 4)
+        centerness = centerness.reshape(-1)
         bbox_targets = bbox_targets.reshape(-1, 4)
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
@@ -491,6 +560,9 @@ class ATSSVLFusionHead(ATSSHead):
 
             centerness_targets = self.centerness_target(
                 pos_anchors, pos_bbox_targets)
+
+            # The decoding process takes the offset into consideration.
+            pos_anchors[:, 2:] += 1
             pos_decode_bbox_pred = self.bbox_coder.decode(
                 pos_anchors, pos_bbox_pred)
 
@@ -557,19 +629,8 @@ class ATSSVLFusionHead(ATSSHead):
                     (num_neg,).
                 sampling_result (:obj:`SamplingResult`): Sampling results.
         """
-        inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
-                                           img_meta['img_shape'][:2],
-                                           self.train_cfg['allowed_border'])
-        if not inside_flags.any():
-            raise ValueError(
-                'There is no valid anchor inside the image boundary. Please '
-                'check the image size and anchor sizes, or set '
-                '``allowed_border`` to -1 to skip the condition.')
-        # assign gt and sample anchors
-        anchors = flat_anchors[inside_flags, :]
-
-        num_level_anchors_inside = self.get_num_level_anchors_inside(
-            num_level_anchors, inside_flags)
+        anchors = flat_anchors
+        num_level_anchors_inside = num_level_anchors
         pred_instances = InstanceData(priors=anchors)
         assign_result = self.assigner.assign(pred_instances,
                                              num_level_anchors_inside,
@@ -608,17 +669,6 @@ class ATSSVLFusionHead(ATSSHead):
                 label_weights[pos_inds] = self.train_cfg['pos_weight']
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
-
-        # map up to original set of anchors
-        if unmap_outputs:
-            num_total_anchors = flat_anchors.size(0)
-            anchors = unmap(anchors, num_total_anchors, inside_flags)
-            # this change
-            labels = unmap(labels, num_total_anchors, inside_flags, fill=0)
-            label_weights = unmap(label_weights, num_total_anchors,
-                                  inside_flags)
-            bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
-            bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
         return (anchors, labels, label_weights, bbox_targets, bbox_weights,
                 pos_inds, neg_inds, sampling_result)

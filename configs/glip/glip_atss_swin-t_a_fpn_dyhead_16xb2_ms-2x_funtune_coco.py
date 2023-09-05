@@ -30,7 +30,7 @@ model = dict(
         with_cp=False,
         convert_weights=False),
     neck=dict(
-        type='FPN',
+        type='FPN_DropBlock',
         in_channels=[192, 384, 768],
         out_channels=256,
         start_level=0,
@@ -65,7 +65,10 @@ model = dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     language_model=dict(type='BertModel', name=lang_model_name),
     train_cfg=dict(
-        assigner=dict(type='ATSSAssigner', topk=9),
+        assigner=dict(
+            type='ATSSAssigner',
+            topk=9,
+            iou_calculator=dict(type='BboxOverlaps2D_GLIP')),
         allowed_border=-1,
         pos_weight=-1,
         debug=False),
@@ -83,18 +86,16 @@ train_pipeline = [
         imdecode_backend='pillow',
         backend_args=_base_.backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
-    # dict(
-    #     type='RandomResize',
-    #     scale=[(1333, 480), (1333, 800)],  # TODO
-    #     keep_ratio=True,
-    #     backend='pillow'),
+    dict(type='GTBoxSubOne_GLIP'),
     dict(
         type='RandomChoiceResize',
         scales=[(1333, 480), (1333, 560), (1333, 640), (1333, 720),
                 (1333, 800)],
         keep_ratio=True,
+        resize_type='FixScaleResize',
         backend='pillow'),
-    dict(type='RandomFlip', prob=0.5),
+    dict(type='RandomFlip_GLIP', prob=0.5),
+    dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1)),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',

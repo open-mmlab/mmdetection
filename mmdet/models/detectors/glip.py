@@ -209,6 +209,7 @@ class GLIP(SingleStageDetector):
         self._token_positive_maps = None
         self._language_dict_features = None
         self._entities = None
+        self._special_tokens = '. '
 
     def get_tokens_and_prompts(
             self,
@@ -217,27 +218,29 @@ class GLIP(SingleStageDetector):
         """Get the tokens positive and prompts for the caption."""
         if isinstance(original_caption, (list, tuple)) or custom_entities:
             if custom_entities and isinstance(original_caption, str):
-                if not original_caption.endswith('.'):
-                    original_caption = original_caption + ' . '
-                original_caption = original_caption.split(' . ')
+                if original_caption.endswith(self._special_tokens):
+                    original_caption = original_caption.replace(
+                        self._special_tokens, '')
+                original_caption = original_caption.split(self._special_tokens)
                 original_caption = list(
                     filter(lambda x: len(x) > 0, original_caption))
 
             caption_string = ''
             tokens_positive = []
-            seperation_tokens = ' . '
-            for word in original_caption:
+            for idx, word in enumerate(original_caption):
                 tokens_positive.append(
                     [[len(caption_string),
                       len(caption_string) + len(word)]])
                 caption_string += word
-                caption_string += seperation_tokens
+                if idx != len(original_caption) - 1:
+                    caption_string += self._special_tokens
             tokenized = self.language_model.tokenizer([caption_string],
                                                       return_tensors='pt')
             self._entities = original_caption
         else:
-            if not original_caption.endswith('.'):
-                original_caption = original_caption + ' . '
+            if original_caption.endswith(self._special_tokens):
+                original_caption = original_caption.replace(
+                    self._special_tokens, '')
 
             tokenized = self.language_model.tokenizer([original_caption],
                                                       return_tensors='pt')
@@ -307,7 +310,9 @@ class GLIP(SingleStageDetector):
 
         language_dict_features = self.language_model(new_text_prompts)
         for i, data_samples in enumerate(batch_data_samples):
-            positive_map = positive_maps[i].to(batch_inputs.device)
+            # .bool().float() is very important
+            positive_map = positive_maps[i].to(
+                batch_inputs.device).bool().float()
             data_samples.gt_instances.positive_maps = positive_map
 
         visual_features = self.extract_feat(batch_inputs)
@@ -375,7 +380,8 @@ class GLIP(SingleStageDetector):
 
             self._token_positive_maps, text_prompts, _ = zip(
                 *_positive_maps_and_prompts)
-            self._language_dict_features = self.language_model(text_prompts)
+            self._language_dict_features = self.language_model(
+                list(text_prompts))
 
         for i, data_samples in enumerate(batch_data_samples):
             data_samples.token_positive_map = self._token_positive_maps[i]
