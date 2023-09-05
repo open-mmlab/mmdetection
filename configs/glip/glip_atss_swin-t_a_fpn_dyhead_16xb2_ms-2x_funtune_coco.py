@@ -149,3 +149,8 @@ param_scheduler = [
         milestones=[16, 22],
         gamma=0.1)
 ]
+
+default_hooks = dict(
+    checkpoint=dict(
+        max_keep_ckpts=3  # only keep latest 3 checkpoints
+    ))
