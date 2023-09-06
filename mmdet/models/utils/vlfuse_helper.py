@@ -57,7 +57,7 @@ class BiMultiHeadAttention(nn.Module):
         self.l_dim = l_dim
 
         assert (
-            self.head_dim * self.num_heads == self.embed_dim
+                self.head_dim * self.num_heads == self.embed_dim
         ), 'embed_dim must be divisible by num_heads ' \
            f'(got `embed_dim`: {self.embed_dim} ' \
            f'and `num_heads`: {self.num_heads}).'
@@ -235,10 +235,14 @@ class BiAttentionBlock(nn.Module):
             init_values * torch.ones(l_dim), requires_grad=True)
 
     def forward(self,
-                visual_features: list,
+                vf0: Tensor,
+                vf1: Tensor,
+                vf2: Tensor,
+                vf3: Tensor,
+                vf4: Tensor,
                 lang_feature: Tensor,
                 attention_mask_l=None):
-
+        visual_features = [vf0, vf1, vf2, vf3, vf4]
         size_per_level, visual_features_flatten = [], []
         for i, feat_per_level in enumerate(visual_features):
             bs, c, h, w = feat_per_level.shape
@@ -254,15 +258,16 @@ class BiAttentionBlock(nn.Module):
         new_v = new_v.transpose(1, 2).contiguous()
 
         start = 0
-        fusion_visual_features = []
+        # fvfs is mean fusion_visual_features
+        fvfs = []
         for (h, w) in size_per_level:
             new_v_per_level = new_v[:, :,
                                     start:start + h * w].view(bs, -1, h,
                                                               w).contiguous()
-            fusion_visual_features.append(new_v_per_level)
+            fvfs.append(new_v_per_level)
             start += h * w
 
-        return fusion_visual_features, new_lang_feature
+        return fvfs[0], fvfs[1], fvfs[2], fvfs[3], fvfs[4], new_lang_feature
 
     def single_attention_call(self, visual, lang, attention_mask_l=None):
         visual = self.layer_norm_v(visual)
@@ -303,19 +308,23 @@ class VLFuse(nn.Module):
         language_dict_features = x['lang']
 
         if self.use_checkpoint:
-            fused_visual_features, language_features = checkpoint.checkpoint(
-                self.b_attn, visual_features, language_dict_features['hidden'],
+            # vf is mean visual_features
+            # checkpoint does not allow complex data structures as input,
+            # such as list, so we must split them.
+            vf0, vf1, vf2, vf3, vf4, language_features = checkpoint.checkpoint(
+                self.b_attn, *visual_features,
+                language_dict_features['hidden'],
                 language_dict_features['masks'])
         else:
-            fused_visual_features, language_features = self.b_attn(
-                visual_features, language_dict_features['hidden'],
+            vf0, vf1, vf2, vf3, vf4, language_features = self.b_attn(
+                *visual_features, language_dict_features['hidden'],
                 language_dict_features['masks'])
 
         language_dict_features['hidden'] = language_features
         fused_language_dict_features = language_dict_features
 
         features_dict = {
-            'visual': fused_visual_features,
+            'visual': [vf0, vf1, vf2, vf3, vf4],
             'lang': fused_language_dict_features
         }
 
