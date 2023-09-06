@@ -121,35 +121,35 @@ test_pipeline = [
 ]
 
 train_dataloader = dict(
-    dataset=dict(pipeline=train_pipeline, return_classes=True))
+    dataset=dict(
+        _delete_=True,
+        type='RepeatDataset',
+        times=2,
+        dataset=dict(
+            type=_base_.dataset_type,
+            data_root=_base_.data_root,
+            ann_file='annotations/instances_train2017.json',
+            data_prefix=dict(img='train2017/'),
+            filter_cfg=dict(filter_empty_gt=True, min_size=32),
+            pipeline=train_pipeline,
+            return_classes=True,
+            backend_args=_base_.backend_args)))
 
 val_dataloader = dict(
     dataset=dict(pipeline=test_pipeline, return_classes=True))
 test_dataloader = val_dataloader
 
+# We did not adopt the official 24e optimizer strategy
+# because the results indicate that the current strategy is superior.
 optim_wrapper = dict(
-    clip_grad=dict(max_norm=1, norm_type=2),
+    _delete_=True,
+    type='OptimWrapper',
     optimizer=dict(
-        _delete_=True,
-        type='AdamW',
-        lr=0.00001,
-        weight_decay=0.0001,
-        betas=(0.9, 0.999)),
-    paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
-
-param_scheduler = [
-    dict(
-        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
-        end=2000),
-    dict(
-        type='MultiStepLR',
-        begin=0,
-        end=24,
-        by_epoch=True,
-        milestones=[16, 22],
-        gamma=0.1)
-]
-
-default_hooks = dict(
-    checkpoint=dict(max_keep_ckpts=3  # only keep latest 3 checkpoints
-                    ))
+        type='AdamW', lr=0.00005, betas=(0.9, 0.999), weight_decay=0.05),
+    paramwise_cfg=dict(
+        custom_keys={
+            'absolute_pos_embed': dict(decay_mult=0.),
+            'relative_position_bias_table': dict(decay_mult=0.),
+            'norm': dict(decay_mult=0.)
+        }),
+    clip_grad=None)

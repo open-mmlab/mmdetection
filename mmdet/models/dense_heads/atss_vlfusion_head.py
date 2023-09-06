@@ -558,6 +558,21 @@ class ATSSVLFusionHead(ATSSHead):
             centerness_targets = self.centerness_target(
                 pos_anchors, pos_bbox_targets)
 
+            if torch.isnan(centerness_targets).any():
+                print('=====Centerness includes NaN=====')
+                mask = ~torch.isnan(centerness_targets)
+                centerness_targets = centerness_targets[mask]
+                pos_centerness = pos_centerness[mask]
+                pos_anchors = pos_anchors[mask]
+                pos_bbox_targets = pos_bbox_targets[mask]
+
+                if pos_bbox_targets.shape[0] == 0:
+                    loss_bbox = bbox_pred.sum() * 0
+                    loss_centerness = centerness.sum() * 0
+                    centerness_targets = bbox_targets.new_tensor(0.)
+                    return loss_cls, loss_bbox, loss_centerness, \
+                        centerness_targets.sum()
+
             # The decoding process takes the offset into consideration.
             pos_anchors[:, 2:] += 1
             pos_decode_bbox_pred = self.bbox_coder.decode(
@@ -672,6 +687,33 @@ class ATSSVLFusionHead(ATSSHead):
 
         return (anchors, labels, label_weights, bbox_targets, bbox_weights,
                 pos_inds, neg_inds, sampling_result)
+
+    def centerness_target(self, anchors: Tensor, gts: Tensor) -> Tensor:
+        """Calculate the centerness between anchors and gts.
+
+        Only calculate pos centerness targets, otherwise there may be nan.
+
+        Args:
+            anchors (Tensor): Anchors with shape (N, 4), "xyxy" format.
+            gts (Tensor): Ground truth bboxes with shape (N, 4), "xyxy" format.
+
+        Returns:
+            Tensor: Centerness between anchors and gts.
+        """
+        anchors_cx = (anchors[:, 2] + anchors[:, 0]) / 2
+        anchors_cy = (anchors[:, 3] + anchors[:, 1]) / 2
+        l_ = anchors_cx - gts[:, 0]
+        t_ = anchors_cy - gts[:, 1]
+        r_ = gts[:, 2] - anchors_cx
+        b_ = gts[:, 3] - anchors_cy
+
+        left_right = torch.stack([l_, r_], dim=1)
+        top_bottom = torch.stack([t_, b_], dim=1)
+        centerness = torch.sqrt(
+            (left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) *
+            (top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0]))
+        # assert not torch.isnan(centerness).any()
+        return centerness
 
     def predict(self,
                 visual_feats: Tuple[Tensor],
