@@ -565,6 +565,7 @@ class ATSSVLFusionHead(ATSSHead):
                 pos_centerness = pos_centerness[mask]
                 pos_anchors = pos_anchors[mask]
                 pos_bbox_targets = pos_bbox_targets[mask]
+                pos_bbox_pred = pos_bbox_pred[mask]
 
                 if pos_bbox_targets.shape[0] == 0:
                     loss_bbox = bbox_pred.sum() * 0
