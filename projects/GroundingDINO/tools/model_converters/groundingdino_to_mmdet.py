@@ -1,6 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
-import subprocess
 from collections import OrderedDict
 
 import torch
@@ -48,12 +47,39 @@ def convert(ckpt):
                         new_v = correct_unfold_reduction_order(v)
                     elif 'norm.' in k:
                         new_v = correct_unfold_norm_order(v)
+
         elif 'module.bert' in k:
-            new_k = k.replace('module.bert',
-                              'language_model.language_backbone.body.model')
-            # if 'pooler' in k:
-            #     new_k = new_k.replace('pooler', 'pooler.dense')
+            # new_k = k.replace('module.bert',
+            #                   'language_model.language_backbone.body.model')
+            new_k = k.replace('module.bert', 'bert')
+
+        elif 'module.feat_map' in k:
+            new_k = k.replace('module.feat_map', 'feat_map')
+
+        elif 'module.input_proj' in k:
+            new_k = k.replace('module.input_proj', 'neck.convs')
+            if 'neck.convs.3' in new_k:
+                # extra convs for 4th scale
+                new_k = new_k.replace('neck.convs.3', 'neck.extra_convs.0')
+            if '0.weight' in new_k:
+                # 0.weight -> conv.weight
+                new_k = new_k.replace('0.weight', 'conv.weight')
+            if '0.bias' in new_k:
+                # 0.bias -> conv.bias
+                new_k = new_k.replace('0.bias', 'conv.bias')
+            if '1.weight' in new_k:
+                # 1.weight -> gn.weight
+                new_k = new_k.replace('1.weight', 'gn.weight')
+            if '1.bias' in new_k:
+                # 1.bias -> gn.bias
+                new_k = new_k.replace('1.bias', 'gn.bias')
+
+        elif 'module.transformer.level_embed' in k:
+            # module.transformer.level_embed -> level_embed
+            new_k = k.replace('module.transformer.level_embed', 'level_embed')
+
         elif 'module.transformer.encoder' in k:
+            # if '.layers' in k:
             new_k = k.replace('module.transformer.encoder', 'encoder')
             if 'norm1' in new_k:
                 new_k = new_k.replace('norm1', 'norms.0')
@@ -65,6 +91,37 @@ def convert(ckpt):
                 new_k = new_k.replace('linear1', 'ffn.layers.0.0')
             if 'linear2' in new_k:
                 new_k = new_k.replace('linear2', 'ffn.layers.1')
+
+            if 'text_layers' in new_k and 'self_attn' in new_k:
+                new_k = new_k.replace('self_attn', 'self_attn.attn')
+
+        elif 'module.transformer.enc_output' in k:
+            if 'module.transformer.enc_output' in k and 'norm' not in k:
+                new_k = k.replace('module.transformer.enc_output',
+                                  'memory_trans_fc')
+            if 'module.transformer.enc_output_norm' in k:
+                new_k = k.replace('module.transformer.enc_output_norm',
+                                  'memory_trans_norm')
+
+        elif 'module.transformer.enc_out_bbox_embed.layers' in k:
+            # ugly version
+            if 'module.transformer.enc_out_bbox_embed.layers.0' in k:
+                new_k = k.replace(
+                    'module.transformer.enc_out_bbox_embed.layers.0',
+                    'bbox_head.reg_branches.6.0')
+            if 'module.transformer.enc_out_bbox_embed.layers.1' in k:
+                new_k = k.replace(
+                    'module.transformer.enc_out_bbox_embed.layers.1',
+                    'bbox_head.reg_branches.6.2')
+            if 'module.transformer.enc_out_bbox_embed.layers.2' in k:
+                new_k = k.replace(
+                    'module.transformer.enc_out_bbox_embed.layers.2',
+                    'bbox_head.reg_branches.6.4')
+
+        elif 'module.transformer.tgt_embed' in k:
+            new_k = k.replace('module.transformer.tgt_embed',
+                              'query_embedding')
+
         elif 'module.transformer.decoder' in k:
             new_k = k.replace('module.transformer.decoder', 'decoder')
             if 'norm1' in new_k:
@@ -110,10 +167,10 @@ def main():
 
     weight = convert(state_dict)
     torch.save(weight, args.dst)
-    sha = subprocess.check_output(['sha256sum', args.dst]).decode()
-    final_file = args.dst.replace('.pth', '') + '-{}.pth'.format(sha[:8])
-    subprocess.Popen(['mv', args.dst, final_file])
-    print(f'Done!!, save to {final_file}')
+    # sha = subprocess.check_output(['sha256sum', args.dst]).decode()
+    # final_file = args.dst.replace('.pth', '') + '-{}.pth'.format(sha[:8])
+    # subprocess.Popen(['mv', args.dst, final_file])
+    # print(f'Done!!, save to {final_file}')
 
 
 if __name__ == '__main__':
