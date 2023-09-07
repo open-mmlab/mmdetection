@@ -12,6 +12,7 @@ from mmdet.utils import InstanceList, OptInstanceList, reduce_mean
 from ..utils import multi_apply
 from ..layers import inverse_sigmoid
 from .deformable_detr_head import DeformableDETRHead
+import copy
 
 
 @MODELS.register_module()
@@ -309,12 +310,18 @@ class Hybrid_DINOHead(DeformableDETRHead):
         
         '''hybrid_matching'''
         # import pdb;pdb.set_trace()
-        multi_batch_gt_instances = batch_gt_instances
-        for gt in multi_batch_gt_instances:
-            bboxes = gt.bboxes.repeat(self.k_one2many, 1)
-            labels = gt.labels.repeat(self.k_one2many)
-            metainfo = gt.metainfo
-            gt = type(gt)(metainfo=metainfo, bboxes=bboxes, labels=labels)
+        multi_batch_gt_instances = copy.deepcopy(batch_gt_instances)
+        for i in range(len(multi_batch_gt_instances)):
+            bboxes = multi_batch_gt_instances[i].bboxes.repeat(self.k_one2many, 1)
+            labels = multi_batch_gt_instances[i].labels.repeat(self.k_one2many)
+            metainfo = multi_batch_gt_instances[i].metainfo
+            gt = type(multi_batch_gt_instances[i])(metainfo=metainfo, bboxes=bboxes, labels=labels)
+            multi_batch_gt_instances[i] = gt
+        # for gt in multi_batch_gt_instances:
+        #     bboxes = gt.bboxes.repeat(self.k_one2many, 1)
+        #     labels = gt.labels.repeat(self.k_one2many)
+        #     metainfo = gt.metainfo
+        #     gt = type(gt)(metainfo=metainfo, bboxes=bboxes, labels=labels)
         losses_cls_one2many, losses_bbox_one2many, losses_iou_one2many = multi_apply(
             self.loss_by_feat_single,
             one2many_cls_scores,
@@ -701,7 +708,7 @@ class Hybrid_DINOHead(DeformableDETRHead):
             list[obj:`InstanceData`]: Detection results of each image
             after the post process.
         """
-        cls_scores = all_layers_cls_scores[-1]
+        cls_scores = all_layers_cls_scores[-1]  # 取最后一个decoder的输出
         bbox_preds = all_layers_bbox_preds[-1]
 
         result_list = []

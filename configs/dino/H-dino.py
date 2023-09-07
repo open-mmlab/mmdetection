@@ -2,7 +2,7 @@ _base_ = [
     '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
 ]
 model = dict(
-    type='H_DINO',
+    type='DINO',
     num_queries=1800,  # num_matching_queries
     with_box_refine=True,
     as_two_stage=True,
@@ -61,8 +61,8 @@ model = dict(
         type='Hybrid_DINOHead',
         num_classes=80,
         sync_cls_avg_factor=True,
-        num_query_one2one=300,
-        k_one2many=6,
+        num_query_one2one=900,
+        k_one2many=2,
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -75,7 +75,7 @@ model = dict(
         label_noise_scale=0.5,
         box_noise_scale=1.0,  # 0.4 for DN-DETR
         group_cfg=dict(dynamic=True, num_groups=None,
-                       num_dn_queries=100, num_query_one2one=300)),  # TODO: half num_dn_queries
+                       num_dn_queries=100)),  # TODO: half num_dn_queries
     # training and testing settings
     train_cfg=dict(
         assigner=dict(
