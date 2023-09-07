@@ -1,20 +1,41 @@
+# Copyright (c) OpenMMLab. All rights reserved.
+"""Support for multi-model fusion, and currently only the Weighted Box Fusion
+(WBF) fusion method is supported.
+
+References: https://github.com/ZFTurbo/Weighted-Boxes-Fusion
+
+Example:
+
+     python demo/demo_multi_model.py demo/demo.jpg \
+         ./configs/faster_rcnn/faster-rcnn_r50-caffe_fpn_1x_coco.py \
+         ./configs/retinanet/retinanet_r50-caffe_fpn_1x_coco.py \
+         --checkpoints \
+         https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_fpn_1x_coco/faster_rcnn_r50_caffe_fpn_1x_coco_bbox_mAP-0.378_20200504_180032-c5925ee5.pth \  # noqa
+         https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_caffe_fpn_1x_coco/retinanet_r50_caffe_fpn_1x_coco_20200531-f11027c5.pth \
+         --weights 1 2
+"""
+
 import argparse
 import os.path as osp
 
 import mmcv
 import mmengine
 from mmengine.fileio import isdir, join_path, list_dir_or_file
+from mmengine.logging import print_log
 from mmengine.structures import InstanceData
 
 from mmdet.apis import DetInferencer
-from mmdet.models.layers import weighted_boxes_fusion
+from mmdet.models.utils import weighted_boxes_fusion
 from mmdet.registry import VISUALIZERS
 from mmdet.structures import DetDataSample
 
+IMG_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif',
+                  '.tiff', '.webp')
+
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='MMDetection video demo')
-
+    parser = argparse.ArgumentParser(
+        description='MMDetection multi-model inference demo')
     parser.add_argument(
         'inputs', type=str, help='Input image file or folder path.')
     parser.add_argument(
@@ -23,7 +44,7 @@ def parse_args():
         nargs='*',
         help='Config file(s), support receive multiple files')
     parser.add_argument(
-        '--checkpoint',
+        '--checkpoints',
         type=str,
         nargs='*',
         help='Checkpoint file(s), support receive multiple files, '
@@ -49,7 +70,7 @@ def parse_args():
     parser.add_argument(
         '--conf-type',
         type=str,
-        default='avg',
+        default='avg',  # avg, max, box_and_model_avg, absent_model_aware_avg
         help='how to calculate confidence in weighted boxes in wbf')
     parser.add_argument(
         '--out-dir',
@@ -94,39 +115,29 @@ def parse_args():
 def main():
     args = parse_args()
 
-    IMG_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif',
-                      '.tiff', '.webp')
-
-    assert len(args.config) == len(args.checkpoint) and \
-           (args.weights is None or len(args.config) == len(args.weights)), \
-           ('Please ensure config, checkpoint, weights '
-           'are corresponding')
-
     results = []
-    cfg_visualizer = object
-    dataset_meta = object
+    cfg_visualizer = None
+    dataset_meta = None
 
     inputs = []
     filename_list = []
     if isdir(args.inputs):
         dir = list_dir_or_file(
             args.inputs, list_dir=False, suffix=IMG_EXTENSIONS)
-
         for filename in dir:
-            img = mmcv.imread(
-                join_path(args.inputs, filename), channel_order='rgb')
+            img = mmcv.imread(join_path(args.inputs, filename))
             inputs.append(img)
             filename_list.append(filename)
-
     else:
-        img = mmcv.imread(args.inputs, channel_order='rgb')
+        img = mmcv.imread(args.inputs)
         inputs.append(img)
         img_name = osp.basename(args.inputs)
         filename_list.append(img_name)
 
     for i, (config,
-            checkpoint) in enumerate(zip(args.config, args.checkpoint)):
-        inferencer = DetInferencer(config, checkpoint, device=args.device)
+            checkpoint) in enumerate(zip(args.config, args.checkpoints)):
+        inferencer = DetInferencer(
+            config, checkpoint, device=args.device, palette=args.palette)
 
         result_raw = inferencer(
             inputs=inputs,
@@ -185,13 +196,16 @@ def main():
 
         visualizer.add_datasample(
             img_name,
-            inputs[i],
+            inputs[i][..., ::-1],
             data_sample=fusion_result,
             show=args.show,
-            draw_gt=None,
+            draw_gt=False,
             wait_time=0,
             pred_score_thr=args.pred_score_thr,
             out_file=out_file)
+
+    if not args.no_save_vis:
+        print_log(f'results have been saved at {args.out_dir}')
 
 
 if __name__ == '__main__':

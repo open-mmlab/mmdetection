@@ -8,6 +8,7 @@ import torch
 from torch import Tensor
 
 
+# References: https://github.com/ZFTurbo/Weighted-Boxes-Fusion
 def weighted_boxes_fusion(
         bboxes_list: list,
         scores_list: list,
@@ -17,8 +18,7 @@ def weighted_boxes_fusion(
         skip_box_thr: float = 0.0,
         conf_type: str = 'avg',
         allows_overflow: bool = False) -> Tuple[Tensor, Tensor, Tensor]:
-    """weighted boxes fusion (<https://arxiv.org/abs/1910.13302> or <https://ww
-    w.sciencedirect.com/science/article/abs/pii/S0262885621000226>) is a method
+    """weighted boxes fusion (<https://arxiv.org/abs/1910.13302> is a method
     for fusing predictions from different object detection models, which
     utilizes confidence scores of all proposed bounding boxes to construct
     averaged boxes.

@@ -36,13 +36,12 @@ from .transformer import (MLP, AdaptivePadding, CdnQueryGenerator,
                           Mask2FormerTransformerEncoder, PatchEmbed,
                           PatchMerging, coordinate_to_encoding,
                           inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
-from .wbf import weighted_boxes_fusion
 
 # yapf: enable
 
 __all__ = [
-    'fast_nms', 'multiclass_nms', 'mask_matrix_nms', 'weighted_boxes_fusion',
-    'DropBlock', 'PixelDecoder', 'TransformerEncoderPixelDecoder',
+    'fast_nms', 'multiclass_nms', 'mask_matrix_nms', 'DropBlock',
+    'PixelDecoder', 'TransformerEncoderPixelDecoder',
     'MSDeformAttnPixelDecoder', 'ResLayer', 'PatchMerging',
     'SinePositionalEncoding', 'LearnedPositionalEncoding', 'DynamicConv',
     'SimplifiedBasicBlock', 'NormedLinear', 'NormedConv2d', 'InvertedResidual',
