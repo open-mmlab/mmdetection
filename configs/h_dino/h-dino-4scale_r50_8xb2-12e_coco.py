@@ -3,7 +3,7 @@ _base_ = [
 ]
 model = dict(
     type='DINO',
-    num_queries=1800,  # num_matching_queries
+    num_queries=1800,  # num_total_queries: 900+900
     with_box_refine=True,
     as_two_stage=True,
     data_preprocessor=dict(
@@ -58,7 +58,7 @@ model = dict(
         offset=0.0,  # -0.5 for DeformDETR
         temperature=20),  # 10000 for DeformDETR
     bbox_head=dict(
-        type='Hybrid_DINOHead',
+        type='HybridDINOHead',
         num_classes=80,
         sync_cls_avg_factor=True,
         num_query_one2one=900,
@@ -71,11 +71,11 @@ model = dict(
             loss_weight=1.0),  # 2.0 in DeformDETR
         loss_bbox=dict(type='L1Loss', loss_weight=5.0),
         loss_iou=dict(type='GIoULoss', loss_weight=2.0)),
-    dn_cfg=dict(  # TODO: Move to model.train_cfg ?
+    dn_cfg=dict(
         label_noise_scale=0.5,
         box_noise_scale=1.0,  # 0.4 for DN-DETR
         group_cfg=dict(dynamic=True, num_groups=None,
-                       num_dn_queries=100)),  # TODO: half num_dn_queries
+                       num_dn_queries=100)),
     # training and testing settings
     train_cfg=dict(
         assigner=dict(
@@ -90,7 +90,7 @@ model = dict(
 # train_pipeline, NOTE the img_scale and the Pad's size_divisor is different
 # from the default setting in mmdet.
 train_pipeline = [
-    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
+    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomFlip', prob=0.5),
     dict(

@@ -17,7 +17,7 @@ import copy
 
 
 @MODELS.register_module()
-class Hybrid_DINOHead(DINOHead):
+class HybridDINOHead(DeformableDETRHead):
     r"""Head of the DINO: DETR with Improved DeNoising Anchor Boxes
     for End-to-End Object Detection
 
