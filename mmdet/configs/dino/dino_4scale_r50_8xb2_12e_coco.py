@@ -1,8 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-
-
-
-
 from mmcv.transforms import RandomChoice, RandomChoiceResize
 from mmcv.transforms.loading import LoadImageFromFile
 from mmengine.config import read_base
@@ -10,22 +6,23 @@ from mmengine.model.weight_init import PretrainedInit
 from mmengine.optim.optimizer.optimizer_wrapper import OptimWrapper
 from mmengine.optim.scheduler.lr_scheduler import MultiStepLR
 from mmengine.runner.loops import EpochBasedTrainLoop, ValLoop, TestLoop
-from torch.nn import BatchNorm2d, GroupNorm
+from torch.nn.modules.batchnorm import BatchNorm2d
+from torch.nn.modules.normalization import GroupNorm
 from torch.optim.adamw import AdamW
 
 from mmdet.datasets.transforms import (LoadAnnotations, PackDetInputs,
                                        RandomCrop, RandomFlip, Resize)
-from mmdet.models import (DINO, ResNet, ChannelMapper,
-                          DINOHead, DetDataPreprocessor)
+from mmdet.models import (DINO, ChannelMapper, DetDataPreprocessor,
+                          DINOHead, ResNet,)
 from mmdet.models.losses.focal_loss import FocalLoss
 from mmdet.models.losses.smooth_l1_loss import L1Loss
 from mmdet.models.losses.iou_loss import GIoULoss
-from mmdet.models.task_modules import (HungarianAssigner, FocalLossCost,
-                                       BBoxL1Cost, IoUCost)
+from mmdet.models.task_modules import (BBoxL1Cost, FocalLossCost,
+                                       HungarianAssigner, IoUCost)
 
 with read_base():
-    from .._base_.default_runtime import *
     from .._base_.datasets.coco_detection import *
+    from .._base_.default_runtime import *
 
 model = dict(
     type=DINO,

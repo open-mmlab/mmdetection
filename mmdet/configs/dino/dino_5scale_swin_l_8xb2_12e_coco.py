@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from mmengine.config import read_base
 from mmengine.model.weight_init import PretrainedInit
-from mmdet.models.backbones.swin import SwinTransformer
+from mmdet.models import SwinTransformer
 
 with read_base():
     from .dino_4scale_r50_8xb2_12e_coco import *
