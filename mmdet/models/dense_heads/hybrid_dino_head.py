@@ -17,7 +17,7 @@ import copy
 
 
 @MODELS.register_module()
-class HybridDINOHead(DeformableDETRHead):
+class HybridDINOHead(DINOHead):
     r"""Head of the DINO: DETR with Improved DeNoising Anchor Boxes
     for End-to-End Object Detection
 
@@ -152,12 +152,19 @@ class HybridDINOHead(DeformableDETRHead):
         outputs_coords_one2many = all_layers_outputs_coords[:, :, self.num_query_one2one :, :]
 
         if self.as_two_stage:
-            return (
-                outputs_classes_one2one,
-                outputs_coords_one2one,
-                outputs_classes_one2many,
-                outputs_coords_one2many
-            )
+            if self.training:    
+                return (
+                    outputs_classes_one2one,
+                    outputs_coords_one2one,
+                    outputs_classes_one2many,
+                    outputs_coords_one2many
+                )
+            else:
+                return (
+                    outputs_classes_one2one,
+                    outputs_coords_one2one
+                )
+
         else:
             return (
                 outputs_classes_one2one,
@@ -349,83 +356,3 @@ class HybridDINOHead(DeformableDETRHead):
             
             num_dec_layer += 1
         return loss_dict
-
-    def predict(self,
-                hidden_states: Tensor,
-                references: List[Tensor],
-                batch_data_samples: SampleList,
-                rescale: bool = True) -> InstanceList:
-        """Perform forward propagation and loss calculation of the detection
-        head on the queries of the upstream network.
-
-        Args:
-            hidden_states (Tensor): Hidden states output from each decoder
-                layer, has shape (num_decoder_layers, num_queries, bs, dim).
-            references (list[Tensor]): List of the reference from the decoder.
-                The first reference is the `init_reference` (initial) and the
-                other num_decoder_layers(6) references are `inter_references`
-                (intermediate). The `init_reference` has shape (bs,
-                num_queries, 4) when `as_two_stage` of the detector is `True`,
-                otherwise (bs, num_queries, 2). Each `inter_reference` has
-                shape (bs, num_queries, 4) when `with_box_refine` of the
-                detector is `True`, otherwise (bs, num_queries, 2). The
-                coordinates are arranged as (cx, cy) when the last dimension is
-                2, and (cx, cy, w, h) when it is 4.
-            batch_data_samples (list[:obj:`DetDataSample`]): The Data
-                Samples. It usually includes information such as
-                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
-            rescale (bool, optional): If `True`, return boxes in original
-                image space. Defaults to `True`.
-
-        Returns:
-            list[obj:`InstanceData`]: Detection results of each image
-            after the post process.
-        """
-        batch_img_metas = [
-            data_samples.metainfo for data_samples in batch_data_samples
-        ]
-
-        outs = self(hidden_states, references)
-
-        predictions = self.predict_by_feat(
-            *outs, batch_img_metas=batch_img_metas, rescale=rescale)
-        return predictions
-    
-    def predict_by_feat(self,
-                        all_layers_cls_scores: Tensor,
-                        all_layers_bbox_preds: Tensor,
-                        one2many_cls_scores: Tensor,
-                        one2many_bbox_preds: Tensor,
-                        batch_img_metas: List[Dict],
-                        rescale: bool = False) -> InstanceList:
-        """Transform a batch of output features extracted from the head into
-        bbox results.
-
-        Args:
-            all_layers_cls_scores (Tensor): Classification scores of all
-                decoder layers, has shape (num_decoder_layers, bs, num_queries,
-                cls_out_channels).
-            all_layers_bbox_preds (Tensor): Regression outputs of all decoder
-                layers. Each is a 4D-tensor with normalized coordinate format
-                (cx, cy, w, h) and shape (num_decoder_layers, bs, num_queries,
-                4) with the last dimension arranged as (cx, cy, w, h).
-            batch_img_metas (list[dict]): Meta information of each image.
-            rescale (bool, optional): If `True`, return boxes in original
-                image space. Default `False`.
-
-        Returns:
-            list[obj:`InstanceData`]: Detection results of each image
-            after the post process.
-        """
-        cls_scores = all_layers_cls_scores[-1]  # 取最后一个decoder的输出
-        bbox_preds = all_layers_bbox_preds[-1]
-
-        result_list = []
-        for img_id in range(len(batch_img_metas)):
-            cls_score = cls_scores[img_id]
-            bbox_pred = bbox_preds[img_id]
-            img_meta = batch_img_metas[img_id]
-            results = self._predict_by_feat_single(cls_score, bbox_pred,
-                                                   img_meta, rescale)
-            result_list.append(results)
-        return result_list
