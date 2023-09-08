@@ -7,10 +7,6 @@ with read_base():
 
 max_epochs = 36
 train_cfg.update(
-    dict(
-        type=EpochBasedTrainLoop,
-        max_epochs=max_epochs,
-        val_interval=1))
+    dict(type=EpochBasedTrainLoop, max_epochs=max_epochs, val_interval=1))
 
-param_scheduler[0].update(
-    dict(milestones=[30]))
+param_scheduler[0].update(dict(milestones=[30]))

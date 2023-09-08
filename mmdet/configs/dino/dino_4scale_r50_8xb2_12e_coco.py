@@ -5,18 +5,18 @@ from mmengine.config import read_base
 from mmengine.model.weight_init import PretrainedInit
 from mmengine.optim.optimizer.optimizer_wrapper import OptimWrapper
 from mmengine.optim.scheduler.lr_scheduler import MultiStepLR
-from mmengine.runner.loops import EpochBasedTrainLoop, ValLoop, TestLoop
+from mmengine.runner.loops import EpochBasedTrainLoop, TestLoop, ValLoop
 from torch.nn.modules.batchnorm import BatchNorm2d
 from torch.nn.modules.normalization import GroupNorm
 from torch.optim.adamw import AdamW
 
 from mmdet.datasets.transforms import (LoadAnnotations, PackDetInputs,
                                        RandomCrop, RandomFlip, Resize)
-from mmdet.models import (DINO, ChannelMapper, DetDataPreprocessor,
-                          DINOHead, ResNet,)
+from mmdet.models import (DINO, ChannelMapper, DetDataPreprocessor, DINOHead,
+                          ResNet)
 from mmdet.models.losses.focal_loss import FocalLoss
-from mmdet.models.losses.smooth_l1_loss import L1Loss
 from mmdet.models.losses.iou_loss import GIoULoss
+from mmdet.models.losses.smooth_l1_loss import L1Loss
 from mmdet.models.task_modules import (BBoxL1Cost, FocalLossCost,
                                        HungarianAssigner, IoUCost)
 
@@ -26,7 +26,7 @@ with read_base():
 
 model = dict(
     type=DINO,
-    num_queries=900,   # num_matching_queries
+    num_queries=900,  # num_matching_queries
     with_box_refine=True,
     as_two_stage=True,
     data_preprocessor=dict(

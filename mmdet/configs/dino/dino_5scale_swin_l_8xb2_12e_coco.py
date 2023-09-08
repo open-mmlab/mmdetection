@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from mmengine.config import read_base
 from mmengine.model.weight_init import PretrainedInit
+
 from mmdet.models import SwinTransformer
 
 with read_base():
