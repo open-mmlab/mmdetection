@@ -1,9 +1,9 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from mmengine.config import read_base
+from mmengine.runner.loops import EpochBasedTrainLoop
 
 with read_base():
     from .dino_4scale_r50_8xb2_12e_coco import *
-
-from mmengine.runner.loops import EpochBasedTrainLoop
 
 max_epochs = 24
 train_cfg.update(

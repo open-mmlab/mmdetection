@@ -1,32 +1,31 @@
-from mmengine.config import read_base
+# Copyright (c) OpenMMLab. All rights reserved.
 
-with read_base():
-    from .._base_.default_runtime import *
-    from .._base_.datasets.coco_detection import *
 
+
+
+from mmcv.transforms import RandomChoice, RandomChoiceResize
 from mmcv.transforms.loading import LoadImageFromFile
-from mmcv.transforms.wrappers import RandomChoice
-from mmcv.transforms.processing import RandomChoiceResize
+from mmengine.config import read_base
+from mmengine.model.weight_init import PretrainedInit
 from mmengine.optim.optimizer.optimizer_wrapper import OptimWrapper
 from mmengine.optim.scheduler.lr_scheduler import MultiStepLR
 from mmengine.runner.loops import EpochBasedTrainLoop, ValLoop, TestLoop
 from torch.nn import BatchNorm2d, GroupNorm
-from mmdet.models.detectors.dino import DINO
-from mmdet.models.data_preprocessors.data_preprocessor import \
-    DetDataPreprocessor
-from mmdet.models.backbones.resnet import ResNet
-from mmdet.models.necks.channel_mapper import ChannelMapper
-from mmdet.models.dense_heads.dino_head import DINOHead
+from torch.optim.adamw import AdamW
+
+from mmdet.datasets.transforms import (LoadAnnotations, PackDetInputs,
+                                       RandomCrop, RandomFlip, Resize)
+from mmdet.models import (DINO, ResNet, ChannelMapper,
+                          DINOHead, DetDataPreprocessor)
 from mmdet.models.losses.focal_loss import FocalLoss
 from mmdet.models.losses.smooth_l1_loss import L1Loss
 from mmdet.models.losses.iou_loss import GIoULoss
-from mmdet.models.task_modules.assigners.hungarian_assigner import \
-    HungarianAssigner
-from mmdet.models.task_modules.assigners.match_cost import \
-    FocalLossCost, BBoxL1Cost, IoUCost
-from mmdet.datasets.transforms.loading import LoadAnnotations
-from mmdet.datasets.transforms.transforms import RandomFlip, RandomCrop
-from mmdet.datasets.transforms.formatting import PackDetInputs
+from mmdet.models.task_modules import (HungarianAssigner, FocalLossCost,
+                                       BBoxL1Cost, IoUCost)
+
+with read_base():
+    from .._base_.default_runtime import *
+    from .._base_.datasets.coco_detection import *
 
 model = dict(
     type=DINO,
@@ -48,7 +47,8 @@ model = dict(
         norm_cfg=dict(type=BatchNorm2d, requires_grad=False),
         norm_eval=True,
         style='pytorch',
-        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
+        init_cfg=dict(
+            type=PretrainedInit, checkpoint='torchvision://resnet50')),
     neck=dict(
         type=ChannelMapper,
         in_channels=[512, 1024, 2048],
@@ -124,6 +124,7 @@ train_pipeline = [
             [
                 dict(
                     type=RandomChoiceResize,
+                    resize_type=Resize,
                     scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
                             (608, 1333), (640, 1333), (672, 1333), (704, 1333),
                             (736, 1333), (768, 1333), (800, 1333)],
@@ -132,6 +133,7 @@ train_pipeline = [
             [
                 dict(
                     type=RandomChoiceResize,
+                    resize_type=Resize,
                     # The radio of all image in train dataset < 7
                     # follow the original implement
                     scales=[(400, 4200), (500, 4200), (600, 4200)],
@@ -143,6 +145,7 @@ train_pipeline = [
                     allow_negative_crop=True),
                 dict(
                     type=RandomChoiceResize,
+                    resize_type=Resize,
                     scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
                             (608, 1333), (640, 1333), (672, 1333), (704, 1333),
                             (736, 1333), (768, 1333), (800, 1333)],
@@ -159,7 +162,7 @@ train_dataloader.update(
 optim_wrapper = dict(
     type=OptimWrapper,
     optimizer=dict(
-        type='AdamW',
+        type=AdamW,
         lr=0.0001,  # 0.0002 for DeformDETR
         weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),

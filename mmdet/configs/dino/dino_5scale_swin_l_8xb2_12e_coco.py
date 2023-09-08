@@ -1,9 +1,10 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from mmengine.config import read_base
+from mmengine.model.weight_init import PretrainedInit
+from mmdet.models.backbones.swin import SwinTransformer
 
 with read_base():
     from .dino_4scale_r50_8xb2_12e_coco import *
-
-from mmdet.models.backbones.swin import SwinTransformer
 
 fp16 = dict(loss_scale=512.)
 pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'  # noqa
@@ -31,7 +32,7 @@ model.merge(
             # in FPN, otherwise some parameter will not be used
             with_cp=True,
             convert_weights=True,
-            init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
+            init_cfg=dict(type=PretrainedInit, checkpoint=pretrained)),
         neck=dict(in_channels=[192, 384, 768, 1536], num_outs=num_levels),
         encoder=dict(
             layer_cfg=dict(self_attn_cfg=dict(num_levels=num_levels))),
