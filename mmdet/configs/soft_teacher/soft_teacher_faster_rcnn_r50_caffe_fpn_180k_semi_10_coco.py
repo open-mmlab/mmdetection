@@ -27,22 +27,7 @@ detector.data_preprocessor.update(
         bgr_to_rgb=False,
         pad_size_divisor=32))
 
-detector.backbone.update(
-    dict(
-        type=ResNet,
-        depth=50,
-        num_stages=4,
-        out_indices=(0, 1, 2, 3),
-        frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=False),
-        norm_eval=True,
-        style='caffe',
-        init_cfg=dict(
-            type='Pretrained',
-            checkpoint='open-mmlab://detectron2/resnet50_caffe')))
-
 model = dict(
-    # _delete_=True,
     type=SoftTeacher,
     detector=detector,
     data_preprocessor=dict(
