@@ -18,10 +18,10 @@ def weighted_boxes_fusion(
         skip_box_thr: float = 0.0,
         conf_type: str = 'avg',
         allows_overflow: bool = False) -> Tuple[Tensor, Tensor, Tensor]:
-    """weighted boxes fusion (<https://arxiv.org/abs/1910.13302> is a method
-    for fusing predictions from different object detection models, which
-    utilizes confidence scores of all proposed bounding boxes to construct
-    averaged boxes.
+    """weighted boxes fusion <https://arxiv.org/abs/1910.13302> is a method for
+    fusing predictions from different object detection models, which utilizes
+    confidence scores of all proposed bounding boxes to construct averaged
+    boxes.
 
     Args:
         bboxes_list(list): list of boxes predictions from each model,
@@ -44,9 +44,6 @@ def weighted_boxes_fusion(
         bboxes(Tensor): boxes coordinates (Order of boxes: x1, y1, x2, y2).
         scores(Tensor): confidence scores
         labels(Tensor): boxes labels
-
-    References:
-        https://github.com/ZFTurbo/Weighted-Boxes-Fusion
     """
 
     if weights is None:
