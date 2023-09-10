@@ -26,6 +26,15 @@ def convert(ckpt):
 
     for k, v in list(ckpt.items()):
         new_v = v
+        #
+        if 'module' not in k:
+            # NOTE: swin-b has no module prefix and swin-t has module prefix
+            k = 'module.' + k
+        if 'module.bbox_embed' in k:
+            # NOTE: bbox_embed name is swin-b is different from swin-t
+            k = k.replace('module.bbox_embed',
+                          'module.transformer.decoder.bbox_embed')
+
         if 'module.backbone.0' in k:
             new_k = k.replace('module.backbone.0', 'backbone')
             if 'patch_embed.proj' in new_k:
@@ -50,9 +59,9 @@ def convert(ckpt):
                         new_v = correct_unfold_norm_order(v)
 
         elif 'module.bert' in k:
-            # new_k = k.replace('module.bert',
-            #                   'language_model.language_backbone.body.model')
-            new_k = k.replace('module.bert', 'bert')
+            new_k = k.replace('module.bert',
+                              'language_model.language_backbone.body.model')
+            # new_k = k.replace('module.bert', 'bert')
 
         elif 'module.feat_map' in k:
             new_k = k.replace('module.feat_map', 'feat_map')
