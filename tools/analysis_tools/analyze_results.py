@@ -124,8 +124,12 @@ class ResultVisualizer:
 
             if task == 'det':
                 gt_instances = InstanceData()
-                gt_instances.bboxes = results[index]['gt_instances']['bboxes']
-                gt_instances.labels = results[index]['gt_instances']['labels']
+                gt_instances.bboxes = [
+                    d['bbox'] for d in data_info['gt_instances']
+                ]
+                gt_instances.labels = [
+                    d['bbox_label'] for d in data_info['gt_instances']
+                ]
 
                 pred_instances = InstanceData()
                 pred_instances.bboxes = results[index]['pred_instances'][
@@ -141,7 +145,9 @@ class ResultVisualizer:
 
             elif task == 'seg':
                 gt_panoptic_seg = PixelData()
-                gt_panoptic_seg.sem_seg = results[index]['gt_seg_map']
+                gt_panoptic_seg.sem_seg = [
+                    d['gt_seg_map'] for d in data_info['gt_instances']
+                ]
 
                 pred_panoptic_seg = PixelData()
                 pred_panoptic_seg.sem_seg = results[index][
