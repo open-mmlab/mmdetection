@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
+import subprocess
 from collections import OrderedDict
 
 import torch
@@ -125,17 +126,42 @@ def convert(ckpt):
         elif 'module.transformer.decoder' in k:
             new_k = k.replace('module.transformer.decoder', 'decoder')
             if 'norm1' in new_k:
-                new_k = new_k.replace('norm1', 'norms.0')
+                # norm1 in official GroundingDINO is the third norm in decoder
+                new_k = new_k.replace('norm1', 'norms.2')
+            if 'catext_norm' in new_k:
+                # catext_norm in official GroundingDINO is the
+                # second norm in decoder
+                new_k = new_k.replace('catext_norm', 'norms.1')
             if 'norm2' in new_k:
-                new_k = new_k.replace('norm2', 'norms.1')
+                # norm2 in official GroundingDINO is the first norm in decoder
+                new_k = new_k.replace('norm2', 'norms.0')
             if 'norm3' in new_k:
-                new_k = new_k.replace('norm3', 'norms.2')
+                new_k = new_k.replace('norm3', 'norms.3')
+            if 'ca_text' in new_k:
+                if 'in_proj_weight' in new_k:
+                    new_k = new_k.replace('in_proj_weight',
+                                          'attn.in_proj_weight')
+                if 'in_proj_bias' in new_k:
+                    new_k = new_k.replace('in_proj_bias', 'attn.in_proj_bias')
+                if 'out_proj.weight' in new_k:
+                    new_k = new_k.replace('out_proj.weight',
+                                          'attn.out_proj.weight')
+                if 'out_proj.bias' in new_k:
+                    new_k = new_k.replace('out_proj.bias',
+                                          'attn.out_proj.bias')
             if 'linear1' in new_k:
                 new_k = new_k.replace('linear1', 'ffn.layers.0.0')
             if 'linear2' in new_k:
                 new_k = new_k.replace('linear2', 'ffn.layers.1')
             if 'self_attn' in new_k:
                 new_k = new_k.replace('self_attn', 'self_attn.attn')
+            if 'bbox_embed' in new_k:
+                reg_layer_id = int(new_k.split('.')[2])
+                linear_id = int(new_k.split('.')[4])
+                weight_or_bias = new_k.split('.')[-1]
+                new_k = 'bbox_head.reg_branches.' + \
+                    str(reg_layer_id)+'.'+str(2*linear_id)+'.'+weight_or_bias
+
         else:
             print('skip:', k)
             continue
@@ -167,10 +193,10 @@ def main():
 
     weight = convert(state_dict)
     torch.save(weight, args.dst)
-    # sha = subprocess.check_output(['sha256sum', args.dst]).decode()
-    # final_file = args.dst.replace('.pth', '') + '-{}.pth'.format(sha[:8])
-    # subprocess.Popen(['mv', args.dst, final_file])
-    # print(f'Done!!, save to {final_file}')
+    sha = subprocess.check_output(['sha256sum', args.dst]).decode()
+    final_file = args.dst.replace('.pth', '') + '-{}.pth'.format(sha[:8])
+    subprocess.Popen(['mv', args.dst, final_file])
+    print(f'Done!!, save to {final_file}')
 
 
 if __name__ == '__main__':
