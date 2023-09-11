@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/datasets/coco_detection.py',
-    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 load_from = 'https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth'  # noqa
 lang_model_name = 'bert-base-uncased'
@@ -145,7 +145,7 @@ optim_wrapper = dict(
     _delete_=True,
     type='OptimWrapper',
     optimizer=dict(
-        type='AdamW', lr=0.00005, betas=(0.9, 0.999), weight_decay=0.05),
+        type='AdamW', lr=0.00002, betas=(0.9, 0.999), weight_decay=0.05),
     paramwise_cfg=dict(
         custom_keys={
             'absolute_pos_embed': dict(decay_mult=0.),
