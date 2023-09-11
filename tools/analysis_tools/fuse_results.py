@@ -19,12 +19,6 @@ def parse_args():
         nargs='+',
         help='files of prediction results \
                     from multiple models, json format.')
-    parser.add_argument(
-        '--models-name',
-        type=str,
-        default=None,
-        nargs='+',
-        help='Model name for each single model result.')
     parser.add_argument('--annotation', type=str, help='annotation file path')
     parser.add_argument(
         '--weights',
@@ -76,12 +70,8 @@ def main():
     cocoGT = COCO(args.annotation)
 
     predicts_raw = []
-    if args.models_name is None:
-        models_name = [
-            'model_' + str(i) for i in range(len(args.pred_results))
-        ]
-    else:
-        models_name = args.models_name
+
+    models_name = ['model_' + str(i) for i in range(len(args.pred_results))]
 
     for model_name, path in \
             zip(models_name, args.pred_results):

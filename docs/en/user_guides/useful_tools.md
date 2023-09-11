@@ -120,7 +120,6 @@ python tools/analysis_tools/analyze_results.py \
 ```shell
 python tools/analysis_tools/fuse_results.py \
        ${PRED_RESULTS} \
-       [--models-name ${MODEL_NAME}] \
        [--annotation ${ANNOTATION}] \
        [--weights ${WEIGHTS}] \
        [--fusion-iou-thr ${FUSION_IOU_THR}] \
@@ -134,7 +133,6 @@ python tools/analysis_tools/fuse_results.py \
 Description of all arguments:
 
 - `pred-results`: Paths of detection results from different models.(Currently support coco format only)
-- `--models-name`: Names of multiple models.
 - `--annotation`: Path of ground-truth.
 - `--weights`: List of weights for each model. Default: `None`, which means weight == 1 for each model.
 - `--fusion-iou-thr`: IoU value for boxes to be a match。Default: `0.55`。
@@ -149,14 +147,15 @@ Description of all arguments:
 - `--out-dir`: Path of fusion results.
 
 **Examples**:
-Assume that you have got 3 result files from corresponding models through `tools/test.py`, which paths are './model_1.json', './model_2.json', './model_3.json' respectively. The ground-truth file path is './annotation.json'.
+Assume that you have got 3 result files from corresponding models through `tools/test.py`, which paths are './faster-rcnn_r50-caffe_fpn_1x_coco.json', './retinanet_r50-caffe_fpn_1x_coco.json', './cascade-rcnn_r50-caffe_fpn_1x_coco.json' respectively. The ground-truth file path is './annotation.json'.
 
 1. Fusion of predictions from three models and evaluation of their effectiveness
 
 ```shell
 python tools/analysis_tools/fuse_results.py \
-       ./model_1.json ./model_2.json ./model_3.json \
-       --model-name model_1 model_2 model_3 \
+       ./faster-rcnn_r50-caffe_fpn_1x_coco.json \
+       ./retinanet_r50-caffe_fpn_1x_coco.json \
+       ./cascade-rcnn_r50-caffe_fpn_1x_coco.json \
        --annotation ./annotation.json \
        --weights 1 2 3 \
 ```
@@ -165,8 +164,9 @@ python tools/analysis_tools/fuse_results.py \
 
 ```shell
 python tools/analysis_tools/fuse_results.py \
-       ./model_1.json ./model_2.json ./model_3.json \
-       --model-name model_1 model_2 model_3 \
+       ./faster-rcnn_r50-caffe_fpn_1x_coco.json \
+       ./retinanet_r50-caffe_fpn_1x_coco.json \
+       ./cascade-rcnn_r50-caffe_fpn_1x_coco.json \
        --annotation ./annotation.json \
        --weights 1 2 3 \
        --eval-single
@@ -176,8 +176,9 @@ python tools/analysis_tools/fuse_results.py \
 
 ```shell
 python tools/analysis_tools/fuse_results.py \
-       ./model_1.json ./model_2.json ./model_3.json \
-       --model-name model_1 model_2 model_3 \
+       ./faster-rcnn_r50-caffe_fpn_1x_coco.json \
+       ./retinanet_r50-caffe_fpn_1x_coco.json \
+       ./cascade-rcnn_r50-caffe_fpn_1x_coco.json \
        --annotation ./annotation.json \
        --weights 1 2 3 \
        --save-fusion-results \

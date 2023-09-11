@@ -111,14 +111,13 @@ python tools/analysis_tools/analyze_results.py \
 
 ## 多模型检测结果融合
 
-`tools/analysis_tools/fuse_results.py` 可使用Weighted Boxes Fusion(WBF)方法将多个模型的检测结果进行融合。（当前仅支持COCO格式）
+`tools/analysis_tools/fuse_results.py` 可使用 Weighted Boxes Fusion(WBF) 方法将多个模型的检测结果进行融合。（当前仅支持 COCO 格式）
 
 **使用方法**
 
 ```shell
 python tools/analysis_tools/fuse_results.py \
        ${PRED_RESULTS} \
-       [--models-name ${MODEL_NAME}] \
        [--annotation ${ANNOTATION}] \
        [--weights ${WEIGHTS}] \
        [--fusion-iou-thr ${FUSION_IOU_THR}] \
@@ -132,7 +131,6 @@ python tools/analysis_tools/fuse_results.py \
 各个参数选项的作用:
 
 - `pred-results`: 多模型测试结果的保存路径。（目前仅支持 json 格式）
-- `--models-name`: 模型名称。
 - `--annotation`: 真实标注框的保存路径。
 - `--weights`: 模型融合权重。默认设置下，每个模型的权重均为1。
 - `--fusion-iou-thr`: 在WBF算法中，匹配成功的 IoU 阈值，默认值为`0.55`。
@@ -147,14 +145,15 @@ python tools/analysis_tools/fuse_results.py \
 - `--out-dir`: 融合结果保存的路径。
 
 **样例**:
-假设你已经通过 `tools/test.py` 得到了3个模型的 json 格式的结果文件，路径分别为 './model_1.json', './model_2.json', './model_3.json'，真实标注框的文件路径为'./annotation.json'。
+假设你已经通过 `tools/test.py` 得到了3个模型的 json 格式的结果文件，路径分别为 './faster-rcnn_r50-caffe_fpn_1x_coco.json', './retinanet_r50-caffe_fpn_1x_coco.json', './cascade-rcnn_r50-caffe_fpn_1x_coco.json'，真实标注框的文件路径为'./annotation.json'。
 
 1. 融合三个模型的预测结果并评估其效果
 
 ```shell
 python tools/analysis_tools/fuse_results.py \
-       ./model_1.json ./model_2.json ./model_3.json \
-       --model-name model_1 model_2 model_3 \
+       ./faster-rcnn_r50-caffe_fpn_1x_coco.json \
+       ./retinanet_r50-caffe_fpn_1x_coco.json \
+       ./cascade-rcnn_r50-caffe_fpn_1x_coco.json \
        --annotation ./annotation.json \
        --weights 1 2 3 \
 ```
@@ -163,8 +162,9 @@ python tools/analysis_tools/fuse_results.py \
 
 ```shell
 python tools/analysis_tools/fuse_results.py \
-       ./model_1.json ./model_2.json ./model_3.json \
-       --model-name model_1 model_2 model_3 \
+       ./faster-rcnn_r50-caffe_fpn_1x_coco.json \
+       ./retinanet_r50-caffe_fpn_1x_coco.json \
+       ./cascade-rcnn_r50-caffe_fpn_1x_coco.json \
        --annotation ./annotation.json \
        --weights 1 2 3 \
        --eval-single
@@ -174,8 +174,9 @@ python tools/analysis_tools/fuse_results.py \
 
 ```shell
 python tools/analysis_tools/fuse_results.py \
-       ./model_1.json ./model_2.json ./model_3.json \
-       --model-name model_1 model_2 model_3 \
+       ./faster-rcnn_r50-caffe_fpn_1x_coco.json \
+       ./retinanet_r50-caffe_fpn_1x_coco.json \
+       ./cascade-rcnn_r50-caffe_fpn_1x_coco.json \
        --annotation ./annotation.json \
        --weights 1 2 3 \
        --save-fusion-results \
