@@ -152,9 +152,12 @@ class DeformableDETR(DetectionTransformer):
         assert batch_data_samples is not None
         batch_input_shape = batch_data_samples[0].batch_input_shape
         input_img_h, input_img_w = batch_input_shape
-
+        img_shape_list = [sample.img_shape for sample in batch_data_samples]
+        same_shape_flag = all([
+            s[0] == input_img_h and s[1] == input_img_w for s in img_shape_list
+        ])
         # support torch2onnx without feeding masks
-        if torch.onnx.is_in_onnx_export():
+        if torch.onnx.is_in_onnx_export() or same_shape_flag:
             mlvl_masks = []
             mlvl_pos_embeds = []
             for feat in mlvl_feats:
@@ -164,9 +167,6 @@ class DeformableDETR(DetectionTransformer):
         else:
             masks = mlvl_feats[0].new_ones(
                 (batch_size, input_img_h, input_img_w))
-            img_shape_list = [
-                sample.img_shape for sample in batch_data_samples
-            ]
             for img_id in range(batch_size):
                 img_h, img_w = img_shape_list[img_id]
                 masks[img_id, :img_h, :img_w] = 0
@@ -190,6 +190,7 @@ class DeformableDETR(DetectionTransformer):
         for lvl, (feat, mask, pos_embed) in enumerate(
                 zip(mlvl_feats, mlvl_masks, mlvl_pos_embeds)):
             batch_size, c, h, w = feat.shape
+            spatial_shape = torch._shape_as_tensor(feat)[2:].to(feat.device)
             # [bs, c, h_lvl, w_lvl] -> [bs, h_lvl*w_lvl, c]
             feat = feat.view(batch_size, c, -1).permute(0, 2, 1)
             pos_embed = pos_embed.view(batch_size, c, -1).permute(0, 2, 1)
@@ -197,7 +198,6 @@ class DeformableDETR(DetectionTransformer):
             # [bs, h_lvl, w_lvl] -> [bs, h_lvl*w_lvl]
             if mask is not None:
                 mask = mask.flatten(1)
-            spatial_shape = (h, w)
 
             feat_flatten.append(feat)
             lvl_pos_embed_flatten.append(lvl_pos_embed)
@@ -213,10 +213,8 @@ class DeformableDETR(DetectionTransformer):
         else:
             mask_flatten = None
 
-        spatial_shapes = torch.as_tensor(  # (num_level, 2)
-            spatial_shapes,
-            dtype=torch.long,
-            device=feat_flatten.device)
+        # (num_level, 2)
+        spatial_shapes = torch.cat(spatial_shapes).view(-1, 2)
         level_start_index = torch.cat((
             spatial_shapes.new_zeros((1, )),  # (num_level)
             spatial_shapes.prod(1).cumsum(0)[:-1]))
