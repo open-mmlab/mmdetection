@@ -64,7 +64,7 @@ class SinePositionalEncoding(BaseModule):
             mask (Tensor): ByteTensor mask. Non-zero values representing
                 ignored positions, while zero values means valid positions
                 for this image. Shape [bs, h, w].
-            input (Tensor, optional): Input image Tensor.
+            input (Tensor, optional): Input image/feature Tensor.
                 Shape [bs, c, h, w]
 
         Returns:
@@ -72,11 +72,13 @@ class SinePositionalEncoding(BaseModule):
                 [bs, num_feats*2, h, w].
         """
         assert not (mask is None and input is None)
-        # For convenience of exporting to ONNX, it's required to convert
-        # `masks` from bool to int.
+
         if mask is not None:
             B, H, W = mask.size()
             device = mask.device
+            # For convenience of exporting to ONNX,
+            # it's required to convert
+            # `masks` from bool to int.
             mask = mask.to(torch.int)
             not_mask = 1 - mask  # logical_not
             y_embed = not_mask.cumsum(1, dtype=torch.float32)

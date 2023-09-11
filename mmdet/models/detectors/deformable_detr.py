@@ -152,11 +152,9 @@ class DeformableDETR(DetectionTransformer):
         assert batch_data_samples is not None
         batch_input_shape = batch_data_samples[0].batch_input_shape
         input_img_h, input_img_w = batch_input_shape
-        img_shape_list = [sample.img_shape for sample in batch_data_samples]
-        same_shape_flag = all([
-            s[0] == input_img_h and s[1] == input_img_w for s in img_shape_list
-        ])
-        if torch.onnx.is_in_onnx_export() or same_shape_flag:
+
+        # support torch2onnx without feeding masks
+        if torch.onnx.is_in_onnx_export():
             mlvl_masks = []
             mlvl_pos_embeds = []
             for feat in mlvl_feats:
@@ -166,6 +164,9 @@ class DeformableDETR(DetectionTransformer):
         else:
             masks = mlvl_feats[0].new_ones(
                 (batch_size, input_img_h, input_img_w))
+            img_shape_list = [
+                sample.img_shape for sample in batch_data_samples
+            ]
             for img_id in range(batch_size):
                 img_h, img_w = img_shape_list[img_id]
                 masks[img_id, :img_h, :img_w] = 0
