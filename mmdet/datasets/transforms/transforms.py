@@ -7,7 +7,6 @@ from typing import List, Optional, Sequence, Tuple, Union
 
 import cv2
 import mmcv
-import numpy
 import numpy as np
 from mmcv.image import imresize
 from mmcv.image.geometric import _scale_size
