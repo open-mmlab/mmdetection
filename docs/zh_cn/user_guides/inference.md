@@ -393,10 +393,10 @@ demo 效果如下图所示：
 <img src="https://user-images.githubusercontent.com/17425982/234547841-266476c8-f987-4832-8642-34357be621c6.png" height="300"/>
 </div>
 
-如果想进行多种类型的识别，需要使用 `xx . xx .` 的格式在 `--texts` 字段后声明目标类型:
+如果想进行多种类型的识别，需要使用 `xx. xx` 的格式在 `--texts` 字段后声明目标类型:
 
 ```shell
-python demo/image_demo.py demo/demo.jpg glip_tiny_a_mmdet-b3654169.pth --texts 'bench . car .'
+python demo/image_demo.py demo/demo.jpg glip_tiny_a_mmdet-b3654169.pth --texts 'bench. car'
 ```
 
 结果如下图所示：
@@ -435,21 +435,4 @@ python tools/test.py configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py
 
 # 8 GPU
 ./tools/dist_test.sh configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365.py glip_tiny_a_mmdet-b3654169.pth 8
-```
-
-验证结果大致如下：
-
-```shell
-Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.428
-Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=1000 ] = 0.594
-Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=1000 ] = 0.466
-Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.300
-Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.477
-Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.534
-Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.634
-Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=300 ] = 0.634
-Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=1000 ] = 0.634
-Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=1000 ] = 0.473
-Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=1000 ] = 0.690
-Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.789
 ```
