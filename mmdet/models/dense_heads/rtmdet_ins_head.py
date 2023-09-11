@@ -466,7 +466,7 @@ class RTMDetInsHead(RTMDetHead):
             results.bboxes = scale_boxes(results.bboxes, scale_factor)
 
         if hasattr(results, 'score_factors'):
-            # TODO： Add sqrt operation in order to be consistent with
+            # TODO: Add sqrt operation in order to be consistent with
             #  the paper.
             score_factors = results.pop('score_factors')
             results.scores = results.scores * score_factors

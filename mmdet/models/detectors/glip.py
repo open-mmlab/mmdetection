@@ -2,7 +2,7 @@
 import copy
 import re
 import warnings
-from typing import Tuple
+from typing import Tuple, Union
 
 import torch
 from torch import Tensor
@@ -206,38 +206,41 @@ class GLIP(SingleStageDetector):
         self.language_model = MODELS.build(language_model)
 
         self._text_prompts = None
-        self._positive_maps = None
+        self._token_positive_maps = None
         self._language_dict_features = None
         self._entities = None
+        self._special_tokens = '. '
 
-    def get_tokens_positive_and_prompts(
+    def get_tokens_and_prompts(
             self,
-            original_caption: str,
-            custom_entities: bool = False) -> Tuple[dict, str]:
+            original_caption: Union[str, list, tuple],
+            custom_entities: bool = False) -> Tuple[dict, str, list]:
         """Get the tokens positive and prompts for the caption."""
         if isinstance(original_caption, (list, tuple)) or custom_entities:
             if custom_entities and isinstance(original_caption, str):
-                if not original_caption.endswith('.'):
-                    original_caption = original_caption + ' . '
-                original_caption = original_caption.split(' . ')
+                if original_caption.endswith(self._special_tokens):
+                    original_caption = original_caption.replace(
+                        self._special_tokens, '')
+                original_caption = original_caption.split(self._special_tokens)
                 original_caption = list(
                     filter(lambda x: len(x) > 0, original_caption))
 
             caption_string = ''
             tokens_positive = []
-            seperation_tokens = ' . '
-            for word in original_caption:
+            for idx, word in enumerate(original_caption):
                 tokens_positive.append(
                     [[len(caption_string),
                       len(caption_string) + len(word)]])
                 caption_string += word
-                caption_string += seperation_tokens
+                if idx != len(original_caption) - 1:
+                    caption_string += self._special_tokens
             tokenized = self.language_model.tokenizer([caption_string],
                                                       return_tensors='pt')
             self._entities = original_caption
         else:
-            if not original_caption.endswith('.'):
-                original_caption = original_caption + ' . '
+            if original_caption.endswith(self._special_tokens):
+                original_caption = original_caption.replace(
+                    self._special_tokens, '')
 
             tokenized = self.language_model.tokenizer([original_caption],
                                                       return_tensors='pt')
@@ -245,10 +248,78 @@ class GLIP(SingleStageDetector):
             self._entities = noun_phrases
             caption_string = original_caption
 
+        return tokenized, caption_string, tokens_positive
+
+    def get_positive_map(self, tokenized, tokens_positive):
         positive_map = create_positive_map(tokenized, tokens_positive)
         positive_map_label_to_token = create_positive_map_label_to_token(
             positive_map, plus=1)
-        return positive_map_label_to_token, caption_string
+        return positive_map_label_to_token, positive_map
+
+    def get_tokens_positive_and_prompts(
+            self,
+            original_caption: Union[str, list, tuple],
+            custom_entities: bool = False) -> Tuple[dict, str, Tensor]:
+        tokenized, caption_string, tokens_positive = \
+            self.get_tokens_and_prompts(
+                original_caption, custom_entities)
+        positive_map_label_to_token, positive_map = self.get_positive_map(
+            tokenized, tokens_positive)
+        return positive_map_label_to_token, caption_string, positive_map
+
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> Union[dict, list]:
+        # TODO: Only open vocabulary tasks are supported for training now.
+        text_prompts = [
+            data_samples.text for data_samples in batch_data_samples
+        ]
+
+        gt_labels = [
+            data_samples.gt_instances.labels
+            for data_samples in batch_data_samples
+        ]
+
+        new_text_prompts = []
+        positive_maps = []
+        if len(set(text_prompts)) == 1:
+            # All the text prompts are the same,
+            # so there is no need to calculate them multiple times.
+            tokenized, caption_string, tokens_positive = \
+                self.get_tokens_and_prompts(
+                    text_prompts[0], True)
+            new_text_prompts = [caption_string] * len(batch_inputs)
+            for gt_label in gt_labels:
+                new_tokens_positive = [
+                    tokens_positive[label] for label in gt_label
+                ]
+                _, positive_map = self.get_positive_map(
+                    tokenized, new_tokens_positive)
+                positive_maps.append(positive_map)
+        else:
+            for text_prompt, gt_label in zip(text_prompts, gt_labels):
+                tokenized, caption_string, tokens_positive = \
+                    self.get_tokens_and_prompts(
+                        text_prompt, True)
+                new_tokens_positive = [
+                    tokens_positive[label] for label in gt_label
+                ]
+                _, positive_map = self.get_positive_map(
+                    tokenized, new_tokens_positive)
+                positive_maps.append(positive_map)
+                new_text_prompts.append(caption_string)
+
+        language_dict_features = self.language_model(new_text_prompts)
+        for i, data_samples in enumerate(batch_data_samples):
+            # .bool().float() is very important
+            positive_map = positive_maps[i].to(
+                batch_inputs.device).bool().float()
+            data_samples.gt_instances.positive_maps = positive_map
+
+        visual_features = self.extract_feat(batch_inputs)
+
+        losses = self.bbox_head.loss(visual_features, language_dict_features,
+                                     batch_data_samples)
+        return losses
 
     def predict(self,
                 batch_inputs: Tensor,
@@ -307,12 +378,13 @@ class GLIP(SingleStageDetector):
                     for text_prompt in text_prompts
                 ]
 
-            self._positive_maps, text_prompts = zip(
+            self._token_positive_maps, text_prompts, _ = zip(
                 *_positive_maps_and_prompts)
-            self._language_dict_features = self.language_model(text_prompts)
+            self._language_dict_features = self.language_model(
+                list(text_prompts))
 
         for i, data_samples in enumerate(batch_data_samples):
-            data_samples.token_positive_map = self._positive_maps[i]
+            data_samples.token_positive_map = self._token_positive_maps[i]
 
         visual_features = self.extract_feat(batch_inputs)
 

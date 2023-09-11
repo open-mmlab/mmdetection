@@ -42,7 +42,18 @@ def iou_loss(pred: Tensor,
         warnings.warn('DeprecationWarning: Setting "linear=True" in '
                       'iou_loss is deprecated, please use "mode=`linear`" '
                       'instead.')
+    # avoid fp16 overflow
+    if pred.dtype == torch.float16:
+        fp16 = True
+        pred = pred.to(torch.float32)
+    else:
+        fp16 = False
+
     ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
+
+    if fp16:
+        ious = ious.to(torch.float16)
+
     if mode == 'linear':
         loss = 1 - ious
     elif mode == 'square':
@@ -121,7 +132,18 @@ def giou_loss(pred: Tensor, target: Tensor, eps: float = 1e-7) -> Tensor:
     Return:
         Tensor: Loss tensor.
     """
+    # avoid fp16 overflow
+    if pred.dtype == torch.float16:
+        fp16 = True
+        pred = pred.to(torch.float32)
+    else:
+        fp16 = False
+
     gious = bbox_overlaps(pred, target, mode='giou', is_aligned=True, eps=eps)
+
+    if fp16:
+        gious = gious.to(torch.float16)
+
     loss = 1 - gious
     return loss
 

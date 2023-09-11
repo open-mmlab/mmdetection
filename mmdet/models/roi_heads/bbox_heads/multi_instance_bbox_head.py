@@ -601,6 +601,10 @@ class MultiInstanceBBoxHead(BBoxHead):
 
         keep = torch.ones(len(ordered_bboxes)) == 1
         ruler = torch.arange(len(ordered_bboxes))
+
+        keep = keep.to(bboxes.device)
+        ruler = ruler.to(bboxes.device)
+
         while ruler.shape[0] > 0:
             basement = ruler[0]
             ruler = ruler[1:]

@@ -258,7 +258,7 @@ Thanks @liuyanyi, @RangeKing, @lihua199710, @MambaWong, @sanbuphy, @Xiangxu-0103
 
 - Update the docs of GIoU Loss in README (#8810)
 - Handle dataset wrapper in `inference_detector` (#9144)
-- Update the type of `counts` in COCO’s compressed RLE (#9274)
+- Update the type of `counts` in COCO's compressed RLE (#9274)
 - Support saving config file in `print_config` (#9276)
 - Update docs about video inference (#9305)
 - Update guide about model deployment (#9344)

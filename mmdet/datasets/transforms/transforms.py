@@ -7,7 +7,6 @@ from typing import List, Optional, Sequence, Tuple, Union
 
 import cv2
 import mmcv
-import numpy
 import numpy as np
 from mmcv.image import imresize
 from mmcv.image.geometric import _scale_size
@@ -56,7 +55,7 @@ def _fixed_scale_size(
     if isinstance(scale, (float, int)):
         scale = (scale, scale)
     w, h = size
-    # don’t need o.5 offset
+    # don't need o.5 offset
     return int(w * float(scale[0])), int(h * float(scale[1]))
 
 
@@ -2631,7 +2630,7 @@ class MixUp(BaseTransform):
         retrieve_img = retrieve_results['img']
 
         jit_factor = random.uniform(*self.ratio_range)
-        is_filp = random.uniform(0, 1) > self.flip_ratio
+        is_flip = random.uniform(0, 1) > self.flip_ratio
 
         if len(retrieve_img.shape) == 3:
             out_img = np.ones(
@@ -2658,7 +2657,7 @@ class MixUp(BaseTransform):
                                           int(out_img.shape[0] * jit_factor)))
 
         # 4. flip
-        if is_filp:
+        if is_flip:
             out_img = out_img[:, ::-1, :]
 
         # 5. random crop
@@ -2684,7 +2683,7 @@ class MixUp(BaseTransform):
         if self.bbox_clip_border:
             retrieve_gt_bboxes.clip_([origin_h, origin_w])
 
-        if is_filp:
+        if is_flip:
             retrieve_gt_bboxes.flip_([origin_h, origin_w],
                                      direction='horizontal')
 
@@ -3728,7 +3727,7 @@ class CachedMixUp(BaseTransform):
         with_mask = True if 'gt_masks' in results else False
 
         jit_factor = random.uniform(*self.ratio_range)
-        is_filp = random.uniform(0, 1) > self.flip_ratio
+        is_flip = random.uniform(0, 1) > self.flip_ratio
 
         if len(retrieve_img.shape) == 3:
             out_img = np.ones(
@@ -3755,7 +3754,7 @@ class CachedMixUp(BaseTransform):
                                           int(out_img.shape[0] * jit_factor)))
 
         # 4. flip
-        if is_filp:
+        if is_flip:
             out_img = out_img[:, ::-1, :]
 
         # 5. random crop
@@ -3785,7 +3784,7 @@ class CachedMixUp(BaseTransform):
         if self.bbox_clip_border:
             retrieve_gt_bboxes.clip_([origin_h, origin_w])
 
-        if is_filp:
+        if is_flip:
             retrieve_gt_bboxes.flip_([origin_h, origin_w],
                                      direction='horizontal')
             if with_mask:

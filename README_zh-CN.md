@@ -237,9 +237,12 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
             <li><a href="configs/dab_detr">DAB-DETR (ICLR'2022)</a></li>
             <li><a href="configs/dino">DINO (ICLR'2023)</a></li>
             <li><a href="configs/glip">GLIP (CVPR'2022)</a></li>
+            <li><a href="configs/ddq">DDQ (CVPR'2023)</a></li>
             <li><a href="projects/DiffusionDet">DiffusionDet (ArXiv'2023)</a></li>
             <li><a href="projects/EfficientDet">EfficientDet (CVPR'2020)</a></li>
+            <li><a href="projects/ViTDet">ViTDet (ECCV'2022)</a></li>
             <li><a href="projects/Detic">Detic (ECCV'2022)</a></li>
+            <li><a href="projects/CO-DETR">CO-DETR (ICCV'2023)</a></li>
       </ul>
       </td>
       <td>
@@ -261,6 +264,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="projects/SparseInst">SparseInst (CVPR'2022)</a></li>
           <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
           <li><a href="configs/boxinst">BoxInst (CVPR'2021)</a></li>
+          <li><a href="projects/ConvNeXt-V2">ConvNeXt-V2 (Arxiv'2023)</a></li>
         </ul>
       </td>
       <td>
@@ -268,6 +272,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
           <li><a href="configs/maskformer">MaskFormer (NeurIPS'2021)</a></li>
           <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
+          <li><a href="configs/XDecoder">XDecoder (CVPR'2023)</a></li>
         </ul>
       </td>
       <td>
@@ -443,10 +448,10 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 
 ## 欢迎加入 OpenMMLab 社区
 
-扫描下方的二维码可关注 OpenMMLab 团队的 [知乎官方账号](https://www.zhihu.com/people/openmmlab)，加入 OpenMMLab 团队的 [官方交流 QQ 群](https://jq.qq.com/?_wv=1027&k=aCvMxdr3)
+扫描下方的二维码可关注 OpenMMLab 团队的 [知乎官方账号](https://www.zhihu.com/people/openmmlab)，扫描下方微信二维码添加喵喵好友，进入 MMDectection 微信交流社群。【加好友申请格式：研究方向+地区+学校/公司+姓名】
 
 <div align="center">
-<img src="resources/zhihu_qrcode.jpg" height="400" />  <img src="resources/qq_group_qrcode.jpg" height="400" />
+<img src="resources/zhihu_qrcode.jpg" height="400" />  <img src="resources/miaomiao_qrcode.jpg" height="400" />
 </div>
 
 我们会在 OpenMMLab 社区为大家
