@@ -353,8 +353,8 @@ class CocoMetric(BaseMetric):
             result = dict()
             pred = data_sample['pred_instances']
             result['img_id'] = data_sample['img_id']
-            result['bboxes'] = pred['bboxes'].cpu().numpy()
-            result['scores'] = pred['scores'].cpu().numpy()
+            result['bboxes'] = pred['bboxes'].to(dtype=torch.float32).cpu().numpy()
+            result['scores'] = pred['scores'].to(dtype=torch.float32).cpu().numpy()
             result['labels'] = pred['labels'].cpu().numpy()
             # encode mask to RLE
             if 'masks' in pred:
@@ -363,7 +363,7 @@ class CocoMetric(BaseMetric):
                         pred['masks'], torch.Tensor) else pred['masks']
             # some detectors use different scores for bbox and mask
             if 'mask_scores' in pred:
-                result['mask_scores'] = pred['mask_scores'].cpu().numpy()
+                result['mask_scores'] = pred['mask_scores'].to(dtype=torch.float32).cpu().numpy()
 
             # parse gt
             gt = dict()

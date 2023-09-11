@@ -67,7 +67,7 @@ def coordinate_to_encoding(coord_tensor: Tensor,
         Tensor: Returned encoded positional tensor.
     """
     dim_t = torch.arange(
-        num_feats, dtype=torch.float32, device=coord_tensor.device)
+        num_feats, dtype=coord_tensor.dtype, device=coord_tensor.device)
     dim_t = temperature**(2 * (dim_t // 2) / num_feats)
     x_embed = coord_tensor[..., 0] * scale
     y_embed = coord_tensor[..., 1] * scale
