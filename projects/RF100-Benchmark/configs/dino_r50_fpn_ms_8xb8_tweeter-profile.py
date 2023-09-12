@@ -92,3 +92,5 @@ default_hooks = dict(checkpoint=dict(save_best='auto', max_keep_ckpts=2))
 #       or not by default.
 #   - `base_batch_size` = (8 GPUs) x (2 samples per GPU).
 auto_scale_lr = dict(enable=False, base_batch_size=64)
+
+broadcast_buffers = True
