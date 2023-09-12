@@ -1,4 +1,4 @@
-_base_ = '../../../configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py'
+_base_ = '../../../configs/dino/dino-4scale_r50_8xb2-12e_coco.py'
 
 data_root = 'rf100/tweeter-profile/'
 class_name = ('profile_info', )
@@ -6,7 +6,7 @@ num_classes = len(class_name)
 metainfo = dict(classes=class_name)
 image_scale = (640, 640)
 
-model = dict(roi_head=dict(bbox_head=dict(num_classes=int(num_classes))))
+model = dict(bbox_head=dict(num_classes=int(num_classes)))
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -80,9 +80,7 @@ param_scheduler = [
         gamma=0.1)
 ]
 
-optim_wrapper = dict(optimizer=dict(lr=0.01))
-
-load_from = 'https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_mstrain_3x_coco/faster_rcnn_r50_fpn_mstrain_3x_coco_20210524_110822-e10bd31c.pth'  # noqa
+load_from = 'https://download.openmmlab.com/mmdetection/v3.0/dino/dino-4scale_r50_8xb2-12e_coco/dino-4scale_r50_8xb2-12e_coco_20221202_182705-55b2bba2.pth'  # noqa
 
 default_hooks = dict(checkpoint=dict(save_best='auto', max_keep_ckpts=2))
 
