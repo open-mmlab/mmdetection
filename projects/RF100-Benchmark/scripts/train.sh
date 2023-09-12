@@ -17,7 +17,7 @@ for dataset in $(ls $datasets)
     # You can customize string_list to train only specific datasets.
     if [ "$DEBUG" == 0 ]; then
       # example
-      datasets_list=("acl-x-ray" "tweeter-profile")
+      datasets_list=("acl-x-ray", "tweeter-profile")
       if [[ ! " ${datasets_list[@]} " =~ " ${dataset} " ]]; then
         continue
       fi
