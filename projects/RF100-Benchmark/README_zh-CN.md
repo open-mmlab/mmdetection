@@ -1,0 +1,103 @@
+# Roboflow 100 Benchmark
+
+> [Roboflow 100: A Rich, Multi-Domain Object Detection Benchmark](https://arxiv.org/abs/2211.13523v3)
+
+<!-- [Dataset] -->
+
+## 摘要
+
+目标检测模型的评估通常通过在一组固定的数据集上优化单一指标（例如 mAP），例如 Microsoft COCO 和 Pascal VOC。由于图像检索和注释成本高昂，这些数据集主要由在网络上找到的图像组成，并不能代表实际建模的许多现实领域，例如卫星、显微和游戏等，这使得很难确定模型学到的泛化程度。我们介绍了 Roboflow-100（RF100），它包括 100 个数据集、7 个图像领域、224,714 张图像和 805 个类别标签，超过 11,170 个标注小时。我们从超过 90,000 个公共数据集、6000 万个公共图像中提取了 RF100，这些数据集正在由计算机视觉从业者在网络应用程序 Roboflow Universe 上积极组装和标注。通过发布 RF100，我们旨在提供一个语义多样、多领域的数据集基准，帮助研究人员用真实数据测试模型的泛化能力。
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/71b0eb6f-d710-4100-9fb1-9d5485e07fdb"/>
+</div>
+
+## 数据集准备
+
+Roboflow 100 数据集是由 Roboflow 平台托管，并且在 [roboflow-100-benchmark](https://github.com/roboflow/roboflow-100-benchmark) 仓库中提供了详细的下载脚本。为了简单，我们直接使用官方提供的下载脚本。
+
+在下载数据前，你首先需要在 Roboflow 平台注册账号，获取 API key。
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/6126e69e-85ce-4dec-8e7b-936c4fae29a6"/>
+</div>
+
+```shell
+export ROBOFLOW_API_KEY = 你的 Private API Key
+```
+
+同时你也应该安装 Roboflow 包。
+
+```shell
+pip install roboflow
+```
+
+最后使用如下命令下载数据集即可。
+
+```shell
+cd projects/RF100-Benchmark/
+bash scripts/download_datasets.sh
+```
+
+下载完成后，会在当前目录下 `projects/RF100-Benchmark/` 生成 `rf100` 文件夹，其中包含了所有的数据集。其结构如下所示：
+
+```text
+├── README.md
+├── README_zh-CN.md
+└── scripts
+    ├── datasets_links_640.txt
+├── rf100
+│    └── tweeter-profile
+│    │    ├── train
+|    |    |    ├── 0b3la49zec231_jpg.rf.8913f1b7db315c31d09b1d2f583fb521.jpg
+|    |    |    ├──_annotations.coco.json
+│    │    ├── valid
+|    |    |    ├── 0fcjw3hbfdy41_jpg.rf.d61585a742f6e9d1a46645389b0073ff.jpg
+|    |    |    ├──_annotations.coco.json
+│    │    ├── test
+|    |    |    ├── 0dh0to01eum41_jpg.rf.dcca24808bb396cdc07eda27a2cea2d4.jpg
+|    |    |    ├──_annotations.coco.json
+│    │    ├── README.dataset.txt
+│    │    ├── README.roboflow.txt
+│    └── 4-fold-defect
+...
+```
+
+整个数据集一共需要 12.3G 存储空间。如果你不想一次性训练和评估所有模型，你可以修改 `scripts/datasets_links_640.txt` 文件，将你不想使用的数据集链接删掉即可。
+
+## 模型训练和评估
+
+在准备好数据集后，可以一键开启单卡或者多卡训练。以 `faster-rcnn_r50_fpn` 算法为例
+
+1. 单卡训练
+
+```shell
+bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_tweeter-profile.py 1
+```
+
+2. 分布式多卡训练
+
+```shell
+bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_tweeter-profile.py 8
+```
+
+训练完成后会在当前路径下生成 `work_dirs` 文件夹，其中包含了训练好的模型权重和日志。
+
+## 模型汇总
+
+## 自定义算法进行 benchmark
+
+如果用户想针对不同算法进行 Roboflow 100 Benchmark，你只需要在 `projects/RF100-Benchmark/configs` 文件夹新增算法配置即可。
+
+注意：由于内部运行过程是通过将用户提供的配置中是以字符串替换的方式实现自定义数据集的功能，因此用户提供的配置必须是 `tweeter-profile` 数据集且必须包括 `data_root` 和 `class_name` 变量，否则程序会报错。
+
+## 引用
+
+```BibTeX
+@misc{2211.13523,
+Author = {Floriana Ciaglia and Francesco Saverio Zuppichini and Paul Guerrie and Mark McQuade and Jacob Solawetz},
+Title = {Roboflow 100: A Rich, Multi-Domain Object Detection Benchmark},
+Year = {2022},
+Eprint = {arXiv:2211.13523},
+}
+```
