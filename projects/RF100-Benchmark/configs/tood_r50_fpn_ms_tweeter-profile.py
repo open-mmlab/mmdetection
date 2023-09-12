@@ -6,7 +6,9 @@ num_classes = len(class_name)
 metainfo = dict(classes=class_name)
 image_scale = (640, 640)
 
-model = dict(bbox_head=dict(num_classes=int(num_classes)))
+model = dict(
+    backbone=dict(norm_eval=False, frozen_stages=-1),
+    bbox_head=dict(num_classes=int(num_classes)))
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
