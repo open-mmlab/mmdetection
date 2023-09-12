@@ -7,7 +7,6 @@ from mmdet.models import SwinTransformer
 with read_base():
     from .dino_4scale_r50_8xb2_12e_coco import *
 
-fp16 = dict(loss_scale=512.)
 pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'  # noqa
 num_levels = 5
 model.merge(
