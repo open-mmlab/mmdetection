@@ -12,9 +12,32 @@
 <img src="https://github.com/open-mmlab/mmdetection/assets/17425982/71b0eb6f-d710-4100-9fb1-9d5485e07fdb"/>
 </div>
 
+## 代码结构说明
+
+```text
+# 当前文件路径为 projects/RF100-Benchmark/
+├── configs # 配置文件
+│         ├── dino_r50_fpn_ms_tweeter-profile.py
+│         ├── faster-rcnn_r50_fpn_ms_tweeter-profile.py
+│         └── tood_r50_fpn_ms_tweeter-profile.py
+├── README.md
+├── README_zh-CN.md
+├── rf100
+└── scripts
+    ├── create_new_config.py # 基于上述提供的配置生成其余 99 个数据集训练配置
+    ├── datasets_links_640.txt # 数据集下载链接，来自官方 repo
+    ├── download_dataset.py # 数据集下载代码，来自官方 repo
+    ├── download_datasets.sh # 数据集下载脚本，来自官方 repo
+    ├── labels_names.json # 数据集信息，来自官方 repo
+    ├── parse_dataset_link.py # 下载数据集需要，来自官方 repo
+    └── train.sh # 训练和评估启动脚本
+```
+
 ## 数据集准备
 
 Roboflow 100 数据集是由 Roboflow 平台托管，并且在 [roboflow-100-benchmark](https://github.com/roboflow/roboflow-100-benchmark) 仓库中提供了详细的下载脚本。为了简单，我们直接使用官方提供的下载脚本。
+
+如果想对数据集有个清晰的认识，可以查看 [roboflow-100-benchmark](https://github.com/roboflow/roboflow-100-benchmark) 仓库，其提供了诸多数据集分析脚本。
 
 在下载数据前，你首先需要在 Roboflow 平台注册账号，获取 API key。
 
@@ -42,6 +65,7 @@ bash scripts/download_datasets.sh
 下载完成后，会在当前目录下 `projects/RF100-Benchmark/` 生成 `rf100` 文件夹，其中包含了所有的数据集。其结构如下所示：
 
 ```text
+# 当前文件路径为 projects/RF100-Benchmark/
 ├── README.md
 ├── README_zh-CN.md
 └── scripts
@@ -72,6 +96,7 @@ bash scripts/download_datasets.sh
 1. 单卡训练
 
 ```shell
+# 当前位于 projects/RF100-Benchmark/
 bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_tweeter-profile.py 1
 ```
 
@@ -82,6 +107,8 @@ bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_tweeter-profile.py 8
 ```
 
 训练完成后会在当前路径下生成 `work_dirs` 文件夹，其中包含了训练好的模型权重和日志。
+
+为了方便用户调试或者只想训练特定的数据集，在 `scripts/train.sh` 中我们提供了 `DEBUG` 变量，你只需要设置为 1，并且在 `datasets_list` 变量中指定你想训练的数据集即可。
 
 ## 模型汇总
 
