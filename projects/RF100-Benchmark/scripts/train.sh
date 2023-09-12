@@ -18,7 +18,7 @@ for dataset in $(ls $datasets)
     if [ "$DEBUG" == 0 ]; then
       # example
       datasets_list=("acl-x-ray", "tweeter-profile")
-      if [[ ! " ${datasets_list[@]} " =~ " ${dataset} " ]]; then
+      if [[ ! " ${datasets_list[@]} " =~ "$dataset" ]]; then
         continue
       fi
     fi
