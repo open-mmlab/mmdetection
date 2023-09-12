@@ -7,7 +7,7 @@ NODE_RANK=${NODE_RANK:-0}
 PORT=${PORT:-29500}
 MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
 
-DEBUG=1
+DEBUG=0
 
 datasets=$(pwd)/rf100
 export PYTHONPATH="../..":$PYTHONPATH
@@ -15,7 +15,7 @@ export PYTHONPATH="../..":$PYTHONPATH
 for dataset in $(ls $datasets)
   do
     # You can customize string_list to train only specific datasets.
-    if [ "$DEBUG" == 0 ]; then
+    if [ "$DEBUG" == 1 ]; then
       # example
       datasets_list=("acl-x-ray", "tweeter-profile")
       if [[ ! " ${datasets_list[@]} " =~ "$dataset" ]]; then
