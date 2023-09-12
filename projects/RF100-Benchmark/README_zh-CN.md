@@ -17,9 +17,9 @@
 ```text
 # 当前文件路径为 projects/RF100-Benchmark/
 ├── configs # 配置文件
-│         ├── dino_r50_fpn_ms_tweeter-profile.py
-│         ├── faster-rcnn_r50_fpn_ms_tweeter-profile.py
-│         └── tood_r50_fpn_ms_tweeter-profile.py
+│         ├── dino_r50_fpn_ms_8xb8_tweeter-profile.py
+│         ├── faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py
+│         └── tood_r50_fpn_ms_8xb8_tweeter-profile.py
 ├── README.md
 ├── README_zh-CN.md
 ├── rf100
@@ -97,17 +97,17 @@ bash scripts/download_datasets.sh
 
 ```shell
 # 当前位于 projects/RF100-Benchmark/
-bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_tweeter-profile.py 1
+bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 1
 # 如果想指定保存路径
-bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_tweeter-profile.py 1 my_work_dirs
+bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 1 my_work_dirs
 ```
 
 2. 分布式多卡训练
 
 ```shell
-bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_tweeter-profile.py 8
+bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 8
 # 如果想指定保存路径
-bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_tweeter-profile.py 8 my_work_dirs
+bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 8 my_work_dirs
 ```
 
 训练完成后会在当前路径下生成 `work_dirs` 文件夹，其中包含了训练好的模型权重和日志。
