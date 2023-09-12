@@ -66,8 +66,11 @@ val_evaluator = dict(
 test_evaluator = val_evaluator
 
 max_epochs = 25
+train_cfg = dict(max_epochs=max_epochs)
 
 param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
     dict(
         type='MultiStepLR',
         begin=0,
