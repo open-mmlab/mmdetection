@@ -2,6 +2,7 @@
 
 CONFIG=$1
 GPUS=$2
+WORK_DIRS=${3:-'work_dirs'}
 NNODES=${NNODES:-1}
 NODE_RANK=${NODE_RANK:-0}
 PORT=${PORT:-29500}
@@ -26,7 +27,7 @@ for dataset in $(ls $datasets)
     echo "Training on $dataset"
     python $(pwd)/scripts/create_new_config.py $CONFIG $dataset
     if [ "$GPUS" == 1 ]; then
-       python ../../tools/train.py "temp_configs/$dataset.py" ${@:3}
+       python ../../tools/train.py "temp_configs/$dataset.py" --work-dir "$WORK_DIRS/$dataset" ${@:4}
     else
         python -m torch.distributed.launch \
             --nnodes=$NNODES \
@@ -36,7 +37,7 @@ for dataset in $(ls $datasets)
             --master_port=$PORT \
             ../../tools/train.py \
             "temp_configs/$dataset.py" \
-            --launcher pytorch ${@:3}
+            --launcher pytorch --work-dir "$WORK_DIRS/$dataset" ${@:4}
     fi
   done
 
