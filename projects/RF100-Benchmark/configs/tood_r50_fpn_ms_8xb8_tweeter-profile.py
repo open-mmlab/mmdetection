@@ -84,7 +84,7 @@ param_scheduler = [
 
 load_from = 'https://download.openmmlab.com/mmdetection/v2.0/tood/tood_r50_fpn_1x_coco/tood_r50_fpn_1x_coco_20211210_103425-20e20746.pth'  # noqa
 
-default_hooks = dict(checkpoint=dict(save_best='auto', max_keep_ckpts=2))
+default_hooks = dict(checkpoint=dict(save_best='auto', max_keep_ckpts=1))
 
 # Default setting for scaling LR automatically
 #   - `enable` means enable scaling LR automatically
