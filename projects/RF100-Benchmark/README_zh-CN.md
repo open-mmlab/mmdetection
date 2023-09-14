@@ -37,8 +37,6 @@
 
 Roboflow 100 数据集是由 Roboflow 平台托管，并且在 [roboflow-100-benchmark](https://github.com/roboflow/roboflow-100-benchmark) 仓库中提供了详细的下载脚本。为了简单，我们直接使用官方提供的下载脚本。
 
-如果想对数据集有个清晰的认识，可以查看 [roboflow-100-benchmark](https://github.com/roboflow/roboflow-100-benchmark) 仓库，其提供了诸多数据集分析脚本。
-
 在下载数据前，你首先需要在 Roboflow 平台注册账号，获取 API key。
 
 <div align=center>
@@ -88,6 +86,14 @@ bash scripts/download_datasets.sh
 ```
 
 整个数据集一共需要 12.3G 存储空间。如果你不想一次性训练和评估所有模型，你可以修改 `scripts/datasets_links_640.txt` 文件，将你不想使用的数据集链接删掉即可。
+
+Roboflow 100 数据集的特点如下图所示
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/e2693662-3d16-49a4-af0b-2a03be7e16b6"/>
+</div>
+
+如果想对数据集有个清晰的认识，可以查看 [roboflow-100-benchmark](https://github.com/roboflow/roboflow-100-benchmark) 仓库，其提供了诸多数据集分析脚本。
 
 ## 模型训练和评估
 
