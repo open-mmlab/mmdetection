@@ -80,12 +80,12 @@ We use LVIS as bboxes-labeled data, and adopt the overlap classes between ImageN
 
 ```
 data/
-	lvis/
-		train2017
-		val2017
-		anntations/
-			lvis_v1_train.json
-			lvis_v1_val.json
+    lvis/
+        train2017
+        val2017
+        anntations/
+          lvis_v1_train.json
+          lvis_v1_val.json
     imagenet/
         ImageNet-21K/
             n00007846
