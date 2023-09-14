@@ -30,6 +30,8 @@ class HDINO(DINO):
             memory, memory_mask, spatial_shapes, batch_data_samples)
 
         if self.training:
+            # train: num_denoising_queries + num_query_one2one
+            # + num_query_one2many
             dn_mask = decoder_inputs_dict['dn_mask']
             num_denoising_queries = head_inputs_dict['dn_meta'][
                 'num_denoising_queries']
@@ -39,6 +41,7 @@ class HDINO(DINO):
                     num_query_one2one:] = True
             decoder_inputs_dict['dn_mask'] = dn_mask
         else:
+            # test: num_query_one2one + num_query_one2many
             query = decoder_inputs_dict['query']
             reference_points = decoder_inputs_dict['reference_points']
             num_query_one2many = self.num_queries - self.num_query_one2one
