@@ -112,7 +112,21 @@ bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 8 m
 
 训练完成后会在当前路径下生成 `work_dirs` 文件夹，其中包含了训练好的模型权重和日志。
 
-为了方便用户调试或者只想训练特定的数据集，在 `scripts/train.sh` 中我们提供了 `DEBUG` 变量，你只需要设置为 1，并且在 `datasets_list` 变量中指定你想训练的数据集即可。
+1. 为了方便用户调试或者只想训练特定的数据集，在 `scripts/train.sh` 中我们提供了 `DEBUG` 变量，你只需要设置为 1，并且在 `datasets_list` 变量中指定你想训练的数据集即可。
+2. 考虑到由于各种原因，用户训练过程中可能出现某些数据集训练失败，因此我们提供了 `RETRY_PATH` 变量，你只需要传入 txt 数据集列表文件即可，程序会读取该文件中的数据集，然后只训练特定数据集。如果不提供则为全量数据集训练。
+
+```shell
+RETRY_PATH=你的数据集列表.txt bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 8 my_work_dirs
+```
+
+txt 文件中每一行代表一个数据集名称，示例如下(第 4 行的空行不可少)：
+
+```text
+acl-x-ray
+tweeter-profile
+abdomen-mri
+
+```
 
 ## 模型汇总
 
