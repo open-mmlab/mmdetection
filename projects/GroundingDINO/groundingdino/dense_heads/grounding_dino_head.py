@@ -3,6 +3,7 @@ from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
+from torch import Tensor
 from mmcv.cnn import Linear
 from mmengine.structures import InstanceData
 from torch import Tensor
@@ -18,13 +19,16 @@ from mmdet.utils import InstanceList
 
 
 class ContrastiveEmbed(nn.Module):
+    """text visual ContrastiveEmbed layer.
 
-    def __init__(self, max_text_len=256):
+    Args:
+        max_text_len (int, optional): Maximum length of text. Defaults to 256.
+    """
+    def __init__(self,max_text_len=256):
         super().__init__()
         self.max_text_len = max_text_len
 
     def forward(self, visual_feat, text_feat, text_token_mask):
-
         res = visual_feat @ text_feat.transpose(-1, -2)
         res.masked_fill_(~text_token_mask[:, None, :], float('-inf'))
 

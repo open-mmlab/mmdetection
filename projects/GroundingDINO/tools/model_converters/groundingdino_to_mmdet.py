@@ -64,7 +64,7 @@ def convert(ckpt):
             # new_k = k.replace('module.bert', 'bert')
 
         elif 'module.feat_map' in k:
-            new_k = k.replace('module.feat_map', 'feat_map')
+            new_k = k.replace('module.feat_map', 'text_feat_map')
 
         elif 'module.input_proj' in k:
             new_k = k.replace('module.input_proj', 'neck.convs')
@@ -147,6 +147,7 @@ def convert(ckpt):
             if 'norm3' in new_k:
                 new_k = new_k.replace('norm3', 'norms.3')
             if 'ca_text' in new_k:
+                new_k = new_k.replace('ca_text', 'cross_attn_text')
                 if 'in_proj_weight' in new_k:
                     new_k = new_k.replace('in_proj_weight',
                                           'attn.in_proj_weight')

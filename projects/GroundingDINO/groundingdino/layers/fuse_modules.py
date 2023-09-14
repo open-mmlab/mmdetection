@@ -1,18 +1,17 @@
 import torch
 import torch.nn as nn
+from torch import Tensor
 import torch.nn.functional as F
 from timm.models.layers import DropPath
 
 
 class BiMultiHeadAttention(nn.Module):
-
     def __init__(self,
                  v_dim,
                  l_dim,
                  embed_dim,
                  num_heads,
-                 dropout=0.1,
-                 cfg=None):
+                 dropout=0.1):
         super(BiMultiHeadAttention, self).__init__()
 
         self.embed_dim = embed_dim
@@ -63,8 +62,6 @@ class BiMultiHeadAttention(nn.Module):
         self.out_l_proj.bias.data.fill_(0)
 
     def forward(self, v, l, attention_mask_v=None, attention_mask_l=None):
-        # if os.environ.get('IPDB_SHILONG_DEBUG', None) == 'INFO':
-        #     import ipdb; ipdb.set_trace()
         bsz, tgt_len, _ = v.size()
 
         query_states = self.v_proj(v) * self.scale
@@ -80,7 +77,7 @@ class BiMultiHeadAttention(nn.Module):
         value_l_states = value_l_states.view(*proj_shape)
 
         src_len = key_states.size(1)
-        # bs*nhead, nimg, ntxt
+
         attn_weights = torch.bmm(query_states, key_states.transpose(1, 2))
 
         if attn_weights.size() != (bsz * self.num_heads, tgt_len, src_len):
@@ -92,9 +89,10 @@ class BiMultiHeadAttention(nn.Module):
             attn_weights = attn_weights - attn_weights.max()
 
         if self.clamp_min_for_underflow:
+            # NOTE: Do not increase -50000, data type half has quite limited range.
             attn_weights = torch.clamp(
                 attn_weights, min=-50000
-            )  # Do not increase -50000, data type half has quite limited range
+            )
         if self.clamp_max_for_overflow:
             attn_weights = torch.clamp(
                 attn_weights, max=50000
@@ -106,11 +104,11 @@ class BiMultiHeadAttention(nn.Module):
         if self.clamp_min_for_underflow:
             attn_weights_l = torch.clamp(
                 attn_weights_l, min=-50000
-            )  # Do not increase -50000, data type half has quite limited range
+            )
         if self.clamp_max_for_overflow:
             attn_weights_l = torch.clamp(
                 attn_weights_l, max=50000
-            )  # Do not increase 50000, data type half has quite limited range
+            )
 
         # mask vison for language
         if attention_mask_v is not None:
@@ -174,8 +172,7 @@ class BiMultiHeadAttention(nn.Module):
                  l_dim,
                  embed_dim,
                  num_heads,
-                 dropout=0.1,
-                 cfg=None):
+                 dropout=0.1):
         super(BiMultiHeadAttention, self).__init__()
 
         self.embed_dim = embed_dim
@@ -338,27 +335,28 @@ class BiMultiHeadAttention(nn.Module):
         return attn_output_v, attn_output_l
 
 
-# Bi-Direction MHA (text->image, image->text)
 class BiAttentionBlock(nn.Module):
 
     def __init__(
         self,
-        v_dim,
-        l_dim,
-        embed_dim,
-        num_heads,
-        dropout=0.1,
-        drop_path=0.0,
-        init_values=1e-4,
-        cfg=None,
+        v_dim: int,
+        l_dim: int,
+        embed_dim: int,
+        num_heads: int,
+        dropout: float = 0.1,
+        drop_path: float = 0.0,
+        init_values: bool = 1e-4
     ):
-        """
-        Inputs:
-            embed_dim - Dimensionality of input and attention feature vectors
-            hidden_dim - Dimensionality of hidden layer in feed-forward network
-                         (usually 2-4x larger than embed_dim)
-            num_heads - Number of heads to use in the Multi-Head Attention block
-            dropout - Amount of dropout to apply in the feed-forward network
+        """Bi-Direction MHA (text->image, image->text)
+
+        Args:
+            v_dim (int): visual feature dimension.
+            l_dim (int): language feature dimension.
+            embed_dim (int): dimensionality of input and attention feature vectors.
+            num_heads (int): number of attention heads.
+            dropout (float, optional): dropout ratio.
+            drop_path (float, optional): droppath ratio.
+            init_values (bool, optional): gamma init values.
         """
         super(BiAttentionBlock, self).__init__()
 
@@ -380,7 +378,20 @@ class BiAttentionBlock(nn.Module):
         self.gamma_l = nn.Parameter(
             init_values * torch.ones((l_dim)), requires_grad=True)
 
-    def forward(self, v, l, attention_mask_v=None, attention_mask_l=None):
+    def forward(self,
+                v: Tensor,
+                l: Tensor,
+                attention_mask_v: Tensor = None,
+                attention_mask_l: Tensor = None):
+        """Forward pass of the VLFuse module.
+
+        Args:
+            v (Tensor): visual features.
+            l (Tensor): language features.
+            attention_mask_v (Tensor, optional): visual feature attention mask. Defaults to None.
+            attention_mask_l (Tensor, optional): text feature attention mask. Defaults to None.
+
+        """
         v = self.layer_norm_v(v)
         l = self.layer_norm_l(l)
         delta_v, delta_l = self.attn(

@@ -22,7 +22,7 @@ model = dict(
         bgr_to_rgb=True,
         pad_mask=False,
     ),
-    language_model_cfg=dict(
+    language_model=dict(
         type='BertModelGroundingDINO',
         name=lang_model_name,
         pad_to_max=False,
@@ -62,6 +62,7 @@ model = dict(
             self_attn_cfg=dict(embed_dims=256, num_levels=4, dropout=0.0),
             ffn_cfg=dict(
                 embed_dims=256, feedforward_channels=2048, ffn_drop=0.0)),
+        # text layer config
         text_layer_cfg=dict(
             self_attn_cfg=dict(num_heads=4, embed_dims=256, dropout=0.0),
             ffn_cfg=dict(
@@ -75,7 +76,9 @@ model = dict(
         return_intermediate=True,
         layer_cfg=dict(
             self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
+            # cross attention query to text
             cross_attn_text_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
+            # cross attention query to image
             cross_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
             ffn_cfg=dict(
                 embed_dims=256, feedforward_channels=2048, ffn_drop=0.0)),

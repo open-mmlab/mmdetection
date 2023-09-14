@@ -22,21 +22,21 @@ class GroundingDinoTransformerDecoderLayer(
         DeformableDetrTransformerDecoderLayer):
 
     def __init__(self,
-                 ca_text_cfg: OptConfigType = dict(
+                 cross_attn_text_cfg: OptConfigType = dict(
                      embed_dims=256,
                      num_heads=8,
                      dropout=0.0,
                      batch_first=True),
                  **kwargs) -> None:
-        self.ca_text_cfg = ca_text_cfg
-        if 'batch_first' not in self.ca_text_cfg:
-            self.ca_text_cfg['batch_first'] = True
+        self.cross_attn_text_cfg = cross_attn_text_cfg
+        if 'batch_first' not in self.cross_attn_text_cfg:
+            self.cross_attn_text_cfg['batch_first'] = True
         super().__init__(**kwargs)
 
     def _init_layers(self) -> None:
         """Initialize self_attn, cross-attn, ffn, and norms."""
         self.self_attn = MultiheadAttention(**self.self_attn_cfg)
-        self.ca_text = MultiheadAttention(**self.ca_text_cfg)
+        self.cross_attn_text = MultiheadAttention(**self.cross_attn_text_cfg)
         self.cross_attn = MultiScaleDeformableAttention(**self.cross_attn_cfg)
         self.embed_dims = self.self_attn.embed_dims
         self.ffn = FFN(**self.ffn_cfg)
@@ -69,7 +69,7 @@ class GroundingDinoTransformerDecoderLayer(
             **kwargs)
         query = self.norms[0](query)
         # cross attention between query and text
-        query = self.ca_text(
+        query = self.cross_attn_text(
             query=query,
             query_pos=query_pos,
             key=memory_text,

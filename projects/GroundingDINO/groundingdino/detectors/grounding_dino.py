@@ -1,6 +1,6 @@
 import copy
 import warnings
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -20,12 +20,13 @@ from ..layers.grounding_dino_layers import (GroundingDinoTransformerDecoder,
 @MODELS.register_module()
 class GroundingDINO(DINO):
 
-    def __init__(self, language_model_cfg, *args, **kwargs) -> None:
-        self.language_model_cfg = language_model_cfg
+    def __init__(self, language_model, *args, **kwargs) -> None:
+        self.language_model = language_model
         self._text_prompts = None
-        self._positive_maps = None
+        self._token_positive_maps = None
         self._entities = None
         self._text_dict = None
+        self._special_tokens = '. '
         super().__init__(*args, **kwargs)
 
     def _init_layers(self) -> None:
@@ -46,14 +47,14 @@ class GroundingDINO(DINO):
         self.memory_trans_fc = nn.Linear(self.embed_dims, self.embed_dims)
         self.memory_trans_norm = nn.LayerNorm(self.embed_dims)
 
-        # text encoder
-        self.language_model = MODELS.build(self.language_model_cfg)
-        self.feat_map = nn.Linear(
+        # feat map layer for language model
+        self.language_model = MODELS.build(self.language_model)
+        self.text_feat_map = nn.Linear(
             self.language_model.language_backbone.body.language_dim,
             self.embed_dims,
             bias=True)
-        nn.init.constant_(self.feat_map.bias.data, 0)
-        nn.init.xavier_uniform_(self.feat_map.weight.data)
+        nn.init.constant_(self.text_feat_map.bias.data, 0)
+        nn.init.xavier_uniform_(self.text_feat_map.weight.data)
 
     def forward_transformer(
         self,
@@ -171,51 +172,61 @@ class GroundingDINO(DINO):
         head_inputs_dict['text_token_mask'] = text_token_mask
         return decoder_inputs_dict, head_inputs_dict
 
-    def get_tokens_positive_and_prompts(
+    def get_tokens_and_prompts(
             self,
-            original_caption: str,
-            custom_entities: bool = False) -> Tuple[dict, str]:
+            original_caption: Union[str, list, tuple],
+            custom_entities: bool = False) -> Tuple[dict, str, list]:
         """Get the tokens positive and prompts for the caption."""
         if isinstance(original_caption, (list, tuple)) or custom_entities:
             if custom_entities and isinstance(original_caption, str):
-                if not original_caption.endswith('.'):
-                    original_caption = original_caption + ' . '
-                original_caption = original_caption.split(' . ')
+                if original_caption.endswith(self._special_tokens):
+                    original_caption = original_caption.replace(
+                        self._special_tokens, '')
+                original_caption = original_caption.split(self._special_tokens)
                 original_caption = list(
                     filter(lambda x: len(x) > 0, original_caption))
 
             caption_string = ''
             tokens_positive = []
-            seperation_tokens = ' . '
-            for word in original_caption:
+            for idx, word in enumerate(original_caption):
                 tokens_positive.append(
                     [[len(caption_string),
                       len(caption_string) + len(word)]])
                 caption_string += word
-                caption_string += seperation_tokens
-                tokenized = self.language_model.tokenizer(
-                    [caption_string],
-                    padding='max_length'
-                    if self.language_model.pad_to_max else 'longest',
-                    return_tensors='pt')
-                self._entities = original_caption
+                if idx != len(original_caption) - 1:
+                    caption_string += self._special_tokens
+            tokenized = self.language_model.tokenizer([caption_string],
+                                                      return_tensors='pt')
+            self._entities = original_caption
         else:
-            if not original_caption.endswith('.'):
-                original_caption = original_caption + ' . '
+            if original_caption.endswith(self._special_tokens):
+                original_caption = original_caption.replace(
+                    self._special_tokens, '')
 
-            tokenized = self.language_model.tokenizer(
-                [original_caption],
-                padding='max_length'
-                if self.language_model.pad_to_max else 'longest',
-                return_tensors='pt')
+            tokenized = self.language_model.tokenizer([original_caption],
+                                                      return_tensors='pt')
             tokens_positive, noun_phrases = run_ner(original_caption)
             self._entities = noun_phrases
             caption_string = original_caption
 
+        return tokenized, caption_string, tokens_positive
+
+    def get_positive_map(self, tokenized, tokens_positive):
         positive_map = create_positive_map(tokenized, tokens_positive)
         positive_map_label_to_token = create_positive_map_label_to_token(
             positive_map, plus=1)
-        return positive_map_label_to_token, caption_string
+        return positive_map_label_to_token, positive_map
+
+    def get_tokens_positive_and_prompts(
+            self,
+            original_caption: Union[str, list, tuple],
+            custom_entities: bool = False) -> Tuple[dict, str, Tensor]:
+        tokenized, caption_string, tokens_positive = \
+            self.get_tokens_and_prompts(
+                original_caption, custom_entities)
+        positive_map_label_to_token, positive_map = self.get_positive_map(
+            tokenized, tokens_positive)
+        return positive_map_label_to_token, caption_string, positive_map
 
     def extract_text_feat(self, batch_inputs, batch_data_samples):
         text_prompts = [
@@ -244,19 +255,19 @@ class GroundingDINO(DINO):
                         text_prompt, custom_entities)
                     for text_prompt in text_prompts
                 ]
-            self._positive_maps, text_prompts = zip(
+            self._token_positive_maps, text_prompts, _ = zip(
                 *_positive_maps_and_prompts)
 
             self._text_dict = self.language_model(text_prompts)
-            if self.feat_map is not None:
-                self._text_dict['embedded'] = self.feat_map(
+            if self.text_feat_map is not None:
+                self._text_dict['embedded'] = self.text_feat_map(
                     self._text_dict['embedded'])
 
     def predict(self, batch_inputs, batch_data_samples, rescale: bool = True):
         # text feature extraction
         self.extract_text_feat(batch_inputs, batch_data_samples)
         for i, data_samples in enumerate(batch_data_samples):
-            data_samples.token_positive_map = self._positive_maps[i]
+            data_samples.token_positive_map = self._token_positive_maps[i]
 
         # image feature extraction
         visual_feats = self.extract_feat(batch_inputs)
