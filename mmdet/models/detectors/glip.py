@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import copy
 import re
 import warnings
 from typing import Tuple, Union
@@ -207,7 +206,6 @@ class GLIP(SingleStageDetector):
 
         self._text_prompts = None
         self._token_positive_maps = None
-        self._language_dict_features = None
         self._entities = None
         self._special_tokens = '. '
 
@@ -363,7 +361,6 @@ class GLIP(SingleStageDetector):
 
         if text_prompts != self._text_prompts:
             # avoid redundant computation
-            self._text_prompts = text_prompts
             if len(set(text_prompts)) == 1:
                 # All the text prompts are the same,
                 # so there is no need to calculate them multiple times.
@@ -380,8 +377,9 @@ class GLIP(SingleStageDetector):
 
             self._token_positive_maps, text_prompts, _ = zip(
                 *_positive_maps_and_prompts)
-            self._language_dict_features = self.language_model(
-                list(text_prompts))
+            self._text_prompts = list(text_prompts)
+
+        language_dict_features = self.language_model(self._text_prompts)
 
         for i, data_samples in enumerate(batch_data_samples):
             data_samples.token_positive_map = self._token_positive_maps[i]
@@ -390,7 +388,7 @@ class GLIP(SingleStageDetector):
 
         results_list = self.bbox_head.predict(
             visual_features,
-            copy.deepcopy(self._language_dict_features),
+            language_dict_features,
             batch_data_samples,
             rescale=rescale)
 
