@@ -47,7 +47,7 @@ def generate_masks_with_special_tokens_and_transfer_map(
     previous_col = 0
     for i in range(idxs.shape[0]):
         row, col = idxs[i]
-        if (col == 0) or (col == num_token - 1):  # 如果是第一个或者最后一个token
+        if (col == 0) or (col == num_token - 1):
             attention_mask[row, col, col] = True
             position_ids[row, col] = 0
         else:

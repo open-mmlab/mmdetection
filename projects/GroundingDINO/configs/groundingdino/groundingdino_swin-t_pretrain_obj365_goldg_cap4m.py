@@ -8,6 +8,8 @@ custom_imports = dict(
     allow_failed_imports=False)
 default_scope = 'mmdet'
 
+lang_model_name = 'bert-base-uncased'
+
 model = dict(
     type='GroundingDINO',
     num_queries=900,
@@ -18,11 +20,11 @@ model = dict(
         mean=[123.675, 116.28, 103.53],
         std=[58.395, 57.12, 57.375],
         bgr_to_rgb=True,
-        pad_mask=True,
+        pad_mask=False,
     ),
     language_model_cfg=dict(
         type='BertModelGroundingDINO',
-        name='bert-base-uncased',
+        name=lang_model_name,
         pad_to_max=False,
         use_sub_sentence_present=True,
         special_tokens_list=['[CLS]', '[SEP]', '.', '?'],
@@ -55,26 +57,25 @@ model = dict(
         num_outs=4),
     encoder=dict(
         num_layers=6,
+        # visual layer config
         layer_cfg=dict(
             self_attn_cfg=dict(embed_dims=256, num_levels=4, dropout=0.0),
             ffn_cfg=dict(
-                embed_dims=256, feedforward_channels=2048,
-                ffn_drop=0.0)),  # visual layer config
+                embed_dims=256, feedforward_channels=2048, ffn_drop=0.0)),
         text_layer_cfg=dict(
             self_attn_cfg=dict(num_heads=4, embed_dims=256, dropout=0.0),
             ffn_cfg=dict(
-                embed_dims=256, feedforward_channels=1024,
-                ffn_drop=0.0)),  # text layer config
+                embed_dims=256, feedforward_channels=1024, ffn_drop=0.0)),
+        # fusion layer config
         fusion_layer_cfg=dict(
-            v_dim=256, l_dim=256, embed_dim=1024,
-            num_heads=4),  # fusion layer config
+            v_dim=256, l_dim=256, embed_dim=1024, num_heads=4),
     ),
     decoder=dict(
         num_layers=6,
         return_intermediate=True,
         layer_cfg=dict(
             self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
-            ca_text_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
+            cross_attn_text_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
             cross_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
             ffn_cfg=dict(
                 embed_dims=256, feedforward_channels=2048, ffn_drop=0.0)),
