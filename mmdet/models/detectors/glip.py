@@ -387,12 +387,12 @@ class GLIP(SingleStageDetector):
             batch_data_samples,
             rescale=rescale)
 
-        for data_sample, pred_instances in zip(batch_data_samples,
-                                               results_list):
+        for data_sample, pred_instances, entity in zip(batch_data_samples,
+                                                       results_list, entities):
             if len(pred_instances) > 0:
                 label_names = []
                 for labels in pred_instances.labels:
-                    if labels >= len(entities):
+                    if labels >= len(entity):
                         warnings.warn(
                             'The unexpected output indicates an issue with '
                             'named entity recognition. You can try '
@@ -400,7 +400,7 @@ class GLIP(SingleStageDetector):
                             'again to see if it helps.')
                         label_names.append('unobject')
                     else:
-                        label_names.append(entities[labels])
+                        label_names.append(entity[labels])
                 # for visualization
                 pred_instances.label_names = label_names
             data_sample.pred_instances = pred_instances
