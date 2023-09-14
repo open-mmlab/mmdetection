@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
 from typing import List, Union
 
 import numpy as np
@@ -11,7 +12,6 @@ from torch import Tensor
 from mmdet.models.detectors.cascade_rcnn import CascadeRCNN
 from mmdet.registry import MODELS
 from mmdet.structures import SampleList
-from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 
 # download from
 # https://github.com/facebookresearch/Detic/tree/main/datasets/metadata
@@ -128,25 +128,92 @@ def reset_cls_layer_weight(roi_head, weight):
 class Detic(CascadeRCNN):
 
     def __init__(self,
-                 backbone: ConfigType,
-                 neck: ConfigType,
-                 rpn_head: OptConfigType = None,
-                 roi_head: OptConfigType = None,
-                 train_cfg: OptConfigType = None,
-                 test_cfg: OptConfigType = None,
-                 data_preprocessor: OptConfigType = None,
-                 init_cfg: OptMultiConfig = None) -> None:
-        super().__init__(
-            backbone=backbone,
-            neck=neck,
-            rpn_head=rpn_head,
-            roi_head=roi_head,
-            train_cfg=train_cfg,
-            test_cfg=test_cfg,
-            data_preprocessor=data_preprocessor,
-            init_cfg=init_cfg)
+                 with_image_labels: bool = False,
+                 sync_caption_batch: bool = False,
+                 fp16: bool = False,
+                 roi_head_name: str = '',
+                 cap_batch_ratio: int = 4,
+                 with_caption: bool = False,
+                 dynamic_classifier: bool = False,
+                 **kwargs) -> None:
+        super().__init__(**kwargs)
+
         self._entities = None
         self._text_prompts = None
+        # Turn on co-training with classification data
+        self.with_image_labels = with_image_labels
+        # Caption losses
+        self.with_caption = with_caption
+        # synchronize across GPUs to enlarge # "classes"
+        self.sync_caption_batch = sync_caption_batch
+        # Ratio between detection data and caption data
+        self.cap_batch_ratio = cap_batch_ratio
+        self.fp16 = fp16
+        self.roi_head_name = roi_head_name
+        # dynamic class sampling when training with 21K classes,
+        # Federated loss is enabled when DYNAMIC_CLASSIFIER is on
+        self.dynamic_classifier = dynamic_classifier
+        self.return_proposal = False
+        if self.dynamic_classifier:
+            self.freq_weight = kwargs.pop('freq_weight')
+            self.num_classes = kwargs.pop('num_classes')
+            self.num_sample_cats = kwargs.pop('num_sample_cats')
+
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> dict:
+        """Calculate losses from a batch of inputs and data samples.
+
+        Args:
+            batch_inputs (Tensor): Input images of shape (N, C, H, W).
+                These should usually be mean centered and std scaled.
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+
+        Returns:
+            dict: A dictionary of loss components
+        """
+
+        x = self.extract_feat(batch_inputs)
+        losses = dict()
+
+        # RPN forward and loss
+        if self.with_rpn:
+            proposal_cfg = self.train_cfg.get('rpn_proposal',
+                                              self.test_cfg.rpn)
+            rpn_data_samples = copy.deepcopy(batch_data_samples)
+            # set cat_id of gt_labels to 0 in RPN
+            for data_sample in rpn_data_samples:
+                data_sample.gt_instances.labels = \
+                    torch.zeros_like(data_sample.gt_instances.labels)
+
+            rpn_losses, rpn_results_list = self.rpn_head.loss_and_predict(
+                x, rpn_data_samples, proposal_cfg=proposal_cfg)
+
+            # avoid get same name with roi_head loss
+            keys = rpn_losses.keys()
+            for key in list(keys):
+                if 'loss' in key and 'rpn' not in key:
+                    rpn_losses[f'rpn_{key}'] = rpn_losses.pop(key)
+            losses.update(rpn_losses)
+            # if not hasattr(batch_data_samples[0].gt_instances, 'bboxes'):
+            #     losses.update({k: v * 0 for k, v in rpn_losses.items()})
+            # else:
+            #     losses.update(rpn_losses)
+        else:
+            assert batch_data_samples[0].get('proposals', None) is not None
+            # use pre-defined proposals in InstanceData for the second stage
+            # to extract ROI features.
+            rpn_results_list = [
+                data_sample.proposals for data_sample in batch_data_samples
+            ]
+
+        roi_losses = self.roi_head.loss(x, rpn_results_list,
+                                        batch_data_samples)
+
+        losses.update(roi_losses)
+
+        return losses
 
     def predict(self,
                 batch_inputs: Tensor,
@@ -190,6 +257,7 @@ class Detic(CascadeRCNN):
             reset_cls_layer_weight(self.roi_head, zs_weight)
 
         assert self.with_bbox, 'Bbox head must be implemented.'
+
         x = self.extract_feat(batch_inputs)
 
         # If there are no pre-defined proposals, use RPN to get proposals
@@ -213,4 +281,5 @@ class Detic(CascadeRCNN):
                 # for visualization
                 pred_instances.label_names = label_names
             data_sample.pred_instances = pred_instances
+
         return batch_data_samples

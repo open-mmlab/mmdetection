@@ -6,10 +6,9 @@ custom_imports = dict(
 
 num_classes = 1203
 lvis_v1_train_cat_info = 'data/metadata/lvis_v1_train_cat_info.json'
-curl = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window7_224_22k.pth'
-image_size_det = (896, 896)
-image_size_cls = (448, 448)
-# batch_augments = [dict(type='BatchFixedSizePad', size=image_size)]
+curl = 'https://miil-public-eu.oss-eu-central-1.aliyuncs.com/model-zoo/ImageNet_21K_P/models/resnet50_miil_21k.pth'
+image_size = (896, 896)
+batch_augments = [dict(type='BatchFixedSizePad', size=image_size)]
 
 cls_layer = dict(
     type='ZeroShotClassifier',
@@ -118,8 +117,8 @@ model = dict(
                 loss_cls=dict(
                     type='CrossEntropyLoss', use_sigmoid=True,
                     loss_weight=1.0),
-                loss_bbox=dict(type='SmoothL1Loss', beta=0.1,
-                               loss_weight=1.0)),
+                loss_bbox=dict(
+                    type='SmoothL1Loss', beta=1e-3, loss_weight=1.0)),
             dict(
                 type='DeticBBoxHead',
                 in_channels=256,
@@ -138,8 +137,8 @@ model = dict(
                 loss_cls=dict(
                     type='CrossEntropyLoss', use_sigmoid=True,
                     loss_weight=1.0),
-                loss_bbox=dict(type='SmoothL1Loss', beta=0.1,
-                               loss_weight=1.0)),
+                loss_bbox=dict(
+                    type='SmoothL1Loss', beta=1e-3, loss_weight=1.0)),
             dict(
                 type='DeticBBoxHead',
                 in_channels=256,
@@ -158,7 +157,8 @@ model = dict(
                 loss_cls=dict(
                     type='CrossEntropyLoss', use_sigmoid=True,
                     loss_weight=1.0),
-                loss_bbox=dict(type='SmoothL1Loss', beta=0.1, loss_weight=1.0))
+                loss_bbox=dict(
+                    type='SmoothL1Loss', beta=1e-3, loss_weight=1.0))
         ],
         mask_roi_extractor=dict(
             type='SingleRoIExtractor',
@@ -271,40 +271,21 @@ model = dict(
 # backend = 'pillow'
 backend_args = None
 
-train_pipeline_det = [
+train_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='RandomResize',
-        scale=image_size_det,
+        scale=image_size,
         ratio_range=(0.1, 2.0),
         keep_ratio=True),
     dict(
         type='RandomCrop',
         crop_type='absolute_range',
-        crop_size=image_size_det,
+        crop_size=image_size,
         recompute_bbox=True,
         allow_negative_crop=True),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
-    dict(type='RandomFlip', prob=0.5),
-    dict(type='PackDetInputs')
-]
-
-train_pipeline_cls = [
-    dict(type='LoadImageFromFile', backend_args=backend_args),
-    dict(type='LoadAnnotations', with_bbox=False, with_label=True),
-    dict(
-        type='RandomResize',
-        scale=image_size_cls,
-        ratio_range=(0.5, 1.5),
-        keep_ratio=True),
-    dict(
-        type='RandomCrop',
-        crop_type='absolute_range',
-        crop_size=image_size_cls,
-        recompute_bbox=False,
-        bbox_clip_border=False,
-        allow_negative_crop=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]
@@ -330,36 +311,26 @@ test_pipeline = [
                    'scale_factor', 'text', 'custom_entities'))
 ]
 
-dataset_det = dict(
-    type='ClassBalancedDataset',
-    oversample_thr=1e-3,
-    dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='annotations/lvis_v1_train.json',
-        data_prefix=dict(img=''),
-        filter_cfg=dict(filter_empty_gt=True, min_size=32),
-        pipeline=train_pipeline_det,
-        backend_args=backend_args))
-
-dataset_cls = dict(
-    type='IMAGENETLVISV1Dataset',
-    data_root='data/imagenet',
-    ann_file='annotations/imagenet_lvis_image_info.json',
-    data_prefix=dict(img='ImageNet-LVIS/'),
-    pipeline=train_pipeline_cls,
-    backend_args=backend_args)
-
 train_dataloader = dict(
-    batch_size=[4, 16],
+    batch_size=4,
     num_workers=2,
     persistent_workers=True,
-    sampler=dict(type='MultiDataSampler', dataset_ratio=[1, 4]),
-    batch_sampler=dict(type='MDAspectRatioBatchSampler', num_datasets=2),
-    dataset=dict(type='MultiDataDataset', datasets=[dataset_det, dataset_cls]))
+    sampler=dict(type='DefaultSampler', shuffle=True),
+    batch_sampler=dict(type='AspectRatioBatchSampler'),
+    dataset=dict(
+        type='ClassBalancedDataset',
+        oversample_thr=1e-3,
+        dataset=dict(
+            type=dataset_type,
+            data_root=data_root,
+            ann_file='annotations/lvis_v1_train.json',
+            data_prefix=dict(img=''),
+            filter_cfg=dict(filter_empty_gt=True, min_size=32),
+            pipeline=train_pipeline,
+            backend_args=backend_args)))
 
 val_dataloader = dict(
-    batch_size=8,
+    batch_size=4,
     num_workers=2,
     persistent_workers=True,
     drop_last=False,
@@ -383,7 +354,7 @@ test_evaluator = val_evaluator
 # training schedule for 90k
 max_iter = 180000
 train_cfg = dict(
-    type='IterBasedTrainLoop', max_iters=max_iter, val_interval=180000)
+    type='IterBasedTrainLoop', max_iters=max_iter, val_interval=max_iter)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 
@@ -396,21 +367,20 @@ optim_wrapper = dict(
 
 param_scheduler = [
     dict(
-        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
-        end=1000),
+        type='LinearLR',
+        start_factor=0.0001,
+        by_epoch=False,
+        begin=0,
+        end=10000),
     dict(
         type='CosineAnnealingLR',
         begin=0,
         by_epoch=False,
-        T_max=90000,
+        T_max=180000,
     )
 ]
 
 # only keep latest 5 checkpoints
 default_hooks = dict(
     checkpoint=dict(by_epoch=False, interval=30000, max_keep_ckpts=5),
-    logger=dict(type='LoggerHook', interval=50))
-
-load_from = './first_stage/boxsup_centernet2_swin-b_fpn_4x_lvis.pth'
-
-find_unused_parameters = True
+    logger=dict(type='LoggerHook', interval=100))

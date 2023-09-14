@@ -70,34 +70,107 @@ python demo/image_demo.py \
 
 Note that `headphone`, `paper` and `coffe` (typo intended) are not LVIS classes. Despite the misspelled class name, Detic can produce a reasonable detection for `coffe`.
 
-## Results
+## Models and Results
+
+### Training
+
+#### Prepare Datasets
+
+We use LVIS as bboxes-labeled data, and adopt the overlap classes between ImageNet-21K and LVIS, term `in21k-lvis`, as image-labeled data.  We prepare `data/imagenet/ImageNet-LVIS`  and create annotations `data/imagenet/annotations/imagenet_lvis_image_info.json` following \[official prepare_datsets\]([Detic/datasets/README.md at main · facebookresearch/Detic (github.com)](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md)). The `data` floder should look like:
+
+```
+data/
+	lvis/
+		train2017
+		val2017
+		anntations/
+			lvis_v1_train.json
+			lvis_v1_val.json
+    imagenet/
+        ImageNet-21K/
+            n00007846
+            n01318894
+            ...
+        annotations/
+            imagenet_lvis_image_info.json
+```
+
+#### Multi-Datasets Config
+
+We provide dataset_wrapper `MultiDataDataset` to concatenate multiple datasets, all datasets could have different annotation types and different pipelines (e.g., image_size). You can also obtain the index of `dataset_source` for each sample through ` get_data_info` in  `MultiDataDataset` . We provide sampler `MultiDataSampler` to custom the ratios of different datasets. Beside, we provide batch_sampler `MDAspectRatioBatchSampler` to enable different datasets to have different batchsizes.  The config of multiple datasets is as follows:
+
+```python
+dataset_det=dict(
+    type='ClassBalancedDataset',
+    oversample_thr=1e-3,
+    dataset=dict(
+        type='LVISV1Dataset',
+        data_root='data/lvis/',
+        ann_file='annotations/lvis_v1_train.json',
+        data_prefix=dict(img=''),
+        filter_cfg=dict(filter_empty_gt=True, min_size=32),
+        pipeline=train_pipeline_det,
+        backend_args=backend_args))
+
+dataset_cls=dict(
+        type='IMAGENETLVISV1Dataset',
+        data_root='data/imagenet',
+        ann_file='annotations/imagenet_lvis_image_info.json',
+        data_prefix=dict(img='ImageNet-LVIS/'),
+        pipeline=train_pipeline_cls,
+        backend_args=backend_args)
+
+# custom ratios and batchsizes of different datasets
+train_dataloader = dict(
+    batch_size=[8, 32],
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(type='MultiDataSampler',
+                 dataset_ratio=[1, 4]),
+    batch_sampler=dict(type='MDAspectRatioBatchSampler',
+                       num_datasets=2),
+    dataset=dict(
+        type='MultiDataDataset',
+        datasets=[dataset_det, dataset_cls])
+)
+```
+
+#### Train Command
+
+To train a model, run
+
+```shell
+bash ./tools/dist_train.sh ${CONFIG_FILE} ${GPU_NUM}
+```
+
+#### Standard LVIS Results
+
+|                                             Model (Config)                                              | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) | Download |
+| :-----------------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: | :------: |
+|           [boxsup_centernet2_r50_fpn_4x_lvis](./configs/boxsup_centernet2_r50_fpn_4x_lvis.py)           |   31.6   |        31.5        |     26.7      |           25.6           |          |
+| [detic_centernet2_r50_fpn_4x_lvis_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis.py) |   32.9   |        33.2        |     30.9      |           29.7           |          |
 
 ### Testing
+
+#### Test Command
 
 To evaluate a model with a trained model, run
 
 ```shell
-python tools/test.py path/to/config.py /path/to/weight.pth
+python ./tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE}
 ```
 
-### Open-vocabulary LVIS
+#### Open-vocabulary LVIS Results
 
-| Backbone |          Training data          | mask mAP | mask mAP_novel |                                   Config                                   | Download |
-| :------: | :-----------------------------: | :------: | :------------: | :------------------------------------------------------------------------: | :------: |
-| ResNet50 | LVIS-Base  &  ImageNet-21K-LVIS |   32.4   |      25.2      |  [config](./configs/detic_centernet2_r50_fpn_4x_lvis-base_in21k-lvis.py)   |          |
-|  Swin-B  | LVIS-Base  &  ImageNet-21K-LVIS |   40.7   |      34.0      | [config](./configs/detic_centernet2_swin-b_fpn_4x_lvis-base_in21k-lvis.py) |          |
-
-### Standard LVIS
-
-| Backbone |      Training data       | mask mAP | mask mAP_novel |                                Config                                 | Download |
-| :------: | :----------------------: | :------: | :------------: | :-------------------------------------------------------------------: | :------: |
-| ResNet50 | LVIS & ImageNet-21K-LVIS |   33.2   |      29.7      |  [config](./configs/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis.py)   |          |
-|  Swin-B  | LVIS & ImageNet-21K-LVIS |   41.7   |      41.7      | [config](./configs/detic_centernet2_swin-b_fpn_4x_lvis_in21k-lvis.py) |          |
+|                                                    Model (Config)                                                     | mask mAP | mask mAP_novel |
+| :-------------------------------------------------------------------------------------------------------------------: | :------: | :------------: |
+|    [detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis.py)    |   32.4   |      25.2      |
+| [detic_centernet2_swin-b_fpn_4x_lvisbase_in21k-lvis](./configs/detic_centernet2_swin-b_fpn_4x_lvisbase_in21k-lvis.py) |   40.7   |      34.0      |
 
 #### Note:
 
-- The open-vocabulary LVIS setup is LVIS without rare class annotations in training, termed `LVIS-Base`. We evaluate rare classes as novel classes in testing.
-- ` ImageNet-21K-LVIS` denotes that the model use the overlap classes between ImageNet-21K and LVIS as image-labeled data.
+- The open-vocabulary LVIS setup is LVIS without rare class annotations in training, termed `lvisbase`. We evaluate rare classes as novel classes in testing.
+- ` in21k-lvis` denotes that the model use the overlap classes between ImageNet-21K and LVIS as image-labeled data.
 
 ## Citation
 
