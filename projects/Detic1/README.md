@@ -84,8 +84,8 @@ data/
         train2017
         val2017
         anntations/
-          lvis_v1_train.json
-          lvis_v1_val.json
+            lvis_v1_train.json
+            lvis_v1_val.json
     imagenet/
         ImageNet-21K/
             n00007846
