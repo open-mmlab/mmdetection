@@ -26,6 +26,7 @@ from .ga_retina_head import GARetinaHead
 from .ga_rpn_head import GARPNHead
 from .gfl_head import GFLHead
 from .guided_anchor_head import FeatureAdaption, GuidedAnchorHead
+from .h_dino_head import HybridDINOHead
 from .lad_head import LADHead
 from .ld_head import LDHead
 from .mask2former_head import Mask2FormerHead
@@ -50,7 +51,6 @@ from .yolact_head import YOLACTHead, YOLACTProtonet
 from .yolo_head import YOLOV3Head
 from .yolof_head import YOLOFHead
 from .yolox_head import YOLOXHead
-from .hybrid_dino_head import HybridDINOHead
 
 __all__ = [
     'AnchorFreeHead', 'AnchorHead', 'GuidedAnchorHead', 'FeatureAdaption',

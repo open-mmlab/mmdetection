@@ -2,7 +2,7 @@ _base_ = [
     '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
 ]
 model = dict(
-    type='DINO',
+    type='HDINO',
     num_queries=1800,  # num_total_queries: 900+900
     with_box_refine=True,
     as_two_stage=True,
@@ -74,8 +74,7 @@ model = dict(
     dn_cfg=dict(
         label_noise_scale=0.5,
         box_noise_scale=1.0,  # 0.4 for DN-DETR
-        group_cfg=dict(dynamic=True, num_groups=None,
-                       num_dn_queries=100)),
+        group_cfg=dict(dynamic=True, num_groups=None, num_dn_queries=100)),
     # training and testing settings
     train_cfg=dict(
         assigner=dict(
@@ -163,6 +162,3 @@ param_scheduler = [
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (2 samples per GPU)
 auto_scale_lr = dict(base_batch_size=16)
-
-# default_hooks = dict(
-#     checkpoint=dict(type='CheckpointHook',save_best='bbox_mAP')

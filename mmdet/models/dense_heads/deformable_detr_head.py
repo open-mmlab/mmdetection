@@ -83,7 +83,7 @@ class DeformableDETRHead(DETRHead):
                 nn.init.constant_(m[-1].bias.data[2:], 0.0)
 
     def forward(self, hidden_states: Tensor,
-                references: List[Tensor]) -> Tuple[Tensor]:
+                references: List[Tensor]) -> Tuple[Tensor, Tensor]:
         """Forward function.
 
         Args:
