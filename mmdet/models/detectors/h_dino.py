@@ -41,8 +41,8 @@ class HDINO(DINO):
         else:
             query = decoder_inputs_dict['query']
             reference_points = decoder_inputs_dict['reference_points']
-            num_query_one2one = self.num_queries - self.num_query_one2one
-            decoder_inputs_dict['query'] = query[:num_query_one2one]
+            num_query_one2many = self.num_queries - self.num_query_one2one
+            decoder_inputs_dict['query'] = query[:num_query_one2many]
             decoder_inputs_dict[
-                'reference_points'] = reference_points[:num_query_one2one]
+                'reference_points'] = reference_points[:num_query_one2many]
         return decoder_inputs_dict, head_inputs_dict
