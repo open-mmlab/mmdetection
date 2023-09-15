@@ -1,11 +1,11 @@
 _base_ = [
-    'mmdet::_base_/datasets/coco_detection.py',
-    'mmdet::_base_/schedules/schedule_1x.py',
-    'mmdet::_base_/default_runtime.py'
+    '../_base_/datasets/coco_detection.py',
+    '../_base_/schedules/schedule_1x.py',
+    '../_base_/default_runtime.py'
 ]
-custom_imports = dict(
-    imports=['projects.GroundingDINO.groundingdino'],
-    allow_failed_imports=False)
+# custom_imports = dict(
+#     imports=['projects.GroundingDINO.groundingdino'],
+#     allow_failed_imports=False)
 default_scope = 'mmdet'
 
 lang_model_name = 'bert-base-uncased'

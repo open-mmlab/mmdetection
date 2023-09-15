@@ -29,7 +29,7 @@ cd $MMDETROOT
 
 wget https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth
 
-python projects/GroundingDINO/tools/model_converters/groundingdino_to_mmdet.py \
+python tools/model_converters/groundingdino_to_mmdet.py \
 		groundingdino_swint_ogc.pth \
 		weights/groundingdino_swint_ogc_mmdet.pth
 # this script will generate a model $WEIGHT_FILE in $MMDETROOT
@@ -49,9 +49,9 @@ python demo/image_demo.py \
 
 |      Model       | backbone | COCO mAP |                  Pre-Train Data                  |                         Config                          |                                                        Download                                                         |
 | :--------------: | :------: | :------: | :----------------------------------------------: | :-----------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------: |
-| Grounding DINO-T |  Swin-T  |   48.5   |                 O365,GoldG,Cap4M                 | [config](configs/groundingdino/groundingdino_swin-t.py) |   [model](https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth)    |
-| Grounding DINO-B |  Swin-B  |   56.9   | COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO | [config](configs/groundingdino/groundingdino_swin-b.py) | [model](https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha2/groundingdino_swinb_cogcoor.pth) |
+| Grounding DINO-T |  Swin-T  |   48.5   |                 O365,GoldG,Cap4M                 | [config](groundingdino_swin-t.py) |   [model](https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth)    |
+| Grounding DINO-B |  Swin-B  |   56.9   | COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO | [config](groundingdino_swin-b.py) | [model](https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha2/groundingdino_swinb_cogcoor.pth) |
 
 Note:
 
-1. The weights corresponding to the zero-shot model are adopted from the official weights and converted using the [script](./tools/model_converters/groundingdino_to_mmdet.py). We have not retrained the model for the time being.
+1. The weights corresponding to the zero-shot model are adopted from the official weights and converted using the [script](../../tools/model_converters/groundingdino_to_mmdet.py). We have not retrained the model for the time being.

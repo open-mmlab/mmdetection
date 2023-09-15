@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import warnings
 from typing import Dict, Tuple, Union
@@ -6,15 +7,15 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from mmdet.models.detectors import DINO
-from mmdet.models.detectors.glip import (create_positive_map,
-                                         create_positive_map_label_to_token,
-                                         run_ner)
-from mmdet.models.layers import SinePositionalEncoding
 from mmdet.registry import MODELS
 from mmdet.structures import OptSampleList
-from ..layers.grounding_dino_layers import (GroundingDinoTransformerDecoder,
-                                            GroundingDinoTransformerEncoder)
+from .dino import DINO
+from .glip import (create_positive_map,
+                   create_positive_map_label_to_token,
+                   run_ner)
+from ..layers import SinePositionalEncoding
+from ..layers.transformer.grounding_dino_layers import (GroundingDinoTransformerDecoder,
+                                                        GroundingDinoTransformerEncoder)
 
 
 @MODELS.register_module()

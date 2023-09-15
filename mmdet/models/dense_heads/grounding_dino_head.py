@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import copy
 from typing import Dict, List, Optional, Tuple
 
@@ -7,14 +8,13 @@ from mmcv.cnn import Linear
 from mmengine.structures import InstanceData
 from torch import Tensor
 
-from mmdet.models.dense_heads import DINOHead
-from mmdet.models.dense_heads.atss_vlfusion_head import \
-    convert_grounding_to_cls_scores
-from mmdet.models.layers import inverse_sigmoid
 from mmdet.registry import MODELS
 from mmdet.structures import SampleList
 from mmdet.structures.bbox import bbox_cxcywh_to_xyxy
 from mmdet.utils import InstanceList
+from ..layers import inverse_sigmoid
+from .atss_vlfusion_head import convert_grounding_to_cls_scores
+from .dino_head import DINOHead
 
 
 class ContrastiveEmbed(nn.Module):

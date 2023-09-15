@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn as nn
 from mmcv.cnn import build_norm_layer
@@ -6,16 +7,14 @@ from mmcv.ops import MultiScaleDeformableAttention
 from mmengine.model import ModuleList
 from torch import Tensor
 
-from mmdet.models.layers.transformer.deformable_detr_layers import (
-    DeformableDetrTransformerDecoderLayer, DeformableDetrTransformerEncoder,
-    DeformableDetrTransformerEncoderLayer)
-from mmdet.models.layers.transformer.detr_layers import \
-    DetrTransformerEncoderLayer
-from mmdet.models.layers.transformer.dino_layers import DinoTransformerDecoder
-from mmdet.models.layers.transformer.utils import MLP
 from mmdet.models.utils.vlfuse_helper import BiAttentionBlock
 from mmdet.utils import ConfigType, OptConfigType
-from ..utils import get_text_sine_pos_embed
+from .deformable_detr_layers import (DeformableDetrTransformerDecoderLayer,
+                                     DeformableDetrTransformerEncoder,
+                                     DeformableDetrTransformerEncoderLayer)
+from .detr_layers import DetrTransformerEncoderLayer
+from .dino_layers import DinoTransformerDecoder
+from .utils import MLP, get_text_sine_pos_embed
 
 
 class GroundingDinoTransformerDecoderLayer(
