@@ -155,8 +155,8 @@ class GroundingDinoTransformerEncoder(DeformableDetrTransformerEncoder):
         for layer_id, layer in enumerate(self.layers):
             if self.fusion_layers:
                 output, memory_text = self.fusion_layers[layer_id](
-                    v=output,
-                    l=memory_text,
+                    vision=output,
+                    lang=memory_text,
                     attention_mask_v=key_padding_mask,
                     attention_mask_l=text_attention_mask,
                 )

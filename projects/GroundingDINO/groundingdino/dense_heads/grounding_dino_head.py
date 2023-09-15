@@ -3,7 +3,6 @@ from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
-from torch import Tensor
 from mmcv.cnn import Linear
 from mmengine.structures import InstanceData
 from torch import Tensor
@@ -22,13 +21,25 @@ class ContrastiveEmbed(nn.Module):
     """text visual ContrastiveEmbed layer.
 
     Args:
-        max_text_len (int, optional): Maximum length of text. Defaults to 256.
+        max_text_len (int, optional): Maximum length of text.
     """
-    def __init__(self,max_text_len=256):
+
+    def __init__(self, max_text_len=256):
         super().__init__()
         self.max_text_len = max_text_len
 
-    def forward(self, visual_feat, text_feat, text_token_mask):
+    def forward(self, visual_feat: Tensor, text_feat: Tensor,
+                text_token_mask: Tensor) -> Tensor:
+        """Forward function.
+
+        Args:
+            visual_feat (Tensor): Visual features.
+            text_feat (Tensor): Text features.
+            text_token_mask (Tensor): A mask used for text feats.
+
+        Returns:
+            Tensor: Classification score.
+        """
         res = visual_feat @ text_feat.transpose(-1, -2)
         res.masked_fill_(~text_token_mask[:, None, :], float('-inf'))
 
@@ -42,8 +53,15 @@ class ContrastiveEmbed(nn.Module):
 
 @MODELS.register_module()
 class GroundingDINOHead(DINOHead):
+    """Head of the Grounding DINO: Marrying DINO with Grounded Pre-Training for
+    Open-Set Object Detection.
+
+    Args:
+        max_text_len (int, optional): Maximum length of text.
+    """
 
     def __init__(self, max_text_len=256, **kwargs):
+
         self.max_text_len = max_text_len
         super().__init__(**kwargs)
 
@@ -78,6 +96,37 @@ class GroundingDINOHead(DINOHead):
         memory_text: Tensor,
         text_token_mask: Tensor,
     ) -> Tuple[Tensor]:
+        """Forward function.
+
+        Args:
+            hidden_states (Tensor): Hidden states output from each decoder
+                layer, has shape (num_decoder_layers, bs, num_queries, dim).
+            references (List[Tensor]): List of the reference from the decoder.
+                The first reference is the `init_reference` (initial) and the
+                other num_decoder_layers(6) references are `inter_references`
+                (intermediate). The `init_reference` has shape (bs,
+                num_queries, 4) when `as_two_stage` of the detector is `True`,
+                otherwise (bs, num_queries, 2). Each `inter_reference` has
+                shape (bs, num_queries, 4) when `with_box_refine` of the
+                detector is `True`, otherwise (bs, num_queries, 2). The
+                coordinates are arranged as (cx, cy) when the last dimension is
+                2, and (cx, cy, w, h) when it is 4.
+            memory_text (Tensor): Memory text. It has shape (bs, len_text,
+                text_embed_dims).
+            text_token_mask (Tensor): Text token mask. It has shape (bs,
+                len_text).
+
+        Returns:
+            tuple[Tensor]: results of head containing the following tensor.
+
+            - all_layers_outputs_classes (Tensor): Outputs from the
+              classification head, has shape (num_decoder_layers, bs,
+              num_queries, cls_out_channels).
+            - all_layers_outputs_coords (Tensor): Sigmoid outputs from the
+              regression head with normalized coordinate format (cx, cy, w,
+              h), has shape (num_decoder_layers, bs, num_queries, 4) with the
+              last dimension arranged as (cx, cy, w, h).
+        """
         all_layers_outputs_classes = []
         all_layers_outputs_coords = []
 
@@ -116,6 +165,36 @@ class GroundingDINOHead(DINOHead):
                 text_token_mask: Tensor,
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> InstanceList:
+        """Perform forward propagation and loss calculation of the detection
+        head on the queries of the upstream network.
+
+        Args:
+            hidden_states (Tensor): Hidden states output from each decoder
+                layer, has shape (num_decoder_layers, num_queries, bs, dim).
+            references (List[Tensor]): List of the reference from the decoder.
+                The first reference is the `init_reference` (initial) and the
+                other num_decoder_layers(6) references are `inter_references`
+                (intermediate). The `init_reference` has shape (bs,
+                num_queries, 4) when `as_two_stage` of the detector is `True`,
+                otherwise (bs, num_queries, 2). Each `inter_reference` has
+                shape (bs, num_queries, 4) when `with_box_refine` of the
+                detector is `True`, otherwise (bs, num_queries, 2). The
+                coordinates are arranged as (cx, cy) when the last dimension is
+                2, and (cx, cy, w, h) when it is 4.
+            memory_text (Tensor): Memory text. It has shape (bs, len_text,
+                text_embed_dims).
+            text_token_mask (Tensor): Text token mask. It has shape (bs,
+                len_text).
+            batch_data_samples (SampleList): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+            rescale (bool, optional): If `True`, return boxes in original
+                image space. Defaults to `True`.
+
+        Returns:
+            InstanceList: Detection results of each image
+                after the post process.
+        """
         batch_img_metas = [
             data_samples.metainfo for data_samples in batch_data_samples
         ]
@@ -139,6 +218,34 @@ class GroundingDINOHead(DINOHead):
                         batch_img_metas: List[Dict],
                         batch_token_positive_maps: Optional[List[dict]] = None,
                         rescale: bool = False) -> InstanceList:
+        """Transform a batch of output features extracted from the head into
+        bbox results.
+
+        Args:
+            all_layers_cls_scores (Tensor):  Classification scores of all
+                decoder layers, has shape (num_decoder_layers, bs, num_queries,
+                cls_out_channels).
+            all_layers_bbox_preds (Tensor): Regression outputs of all decoder
+                layers. Each is a 4D-tensor with normalized coordinate format
+                (cx, cy, w, h) and shape (num_decoder_layers, bs, num_queries,
+                4) with the last dimension arranged as (cx, cy, w, h).
+            batch_img_metas (List[Dict]): _description_
+            batch_token_positive_maps (list[dict], Optional): Batch token
+                positive map. Defaults to None.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
+
+        Returns:
+            list[:obj:`InstanceData`]: Object detection results of each image
+            after the post process. Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
+        """
         cls_scores = all_layers_cls_scores[-1]
         bbox_preds = all_layers_bbox_preds[-1]
         result_list = []
@@ -159,6 +266,32 @@ class GroundingDINOHead(DINOHead):
                                 token_positive_maps: dict,
                                 img_meta: dict,
                                 rescale: bool = True) -> InstanceData:
+        """Transform a single image's features extracted from the head into
+        bbox results.
+
+        Args:
+            cls_score (Tensor): Box score logits from the last decoder layer
+                for each image. Shape [num_queries, cls_out_channels].
+            bbox_pred (Tensor): Sigmoid outputs from the last decoder layer
+                for each image, with coordinate format (cx, cy, w, h) and
+                shape [num_queries, 4].
+            token_positive_maps (dict): Token positive map.
+            img_meta (dict): Image meta info.
+            rescale (bool, optional): If True, return boxes in original image
+                space. Default True.
+
+        Returns:
+            :obj:`InstanceData`: Detection results of each image
+            after the post process.
+            Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
+        """
         assert len(cls_score) == len(bbox_pred)  # num_queries
         max_per_img = self.test_cfg.get('max_per_img', len(cls_score))
         img_shape = img_meta['img_shape']

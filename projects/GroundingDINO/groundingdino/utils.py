@@ -14,8 +14,9 @@ def get_sine_pos_embed(
         pos_tensor (torch.Tensor): shape: [..., n].
         num_pos_feats (int): projected shape for each float in the tensor.
         temperature (int): temperature in the sine/cosine function.
-        exchange_xy (bool, optional): exchange pos x and pos y. \
-            For example, input tensor is [x,y], the results will be [pos(y), pos(x)]. Defaults to True.
+        exchange_xy (bool, optional): exchange pos x and pos y. For example,
+            input tensor is [x,y], the results will be [pos(y), pos(x)].
+            Defaults to True.
     Returns:
         pos_embed (torch.Tensor): shape: [..., n*num_pos_feats].
     """

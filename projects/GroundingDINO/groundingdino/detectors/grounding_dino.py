@@ -21,7 +21,7 @@ from ..layers.grounding_dino_layers import (GroundingDinoTransformerDecoder,
 class GroundingDINO(DINO):
 
     def __init__(self, language_model, *args, **kwargs) -> None:
-        self.language_model = language_model
+        self.language_model_cfg = language_model
         self._text_prompts = None
         self._token_positive_maps = None
         self._entities = None
@@ -47,8 +47,8 @@ class GroundingDINO(DINO):
         self.memory_trans_fc = nn.Linear(self.embed_dims, self.embed_dims)
         self.memory_trans_norm = nn.LayerNorm(self.embed_dims)
 
-        # feat map layer for language model
-        self.language_model = MODELS.build(self.language_model)
+        # text modules
+        self.language_model = MODELS.build(self.language_model_cfg)
         self.text_feat_map = nn.Linear(
             self.language_model.language_backbone.body.language_dim,
             self.embed_dims,
@@ -193,18 +193,23 @@ class GroundingDINO(DINO):
                     [[len(caption_string),
                       len(caption_string) + len(word)]])
                 caption_string += word
-                if idx != len(original_caption) - 1:
-                    caption_string += self._special_tokens
-            tokenized = self.language_model.tokenizer([caption_string],
-                                                      return_tensors='pt')
+                caption_string += self._special_tokens
+            tokenized = self.language_model.tokenizer(
+                [caption_string],
+                padding='max_length'
+                if self.language_model.pad_to_max else 'longest',
+                return_tensors='pt')
             self._entities = original_caption
         else:
             if original_caption.endswith(self._special_tokens):
                 original_caption = original_caption.replace(
                     self._special_tokens, '')
 
-            tokenized = self.language_model.tokenizer([original_caption],
-                                                      return_tensors='pt')
+                tokenized = self.language_model.tokenizer(
+                    [caption_string],
+                    padding='max_length'
+                    if self.language_model.pad_to_max else 'longest',
+                    return_tensors='pt')
             tokens_positive, noun_phrases = run_ner(original_caption)
             self._entities = noun_phrases
             caption_string = original_caption
@@ -221,6 +226,7 @@ class GroundingDINO(DINO):
             self,
             original_caption: Union[str, list, tuple],
             custom_entities: bool = False) -> Tuple[dict, str, Tensor]:
+        """Get the tokens positive and prompts for the caption."""
         tokenized, caption_string, tokens_positive = \
             self.get_tokens_and_prompts(
                 original_caption, custom_entities)

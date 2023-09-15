@@ -75,10 +75,11 @@ model = dict(
         num_layers=6,
         return_intermediate=True,
         layer_cfg=dict(
+            # query self attention layer
             self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
-            # cross attention query to text
+            # cross attention layer query to text
             cross_attn_text_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
-            # cross attention query to image
+            # cross attention layer query to image
             cross_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
             ffn_cfg=dict(
                 embed_dims=256, feedforward_channels=2048, ffn_drop=0.0)),
