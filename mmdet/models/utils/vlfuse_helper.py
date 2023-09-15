@@ -137,7 +137,8 @@ class BiMultiHeadAttention(nn.Module):
             self,
             vision: Tensor,
             lang: Tensor,
-            attention_mask_l: Optional[Tensor] = None
+            attention_mask_v: Optional[Tensor] = None,
+            attention_mask_l: Optional[Tensor] = None,
     ) -> Tuple[Tensor, Tensor]:
         bsz, tgt_len, _ = vision.size()
 
@@ -182,6 +183,13 @@ class BiMultiHeadAttention(nn.Module):
         if self.clamp_max_for_overflow:
             # Do not increase 50000, data type half has quite limited range
             attn_weights_l = torch.clamp(attn_weights_l, max=MAX_CLAMP_VALUE)
+
+        if attention_mask_v is not None:
+            attention_mask_v = (
+                attention_mask_v[:, None,
+                                 None, :].repeat(1, self.num_heads, 1,
+                                                 1).flatten(0, 1))
+            attn_weights_l.masked_fill_(attention_mask_v, float('-inf'))
 
         attn_weights_l = attn_weights_l.softmax(dim=-1)
 
@@ -292,39 +300,56 @@ class BiAttentionBlock(nn.Module):
         self,
         visual_features: Tuple[Tensor],
         lang_feature: Tensor,
-        attention_mask_l: Optional[Tensor] = None
+        attention_mask_v: Optional[Tensor] = None,
+        attention_mask_l: Optional[Tensor] = None,
     ) -> Tuple[List[Tensor], Tensor]:
 
-        size_per_level, visual_features_flatten = [], []
-        for i, feat_per_level in enumerate(visual_features):
-            bs, c, h, w = feat_per_level.shape
-            size_per_level.append([h, w])
-            feat = permute_and_flatten(feat_per_level, bs, -1, c, h, w)
-            visual_features_flatten.append(feat)
-        visual_features_flatten = torch.cat(visual_features_flatten, dim=1)
-        new_v, new_lang_feature = self.single_attention_call(
-            visual_features_flatten,
-            lang_feature,
-            attention_mask_l=attention_mask_l)
-        # [bs, N, C] -> [bs, C, N]
-        new_v = new_v.transpose(1, 2).contiguous()
+        if isinstance(visual_features, (list, tuple)):
+            # for multiple feature maps
+            size_per_level, visual_features_flatten = [], []
+            for i, feat_per_level in enumerate(visual_features):
+                bs, c, h, w = feat_per_level.shape
+                size_per_level.append([h, w])
+                feat = permute_and_flatten(feat_per_level, bs, -1, c, h, w)
+                visual_features_flatten.append(feat)
+            visual_features_flatten = torch.cat(visual_features_flatten, dim=1)
+            new_v, new_lang_feature = self.single_attention_call(
+                visual_features_flatten,
+                lang_feature,
+                attention_mask_l=attention_mask_l,
+                attention_mask_v=attention_mask_v)
+            # [bs, N, C] -> [bs, C, N]
+            new_v = new_v.transpose(1, 2).contiguous()
 
-        start = 0
-        fusion_visual_features = []
-        for (h, w) in size_per_level:
-            new_v_per_level = new_v[:, :,
-                                    start:start + h * w].view(bs, -1, h,
-                                                              w).contiguous()
-            fusion_visual_features.append(new_v_per_level)
-            start += h * w
+            start = 0
+            fusion_visual_features = []
+            for (h, w) in size_per_level:
+                new_v_per_level = new_v[:, :,
+                                        start:start + h * w].view(bs, -1, h,
+                                                                  w).contiguous()
+                fusion_visual_features.append(new_v_per_level)
+                start += h * w
 
-        return fusion_visual_features, new_lang_feature
+            return fusion_visual_features, new_lang_feature
+        elif isinstance(visual_features, Tensor):
+            # for a single feature map
+            new_v, new_lang_feature = self.single_attention_call(
+                visual_features,
+                lang_feature,
+                attention_mask_l=attention_mask_l,
+                attention_mask_v=attention_mask_v)
+            return new_v, new_lang_feature
+        else:
+            raise TypeError(
+                f'visual features expected a Tensor, List[Tensor] \
+                             or Tuple[Tensor], but got {type(visual_features)}')
 
     def single_attention_call(
             self,
             visual: Tensor,
             lang: Tensor,
-            attention_mask_l: Optional[Tensor] = None
+            attention_mask_v: Optional[Tensor] = None,
+            attention_mask_l: Optional[Tensor] = None,
     ) -> Tuple[Tensor, Tensor]:
         """Perform a single attention call between the visual and language
         inputs.
@@ -342,7 +367,9 @@ class BiAttentionBlock(nn.Module):
         visual = self.layer_norm_v(visual)
         lang = self.layer_norm_l(lang)
         delta_v, delta_l = self.attn(
-            visual, lang, attention_mask_l=attention_mask_l)
+            visual, lang,
+            attention_mask_v=attention_mask_v,
+            attention_mask_l=attention_mask_l)
         # visual, lang = visual + delta_v, l + delta_l
         visual = visual + self.drop_path(self.gamma_v * delta_v)
         lang = lang + self.drop_path(self.gamma_l * delta_l)
@@ -389,11 +416,11 @@ class VLFuse(nn.Module):
         if self.use_checkpoint:
             fused_visual_features, language_features = checkpoint.checkpoint(
                 self.b_attn, visual_features, language_dict_features['hidden'],
-                language_dict_features['masks'])
+                attention_mask_l=language_dict_features['masks'])
         else:
             fused_visual_features, language_features = self.b_attn(
                 visual_features, language_dict_features['hidden'],
-                language_dict_features['masks'])
+                attention_mask_l=language_dict_features['masks'])
 
         language_dict_features['hidden'] = language_features
         fused_language_dict_features = language_dict_features
