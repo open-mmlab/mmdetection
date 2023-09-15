@@ -117,21 +117,18 @@ class GroundingDinoTransformerEncoder(DeformableDetrTransformerEncoder):
         ])
         self.embed_dims = self.layers[0].embed_dims
 
-    def forward(
-            self,
-            # for images
-            query: Tensor,
-            query_pos: Tensor,
-            key_padding_mask: Tensor,
-            spatial_shapes: Tensor,
-            level_start_index: Tensor,
-            valid_ratios: Tensor,
-            # for texts
-            memory_text: Tensor = None,
-            text_attention_mask: Tensor = None,
-            pos_text: Tensor = None,
-            text_self_attention_masks: Tensor = None,
-            position_ids: Tensor = None):
+    def forward(self,
+                query: Tensor,
+                query_pos: Tensor,
+                key_padding_mask: Tensor,
+                spatial_shapes: Tensor,
+                level_start_index: Tensor,
+                valid_ratios: Tensor,
+                memory_text: Tensor = None,
+                text_attention_mask: Tensor = None,
+                pos_text: Tensor = None,
+                text_self_attention_masks: Tensor = None,
+                position_ids: Tensor = None):
         output = query
         reference_points = self.get_encoder_reference_points(
             spatial_shapes, valid_ratios, device=query.device)

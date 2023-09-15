@@ -156,6 +156,7 @@ class BertEncoder(nn.Module):
     Args:
         name (str): name of the pretrained BERT model from HuggingFace.
                 Defaults to bert-base-uncased.
+        add_pooling_layer (bool): whether to add a pooling layer.
         num_layers_of_embedded (int): number of layers of the embedded model.
                 Defaults to 1.
         use_checkpoint (bool): whether to use gradient checkpointing.
