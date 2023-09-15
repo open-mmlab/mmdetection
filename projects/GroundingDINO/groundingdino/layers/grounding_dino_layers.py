@@ -188,7 +188,8 @@ class GroundingDinoTransformerEncoder(DeformableDetrTransformerEncoder):
                 Defaults to None.
             text_self_attention_masks (Tensor, optional): Text self attention
                 mask. Defaults to None.
-            position_ids (Tensor, optional): Text position ids. Defaults to None.
+            position_ids (Tensor, optional): Text position ids. 
+                Defaults to None.
         """
         output = query
         reference_points = self.get_encoder_reference_points(
