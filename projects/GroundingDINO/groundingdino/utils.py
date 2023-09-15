@@ -3,7 +3,7 @@ import math
 import torch
 
 
-def get_sine_pos_embed(
+def get_text_sine_pos_embed(
     pos_tensor: torch.Tensor,
     num_pos_feats: int = 128,
     temperature: int = 10000,

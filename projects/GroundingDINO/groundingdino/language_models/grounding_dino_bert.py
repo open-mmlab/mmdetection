@@ -60,8 +60,9 @@ def generate_masks_with_special_tokens_and_transfer_map(
     return attention_mask, position_ids.to(torch.long)
 
 
+# TODO: Merge GroundingDinoBertModel and BertModel
 @MODELS.register_module()
-class BertModelGroundingDINO(BaseModel):
+class GroundingDinoBertModel(BaseModel):
     """BERT model for language embedding only encoder.
 
     Args:

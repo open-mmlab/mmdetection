@@ -23,7 +23,7 @@ model = dict(
         pad_mask=False,
     ),
     language_model=dict(
-        type='BertModelGroundingDINO',
+        type='GroundingDinoBertModel',
         name=lang_model_name,
         pad_to_max=False,
         use_sub_sentence_present=True,
@@ -69,7 +69,11 @@ model = dict(
                 embed_dims=256, feedforward_channels=1024, ffn_drop=0.0)),
         # fusion layer config
         fusion_layer_cfg=dict(
-            v_dim=256, l_dim=256, embed_dim=1024, num_heads=4),
+            v_dim=256,
+            l_dim=256,
+            embed_dim=1024,
+            num_heads=4,
+            init_values=1e-4),
     ),
     decoder=dict(
         num_layers=6,

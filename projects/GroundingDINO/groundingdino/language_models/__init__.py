@@ -1,3 +1,3 @@
-from .bert_grounding_dino import BertModelGroundingDINO
+from .grounding_dino_bert import GroundingDinoBertModel
 
-__all__ = ['BertModelGroundingDINO']
+__all__ = ['GroundingDinoBertModel']

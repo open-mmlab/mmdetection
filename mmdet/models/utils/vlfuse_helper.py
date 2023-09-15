@@ -134,11 +134,11 @@ class BiMultiHeadAttention(nn.Module):
         self.out_l_proj.bias.data.fill_(0)
 
     def forward(
-            self,
-            vision: Tensor,
-            lang: Tensor,
-            attention_mask_v: Optional[Tensor] = None,
-            attention_mask_l: Optional[Tensor] = None,
+        self,
+        vision: Tensor,
+        lang: Tensor,
+        attention_mask_v: Optional[Tensor] = None,
+        attention_mask_l: Optional[Tensor] = None,
     ) -> Tuple[Tensor, Tensor]:
         bsz, tgt_len, _ = vision.size()
 
@@ -324,9 +324,8 @@ class BiAttentionBlock(nn.Module):
             start = 0
             fusion_visual_features = []
             for (h, w) in size_per_level:
-                new_v_per_level = new_v[:, :,
-                                        start:start + h * w].view(bs, -1, h,
-                                                                  w).contiguous()
+                new_v_per_level = new_v[:, :, start:start + h * w].view(
+                    bs, -1, h, w).contiguous()
                 fusion_visual_features.append(new_v_per_level)
                 start += h * w
 
@@ -340,16 +339,16 @@ class BiAttentionBlock(nn.Module):
                 attention_mask_v=attention_mask_v)
             return new_v, new_lang_feature
         else:
-            raise TypeError(
-                f'visual features expected a Tensor, List[Tensor] \
-                             or Tuple[Tensor], but got {type(visual_features)}')
+            raise TypeError(f'visual features expected a Tensor, List[Tensor] \
+                             or Tuple[Tensor], but got {type(visual_features)}'
+                            )
 
     def single_attention_call(
-            self,
-            visual: Tensor,
-            lang: Tensor,
-            attention_mask_v: Optional[Tensor] = None,
-            attention_mask_l: Optional[Tensor] = None,
+        self,
+        visual: Tensor,
+        lang: Tensor,
+        attention_mask_v: Optional[Tensor] = None,
+        attention_mask_l: Optional[Tensor] = None,
     ) -> Tuple[Tensor, Tensor]:
         """Perform a single attention call between the visual and language
         inputs.
@@ -367,7 +366,8 @@ class BiAttentionBlock(nn.Module):
         visual = self.layer_norm_v(visual)
         lang = self.layer_norm_l(lang)
         delta_v, delta_l = self.attn(
-            visual, lang,
+            visual,
+            lang,
             attention_mask_v=attention_mask_v,
             attention_mask_l=attention_mask_l)
         # visual, lang = visual + delta_v, l + delta_l
@@ -415,11 +415,14 @@ class VLFuse(nn.Module):
 
         if self.use_checkpoint:
             fused_visual_features, language_features = checkpoint.checkpoint(
-                self.b_attn, visual_features, language_dict_features['hidden'],
+                self.b_attn,
+                visual_features,
+                language_dict_features['hidden'],
                 attention_mask_l=language_dict_features['masks'])
         else:
             fused_visual_features, language_features = self.b_attn(
-                visual_features, language_dict_features['hidden'],
+                visual_features,
+                language_dict_features['hidden'],
                 attention_mask_l=language_dict_features['masks'])
 
         language_dict_features['hidden'] = language_features
