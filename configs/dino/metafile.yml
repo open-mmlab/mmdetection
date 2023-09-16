@@ -19,7 +19,7 @@ Collections:
       Version: v3.0.0rc6
 
 Models:
-  - Name: dino-4scale_r50_8xb2-12e_coco.py
+  - Name: dino-4scale_r50_8xb2-12e_coco
     In Collection: DINO
     Config: configs/dino/dino-4scale_r50_8xb2-12e_coco.py
     Metadata:
@@ -31,7 +31,7 @@ Models:
           box AP: 49.0
     Weights: https://download.openmmlab.com/mmdetection/v3.0/dino/dino-4scale_r50_8xb2-12e_coco/dino-4scale_r50_8xb2-12e_coco_20221202_182705-55b2bba2.pth
 
-  - Name: dino-4scale_r50_8xb2-24e_coco.py
+  - Name: dino-4scale_r50_8xb2-24e_coco
     In Collection: DINO
     Config: configs/dino/dino-4scale_r50_8xb2-24e_coco.py
     Metadata:
@@ -40,7 +40,7 @@ Models:
       - Task: Object Detection
         Dataset: COCO
 
-  - Name:  dino-4scale_r50_8xb2-24e_coco.py
+  - Name:  dino-4scale_r50_8xb2-36e_coco
     In Collection: DINO
     Config: configs/dino/dino-4scale_r50_8xb2-36e_coco.py
     Metadata:
@@ -49,7 +49,7 @@ Models:
       - Task: Object Detection
         Dataset: COCO
 
-  - Name: dino-5scale_swin-l_8xb2-12e_coco.py
+  - Name: dino-5scale_swin-l_8xb2-12e_coco
     In Collection: DINO
     Config: configs/dino/dino-5scale_swin-l_8xb2-12e_coco.py
     Metadata:
@@ -61,7 +61,7 @@ Models:
           box AP: 57.2
     Weights: https://download.openmmlab.com/mmdetection/v3.0/dino/dino-5scale_swin-l_8xb2-12e_coco/dino-5scale_swin-l_8xb2-12e_coco_20230228_072924-a654145f.pth
 
-  - Name: dino-5scale_swin-l_8xb2-36e_coco.py
+  - Name: dino-5scale_swin-l_8xb2-36e_coco
     In Collection: DINO
     Config: configs/dino/dino-5scale_swin-l_8xb2-36e_coco.py
     Metadata:
@@ -72,3 +72,14 @@ Models:
         Metrics:
           box AP: 58.4
     Weights: https://github.com/RistoranteRist/mmlab-weights/releases/download/dino-swinl/dino-5scale_swin-l_8xb2-36e_coco-5486e051.pth
+  - Name: dino-4scale_r50_improved_8xb2-12e_coco
+    In Collection: DINO
+    Config: configs/dino/dino-4scale_r50_improved_8xb2-12e_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 50.1
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/dino/dino-4scale_r50_improved_8xb2-12e_coco/dino-4scale_r50_improved_8xb2-12e_coco_20230818_162607-6f47a913.pth

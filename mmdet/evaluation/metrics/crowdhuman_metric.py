@@ -276,7 +276,7 @@ class CrowdHumanMetric(BaseMetric):
                 a list of tuples (dtbox, label, imgID) in the descending
                 sort of dtbox.score.
             gt_num(int): The number of gt boxes in the entire dataset.
-            img_num(int)： The number of images in the entire dataset.
+            img_num(int): The number of images in the entire dataset.
 
         Returns:
             ap(float): result of average precision.

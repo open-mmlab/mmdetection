@@ -281,7 +281,7 @@ class ATSSHead(AnchorHead):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
+        featmap_sizes = [featmap.size()[-2:] for featmap in bbox_preds]
         assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device

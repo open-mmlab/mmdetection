@@ -188,7 +188,7 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
             no_save_vis: bool = False,
             draw_pred: bool = True,
             pred_score_thr: float = 0.3,
-            return_datasample: bool = False,
+            return_datasamples: bool = False,
             print_result: bool = False,
             no_save_pred: bool = True,
             out_dir: str = '',
@@ -211,7 +211,7 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
                 Defaults to True.
             pred_score_thr (float): Minimum score of bboxes to draw.
                 Defaults to 0.3.
-            return_datasample (bool): Whether to return results as
+            return_datasamples (bool): Whether to return results as
                 :obj:`DetDataSample`. Defaults to False.
             print_result (bool): Whether to print the inference result w/o
                 visualization to the console. Defaults to False.
@@ -297,7 +297,7 @@ class RefImageCaptionInferencer(ImageCaptionInferencer):
             results = self.postprocess(
                 preds,
                 visualization,
-                return_datasample=return_datasample,
+                return_datasamples=return_datasamples,
                 print_result=print_result,
                 no_save_pred=no_save_pred,
                 pred_out_dir=out_dir,

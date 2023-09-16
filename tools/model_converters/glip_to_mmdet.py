@@ -97,8 +97,7 @@ def convert(ckpt):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Convert keys in pretrained eva '
-        'models to mmpretrain style.')
+        description='Convert keys to mmdet style.')
     parser.add_argument(
         'src', default='glip_a_tiny_o365.pth', help='src model path or url')
     # The dst path must be a full path of the new checkpoint.

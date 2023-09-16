@@ -109,6 +109,80 @@ python tools/analysis_tools/analyze_results.py \
        --show-score-thr 0.3
 ```
 
+## 多模型检测结果融合
+
+`tools/analysis_tools/fuse_results.py` 可使用 Weighted Boxes Fusion(WBF) 方法将多个模型的检测结果进行融合。（当前仅支持 COCO 格式）
+
+**使用方法**
+
+```shell
+python tools/analysis_tools/fuse_results.py \
+       ${PRED_RESULTS} \
+       [--annotation ${ANNOTATION}] \
+       [--weights ${WEIGHTS}] \
+       [--fusion-iou-thr ${FUSION_IOU_THR}] \
+       [--skip-box-thr ${SKIP_BOX_THR}] \
+       [--conf-type ${CONF_TYPE}] \
+       [--eval-single ${EVAL_SINGLE}] \
+       [--save-fusion-results ${SAVE_FUSION_RESULTS}] \
+       [--out-dir ${OUT_DIR}]
+```
+
+各个参数选项的作用:
+
+- `pred-results`: 多模型测试结果的保存路径。（目前仅支持 json 格式）
+- `--annotation`: 真实标注框的保存路径。
+- `--weights`: 模型融合权重。默认设置下，每个模型的权重均为1。
+- `--fusion-iou-thr`: 在WBF算法中，匹配成功的 IoU 阈值，默认值为`0.55`。
+- `--skip-box-thr`: WBF算法中需剔除的置信度阈值，置信度小于该值的 bbox 会被剔除，默认值为`0`。
+- `--conf-type`: 如何计算融合后 bbox 的置信度。有以下四种选项：
+  - `avg`: 取平均值，默认为此选项。
+  - `max`: 取最大值。
+  - `box_and_model_avg`: box和模型尺度的加权平均值。
+  - `absent_model_aware_avg`: 考虑缺失模型的加权平均值。
+- `--eval-single`: 是否评估每个单一模型，默认值为`False`。
+- `--save-fusion-results`: 是否保存融合结果，默认值为`False`。
+- `--out-dir`: 融合结果保存的路径。
+
+**样例**:
+假设你已经通过 `tools/test.py` 得到了3个模型的 json 格式的结果文件，路径分别为 './faster-rcnn_r50-caffe_fpn_1x_coco.json', './retinanet_r50-caffe_fpn_1x_coco.json', './cascade-rcnn_r50-caffe_fpn_1x_coco.json'，真实标注框的文件路径为'./annotation.json'。
+
+1. 融合三个模型的预测结果并评估其效果
+
+```shell
+python tools/analysis_tools/fuse_results.py \
+       ./faster-rcnn_r50-caffe_fpn_1x_coco.json \
+       ./retinanet_r50-caffe_fpn_1x_coco.json \
+       ./cascade-rcnn_r50-caffe_fpn_1x_coco.json \
+       --annotation ./annotation.json \
+       --weights 1 2 3 \
+```
+
+2. 同时评估每个单一模型与融合结果
+
+```shell
+python tools/analysis_tools/fuse_results.py \
+       ./faster-rcnn_r50-caffe_fpn_1x_coco.json \
+       ./retinanet_r50-caffe_fpn_1x_coco.json \
+       ./cascade-rcnn_r50-caffe_fpn_1x_coco.json \
+       --annotation ./annotation.json \
+       --weights 1 2 3 \
+       --eval-single
+```
+
+3. 融合三个模型的预测结果并保存
+
+```shell
+python tools/analysis_tools/fuse_results.py \
+       ./faster-rcnn_r50-caffe_fpn_1x_coco.json \
+       ./retinanet_r50-caffe_fpn_1x_coco.json \
+       ./cascade-rcnn_r50-caffe_fpn_1x_coco.json \
+       --annotation ./annotation.json \
+       --weights 1 2 3 \
+       --save-fusion-results \
+       --out-dir outputs/fusion
+```
+
 ## 可视化
 
 ### 可视化数据集
@@ -116,7 +190,7 @@ python tools/analysis_tools/analyze_results.py \
 `tools/analysis_tools/browse_dataset.py` 可帮助使用者检查所使用的检测数据集（包括图像和标注），或保存图像至指定目录。
 
 ```shell
-python tools/misc/browse_dataset.py ${CONFIG} [-h] [--skip-type ${SKIP_TYPE[SKIP_TYPE...]}] [--output-dir ${OUTPUT_DIR}] [--not-show] [--show-interval ${SHOW_INTERVAL}]
+python tools/analysis_tools/browse_dataset.py ${CONFIG} [-h] [--skip-type ${SKIP_TYPE[SKIP_TYPE...]}] [--output-dir ${OUTPUT_DIR}] [--not-show] [--show-interval ${SHOW_INTERVAL}]
 ```
 
 ### 可视化模型
