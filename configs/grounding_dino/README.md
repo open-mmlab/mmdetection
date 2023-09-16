@@ -47,8 +47,8 @@ python demo/image_demo.py \
 
 ## Results and Models
 
-|      Model       | backbone | COCO mAP |                  Pre-Train Data                  |                         Config                          |                                                        Download                                                         |
-| :--------------: | :------: | :------: | :----------------------------------------------: | :-----------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------: |
+|      Model       | backbone | COCO mAP |                  Pre-Train Data                  |              Config               |                                                        Download                                                         |
+| :--------------: | :------: | :------: | :----------------------------------------------: | :-------------------------------: | :---------------------------------------------------------------------------------------------------------------------: |
 | Grounding DINO-T |  Swin-T  |   48.5   |                 O365,GoldG,Cap4M                 | [config](groundingdino_swin-t.py) |   [model](https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth)    |
 | Grounding DINO-B |  Swin-B  |   56.9   | COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO | [config](groundingdino_swin-b.py) | [model](https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha2/groundingdino_swinb_cogcoor.pth) |
 

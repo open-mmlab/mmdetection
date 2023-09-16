@@ -1,5 +1,5 @@
 _base_ = [
-    './groundingdino_swin-t.py',
+    './grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py',
 ]
 
 model = dict(
