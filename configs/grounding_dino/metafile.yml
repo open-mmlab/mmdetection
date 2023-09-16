@@ -1,0 +1,40 @@
+Collections:
+  - Name: Grounding DINO
+    Metadata:
+      Training Data: Objects365, GoldG, CC3M and COCO
+      Training Techniques:
+        - AdamW
+        - Multi Scale Train
+        - Gradient Clip
+      Training Resources: A100 GPUs
+      Architecture:
+        - Swin Transformer
+        - BERT
+    Paper:
+      URL: https://arxiv.org/abs/2303.05499
+      Title: 'Grounding DINO: Marrying DINO with Grounded Pre-Training for Open-Set Object Detection
+'
+    README: configs/grounding_dino/README.md
+    Code:
+      URL:
+      Version: v3.0.0
+
+Models:
+  - Name: grounding_dino_swin-t_pretrain_obj365_goldg_cap4m
+    In Collection: Grounding DINO
+    Config: configs/grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 48.5
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth
+  - Name: grounding_dino_swin-b_pretrain_mixeddata
+    In Collection: GLIPGrounding DINO
+    Config: configs/grounding_dino/grounding_dino_swin-b_pretrain_mixeddata.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 56.9
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swinb_cogcoor_mmdet-55949c9c.pth
