@@ -22,10 +22,10 @@ model = dict(
         pad_mask=False,
     ),
     language_model=dict(
-        type='GroundingDinoBertModel',
+        type='BertModel',
         name=lang_model_name,
         pad_to_max=False,
-        use_sub_sentence_present=True,
+        use_sub_sentence_represent=True,
         special_tokens_list=['[CLS]', '[SEP]', '.', '?'],
         add_pooling_layer=True,
     ),

@@ -19,8 +19,17 @@ from .glip import (create_positive_map, create_positive_map_label_to_token,
 
 @MODELS.register_module()
 class GroundingDINO(DINO):
+    """Implementation of `Grounding DINO: Marrying DINO with Grounded Pre-
+    Training for Open-Set Object Detection.
+
+    <https://arxiv.org/abs/2303.05499>`_
+
+    Code is modified from the `official github repo
+    <https://github.com/IDEA-Research/GroundingDINO>`_.
+    """
 
     def __init__(self, language_model, *args, **kwargs) -> None:
+
         self.language_model_cfg = language_model
         self._text_prompts = None
         self._token_positive_maps = None
