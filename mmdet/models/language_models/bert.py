@@ -73,8 +73,8 @@ class BertModel(BaseModel):
              Defaults to True.
         use_sub_sentence_represent (bool, optional): whether to use sub
             sentence represent introduced in `Grounding DINO
-            <https://arxiv.org/abs/2303.05499>`.Defaults to False.
-        special_tokens_list (list, optional): Special tokens used to split
+            <https://arxiv.org/abs/2303.05499>`. Defaults to False.
+        special_tokens_list (list, optional): special tokens used to split
             subsentence. It cannot be None when `use_sub_sentence_represent`
             is True. Defaults to None.
         add_pooling_layer (bool, optional): whether to adding pooling
