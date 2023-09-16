@@ -27,17 +27,12 @@ mim install mmdet[multimodal]
 ```
 cd $MMDETROOT
 
-wget https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth
-
-python tools/model_converters/groundingdino_to_mmdet.py \
-		groundingdino_swint_ogc.pth \
-		weights/groundingdino_swint_ogc_mmdet.pth
-# this script will generate a model $WEIGHT_FILE in $MMDETROOT
+wget https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth
 
 python demo/image_demo.py \
 	demo/demo.jpg \
 	configs/grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py \
-	--weights  $WEIGHT_FILE \
+	--weights groundingdino_swint_ogc_mmdet-822d7e9d.pth \
 	--texts 'bench . car .'
 ```
 
@@ -47,10 +42,10 @@ python demo/image_demo.py \
 
 ## Results and Models
 
-|      Model       | backbone | COCO mAP |                  Pre-Train Data                  |                                              Config                                              |                                                        Download                                                         |
-| :--------------: | :------: | :------: | :----------------------------------------------: | :----------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------: |
-| Grounding DINO-T |  Swin-T  |   48.5   |                 O365,GoldG,Cap4M                 |                      [config](grounding_dino_swin-b_pretrain_mixeddata.py)                       |   [model](https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth)    |
-| Grounding DINO-B |  Swin-B  |   56.9   | COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO | [config](grounding_dino_swin-b_pretrain_mixeddata.pygrounding_dino_swin-b_pretrain_mixeddata.py) | [model](https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha2/groundingdino_swinb_cogcoor.pth) |
+|      Model       | backbone | COCO mAP |                  Pre-Train Data                  |                                              Config                                              |                                                        Download                                                        |
+| :--------------: | :------: | :------: | :----------------------------------------------: | :----------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------: |
+| Grounding DINO-T |  Swin-T  |   48.5   |                 O365,GoldG,Cap4M                 |                      [config](grounding_dino_swin-b_pretrain_mixeddata.py)                       |   [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth)   |
+| Grounding DINO-B |  Swin-B  |   56.9   | COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO | [config](grounding_dino_swin-b_pretrain_mixeddata.pygrounding_dino_swin-b_pretrain_mixeddata.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swinb_cogcoor_mmdet-55949c9c.pth) |
 
 Note:
 
