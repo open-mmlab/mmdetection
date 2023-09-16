@@ -2,10 +2,6 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-# custom_imports = dict(
-#     imports=['projects.GroundingDINO.groundingdino'],
-#     allow_failed_imports=False)
-default_scope = 'mmdet'
 
 lang_model_name = 'bert-base-uncased'
 
@@ -101,7 +97,6 @@ model = dict(
             alpha=0.25,
             loss_weight=1.0),  # 2.0 in DeformDETR
         loss_bbox=dict(type='L1Loss', loss_weight=5.0)),
-    #     loss_iou=dict(type='GIoULoss', loss_weight=2.0)),
     dn_cfg=dict(  # TODO: Move to model.train_cfg ?
         label_noise_scale=0.5,
         box_noise_scale=1.0,  # 0.4 for DN-DETR

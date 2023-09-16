@@ -36,7 +36,7 @@ python tools/model_converters/groundingdino_to_mmdet.py \
 
 python demo/image_demo.py \
 	demo/demo.jpg \
-	projects/GroundingDINO/configs/groundingdino/groundingdino_swin-t.py \
+	configs/grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py \
 	--weights  $WEIGHT_FILE \
 	--texts 'bench . car .'
 ```
@@ -47,10 +47,10 @@ python demo/image_demo.py \
 
 ## Results and Models
 
-|      Model       | backbone | COCO mAP |                  Pre-Train Data                  |              Config               |                                                        Download                                                         |
-| :--------------: | :------: | :------: | :----------------------------------------------: | :-------------------------------: | :---------------------------------------------------------------------------------------------------------------------: |
-| Grounding DINO-T |  Swin-T  |   48.5   |                 O365,GoldG,Cap4M                 | [config](groundingdino_swin-t.py) |   [model](https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth)    |
-| Grounding DINO-B |  Swin-B  |   56.9   | COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO | [config](groundingdino_swin-b.py) | [model](https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha2/groundingdino_swinb_cogcoor.pth) |
+|      Model       | backbone | COCO mAP |                  Pre-Train Data                  |                                              Config                                              |                                                        Download                                                         |
+| :--------------: | :------: | :------: | :----------------------------------------------: | :----------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------: |
+| Grounding DINO-T |  Swin-T  |   48.5   |                 O365,GoldG,Cap4M                 |                      [config](grounding_dino_swin-b_pretrain_mixeddata.py)                       |   [model](https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth)    |
+| Grounding DINO-B |  Swin-B  |   56.9   | COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO | [config](grounding_dino_swin-b_pretrain_mixeddata.pygrounding_dino_swin-b_pretrain_mixeddata.py) | [model](https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha2/groundingdino_swinb_cogcoor.pth) |
 
 Note:
 
