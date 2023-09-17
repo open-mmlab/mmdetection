@@ -14,8 +14,7 @@ import mmengine
 
 V3DET_CLASSES = tuple(
     mmengine.list_from_file(
-        'data/V3Det/annotations/category_name_13204_v3det_2023_v1.txt'))
-
+        'configs/v3det/category_name_13204_v3det_2023_v1.txt'))
 
 @DATASETS.register_module()
 class V3DetDataset(CocoDataset):

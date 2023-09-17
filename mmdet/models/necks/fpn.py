@@ -40,6 +40,8 @@ class FPN(BaseModule):
             conv. Defaults to False.
         no_norm_on_lateral (bool): Whether to apply norm on lateral.
             Defaults to False.
+        force_grad_on_level (bool): Whether to force each level of FPN has gradients
+            to avoid potential deadlock. Defaults to False.
         conv_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
             convolution layer. Defaults to None.
         norm_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
@@ -77,6 +79,7 @@ class FPN(BaseModule):
         add_extra_convs: Union[bool, str] = False,
         relu_before_extra_convs: bool = False,
         no_norm_on_lateral: bool = False,
+        force_grad_on_level: bool = False,
         conv_cfg: OptConfigType = None,
         norm_cfg: OptConfigType = None,
         act_cfg: OptConfigType = None,
@@ -92,6 +95,7 @@ class FPN(BaseModule):
         self.num_outs = num_outs
         self.relu_before_extra_convs = relu_before_extra_convs
         self.no_norm_on_lateral = no_norm_on_lateral
+        self.force_grad_on_level = force_grad_on_level
         self.fp16_enabled = False
         self.upsample_cfg = upsample_cfg.copy()
 
@@ -219,8 +223,8 @@ class FPN(BaseModule):
                     else:
                         outs.append(self.fpn_convs[i](outs[-1]))
 
-        if self.start_level != 0:
-            # for grad safe
+        if self.force_grad_on_level:
+            # add zero gradient on each level of FPN to avoid deadlock
             grad_safe = sum([input_data.sum() * 0 for input_data in inputs]) * 0
             outs = [out + grad_safe for out in outs]
         return tuple(outs)

@@ -57,6 +57,8 @@ class FCOSHead(AnchorFreeHead):
         norm_cfg (:obj:`ConfigDict` or dict): dictionary to construct and
             config norm layer.  Defaults to
             ``norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)``.
+        cls_predictor_cfg (:obj:`ConfigDict` or dict): dictionary to construct and
+            config conv_cls. Defaults to None.
         init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
             dict]): Initialization config dict.
 

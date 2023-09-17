@@ -303,7 +303,7 @@ class CrossEntropyLoss(nn.Module):
 
 
 @MODELS.register_module()
-class CrossEntropyV3DetLoss(nn.Module):
+class CrossEntropyCustomLoss(CrossEntropyLoss):
 
     def __init__(self,
                  use_sigmoid=False,
@@ -314,7 +314,7 @@ class CrossEntropyV3DetLoss(nn.Module):
                  ignore_index=None,
                  loss_weight=1.0,
                  avg_non_ignore=False):
-        """CrossEntropyV3DetLoss.
+        """CrossEntropyCustomLoss.
 
         Args:
             use_sigmoid (bool, optional): Whether the prediction uses sigmoid
@@ -332,7 +332,7 @@ class CrossEntropyV3DetLoss(nn.Module):
             avg_non_ignore (bool): The flag decides to whether the loss is
                 only averaged over non-ignored targets. Default: False.
         """
-        super(CrossEntropyV3DetLoss, self).__init__()
+        super(CrossEntropyCustomLoss, self).__init__()
         assert (use_sigmoid is False) or (use_mask is False)
         self.use_sigmoid = use_sigmoid
         self.use_mask = use_mask
@@ -367,11 +367,6 @@ class CrossEntropyV3DetLoss(nn.Module):
         # custom accuracy of the classsifier
         self.custom_accuracy = True
 
-    def extra_repr(self):
-        """Extra repr."""
-        s = f'avg_non_ignore={self.avg_non_ignore}'
-        return s
-
     def get_cls_channels(self, num_classes):
         assert num_classes == self.num_classes
         if not self.use_sigmoid:
@@ -404,51 +399,3 @@ class CrossEntropyV3DetLoss(nn.Module):
         acc = dict()
         acc['acc_classes'] = acc_classes
         return acc
-
-    def forward(self,
-                cls_score,
-                label,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None,
-                ignore_index=None,
-                **kwargs):
-        """Forward function.
-
-        Args:
-            cls_score (torch.Tensor): The prediction.
-            label (torch.Tensor): The learning label of the prediction.
-            weight (torch.Tensor, optional): Sample-wise loss weight.
-            avg_factor (int, optional): Average factor that is used to average
-                the loss. Defaults to None.
-            reduction_override (str, optional): The method used to reduce the
-                loss. Options are "none", "mean" and "sum".
-            ignore_index (int | None): The label index to be ignored.
-                If not None, it will override the default value. Default: None.
-        Returns:
-            torch.Tensor: The calculated loss.
-        """
-        assert reduction_override in (None, 'none', 'mean', 'sum')
-        reduction = (
-            reduction_override if reduction_override else self.reduction)
-        if ignore_index is None:
-            ignore_index = self.ignore_index
-
-        if self.class_weight is not None:
-            class_weight = cls_score.new_tensor(
-                self.class_weight, device=cls_score.device)
-        else:
-            class_weight = cls_score.new_ones(
-                (cls_score.size(1), ), device=cls_score.device)
-
-        loss_cls = self.loss_weight * self.cls_criterion(
-            cls_score,
-            label,
-            weight,
-            class_weight=class_weight,
-            reduction=reduction,
-            avg_factor=avg_factor,
-            ignore_index=ignore_index,
-            avg_non_ignore=self.avg_non_ignore,
-            **kwargs)
-        return loss_cls

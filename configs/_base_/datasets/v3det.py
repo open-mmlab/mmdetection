@@ -7,7 +7,11 @@ backend_args = None
 train_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', scale=(1333, 800), keep_ratio=True),
+    dict(
+        type='RandomChoiceResize',
+        scales=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
+                (1333, 768), (1333, 800)],
+        keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]
@@ -28,13 +32,16 @@ train_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=True),
     batch_sampler=dict(type='AspectRatioBatchSampler'),
     dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='annotations/v3det_2023_v1_train.json',
-        data_prefix=dict(img=''),
-        filter_cfg=dict(filter_empty_gt=True, min_size=32),
-        pipeline=train_pipeline,
-        backend_args=backend_args))
+        type='ClassBalancedDataset',
+        oversample_thr=1e-3,
+        dataset=dict(
+            type=dataset_type,
+            data_root=data_root,
+            ann_file='annotations/v3det_2023_v1_train.json',
+            data_prefix=dict(img=''),
+            filter_cfg=dict(filter_empty_gt=True, min_size=4),
+            pipeline=train_pipeline,
+            backend_args=backend_args)))
 val_dataloader = dict(
     batch_size=1,
     num_workers=2,

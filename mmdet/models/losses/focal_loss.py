@@ -255,7 +255,7 @@ class FocalLoss(nn.Module):
 
 
 @MODELS.register_module()
-class FocalV3DetLoss(nn.Module):
+class FocalCustomLoss(nn.Module):
 
     def __init__(self,
                  use_sigmoid=True,
@@ -284,7 +284,7 @@ class FocalV3DetLoss(nn.Module):
                 treated as probabilities. Else, it should be treated as logits.
                 Defaults to False.
         """
-        super(FocalV3DetLoss, self).__init__()
+        super(FocalCustomLoss, self).__init__()
         assert use_sigmoid is True, 'Only sigmoid focal loss supported now.'
         self.use_sigmoid = use_sigmoid
         self.num_classes = num_classes

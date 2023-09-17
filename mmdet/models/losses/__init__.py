@@ -3,11 +3,11 @@ from .accuracy import Accuracy, accuracy
 from .ae_loss import AssociativeEmbeddingLoss
 from .balanced_l1_loss import BalancedL1Loss, balanced_l1_loss
 from .cross_entropy_loss import (CrossEntropyLoss, binary_cross_entropy,
-                                 cross_entropy, mask_cross_entropy, CrossEntropyV3DetLoss)
+                                 cross_entropy, mask_cross_entropy, CrossEntropyCustomLoss)
 from .ddq_detr_aux_loss import DDQAuxLoss
 from .dice_loss import DiceLoss
 from .eqlv2_loss import EQLV2Loss
-from .focal_loss import FocalLoss, sigmoid_focal_loss, FocalV3DetLoss
+from .focal_loss import FocalLoss, sigmoid_focal_loss, FocalCustomLoss
 from .gaussian_focal_loss import GaussianFocalLoss
 from .gfocal_loss import DistributionFocalLoss, QualityFocalLoss
 from .ghm_loss import GHMC, GHMR
@@ -37,5 +37,5 @@ __all__ = [
     'QualityFocalLoss', 'DistributionFocalLoss', 'VarifocalLoss',
     'KnowledgeDistillationKLDivLoss', 'SeesawLoss', 'DiceLoss', 'EQLV2Loss',
     'MarginL2Loss', 'MultiPosCrossEntropyLoss', 'L2Loss', 'TripletLoss',
-    'DDQAuxLoss', 'CrossEntropyV3DetLoss', 'FocalV3DetLoss'
+    'DDQAuxLoss', 'CrossEntropyCustomLoss', 'FocalCustomLoss'
 ]
