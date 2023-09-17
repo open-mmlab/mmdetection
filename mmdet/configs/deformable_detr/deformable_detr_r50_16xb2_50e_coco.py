@@ -17,7 +17,7 @@ from mmengine.runner.loops import EpochBasedTrainLoop, TestLoop, ValLoop
 from torch.optim.adamw import AdamW
 
 from mmdet.datasets.transforms import (LoadAnnotations, PackDetInputs,
-                                       RandomCrop, RandomFlip)
+                                       RandomCrop, RandomFlip, Resize)
 from mmdet.models.backbones import ResNet
 from mmdet.models.data_preprocessors import DetDataPreprocessor
 from mmdet.models.dense_heads import DeformableDETRHead
@@ -119,6 +119,7 @@ train_pipeline = [
                     scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
                             (608, 1333), (640, 1333), (672, 1333), (704, 1333),
                             (736, 1333), (768, 1333), (800, 1333)],
+                    resize_type=Resize,
                     keep_ratio=True)
             ],
             [
@@ -127,6 +128,7 @@ train_pipeline = [
                     # The radio of all image in train dataset < 7
                     # follow the original implement
                     scales=[(400, 4200), (500, 4200), (600, 4200)],
+                    resize_type=Resize,
                     keep_ratio=True),
                 dict(
                     type=RandomCrop,
@@ -138,6 +140,7 @@ train_pipeline = [
                     scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
                             (608, 1333), (640, 1333), (672, 1333), (704, 1333),
                             (736, 1333), (768, 1333), (800, 1333)],
+                    resize_type=Resize,
                     keep_ratio=True)
             ]
         ]),
