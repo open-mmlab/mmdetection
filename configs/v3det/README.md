@@ -55,10 +55,11 @@ data/
 ## Citation
 
 ```latex
-@article{wang2023v3det,
-  title={V3det: Vast vocabulary visual detection dataset},
-  author={Wang, Jiaqi and Zhang, Pan and Chu, Tao and Cao, Yuhang and Zhou, Yujie and Wu, Tong and Wang, Bin and He, Conghui and Lin, Dahua},
-  journal={arXiv preprint arXiv:2304.03752},
-  year={2023}
+@inproceedings{wang2023v3det,
+      title = {V3Det: Vast Vocabulary Visual Detection Dataset}, 
+      author = {Wang, Jiaqi and Zhang, Pan and Chu, Tao and Cao, Yuhang and Zhou, Yujie and Wu, Tong and Wang, Bin and He, Conghui and Lin, Dahua},
+      booktitle = {The IEEE International Conference on Computer Vision (ICCV)},
+      month = {October},
+      year = {2023}
 }
 ```
