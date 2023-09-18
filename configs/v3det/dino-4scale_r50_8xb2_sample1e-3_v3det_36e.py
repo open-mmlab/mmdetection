@@ -75,7 +75,7 @@ val_evaluator = dict(
     proposal_nums=[300])
 test_evaluator = val_evaluator
 
-# training schedule for 50e
+# training schedule for 36e
 # when using RFS, bs16, each epoch ~ 11460 iter
 max_iter = 412560
 train_cfg = dict(
@@ -93,13 +93,13 @@ param_scheduler = [
         begin=0,
         end=max_iter,
         by_epoch=False,
-        milestones=[343800],  # 40e
+        milestones=[343800],  # 30e
         gamma=0.1)
 ]
 
 default_hooks = dict(
     timer=dict(type='IterTimerHook'),
     param_scheduler=dict(type='ParamSchedulerHook'),
-    checkpoint=dict(type='CheckpointHook', by_epoch=False, interval=11460))
+    checkpoint=dict(type='CheckpointHook', by_epoch=False, interval=11460, max_keep_ckpts=3))
 
 log_processor = dict(type='LogProcessor', window_size=50, by_epoch=False)

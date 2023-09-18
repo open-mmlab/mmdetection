@@ -1,5 +1,7 @@
 _base_ = 'dino-4scale_r50_8xb2_sample1e-3_v3det_36e.py'
 
+pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window7_224.pth'  # noqa
+
 model = dict(
     backbone=dict(
         _delete_=True,
@@ -19,7 +21,7 @@ model = dict(
         with_cp=False,
         convert_weights=True,
         init_cfg=dict(
-            type='Pretrained', checkpoint='models/swin_base_patch4_window7_224.pth')),
+            type='Pretrained', checkpoint=pretrained)),
     neck=dict(in_channels=[256, 512, 1024]),
 )
 

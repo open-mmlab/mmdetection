@@ -1,6 +1,9 @@
 _base_ = [
     './cascade_rcnn_r50_fpn_8x4_sample1e-3_mstrain_v3det_2x.py',
 ]
+
+pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window7_224.pth'  # noqa
+
 # model settings
 model = dict(
     backbone=dict(
@@ -20,5 +23,5 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         with_cp=False,
         convert_weights=True,
-        init_cfg=dict(type='Pretrained', checkpoint='./swin_base_patch4_window7_224.pth')),
+        init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     neck=dict(in_channels=[128, 256, 512, 1024]))

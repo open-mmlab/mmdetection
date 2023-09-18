@@ -101,6 +101,6 @@ param_scheduler = [
 default_hooks = dict(
     timer=dict(type='IterTimerHook'),
     param_scheduler=dict(type='ParamSchedulerHook'),
-    checkpoint=dict(type='CheckpointHook', by_epoch=False, interval=5730))
+    checkpoint=dict(type='CheckpointHook', by_epoch=False, interval=5730, max_keep_ckpts=3))
 
 log_processor = dict(type='LogProcessor', window_size=50, by_epoch=False)

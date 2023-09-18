@@ -72,7 +72,7 @@ backend_args = None
 
 train_dataloader = dict(batch_size=2, num_workers=8)
 
-# training schedule for 1x
+# training schedule for 2x
 max_iter = 68760 * 2 * 2
 train_cfg = dict(
     _delete_=True, type='IterBasedTrainLoop', max_iters=max_iter, val_interval=max_iter)
@@ -106,4 +106,4 @@ default_hooks = dict(
     checkpoint=dict(type='CheckpointHook', by_epoch=False, interval=5730 * 2))
 log_processor = dict(type='LogProcessor', window_size=50, by_epoch=False)
 
-find_unused_parameters=True
+find_unused_parameters = True

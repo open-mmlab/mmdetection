@@ -27,9 +27,9 @@
 </div>
 </p>
 
-<p align="left">
-    <img width=960 src="introduction.jpg"/>
-</p>
+<div align=center>
+    <img width=960 src="https://github.com/open-mmlab/mmdetection/assets/17425982/9c216387-02be-46e6-b0f2-b856f80f6d84"/>
+</div>
 
 <!-- [ALGORITHM] -->
 

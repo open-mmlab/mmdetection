@@ -30,7 +30,7 @@ model = dict(
 # dataset settings
 train_dataloader = dict(batch_size=4, num_workers=8)
 
-# training schedule for 1x
+# training schedule for 2x
 max_iter = 68760 * 2
 train_cfg = dict(
     _delete_=True, type='IterBasedTrainLoop', max_iters=max_iter, val_interval=max_iter)
