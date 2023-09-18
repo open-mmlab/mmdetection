@@ -84,7 +84,8 @@ param_scheduler = [
 
 load_from = 'https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_mstrain_3x_coco/faster_rcnn_r50_fpn_mstrain_3x_coco_20210524_110822-e10bd31c.pth'  # noqa
 
-default_hooks = dict(checkpoint=dict(save_best='auto', max_keep_ckpts=1))
+# We only save the best checkpoint by validation mAP.
+default_hooks = dict(checkpoint=dict(save_best='auto', max_keep_ckpts=-1, interval=-1))
 
 # Default setting for scaling LR automatically
 #   - `enable` means enable scaling LR automatically

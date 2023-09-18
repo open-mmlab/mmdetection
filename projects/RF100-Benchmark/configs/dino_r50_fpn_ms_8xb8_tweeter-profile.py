@@ -85,7 +85,8 @@ param_scheduler = [
 
 load_from = 'https://download.openmmlab.com/mmdetection/v3.0/dino/dino-4scale_r50_8xb2-12e_coco/dino-4scale_r50_8xb2-12e_coco_20221202_182705-55b2bba2.pth'  # noqa
 
-default_hooks = dict(checkpoint=dict(save_best='auto', max_keep_ckpts=1))
+# We only save the best checkpoint by validation mAP.
+default_hooks = dict(checkpoint=dict(save_best='auto', max_keep_ckpts=-1, interval=-1))
 
 # Default setting for scaling LR automatically
 #   - `enable` means enable scaling LR automatically
