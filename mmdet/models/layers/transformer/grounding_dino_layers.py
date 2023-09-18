@@ -86,7 +86,7 @@ class GroundingDinoTransformerDecoderLayer(
                 Defaults to None.
             memory_text (Tensor): Memory text. It has shape (bs, len_text,
                 text_embed_dims).
-            text_token_mask (Tensor): Text token mask. It has shape (bs,
+            text_attention_mask (Tensor): Text token mask. It has shape (bs,
                 len_text).
 
         Returns:
