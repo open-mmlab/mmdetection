@@ -2,6 +2,7 @@ _base_ = './detic_centernet2_r50_fpn_4x_lvis_boxsup.py'
 
 model = dict(
     backbone=dict(
+        _delete_=True,
         type='SwinTransformer',
         embed_dims=128,
         depths=[2, 2, 18, 2],
@@ -27,6 +28,8 @@ model = dict(
 backend_args = None
 
 train_pipeline = [
+    dict(type='LoadImageFromFile', backend_args=backend_args),
+    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='RandomResize',
         scale=(896, 896),
@@ -37,8 +40,17 @@ train_pipeline = [
         crop_type='absolute_range',
         crop_size=(896, 896),
         recompute_bbox=True,
-        allow_negative_crop=True)
+        allow_negative_crop=True),
+    dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
 ]
+
+train_dataloader = dict(
+    dataset=dict(
+        type='ClassBalancedDataset',
+        oversample_thr=1e-3,
+        dataset=dict(pipeline=train_pipeline)))
 
 # training schedule for 180k
 max_iter = 180000

@@ -5,8 +5,8 @@ custom_imports = dict(
 num_classes = 1203
 lvis_cat_frequency_info = 'data/metadata/lvis_v1_train_cat_info.json'
 
-# 'data/metadata/lvis_v1_clip_a+cname.npy' is class-aware
-# features extracted by CLIP
+# 'data/metadata/lvis_v1_clip_a+cname.npy' is pre-computed
+# CLIP embeddings for each category
 cls_layer = dict(
     type='ZeroShotClassifier',
     zs_weight_path='data/metadata/lvis_v1_clip_a+cname.npy',
@@ -298,6 +298,27 @@ test_pipeline = [
                    'scale_factor', 'text', 'custom_entities'))
 ]
 
+val_pipeline = [
+    dict(
+        type='LoadImageFromFile',
+        backend_args=backend_args,
+        imdecode_backend=backend_args),
+    dict(
+        type='Resize',
+        scale=(1333, 800),
+        keep_ratio=True,
+        backend=backend_args),
+    dict(
+        type='LoadAnnotations',
+        with_bbox=True,
+        with_mask=True,
+        poly2mask=False),
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
+]
+
 train_dataloader = dict(
     batch_size=8,
     num_workers=2,
@@ -310,7 +331,7 @@ train_dataloader = dict(
         dataset=dict(
             type='LVISV1Dataset',
             data_root='data/lvis/',
-            ann_file='annotations/lvis_v1_train.json',
+            ann_file='annotations/lvis_v1_train_norare.json',
             data_prefix=dict(img=''),
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
             pipeline=train_pipeline,
@@ -328,7 +349,7 @@ val_dataloader = dict(
         data_root='data/lvis/',
         ann_file='annotations/lvis_v1_val.json',
         data_prefix=dict(img=''),
-        pipeline=test_pipeline,
+        pipeline=val_pipeline,
         return_classes=False))
 
 test_dataloader = dict(

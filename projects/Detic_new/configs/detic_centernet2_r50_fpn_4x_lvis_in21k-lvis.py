@@ -65,13 +65,14 @@ dataset_cls = dict(
     backend_args=backend_args)
 
 train_dataloader = dict(
+    _delete_=True,
     batch_size=[8, 32],
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='MultiDataSampler', dataset_ratio=[1, 4]),
     batch_sampler=dict(
         type='MultiDataAspectRatioBatchSampler', num_datasets=2),
-    dataset=dict(type='MultiDataDataset', datasets=[dataset_det, dataset_cls]))
+    dataset=dict(type='ConcatDataset', datasets=[dataset_det, dataset_cls]))
 
 param_scheduler = [
     dict(

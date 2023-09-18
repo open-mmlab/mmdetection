@@ -22,6 +22,54 @@ Detic requires to install CLIP.
 pip install git+https://github.com/openai/CLIP.git
 ```
 
+## Prepare Datasets
+
+It is recommended to download and extract the dataset somewhere outside the project directory and symlink the dataset root to `$MMDETECTION/data` as below. If your folder structure is different, you may need to change the corresponding paths in config files.
+
+### LVIS
+
+LVIS dataset is adopted as box-labeled data,  [LVIS](https://www.lvisdataset.org/) is available from official website or mirror.  You need to generate `lvis_v1_train_norare.json` according to the [official prepare datasets](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md#coco-and-lvis) for open-vocabulary LVIS, which removes the labels of 337 rare-class from training. The directory should be like this.
+
+```shell
+mmdetection
+├── data
+│   ├── lvis
+│   │   ├── annotations
+│   │   |	├── lvis_v1_train.json
+│   │   |	├── lvis_v1_val.json
+│   │   |	├── lvis_v1_train_norare.json
+│   │   ├── train2017
+│   │   ├── val2017
+```
+
+### ImageNet-LVIS
+
+ImageNet-LVIS is adopted as image-labeled data. You can download [ImageNet-21K](https://www.image-net.org/download.php) dataset from the official website.  Then you need to unzip the overlapping classes of LVIS and convert them into LVIS annotation format according to the [official prepare datasets](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md#imagenet-21k). The directory should be like this.
+
+```shell
+mmdetection
+├── data
+│   ├── imagenet
+│   │   ├── annotations
+│   │   |	├── imagenet_lvis_image_info.json
+│   │   ├── ImageNet-21K
+│   │   |	├── n00007846
+│   │   |	├── n01318894
+│   │   |	├── ...
+```
+
+### Metadata
+
+`data/metadata/` is the preprocessed meta-data (included in the repo). Please follow the [official instruction](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md#metadata) to pre-process the  LVIS dataset. You will generate `lvis_v1_train_cat_info.json` for Federated loss, which contains the frequency of each category of training set of LVIS. In addition, ` lvis_v1_clip_a+cname.npy` is the pre-computed CLIP embeddings for each category of LVIS. The directory should be like this.
+
+```shell
+mmdetection
+├── data
+│   ├── metadata
+│   │   ├── lvis_v1_train_cat_info.json
+│   │   ├── lvis_v1_clip_a+cname.npy
+```
+
 ## Demo
 
 Here we provide the Detic model for the open vocabulary demo.  This model is trained on combined LVIS-COCO and ImageNet-21K for better demo purposes. LVIS models do not detect persons well due to its federated annotation protocol. LVIS+COCO models give better visual results.
@@ -74,33 +122,30 @@ Note that `headphone`, `paper` and `coffe` (typo intended) are not LVIS classes.
 
 ### Training
 
-#### Prepare Datasets
+There are two stages in the whole training process. The first stage is to train a model using images with box labels as the baseline. The second stage is to finetune from the baseline model and leverage image-labeled data.
 
-We use LVIS as bboxes-labeled data, and adopt the overlap classes between ImageNet-21K and LVIS, term `in21k-lvis`, as image-labeled data.  We prepare `data/imagenet/ImageNet-LVIS`  and create annotations `data/imagenet/annotations/imagenet_lvis_image_info.json` following \[official prepare_datsets\]([Detic/datasets/README.md at main · facebookresearch/Detic (github.com)](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md)). The `data` floder should look like:
+#### First stage
 
-```
-data/
-    lvis/
-        train2017
-        val2017
-        anntations/
-            lvis_v1_train.json
-            lvis_v1_val.json
-    imagenet/
-        ImageNet-21K/
-            n00007846
-            n01318894
-            ...
-        annotations/
-            imagenet_lvis_image_info.json
+To train the baseline with box-supervised, run
+
+```shell
+bash ./tools/dist_train.sh projects/Detic_new/detic_centernet2_r50_fpn_4x_lvis_boxsup.py 8
 ```
 
-#### Multi-Datasets Config
+|                                         Model (Config)                                          | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) | Download |
+| :---------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: | :------: |
+| [detic_centernet2_r50_fpn_4x_lvis_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvis_boxsup.py) |   31.6   |        31.5        |     26.6      |           25.6           |          |
 
-We provide dataset_wrapper `MultiDataDataset` to concatenate multiple datasets, all datasets could have different annotation types and different pipelines (e.g., image_size). You can also obtain the index of `dataset_source` for each sample through ` get_data_info` in  `MultiDataDataset` . We provide sampler `MultiDataSampler` to custom the ratios of different datasets. Beside, we provide batch_sampler `MDAspectRatioBatchSampler` to enable different datasets to have different batchsizes.  The config of multiple datasets is as follows:
+#### Second stage
+
+The second stage uses  both object detection and image classification datasets.
+
+##### Multi-Datasets Config
+
+We provide improved dataset_wrapper `ConcatDataset` to concatenate multiple datasets, all datasets could have different annotation types and different pipelines (e.g., image_size). You can also obtain the index of `dataset_source` for each sample through ` get_dataset_source` . We provide sampler `MultiDataSampler` to custom the ratios of different datasets. Beside, we provide batch_sampler `MultiDataAspectRatioBatchSampler` to enable different datasets to have different batchsizes.  The config of multiple datasets is as follows:
 
 ```python
-dataset_det=dict(
+dataset_det = dict(
     type='ClassBalancedDataset',
     oversample_thr=1e-3,
     dataset=dict(
@@ -112,42 +157,48 @@ dataset_det=dict(
         pipeline=train_pipeline_det,
         backend_args=backend_args))
 
-dataset_cls=dict(
-        type='IMAGENETLVISV1Dataset',
-        data_root='data/imagenet',
-        ann_file='annotations/imagenet_lvis_image_info.json',
-        data_prefix=dict(img='ImageNet-LVIS/'),
-        pipeline=train_pipeline_cls,
-        backend_args=backend_args)
+dataset_cls = dict(
+    type='ImageNetLVISV1Dataset',
+    data_root='data/imagenet',
+    ann_file='annotations/imagenet_lvis_image_info.json',
+    data_prefix=dict(img='ImageNet-LVIS/'),
+    pipeline=train_pipeline_cls,
+    backend_args=backend_args)
 
-# custom ratios and batchsizes of different datasets
 train_dataloader = dict(
     batch_size=[8, 32],
     num_workers=2,
     persistent_workers=True,
-    sampler=dict(type='MultiDataSampler',
-                 dataset_ratio=[1, 4]),
-    batch_sampler=dict(type='MDAspectRatioBatchSampler',
-                       num_datasets=2),
+    sampler=dict(
+        type='MultiDataSampler',
+        dataset_ratio=[1, 4]),
+    batch_sampler=dict(
+        type='MultiDataAspectRatioBatchSampler',
+        num_datasets=2),
     dataset=dict(
-        type='MultiDataDataset',
-        datasets=[dataset_det, dataset_cls])
-)
+        type='ConcatDataset',
+        datasets=[dataset_det, dataset_cls]))
 ```
 
-#### Train Command
+###### Note:
 
-To train a model, run
+- If the one of the  multiple datasets is `ConcatDataset` , it is still considered as a dataset for `num_datasets` in `MultiDataAspectRatioBatchSampler`.
+
+To finetune the baseline model with image-labeled data， run:
 
 ```shell
-bash ./tools/dist_train.sh ${CONFIG_FILE} ${GPU_NUM}
+bash ./tools/dist_train.sh projects/Detic_new/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis.py 8
 ```
+
+|                                             Model (Config)                                              | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) | Download |
+| :-----------------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: | :------: |
+| [detic_centernet2_r50_fpn_4x_lvis_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis.py) |   32.9   |        33.2        |     30.9      |           29.7           |          |
 
 #### Standard LVIS Results
 
 |                                             Model (Config)                                              | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) | Download |
 | :-----------------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: | :------: |
-|           [boxsup_centernet2_r50_fpn_4x_lvis](./configs/boxsup_centernet2_r50_fpn_4x_lvis.py)           |   31.6   |        31.5        |     26.7      |           25.6           |          |
+|     [detic_centernet2_r50_fpn_4x_lvis_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvis_boxsup.py)     |   31.6   |        31.5        |     26.6      |           25.6           |          |
 | [detic_centernet2_r50_fpn_4x_lvis_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis.py) |   32.9   |        33.2        |     30.9      |           29.7           |          |
 
 ### Testing
@@ -167,7 +218,7 @@ python ./tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE}
 |    [detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis.py)    |   32.4   |      25.2      |
 | [detic_centernet2_swin-b_fpn_4x_lvisbase_in21k-lvis](./configs/detic_centernet2_swin-b_fpn_4x_lvisbase_in21k-lvis.py) |   40.7   |      34.0      |
 
-#### Note:
+###### Note:
 
 - The open-vocabulary LVIS setup is LVIS without rare class annotations in training, termed `lvisbase`. We evaluate rare classes as novel classes in testing.
 - ` in21k-lvis` denotes that the model use the overlap classes between ImageNet-21K and LVIS as image-labeled data.

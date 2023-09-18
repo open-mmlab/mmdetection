@@ -233,5 +233,5 @@ class ConcatDataset(MMENGINE_ConcatDataset):
             self._metainfo = [dataset.metainfo for dataset in self.datasets]
 
     def get_dataset_source(self, idx: int) -> int:
-        dataset_idx, sample_idx = self._get_ori_dataset_idx(idx)
+        dataset_idx, _ = self._get_ori_dataset_idx(idx)
         return dataset_idx
