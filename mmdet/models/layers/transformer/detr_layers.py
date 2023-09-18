@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
 from typing import Union
 
 import torch
@@ -10,6 +11,11 @@ from torch import Tensor
 
 from mmdet.utils import ConfigType, OptConfigType
 
+try:
+    from fairscale.nn.checkpoint import checkpoint_wrapper
+except Exception:
+    checkpoint_wrapper = None
+
 
 class DetrTransformerEncoder(BaseModule):
     """Encoder of DETR.
@@ -18,6 +24,8 @@ class DetrTransformerEncoder(BaseModule):
         num_layers (int): Number of encoder layers.
         layer_cfg (:obj:`ConfigDict` or dict): the config of each encoder
             layer. All the layers will share the same config.
+        num_cp (int): Number of checkpointing blocks in encoder layer.
+            Default to -1.
         init_cfg (:obj:`ConfigDict` or dict, optional): the config to control
             the initialization. Defaults to None.
     """
@@ -25,11 +33,14 @@ class DetrTransformerEncoder(BaseModule):
     def __init__(self,
                  num_layers: int,
                  layer_cfg: ConfigType,
+                 num_cp: int = -1,
                  init_cfg: OptConfigType = None) -> None:
 
         super().__init__(init_cfg=init_cfg)
         self.num_layers = num_layers
         self.layer_cfg = layer_cfg
+        self.num_cp = num_cp
+        assert self.num_cp <= self.num_layers
         self._init_layers()
 
     def _init_layers(self) -> None:
@@ -38,6 +49,16 @@ class DetrTransformerEncoder(BaseModule):
             DetrTransformerEncoderLayer(**self.layer_cfg)
             for _ in range(self.num_layers)
         ])
+
+        if self.num_cp > 0:
+            if checkpoint_wrapper is None:
+                warnings.warn('If you want to reduce GPU memory usage, \
+                               please install fairscale by executing the \
+                               following command: pip install fairscale.')
+                return
+            for i in range(self.num_cp):
+                self.layers[i] = checkpoint_wrapper(self.layers[i])
+
         self.embed_dims = self.layers[0].embed_dims
 
     def forward(self, query: Tensor, query_pos: Tensor,
