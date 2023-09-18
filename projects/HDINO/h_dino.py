@@ -25,7 +25,7 @@ class HDINO(DINO):
         super(HDINO, self).__init__(*args, bbox_head=bbox_head, **kwargs)
 
     def _init_layers(self) -> None:
-        super(DeformableDETR, self).init_weights()
+        super(HDINO, self)._init_layers()
         self.query_embedding = None
         if self.method == 1:
             self.query_map = nn.Linear(self.embed_dims, self.embed_dims)
@@ -34,6 +34,7 @@ class HDINO(DINO):
             self.pos_trans_norm = nn.LayerNorm(self.embed_dims)
 
     def init_weights(self) -> None:
+        super(DeformableDETR, self).init_weights()
         """Initialize weights for Transformer and other components."""
         for coder in self.encoder, self.decoder:
             for p in coder.parameters():
