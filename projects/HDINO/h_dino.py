@@ -35,7 +35,6 @@ class HDINO(DINO):
 
     def init_weights(self) -> None:
         """Initialize weights for Transformer and other components."""
-        super(HDINO, self).init_weights()
         for coder in self.encoder, self.decoder:
             for p in coder.parameters():
                 if p.dim() > 1:
