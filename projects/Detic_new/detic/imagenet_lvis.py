@@ -12,7 +12,7 @@ from mmdet.registry import DATASETS
 
 
 @DATASETS.register_module()
-class IMAGENETLVISV1Dataset(LVISV1Dataset):
+class ImageNetLVISV1Dataset(LVISV1Dataset):
     """LVIS v1 dataset for detection."""
 
     METAINFO = {

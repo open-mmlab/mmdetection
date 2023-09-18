@@ -2,6 +2,7 @@ import torch
 from torch import nn
 
 
+# support calculate  IOULoss with box_pred
 class IOULoss(nn.Module):
 
     def __init__(self, loc_loss_type='iou'):

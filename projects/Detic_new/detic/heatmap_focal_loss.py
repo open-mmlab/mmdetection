@@ -5,11 +5,10 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from mmdet.models.losses.utils import weighted_loss
 from mmdet.registry import MODELS
 
 
-# @weighted_loss
+# support class-agnostic heatmap_focal_loss
 def heatmap_focal_loss_with_pos_inds(
         pred: Tensor,
         targets: Tensor,

@@ -1,16 +1,12 @@
 _base_ = 'mmdet::_base_/default_runtime.py'
-dataset_type = 'LVISV1Dataset'
-data_root = 'data/lvis/'
 custom_imports = dict(
-    imports=['projects.Detic1.detic'], allow_failed_imports=False)
+    imports=['projects.Detic_new.detic'], allow_failed_imports=False)
 
 num_classes = 1203
-lvis_v1_train_cat_info = 'data/metadata/lvis_v1_train_cat_info.json'
-curl = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window7_224_22k.pth'
-image_size_det = (896, 896)
-image_size_cls = (448, 448)
-# batch_augments = [dict(type='BatchFixedSizePad', size=image_size)]
+lvis_cat_frequency_info = 'data/metadata/lvis_v1_train_cat_info.json'
 
+# 'data/metadata/lvis_v1_clip_a+cname.npy' is class-aware
+# features extracted by CLIP
 cls_layer = dict(
     type='ZeroShotClassifier',
     zs_weight_path='data/metadata/lvis_v1_clip_a+cname.npy',
@@ -32,30 +28,20 @@ model = dict(
         std=[58.395, 57.12, 57.375],
         bgr_to_rgb=True,
         pad_size_divisor=32),
-    # batch_augments=batch_augments),
     backbone=dict(
-        type='SwinTransformer',
-        embed_dims=128,
-        depths=[2, 2, 18, 2],
-        num_heads=[4, 8, 16, 32],
-        window_size=7,
-        mlp_ratio=4,
-        qkv_bias=True,
-        qk_scale=None,
-        drop_rate=0.,
-        attn_drop_rate=0.,
-        drop_path_rate=0.3,
-        patch_norm=True,
+        type='ResNet',
+        depth=50,
+        num_stages=4,
         out_indices=(1, 2, 3),
-        with_cp=False,
-        convert_weights=True,
+        norm_cfg=dict(type='BN', requires_grad=False),
+        norm_eval=True,
         init_cfg=dict(
             type='Pretrained',
-            checkpoint=curl,
-        )),
+            checkpoint='https://miil-public-eu.oss-eu-central-1.aliyuncs.com/'
+            'model-zoo/ImageNet_21K_P/models/resnet50_miil_21k.pth')),
     neck=dict(
         type='FPN',
-        in_channels=[256, 512, 1024],
+        in_channels=[512, 1024, 2048],
         out_channels=256,
         start_level=0,
         add_extra_convs='on_output',
@@ -109,7 +95,7 @@ model = dict(
                 cls_predictor_cfg=cls_layer,
                 reg_predictor_cfg=reg_layer,
                 use_fed_loss=True,
-                cat_freq_path=lvis_v1_train_cat_info,
+                cat_freq_path=lvis_cat_frequency_info,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -118,8 +104,8 @@ model = dict(
                 loss_cls=dict(
                     type='CrossEntropyLoss', use_sigmoid=True,
                     loss_weight=1.0),
-                loss_bbox=dict(type='SmoothL1Loss', beta=0.1,
-                               loss_weight=1.0)),
+                loss_bbox=dict(
+                    type='SmoothL1Loss', beta=1e-3, loss_weight=1.0)),
             dict(
                 type='DeticBBoxHead',
                 in_channels=256,
@@ -129,7 +115,7 @@ model = dict(
                 cls_predictor_cfg=cls_layer,
                 reg_predictor_cfg=reg_layer,
                 use_fed_loss=True,
-                cat_freq_path=lvis_v1_train_cat_info,
+                cat_freq_path=lvis_cat_frequency_info,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -138,8 +124,8 @@ model = dict(
                 loss_cls=dict(
                     type='CrossEntropyLoss', use_sigmoid=True,
                     loss_weight=1.0),
-                loss_bbox=dict(type='SmoothL1Loss', beta=0.1,
-                               loss_weight=1.0)),
+                loss_bbox=dict(
+                    type='SmoothL1Loss', beta=1e-3, loss_weight=1.0)),
             dict(
                 type='DeticBBoxHead',
                 in_channels=256,
@@ -149,7 +135,7 @@ model = dict(
                 cls_predictor_cfg=cls_layer,
                 reg_predictor_cfg=reg_layer,
                 use_fed_loss=True,
-                cat_freq_path=lvis_v1_train_cat_info,
+                cat_freq_path=lvis_cat_frequency_info,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -158,7 +144,8 @@ model = dict(
                 loss_cls=dict(
                     type='CrossEntropyLoss', use_sigmoid=True,
                     loss_weight=1.0),
-                loss_bbox=dict(type='SmoothL1Loss', beta=0.1, loss_weight=1.0))
+                loss_bbox=dict(
+                    type='SmoothL1Loss', beta=1e-3, loss_weight=1.0))
         ],
         mask_roi_extractor=dict(
             type='SingleRoIExtractor',
@@ -271,40 +258,21 @@ model = dict(
 # backend = 'pillow'
 backend_args = None
 
-train_pipeline_det = [
+train_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='RandomResize',
-        scale=image_size_det,
+        scale=(640, 640),
         ratio_range=(0.1, 2.0),
         keep_ratio=True),
     dict(
         type='RandomCrop',
         crop_type='absolute_range',
-        crop_size=image_size_det,
+        crop_size=(640, 640),
         recompute_bbox=True,
         allow_negative_crop=True),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
-    dict(type='RandomFlip', prob=0.5),
-    dict(type='PackDetInputs')
-]
-
-train_pipeline_cls = [
-    dict(type='LoadImageFromFile', backend_args=backend_args),
-    dict(type='LoadAnnotations', with_bbox=False, with_label=True),
-    dict(
-        type='RandomResize',
-        scale=image_size_cls,
-        ratio_range=(0.5, 1.5),
-        keep_ratio=True),
-    dict(
-        type='RandomCrop',
-        crop_type='absolute_range',
-        crop_size=image_size_cls,
-        recompute_bbox=False,
-        bbox_clip_border=False,
-        allow_negative_crop=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]
@@ -330,33 +298,23 @@ test_pipeline = [
                    'scale_factor', 'text', 'custom_entities'))
 ]
 
-dataset_det = dict(
-    type='ClassBalancedDataset',
-    oversample_thr=1e-3,
-    dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='annotations/lvis_v1_train.json',
-        data_prefix=dict(img=''),
-        filter_cfg=dict(filter_empty_gt=True, min_size=32),
-        pipeline=train_pipeline_det,
-        backend_args=backend_args))
-
-dataset_cls = dict(
-    type='IMAGENETLVISV1Dataset',
-    data_root='data/imagenet',
-    ann_file='annotations/imagenet_lvis_image_info.json',
-    data_prefix=dict(img='ImageNet-LVIS/'),
-    pipeline=train_pipeline_cls,
-    backend_args=backend_args)
-
 train_dataloader = dict(
-    batch_size=[4, 16],
+    batch_size=8,
     num_workers=2,
     persistent_workers=True,
-    sampler=dict(type='MultiDataSampler', dataset_ratio=[1, 4]),
-    batch_sampler=dict(type='MDAspectRatioBatchSampler', num_datasets=2),
-    dataset=dict(type='MultiDataDataset', datasets=[dataset_det, dataset_cls]))
+    sampler=dict(type='DefaultSampler', shuffle=True),
+    batch_sampler=dict(type='AspectRatioBatchSampler'),
+    dataset=dict(
+        type='ClassBalancedDataset',
+        oversample_thr=1e-3,
+        dataset=dict(
+            type='LVISV1Dataset',
+            data_root='data/lvis/',
+            ann_file='annotations/lvis_v1_train.json',
+            data_prefix=dict(img=''),
+            filter_cfg=dict(filter_empty_gt=True, min_size=32),
+            pipeline=train_pipeline,
+            backend_args=backend_args)))
 
 val_dataloader = dict(
     batch_size=8,
@@ -366,43 +324,62 @@ val_dataloader = dict(
     pin_memory=True,
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
+        type='LVISV1Dataset',
+        data_root='data/lvis/',
+        ann_file='annotations/lvis_v1_val.json',
+        data_prefix=dict(img=''),
+        pipeline=test_pipeline,
+        return_classes=False))
+
+test_dataloader = dict(
+    batch_size=8,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    pin_memory=True,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type='LVISV1Dataset',
+        data_root='data/lvis/',
         ann_file='annotations/lvis_v1_val.json',
         data_prefix=dict(img=''),
         pipeline=test_pipeline,
         return_classes=True))
-test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='LVISMetric',
-    ann_file=data_root + 'annotations/lvis_v1_val.json',
+    ann_file='data/lvis/annotations/lvis_v1_val.json',
     metric=['bbox', 'segm'])
 test_evaluator = val_evaluator
 
-# training schedule for 90k
-max_iter = 180000
+# training schedule for 90k with batch_size of 64
+# with total batch_size of 16, 90k iters is equivalent to '1x' (12 epochs)
+# with total batch_size of 64, 90k iters is equivalent to '4x'
+max_iter = 90000
 train_cfg = dict(
-    type='IterBasedTrainLoop', max_iters=max_iter, val_interval=180000)
+    type='IterBasedTrainLoop', max_iters=max_iter, val_interval=90000)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 
 # Enable automatic-mixed-precision training with AmpOptimWrapper.
 optim_wrapper = dict(
     type='OptimWrapper',
-    optimizer=dict(type='AdamW', lr=0.0001, weight_decay=0.0001),
+    optimizer=dict(type='AdamW', lr=0.0002, weight_decay=0.0001),
     paramwise_cfg=dict(norm_decay_mult=0.),
     clip_grad=dict(max_norm=1.0, norm_type=2))
 
 param_scheduler = [
     dict(
-        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
-        end=1000),
+        type='LinearLR',
+        start_factor=0.0001,
+        by_epoch=False,
+        begin=0,
+        end=10000),
     dict(
         type='CosineAnnealingLR',
         begin=0,
         by_epoch=False,
-        T_max=90000,
+        T_max=max_iter,
     )
 ]
 
@@ -410,7 +387,3 @@ param_scheduler = [
 default_hooks = dict(
     checkpoint=dict(by_epoch=False, interval=30000, max_keep_ckpts=5),
     logger=dict(type='LoggerHook', interval=50))
-
-load_from = './first_stage/boxsup_centernet2_swin-b_fpn_4x_lvis.pth'
-
-find_unused_parameters = True

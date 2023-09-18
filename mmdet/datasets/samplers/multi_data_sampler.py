@@ -64,12 +64,8 @@ class MultiDataSampler(Sampler):
                 (len(self.dataset) - rank) / world_size)
             self.total_size = len(self.dataset)
 
-        sizes = [0 for _ in range(len(self.dataset_ratio))]
-        for idx in range(len(self.dataset)):
-            data_info = self.dataset.get_data_info(idx)
-            dataset_source_idx = data_info['dataset_source']
-            sizes[dataset_source_idx] += 1
-        self.sizes = sizes
+        self.sizes = [len(dataset) for dataset in self.dataset.datasets]
+
         dataset_weight = [
             torch.ones(s) * max(self.sizes) / s * r / sum(self.dataset_ratio)
             for i, (r, s) in enumerate(zip(self.dataset_ratio, self.sizes))

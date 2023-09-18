@@ -9,18 +9,10 @@ import torch.nn.functional as F
 from mmengine.logging import print_log
 from torch import Tensor
 
+from mmdet.datasets import LVISV1Dataset
 from mmdet.models.detectors.cascade_rcnn import CascadeRCNN
 from mmdet.registry import MODELS
 from mmdet.structures import SampleList
-
-# download from
-# https://github.com/facebookresearch/Detic/tree/main/datasets/metadata
-DATASET_EMBEDDINGS = {
-    'lvis': 'datasets/metadata/lvis_v1_clip_a+cname.npy',
-    'objects365': 'datasets/metadata/o365_clip_a+cnamefix.npy',
-    'openimages': 'datasets/metadata/oid_clip_a+cname.npy',
-    'coco': 'datasets/metadata/coco_clip_a+cname.npy',
-}
 
 
 class CLIPTextEncoder(nn.Module):
@@ -138,7 +130,7 @@ class Detic(CascadeRCNN):
                  **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self._entities = None
+        self._entities = LVISV1Dataset.METAINFO['classes']
         self._text_prompts = None
         # Turn on co-training with classification data
         self.with_image_labels = with_image_labels
@@ -244,17 +236,14 @@ class Detic(CascadeRCNN):
                     the last dimension 4 arrange as (x1, y1, x2, y2).
                 - masks (Tensor): Has a shape (num_instances, H, W).
         """
-
-        text_prompts = [
-            data_samples.text for data_samples in batch_data_samples
-        ]
-        # Assuming that the all the text prompts inside a batch are the same
-        text_prompts = text_prompts[0]
-        if text_prompts != self._text_prompts:
-            self._text_prompts = text_prompts
-            class_names, zs_weight = get_class_weight(text_prompts)
-            self._entities = class_names
-            reset_cls_layer_weight(self.roi_head, zs_weight)
+        # For single image inference
+        if 'custom_entities' in batch_data_samples[0]:
+            text_prompts = batch_data_samples[0].text
+            if text_prompts != self._text_prompts:
+                self._text_prompts = text_prompts
+                class_names, zs_weight = get_class_weight(text_prompts)
+                self._entities = class_names
+                reset_cls_layer_weight(self.roi_head, zs_weight)
 
         assert self.with_bbox, 'Bbox head must be implemented.'
 

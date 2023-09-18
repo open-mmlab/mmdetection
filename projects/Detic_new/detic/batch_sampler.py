@@ -8,7 +8,7 @@ from mmdet.registry import DATA_SAMPLERS
 
 # TODO: maybe replace with a data_loader wrapper
 @DATA_SAMPLERS.register_module()
-class MDAspectRatioBatchSampler(BatchSampler):
+class MultiDataAspectRatioBatchSampler(BatchSampler):
     """A sampler wrapper for grouping images with similar aspect ratio (< 1 or.
 
     >= 1) into a same batch for multi-source datasets.

@@ -114,14 +114,6 @@ class CenterNetRPNHead(CenterNetUpdateHead):
         self.delta = (1 - hm_min_overlap) / (1 + hm_min_overlap)
         self.loss_bbox = IOULoss('giou')
 
-        # self.hm_focal_alpha = hm_focal_alpha
-        # self.hm_focal_beta = hm_focal_beta
-        # self.loss_gamma = loss_gamma
-        # self.pos_weight = pos_weight
-        # self.neg_weight = neg_weight
-        # self.sigmoid_clamp = sigmoid_clamp
-        # self.ignore_high_fp = ignore_high_fp
-
         # GaussianFocalLoss must be sigmoid mode
         self.use_sigmoid_cls = True
         self.cls_out_channels = num_classes
