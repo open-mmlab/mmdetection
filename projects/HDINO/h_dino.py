@@ -20,10 +20,9 @@ class HDINO(DINO):
                  *args,
                  bbox_head: OptConfigType = None,
                  **kwargs) -> None:
+        self.method = 1
         self.num_query_one2one = bbox_head['num_query_one2one']
         super(HDINO, self).__init__(*args, bbox_head=bbox_head, **kwargs)
-
-        self.method = 1
 
     def _init_layers(self) -> None:
         super(HDINO, self)._init_layers()
