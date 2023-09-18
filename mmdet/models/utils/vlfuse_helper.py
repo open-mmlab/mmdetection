@@ -380,7 +380,7 @@ class SingleScaleBiAttentionBlock(BiAttentionBlock):
                 lang_feature: Tensor,
                 attention_mask_v=None,
                 attention_mask_l=None):
-        """_summary_
+        """Single-scale forward pass.
 
         Args:
             visual_feature (Tensor): The visual input tensor. Tensor of
@@ -391,9 +391,6 @@ class SingleScaleBiAttentionBlock(BiAttentionBlock):
                 mask. Defaults to None.
             attention_mask_l (_type_, optional): Language feature attention
                 mask.Defaults to None.
-
-        Returns:
-            _type_: _description_
         """
         new_v, new_lang_feature = self.single_attention_call(
             visual_feature,
