@@ -28,8 +28,7 @@ model = dict(
         start_level=1,
         add_extra_convs='on_output',  # use P5
         num_outs=5,
-        relu_before_extra_convs=True,
-        force_grad_on_level=True),
+        relu_before_extra_convs=True),
     bbox_head=dict(
         type='FCOSHead',
         num_classes=13204,
@@ -106,3 +105,5 @@ auto_scale_lr = dict(enable=False, base_batch_size=32)
 default_hooks = dict(
     checkpoint=dict(type='CheckpointHook', by_epoch=False, interval=5730 * 2))
 log_processor = dict(type='LogProcessor', window_size=50, by_epoch=False)
+
+find_unused_parameters=True
