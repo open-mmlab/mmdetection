@@ -20,12 +20,10 @@ One-to-one set matching is a key design for DETR to establish its end-to-end cap
 
 ### NOTE
 
-1. The performance is unstable. `H-DINO-4scale` with `R-50` may fluctuate about 0.4 mAP.
-2. We are based on `DINO` rather than `Deformable DETR` to support the `Hybrid Matching` algorithm.
+1. We are based on `DINO` rather than `Deformable DETR` to support the `Hybrid Matching` algorithm.
+2. We found that directly applying Hybrid Matching to the DINO algorithm results in a significant decrease in performance. Therefore, I added the `query_map` to the detector, which can only achieve comparable performance to DINO. If you have any other insights or suggestions, please feel free to comment or submit a pull request (PR).
 
 ## Citation
-
-We provide the config files for H-DINO: [DETRs with Hybrid Matching](https://arxiv.org/abs/2207.13080).
 
 ```latex
 @article{jia2022detrs,

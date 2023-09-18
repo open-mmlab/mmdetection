@@ -3,10 +3,10 @@ from typing import Dict, List
 
 from torch import Tensor
 
+from mmdet.models.dense_heads.dino_head import DINOHead
+from mmdet.models.utils import multi_apply
 from mmdet.registry import MODELS
 from mmdet.utils import InstanceList, OptInstanceList
-from ..utils import multi_apply
-from .dino_head import DINOHead
 
 
 @MODELS.register_module()
@@ -16,7 +16,7 @@ class HybridDINOHead(DINOHead):
     def __init__(self,
                  *args,
                  num_query_one2one: int = 900,
-                 k_one2many: int = 6,
+                 k_one2many: int = 2,
                  **kwargs) -> None:
         self.num_query_one2one = num_query_one2one
         self.k_one2many = k_one2many

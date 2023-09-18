@@ -1,6 +1,10 @@
 _base_ = [
-    '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
+    '../../configs/_base_/datasets/coco_detection.py',
+    '../../configs/_base_/default_runtime.py'
 ]
+
+custom_imports = dict(imports=['projects.HDINO'], allow_failed_imports=False)
+
 model = dict(
     type='HDINO',
     num_queries=1800,  # num_total_queries: 900+900
