@@ -11,6 +11,7 @@ from mmengine.logging import MMLogger
 from mmengine.model import revert_sync_batchnorm
 from mmengine.registry import init_default_scope
 from mmengine.runner import Runner
+from mmengine.utils import digit_version
 
 from mmdet.registry import MODELS
 
@@ -44,7 +45,7 @@ def parse_args():
 
 
 def inference(args, logger):
-    if str(torch.__version__) < '1.12':
+    if digit_version(torch.__version__) < digit_version('1.12'):
         logger.warning(
             'Some config files, such as configs/yolact and configs/detectors,'
             'may have compatibility issues with torch.jit when torch<1.12. '
