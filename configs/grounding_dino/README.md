@@ -42,10 +42,10 @@ python demo/image_demo.py \
 
 ## Results and Models
 
-|      Model       | backbone | COCO mAP |                  Pre-Train Data                  |                                              Config                                              |                                                        Download                                                        |
-| :--------------: | :------: | :------: | :----------------------------------------------: | :----------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------: |
-| Grounding DINO-T |  Swin-T  |   48.5   |                 O365,GoldG,Cap4M                 |                      [config](grounding_dino_swin-b_pretrain_mixeddata.py)                       |   [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth)   |
-| Grounding DINO-B |  Swin-B  |   56.9   | COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO | [config](grounding_dino_swin-b_pretrain_mixeddata.pygrounding_dino_swin-b_pretrain_mixeddata.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swinb_cogcoor_mmdet-55949c9c.pth) |
+|      Model       | backbone | COCO mAP |                  Pre-Train Data                  |                             Config                             |                                                        Download                                                        |
+| :--------------: | :------: | :------: | :----------------------------------------------: | :------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------: |
+| Grounding DINO-T |  Swin-T  |   48.5   |                 O365,GoldG,Cap4M                 | [config](grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py) |   [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth)   |
+| Grounding DINO-B |  Swin-B  |   56.9   | COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO |     [config](grounding_dino_swin-b_pretrain_mixeddata.py)      | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swinb_cogcoor_mmdet-55949c9c.pth) |
 
 Note:
 
