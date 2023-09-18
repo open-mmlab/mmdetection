@@ -207,7 +207,7 @@ class MaxIoUAssigner(BaseAssigner):
                 self.perm_repeat_gt_cfg)
         else:
             gt_bboxes_unique = gt_bboxes
-        overlaps = self.iou_calculator(gt_bboxes, priors)
+        overlaps = self.iou_calculator(gt_bboxes_unique, priors)
 
         if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None
                 and gt_bboxes_ignore.numel() > 0 and priors.numel() > 0):
