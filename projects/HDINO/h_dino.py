@@ -3,8 +3,11 @@ from typing import Tuple
 
 import torch
 from torch import Tensor, nn
+from torch.nn.init import normal_
 
 from mmdet.models.detectors import DINO
+from mmdet.models.detectors.deformable_detr import \
+    MultiScaleDeformableAttention
 from mmdet.registry import MODELS
 from mmdet.structures import OptSampleList
 from mmdet.utils import OptConfigType
@@ -24,6 +27,19 @@ class HDINO(DINO):
         super(HDINO, self)._init_layers()
         self.query_embedding = None
         self.query_map = nn.Linear(self.embed_dims, self.embed_dims)
+
+    def init_weights(self) -> None:
+        """Initialize weights for Transformer and other components."""
+        super(HDINO, self).init_weights()
+        for coder in self.encoder, self.decoder:
+            for p in coder.parameters():
+                if p.dim() > 1:
+                    nn.init.xavier_uniform_(p)
+        for m in self.modules():
+            if isinstance(m, MultiScaleDeformableAttention):
+                m.init_weights()
+        nn.init.xavier_uniform_(self.memory_trans_fc.weight)
+        normal_(self.level_embed)
 
     def pre_decoder(
         self,
