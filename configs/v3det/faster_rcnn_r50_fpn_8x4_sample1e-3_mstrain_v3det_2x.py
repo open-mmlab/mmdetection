@@ -1,6 +1,5 @@
 _base_ = [
-    '../_base_/models/faster-rcnn_r50_fpn.py',
-    '../_base_/datasets/v3det.py',
+    '../_base_/models/faster-rcnn_r50_fpn.py', '../_base_/datasets/v3det.py',
     '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
 ]
 # model settings
@@ -9,7 +8,8 @@ model = dict(
         bbox_head=dict(
             num_classes=13204,
             reg_class_agnostic=True,
-            cls_predictor_cfg=dict(type='NormedLinear', tempearture=50, bias=True),
+            cls_predictor_cfg=dict(
+                type='NormedLinear', tempearture=50, bias=True),
             loss_cls=dict(
                 type='CrossEntropyCustomLoss',
                 num_classes=13204,
@@ -33,12 +33,19 @@ train_dataloader = dict(batch_size=4, num_workers=8)
 # training schedule for 2x
 max_iter = 68760 * 2
 train_cfg = dict(
-    _delete_=True, type='IterBasedTrainLoop', max_iters=max_iter, val_interval=max_iter)
+    _delete_=True,
+    type='IterBasedTrainLoop',
+    max_iters=max_iter,
+    val_interval=max_iter)
 
 # learning rate
 param_scheduler = [
     dict(
-        type='LinearLR', start_factor=1.0 / 2048, by_epoch=False, begin=0, end=5000),
+        type='LinearLR',
+        start_factor=1.0 / 2048,
+        by_epoch=False,
+        begin=0,
+        end=5000),
     dict(
         type='MultiStepLR',
         begin=0,
@@ -63,4 +70,3 @@ auto_scale_lr = dict(enable=False, base_batch_size=32)
 default_hooks = dict(
     checkpoint=dict(type='CheckpointHook', by_epoch=False, interval=5730 * 2))
 log_processor = dict(type='LogProcessor', window_size=50, by_epoch=False)
-

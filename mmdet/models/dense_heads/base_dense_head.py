@@ -369,7 +369,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                                                     0).reshape(-1).sigmoid()
             cls_score = cls_score.permute(1, 2,
                                           0).reshape(-1, self.cls_out_channels)
-            
+
+            # the `custom_cls_channels` parameter is derived from
+            # CrossEntropyCustomLoss and FocalCustomLoss, and is currently used
+            # in v3det.
             if getattr(self.loss_cls, 'custom_cls_channels', False):
                 scores = self.loss_cls.get_activation(cls_score)
             elif self.use_sigmoid_cls:

@@ -6,8 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from mmdet.registry import MODELS
-from .utils import weight_reduce_loss
 from .accuracy import accuracy
+from .utils import weight_reduce_loss
 
 
 def cross_entropy(pred,
@@ -323,7 +323,7 @@ class CrossEntropyCustomLoss(CrossEntropyLoss):
                 Defaults to False.
             reduction (str, optional): . Defaults to 'mean'.
                 Options are "none", "mean" and "sum".
-            num_classes (int): Number of classes to classify. 
+            num_classes (int): Number of classes to classify.
             class_weight (list[float], optional): Weight of each class.
                 Defaults to None.
             ignore_index (int | None): The label index to be ignored.
@@ -377,7 +377,7 @@ class CrossEntropyCustomLoss(CrossEntropyLoss):
     def get_activation(self, cls_score):
 
         fine_cls_score = cls_score[:, :self.num_classes]
-        
+
         if not self.use_sigmoid:
             bg_score = cls_score[:, [-1]]
             new_score = torch.cat([fine_cls_score, bg_score], dim=-1)

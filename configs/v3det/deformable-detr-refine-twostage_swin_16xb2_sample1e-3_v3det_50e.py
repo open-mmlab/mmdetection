@@ -20,8 +20,7 @@ model = dict(
         out_indices=(1, 2, 3),
         with_cp=False,
         convert_weights=True,
-        init_cfg=dict(
-            type='Pretrained', checkpoint=pretrained)),
+        init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     neck=dict(in_channels=[256, 512, 1024]),
 )
 

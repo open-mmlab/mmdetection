@@ -1,4 +1,4 @@
-_base_ = '../deformable_detr/deformable-detr-refine-twostage_r50_16xb2-50e_coco.py'
+_base_ = '../deformable_detr/deformable-detr-refine-twostage_r50_16xb2-50e_coco.py'  # noqa
 
 model = dict(
     bbox_head=dict(num_classes=13204),
@@ -101,6 +101,8 @@ param_scheduler = [
 default_hooks = dict(
     timer=dict(type='IterTimerHook'),
     param_scheduler=dict(type='ParamSchedulerHook'),
-    checkpoint=dict(type='CheckpointHook', by_epoch=False, interval=5730, max_keep_ckpts=3))
+    checkpoint=dict(
+        type='CheckpointHook', by_epoch=False, interval=5730,
+        max_keep_ckpts=3))
 
 log_processor = dict(type='LogProcessor', window_size=50, by_epoch=False)

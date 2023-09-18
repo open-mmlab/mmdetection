@@ -2,7 +2,6 @@
 import copy
 from typing import Optional, Union
 
-
 import torch
 from mmengine.structures import InstanceData
 from torch import Tensor
@@ -11,8 +10,14 @@ from mmdet.registry import TASK_UTILS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
-def _perm_box(bboxes, iou_calculator, iou_thr=0.97, perm_range=0.01, counter=0, max_iter=5):
-    """Compute the permuted bboxes
+
+def _perm_box(bboxes,
+              iou_calculator,
+              iou_thr=0.97,
+              perm_range=0.01,
+              counter=0,
+              max_iter=5):
+    """Compute the permuted bboxes.
 
     Args:
         bboxes (Tensor): Shape (n, 4) for , "xyxy" format.
@@ -28,7 +33,7 @@ def _perm_box(bboxes, iou_calculator, iou_thr=0.97, perm_range=0.01, counter=0, 
     is_valid = True
     N = bboxes.size(0)
     perm_factor = bboxes.new_empty(N, 4).uniform_(1 - perm_range,
-                                                 1 + perm_range)
+                                                  1 + perm_range)
     bboxes *= perm_factor
     new_wh = bboxes[:, 2:] - bboxes[:, :2]
     if (new_wh <= 0).any():
@@ -46,7 +51,7 @@ def _perm_box(bboxes, iou_calculator, iou_thr=0.97, perm_range=0.01, counter=0, 
 
 
 def perm_repeat_bboxes(bboxes, iou_calculator=None, perm_repeat_cfg=None):
-    """Permute the repeated bboxes
+    """Permute the repeated bboxes.
 
     Args:
         bboxes (Tensor): Shape (n, 4) for , "xyxy" format.
@@ -67,8 +72,12 @@ def perm_repeat_bboxes(bboxes, iou_calculator=None, perm_repeat_cfg=None):
         inds = (bboxes == box).sum(-1).float() == 4
         if inds.float().sum().item() == 1:
             continue
-        bboxes[inds] = _perm_box(bboxes[inds], iou_calculator, 
-            iou_thr=iou_thr, perm_range=perm_range, counter=0)
+        bboxes[inds] = _perm_box(
+            bboxes[inds],
+            iou_calculator,
+            iou_thr=iou_thr,
+            perm_range=perm_range,
+            counter=0)
     return bboxes
 
 
@@ -107,7 +116,7 @@ class MaxIoUAssigner(BaseAssigner):
             assign. When the number of gt is above this threshold, will assign
             on CPU device. Negative values mean not assign on CPU.
         iou_calculator (dict): Config of overlaps Calculator.
-        perm_repeat_gt_cfg (dict): Config of permute repeated gt bboxes. 
+        perm_repeat_gt_cfg (dict): Config of permute repeated gt bboxes.
     """
 
     def __init__(self,
@@ -203,8 +212,9 @@ class MaxIoUAssigner(BaseAssigner):
                 gt_bboxes_ignore = gt_bboxes_ignore.cpu()
 
         if self.perm_repeat_gt_cfg is not None and priors.numel() > 0:
-            gt_bboxes_unique = perm_repeat_bboxes(gt_bboxes, self.iou_calculator, 
-                self.perm_repeat_gt_cfg)
+            gt_bboxes_unique = perm_repeat_bboxes(gt_bboxes,
+                                                  self.iou_calculator,
+                                                  self.perm_repeat_gt_cfg)
         else:
             gt_bboxes_unique = gt_bboxes
         overlaps = self.iou_calculator(gt_bboxes_unique, priors)

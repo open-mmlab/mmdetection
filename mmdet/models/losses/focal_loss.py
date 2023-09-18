@@ -5,8 +5,8 @@ import torch.nn.functional as F
 from mmcv.ops import sigmoid_focal_loss as _sigmoid_focal_loss
 
 from mmdet.registry import MODELS
-from .utils import weight_reduce_loss
 from .accuracy import accuracy
+from .utils import weight_reduce_loss
 
 
 # This method is only for debugging
@@ -270,7 +270,7 @@ class FocalCustomLoss(nn.Module):
         Args:
             use_sigmoid (bool, optional): Whether to the prediction is
                 used for sigmoid or softmax. Defaults to True.
-            num_classes (int): Number of classes to classify. 
+            num_classes (int): Number of classes to classify.
             gamma (float, optional): The gamma for calculating the modulating
                 factor. Defaults to 2.0.
             alpha (float, optional): A balanced form for Focal Loss.
@@ -303,7 +303,6 @@ class FocalCustomLoss(nn.Module):
         # custom accuracy of the classsifier
         self.custom_accuracy = True
 
-
     def get_cls_channels(self, num_classes):
         assert num_classes == self.num_classes
         return num_classes
@@ -311,7 +310,7 @@ class FocalCustomLoss(nn.Module):
     def get_activation(self, cls_score):
 
         fine_cls_score = cls_score[:, :self.num_classes]
-        
+
         score_classes = fine_cls_score.sigmoid()
 
         return score_classes

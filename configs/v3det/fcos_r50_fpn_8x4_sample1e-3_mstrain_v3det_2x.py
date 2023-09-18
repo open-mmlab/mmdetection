@@ -1,6 +1,6 @@
 _base_ = [
-    '../_base_/datasets/v3det.py',
-    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
+    '../_base_/datasets/v3det.py', '../_base_/schedules/schedule_2x.py',
+    '../_base_/default_runtime.py'
 ]
 # model settings
 model = dict(
@@ -67,7 +67,6 @@ model = dict(
         max_per_img=300))
 # dataset settings
 
-
 backend_args = None
 
 train_dataloader = dict(batch_size=2, num_workers=8)
@@ -75,12 +74,19 @@ train_dataloader = dict(batch_size=2, num_workers=8)
 # training schedule for 2x
 max_iter = 68760 * 2 * 2
 train_cfg = dict(
-    _delete_=True, type='IterBasedTrainLoop', max_iters=max_iter, val_interval=max_iter)
+    _delete_=True,
+    type='IterBasedTrainLoop',
+    max_iters=max_iter,
+    val_interval=max_iter)
 
 # learning rate
 param_scheduler = [
     dict(
-        type='LinearLR', start_factor=1.0 / 2048, by_epoch=False, begin=0, end=5000 * 2),
+        type='LinearLR',
+        start_factor=1.0 / 2048,
+        by_epoch=False,
+        begin=0,
+        end=5000 * 2),
     dict(
         type='MultiStepLR',
         begin=0,
@@ -93,7 +99,8 @@ param_scheduler = [
 # optimizer
 optim_wrapper = dict(
     type='OptimWrapper',
-    optimizer=dict(_delete_=True, type='AdamW', lr=1e-4 * 0.25, weight_decay=0.1),
+    optimizer=dict(
+        _delete_=True, type='AdamW', lr=1e-4 * 0.25, weight_decay=0.1),
     clip_grad=dict(max_norm=35, norm_type=2))
 
 # Default setting for scaling LR automatically

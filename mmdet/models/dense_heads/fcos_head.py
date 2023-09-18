@@ -7,13 +7,12 @@ from mmcv.cnn import Scale
 from mmengine.structures import InstanceData
 from torch import Tensor
 
+from mmdet.models.layers import NormedConv2d
 from mmdet.registry import MODELS
 from mmdet.utils import (ConfigType, InstanceList, MultiConfig,
                          OptInstanceList, RangeType, reduce_mean)
 from ..utils import multi_apply
 from .anchor_free_head import AnchorFreeHead
-
-from mmdet.models.layers import NormedConv2d
 
 INF = 1e8
 
@@ -125,7 +124,12 @@ class FCOSHead(AnchorFreeHead):
         self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
         if self.cls_predictor_cfg is not None:
             self.cls_predictor_cfg.pop('type')
-            self.conv_cls = NormedConv2d(self.feat_channels, self.cls_out_channels, 1, padding=0, **self.cls_predictor_cfg)
+            self.conv_cls = NormedConv2d(
+                self.feat_channels,
+                self.cls_out_channels,
+                1,
+                padding=0,
+                **self.cls_predictor_cfg)
 
     def forward(
             self, x: Tuple[Tensor]
@@ -264,7 +268,8 @@ class FCOSHead(AnchorFreeHead):
             flatten_cls_scores, flatten_labels, avg_factor=num_pos)
 
         if getattr(self.loss_cls, 'custom_accuracy', False):
-            acc = self.loss_cls.get_accuracy(flatten_cls_scores, flatten_labels)
+            acc = self.loss_cls.get_accuracy(flatten_cls_scores,
+                                             flatten_labels)
             losses.update(acc)
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]

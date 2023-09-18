@@ -1,69 +1,70 @@
 _base_ = [
-    '../_base_/models/cascade-rcnn_r50_fpn.py',
-    '../_base_/datasets/v3det.py',
+    '../_base_/models/cascade-rcnn_r50_fpn.py', '../_base_/datasets/v3det.py',
     '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
 ]
 # model settings
 model = dict(
     rpn_head=dict(
         loss_bbox=dict(_delete_=True, type='L1Loss', loss_weight=1.0)),
-    roi_head=dict(
-        bbox_head=[
-            dict(
-                type='Shared2FCBBoxHead',
-                in_channels=256,
-                fc_out_channels=1024,
-                roi_feat_size=7,
+    roi_head=dict(bbox_head=[
+        dict(
+            type='Shared2FCBBoxHead',
+            in_channels=256,
+            fc_out_channels=1024,
+            roi_feat_size=7,
+            num_classes=13204,
+            bbox_coder=dict(
+                type='DeltaXYWHBBoxCoder',
+                target_means=[0., 0., 0., 0.],
+                target_stds=[0.1, 0.1, 0.2, 0.2]),
+            reg_class_agnostic=True,
+            cls_predictor_cfg=dict(
+                type='NormedLinear', tempearture=50, bias=True),
+            loss_cls=dict(
+                type='CrossEntropyCustomLoss',
                 num_classes=13204,
-                bbox_coder=dict(
-                    type='DeltaXYWHBBoxCoder',
-                    target_means=[0., 0., 0., 0.],
-                    target_stds=[0.1, 0.1, 0.2, 0.2]),
-                reg_class_agnostic=True,
-                cls_predictor_cfg=dict(type='NormedLinear', tempearture=50, bias=True),
-                loss_cls=dict(
-                    type='CrossEntropyCustomLoss',
-                    num_classes=13204,
-                    use_sigmoid=True,
-                    loss_weight=1.0),
-                loss_bbox=dict(type='L1Loss', loss_weight=1.0)),
-            dict(
-                type='Shared2FCBBoxHead',
-                in_channels=256,
-                fc_out_channels=1024,
-                roi_feat_size=7,
+                use_sigmoid=True,
+                loss_weight=1.0),
+            loss_bbox=dict(type='L1Loss', loss_weight=1.0)),
+        dict(
+            type='Shared2FCBBoxHead',
+            in_channels=256,
+            fc_out_channels=1024,
+            roi_feat_size=7,
+            num_classes=13204,
+            bbox_coder=dict(
+                type='DeltaXYWHBBoxCoder',
+                target_means=[0., 0., 0., 0.],
+                target_stds=[0.05, 0.05, 0.1, 0.1]),
+            reg_class_agnostic=True,
+            cls_predictor_cfg=dict(
+                type='NormedLinear', tempearture=50, bias=True),
+            loss_cls=dict(
+                type='CrossEntropyCustomLoss',
                 num_classes=13204,
-                bbox_coder=dict(
-                    type='DeltaXYWHBBoxCoder',
-                    target_means=[0., 0., 0., 0.],
-                    target_stds=[0.05, 0.05, 0.1, 0.1]),
-                reg_class_agnostic=True,
-                cls_predictor_cfg=dict(type='NormedLinear', tempearture=50, bias=True),
-                loss_cls=dict(
-                    type='CrossEntropyCustomLoss',
-                    num_classes=13204,
-                    use_sigmoid=True,
-                    loss_weight=1.0),
-                loss_bbox=dict(type='L1Loss', loss_weight=1.0)),
-            dict(
-                type='Shared2FCBBoxHead',
-                in_channels=256,
-                fc_out_channels=1024,
-                roi_feat_size=7,
+                use_sigmoid=True,
+                loss_weight=1.0),
+            loss_bbox=dict(type='L1Loss', loss_weight=1.0)),
+        dict(
+            type='Shared2FCBBoxHead',
+            in_channels=256,
+            fc_out_channels=1024,
+            roi_feat_size=7,
+            num_classes=13204,
+            bbox_coder=dict(
+                type='DeltaXYWHBBoxCoder',
+                target_means=[0., 0., 0., 0.],
+                target_stds=[0.033, 0.033, 0.067, 0.067]),
+            reg_class_agnostic=True,
+            cls_predictor_cfg=dict(
+                type='NormedLinear', tempearture=50, bias=True),
+            loss_cls=dict(
+                type='CrossEntropyCustomLoss',
                 num_classes=13204,
-                bbox_coder=dict(
-                    type='DeltaXYWHBBoxCoder',
-                    target_means=[0., 0., 0., 0.],
-                    target_stds=[0.033, 0.033, 0.067, 0.067]),
-                reg_class_agnostic=True,
-                cls_predictor_cfg=dict(type='NormedLinear', tempearture=50, bias=True),
-                loss_cls=dict(
-                    type='CrossEntropyCustomLoss',
-                    num_classes=13204,
-                    use_sigmoid=True,
-                    loss_weight=1.0),
-                loss_bbox=dict(type='L1Loss', loss_weight=1.0))
-        ]),
+                use_sigmoid=True,
+                loss_weight=1.0),
+            loss_bbox=dict(type='L1Loss', loss_weight=1.0))
+    ]),
     # model training and testing settings
     train_cfg=dict(
         rpn_proposal=dict(nms_pre=4000, max_per_img=2000),
@@ -131,12 +132,19 @@ train_dataloader = dict(batch_size=4, num_workers=8)
 # training schedule for 1x
 max_iter = 68760 * 2
 train_cfg = dict(
-    _delete_=True, type='IterBasedTrainLoop', max_iters=max_iter, val_interval=max_iter)
+    _delete_=True,
+    type='IterBasedTrainLoop',
+    max_iters=max_iter,
+    val_interval=max_iter)
 
 # learning rate
 param_scheduler = [
     dict(
-        type='LinearLR', start_factor=1.0 / 2048, by_epoch=False, begin=0, end=5000),
+        type='LinearLR',
+        start_factor=1.0 / 2048,
+        by_epoch=False,
+        begin=0,
+        end=5000),
     dict(
         type='MultiStepLR',
         begin=0,

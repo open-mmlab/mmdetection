@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import itertools
 import time
@@ -38,8 +39,8 @@ class COCOevalMP(COCOeval):
                 if (dt['category_id'] in cat_ids) and (dt['image_id']
                                                        in img_ids):
                     dts.append(dt)
-            # gts=self.cocoGt.loadAnns(self.cocoGt.getAnnIds(imgIds=p.imgIds, catIds=p.catIds))
-            # dts=self.cocoDt.loadAnns(self.cocoDt.getAnnIds(imgIds=p.imgIds, catIds=p.catIds))
+            # gts=self.cocoGt.loadAnns(self.cocoGt.getAnnIds(imgIds=p.imgIds, catIds=p.catIds)) # noqa
+            # dts=self.cocoDt.loadAnns(self.cocoDt.getAnnIds(imgIds=p.imgIds, catIds=p.catIds)) # noqa
             # gts=self.cocoGt.dataset['annotations']
             # dts=self.cocoDt.dataset['annotations']
         else:
@@ -67,15 +68,16 @@ class COCOevalMP(COCOeval):
         self.eval = {}  # accumulated evaluation results
 
     def evaluate(self):
-        '''
-        Run per image evaluation on given images and store results (a list of dict) in self.evalImgs
+        """Run per image evaluation on given images and store results (a list
+        of dict) in self.evalImgs.
+
         :return: None
-        '''
+        """
         tic = time.time()
         print('Running per image evaluation...')
         p = self.params
         # add backward compatibility if useSegm is specified in params
-        if not p.useSegm is None:
+        if p.useSegm is not None:
             p.iouType = 'segm' if p.useSegm == 1 else 'bbox'
             print('useSegm (deprecated) is not None. Running {} evaluation'.
                   format(p.iouType))
@@ -100,7 +102,7 @@ class COCOevalMP(COCOeval):
             mp_params.append((catIds[begin:end], ))
 
         MMLogger.get_current_instance().info(
-            f'start multi processing evaluation ...')
+            'start multi processing evaluation ...')
         with mp.Pool(nproc) as pool:
             self.evalImgs = pool.starmap(self._evaluateImg, mp_params)
 
@@ -149,7 +151,7 @@ class COCOevalMP(COCOeval):
         dt = [dt[i] for i in dtind[0:maxDet]]
         iscrowd = [int(o['iscrowd']) for o in gt]
         # load computed ious
-        # ious = self.ious[imgId, catId][:, gtind] if len(self.ious[imgId, catId]) > 0 else self.ious[imgId, catId]
+        # ious = self.ious[imgId, catId][:, gtind] if len(self.ious[imgId, catId]) > 0 else self.ious[imgId, catId] # noqa
         ious = self.computeIoU(imgId, catId)
         ious = ious[:, gtind] if len(ious) > 0 else ious
 
@@ -176,7 +178,8 @@ class COCOevalMP(COCOeval):
                         # continue to next gt unless better match made
                         if ious[dind, gind] < iou:
                             continue
-                        # if match successful and best so far, store appropriately
+                        # if match successful and best so far,
+                        # store appropriately
                         iou = ious[dind, gind]
                         m = gind
                     # if match made store id of match for both dt and gt
@@ -207,19 +210,23 @@ class COCOevalMP(COCOeval):
         }
 
     def summarize(self):
-        '''
-        Compute and display summary metrics for evaluation results.
-        Note this functin can *only* be applied on the default parameter setting
-        '''
-        def _summarize( ap=1, iouThr=None, areaRng='all', maxDets=100 ):
+        """Compute and display summary metrics for evaluation results.
+
+        Note this function can *only* be applied on the default parameter
+        setting
+        """
+
+        def _summarize(ap=1, iouThr=None, areaRng='all', maxDets=100):
             p = self.params
-            iStr = ' {:<18} {} @[ IoU={:<9} | area={:>6s} | maxDets={:>3d} ] = {:0.3f}'
+            iStr = ' {:<18} {} @[ IoU={:<9} | area={:>6s} | maxDets={:>3d} ] = {:0.3f}'  # noqa
             titleStr = 'Average Precision' if ap == 1 else 'Average Recall'
-            typeStr = '(AP)' if ap==1 else '(AR)'
+            typeStr = '(AP)' if ap == 1 else '(AR)'
             iouStr = '{:0.2f}:{:0.2f}'.format(p.iouThrs[0], p.iouThrs[-1]) \
                 if iouThr is None else '{:0.2f}'.format(iouThr)
 
-            aind = [i for i, aRng in enumerate(p.areaRngLbl) if aRng == areaRng]
+            aind = [
+                i for i, aRng in enumerate(p.areaRngLbl) if aRng == areaRng
+            ]
             mind = [i for i, mDet in enumerate(p.maxDets) if mDet == maxDets]
             if ap == 1:
                 # dimension of precision: [TxRxKxAxM]
@@ -228,35 +235,45 @@ class COCOevalMP(COCOeval):
                 if iouThr is not None:
                     t = np.where(iouThr == p.iouThrs)[0]
                     s = s[t]
-                s = s[:,:,:,aind,mind]
+                s = s[:, :, :, aind, mind]
             else:
                 # dimension of recall: [TxKxAxM]
                 s = self.eval['recall']
                 if iouThr is not None:
                     t = np.where(iouThr == p.iouThrs)[0]
                     s = s[t]
-                s = s[:,:,aind,mind]
-            if len(s[s>-1])==0:
+                s = s[:, :, aind, mind]
+            if len(s[s > -1]) == 0:
                 mean_s = -1
             else:
-                mean_s = np.mean(s[s>-1])
-            print(iStr.format(titleStr, typeStr, iouStr, areaRng, maxDets, mean_s))
+                mean_s = np.mean(s[s > -1])
+            print(
+                iStr.format(titleStr, typeStr, iouStr, areaRng, maxDets,
+                            mean_s))
             return mean_s
+
         def _summarizeDets():
             stats = []
             stats.append(_summarize(1, maxDets=self.params.maxDets[-1]))
-            stats.append(_summarize(1, iouThr=.5, maxDets=self.params.maxDets[-1]))
-            stats.append(_summarize(1, iouThr=.75, maxDets=self.params.maxDets[-1]))
+            stats.append(
+                _summarize(1, iouThr=.5, maxDets=self.params.maxDets[-1]))
+            stats.append(
+                _summarize(1, iouThr=.75, maxDets=self.params.maxDets[-1]))
             for area_rng in ('small', 'medium', 'large'):
-                stats.append(_summarize(1, areaRng=area_rng, maxDets=self.params.maxDets[-1]))
+                stats.append(
+                    _summarize(
+                        1, areaRng=area_rng, maxDets=self.params.maxDets[-1]))
             for max_det in self.params.maxDets:
                 stats.append(_summarize(0, maxDets=max_det))
             for area_rng in ('small', 'medium', 'large'):
-                stats.append(_summarize(0, areaRng=area_rng, maxDets=self.params.maxDets[-1]))
+                stats.append(
+                    _summarize(
+                        0, areaRng=area_rng, maxDets=self.params.maxDets[-1]))
             stats = np.array(stats)
             return stats
+
         def _summarizeKps():
-            stats = np.zeros((10,))
+            stats = np.zeros((10, ))
             stats[0] = _summarize(1, maxDets=20)
             stats[1] = _summarize(1, maxDets=20, iouThr=.5)
             stats[2] = _summarize(1, maxDets=20, iouThr=.75)
@@ -268,6 +285,7 @@ class COCOevalMP(COCOeval):
             stats[8] = _summarize(0, maxDets=20, areaRng='medium')
             stats[9] = _summarize(0, maxDets=20, areaRng='large')
             return stats
+
         if not self.eval:
             raise Exception('Please run accumulate() first')
         iouType = self.params.iouType
