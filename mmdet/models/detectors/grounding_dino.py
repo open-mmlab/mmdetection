@@ -96,15 +96,15 @@ class GroundingDINO(DINO):
             if original_caption.endswith(self._special_tokens):
                 original_caption = original_caption.replace(
                     self._special_tokens, '')
-                # NOTE: Tokenizer in Grounding DINO is different from
-                # that in GLIP. The tokenizer in GLIP will pad the
-                # caption_string to max_length, while the tokenizer
-                # in Grounding DINO will not.
-                tokenized = self.language_model.tokenizer(
-                    [caption_string],
-                    padding='max_length'
-                    if self.language_model.pad_to_max else 'longest',
-                    return_tensors='pt')
+            # NOTE: Tokenizer in Grounding DINO is different from
+            # that in GLIP. The tokenizer in GLIP will pad the
+            # caption_string to max_length, while the tokenizer
+            # in Grounding DINO will not.
+            tokenized = self.language_model.tokenizer(
+                [original_caption],
+                padding='max_length'
+                if self.language_model.pad_to_max else 'longest',
+                return_tensors='pt')
             tokens_positive, noun_phrases = run_ner(original_caption)
             entities = noun_phrases
             caption_string = original_caption
@@ -272,7 +272,7 @@ class GroundingDINO(DINO):
         token_positive_maps, text_prompts, _, entities = zip(
             *_positive_maps_and_prompts)
         # extract text feats
-        text_dict = self.language_model(text_prompts)
+        text_dict = self.language_model(list(text_prompts))
         # text feature map layer
         if self.text_feat_map is not None:
             text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
@@ -289,12 +289,12 @@ class GroundingDINO(DINO):
             **head_inputs_dict,
             rescale=rescale,
             batch_data_samples=batch_data_samples)
-        for data_sample, pred_instances in zip(batch_data_samples,
-                                               results_list):
+        for data_sample, pred_instances, entity in zip(batch_data_samples,
+                                                       results_list, entities):
             if len(pred_instances) > 0:
                 label_names = []
                 for labels in pred_instances.labels:
-                    if labels >= len(entities):
+                    if labels >= len(entity):
                         warnings.warn(
                             'The unexpected output indicates an issue with '
                             'named entity recognition. You can try '
@@ -302,8 +302,8 @@ class GroundingDINO(DINO):
                             'again to see if it helps.')
                         label_names.append('unobject')
                     else:
-                        label_names.append(entities[labels])
-                    # for visualization
+                        label_names.append(entity[labels])
+                # for visualization
                 pred_instances.label_names = label_names
             data_sample.pred_instances = pred_instances
         return batch_data_samples

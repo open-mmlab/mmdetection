@@ -7,7 +7,7 @@ from mmcv.ops import MultiScaleDeformableAttention
 from mmengine.model import ModuleList
 from torch import Tensor
 
-from mmdet.models.utils.vlfuse_helper import BiAttentionBlock
+from mmdet.models.utils.vlfuse_helper import SingleScaleBiAttentionBlock
 from mmdet.utils import ConfigType, OptConfigType
 from .deformable_detr_layers import (DeformableDetrTransformerDecoderLayer,
                                      DeformableDetrTransformerEncoder,
@@ -146,7 +146,7 @@ class GroundingDinoTransformerEncoder(DeformableDetrTransformerEncoder):
             for _ in range(self.num_layers)
         ])
         self.fusion_layers = ModuleList([
-            BiAttentionBlock(**self.fusion_layer_cfg)
+            SingleScaleBiAttentionBlock(**self.fusion_layer_cfg)
             for _ in range(self.num_layers)
         ])
         self.embed_dims = self.layers[0].embed_dims
@@ -213,7 +213,7 @@ class GroundingDinoTransformerEncoder(DeformableDetrTransformerEncoder):
         for layer_id, layer in enumerate(self.layers):
             if self.fusion_layers:
                 output, memory_text = self.fusion_layers[layer_id](
-                    visual_features=output,
+                    visual_feature=output,
                     lang_feature=memory_text,
                     attention_mask_v=key_padding_mask,
                     attention_mask_l=text_attention_mask,
