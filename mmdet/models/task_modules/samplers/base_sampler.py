@@ -1,11 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from abc import ABCMeta, abstractmethod
 
-import torch
 from mmengine.structures import InstanceData
 
-from mmdet.structures.bbox import BaseBoxes, cat_boxes
-from ..assigners import AssignResult
 from .sampling_result import SamplingResult
 
 
@@ -35,26 +32,27 @@ class BaseSampler(metaclass=ABCMeta):
         self.neg_sampler = self
 
     @abstractmethod
-    def _sample_pos(self, assign_result: AssignResult, num_expected: int,
+    def _sample_pos(self, assign_result: SamplingResult, num_expected: int,
                     **kwargs):
         """Sample positive samples."""
         pass
 
     @abstractmethod
-    def _sample_neg(self, assign_result: AssignResult, num_expected: int,
+    def _sample_neg(self, assign_result: SamplingResult, num_expected: int,
                     **kwargs):
         """Sample negative samples."""
         pass
 
-    def sample(self, assign_result: AssignResult, pred_instances: InstanceData,
-               gt_instances: InstanceData, **kwargs) -> SamplingResult:
+    def sample(self, assign_result: SamplingResult,
+               pred_instances: InstanceData, gt_instances: InstanceData,
+               **kwargs) -> SamplingResult:
         """Sample positive and negative bboxes.
 
         This is a simple implementation of bbox sampling given candidates,
         assigning results and ground truth bboxes.
 
         Args:
-            assign_result (:obj:`AssignResult`): Assigning results.
+            assign_result (:obj:`SamplingResult`): Assigning results.
             pred_instances (:obj:`InstanceData`): Instances of model
                 predictions. It includes ``priors``, and the priors can
                 be anchors or points, or the bboxes predicted by the
@@ -89,25 +87,12 @@ class BaseSampler(metaclass=ABCMeta):
             >>>                      add_gt_as_proposals=False)
             >>> self = self.sample(assign_result, pred_instances, gt_instances)
         """
-        gt_bboxes = gt_instances.bboxes
         priors = pred_instances.priors
-        gt_labels = gt_instances.labels
         if len(priors.shape) < 2:
             priors = priors[None, :]
 
-        gt_flags = priors.new_zeros((priors.shape[0], ), dtype=torch.uint8)
-        if self.add_gt_as_proposals and len(gt_bboxes) > 0:
-            # When `gt_bboxes` and `priors` are all box type, convert
-            # `gt_bboxes` type to `priors` type.
-            if (isinstance(gt_bboxes, BaseBoxes)
-                    and isinstance(priors, BaseBoxes)):
-                gt_bboxes_ = gt_bboxes.convert_to(type(priors))
-            else:
-                gt_bboxes_ = gt_bboxes
-            priors = cat_boxes([gt_bboxes_, priors], dim=0)
-            assign_result.add_gt_(gt_labels)
-            gt_ones = priors.new_ones(gt_bboxes_.shape[0], dtype=torch.uint8)
-            gt_flags = torch.cat([gt_ones, gt_flags])
+        if self.add_gt_as_proposals and len(gt_instances) > 0:
+            assign_result.add_gt_(gt_instances)
 
         num_expected_pos = int(self.num * self.pos_fraction)
         pos_inds = self.pos_sampler._sample_pos(
@@ -126,11 +111,6 @@ class BaseSampler(metaclass=ABCMeta):
             assign_result, num_expected_neg, bboxes=priors, **kwargs)
         neg_inds = neg_inds.unique()
 
-        sampling_result = SamplingResult(
-            pos_inds=pos_inds,
-            neg_inds=neg_inds,
-            priors=priors,
-            gt_bboxes=gt_bboxes,
-            assign_result=assign_result,
-            gt_flags=gt_flags)
-        return sampling_result
+        assign_result.update_sampling_result(
+            pos_inds=pos_inds, neg_inds=neg_inds, avg_factor_with_neg=True)
+        return assign_result

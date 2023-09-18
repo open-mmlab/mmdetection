@@ -1,14 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import warnings
-
 import numpy as np
 import torch
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.structures.bbox import BaseBoxes, cat_boxes
 from mmdet.utils import util_mixins
 from mmdet.utils.util_random import ensure_rng
-from ..assigners import AssignResult
 
 
 def random_boxes(num=1, scale=1, rng=None):
@@ -84,13 +82,13 @@ class SamplingResult(util_mixins.NiceRepr):
     """
 
     def __init__(self,
+                 pred_instances: InstanceData,
+                 gt_instances: InstanceData,
                  pos_inds: Tensor,
                  neg_inds: Tensor,
-                 priors: Tensor,
-                 gt_bboxes: Tensor,
-                 assign_result: AssignResult,
-                 gt_flags: Tensor,
                  avg_factor_with_neg: bool = True) -> None:
+        self.pred_instances = pred_instances
+        self.gt_instances = gt_instances
         self.pos_inds = pos_inds
         self.neg_inds = neg_inds
         self.num_pos = max(pos_inds.numel(), 1)
@@ -98,22 +96,34 @@ class SamplingResult(util_mixins.NiceRepr):
         self.avg_factor_with_neg = avg_factor_with_neg
         self.avg_factor = self.num_pos + self.num_neg \
             if avg_factor_with_neg else self.num_pos
-        self.pos_priors = priors[pos_inds]
-        self.neg_priors = priors[neg_inds]
-        self.pos_is_gt = gt_flags[pos_inds]
 
-        self.num_gts = gt_bboxes.shape[0]
-        self.pos_assigned_gt_inds = assign_result.gt_inds[pos_inds] - 1
-        self.pos_gt_labels = assign_result.labels[pos_inds]
-        box_dim = gt_bboxes.box_dim if isinstance(gt_bboxes, BaseBoxes) else 4
-        if gt_bboxes.numel() == 0:
-            # hack for index error case
-            assert self.pos_assigned_gt_inds.numel() == 0
-            self.pos_gt_bboxes = gt_bboxes.view(-1, box_dim)
-        else:
-            if len(gt_bboxes.shape) < 2:
-                gt_bboxes = gt_bboxes.view(-1, box_dim)
-            self.pos_gt_bboxes = gt_bboxes[self.pos_assigned_gt_inds.long()]
+        self.pos_assigned_gt_inds = pred_instances.gt_inds[pos_inds] - 1
+
+    def update_sampling_result(self,
+                               pos_inds: Tensor,
+                               neg_inds: Tensor,
+                               avg_factor_with_neg: bool = True) -> None:
+        self.pos_inds = pos_inds
+        self.neg_inds = neg_inds
+        self.num_pos = max(pos_inds.numel(), 1)
+        self.num_neg = max(neg_inds.numel(), 1)
+        self.avg_factor_with_neg = avg_factor_with_neg
+        self.avg_factor = self.num_pos + self.num_neg \
+            if avg_factor_with_neg else self.num_pos
+
+        self.pos_assigned_gt_inds = self.pred_instances.gt_inds[pos_inds] - 1
+
+    @property
+    def num_gts(self):
+        return len(self.gt_instances)
+
+    @property
+    def pos_priors(self):
+        return self.pred_instances.priors[self.pos_inds]
+
+    @property
+    def neg_priors(self):
+        return self.pred_instances.priors[self.neg_inds]
 
     @property
     def priors(self):
@@ -121,23 +131,69 @@ class SamplingResult(util_mixins.NiceRepr):
         return cat_boxes([self.pos_priors, self.neg_priors])
 
     @property
-    def bboxes(self):
-        """torch.Tensor: concatenated positive and negative boxes"""
-        warnings.warn('DeprecationWarning: bboxes is deprecated, '
-                      'please use "priors" instead')
-        return self.priors
+    def max_overlaps(self):
+        return self.pred_instances.max_overlaps
 
     @property
-    def pos_bboxes(self):
-        warnings.warn('DeprecationWarning: pos_bboxes is deprecated, '
-                      'please use "pos_priors" instead')
-        return self.pos_priors
+    def gt_inds(self):
+        return self.pred_instances.gt_inds
 
     @property
-    def neg_bboxes(self):
-        warnings.warn('DeprecationWarning: neg_bboxes is deprecated, '
-                      'please use "neg_priors" instead')
-        return self.neg_priors
+    def pos_pred_instances(self):
+        return self.pred_instances[self.pos_inds]
+
+    @property
+    def pos_gt_instances(self):
+        return self.gt_instances[self.pos_assigned_gt_inds]
+
+    @property
+    def pos_gt_bboxes(self):
+        gt_bboxes = self.gt_instances.bboxes
+        box_dim = gt_bboxes.box_dim if isinstance(gt_bboxes, BaseBoxes) else 4
+        if gt_bboxes.numel() == 0:
+            # hack for index error case
+            assert self.pos_assigned_gt_inds.numel() == 0
+            pos_gt_bboxes = gt_bboxes.view(-1, box_dim)
+        else:
+            if len(gt_bboxes.shape) < 2:
+                gt_bboxes = gt_bboxes.view(-1, box_dim)
+            pos_gt_bboxes = gt_bboxes[self.pos_assigned_gt_inds.long()]
+        return pos_gt_bboxes
+
+    @property
+    def pos_gt_labels(self):
+        return self.gt_instances.labels[self.pos_assigned_gt_inds]
+
+    @property
+    def pos_is_gt(self):
+        return self.pred_instances.gt_flags[self.pos_inds]
+
+    @property
+    def pos_masks(self):
+        return self.pred_instances.masks[self.pos_inds]
+
+    @property
+    def neg_masks(self):
+        return self.pred_instances.masks[self.neg_inds]
+
+    @property
+    def pos_gt_masks(self):
+        gt_masks = self.gt_instances.masks
+        if gt_masks.numel() == 0:
+            # hack for index error case
+            assert self.pos_assigned_gt_inds.numel() == 0
+            pos_gt_masks = torch.empty_like(gt_masks)
+        else:
+            pos_gt_masks = gt_masks[self.pos_assigned_gt_inds, :]
+        return pos_gt_masks
+
+    def get_pos(self, name):
+        assert name in self.pred_instances
+        return self.pred_instances.get(name)[self.pos_inds]
+
+    def get_neg(self, name):
+        assert name in self.pred_instances
+        return self.pred_instances.get(name)[self.neg_inds]
 
     def to(self, device):
         """Change the device of the data inplace.
@@ -153,6 +209,44 @@ class SamplingResult(util_mixins.NiceRepr):
             if isinstance(value, (torch.Tensor, BaseBoxes)):
                 _dict[key] = value.to(device)
         return self
+
+    def add_gt_(self, gt_instances):
+        """Add ground truth as assigned results.
+
+        Args:
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes``, with shape (k, 4),
+                and ``labels``, with shape (k, ).
+        """
+        gt_bboxes = gt_instances.bboxes
+        priors = self.pred_instances.priors
+        if (isinstance(gt_bboxes, BaseBoxes)
+                and isinstance(priors, BaseBoxes)):
+            gt_bboxes = gt_bboxes.convert_to(type(priors))
+        else:
+            gt_bboxes = gt_bboxes
+        num_gts = len(gt_instances)
+
+        add_gt_instances = InstanceData()
+        add_gt_instances.priors = gt_bboxes
+        add_gt_instances.gt_inds = torch.arange(
+            1,
+            num_gts + 1,
+            dtype=torch.long,
+            device=gt_instances.labels.device)
+        add_gt_instances.gt_flags = priors.new_ones((num_gts, ),
+                                                    dtype=torch.uint8)
+        add_gt_instances.max_overlaps = self.max_overlaps.new_ones(num_gts)
+        # TODO: find a more elegant way to match the elements in
+        #  `self.pred_instances`
+        for k, v in self.pred_instances.items():
+            if k not in add_gt_instances:
+                shape = list(v.shape)
+                shape[0] = num_gts
+                add_gt_instances[k] = priors.new_ones(shape)
+        concat_instances = self.pred_instances.cat(
+            [add_gt_instances, self.pred_instances])
+        self.pred_instances = concat_instances
 
     def __nice__(self):
         data = self.info.copy()

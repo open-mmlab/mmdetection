@@ -5,7 +5,7 @@ https://github.com/ZwwWayne/K-Net/blob/main/knet/det/mask_pseudo_sampler.py."""
 import torch
 from torch import Tensor
 
-from ..assigners import AssignResult
+from ..assigners.assign_result import AssignResult
 from .sampling_result import SamplingResult
 
 

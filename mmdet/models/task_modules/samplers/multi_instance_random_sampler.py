@@ -7,7 +7,7 @@ from numpy import ndarray
 from torch import Tensor
 
 from mmdet.registry import TASK_UTILS
-from ..assigners import AssignResult
+from ..assigners.assign_result import AssignResult
 from .multi_instance_sampling_result import MultiInstanceSamplingResult
 from .random_sampler import RandomSampler
 
