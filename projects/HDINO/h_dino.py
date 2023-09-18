@@ -30,7 +30,7 @@ class HDINO(DINO):
         if self.method == 1:
             self.query_map = nn.Linear(self.embed_dims, self.embed_dims)
         else:
-            self.pos_trans_fc = nn.Linear(self.embed_dims, self.embed_dims)
+            self.pos_trans_fc = nn.Linear(self.embed_dims*2, self.embed_dims)
             self.pos_trans_norm = nn.LayerNorm(self.embed_dims)
 
     def init_weights(self) -> None:
