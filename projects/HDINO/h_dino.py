@@ -5,7 +5,7 @@ import torch
 from torch import Tensor, nn
 from torch.nn.init import normal_
 
-from mmdet.models.detectors import DINO
+from mmdet.models.detectors import DINO, DeformableDETR
 from mmdet.models.detectors.deformable_detr import \
     MultiScaleDeformableAttention
 from mmdet.registry import MODELS
@@ -25,7 +25,7 @@ class HDINO(DINO):
         super(HDINO, self).__init__(*args, bbox_head=bbox_head, **kwargs)
 
     def _init_layers(self) -> None:
-        super(HDINO, self)._init_layers()
+        super(DeformableDETR, self).init_weights()
         self.query_embedding = None
         if self.method == 1:
             self.query_map = nn.Linear(self.embed_dims, self.embed_dims)
