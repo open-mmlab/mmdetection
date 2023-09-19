@@ -5,6 +5,7 @@ from functools import partial
 from typing import List, Optional, Union
 
 import numpy as np
+import psutil
 import torch
 import torch.nn as nn
 from mmcv.cnn import fuse_conv_bn
@@ -19,11 +20,6 @@ from mmengine.utils.dl_utils import set_multi_processing
 from torch.nn.parallel import DistributedDataParallel
 
 from mmdet.registry import DATASETS, MODELS
-
-try:
-    import psutil
-except ImportError:
-    psutil = None
 
 
 def custom_round(value: Union[int, float],

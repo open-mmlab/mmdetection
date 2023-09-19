@@ -4,6 +4,7 @@ from .cspnext import CSPNeXt
 from .darknet import Darknet
 from .detectors_resnet import DetectoRS_ResNet
 from .detectors_resnext import DetectoRS_ResNeXt
+from .dino_v2 import DINOv2
 from .efficientnet import EfficientNet
 from .hourglass import HourglassNet
 from .hrnet import HRNet
@@ -23,5 +24,5 @@ __all__ = [
     'MobileNetV2', 'Res2Net', 'HourglassNet', 'DetectoRS_ResNet',
     'DetectoRS_ResNeXt', 'Darknet', 'ResNeSt', 'TridentResNet', 'CSPDarknet',
     'SwinTransformer', 'PyramidVisionTransformer',
-    'PyramidVisionTransformerV2', 'EfficientNet', 'CSPNeXt'
+    'PyramidVisionTransformerV2', 'EfficientNet', 'CSPNeXt', 'DINOv2'
 ]
