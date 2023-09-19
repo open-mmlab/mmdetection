@@ -65,7 +65,7 @@ val_dataloader = dict(
 test_dataloader = val_dataloader
 
 val_evaluator = dict(
-    type='CocoMetric',
+    type='RF100CocoMetric',
     ann_file=data_root + 'valid/_annotations.coco.json',
     metric='bbox',
     format_only=False)
