@@ -20,7 +20,7 @@ class HDINO(DINO):
                  *args,
                  bbox_head: OptConfigType = None,
                  **kwargs) -> None:
-        self.method = 1
+        self.method = 0
         self.num_query_one2one = bbox_head['num_query_one2one']
         super(HDINO, self).__init__(*args, bbox_head=bbox_head, **kwargs)
 
@@ -30,7 +30,7 @@ class HDINO(DINO):
         if self.method == 1:
             self.query_map = nn.Linear(self.embed_dims, self.embed_dims)
         else:
-            self.pos_trans_fc = nn.Linear(self.embed_dims*2, self.embed_dims)
+            self.pos_trans_fc = nn.Linear(self.embed_dims * 2, self.embed_dims)
             self.pos_trans_norm = nn.LayerNorm(self.embed_dims)
 
     def init_weights(self) -> None:
@@ -52,11 +52,11 @@ class HDINO(DINO):
             nn.init.xavier_uniform_(self.pos_trans_fc.weight)
 
     def pre_decoder(
-            self,
-            memory: Tensor,
-            memory_mask: Tensor,
-            spatial_shapes: Tensor,
-            batch_data_samples: OptSampleList = None,
+        self,
+        memory: Tensor,
+        memory_mask: Tensor,
+        spatial_shapes: Tensor,
+        batch_data_samples: OptSampleList = None,
     ) -> Tuple[dict, dict]:
 
         bs, _, c = memory.shape
@@ -67,9 +67,9 @@ class HDINO(DINO):
             memory, memory_mask, spatial_shapes)
         enc_outputs_class = self.bbox_head.cls_branches[
             self.decoder.num_layers](
-            output_memory)
+                output_memory)
         enc_outputs_coord_unact = self.bbox_head.reg_branches[
-                                      self.decoder.num_layers](output_memory) + output_proposals
+            self.decoder.num_layers](output_memory) + output_proposals
 
         # NOTE The DINO selects top-k proposals according to scores of
         # multi-class classification, while DeformDETR, where the input
@@ -94,7 +94,8 @@ class HDINO(DINO):
                 map_memory, 1,
                 topk_indices.unsqueeze(-1).repeat(1, 1, self.embed_dims))
         else:
-            pos_trans_out = self.pos_trans_fc(self.get_proposal_pos_embed(topk_coords_unact, temperature=20))
+            pos_trans_out = self.pos_trans_fc(
+                self.get_proposal_pos_embed(topk_coords_unact))
             query = self.pos_trans_norm(pos_trans_out)
         # -------------------------------------
 
@@ -133,7 +134,7 @@ class HDINO(DINO):
             num_query_one2one = num_denoising_queries + self.num_query_one2one
             # dn_mask[num_query_one2one:, :num_query_one2one] = True
             dn_mask[num_denoising_queries:num_query_one2one,
-            num_query_one2one:] = True
+                    num_query_one2one:] = True
             decoder_inputs_dict['dn_mask'] = dn_mask
         else:
             # test: num_query_one2one

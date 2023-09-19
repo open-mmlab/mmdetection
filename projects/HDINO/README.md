@@ -14,14 +14,14 @@ One-to-one set matching is a key design for DETR to establish its end-to-end cap
 
 ## Results and Models
 
-| Backbone |     Model     | Lr schd | box AP |                     Config                     |                                                       Download                                                       |
-| :------: | :-----------: | :-----: | :----: | :--------------------------------------------: | :------------------------------------------------------------------------------------------------------------------: |
-|   R-50   | H-DINO-4scale |   12e   |        | [config](./h-dino-4scale_r50_8xb2-12e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/) \| [log](https://download.openmmlab.com/mmdetection/v3.0/) |
+| Backbone |     Model     | Lr schd | box AP |                     Config                     | Download |
+| :------: | :-----------: | :-----: | :----: | :--------------------------------------------: | :------: |
+|   R-50   | H-DINO-4scale |   12e   |  48.0  | [config](./h-dino-4scale_r50_8xb2-12e_coco.py) |          |
 
 ### NOTE
 
 1. We are based on `DINO` rather than `Deformable DETR` to support the `Hybrid Matching` algorithm.
-2. We found that directly applying Hybrid Matching to the DINO algorithm results in a significant decrease in performance. Therefore, I added the `query_map` to the detector, which can only achieve comparable performance to DINO. If you have any other insights or suggestions, please feel free to comment or submit a pull request (PR).
+2. We found that directly applying Hybrid Matching to the DINO algorithm results in a significant decrease in performance. If you have any other insights or suggestions, please feel free to comment or submit a pull request (PR).
 
 ## Citation
 
