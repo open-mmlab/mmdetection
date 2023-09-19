@@ -1,5 +1,8 @@
 _base_ = '../../../configs/tood/tood_r50_fpn_1x_coco.py'
 
+custom_imports = dict(
+    imports=['projects.RF100-Benchmark'], allow_failed_imports=False)
+
 data_root = 'rf100/tweeter-profile/'
 class_name = ('profile_info', )
 num_classes = len(class_name)
@@ -42,7 +45,7 @@ train_dataloader = dict(
         type='RepeatDataset',
         times=4,
         dataset=dict(
-            type='CocoDataset',
+            type='RF100CocoDataset',
             metainfo=metainfo,
             data_root=data_root,
             ann_file='train/_annotations.coco.json',
@@ -52,6 +55,7 @@ train_dataloader = dict(
 
 val_dataloader = dict(
     dataset=dict(
+        type='RF100CocoDataset',
         metainfo=metainfo,
         data_root=data_root,
         ann_file='valid/_annotations.coco.json',
@@ -85,7 +89,8 @@ param_scheduler = [
 load_from = 'https://download.openmmlab.com/mmdetection/v2.0/tood/tood_r50_fpn_1x_coco/tood_r50_fpn_1x_coco_20211210_103425-20e20746.pth'  # noqa
 
 # We only save the best checkpoint by validation mAP.
-default_hooks = dict(checkpoint=dict(save_best='auto', max_keep_ckpts=-1, interval=-1))
+default_hooks = dict(
+    checkpoint=dict(save_best='auto', max_keep_ckpts=-1, interval=-1))
 
 # Default setting for scaling LR automatically
 #   - `enable` means enable scaling LR automatically

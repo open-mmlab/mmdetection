@@ -1,5 +1,8 @@
 _base_ = '../../../configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py'
 
+custom_imports = dict(
+    imports=['projects.RF100-Benchmark'], allow_failed_imports=False)
+
 data_root = 'rf100/tweeter-profile/'
 class_name = ('profile_info', )
 num_classes = len(class_name)
@@ -42,7 +45,7 @@ train_dataloader = dict(
         type='RepeatDataset',
         times=4,
         dataset=dict(
-            type='CocoDataset',
+            type='RF100CocoDataset',
             metainfo=metainfo,
             data_root=data_root,
             ann_file='train/_annotations.coco.json',
@@ -52,6 +55,7 @@ train_dataloader = dict(
 
 val_dataloader = dict(
     dataset=dict(
+        type='RF100CocoDataset',
         metainfo=metainfo,
         data_root=data_root,
         ann_file='valid/_annotations.coco.json',
@@ -85,7 +89,8 @@ param_scheduler = [
 load_from = 'https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_mstrain_3x_coco/faster_rcnn_r50_fpn_mstrain_3x_coco_20210524_110822-e10bd31c.pth'  # noqa
 
 # We only save the best checkpoint by validation mAP.
-default_hooks = dict(checkpoint=dict(save_best='auto', max_keep_ckpts=-1, interval=-1))
+default_hooks = dict(
+    checkpoint=dict(save_best='auto', max_keep_ckpts=-1, interval=-1))
 
 # Default setting for scaling LR automatically
 #   - `enable` means enable scaling LR automatically
