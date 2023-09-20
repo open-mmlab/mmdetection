@@ -275,7 +275,7 @@ class GroundingDINO(DINO):
         if len(set(text_prompts)) == 1:
             # All the text prompts are the same,
             # so there is no need to calculate them multiple times.
-            tokenized, caption_string, tokens_positive = \
+            tokenized, caption_string, tokens_positive, _ = \
                 self.get_tokens_and_prompts(
                     text_prompts[0], True)
             new_text_prompts = [caption_string] * len(batch_inputs)
@@ -288,7 +288,7 @@ class GroundingDINO(DINO):
                 positive_maps.append(positive_map)
         else:
             for text_prompt, gt_label in zip(text_prompts, gt_labels):
-                tokenized, caption_string, tokens_positive = \
+                tokenized, caption_string, tokens_positive, _ = \
                     self.get_tokens_and_prompts(
                         text_prompt, True)
                 new_tokens_positive = [

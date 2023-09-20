@@ -2,7 +2,7 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-load_from = 'groundingdino_swint_ogc_mmdet-bb9392ab.pth'
+load_from = 'groundingdino_swint_ogc_mmdet-822d7e9d.pth'
 lang_model_name = 'bert-base-uncased'
 
 model = dict(
