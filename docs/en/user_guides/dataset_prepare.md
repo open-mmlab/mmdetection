@@ -198,17 +198,17 @@ Then the directory should be like this:
 data
 ├── coco
 │   ├── refcoco
-│   │   ├── instances.json
-│   │   ├── refs(google).p
-│   │   └── refs(unc).p
-│   ├── refcoco+
-│   │   ├── instances.json
-│   │   └── refs(unc).p
-│   ├── refcocog
-│   │   ├── instances.json
-│   │   ├── refs(google).p
-│   │   └── refs(umd).p
-|   |── train2014
+│   │   ├── instances.json
+│   │   ├── refs(google).p
+│   │   └── refs(unc).p
+│   ├── refcoco+
+│   │   ├── instances.json
+│   │   └── refs(unc).p
+│   ├── refcocog
+│   │   ├── instances.json
+│   │   ├── refs(google).p
+│   │   └── refs(umd).p
+│   │── train2014
 ```
 
 ### ADE20K 2016 Dataset Preparation
@@ -234,49 +234,49 @@ The directory should be like this.
 ```text
 data
 ├── ADEChallengeData2016
-│   ├── ade20k_instance_train.json
-│   ├── ade20k_instance_val.json
-│   ├── ade20k_panoptic_train
-|   |   ├── ADE_train_00000001.png
-|   |   ├── ADE_train_00000002.png
-|   |   ├── ...
-│   ├── ade20k_panoptic_train.json
-│   ├── ade20k_panoptic_val
-|   |   ├── ADE_val_00000001.png
-|   |   ├── ADE_val_00000002.png
-|   |   ├── ...
-│   ├── ade20k_panoptic_val.json
-│   ├── annotations
-|   |   ├── training
-|   |   |   ├── ADE_train_00000001.png
-|   |   |   ├── ADE_train_00000002.png
-|   |   |   ├── ...
-|   |   ├── validation
-|   |   |   ├── ADE_val_00000001.png
-|   |   |   ├── ADE_val_00000002.png
-|   |   |   ├── ...
-│   ├── annotations_instance
-|   |   ├── training
-|   |   |   ├── ADE_train_00000001.png
-|   |   |   ├── ADE_train_00000002.png
-|   |   |   ├── ...
-|   |   ├── validation
-|   |   |   ├── ADE_val_00000001.png
-|   |   |   ├── ADE_val_00000002.png
-|   |   |   ├── ...
-│   ├── categoryMapping.txt
-│   ├── images
-│   |   ├── training
-|   |   |   ├── ADE_train_00000001.jpg
-|   |   |   ├── ADE_train_00000002.jpg
-|   |   |   ├── ...
-|   |   ├── validation
-|   |   |   ├── ADE_val_00000001.jpg
-|   |   |   ├── ADE_val_00000002.jpg
-|   |   |   ├── ...
-│   ├── imgCatIds.json
-│   ├── objectInfo150.txt
-|   |── sceneCategories.txt
+│   ├── ade20k_instance_train.json
+│   ├── ade20k_instance_val.json
+│   ├── ade20k_panoptic_train
+│   │   ├── ADE_train_00000001.png
+│   │   ├── ADE_train_00000002.png
+│   │   ├── ...
+│   ├── ade20k_panoptic_train.json
+│   ├── ade20k_panoptic_val
+│   │   ├── ADE_val_00000001.png
+│   │   ├── ADE_val_00000002.png
+│   │   ├── ...
+│   ├── ade20k_panoptic_val.json
+│   ├── annotations
+│   │   ├── training
+│   │   │   ├── ADE_train_00000001.png
+│   │   │   ├── ADE_train_00000002.png
+│   │   │   ├── ...
+│   │   ├── validation
+│   │   │   ├── ADE_val_00000001.png
+│   │   │   ├── ADE_val_00000002.png
+│   │   │   ├── ...
+│   ├── annotations_instance
+│   │   ├── training
+│   │   │   ├── ADE_train_00000001.png
+│   │   │   ├── ADE_train_00000002.png
+│   │   │   ├── ...
+│   │   ├── validation
+│   │   │   ├── ADE_val_00000001.png
+│   │   │   ├── ADE_val_00000002.png
+│   │   │   ├── ...
+│   ├── categoryMapping.txt
+│   ├── images
+│   │   ├── training
+│   │   │   ├── ADE_train_00000001.jpg
+│   │   │   ├── ADE_train_00000002.jpg
+│   │   │   ├── ...
+│   │   ├── validation
+│   │   │   ├── ADE_val_00000001.jpg
+│   │   │   ├── ADE_val_00000002.jpg
+│   │   │   ├── ...
+│   ├── imgCatIds.json
+│   ├── objectInfo150.txt
+│   │── sceneCategories.txt
 ```
 
 The above folders include all data of ADE20K's semantic segmentation, instance segmentation, and panoptic segmentation.
@@ -294,10 +294,10 @@ pip install -U openmim
 ```
 
 ```Bash
-# install OpenDataLab CLI tools
-pip install -U opendatalab
-# log in OpenDataLab, registry
-odl login
+# install OpenXLab CLI tools
+pip install -U openxlab
+# log in OpenXLab, registry
+openxlab login
 
 # download voc2007 and preprocess by MIM
 mim download mmdet --dataset voc2007

@@ -7,8 +7,10 @@ from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.structures import SampleList
-from mmdet.structures.bbox import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
+from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_overlaps,
+                                   bbox_xyxy_to_cxcywh)
 from mmdet.utils import InstanceList, OptInstanceList, reduce_mean
+from ..losses import QualityFocalLoss
 from ..utils import multi_apply
 from .deformable_detr_head import DeformableDETRHead
 
@@ -248,8 +250,29 @@ class DINOHead(DeformableDETRHead):
         cls_avg_factor = max(cls_avg_factor, 1)
 
         if len(cls_scores) > 0:
-            loss_cls = self.loss_cls(
-                cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
+            if isinstance(self.loss_cls, QualityFocalLoss):
+                bg_class_ind = self.num_classes
+                pos_inds = ((labels >= 0)
+                            & (labels < bg_class_ind)).nonzero().squeeze(1)
+                scores = label_weights.new_zeros(labels.shape)
+                pos_bbox_targets = bbox_targets[pos_inds]
+                pos_decode_bbox_targets = bbox_cxcywh_to_xyxy(pos_bbox_targets)
+                pos_bbox_pred = dn_bbox_preds.reshape(-1, 4)[pos_inds]
+                pos_decode_bbox_pred = bbox_cxcywh_to_xyxy(pos_bbox_pred)
+                scores[pos_inds] = bbox_overlaps(
+                    pos_decode_bbox_pred.detach(),
+                    pos_decode_bbox_targets,
+                    is_aligned=True)
+                loss_cls = self.loss_cls(
+                    cls_scores, (labels, scores),
+                    weight=label_weights,
+                    avg_factor=cls_avg_factor)
+            else:
+                loss_cls = self.loss_cls(
+                    cls_scores,
+                    labels,
+                    label_weights,
+                    avg_factor=cls_avg_factor)
         else:
             loss_cls = torch.zeros(
                 1, dtype=cls_scores.dtype, device=cls_scores.device)

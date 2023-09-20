@@ -13,7 +13,7 @@ from mmengine.fileio import dump, get_local_path, load
 from mmengine.logging import MMLogger
 from terminaltables import AsciiTable
 
-from mmdet.datasets.api_wrappers import COCO, COCOeval
+from mmdet.datasets.api_wrappers import COCO, COCOeval, COCOevalMP
 from mmdet.registry import METRICS
 from mmdet.structures.mask import encode_mask_results
 from ..functional import eval_recalls
@@ -63,6 +63,7 @@ class CocoMetric(BaseMetric):
             will be used instead. Defaults to None.
         sort_categories (bool): Whether sort categories in annotations. Only
             used for `Objects365V1Dataset`. Defaults to False.
+        use_mp_eval (bool): Whether to use mul-processing evaluation
     """
     default_prefix: Optional[str] = 'coco'
 
@@ -79,7 +80,8 @@ class CocoMetric(BaseMetric):
                  backend_args: dict = None,
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None,
-                 sort_categories: bool = False) -> None:
+                 sort_categories: bool = False,
+                 use_mp_eval: bool = False) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
         # coco evaluation metrics
         self.metrics = metric if isinstance(metric, list) else [metric]
@@ -92,6 +94,8 @@ class CocoMetric(BaseMetric):
 
         # do class wise evaluation, default False
         self.classwise = classwise
+        # whether to use multi processing evaluation, default False
+        self.use_mp_eval = use_mp_eval
 
         # proposal_nums used to compute recall or precision.
         self.proposal_nums = list(proposal_nums)
@@ -462,7 +466,10 @@ class CocoMetric(BaseMetric):
                     'The testing results of the whole dataset is empty.')
                 break
 
-            coco_eval = COCOeval(self._coco_api, coco_dt, iou_type)
+            if self.use_mp_eval:
+                coco_eval = COCOevalMP(self._coco_api, coco_dt, iou_type)
+            else:
+                coco_eval = COCOeval(self._coco_api, coco_dt, iou_type)
 
             coco_eval.params.catIds = self.cat_ids
             coco_eval.params.imgIds = self.img_ids

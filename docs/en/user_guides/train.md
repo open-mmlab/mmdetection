@@ -392,7 +392,7 @@ Using the function above, users can successfully convert the annotation file int
 
 ## Prepare a config
 
-The second step is to prepare a config thus the dataset could be successfully loaded. Assume that we want to use Mask R-CNN with FPN, the config to train the detector on balloon dataset is as below. Assume the config is under directory `configs/balloon/` and named as `mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py`, the config is as below. Please refer [Learn about Configs — MMDetection 3.0.0 documentation](https://mmdetection.readthedocs.io/en/latest/user_guides/config.html) to get detailed information about config files.
+The second step is to prepare a config thus the dataset could be successfully loaded. Assume that we want to use Mask R-CNN with FPN, the config to train the detector on balloon dataset is as below. Assume the config is under directory `configs/balloon/` and named as `mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py`, the config is as below. Please refer [Learn about Configs - MMDetection 3.0.0 documentation](https://mmdetection.readthedocs.io/en/latest/user_guides/config.html) to get detailed information about config files.
 
 ```python
 # The new config inherits a base config to highlight the necessary modification

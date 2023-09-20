@@ -25,6 +25,7 @@
 [![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/main/LICENSE)
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 [![issue resolution](https://isitmaintained.com/badge/resolution/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
+[![Open in OpenXLab](https://cdn-static.openxlab.org.cn/app-center/openxlab_demo.svg)](https://openxlab.org.cn/apps?search=mmdet)
 
 [📘Documentation](https://mmdetection.readthedocs.io/en/latest/) |
 [🛠️Installation](https://mmdetection.readthedocs.io/en/latest/get_started.html) |
@@ -236,9 +237,12 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/dab_detr">DAB-DETR (ICLR'2022)</a></li>
             <li><a href="configs/dino">DINO (ICLR'2023)</a></li>
             <li><a href="configs/glip">GLIP (CVPR'2022)</a></li>
+            <li><a href="configs/ddq">DDQ (CVPR'2023)</a></li>
             <li><a href="projects/DiffusionDet">DiffusionDet (ArXiv'2023)</a></li>
             <li><a href="projects/EfficientDet">EfficientDet (CVPR'2020)</a></li>
+            <li><a href="projects/ViTDet">ViTDet (ECCV'2022)</a></li>
             <li><a href="projects/Detic">Detic (ECCV'2022)</a></li>
+            <li><a href="projects/CO-DETR">CO-DETR (ICCV'2023)</a></li>
       </ul>
       </td>
       <td>
@@ -260,6 +264,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="projects/SparseInst">SparseInst (CVPR'2022)</a></li>
           <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
           <li><a href="configs/boxinst">BoxInst (CVPR'2021)</a></li>
+          <li><a href="projects/ConvNeXt-V2">ConvNeXt-V2 (Arxiv'2023)</a></li>
         </ul>
       </td>
       <td>
@@ -267,6 +272,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
           <li><a href="configs/maskformer">MaskFormer (NeurIPS'2021)</a></li>
           <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
+          <li><a href="configs/XDecoder">XDecoder (CVPR'2023)</a></li>
         </ul>
       </td>
       <td>

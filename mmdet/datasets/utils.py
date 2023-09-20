@@ -37,7 +37,7 @@ def get_loading_pipeline(pipeline):
     loading_pipeline_cfg = []
     for cfg in pipeline:
         obj_cls = TRANSFORMS.get(cfg['type'])
-        # TODO：use more elegant way to distinguish loading modules
+        # TODO:use more elegant way to distinguish loading modules
         if obj_cls is not None and obj_cls in (LoadImageFromFile,
                                                LoadAnnotations,
                                                LoadPanopticAnnotations):

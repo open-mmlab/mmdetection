@@ -5,6 +5,7 @@ from collections import OrderedDict
 
 import torch
 from mmengine import Config
+from mmengine.utils import digit_version
 
 
 def parse_config(config_strings):
@@ -39,7 +40,7 @@ def convert(in_file, out_file):
         out_state_dict[new_key] = value
     checkpoint['state_dict'] = out_state_dict
 
-    if torch.__version__ >= '1.6':
+    if digit_version(torch.__version__) >= digit_version('1.6'):
         torch.save(checkpoint, out_file, _use_new_zipfile_serialization=False)
     else:
         torch.save(checkpoint, out_file)

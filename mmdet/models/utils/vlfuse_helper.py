@@ -1,5 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+# Modified from https://github.com/microsoft/GLIP/blob/main/maskrcnn_benchmark/utils/fuse_helper.py  # noqa
+# and https://github.com/microsoft/GLIP/blob/main/maskrcnn_benchmark/modeling/rpn/modeling_bert.py  # noqa
 import math
+from typing import Dict, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -9,7 +12,7 @@ from mmcv.cnn.bricks import DropPath
 from torch import Tensor
 
 try:
-    from transformers import BertPreTrainedModel
+    from transformers import BertConfig, BertPreTrainedModel
     from transformers.modeling_utils import apply_chunking_to_forward
     from transformers.models.bert.modeling_bert import \
         BertAttention as HFBertAttention
@@ -18,6 +21,7 @@ try:
     from transformers.models.bert.modeling_bert import \
         BertOutput as HFBertOutput
 except ImportError:
+    BertConfig = None
     BertPreTrainedModel = object
     apply_chunking_to_forward = None
     HFBertAttention = object
@@ -27,20 +31,53 @@ except ImportError:
 MAX_CLAMP_VALUE = 50000
 
 
-def permute_and_flatten(layer, N, A, C, H, W):
+def permute_and_flatten(layer: Tensor, N: int, A: int, C: int, H: int,
+                        W: int) -> Tensor:
+    """Permute and then flatten a tensor,
+
+       from size (N, A, C, H, W) to (N, H * W * A, C).
+
+    Args:
+        layer (Tensor): Tensor of shape (N, C, H, W).
+        N (int): Batch size.
+        A (int): Number of attention heads.
+        C (int): Number of channels.
+        H (int): Height of feature map.
+        W (int): Width of feature map.
+
+    Returns:
+        Tensor: A Tensor of shape (N, H * W * A, C).
+    """
     layer = layer.view(N, A, C, H, W)
     layer = layer.permute(0, 3, 4, 1, 2)
     layer = layer.reshape(N, -1, C)
     return layer
 
 
-def clamp_values(vector):
+def clamp_values(vector: Tensor) -> Tensor:
+    """Clamp the values of a vector to the range [-MAX_CLAMP_VALUE,
+    MAX_CLAMP_VALUE].
+
+    Args:
+        vector (Tensor): Tensor of shape (N, C, H, W).
+
+    Returns:
+        Tensor: A Tensor of shape (N, C, H, W) with clamped values.
+    """
     vector = torch.clamp(vector, min=-MAX_CLAMP_VALUE, max=MAX_CLAMP_VALUE)
     return vector
 
 
 class BiMultiHeadAttention(nn.Module):
-    """Bidirectional fusion Multi-Head Attention layer."""
+    """Bidirectional fusion Multi-Head Attention layer.
+
+    Args:
+        v_dim (int): The dimension of the vision input.
+        l_dim (int): The dimension of the language input.
+        embed_dim (int): The embedding dimension for the attention operation.
+        num_heads (int): The number of attention heads.
+        dropout (float, optional): The dropout probability. Defaults to 0.1.
+    """
 
     def __init__(self,
                  v_dim: int,
@@ -96,7 +133,13 @@ class BiMultiHeadAttention(nn.Module):
         nn.init.xavier_uniform_(self.out_l_proj.weight)
         self.out_l_proj.bias.data.fill_(0)
 
-    def forward(self, vision: Tensor, lang: Tensor, attention_mask_l=None):
+    def forward(
+        self,
+        vision: Tensor,
+        lang: Tensor,
+        attention_mask_v: Optional[Tensor] = None,
+        attention_mask_l: Optional[Tensor] = None,
+    ) -> Tuple[Tensor, Tensor]:
         bsz, tgt_len, _ = vision.size()
 
         query_states = self.v_proj(vision) * self.scale
@@ -140,6 +183,13 @@ class BiMultiHeadAttention(nn.Module):
         if self.clamp_max_for_overflow:
             # Do not increase 50000, data type half has quite limited range
             attn_weights_l = torch.clamp(attn_weights_l, max=MAX_CLAMP_VALUE)
+
+        if attention_mask_v is not None:
+            attention_mask_v = (
+                attention_mask_v[:, None,
+                                 None, :].repeat(1, self.num_heads, 1,
+                                                 1).flatten(0, 1))
+            attn_weights_l.masked_fill_(attention_mask_v, float('-inf'))
 
         attn_weights_l = attn_weights_l.softmax(dim=-1)
 
@@ -204,6 +254,18 @@ class BiAttentionBlock(nn.Module):
     First, multi-level visual features are concat; Then the concat visual
     feature and lang feature are fused by attention; Finally the newly visual
     feature are split into multi levels.
+
+    Args:
+        v_dim (int): The dimension of the visual features.
+        l_dim (int): The dimension of the language feature.
+        embed_dim (int): The embedding dimension for the attention operation.
+        num_heads (int): The number of attention heads.
+        dropout (float, optional): The dropout probability. Defaults to 0.1.
+        drop_path (float, optional): The drop path probability.
+            Defaults to 0.0.
+        init_values (float, optional):
+            The initial value for the scaling parameter.
+            Defaults to 1e-4.
     """
 
     def __init__(self,
@@ -235,10 +297,14 @@ class BiAttentionBlock(nn.Module):
             init_values * torch.ones(l_dim), requires_grad=True)
 
     def forward(self,
-                visual_features: list,
+                vf0: Tensor,
+                vf1: Tensor,
+                vf2: Tensor,
+                vf3: Tensor,
+                vf4: Tensor,
                 lang_feature: Tensor,
                 attention_mask_l=None):
-
+        visual_features = [vf0, vf1, vf2, vf3, vf4]
         size_per_level, visual_features_flatten = [], []
         for i, feat_per_level in enumerate(visual_features):
             bs, c, h, w = feat_per_level.shape
@@ -254,29 +320,98 @@ class BiAttentionBlock(nn.Module):
         new_v = new_v.transpose(1, 2).contiguous()
 
         start = 0
-        fusion_visual_features = []
+        # fvfs is mean fusion_visual_features
+        fvfs = []
         for (h, w) in size_per_level:
             new_v_per_level = new_v[:, :,
                                     start:start + h * w].view(bs, -1, h,
                                                               w).contiguous()
-            fusion_visual_features.append(new_v_per_level)
+            fvfs.append(new_v_per_level)
             start += h * w
 
-        return fusion_visual_features, new_lang_feature
+        return fvfs[0], fvfs[1], fvfs[2], fvfs[3], fvfs[4], new_lang_feature
 
-    def single_attention_call(self, visual, lang, attention_mask_l=None):
+    def single_attention_call(
+        self,
+        visual: Tensor,
+        lang: Tensor,
+        attention_mask_v: Optional[Tensor] = None,
+        attention_mask_l: Optional[Tensor] = None,
+    ) -> Tuple[Tensor, Tensor]:
+        """Perform a single attention call between the visual and language
+        inputs.
+
+        Args:
+        visual (Tensor): The visual input tensor.
+        lang (Tensor): The language input tensor.
+        attention_mask_v (Optional[Tensor]):
+            An optional attention mask tensor for the visual input.
+        attention_mask_l (Optional[Tensor]):
+            An optional attention mask tensor for the language input.
+
+        Returns:
+            Tuple[Tensor, Tensor]: A tuple containing the updated
+                visual and language tensors after the attention call.
+        """
         visual = self.layer_norm_v(visual)
         lang = self.layer_norm_l(lang)
         delta_v, delta_l = self.attn(
-            visual, lang, attention_mask_l=attention_mask_l)
+            visual,
+            lang,
+            attention_mask_v=attention_mask_v,
+            attention_mask_l=attention_mask_l)
         # visual, lang = visual + delta_v, l + delta_l
         visual = visual + self.drop_path(self.gamma_v * delta_v)
         lang = lang + self.drop_path(self.gamma_l * delta_l)
         return visual, lang
 
 
+class SingleScaleBiAttentionBlock(BiAttentionBlock):
+    """This is a single-scale implementation of `BiAttentionBlock`.
+
+    The only differenece between it and `BiAttentionBlock` is that the
+    `forward` function of `SingleScaleBiAttentionBlock` only accepts a single
+    flatten visual feature map, while the `forward` function in
+    `BiAttentionBlock` accepts multiple visual feature maps.
+    """
+
+    def forward(self,
+                visual_feature: Tensor,
+                lang_feature: Tensor,
+                attention_mask_v=None,
+                attention_mask_l=None):
+        """Single-scale forward pass.
+
+        Args:
+            visual_feature (Tensor): The visual input tensor. Tensor of
+                shape (bs, patch_len, ch).
+            lang_feature (Tensor): The language input tensor. Tensor of
+                shape (bs, text_len, ch).
+            attention_mask_v (_type_, optional): Visual feature attention
+                mask. Defaults to None.
+            attention_mask_l (_type_, optional): Language feature attention
+                mask.Defaults to None.
+        """
+        new_v, new_lang_feature = self.single_attention_call(
+            visual_feature,
+            lang_feature,
+            attention_mask_v=attention_mask_v,
+            attention_mask_l=attention_mask_l)
+        return new_v, new_lang_feature
+
+
 class VLFuse(nn.Module):
-    """Early Fusion Module."""
+    """Early Fusion Module.
+
+    Args:
+        v_dim (int): Dimension of visual features.
+        l_dim (int): Dimension of language features.
+        embed_dim (int): The embedding dimension for the attention operation.
+        num_heads (int): Number of attention heads.
+        dropout (float): Dropout probability.
+        drop_path (float): Drop path probability.
+        use_checkpoint (bool): Whether to use PyTorch's checkpoint function.
+    """
 
     def __init__(self,
                  v_dim: int = 256,
@@ -287,7 +422,6 @@ class VLFuse(nn.Module):
                  drop_path: float = 0.0,
                  use_checkpoint: bool = False):
         super().__init__()
-        # bi-direction (text->image, image->text)
         self.use_checkpoint = use_checkpoint
         self.b_attn = BiAttentionBlock(
             v_dim=v_dim,
@@ -298,24 +432,29 @@ class VLFuse(nn.Module):
             drop_path=drop_path,
             init_values=1.0 / 6.0)
 
-    def forward(self, x):
+    def forward(self, x: dict) -> dict:
+        """Forward pass of the VLFuse module."""
         visual_features = x['visual']
         language_dict_features = x['lang']
 
         if self.use_checkpoint:
-            fused_visual_features, language_features = checkpoint.checkpoint(
-                self.b_attn, visual_features, language_dict_features['hidden'],
+            # vf is mean visual_features
+            # checkpoint does not allow complex data structures as input,
+            # such as list, so we must split them.
+            vf0, vf1, vf2, vf3, vf4, language_features = checkpoint.checkpoint(
+                self.b_attn, *visual_features,
+                language_dict_features['hidden'],
                 language_dict_features['masks'])
         else:
-            fused_visual_features, language_features = self.b_attn(
-                visual_features, language_dict_features['hidden'],
+            vf0, vf1, vf2, vf3, vf4, language_features = self.b_attn(
+                *visual_features, language_dict_features['hidden'],
                 language_dict_features['masks'])
 
         language_dict_features['hidden'] = language_features
         fused_language_dict_features = language_dict_features
 
         features_dict = {
-            'visual': fused_visual_features,
+            'visual': [vf0, vf1, vf2, vf3, vf4],
             'lang': fused_language_dict_features
         }
 
@@ -323,10 +462,23 @@ class VLFuse(nn.Module):
 
 
 class BertEncoderLayer(BertPreTrainedModel):
-    """Modified from transformers.models.bert.modeling_bert.BertLayer."""
+    """A modified version of the `BertLayer` class from the
+    `transformers.models.bert.modeling_bert` module.
+
+    Args:
+        config (:class:`~transformers.BertConfig`):
+            The configuration object that
+            contains various parameters for the model.
+        clamp_min_for_underflow (bool, optional):
+            Whether to clamp the minimum value of the hidden states
+             to prevent underflow. Defaults to `False`.
+        clamp_max_for_overflow (bool, optional):
+            Whether to clamp the maximum value of the hidden states
+            to prevent overflow. Defaults to `False`.
+    """
 
     def __init__(self,
-                 config,
+                 config: BertConfig,
                  clamp_min_for_underflow: bool = False,
                  clamp_max_for_overflow: bool = False):
         super().__init__(config)
@@ -339,17 +491,16 @@ class BertEncoderLayer(BertPreTrainedModel):
         self.intermediate = BertIntermediate(config)
         self.output = BertOutput(config)
 
-    def forward(self, inputs):
+    def forward(
+        self, inputs: Dict[str, Dict[str, torch.Tensor]]
+    ) -> Dict[str, Dict[str, torch.Tensor]]:
+        """Applies the BertEncoderLayer to the input features."""
         language_dict_features = inputs['lang']
         hidden_states = language_dict_features['hidden']
         attention_mask = language_dict_features['masks']
 
         device = hidden_states.device
         input_shape = hidden_states.size()[:-1]
-        # We can provide a self-attention mask of dimensions
-        # [batch_size, from_seq_length, to_seq_length]
-        # ourselves in which case we just need to make it
-        # broadcastable to all heads.
         extended_attention_mask = self.get_extended_attention_mask(
             attention_mask, input_shape, device)
 
@@ -358,11 +509,9 @@ class BertEncoderLayer(BertPreTrainedModel):
             extended_attention_mask,
             None,
             output_attentions=False,
-            past_key_value=None,
-        )
+            past_key_value=None)
         attention_output = self_attention_outputs[0]
-        outputs = self_attention_outputs[
-            1:]  # add self attentions if we output attention weights
+        outputs = self_attention_outputs[1:]
         layer_output = apply_chunking_to_forward(self.feed_forward_chunk,
                                                  self.chunk_size_feed_forward,
                                                  self.seq_len_dim,
@@ -379,7 +528,9 @@ class BertEncoderLayer(BertPreTrainedModel):
 
         return features_dict
 
-    def feed_forward_chunk(self, attention_output):
+    def feed_forward_chunk(self, attention_output: Tensor) -> Tensor:
+        """Applies the intermediate and output layers of the BertEncoderLayer
+        to a chunk of the input sequence."""
         intermediate_output = self.intermediate(attention_output)
         layer_output = self.output(intermediate_output, attention_output)
         return layer_output
@@ -391,10 +542,21 @@ class BertSelfAttention(nn.Module):
     """BERT self-attention layer from Huggingface transformers.
 
     Compared to the BertSelfAttention of Huggingface, only add the clamp.
+
+    Args:
+        config (:class:`~transformers.BertConfig`):
+            The configuration object that
+            contains various parameters for the model.
+        clamp_min_for_underflow (bool, optional):
+            Whether to clamp the minimum value of the hidden states
+             to prevent underflow. Defaults to `False`.
+        clamp_max_for_overflow (bool, optional):
+            Whether to clamp the maximum value of the hidden states
+            to prevent overflow. Defaults to `False`.
     """
 
     def __init__(self,
-                 config,
+                 config: BertConfig,
                  clamp_min_for_underflow: bool = False,
                  clamp_max_for_overflow: bool = False):
         super().__init__()
@@ -429,7 +591,8 @@ class BertSelfAttention(nn.Module):
 
         self.is_decoder = config.is_decoder
 
-    def transpose_for_scores(self, x):
+    def transpose_for_scores(self, x: Tensor) -> Tensor:
+        """Transpose the dimensions of `x`."""
         new_x_shape = x.size()[:-1] + (self.num_attention_heads,
                                        self.attention_head_size)
         x = x.view(*new_x_shape)
@@ -437,14 +600,16 @@ class BertSelfAttention(nn.Module):
 
     def forward(
         self,
-        hidden_states,
-        attention_mask=None,
-        head_mask=None,
-        encoder_hidden_states=None,
-        encoder_attention_mask=None,
-        past_key_value=None,
-        output_attentions=False,
-    ):
+        hidden_states: Tensor,
+        attention_mask: Optional[Tensor] = None,
+        head_mask: Optional[Tensor] = None,
+        encoder_hidden_states: Optional[Tensor] = None,
+        encoder_attention_mask: Optional[Tensor] = None,
+        past_key_value: Optional[Tuple[Tensor, Tensor]] = None,
+        output_attentions: bool = False,
+    ) -> Tuple[Tensor, ...]:
+        """Perform a forward pass through the BERT self-attention layer."""
+
         mixed_query_layer = self.query(hidden_states)
 
         # If this is instantiated as a cross-attention module, the keys
@@ -557,10 +722,21 @@ class BertAttention(HFBertAttention):
     """BertAttention is made up of self-attention and intermediate+output.
 
     Compared to the BertAttention of Huggingface, only add the clamp.
+
+    Args:
+        config (:class:`~transformers.BertConfig`):
+            The configuration object that
+            contains various parameters for the model.
+        clamp_min_for_underflow (bool, optional):
+            Whether to clamp the minimum value of the hidden states
+             to prevent underflow. Defaults to `False`.
+        clamp_max_for_overflow (bool, optional):
+            Whether to clamp the maximum value of the hidden states
+            to prevent overflow. Defaults to `False`.
     """
 
     def __init__(self,
-                 config,
+                 config: BertConfig,
                  clamp_min_for_underflow: bool = False,
                  clamp_max_for_overflow: bool = False):
         super().__init__(config)
@@ -569,8 +745,12 @@ class BertAttention(HFBertAttention):
 
 
 class BertIntermediate(HFBertIntermediate):
+    """Modified from transformers.models.bert.modeling_bert.BertIntermediate.
 
-    def forward(self, hidden_states):
+    Compared to the BertIntermediate of Huggingface, only add the clamp.
+    """
+
+    def forward(self, hidden_states: Tensor) -> Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = clamp_values(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
@@ -579,8 +759,12 @@ class BertIntermediate(HFBertIntermediate):
 
 
 class BertOutput(HFBertOutput):
+    """Modified from transformers.models.bert.modeling_bert.BertOutput.
 
-    def forward(self, hidden_states, input_tensor):
+    Compared to the BertOutput of Huggingface, only add the clamp.
+    """
+
+    def forward(self, hidden_states: Tensor, input_tensor: Tensor) -> Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
         hidden_states = clamp_values(hidden_states)
