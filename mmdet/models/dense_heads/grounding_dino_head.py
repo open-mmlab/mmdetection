@@ -5,19 +5,18 @@ from typing import Dict, List, Optional, Tuple
 import torch
 import torch.nn as nn
 from mmcv.cnn import Linear
+from mmengine.model import constant_init
 from mmengine.structures import InstanceData
 from torch import Tensor
-from mmengine.model import constant_init
-import math
 
+from mmdet.models.losses import QualityFocalLoss
 from mmdet.registry import MODELS
 from mmdet.structures import SampleList
-from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh)
+from mmdet.structures.bbox import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
 from mmdet.utils import InstanceList, reduce_mean
 from ..layers import inverse_sigmoid
 from .atss_vlfusion_head import convert_grounding_to_cls_scores
 from .dino_head import DINOHead
-from mmdet.models.losses import QualityFocalLoss
 
 
 class ContrastiveEmbed(nn.Module):
@@ -404,13 +403,10 @@ class GroundingDINOHead(DINOHead):
         results.labels = det_labels
         return results
 
-    def loss(self, hidden_states: Tensor, references: List[Tensor], 
-            memory_text: Tensor,
-            text_token_mask: Tensor,
-            enc_outputs_class: Tensor, 
-            enc_outputs_coord: Tensor,
-            batch_data_samples: SampleList,
-            dn_meta: Dict[str, int]) -> dict:
+    def loss(self, hidden_states: Tensor, references: List[Tensor],
+             memory_text: Tensor, text_token_mask: Tensor,
+             enc_outputs_class: Tensor, enc_outputs_coord: Tensor,
+             batch_data_samples: SampleList, dn_meta: Dict[str, int]) -> dict:
         """Perform forward propagation and loss calculation of the detection
         head on the queries of the upstream network.
 
@@ -456,7 +452,6 @@ class GroundingDINOHead(DINOHead):
         losses = self.loss_by_feat(*loss_inputs)
         return losses
 
-
     def loss_by_feat_single(self, cls_scores: Tensor, bbox_preds: Tensor,
                             batch_gt_instances: InstanceList,
                             batch_img_metas: List[dict]) -> Tuple[Tensor]:
@@ -483,8 +478,10 @@ class GroundingDINOHead(DINOHead):
         cls_scores_list = [cls_scores[i] for i in range(num_imgs)]
         bbox_preds_list = [bbox_preds[i] for i in range(num_imgs)]
         with torch.no_grad():
-            cls_reg_targets = self.get_targets(cls_scores_list, bbox_preds_list,
-                                           batch_gt_instances, batch_img_metas)
+            cls_reg_targets = self.get_targets(cls_scores_list,
+                                               bbox_preds_list,
+                                               batch_gt_instances,
+                                               batch_img_metas)
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_pos, num_total_neg) = cls_reg_targets
         labels = torch.stack(labels_list, 0)
@@ -495,7 +492,8 @@ class GroundingDINOHead(DINOHead):
         # ===== this change =====
         # Loss is not computed for the padded regions of the text.
         assert (self.text_masks.dim() == 2)
-        text_masks = self.text_masks.new_zeros((self.text_masks.size(0), self.max_text_len))
+        text_masks = self.text_masks.new_zeros(
+            (self.text_masks.size(0), self.max_text_len))
         text_masks[:, :self.text_masks.size(1)] = self.text_masks
         text_mask = (text_masks > 0).unsqueeze(1)
         text_mask = text_mask.repeat(1, cls_scores.size(1), 1)
@@ -592,7 +590,8 @@ class GroundingDINOHead(DINOHead):
         # ===== this change =====
         # Loss is not computed for the padded regions of the text.
         assert (self.text_masks.dim() == 2)
-        text_masks = self.text_masks.new_zeros((self.text_masks.size(0), self.max_text_len))
+        text_masks = self.text_masks.new_zeros(
+            (self.text_masks.size(0), self.max_text_len))
         text_masks[:, :self.text_masks.size(1)] = self.text_masks
         text_mask = (text_masks > 0).unsqueeze(1)
         text_mask = text_mask.repeat(1, dn_cls_scores.size(1), 1)

@@ -129,7 +129,7 @@ train_pipeline = [
                     scales=[(400, 4200), (500, 4200), (600, 4200)],
                     keep_ratio=True),
                 dict(
-                    type='RandomCrop',  
+                    type='RandomCrop',
                     crop_type='absolute_range',
                     crop_size=(384, 600),
                     allow_negative_crop=True),
@@ -149,9 +149,7 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        backend_args=_base_.backend_args),
+    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
     dict(
         type='FixScaleResize',
         scale=(800, 1333),
@@ -183,11 +181,10 @@ optim_wrapper = dict(
         lr=0.0001,  # 0.0002 for DeformDETR
         weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
-    paramwise_cfg=dict(
-        custom_keys={
-            'absolute_pos_embed': dict(decay_mult=0.),
-            'backbone': dict(lr_mult=0.1)
-        }))
+    paramwise_cfg=dict(custom_keys={
+        'absolute_pos_embed': dict(decay_mult=0.),
+        'backbone': dict(lr_mult=0.1)
+    }))
 # learning policy
 max_epochs = 12
 train_cfg = dict(

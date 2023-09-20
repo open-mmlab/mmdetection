@@ -100,7 +100,7 @@ def create_positive_map(tokenized,
                         max_num_entities: int = 256) -> Tensor:
     """construct a map such that positive_map[i,j] = True
     if box i is associated to token j
-    
+
     Args:
         tokenized: The tokenized input.
         tokens_positive (list): A list of token ranges

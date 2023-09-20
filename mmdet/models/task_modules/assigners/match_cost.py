@@ -373,12 +373,14 @@ class BinaryFocalLossCost(FocalLossCost):
         Returns:
             Tensor: Match Cost matrix of shape (num_preds, num_gts).
         """
-        # gt_instances.text_token_mask is a repeated tensor with the same length 
+        # gt_instances.text_token_mask is a repeated tensor of the same length
         # of instances. Only gt_instances.text_token_mask[0] is useful
-        text_token_mask = torch.nonzero(gt_instances.text_token_mask[0]).squeeze(-1)
+        text_token_mask = torch.nonzero(
+            gt_instances.text_token_mask[0]).squeeze(-1)
         pred_scores = pred_instances.scores[:, text_token_mask]
         gt_labels = gt_instances.positive_maps[:, text_token_mask]
         return self._focal_loss_cost(pred_scores, gt_labels)
+
 
 @TASK_UTILS.register_module()
 class DiceCost(BaseMatchCost):

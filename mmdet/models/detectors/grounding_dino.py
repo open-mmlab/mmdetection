@@ -1,14 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
-from typing import Dict, Tuple, Union, List
+from typing import Dict, Tuple, Union
 
 import torch
 import torch.nn as nn
 from torch import Tensor
 
 from mmdet.registry import MODELS
-from mmdet.structures import OptSampleList
-from mmdet.structures import SampleList
+from mmdet.structures import OptSampleList, SampleList
 from ..layers import SinePositionalEncoding
 from ..layers.transformer.grounding_dino_layers import (
     GroundingDinoTransformerDecoder, GroundingDinoTransformerEncoder)
@@ -123,16 +122,16 @@ class GroundingDINO(DINO):
             original_caption: Union[str, list, tuple],
             custom_entities: bool = False) -> Tuple[dict, str, Tensor, list]:
         """Get the tokens positive and prompts for the caption.
-        
+
         Args:
-            original_caption (str): The original caption, e.g. '"bench . car ."'
+            original_caption (str): The original caption, e.g. 'bench . car .'
             custom_entities (bool, optional): Whether to use custom entities.
                 If ``True``, the ``original_caption`` should be a list of
                 strings, each of which is a word. Defaults to False.
-        
+
         Returns:
-            Tuple[dict, str, dict, str]: The dict is a mapping from each entity id, 
-            which is numbered from 1, to its positive token id.
+            Tuple[dict, str, dict, str]: The dict is a mapping from each entity
+            id, which is numbered from 1, to its positive token id.
             The str represents the prompts.
         """
         tokenized, caption_string, tokens_positive, entities = \
@@ -302,8 +301,7 @@ class GroundingDINO(DINO):
 
         text_dict = self.language_model(new_text_prompts)
         if self.text_feat_map is not None:
-            text_dict['embedded'] = self.text_feat_map(
-                text_dict['embedded'])
+            text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
 
         for i, data_samples in enumerate(batch_data_samples):
             positive_map = positive_maps[i].to(
@@ -315,10 +313,11 @@ class GroundingDINO(DINO):
                     len(positive_map), 1)
 
         visual_features = self.extract_feat(batch_inputs)
-        head_inputs_dict = self.forward_transformer(
-            visual_features, text_dict, batch_data_samples)
+        head_inputs_dict = self.forward_transformer(visual_features, text_dict,
+                                                    batch_data_samples)
 
-        losses = self.bbox_head.loss(**head_inputs_dict, batch_data_samples=batch_data_samples)
+        losses = self.bbox_head.loss(
+            **head_inputs_dict, batch_data_samples=batch_data_samples)
         return losses
 
     def predict(self, batch_inputs, batch_data_samples, rescale: bool = True):

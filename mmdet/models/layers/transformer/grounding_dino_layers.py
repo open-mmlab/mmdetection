@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
+
 import torch
 import torch.nn as nn
 from mmcv.cnn import build_norm_layer
@@ -16,10 +17,12 @@ from .deformable_detr_layers import (DeformableDetrTransformerDecoderLayer,
 from .detr_layers import DetrTransformerEncoderLayer
 from .dino_layers import DinoTransformerDecoder
 from .utils import MLP, get_text_sine_pos_embed
+
 try:
     from fairscale.nn.checkpoint import checkpoint_wrapper
 except Exception:
     checkpoint_wrapper = None
+
 
 class GroundingDinoTransformerDecoderLayer(
         DeformableDetrTransformerDecoderLayer):
@@ -162,8 +165,8 @@ class GroundingDinoTransformerEncoder(DeformableDetrTransformerEncoder):
                 return
             for i in range(self.num_cp):
                 self.layers[i] = checkpoint_wrapper(self.layers[i])
-                self.fusion_layers[i] = checkpoint_wrapper(self.fusion_layers[i])
-
+                self.fusion_layers[i] = checkpoint_wrapper(
+                    self.fusion_layers[i])
 
     def forward(self,
                 query: Tensor,

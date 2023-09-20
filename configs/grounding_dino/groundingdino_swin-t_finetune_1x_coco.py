@@ -115,7 +115,6 @@ model = dict(
             ])),
     test_cfg=dict(max_per_img=300))
 
-
 # dataset settings
 train_pipeline = [
     dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
@@ -133,14 +132,14 @@ train_pipeline = [
                     keep_ratio=True)
             ],
             [
-    dict(
-        type='RandomChoiceResize',
+                dict(
+                    type='RandomChoiceResize',
                     # The radio of all image in train dataset < 7
                     # follow the original implement
                     scales=[(400, 4200), (500, 4200), (600, 4200)],
                     keep_ratio=True),
                 dict(
-                    type='RandomCrop',  
+                    type='RandomCrop',
                     crop_type='absolute_range',
                     crop_size=(384, 600),
                     allow_negative_crop=True),
@@ -179,7 +178,7 @@ test_pipeline = [
 train_dataloader = dict(
     dataset=dict(
         filter_cfg=dict(filter_empty_gt=False),
-            pipeline=train_pipeline,
+        pipeline=train_pipeline,
         return_classes=True))
 val_dataloader = dict(
     dataset=dict(pipeline=test_pipeline, return_classes=True))
@@ -190,16 +189,12 @@ test_dataloader = val_dataloader
 optim_wrapper = dict(
     _delete_=True,
     type='OptimWrapper',
-    optimizer=dict(
-        type='AdamW',
-        lr=0.00001,
-        weight_decay=0.0001),
+    optimizer=dict(type='AdamW', lr=0.00001, weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
-    paramwise_cfg=dict(
-        custom_keys={
-            'absolute_pos_embed': dict(decay_mult=0.),
-            'backbone': dict(lr_mult=0.1)
-        }))
+    paramwise_cfg=dict(custom_keys={
+        'absolute_pos_embed': dict(decay_mult=0.),
+        'backbone': dict(lr_mult=0.1)
+    }))
 # learning policy
 max_epochs = 12
 param_scheduler = [
