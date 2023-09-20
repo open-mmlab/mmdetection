@@ -213,9 +213,13 @@ python ./tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE}
 
 #### Open-vocabulary LVIS Results
 
+The models are converted from the official model zoo.
+
 |                                                    Model (Config)                                                     | mask mAP | mask mAP_novel |
 | :-------------------------------------------------------------------------------------------------------------------: | :------: | :------------: |
+|        [detic_centernet2_r50_fpn_4x_lvisbase_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvisbase_boxsup.py)        |   30.2   |      16.4      |
 |    [detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis.py)    |   32.4   |      25.2      |
+|     [detic_centernet2_swin-b_fpn_4x_lvisbase_boxsup](./configs/detic_centernet2_swin-b_fpn_4x_lvisbase_boxsup.py)     |   38.4   |      21.9      |
 | [detic_centernet2_swin-b_fpn_4x_lvisbase_in21k-lvis](./configs/detic_centernet2_swin-b_fpn_4x_lvisbase_in21k-lvis.py) |   40.7   |      34.0      |
 
 ###### Note:

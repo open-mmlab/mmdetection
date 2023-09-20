@@ -19,8 +19,7 @@ model = dict(
         drop_path_rate=0.3,
         patch_norm=True,
         out_indices=(1, 2, 3),
-        with_cp=False,
-        convert_weights=True),
+        with_cp=False),
     neck=dict(in_channels=[256, 512, 1024]))
 
 backend_args = None
@@ -103,4 +102,4 @@ optim_wrapper = dict(
 
 load_from = './first_stage/detic_centernet2_swin-b_fpn_4x_lvis_boxsup.pth'
 
-find_unused_parameters = True
+find_unused_parameters = False

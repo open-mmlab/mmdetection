@@ -174,6 +174,7 @@ class DeticRoIHead(CascadeRoIHead):
         # score reweighting in centernet2
         cls_scores = [(s * ps[:, None])**0.5
                       for s, ps in zip(cls_scores, proposal_scores)]
+        # # for demo
         # cls_scores = [
         #     s * (s == s[:, :-1].max(dim=1)[0][:, None]).float()
         #     for s in cls_scores

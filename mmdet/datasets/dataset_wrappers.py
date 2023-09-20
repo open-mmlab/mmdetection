@@ -3,7 +3,6 @@ import collections
 import copy
 from typing import List, Sequence, Union
 
-import numpy as np
 from mmengine.dataset import BaseDataset
 from mmengine.dataset import ConcatDataset as MMENGINE_ConcatDataset
 from mmengine.dataset import force_full_init
@@ -200,8 +199,25 @@ class ConcatDataset(MMENGINE_ConcatDataset):
                  datasets: Sequence[Union[BaseDataset, dict]],
                  lazy_init: bool = False,
                  ignore_keys: Union[str, List[str], None] = None):
-        super().__init__(
-            datasets=datasets, lazy_init=lazy_init, ignore_keys=ignore_keys)
+        self.datasets: List[BaseDataset] = []
+        for i, dataset in enumerate(datasets):
+            if isinstance(dataset, dict):
+                self.datasets.append(DATASETS.build(dataset))
+            elif isinstance(dataset, BaseDataset):
+                self.datasets.append(dataset)
+            else:
+                raise TypeError(
+                    'elements in datasets sequence should be config or '
+                    f'`BaseDataset` instance, but got {type(dataset)}')
+        if ignore_keys is None:
+            self.ignore_keys = []
+        elif isinstance(ignore_keys, str):
+            self.ignore_keys = [ignore_keys]
+        elif isinstance(ignore_keys, list):
+            self.ignore_keys = ignore_keys
+        else:
+            raise TypeError('ignore_keys should be a list or str, '
+                            f'but got {type(ignore_keys)}')
 
         meta_keys: set = set()
         for dataset in self.datasets:
@@ -209,28 +225,27 @@ class ConcatDataset(MMENGINE_ConcatDataset):
         # if the metainfo of multiple datasets are the same, use metainfo
         # of the first dataset, else the metainfo is a list with metainfo
         # of all the datasets
-        flag = True
+        is_all_same = True
         self._metainfo_first = self.datasets[0].metainfo
         for i, dataset in enumerate(self.datasets, 1):
             for key in meta_keys:
                 if key in self.ignore_keys:
                     continue
                 if key not in dataset.metainfo:
-                    flag = False
+                    is_all_same = False
                     break
-                first_type = type(self._metainfo_first[key])
-                cur_type = type(dataset.metainfo[key])
-                if first_type is not cur_type:  # type: ignore
-                    flag = False
-                if (isinstance(self._metainfo_first[key], np.ndarray)
-                        and not np.array_equal(self._metainfo_first[key],
-                                               dataset.metainfo[key])
-                        or self._metainfo_first[key] != dataset.metainfo[key]):
-                    flag = False
-        if flag:
+                if self._metainfo_first[key] != dataset.metainfo[key]:
+                    is_all_same = False
+                    break
+
+        if is_all_same:
             self._metainfo = self.datasets[0].metainfo
         else:
             self._metainfo = [dataset.metainfo for dataset in self.datasets]
+
+        self._fully_initialized = False
+        if not lazy_init:
+            self.full_init()
 
     def get_dataset_source(self, idx: int) -> int:
         dataset_idx, _ = self._get_ori_dataset_idx(idx)
