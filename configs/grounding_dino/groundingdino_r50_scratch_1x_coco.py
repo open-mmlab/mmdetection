@@ -81,6 +81,7 @@ model = dict(
         num_classes=80,
         sync_cls_avg_factor=True,
         max_text_len=256,
+        log_scale=-5.0,
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
