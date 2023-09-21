@@ -25,8 +25,8 @@ class ContrastiveEmbed(nn.Module):
 
     Args:
         max_text_len (int, optional): Maximum length of text.
-        log_scale (float): The initial value of a learnable 
-          parameter to multiply with the similarity matrix to 
+        log_scale (float): The initial value of a learnable
+          parameter to multiply with the similarity matrix to
           normalize the output.
     """
 
@@ -35,10 +35,9 @@ class ContrastiveEmbed(nn.Module):
         self.max_text_len = max_text_len
         self.log_scale = nn.Parameter(
             torch.Tensor([float(log_scale)]), requires_grad=True)
-    
+
     def init_weights(self):
         super().init_weights()
-        
 
     def forward(self, visual_feat: Tensor, text_feat: Tensor,
                 text_token_mask: Tensor) -> Tensor:
@@ -70,8 +69,8 @@ class GroundingDINOHead(DINOHead):
 
     Args:
         max_text_len (int, optional): Maximum length of text.
-        log_scale (float): The initial value of a learnable 
-          parameter to multiply with the similarity matrix to 
+        log_scale (float): The initial value of a learnable
+          parameter to multiply with the similarity matrix to
           normalize the output.
     """
 

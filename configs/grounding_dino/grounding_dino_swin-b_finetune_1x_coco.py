@@ -2,6 +2,7 @@ _base_ = [
     './groundingdino_swin-t_finetune_1x_coco.py',
 ]
 
+load_from = 'groundingdino_swinb_cogcoor_mmdet-55949c9c.pth'
 model = dict(
     type='GroundingDINO',
     backbone=dict(

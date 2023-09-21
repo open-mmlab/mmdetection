@@ -25,6 +25,7 @@ mim install mmdet[multimodal]
 ```
 
 ## Inference
+
 ```
 cd $MMDETROOT
 
