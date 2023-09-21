@@ -68,8 +68,11 @@ model = dict(
         num_layers=6,
         return_intermediate=True,
         layer_cfg=dict(
+            # query self attention layer
             self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
-            ca_text_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
+            # cross attention layer query to text
+            cross_attn_text_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
+            # cross attention layer query to image
             cross_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
             ffn_cfg=dict(
                 embed_dims=256, feedforward_channels=2048, ffn_drop=0.0)),
@@ -90,7 +93,7 @@ model = dict(
             loss_weight=1.0),  # 2.0 in DeformDETR
         loss_bbox=dict(type='L1Loss', loss_weight=5.0),
         loss_iou=dict(type='GIoULoss', loss_weight=2.0)),
-    dn_cfg=dict(
+    dn_cfg=dict(  # TODO: Move to model.train_cfg ?
         label_noise_scale=0.5,
         box_noise_scale=1.0,  # 0.4 for DN-DETR
         group_cfg=dict(dynamic=True, num_groups=None,
@@ -151,11 +154,7 @@ train_pipeline = [
 
 test_pipeline = [
     dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
-    dict(
-        type='FixScaleResize',
-        scale=(800, 1333),
-        keep_ratio=True,
-        backend='pillow'),
+    dict(type='FixScaleResize', scale=(800, 1333), keep_ratio=True),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PackDetInputs',

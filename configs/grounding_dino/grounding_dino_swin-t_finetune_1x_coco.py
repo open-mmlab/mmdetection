@@ -159,15 +159,8 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(
-        type='LoadImageFromFile',
-        backend_args={{_base_.backend_args}},
-        imdecode_backend='pillow'),
-    dict(
-        type='FixScaleResize',
-        scale=(800, 1333),
-        keep_ratio=True,
-        backend='pillow'),
+    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
+    dict(type='FixScaleResize', scale=(800, 1333), keep_ratio=True),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PackDetInputs',
