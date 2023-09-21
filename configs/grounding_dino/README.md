@@ -24,6 +24,7 @@ pip install -r requirements/multimodal.txt
 mim install mmdet[multimodal]
 ```
 
+## Inference
 ```
 cd $MMDETROOT
 
@@ -50,3 +51,5 @@ python demo/image_demo.py \
 Note:
 
 1. The weights corresponding to the zero-shot model are adopted from the official weights and converted using the [script](../../tools/model_converters/groundingdino_to_mmdet.py). We have not retrained the model for the time being.
+
+## Finetune on COCO
