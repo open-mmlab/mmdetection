@@ -5,6 +5,8 @@ _base_ = [
     '../_base_/default_runtime.py',
 ]
 
+train_cfg = dict(val_interval=6)
+
 model = dict(
     roi_head=dict(
         bbox_head=dict(
@@ -45,7 +47,7 @@ train_pipeline = [
 ]
 
 # dataloader
-train_dataloader = dict(batch_size=4)
+train_dataloader = dict(batch_size=8)
 
 # optimizer
 optim_wrapper = dict(
