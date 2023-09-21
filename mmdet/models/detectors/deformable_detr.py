@@ -500,7 +500,7 @@ class DeformableDETR(DetectionTransformer):
             else:
                 if not isinstance(HW, torch.Tensor):
                     HW = memory.new_tensor(HW)
-                scale = HW.unsqueeze(0).flip(dims=[0, 1]).view(bs, 1, 1, 2)
+                scale = HW.unsqueeze(0).flip(dims=[0, 1]).view(1, 1, 1, 2)
             grid_y, grid_x = torch.meshgrid(
                 torch.linspace(
                     0, H - 1, H, dtype=torch.float32, device=memory.device),
