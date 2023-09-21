@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
+import math
 from typing import Dict, List, Optional, Tuple
 
 import torch
@@ -26,9 +27,14 @@ class ContrastiveEmbed(nn.Module):
         max_text_len (int, optional): Maximum length of text.
     """
 
-    def __init__(self, max_text_len=256):
+    def __init__(self, max_text_len=256, bias=False):
         super().__init__()
         self.max_text_len = max_text_len
+        self.bias = None
+        if bias:
+            bias_value = -math.log((1 - 0.01) / 0.01)
+            self.bias = nn.Parameter(
+                torch.Tensor([bias_value]), requires_grad=True)
 
     def forward(self, visual_feat: Tensor, text_feat: Tensor,
                 text_token_mask: Tensor) -> Tensor:
@@ -43,6 +49,9 @@ class ContrastiveEmbed(nn.Module):
             Tensor: Classification score.
         """
         res = visual_feat @ text_feat.transpose(-1, -2)
+        if self.bias is not None:
+            res = res / math.sqrt(visual_feat.size(-1))
+            res = res + self.bias
         res.masked_fill_(~text_token_mask[:, None, :], float('-inf'))
 
         new_res = torch.full((*res.shape[:-1], self.max_text_len),
@@ -62,14 +71,13 @@ class GroundingDINOHead(DINOHead):
         max_text_len (int, optional): Maximum length of text.
     """
 
-    def __init__(self, max_text_len=256, **kwargs):
-
-        self.max_text_len = max_text_len
+    def __init__(self, contrastive_cfg=dict(max_text_len=256), **kwargs):
+        self.contrastive_cfg = contrastive_cfg
         super().__init__(**kwargs)
 
     def _init_layers(self) -> None:
         """Initialize classification branch and regression branch of head."""
-        fc_cls = ContrastiveEmbed(self.max_text_len)
+        fc_cls = ContrastiveEmbed(**self.contrastive_cfg)
         reg_branch = []
         for _ in range(self.num_reg_fcs):
             reg_branch.append(Linear(self.embed_dims, self.embed_dims))
