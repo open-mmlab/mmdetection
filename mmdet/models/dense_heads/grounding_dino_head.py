@@ -50,8 +50,7 @@ class ContrastiveEmbed(nn.Module):
         """
         res = visual_feat @ text_feat.transpose(-1, -2)
         if self.bias is not None:
-            res = res / math.sqrt(visual_feat.size(-1))
-            res = res + self.bias
+            res = res / math.sqrt(visual_feat.size(-1)) + self.bias
         res.masked_fill_(~text_token_mask[:, None, :], float('-inf'))
 
         new_res = torch.full((*res.shape[:-1], self.max_text_len),
@@ -73,6 +72,7 @@ class GroundingDINOHead(DINOHead):
 
     def __init__(self, contrastive_cfg=dict(max_text_len=256), **kwargs):
         self.contrastive_cfg = contrastive_cfg
+        self.max_text_len = contrastive_cfg.get('max_text_len', 256)
         super().__init__(**kwargs)
 
     def _init_layers(self) -> None:
