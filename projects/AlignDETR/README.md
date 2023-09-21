@@ -12,10 +12,10 @@ DETR has set up a simple end-to-end pipeline for object detection by formulating
 
 ## Results and Models
 
-| Backbone |    Model    | Lr schd | box AP |                       Config                       |                                                 Download                                                 |
-| :------: | :---------: | :-----: | :----: | :------------------------------------------------: | :------------------------------------------------------------------------------------------------------: |
-|   R-50   | DINO-4scale |   12e   |  50.3  | [config](./align_detr-4scale_r50_8xb2-12e_coco.py) | [model](https://download.openmmlab.com/mmdetection) \| [log](https://download.openmmlab.com/mmdetection) |
-|   R-50   | DINO-4scale |   24e   |  51.4  | [config](./align_detr-4scale_r50_8xb2-24e_coco.py) | [model](https://download.openmmlab.com/mmdetection) \| [log](https://download.openmmlab.com/mmdetection) |
+| Backbone |    Model    | Lr schd | box AP |                       Config                       |                                                                                                                                                                    Download                                                                                                                                                                    |
+| :------: | :---------: | :-----: | :----: | :------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|   R-50   | DINO-4scale |   12e   |  50.5  | [config](./align_detr-4scale_r50_8xb2-12e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/align_detr/align_detr-4scale_r50_8xb2-12e_coco/align_detr-4scale_r50_8xb2-12e_coco_20230914_095734-61f921af.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/align_detr/align_detr-4scale_r50_8xb2-12e_coco/align_detr-4scale_r50_8xb2-12e_coco_20230914_095734.log.json) |
+|   R-50   | DINO-4scale |   24e   |  51.4  | [config](./align_detr-4scale_r50_8xb2-24e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/align_detr/align_detr-4scale_r50_8xb2-24e_coco/align_detr-4scale_r50_8xb2-24e_coco_20230919_152414-f4b6cf76.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/align_detr/align_detr-4scale_r50_8xb2-24e_coco/align_detr-4scale_r50_8xb2-24e_coco_20230919_152414.log.json) |
 
 ## Citation
 
