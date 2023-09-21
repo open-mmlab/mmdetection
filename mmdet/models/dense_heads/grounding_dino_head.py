@@ -24,19 +24,11 @@ class ContrastiveEmbed(nn.Module):
 
     Args:
         max_text_len (int, optional): Maximum length of text.
-        log_scale (float): The initial value of a learnable
-          parameter to multiply with the similarity matrix to
-          normalize the output.
     """
 
-    def __init__(self, max_text_len=256, log_scale=0.0):
+    def __init__(self, max_text_len=256):
         super().__init__()
         self.max_text_len = max_text_len
-        self.log_scale = nn.Parameter(
-            torch.Tensor([float(log_scale)]), requires_grad=True)
-
-    def init_weights(self):
-        super().init_weights()
 
     def forward(self, visual_feat: Tensor, text_feat: Tensor,
                 text_token_mask: Tensor) -> Tensor:
@@ -48,16 +40,16 @@ class ContrastiveEmbed(nn.Module):
             text_token_mask (Tensor): A mask used for text feats.
 
         Returns:
-            Tensor: Classification logits.
+            Tensor: Classification score.
         """
         res = visual_feat @ text_feat.transpose(-1, -2)
-        # Following the design in CLIP to multiply a normalization term
-        res *= self.log_scale.exp()
         res.masked_fill_(~text_token_mask[:, None, :], float('-inf'))
+
         new_res = torch.full((*res.shape[:-1], self.max_text_len),
                              float('-inf'),
                              device=res.device)
         new_res[..., :res.shape[-1]] = res
+
         return new_res
 
 
@@ -68,19 +60,16 @@ class GroundingDINOHead(DINOHead):
 
     Args:
         max_text_len (int, optional): Maximum length of text.
-        log_scale (float): The initial value of a learnable
-          parameter to multiply with the similarity matrix to
-          normalize the output.
     """
 
-    def __init__(self, max_text_len=256, log_scale=0.0, **kwargs):
+    def __init__(self, max_text_len=256, **kwargs):
+
         self.max_text_len = max_text_len
-        self.log_scale = log_scale
         super().__init__(**kwargs)
 
     def _init_layers(self) -> None:
         """Initialize classification branch and regression branch of head."""
-        fc_cls = ContrastiveEmbed(self.max_text_len, log_scale=self.log_scale)
+        fc_cls = ContrastiveEmbed(self.max_text_len)
         reg_branch = []
         for _ in range(self.num_reg_fcs):
             reg_branch.append(Linear(self.embed_dims, self.embed_dims))
