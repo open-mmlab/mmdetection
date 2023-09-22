@@ -1,4 +1,4 @@
-_base_ = ['./oneformer_swin-t-p4-w7-224_lsj_panoptic.py']
+_base_ = ['./oneformer_swin-t-p4-w7-224_panoptic.py']
 pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'  # noqa
 
 depths = [2, 2, 18, 2]

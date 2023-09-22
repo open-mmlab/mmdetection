@@ -1,5 +1,7 @@
 _base_ = ['mmdet::_base_/default_runtime.py']
 
+custom_imports = dict(imports=['projects.OneFormer.oneformer'])
+
 num_things_classes = 80
 num_stuff_classes = 53
 num_classes = num_things_classes + num_stuff_classes
@@ -19,12 +21,12 @@ data_preprocessor = dict(
     mean=[123.675, 116.280, 103.530],
     std=[58.395, 57.120, 57.375],
     bgr_to_rgb=True,
-    pad_size_divisor=32)
-# pad_mask=True,
-# mask_pad_value=0,
-# pad_seg=True,
-# seg_pad_value=255,
-# batch_augments=batch_augments)
+    pad_size_divisor=32,
+    pad_mask=True,
+    mask_pad_value=0,
+    pad_seg=True,
+    seg_pad_value=255,
+    batch_augments=batch_augments)
 
 model = dict(
     type='OneFormer',
@@ -47,7 +49,7 @@ model = dict(
         out_channels=256,
         num_things_classes=num_things_classes,
         num_stuff_classes=num_stuff_classes,
-        num_queries=100,
+        num_queries=150,
         task='panoptic',
         max_seq_len=77,
         task_seq_len=77,
@@ -132,7 +134,12 @@ model = dict(
             reduction='mean',
             naive_dice=True,
             eps=1.0,
-            loss_weight=5.0)),
+            loss_weight=5.0),
+        # loss_contrastive=dict(
+        #     type='ContrastiveLoss',
+        #     loss_weight=0.5,
+        #     contrast_temperature=0.07)
+            ),
     panoptic_fusion_head=dict(
         type='MaskFormerFusionHead',
         num_things_classes=num_things_classes,
@@ -165,35 +172,6 @@ model = dict(
         # it will filter mask area where score is less than 0.5 .
         filter_low_score=True),
     init_cfg=None)
-
-# train_pipeline = [
-#     dict(
-#         type='LoadImageFromFile',
-#         to_float32=True,
-#         # imdecode_backend='pillow',
-#         backend_args=None),
-#     dict(
-#         type='LoadPanopticAnnotations',
-#         with_bbox=True,
-#         with_mask=True,
-#         with_seg=True,
-#         backend_args=None),
-#     dict(type='RandomFlip', prob=0.5),
-#     # large scale jittering
-#     dict(
-#         type='RandomResize',
-#         scale=image_size,
-#         ratio_range=(0.1, 2.0),
-#         keep_ratio=True),
-#     dict(
-#         type='RandomCrop',
-#         crop_size=image_size,
-#         crop_type='absolute',
-#         recompute_bbox=True,
-#         allow_negative_crop=True),
-#     dict(type='PackDetInputs')
-# ]
-# train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
 
 # optimizer
 embed_multi = dict(lr_mult=1.0, decay_mult=0.0)
@@ -233,3 +211,18 @@ train_cfg = dict(
     dynamic_intervals=dynamic_intervals)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
+
+default_hooks = dict(
+    checkpoint=dict(
+        type='CheckpointHook',
+        by_epoch=False,
+        save_last=True,
+        max_keep_ckpts=3,
+        interval=interval))
+log_processor = dict(type='LogProcessor', window_size=50, by_epoch=False)
+
+# Default setting for scaling LR automatically
+#   - `enable` means enable scaling LR automatically
+#       or not by default.
+#   - `base_batch_size` = (8 GPUs) x (2 samples per GPU).
+auto_scale_lr = dict(enable=False, base_batch_size=16)

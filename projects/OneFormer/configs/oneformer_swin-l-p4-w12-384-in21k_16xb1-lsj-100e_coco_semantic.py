@@ -1,4 +1,4 @@
-_base_ = ['./_base_/oneformer_swin-l-p4-w12-384-in21k-lsj_semantic.py']
+_base_ = ['./_base_/oneformer_swin-l-p4-w12-384-in21k_semantic.py']
 
 model = dict(
     test_cfg=dict(

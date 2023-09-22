@@ -189,7 +189,7 @@ class OneFormerHead(Mask2FormerHead):
             self.text_encoder = None
             self.text_projector = None
             self.prompt_ctx = None
-        # TODO:
+        
         self.task = task
         self.class_weight = loss_cls.class_weight
         self.loss_cls = MODELS.build(loss_cls)

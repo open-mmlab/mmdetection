@@ -1,5 +1,5 @@
 _base_ = [
-    './_base_/oneformer_swin-l-p4-w12-384-in21k-lsj_panoptic.py',
+    './_base_/oneformer_swin-l-p4-w12-384-in21k_panoptic.py',
     'mmdet::_base_/datasets/coco_panoptic.py'
 ]
 
