@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from projects.OneFormer.oneformer.oneformer_head import OneFormerHead
 from .anchor_free_head import AnchorFreeHead
 from .anchor_head import AnchorHead
 from .atss_head import ATSSHead
@@ -67,5 +66,5 @@ __all__ = [
     'CenterNetUpdateHead', 'RTMDetHead', 'RTMDetSepBNHead', 'CondInstBboxHead',
     'CondInstMaskHead', 'RTMDetInsHead', 'RTMDetInsSepBNHead',
     'BoxInstBboxHead', 'BoxInstMaskHead', 'ConditionalDETRHead', 'DINOHead',
-    'ATSSVLFusionHead', 'DABDETRHead', 'OneFormerHead'
+    'ATSSVLFusionHead', 'DABDETRHead'
 ]
