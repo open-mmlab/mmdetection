@@ -1,27 +1,55 @@
 import logging
 import math
 from functools import partial
-
 import torch
 import torch.nn as nn
-from torch.nn import Conv2d, 
 import torch.nn.functional as F
-import mmengine
-from .eva_02_utils import (
+from mmengine.model import BaseModule
+from mmcv.cnn import ConvModule, Conv2d
+
+from eva_02_utils import (
     PatchEmbed,
     add_decomposed_rel_pos,
     get_abs_pos,
     window_partition,
     window_unpartition,
     VisionRotaryEmbeddingFast,
+    get_norm,
+    c2_xavier_fill,
+    c2_msra_fill
 )
-from mmengine.model import BaseModule
+
 try:
     import xformers.ops as xops
     HAS_XFORMER=True
 except:
     HAS_XFORMER=False
     pass
+
+
+logger = logging.getLogger(__name__)
+
+
+
+__all__ = ["EVA02_ViT", "SimpleFeaturePyramid", "get_vit_lr_decay_rate"]
+
+
+from dataclasses import dataclass
+from typing import Optional
+
+
+@dataclass
+class ShapeSpec:
+    """
+    A simple structure that contains basic shape specification about a tensor.
+    It is often used as the auxiliary inputs/outputs of models,
+    to complement the lack of shape inference ability among pytorch modules.
+    """
+
+    channels: Optional[int] = None
+    height: Optional[int] = None
+    width: Optional[int] = None
+    stride: Optional[int] = None
 
 
 class SwiGLU(nn.Module):
@@ -135,8 +163,8 @@ class ResBottleneckBlock(BaseModule):
         in_channels,
         out_channels,
         bottleneck_channels,
-        norm="LN",
-        act_layer=nn.GELU,
+        norm=dict(type="LN"),
+        act_layer=dict(type='GELU'),
     ):
         """
         Args:
@@ -150,23 +178,32 @@ class ResBottleneckBlock(BaseModule):
         """
         super().__init__(in_channels, out_channels, 1)
 
-        self.conv1 = Conv2d(in_channels, bottleneck_channels, 1, bias=False)
-        self.norm1 = get_norm(norm, bottleneck_channels)
-        self.act1 = act_layer()
+        self.layer1 = ConvModule(in_channels=in_channels,
+                                 out_channels=bottleneck_channels,
+                                 kernel_size=1,
+                                 bias=False,
+                                 norm_cfg=norm,
+                                 act_cfg=act_layer
+                                 )
+        #self.conv1 = Conv2d(in_channels, bottleneck_channels, 1, bias=False)
+        #self.norm1 = get_norm(norm, bottleneck_channels)
+        #self.act1 = act_layer()
+        self.layer2 = ConvModule(in_channels=bottleneck_channels,
+                                 out_channels=bottleneck_channels,
+                                 kernel_size=3,
+                                 padding=1,
+                                 bias=False,
+                                 norm_cfg=norm,
+                                 act_cfg=act_layer)
 
-        self.conv2 = Conv2d(
-            bottleneck_channels,
-            bottleneck_channels,
-            3,
-            padding=1,
-            bias=False,
-        )
-        self.norm2 = get_norm(norm, bottleneck_channels)
-        self.act2 = act_layer()
-
-        self.conv3 = Conv2d(bottleneck_channels, out_channels, 1, bias=False)
-        self.norm3 = get_norm(norm, out_channels)
-
+        self.layer2 = ConvModule(in_channels=bottleneck_channels,
+                                 out_channels=out_channels,
+                                 kernel_size=1,
+                                 bias=False,
+                                 norm_cfg=norm,
+                                 act_cfg=None)
+        
+        '''
         for layer in [self.conv1, self.conv2, self.conv3]:
             weight_init.c2_msra_fill(layer)
         for layer in [self.norm1, self.norm2]:
@@ -175,6 +212,7 @@ class ResBottleneckBlock(BaseModule):
         # zero init last norm layer.
         self.norm3.weight.data.zero_()
         self.norm3.bias.data.zero_()
+        '''
 
     def forward(self, x):
         out = x
@@ -183,7 +221,8 @@ class ResBottleneckBlock(BaseModule):
 
         out = x + out
         return out
-    
+
+
 class Block(nn.Module):
     """Transformer blocks with support of window attention and residual propagation blocks"""
 
@@ -272,7 +311,8 @@ class Block(nn.Module):
             x = self.residual(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
 
         return x
-    
+
+
 class EVA02_ViT(BaseModule):
     """
     This module implements Vision Transformer (ViT) backbone in :paper:`vitdet`.
@@ -352,12 +392,13 @@ class EVA02_ViT(BaseModule):
 
         half_head_dim = embed_dim // num_heads // 2
         hw_seq_len = img_size // patch_size
-
+        print(f"dim: {half_head_dim}, pt_seq_len: {pt_hw_seq_len}, windowsize: {window_size}")
         self.rope_win = VisionRotaryEmbeddingFast(
             dim=half_head_dim,
             pt_seq_len=pt_hw_seq_len,
             ft_seq_len=window_size if intp_freq else None,
         )
+
         self.rope_glb = VisionRotaryEmbeddingFast(
             dim=half_head_dim,
             pt_seq_len=pt_hw_seq_len,
@@ -408,13 +449,210 @@ class EVA02_ViT(BaseModule):
 
     def forward(self, x):
         x = self.patch_embed(x)
+        #print("pass patch embedding")
         if self.pos_embed is not None:
             x = x + get_abs_pos(
                 self.pos_embed, self.pretrain_use_cls_token, (x.shape[1], x.shape[2])
             )
-
+        #print("pass pos embedding")
         for blk in self.blocks:
             x = blk(x)
-
+        #print("pass blk")
         outputs = {self._out_features[0]: x.permute(0, 3, 1, 2)}
         return outputs
+
+    def output_shape(self):
+        """
+        Returns:
+            dict[str->ShapeSpec]
+        """
+        # this is a backward-compatible default
+        return {
+            name: ShapeSpec(
+                channels=self._out_feature_channels[name], stride=self._out_feature_strides[name]
+            )
+            for name in self._out_features
+        }
+
+
+class SimpleFeaturePyramid(BaseModule):
+    """
+    This module implements SimpleFeaturePyramid in :paper:`vitdet`.
+    It creates pyramid features built on top of the input feature map.
+    """
+
+    def __init__(
+        self,
+        net,
+        in_feature,
+        out_channels,
+        scale_factors,
+        top_block=None,
+        norm="LN",
+        square_pad=0,
+    ):
+        """
+        Args:
+            net (Backbone): module representing the subnetwork backbone.
+                Must be a subclass of :class:`Backbone`.
+            in_feature (str): names of the input feature maps coming
+                from the net.
+            out_channels (int): number of channels in the output feature maps.
+            scale_factors (list[float]): list of scaling factors to upsample or downsample
+                the input features for creating pyramid features.
+            top_block (nn.Module or None): if provided, an extra operation will
+                be performed on the output of the last (smallest resolution)
+                pyramid output, and the result will extend the result list. The top_block
+                further downsamples the feature map. It must have an attribute
+                "num_levels", meaning the number of extra pyramid levels added by
+                this block, and "in_feature", which is a string representing
+                its input feature (e.g., p5).
+            norm (str): the normalization to use.
+            square_pad (int): If > 0, require input images to be padded to specific square size.
+        """
+        super(SimpleFeaturePyramid, self).__init__()
+        # assert isinstance(net, Badr)
+
+        self.scale_factors = scale_factors
+
+        input_shapes = net.output_shape()
+
+        strides = [int(input_shapes[in_feature].stride / scale) for scale in scale_factors]
+        # _assert_strides_are_log2_contiguous(strides)
+
+        dim = input_shapes[in_feature].channels
+        self.stages = []
+        use_bias = norm == ""
+        for idx, scale in enumerate(scale_factors):
+            out_dim = dim
+            if scale == 4.0:
+                layers = [
+                    nn.ConvTranspose2d(dim, dim // 2, kernel_size=2, stride=2),
+                    #nn.LayerNorm(dim//2),
+                    get_norm(norm, dim // 2),
+                    nn.GELU(),
+                    nn.ConvTranspose2d(dim // 2, dim // 4, kernel_size=2, stride=2),
+                ]
+                out_dim = dim // 4
+            elif scale == 2.0:
+                layers = [nn.ConvTranspose2d(dim, dim // 2, kernel_size=2, stride=2)]
+                out_dim = dim // 2
+            elif scale == 1.0:
+                layers = []
+            elif scale == 0.5:
+                layers = [nn.MaxPool2d(kernel_size=2, stride=2)]
+            else:
+                raise NotImplementedError(f"scale_factor={scale} is not supported yet.")
+
+            layers.extend(
+                [
+                    Conv2d(
+                        out_dim,
+                        out_channels,
+                        kernel_size=1,
+                        bias=use_bias,
+                    ),
+                    get_norm(norm, out_channels),
+                    #nn.LayerNorm([out_channels]),
+                    Conv2d(
+                        out_channels,
+                        out_channels,
+                        kernel_size=3,
+                        padding=1,
+                        bias=use_bias,
+                    ),
+                    get_norm(norm, out_channels)
+                    #nn.LayerNorm([out_channels]),
+                ]
+            )
+            layers = nn.Sequential(*layers)
+
+            stage = int(math.log2(strides[idx]))
+            self.add_module(f"simfp_{stage}", layers)
+            self.stages.append(layers)
+
+        self.net = net
+        self.in_feature = in_feature
+        self.top_block = top_block
+        # Return feature names are "p<stage>", like ["p2", "p3", ..., "p6"]
+        self._out_feature_strides = {"p{}".format(int(math.log2(s))): s for s in strides}
+        # top block output feature maps.
+        if self.top_block is not None:
+            for s in range(stage, stage + self.top_block.num_levels):
+                self._out_feature_strides["p{}".format(s + 1)] = 2 ** (s + 1)
+
+        self._out_features = list(self._out_feature_strides.keys())
+        self._out_feature_channels = {k: out_channels for k in self._out_features}
+        self._size_divisibility = strides[-1]
+        self._square_pad = square_pad
+
+    @property
+    def padding_constraints(self):
+        return {
+            "size_divisiblity": self._size_divisibility,
+            "square_size": self._square_pad,
+        }
+
+    def forward(self, x):
+        """
+        Args:
+            x: Tensor of shape (N,C,H,W). H, W must be a multiple of ``self.size_divisibility``.
+
+        Returns:
+            dict[str->Tensor]:
+                mapping from feature map name to pyramid feature map tensor
+                in high to low resolution order. Returned feature names follow the FPN
+                convention: "p<stage>", where stage has stride = 2 ** stage e.g.,
+                ["p2", "p3", ..., "p6"].
+        """
+        bottom_up_features = self.net(x)
+        features = bottom_up_features[self.in_feature]
+        results = []
+
+        for stage in self.stages:
+            results.append(stage(features))
+
+        if self.top_block is not None:
+            if self.top_block.in_feature in bottom_up_features:
+                top_block_in_feature = bottom_up_features[self.top_block.in_feature]
+            else:
+                top_block_in_feature = results[self._out_features.index(self.top_block.in_feature)]
+            results.extend(self.top_block(top_block_in_feature))
+        assert len(self._out_features) == len(results)
+        return {f: res for f, res in zip(self._out_features, results)}
+
+
+def get_vit_lr_decay_rate(name, lr_decay_rate=1.0, num_layers=12):
+    """
+    Calculate lr decay rate for different ViT blocks.
+    Args:
+        name (string): parameter name.
+        lr_decay_rate (float): base lr decay rate.
+        num_layers (int): number of ViT blocks.
+
+    Returns:
+        lr decay rate for the given parameter.
+    """
+    layer_id = num_layers + 1
+    if name.startswith("backbone"):
+        if ".pos_embed" in name or ".patch_embed" in name:
+            layer_id = 0
+        elif ".blocks." in name and ".residual." not in name:
+            layer_id = int(name[name.find(".blocks.") :].split(".")[2]) + 1
+
+    return lr_decay_rate ** (num_layers + 1 - layer_id)
+
+if __name__=='__main__':
+
+    net=EVA02_ViT(window_size=14, embed_dim=768, depth=2, num_heads=2)
+    model=SimpleFeaturePyramid(net,
+                               in_feature="last_feat",
+                                out_channels=256,
+                                scale_factors=(2.0, 1.0, 0.5),  # (4.0, 2.0, 1.0, 0.5) in ViTDet
+                                top_block=None,
+                                norm="LN",
+                                square_pad=1024,
+                            )
+    x=torch.rand([4,3,1024,1024])
+    y=model(x)
+    print(y)
