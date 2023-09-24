@@ -1,18 +1,21 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import math
+from math import pi
+
 import numpy as np
-from scipy import interpolate
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from einops import rearrange, repeat
+from scipy import interpolate
 
 __all__ = [
-    "window_partition",
-    "window_unpartition",
-    "add_decomposed_rel_pos",
-    "get_abs_pos",
-    "PatchEmbed",
-    "VisionRotaryEmbeddingFast",
+    'window_partition',
+    'window_unpartition',
+    'add_decomposed_rel_pos',
+    'get_abs_pos',
+    'PatchEmbed',
+    'VisionRotaryEmbeddingFast',
 ]
 
 
@@ -24,7 +27,8 @@ def window_partition(x, window_size):
         window_size (int): window size.
 
     Returns:
-        windows: windows after partition with [B * num_windows, window_size, window_size, C].
+        windows: windows after partition with [B * num_windows, window_size,
+            window_size, C].
         (Hp, Wp): padded height and width before partition
     """
     B, H, W, C = x.shape
@@ -35,8 +39,10 @@ def window_partition(x, window_size):
         x = F.pad(x, (0, 0, 0, pad_w, 0, pad_h))
     Hp, Wp = H + pad_h, W + pad_w
 
-    x = x.view(B, Hp // window_size, window_size, Wp // window_size, window_size, C)
-    windows = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, window_size, window_size, C)
+    x = x.view(B, Hp // window_size, window_size, Wp // window_size,
+               window_size, C)
+    windows = x.permute(0, 1, 3, 2, 4,
+                        5).contiguous().view(-1, window_size, window_size, C)
     return windows, (Hp, Wp)
 
 
@@ -44,7 +50,8 @@ def window_unpartition(windows, window_size, pad_hw, hw):
     """
     Window unpartition into original sequences and removing padding.
     Args:
-        x (tensor): input tokens with [B * num_windows, window_size, window_size, C].
+        x (tensor): input tokens with
+            [B * num_windows, window_size, window_size, C].
         window_size (int): window size.
         pad_hw (Tuple): padded height and width (Hp, Wp).
         hw (Tuple): original height and width (H, W) before padding.
@@ -55,7 +62,8 @@ def window_unpartition(windows, window_size, pad_hw, hw):
     Hp, Wp = pad_hw
     H, W = hw
     B = windows.shape[0] // (Hp * Wp // window_size // window_size)
-    x = windows.view(B, Hp // window_size, Wp // window_size, window_size, window_size, -1)
+    x = windows.view(B, Hp // window_size, Wp // window_size, window_size,
+                     window_size, -1)
     x = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(B, Hp, Wp, -1)
 
     if Hp > H or Wp > W:
@@ -85,9 +93,11 @@ def get_rel_pos(q_size, k_size, rel_pos):
             rel_pos_resized = F.interpolate(
                 rel_pos.reshape(1, rel_pos.shape[0], -1).permute(0, 2, 1),
                 size=max_rel_dist,
-                mode="linear",
+                mode='linear',
             )
-            rel_pos_resized = rel_pos_resized.reshape(-1, max_rel_dist).permute(1, 0)
+            rel_pos_resized = rel_pos_resized.reshape(-1,
+                                                      max_rel_dist).permute(
+                                                          1, 0)
         else:
             src_size = rel_pos.shape[0]
             dst_size = max_rel_dist
@@ -99,7 +109,7 @@ def get_rel_pos(q_size, k_size, rel_pos):
             cur = 1
             for i in range(src_size // 2):
                 dis.append(cur)
-                cur += q ** (i + 1)
+                cur += q**(i + 1)
 
             r_ids = [-_ for _ in reversed(dis)]
             x = r_ids + [0] + dis
@@ -110,9 +120,11 @@ def get_rel_pos(q_size, k_size, rel_pos):
             all_rel_pos_bias = []
             for i in range(rel_pos.shape[1]):
                 z = rel_pos[:, i].view(src_size).cpu().float().numpy()
-                f = interpolate.interp1d(x, z, kind='cubic', fill_value="extrapolate")
+                f = interpolate.interp1d(
+                    x, z, kind='cubic', fill_value='extrapolate')
                 all_rel_pos_bias.append(
-                    torch.Tensor(f(dx)).contiguous().view(-1, 1).to(rel_pos.device))
+                    torch.Tensor(f(dx)).contiguous().view(-1, 1).to(
+                        rel_pos.device))
             rel_pos_resized = torch.cat(all_rel_pos_bias, dim=-1)
     else:
         rel_pos_resized = rel_pos
@@ -120,7 +132,8 @@ def get_rel_pos(q_size, k_size, rel_pos):
     # Scale the coords with short length if shapes for q and k are different.
     q_coords = torch.arange(q_size)[:, None] * max(k_size / q_size, 1.0)
     k_coords = torch.arange(k_size)[None, :] * max(q_size / k_size, 1.0)
-    relative_coords = (q_coords - k_coords) + (k_size - 1) * max(q_size / k_size, 1.0)
+    relative_coords = (q_coords -
+                       k_coords) + (k_size - 1) * max(q_size / k_size, 1.0)
 
     return rel_pos_resized[relative_coords.long()]
 
@@ -147,23 +160,24 @@ def add_decomposed_rel_pos(attn, q, rel_pos_h, rel_pos_w, q_size, k_size):
 
     B, _, dim = q.shape
     r_q = q.reshape(B, q_h, q_w, dim)
-    rel_h = torch.einsum("bhwc,hkc->bhwk", r_q, Rh)
-    rel_w = torch.einsum("bhwc,wkc->bhwk", r_q, Rw)
+    rel_h = torch.einsum('bhwc,hkc->bhwk', r_q, Rh)
+    rel_w = torch.einsum('bhwc,wkc->bhwk', r_q, Rw)
 
-    attn = (
-        attn.view(B, q_h, q_w, k_h, k_w) + rel_h[:, :, :, :, None] + rel_w[:, :, :, None, :]
-    ).view(B, q_h * q_w, k_h * k_w)
+    attn = (attn.view(B, q_h, q_w, k_h, k_w) + rel_h[:, :, :, :, None] +
+            rel_w[:, :, :, None, :]).view(B, q_h * q_w, k_h * k_w)
 
     return attn
 
 
 def get_abs_pos(abs_pos, has_cls_token, hw):
     """
-    Calculate absolute positional embeddings. If needed, resize embeddings and remove cls_token
-        dimension for the original embeddings.
+    Calculate absolute positional embeddings. If needed, resize embeddings and
+        remove cls_tokencdimension for the original embeddings.
     Args:
-        abs_pos (Tensor): absolute positional embeddings with (1, num_position, C).
-        has_cls_token (bool): If true, has 1 embedding in abs_pos for cls token.
+        abs_pos (Tensor): absolute positional embeddings
+            with (1, num_position, C).
+        has_cls_token (bool): If true, has 1 embedding in
+            abs_pos for cls token.
         hw (Tuple): size of input image tokens.
 
     Returns:
@@ -180,7 +194,7 @@ def get_abs_pos(abs_pos, has_cls_token, hw):
         new_abs_pos = F.interpolate(
             abs_pos.reshape(1, size, size, -1).permute(0, 3, 1, 2),
             size=(h, w),
-            mode="bicubic",
+            mode='bicubic',
             align_corners=False,
         )
 
@@ -190,13 +204,14 @@ def get_abs_pos(abs_pos, has_cls_token, hw):
 
 
 class PatchEmbed(nn.Module):
-    """
-    Image to Patch Embedding.
-    """
+    """Image to Patch Embedding."""
 
-    def __init__(
-        self, kernel_size=(16, 16), stride=(16, 16), padding=(0, 0), in_chans=3, embed_dim=768
-    ):
+    def __init__(self,
+                 kernel_size=(16, 16),
+                 stride=(16, 16),
+                 padding=(0, 0),
+                 in_chans=3,
+                 embed_dim=768):
         """
         Args:
             kernel_size (Tuple): kernel size of the projection layer.
@@ -208,122 +223,121 @@ class PatchEmbed(nn.Module):
         super().__init__()
 
         self.proj = nn.Conv2d(
-            in_chans, embed_dim, kernel_size=kernel_size, stride=stride, padding=padding
-        )
+            in_chans,
+            embed_dim,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding)
 
     def forward(self, x):
         x = self.proj(x)
         # B C H W -> B H W C
         x = x.permute(0, 2, 3, 1)
         return x
-    
 
 
-
-from math import pi
-
-import torch
-from torch import nn
-
-from einops import rearrange, repeat
-
-
-
-def broadcat(tensors, dim = -1):
+def broadcast(tensors, dim=-1):
     num_tensors = len(tensors)
     shape_lens = set(list(map(lambda t: len(t.shape), tensors)))
-    assert len(shape_lens) == 1, 'tensors must all have the same number of dimensions'
+    assert len(
+        shape_lens) == 1, 'tensors must all have the same number of dimensions'
     shape_len = list(shape_lens)[0]
     dim = (dim + shape_len) if dim < 0 else dim
     dims = list(zip(*map(lambda t: list(t.shape), tensors)))
     expandable_dims = [(i, val) for i, val in enumerate(dims) if i != dim]
-    assert all([*map(lambda t: len(set(t[1])) <= 2, expandable_dims)]), 'invalid dimensions for broadcastable concatentation'
+    assert all([*map(lambda t: len(set(t[1])) <= 2, expandable_dims)
+                ]), 'invalid dimensions for broadcastable concatentation'
     max_dims = list(map(lambda t: (t[0], max(t[1])), expandable_dims))
-    expanded_dims = list(map(lambda t: (t[0], (t[1],) * num_tensors), max_dims))
+    expanded_dims = list(
+        map(lambda t: (t[0], (t[1], ) * num_tensors), max_dims))
     expanded_dims.insert(dim, (dim, dims[dim]))
     expandable_shapes = list(zip(*map(lambda t: t[1], expanded_dims)))
-    tensors = list(map(lambda t: t[0].expand(*t[1]), zip(tensors, expandable_shapes)))
-    return torch.cat(tensors, dim = dim)
-
+    tensors = list(
+        map(lambda t: t[0].expand(*t[1]), zip(tensors, expandable_shapes)))
+    return torch.cat(tensors, dim=dim)
 
 
 def rotate_half(x):
-    x = rearrange(x, '... (d r) -> ... d r', r = 2)
-    x1, x2 = x.unbind(dim = -1)
-    x = torch.stack((-x2, x1), dim = -1)
+    x = rearrange(x, '... (d r) -> ... d r', r=2)
+    x1, x2 = x.unbind(dim=-1)
+    x = torch.stack((-x2, x1), dim=-1)
     return rearrange(x, '... d r -> ... (d r)')
 
 
-
 class VisionRotaryEmbedding(nn.Module):
+
     def __init__(
         self,
         dim,
         pt_seq_len,
         ft_seq_len=None,
-        custom_freqs = None,
-        freqs_for = 'lang',
-        theta = 10000,
-        max_freq = 10,
-        num_freqs = 1,
+        custom_freqs=None,
+        freqs_for='lang',
+        theta=10000,
+        max_freq=10,
+        num_freqs=1,
     ):
         super().__init__()
         if custom_freqs:
             freqs = custom_freqs
         elif freqs_for == 'lang':
-            freqs = 1. / (theta ** (torch.arange(0, dim, 2)[:(dim // 2)].float() / dim))
+            freqs = 1. / (
+                theta**(torch.arange(0, dim, 2)[:(dim // 2)].float() / dim))
         elif freqs_for == 'pixel':
             freqs = torch.linspace(1., max_freq / 2, dim // 2) * pi
         elif freqs_for == 'constant':
             freqs = torch.ones(num_freqs).float()
         else:
             raise ValueError(f'unknown modality {freqs_for}')
-
-        if ft_seq_len is None: ft_seq_len = pt_seq_len
+        if ft_seq_len is None:
+            ft_seq_len = pt_seq_len
         t = torch.arange(ft_seq_len) / ft_seq_len * pt_seq_len
 
         freqs_h = torch.einsum('..., f -> ... f', t, freqs)
-        freqs_h = repeat(freqs_h, '... n -> ... (n r)', r = 2)
+        freqs_h = repeat(freqs_h, '... n -> ... (n r)', r=2)
 
         freqs_w = torch.einsum('..., f -> ... f', t, freqs)
-        freqs_w = repeat(freqs_w, '... n -> ... (n r)', r = 2)
+        freqs_w = repeat(freqs_w, '... n -> ... (n r)', r=2)
 
-        freqs = broadcat((freqs_h[:, None, :], freqs_w[None, :, :]), dim = -1)
+        freqs = broadcast((freqs_h[:, None, :], freqs_w[None, :, :]), dim=-1)
 
-        self.register_buffer("freqs_cos", freqs.cos())
-        self.register_buffer("freqs_sin", freqs.sin())
+        self.register_buffer('freqs_cos', freqs.cos())
+        self.register_buffer('freqs_sin', freqs.sin())
 
         print('======== shape of rope freq', self.freqs_cos.shape, '========')
 
-    def forward(self, t, start_index = 0):
+    def forward(self, t, start_index=0):
         rot_dim = self.freqs_cos.shape[-1]
         end_index = start_index + rot_dim
-        assert rot_dim <= t.shape[-1], f'feature dimension {t.shape[-1]} is not of sufficient size to rotate in all the positions {rot_dim}'
-        t_left, t, t_right = t[..., :start_index], t[..., start_index:end_index], t[..., end_index:]
+        assert rot_dim <= t.shape[-1], f'feature dimension {t.shape[-1]} is \
+        not of sufficient size to rotate in all the positions {rot_dim}'
+
+        t_left, t, t_right = t[..., :start_index], t[
+            ..., start_index:end_index], t[..., end_index:]
         t = (t * self.freqs_cos) + (rotate_half(t) * self.freqs_sin)
-        return torch.cat((t_left, t, t_right), dim = -1)
-
-
+        return torch.cat((t_left, t, t_right), dim=-1)
 
 
 class VisionRotaryEmbeddingFast(nn.Module):
+
     def __init__(
         self,
         dim,
         pt_seq_len=16,
         ft_seq_len=None,
-        custom_freqs = None,
-        freqs_for = 'lang',
-        theta = 10000,
-        max_freq = 10,
-        num_freqs = 1,
+        custom_freqs=None,
+        freqs_for='lang',
+        theta=10000,
+        max_freq=10,
+        num_freqs=1,
     ):
         super().__init__()
         if custom_freqs:
             freqs = custom_freqs
         elif freqs_for == 'lang':
 
-            freqs = 1. / (theta ** (torch.arange(0, dim, 2)[:int(dim // 2)].float() / dim))
+            freqs = 1. / (
+                theta**(torch.arange(0, dim, 2)[:int(dim // 2)].float() / dim))
         elif freqs_for == 'pixel':
             freqs = torch.linspace(1., max_freq / 2, dim // 2) * pi
         elif freqs_for == 'constant':
@@ -331,30 +345,31 @@ class VisionRotaryEmbeddingFast(nn.Module):
         else:
             raise ValueError(f'unknown modality {freqs_for}')
 
-        if ft_seq_len is None: ft_seq_len = pt_seq_len
+        if ft_seq_len is None:
+            ft_seq_len = pt_seq_len
         t = torch.arange(ft_seq_len) / ft_seq_len * pt_seq_len
         print(freqs.shape)
         freqs = torch.einsum('..., f -> ... f', t, freqs)
-        freqs = repeat(freqs, '... n -> ... (n r)', r = 2)
-        freqs = broadcat((freqs[:, None, :], freqs[None, :, :]), dim = -1)
+        freqs = repeat(freqs, '... n -> ... (n r)', r=2)
+        freqs = broadcast((freqs[:, None, :], freqs[None, :, :]), dim=-1)
 
         freqs_cos = freqs.cos().view(-1, freqs.shape[-1])
         freqs_sin = freqs.sin().view(-1, freqs.shape[-1])
 
-        self.register_buffer("freqs_cos", freqs_cos)
-        self.register_buffer("freqs_sin", freqs_sin)
+        self.register_buffer('freqs_cos', freqs_cos)
+        self.register_buffer('freqs_sin', freqs_sin)
 
         print('======== shape of rope freq', self.freqs_cos.shape, '========')
 
-    def forward(self, t): 
-        return  t * self.freqs_cos + rotate_half(t) * self.freqs_sin
+    def forward(self, t):
+        return t * self.freqs_cos + rotate_half(t) * self.freqs_sin
 
 
 class LayerNorm(nn.Module):
-    """
-    A LayerNorm variant, popularized by Transformers, that performs point-wise mean and
-    variance normalization over the channel dimension for inputs that have shape
-    (batch_size, channels, height, width).
+    """A LayerNorm variant, popularized by Transformers, that performs point-
+    wise mean and variance normalization over the channel dimension for inputs
+    that have shape (batch_size, channels, height, width).
+
     https://github.com/facebookresearch/ConvNeXt/blob/d1fa8f6fef0a165b27399986cc2bdacc92777e40/models/convnext.py#L119  # noqa B950
     """
 
@@ -363,7 +378,7 @@ class LayerNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(normalized_shape))
         self.bias = nn.Parameter(torch.zeros(normalized_shape))
         self.eps = eps
-        self.normalized_shape = (normalized_shape,)
+        self.normalized_shape = (normalized_shape, )
 
     def forward(self, x):
         u = x.mean(1, keepdim=True)
@@ -371,6 +386,7 @@ class LayerNorm(nn.Module):
         x = (x - u) / torch.sqrt(s + self.eps)
         x = self.weight[:, None, None] * x + self.bias[:, None, None]
         return x
+
 
 def get_norm(norm, out_channels):
     """
@@ -388,13 +404,13 @@ def get_norm(norm, out_channels):
         if len(norm) == 0:
             return None
         norm = {
-            "LN": lambda channels: LayerNorm(channels),
+            'LN': lambda channels: LayerNorm(channels),
         }[norm]
     return norm(out_channels)
 
+
 def c2_xavier_fill(module: nn.Module) -> None:
-    """
-    Initialize `module.weight` using the "XavierFill" implemented in Caffe2.
+    """Initialize `module.weight` using the "XavierFill" implemented in Caffe2.
     Also initializes `module.bias` to 0.
 
     Args:
@@ -408,13 +424,12 @@ def c2_xavier_fill(module: nn.Module) -> None:
 
 
 def c2_msra_fill(module: nn.Module) -> None:
-    """
-    Initialize `module.weight` using the "MSRAFill" implemented in Caffe2.
+    """Initialize `module.weight` using the "MSRAFill" implemented in Caffe2.
     Also initializes `module.bias` to 0.
 
     Args:
         module (torch.nn.Module): module to initialize.
     """
-    nn.init.kaiming_normal_(module.weight, mode="fan_out", nonlinearity="relu")
+    nn.init.kaiming_normal_(module.weight, mode='fan_out', nonlinearity='relu')
     if module.bias is not None:
         nn.init.constant_(module.bias, 0)
