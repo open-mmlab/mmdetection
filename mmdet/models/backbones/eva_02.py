@@ -8,19 +8,12 @@ from typing import Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from eva_02_utils import (PatchEmbed, VisionRotaryEmbeddingFast, get_abs_pos,
+from .eva_02_utils import (PatchEmbed, VisionRotaryEmbeddingFast, get_abs_pos,
                           get_norm, window_partition, window_unpartition)
 from mmcv.cnn import Conv2d, ConvModule
 from mmengine.model import BaseModule
 
 from mmdet.registry import MODELS
-
-try:
-    import xformers.ops as xops
-    HAS_XFORMER = True
-except ImportError:
-    HAS_XFORMER = False
-    pass
 
 logger = logging.getLogger(__name__)
 
