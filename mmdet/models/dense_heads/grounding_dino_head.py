@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import math
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -25,18 +25,33 @@ class ContrastiveEmbed(nn.Module):
 
     Args:
         max_text_len (int, optional): Maximum length of text.
-        log_scale (float, optional):  The initial value of a
+        log_scale (Optional[Union[str, float]]):  The initial value of a
           learnable parameter to multiply with the similarity
           matrix to normalize the output.  Defaults to 0.0.
+          - If set to 'auto', the similarity matrix will be normalized by
+            a fixed value ``sqrt(d_c)`` where ``d_c`` is the channel number.
+          - If set to 'none' or ``None``, there is no normalization applied.
+          - If set to a float number, the similarity matrix will be multiplied
+            by ``exp(log_scale)``, where ``log_scale`` is learnable.
         bias (bool, optional): Whether to add bias to the output.
-            Useful when training from scratch. Defaults to False.
+          If set to ``True``, a learnable bias that is initialized as -4.6
+          will be added to the output. Useful when training from scratch.
+          Defaults to False.
     """
 
-    def __init__(self, max_text_len=256, log_scale=0.0, bias=False):
+    def __init__(self,
+                 max_text_len: int = 256,
+                 log_scale: Optional[Union[str, float]] = None,
+                 bias: bool = False):
         super().__init__()
         self.max_text_len = max_text_len
-        self.log_scale = nn.Parameter(
-            torch.Tensor([float(log_scale)]), requires_grad=True)
+        if isinstance(log_scale, float):
+            self.log_scale = nn.Parameter(
+                torch.Tensor([float(log_scale)]), requires_grad=True)
+        elif log_scale not in ['auto', 'none', None]:
+            raise ValueError(f'log_scale should be one of '
+                             f'"auto", "none", None, but got {log_scale}')
+
         self.bias = None
         if bias:
             bias_value = -math.log((1 - 0.01) / 0.01)
@@ -56,7 +71,11 @@ class ContrastiveEmbed(nn.Module):
             Tensor: Classification score.
         """
         res = visual_feat @ text_feat.transpose(-1, -2)
-        res = res * self.log_scale.exp()
+        if isinstance(self.log_scale, nn.Parameter):
+            res = res * self.log_scale.exp()
+        elif self.log_scale == 'auto':
+            # NOTE: similar to the normalizer in self-attention
+            res = res / math.sqrt(visual_feat.shape[-1])
         if self.bias is not None:
             res = res + self.bias
         res.masked_fill_(~text_token_mask[:, None, :], float('-inf'))
@@ -75,8 +94,8 @@ class GroundingDINOHead(DINOHead):
     Open-Set Object Detection.
 
     Args:
-        contrastive_cfg (dict, optional): Contrastive configuration that contains
-            keys like ``max_text_len``. Defaults to dict(max_text_len=256).
+        contrastive_cfg (dict, optional): Contrastive config that contains
+          keys like ``max_text_len``. Defaults to dict(max_text_len=256).
     """
 
     def __init__(self, contrastive_cfg=dict(max_text_len=256), **kwargs):

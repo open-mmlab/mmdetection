@@ -90,7 +90,7 @@ model = dict(
         type='GroundingDINOHead',
         num_classes=80,
         sync_cls_avg_factor=True,
-        contrastive_cfg=dict(max_text_len=256),
+        contrastive_cfg=dict(max_text_len=256, log_scale=0.0, bias=False),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
