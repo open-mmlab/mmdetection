@@ -25,6 +25,8 @@ class ContrastiveEmbed(nn.Module):
 
     Args:
         max_text_len (int, optional): Maximum length of text.
+        bias (bool, optional): Whether to add bias to the output.
+            Useful when training from scratch. Defaults to False.
     """
 
     def __init__(self, max_text_len=256, bias=False):
@@ -67,7 +69,8 @@ class GroundingDINOHead(DINOHead):
     Open-Set Object Detection.
 
     Args:
-        max_text_len (int, optional): Maximum length of text.
+        contrastive_cfg (dict, optional): Contrastive configuration that contains
+            keys like ``max_text_len``. Defaults to dict(max_text_len=256).
     """
 
     def __init__(self, contrastive_cfg=dict(max_text_len=256), **kwargs):
@@ -159,7 +162,8 @@ class GroundingDINOHead(DINOHead):
         pos_assigned_gt_inds = assign_result.gt_inds[pos_inds] - 1
         pos_gt_bboxes = gt_bboxes[pos_assigned_gt_inds.long(), :]
 
-        # changed
+        # Major changes. The labels are 0-1 binary labels for each bbox
+        # and text tokens.
         labels = gt_bboxes.new_full((num_bboxes, self.max_text_len),
                                     0,
                                     dtype=torch.float32)
@@ -431,6 +435,8 @@ class GroundingDINOHead(DINOHead):
                 num_queries_total, 4) and each `inter_reference` has shape
                 (bs, num_queries, 4) with the last dimension arranged as
                 (cx, cy, w, h).
+            memory_text (Tensor): Memory text. It has shape (bs, len_text,
+                text_embed_dims).
             enc_outputs_class (Tensor): The score of each point on encode
                 feature map, has shape (bs, num_feat_points, cls_out_channels).
             enc_outputs_coord (Tensor): The proposal generate from the
