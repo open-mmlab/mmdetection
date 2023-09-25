@@ -48,6 +48,8 @@ train_pipeline = [
 
 # dataloader
 train_dataloader = dict(batch_size=8)
+val_dataloader = dict(batch_size=8)
+test_dataloader = dict(batch_size=4)
 
 # optimizer
 optim_wrapper = dict(
