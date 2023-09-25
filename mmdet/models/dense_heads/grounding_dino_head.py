@@ -25,13 +25,18 @@ class ContrastiveEmbed(nn.Module):
 
     Args:
         max_text_len (int, optional): Maximum length of text.
+        log_scale (float, optional):  The initial value of a
+          learnable parameter to multiply with the similarity
+          matrix to normalize the output.  Defaults to 0.0.
         bias (bool, optional): Whether to add bias to the output.
             Useful when training from scratch. Defaults to False.
     """
 
-    def __init__(self, max_text_len=256, bias=False):
+    def __init__(self, max_text_len=256, log_scale=0.0, bias=False):
         super().__init__()
         self.max_text_len = max_text_len
+        self.log_scale = nn.Parameter(
+            torch.Tensor([float(log_scale)]), requires_grad=True)
         self.bias = None
         if bias:
             bias_value = -math.log((1 - 0.01) / 0.01)
@@ -51,8 +56,9 @@ class ContrastiveEmbed(nn.Module):
             Tensor: Classification score.
         """
         res = visual_feat @ text_feat.transpose(-1, -2)
+        res = res * self.log_scale.exp()
         if self.bias is not None:
-            res = res / math.sqrt(visual_feat.size(-1)) + self.bias
+            res = res + self.bias
         res.masked_fill_(~text_token_mask[:, None, :], float('-inf'))
 
         new_res = torch.full((*res.shape[:-1], self.max_text_len),
