@@ -30,7 +30,7 @@ Models:
           box AP: 48.5
     Weights: https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth
   - Name: grounding_dino_swin-b_pretrain_mixeddata
-    In Collection: GLIPGrounding DINO
+    In Collection: Grounding DINO
     Config: configs/grounding_dino/grounding_dino_swin-b_pretrain_mixeddata.py
     Results:
       - Task: Object Detection
