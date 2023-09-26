@@ -5,7 +5,7 @@ from .darknet import Darknet
 from .detectors_resnet import DetectoRS_ResNet
 from .detectors_resnext import DetectoRS_ResNeXt
 from .efficientnet import EfficientNet
-from .eva_02 import EVA02_ViT, SimpleFeaturePyramid
+from .eva_02 import EVA02_ViT, SimpleFPN
 from .hourglass import HourglassNet
 from .hrnet import HRNet
 from .mobilenet_v2 import MobileNetV2
@@ -25,5 +25,5 @@ __all__ = [
     'DetectoRS_ResNeXt', 'Darknet', 'ResNeSt', 'TridentResNet', 'CSPDarknet',
     'SwinTransformer', 'PyramidVisionTransformer',
     'PyramidVisionTransformerV2', 'EfficientNet', 'CSPNeXt', 'EVA02_ViT',
-    'SimpleFeaturePyramid'
+    'SimpleFPN'
 ]

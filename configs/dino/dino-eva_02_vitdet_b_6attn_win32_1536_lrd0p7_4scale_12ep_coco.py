@@ -1,8 +1,9 @@
 _base_ = './dino-4scale_r50_8xb2-12e_coco.py'
 
+norm_cfg = dict(type='LN2d', requires_grad=True)
+
 model = dict(
-    type='SimpleFeaturePyramid',
-    net=dict(
+    backbone=dict(
         type='EVA02_ViT',
         img_size=1536,
         patch_size=16,
@@ -14,9 +15,13 @@ model = dict(
         use_act_checkpoint=True,
         drop_path_rate=0.1,
         window_block_indexes=[0, 2, 4, 6, 8, 10]),
-    square_pad=1536,
-    init_cfg=dict(
-        type='Pretrained',
-        checkpoint='/path/to/eva02_B_pt_\
-                in21k_p14to16.pt'),
-)
+    neck=dict(
+        type='SimpleFPN',
+        backbone_channel=768,
+        in_channels=[192, 384, 768, 768],
+        out_channels=256,
+        num_outs=4,
+        norm_cfg=norm_cfg,
+    ))
+
+custom_hooks = [dict(type='Fp16CompresssionHook')]
