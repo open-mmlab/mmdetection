@@ -77,3 +77,5 @@ train_dataloader = dict(
     dataset=dict(type='ConcatDataset', datasets=[dataset_det, dataset_cls]))
 
 load_from = './first_stage/detic_centernet2_r50_fpn_4x_lvis-base_boxsup.pth'
+
+find_unused_parameters = True

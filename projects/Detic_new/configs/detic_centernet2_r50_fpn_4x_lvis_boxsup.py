@@ -104,8 +104,8 @@ model = dict(
                 loss_cls=dict(
                     type='CrossEntropyLoss', use_sigmoid=True,
                     loss_weight=1.0),
-                loss_bbox=dict(
-                    type='SmoothL1Loss', beta=1e-3, loss_weight=1.0)),
+                loss_bbox=dict(type='SmoothL1Loss', beta=0.1,
+                               loss_weight=1.0)),
             dict(
                 type='DeticBBoxHead',
                 in_channels=256,
@@ -124,8 +124,8 @@ model = dict(
                 loss_cls=dict(
                     type='CrossEntropyLoss', use_sigmoid=True,
                     loss_weight=1.0),
-                loss_bbox=dict(
-                    type='SmoothL1Loss', beta=1e-3, loss_weight=1.0)),
+                loss_bbox=dict(type='SmoothL1Loss', beta=0.1,
+                               loss_weight=1.0)),
             dict(
                 type='DeticBBoxHead',
                 in_channels=256,
@@ -144,8 +144,7 @@ model = dict(
                 loss_cls=dict(
                     type='CrossEntropyLoss', use_sigmoid=True,
                     loss_weight=1.0),
-                loss_bbox=dict(
-                    type='SmoothL1Loss', beta=1e-3, loss_weight=1.0))
+                loss_bbox=dict(type='SmoothL1Loss', beta=0.1, loss_weight=1.0))
         ],
         mask_roi_extractor=dict(
             type='SingleRoIExtractor',

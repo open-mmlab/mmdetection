@@ -100,6 +100,17 @@ optim_wrapper = dict(
     type='OptimWrapper',
     optimizer=dict(type='AdamW', lr=0.0001, weight_decay=0.0001))
 
-load_from = './first_stage/detic_centernet2_swin-b_fpn_4x_lvis_boxsup.pth'
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
+        end=1000),
+    dict(
+        type='CosineAnnealingLR',
+        begin=0,
+        by_epoch=False,
+        T_max=max_iter,
+    )
+]
 
-find_unused_parameters = False
+load_from = './first_stage/detic_centernet2_swin-b_fpn_4x_lvis_boxsup.pth'
+find_unused_parameters = True

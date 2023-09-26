@@ -61,3 +61,18 @@ train_cfg = dict(
 optim_wrapper = dict(
     type='OptimWrapper',
     optimizer=dict(type='AdamW', lr=0.0001, weight_decay=0.0001))
+
+param_scheduler = [
+    dict(
+        type='LinearLR',
+        start_factor=0.0001,
+        by_epoch=False,
+        begin=0,
+        end=10000),
+    dict(
+        type='CosineAnnealingLR',
+        begin=0,
+        by_epoch=False,
+        T_max=max_iter,
+    )
+]

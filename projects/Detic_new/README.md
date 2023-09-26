@@ -196,10 +196,19 @@ bash ./tools/dist_train.sh projects/Detic_new/detic_centernet2_r50_fpn_4x_lvis_i
 
 #### Standard LVIS Results
 
-|                                             Model (Config)                                              | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) | Download |
-| :-----------------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: | :------: |
-|     [detic_centernet2_r50_fpn_4x_lvis_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvis_boxsup.py)     |   31.6   |        31.5        |     26.6      |           25.6           |          |
-| [detic_centernet2_r50_fpn_4x_lvis_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis.py) |   32.9   |        33.2        |     30.9      |           29.7           |          |
+|                                                Model (Config)                                                 | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) | Download |
+| :-----------------------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: | :------: |
+|        [detic_centernet2_r50_fpn_4x_lvis_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvis_boxsup.py)        |   31.6   |        31.5        |     26.6      |           25.6           |          |
+|    [detic_centernet2_r50_fpn_4x_lvis_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis.py)    |   32.9   |        33.2        |     30.9      |           29.7           |          |
+|     [detic_centernet2_swin-b_fpn_4x_lvis_boxsup](./configs/detic_centernet2_swin-b_fpn_4x_lvis_boxsup.py)     |   40.7   |        40.7        |     38.0      |           35.9           |          |
+| [detic_centernet2_swin-b_fpn_4x_lvis_in21k-lvis](./configs/detic_centernet2_swin-b_fpn_4x_lvis_in21k-lvis.py) |   41.7   |        41.7        |     41.7      |           41.7           |          |
+
+#### Open-vocabulary LVIS Results
+
+|                                                 Model (Config)                                                  | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) | Download |
+| :-------------------------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: | :------: |
+|     [detic_centernet2_r50_fpn_4x_lvisbase_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvisbase_boxsup.py)     |   30.4   |        30.2        |     16.2      |           16.4           |          |
+| [detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis.py) |   32.6   |        32.4        |     27.4      |           24.9           |          |
 
 ### Testing
 
@@ -217,8 +226,6 @@ The models are converted from the official model zoo.
 
 |                                                    Model (Config)                                                     | mask mAP | mask mAP_novel |
 | :-------------------------------------------------------------------------------------------------------------------: | :------: | :------------: |
-|        [detic_centernet2_r50_fpn_4x_lvisbase_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvisbase_boxsup.py)        |   30.2   |      16.4      |
-|    [detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis.py)    |   32.4   |      25.2      |
 |     [detic_centernet2_swin-b_fpn_4x_lvisbase_boxsup](./configs/detic_centernet2_swin-b_fpn_4x_lvisbase_boxsup.py)     |   38.4   |      21.9      |
 | [detic_centernet2_swin-b_fpn_4x_lvisbase_in21k-lvis](./configs/detic_centernet2_swin-b_fpn_4x_lvisbase_in21k-lvis.py) |   40.7   |      34.0      |
 
