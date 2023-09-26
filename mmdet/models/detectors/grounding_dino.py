@@ -95,7 +95,8 @@ class GroundingDINO(DINO):
                 return_tensors='pt')
             entities = original_caption
         else:
-            original_caption = original_caption.strip(self._special_tokens)
+            if not original_caption.endswith('.'):
+                original_caption = original_caption + self._special_tokens
             # NOTE: Tokenizer in Grounding DINO is different from
             # that in GLIP. The tokenizer in GLIP will pad the
             # caption_string to max_length, while the tokenizer

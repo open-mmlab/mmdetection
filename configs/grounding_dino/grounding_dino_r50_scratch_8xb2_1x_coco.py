@@ -2,7 +2,6 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-load_from = 'groundingdino_swint_ogc_mmdet-822d7e9d.pth'
 lang_model_name = 'bert-base-uncased'
 
 model = dict(
@@ -26,24 +25,18 @@ model = dict(
         add_pooling_layer=False,
     ),
     backbone=dict(
-        type='SwinTransformer',
-        embed_dims=96,
-        depths=[2, 2, 6, 2],
-        num_heads=[3, 6, 12, 24],
-        window_size=7,
-        mlp_ratio=4,
-        qkv_bias=True,
-        qk_scale=None,
-        drop_rate=0.,
-        attn_drop_rate=0.,
-        drop_path_rate=0.2,
-        patch_norm=True,
+        type='ResNet',
+        depth=50,
+        num_stages=4,
         out_indices=(1, 2, 3),
-        with_cp=True,
-        convert_weights=False),
+        frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=False),
+        norm_eval=True,
+        style='pytorch',
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     neck=dict(
         type='ChannelMapper',
-        in_channels=[192, 384, 768],
+        in_channels=[512, 1024, 2048],
         kernel_size=1,
         out_channels=256,
         act_cfg=None,
@@ -90,7 +83,7 @@ model = dict(
         type='GroundingDINOHead',
         num_classes=80,
         sync_cls_avg_factor=True,
-        contrastive_cfg=dict(max_text_len=256, log_scale=0.0, bias=False),
+        contrastive_cfg=dict(max_text_len=256, log_scale='auto', bias=True),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -117,7 +110,7 @@ model = dict(
 
 # dataset settings
 train_pipeline = [
-    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
+    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomFlip', prob=0.5),
     dict(
@@ -159,7 +152,7 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
+    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
     dict(type='FixScaleResize', scale=(800, 1333), keep_ratio=True),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
@@ -182,7 +175,10 @@ test_dataloader = val_dataloader
 optim_wrapper = dict(
     _delete_=True,
     type='OptimWrapper',
-    optimizer=dict(type='AdamW', lr=0.00001, weight_decay=0.0001),
+    optimizer=dict(
+        type='AdamW',
+        lr=0.0001,  # 0.0002 for DeformDETR
+        weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
     paramwise_cfg=dict(custom_keys={
         'absolute_pos_embed': dict(decay_mult=0.),
@@ -190,6 +186,12 @@ optim_wrapper = dict(
     }))
 # learning policy
 max_epochs = 12
+train_cfg = dict(
+    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
+
+val_cfg = dict(type='ValLoop')
+test_cfg = dict(type='TestLoop')
+
 param_scheduler = [
     dict(
         type='MultiStepLR',
