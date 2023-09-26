@@ -36,6 +36,7 @@ def parse_args():
 
     return args
 
+
 def write_csv(datas, args):
     num = 0
     fail_num = 0
@@ -207,11 +208,13 @@ def sum_excel(in_csv, out_xlsx):
             elif i != 1 and i < 5:
                 df_cate.append(value.iloc[:, i].astype(float).sum())
             else:
+                # import pdb; pdb.set_trace()
                 df_cate.append(
                     format(
-                        value.iloc[:, i].astype(float).replace('',
-                                                               np.nan).mean(),
+                        value.iloc[:, i].astype(float).replace(
+                            '', np.nan).replace(-1.0000, np.nan).mean(),
                         '.4f'))
+
         # import pdb;pdb.set_trace()
         df_new.loc[len(df_new)] = df_cate
 
