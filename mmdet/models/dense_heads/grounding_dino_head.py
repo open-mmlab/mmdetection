@@ -45,6 +45,7 @@ class ContrastiveEmbed(nn.Module):
                  bias: bool = False):
         super().__init__()
         self.max_text_len = max_text_len
+        self.log_scale = log_scale
         if isinstance(log_scale, float):
             self.log_scale = nn.Parameter(
                 torch.Tensor([float(log_scale)]), requires_grad=True)
