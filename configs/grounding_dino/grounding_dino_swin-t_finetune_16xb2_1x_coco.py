@@ -177,8 +177,6 @@ val_dataloader = dict(
     dataset=dict(pipeline=test_pipeline, return_classes=True))
 test_dataloader = val_dataloader
 
-# We did not adopt the official 24e optimizer strategy
-# because the results indicate that the current strategy is superior.
 optim_wrapper = dict(
     _delete_=True,
     type='OptimWrapper',
