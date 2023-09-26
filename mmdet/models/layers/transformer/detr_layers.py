@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import warnings
 from typing import Union
 
 import torch
@@ -52,10 +51,10 @@ class DetrTransformerEncoder(BaseModule):
 
         if self.num_cp > 0:
             if checkpoint_wrapper is None:
-                warnings.warn('If you want to reduce GPU memory usage, \
-                               please install fairscale by executing the \
-                               following command: pip install fairscale.')
-                return
+                raise NotImplementedError(
+                    'If you want to reduce GPU memory usage, \
+                    please install fairscale by executing the \
+                    following command: pip install fairscale.')
             for i in range(self.num_cp):
                 self.layers[i] = checkpoint_wrapper(self.layers[i])
 

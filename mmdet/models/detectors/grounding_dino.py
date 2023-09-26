@@ -7,7 +7,7 @@ import torch.nn as nn
 from torch import Tensor
 
 from mmdet.registry import MODELS
-from mmdet.structures import OptSampleList
+from mmdet.structures import OptSampleList, SampleList
 from ..layers import SinePositionalEncoding
 from ..layers.transformer.grounding_dino_layers import (
     GroundingDinoTransformerDecoder, GroundingDinoTransformerEncoder)
@@ -57,6 +57,10 @@ class GroundingDINO(DINO):
             self.language_model.language_backbone.body.language_dim,
             self.embed_dims,
             bias=True)
+
+    def init_weights(self) -> None:
+        """Initialize weights for Transformer and other components."""
+        super().init_weights()
         nn.init.constant_(self.text_feat_map.bias.data, 0)
         nn.init.xavier_uniform_(self.text_feat_map.weight.data)
 
@@ -67,9 +71,7 @@ class GroundingDINO(DINO):
         """Get the tokens positive and prompts for the caption."""
         if isinstance(original_caption, (list, tuple)) or custom_entities:
             if custom_entities and isinstance(original_caption, str):
-                if original_caption.endswith(self._special_tokens):
-                    original_caption = original_caption.replace(
-                        self._special_tokens, '')
+                original_caption = original_caption.strip(self._special_tokens)
                 original_caption = original_caption.split(self._special_tokens)
                 original_caption = list(
                     filter(lambda x: len(x) > 0, original_caption))
@@ -93,9 +95,8 @@ class GroundingDINO(DINO):
                 return_tensors='pt')
             entities = original_caption
         else:
-            if original_caption.endswith(self._special_tokens):
-                original_caption = original_caption.replace(
-                    self._special_tokens, '')
+            if not original_caption.endswith('.'):
+                original_caption = original_caption + self._special_tokens
             # NOTE: Tokenizer in Grounding DINO is different from
             # that in GLIP. The tokenizer in GLIP will pad the
             # caption_string to max_length, while the tokenizer
@@ -121,7 +122,19 @@ class GroundingDINO(DINO):
             self,
             original_caption: Union[str, list, tuple],
             custom_entities: bool = False) -> Tuple[dict, str, Tensor, list]:
-        """Get the tokens positive and prompts for the caption."""
+        """Get the tokens positive and prompts for the caption.
+
+        Args:
+            original_caption (str): The original caption, e.g. 'bench . car .'
+            custom_entities (bool, optional): Whether to use custom entities.
+                If ``True``, the ``original_caption`` should be a list of
+                strings, each of which is a word. Defaults to False.
+
+        Returns:
+            Tuple[dict, str, dict, str]: The dict is a mapping from each entity
+            id, which is numbered from 1, to its positive token id.
+            The str represents the prompts.
+        """
         tokenized, caption_string, tokens_positive, entities = \
             self.get_tokens_and_prompts(
                 original_caption, custom_entities)
@@ -245,6 +258,68 @@ class GroundingDINO(DINO):
         head_inputs_dict['memory_text'] = memory_text
         head_inputs_dict['text_token_mask'] = text_token_mask
         return decoder_inputs_dict, head_inputs_dict
+
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> Union[dict, list]:
+        # TODO: Only open vocabulary tasks are supported for training now.
+        text_prompts = [
+            data_samples.text for data_samples in batch_data_samples
+        ]
+
+        gt_labels = [
+            data_samples.gt_instances.labels
+            for data_samples in batch_data_samples
+        ]
+
+        new_text_prompts = []
+        positive_maps = []
+        if len(set(text_prompts)) == 1:
+            # All the text prompts are the same,
+            # so there is no need to calculate them multiple times.
+            tokenized, caption_string, tokens_positive, _ = \
+                self.get_tokens_and_prompts(
+                    text_prompts[0], True)
+            new_text_prompts = [caption_string] * len(batch_inputs)
+            for gt_label in gt_labels:
+                new_tokens_positive = [
+                    tokens_positive[label] for label in gt_label
+                ]
+                _, positive_map = self.get_positive_map(
+                    tokenized, new_tokens_positive)
+                positive_maps.append(positive_map)
+        else:
+            for text_prompt, gt_label in zip(text_prompts, gt_labels):
+                tokenized, caption_string, tokens_positive, _ = \
+                    self.get_tokens_and_prompts(
+                        text_prompt, True)
+                new_tokens_positive = [
+                    tokens_positive[label] for label in gt_label
+                ]
+                _, positive_map = self.get_positive_map(
+                    tokenized, new_tokens_positive)
+                positive_maps.append(positive_map)
+                new_text_prompts.append(caption_string)
+
+        text_dict = self.language_model(new_text_prompts)
+        if self.text_feat_map is not None:
+            text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
+
+        for i, data_samples in enumerate(batch_data_samples):
+            positive_map = positive_maps[i].to(
+                batch_inputs.device).bool().float()
+            text_token_mask = text_dict['text_token_mask'][i]
+            data_samples.gt_instances.positive_maps = positive_map
+            data_samples.gt_instances.text_token_mask = \
+                text_token_mask.unsqueeze(0).repeat(
+                    len(positive_map), 1)
+
+        visual_features = self.extract_feat(batch_inputs)
+        head_inputs_dict = self.forward_transformer(visual_features, text_dict,
+                                                    batch_data_samples)
+
+        losses = self.bbox_head.loss(
+            **head_inputs_dict, batch_data_samples=batch_data_samples)
+        return losses
 
     def predict(self, batch_inputs, batch_data_samples, rescale: bool = True):
         text_prompts = [

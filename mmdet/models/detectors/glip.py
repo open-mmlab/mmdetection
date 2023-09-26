@@ -100,6 +100,7 @@ def create_positive_map(tokenized,
                         max_num_entities: int = 256) -> Tensor:
     """construct a map such that positive_map[i,j] = True
     if box i is associated to token j
+
     Args:
         tokenized: The tokenized input.
         tokens_positive (list): A list of token ranges
@@ -213,9 +214,7 @@ class GLIP(SingleStageDetector):
         """Get the tokens positive and prompts for the caption."""
         if isinstance(original_caption, (list, tuple)) or custom_entities:
             if custom_entities and isinstance(original_caption, str):
-                if original_caption.endswith(self._special_tokens):
-                    original_caption = original_caption.replace(
-                        self._special_tokens, '')
+                original_caption = original_caption.strip(self._special_tokens)
                 original_caption = original_caption.split(self._special_tokens)
                 original_caption = list(
                     filter(lambda x: len(x) > 0, original_caption))
@@ -233,10 +232,7 @@ class GLIP(SingleStageDetector):
                                                       return_tensors='pt')
             entities = original_caption
         else:
-            if original_caption.endswith(self._special_tokens):
-                original_caption = original_caption.replace(
-                    self._special_tokens, '')
-
+            original_caption = original_caption.strip(self._special_tokens)
             tokenized = self.language_model.tokenizer([original_caption],
                                                       return_tensors='pt')
             tokens_positive, noun_phrases = run_ner(original_caption)

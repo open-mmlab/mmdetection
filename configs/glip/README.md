@@ -39,6 +39,23 @@ configs/glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py \
 <img src="https://github.com/open-mmlab/mmdetection/assets/17425982/7b450d96-81ac-462a-92bc-0d4ae7b8721c" width="40%"/>
 </div>
 
+## NOTE
+
+GLIP utilizes BERT as the language model, which requires access to https://huggingface.co/. If you encounter connection errors due to network access, you can download the required files on a computer with internet access and save them locally. Finally, modify the `lang_model_name` field in the config to the local path. Please refer to the following code:
+
+```python
+from transformers import BertConfig, BertModel
+from transformers import AutoTokenizer
+
+config = BertConfig.from_pretrained("bert-base-uncased")
+model = BertModel.from_pretrained("bert-base-uncased", add_pooling_layer=False, config=config)
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+
+config.save_pretrained("your path/bert-base-uncased")
+model.save_pretrained("your path/bert-base-uncased")
+tokenizer.save_pretrained("your path/bert-base-uncased")
+```
+
 ## Results and Models
 
 |   Model    | Zero-shot or Funetune | COCO mAP | Official COCO mAP |       Pre-Train Data       |                                 Config                                  |                                                                                                                                                                                                   Download                                                                                                                                                                                                    |

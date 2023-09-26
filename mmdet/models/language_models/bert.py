@@ -18,12 +18,23 @@ from mmdet.registry import MODELS
 
 def generate_masks_with_special_tokens_and_transfer_map(
         tokenized, special_tokens_list):
-    """Generate attention mask between each pair of special tokens
+    """Generate attention mask between each pair of special tokens.
+
+    Only token pairs in between two special tokens are attended to
+    and thus the attention mask for these pairs is positive.
+
     Args:
         input_ids (torch.Tensor): input ids. Shape: [bs, num_token]
         special_tokens_mask (list): special tokens mask.
+
     Returns:
-        torch.Tensor: attention mask between each special tokens.
+        Tuple(Tensor, Tensor):
+        - attention_mask is the attention mask between each tokens.
+          Only token pairs in between two special tokens are positive.
+          Shape: [bs, num_token, num_token].
+        - position_ids is the position id of tokens within each valid sentence.
+          The id starts from 0 whenenver a special token is encountered.
+          Shape: [bs, num_token]
     """
     input_ids = tokenized['input_ids']
     bs, num_token = input_ids.shape
