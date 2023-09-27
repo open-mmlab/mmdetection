@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import copy
 from typing import Sequence
 
 from torch.utils.data import BatchSampler, Sampler
@@ -141,7 +140,6 @@ class MultiDataAspectRatioBatchSampler(BatchSampler):
             raise TypeError('sampler should be an instance of ``Sampler``, '
                             f'but got {sampler}')
         self.sampler = sampler
-        self.sampler1 = copy.deepcopy(sampler)
         self.batch_size = batch_size
         self.num_datasets = num_datasets
         self.drop_last = drop_last
@@ -178,8 +176,8 @@ class MultiDataAspectRatioBatchSampler(BatchSampler):
 
     def __len__(self) -> int:
         sizes = [0 for _ in range(self.num_datasets)]
-        for idx in self.sampler1:
-            dataset_source_idx = self.sampler1.dataset.get_dataset_source(idx)
+        for idx in self.sampler:
+            dataset_source_idx = self.sampler.dataset.get_dataset_source(idx)
             sizes[dataset_source_idx] += 1
 
         if self.drop_last:
