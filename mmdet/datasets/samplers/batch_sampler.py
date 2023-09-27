@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
 from typing import Sequence
 
 from torch.utils.data import BatchSampler, Sampler
@@ -140,21 +141,15 @@ class MultiDataAspectRatioBatchSampler(BatchSampler):
             raise TypeError('sampler should be an instance of ``Sampler``, '
                             f'but got {sampler}')
         self.sampler = sampler
+        self.sampler1 = copy.deepcopy(sampler)
         self.batch_size = batch_size
         self.num_datasets = num_datasets
         self.drop_last = drop_last
         # two groups for w < h and w >= h for each dataset --> 2 * num_datasets
         self._buckets = [[] for _ in range(2 * self.num_datasets)]
 
-        sizes = [0 for _ in range(self.num_datasets)]
-        self.it = list(self.sampler)
-        for idx in self.it:
-            dataset_source_idx = self.sampler.dataset.get_dataset_source(idx)
-            sizes[dataset_source_idx] += 1
-        self.sizes = sizes
-
     def __iter__(self) -> Sequence[int]:
-        for idx in self.it:
+        for idx in self.sampler:
             data_info = self.sampler.dataset.get_data_info(idx)
             width, height = data_info['width'], data_info['height']
             dataset_source_idx = self.sampler.dataset.get_dataset_source(idx)
@@ -182,14 +177,19 @@ class MultiDataAspectRatioBatchSampler(BatchSampler):
         self._buckets = [[] for _ in range(2 * self.num_datasets)]
 
     def __len__(self) -> int:
+        sizes = [0 for _ in range(self.num_datasets)]
+        for idx in self.sampler1:
+            dataset_source_idx = self.sampler1.dataset.get_dataset_source(idx)
+            sizes[dataset_source_idx] += 1
+
         if self.drop_last:
             lens = 0
             for i in range(self.num_datasets):
-                lens += self.sizes[i] // self.batch_size[i]
+                lens += sizes[i] // self.batch_size[i]
             return lens
         else:
             lens = 0
             for i in range(self.num_datasets):
-                lens += (self.sizes[i] + self.batch_size[i] -
+                lens += (sizes[i] + self.batch_size[i] -
                          1) // self.batch_size[i]
             return lens
