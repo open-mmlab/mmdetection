@@ -2,11 +2,13 @@ atss/atss_r50_fpn_1x_coco.py
 faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py
 mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py
 cascade_rcnn/cascade-mask-rcnn_r50_fpn_1x_coco.py
+configs/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco.py
+configs/glip/glip_atss_swin-t_a_fpn_dyhead_16xb2_ms-2x_funtune_coco.py
+configs/ddq/ddq-detr-4scale_r50_8xb2-12e_coco.py
 panoptic_fpn/panoptic-fpn_r50_fpn_1x_coco.py
 retinanet/retinanet_r50_fpn_1x_coco.py
 rtmdet/rtmdet_s_8xb32-300e_coco.py
 rtmdet/rtmdet-ins_s_8xb32-300e_coco.py
-deformable_detr/deformable-detr_r50_16xb2-50e_coco.py
 fcos/fcos_r50-caffe_fpn_gn-head-center-normbbox-centeronreg-giou_1x_coco.py
 centernet/centernet-update_r50-caffe_fpn_ms-1x_coco.py
 dino/dino-4scale_r50_8xb2-12e_coco.py
