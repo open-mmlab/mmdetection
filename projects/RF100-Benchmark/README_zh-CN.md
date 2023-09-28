@@ -148,6 +148,10 @@ abdomen-mri
 
 ## 模型汇总
 
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/bb187af4-cdbf-40ba-8def-8870e239c8dd"/>
+</div>
+
 在模型训练好或者在训练中途你想对结果进行收集，你可以执行 `log_extract.py` 脚本，该脚本会将 `work_dirs` 下的信息收集并输出为 csv 和 xlsx 格式。
 
 在运行脚本前，请确保安装了 pandas 和 openpyxl
