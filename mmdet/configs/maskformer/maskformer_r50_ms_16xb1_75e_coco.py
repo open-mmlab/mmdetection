@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from mmengine.config import read_base
 
 with read_base():
@@ -9,17 +10,22 @@ from mmdet.models.data_preprocessors.data_preprocessor import \
 from mmdet.models import MaskFormer
 from mmdet.models.backbones import ResNet
 from mmdet.models.dense_heads.maskformer_head import MaskFormerHead
-from mmdet.models.seg_heads.panoptic_fusion_heads.maskformer_fusion_head import MaskFormerFusionHead
+from mmdet.models.seg_heads.panoptic_fusion_heads.maskformer_fusion_head \
+    import MaskFormerFusionHead
 from mmdet.models.layers.pixel_decoder import TransformerEncoderPixelDecoder
-from mmdet.models.task_modules.assigners.hungarian_assigner import HungarianAssigner
-from mmdet.models.task_modules.assigners.match_cost import DiceCost, ClassificationCost, FocalLossCost
+from mmdet.models.task_modules.assigners.hungarian_assigner \
+    import HungarianAssigner
+from mmdet.models.task_modules.assigners.match_cost \
+    import DiceCost, ClassificationCost, FocalLossCost
 from mmdet.models.task_modules.samplers import MaskPseudoSampler
 from mmdet.models.losses import CrossEntropyLoss, FocalLoss, DiceLoss
 
 from mmcv.transforms import RandomChoiceResize, RandomChoice
 from mmdet.datasets.transforms.formatting import PackDetInputs
-from mmdet.datasets.transforms.loading import LoadImageFromFile, LoadPanopticAnnotations
-from mmdet.datasets.transforms.transforms import RandomFlip, RandomCrop, Resize
+from mmdet.datasets.transforms.loading \
+    import LoadImageFromFile, LoadPanopticAnnotations
+from mmdet.datasets.transforms.transforms \
+    import RandomFlip, RandomCrop, Resize
 
 from torch.nn.modules.batchnorm import BatchNorm2d
 from torch.nn.modules.normalization import GroupNorm
@@ -57,7 +63,8 @@ model = dict(
         norm_cfg=dict(type=BatchNorm2d, requires_grad=False),
         norm_eval=True,
         style='pytorch',
-        init_cfg=dict(type=PretrainedInit, checkpoint='torchvision://resnet50')),
+        init_cfg=dict(type=PretrainedInit,
+                      checkpoint='torchvision://resnet50')),
     panoptic_head=dict(
         type=MaskFormerHead,
         in_channels=[256, 512, 1024, 2048],  # pass to pixel_decoder inside
