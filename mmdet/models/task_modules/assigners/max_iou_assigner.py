@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
 from typing import Optional, Union
 
 import torch
@@ -8,6 +9,76 @@ from torch import Tensor
 from mmdet.registry import TASK_UTILS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
+
+
+def _perm_box(bboxes,
+              iou_calculator,
+              iou_thr=0.97,
+              perm_range=0.01,
+              counter=0,
+              max_iter=5):
+    """Compute the permuted bboxes.
+
+    Args:
+        bboxes (Tensor): Shape (n, 4) for , "xyxy" format.
+        iou_calculator (obj): Overlaps Calculator.
+        iou_thr (float): The permuted bboxes should have IoU > iou_thr.
+        perm_range (float): The scale of permutation.
+        counter (int): Counter of permutation iteration.
+        max_iter (int): The max iterations of permutation.
+    Returns:
+        Tensor: The permuted bboxes.
+    """
+    ori_bboxes = copy.deepcopy(bboxes)
+    is_valid = True
+    N = bboxes.size(0)
+    perm_factor = bboxes.new_empty(N, 4).uniform_(1 - perm_range,
+                                                  1 + perm_range)
+    bboxes *= perm_factor
+    new_wh = bboxes[:, 2:] - bboxes[:, :2]
+    if (new_wh <= 0).any():
+        is_valid = False
+    iou = iou_calculator(ori_bboxes.unique(dim=0), bboxes)
+    if (iou < iou_thr).any():
+        is_valid = False
+    if not is_valid and counter < max_iter:
+        return _perm_box(
+            ori_bboxes,
+            iou_calculator,
+            perm_range=max(perm_range - counter * 0.001, 1e-3),
+            counter=counter + 1)
+    return bboxes
+
+
+def perm_repeat_bboxes(bboxes, iou_calculator=None, perm_repeat_cfg=None):
+    """Permute the repeated bboxes.
+
+    Args:
+        bboxes (Tensor): Shape (n, 4) for , "xyxy" format.
+        iou_calculator (obj): Overlaps Calculator.
+        perm_repeat_cfg (Dict): Config of permutation.
+    Returns:
+        Tensor: Bboxes after permuted repeated bboxes.
+    """
+    assert isinstance(bboxes, torch.Tensor)
+    if iou_calculator is None:
+        import torchvision
+        iou_calculator = torchvision.ops.box_iou
+    bboxes = copy.deepcopy(bboxes)
+    unique_bboxes = bboxes.unique(dim=0)
+    iou_thr = perm_repeat_cfg.get('iou_thr', 0.97)
+    perm_range = perm_repeat_cfg.get('perm_range', 0.01)
+    for box in unique_bboxes:
+        inds = (bboxes == box).sum(-1).float() == 4
+        if inds.float().sum().item() == 1:
+            continue
+        bboxes[inds] = _perm_box(
+            bboxes[inds],
+            iou_calculator,
+            iou_thr=iou_thr,
+            perm_range=perm_range,
+            counter=0)
+    return bboxes
 
 
 @TASK_UTILS.register_module()
@@ -45,6 +116,7 @@ class MaxIoUAssigner(BaseAssigner):
             assign. When the number of gt is above this threshold, will assign
             on CPU device. Negative values mean not assign on CPU.
         iou_calculator (dict): Config of overlaps Calculator.
+        perm_repeat_gt_cfg (dict): Config of permute repeated gt bboxes.
     """
 
     def __init__(self,
@@ -56,7 +128,8 @@ class MaxIoUAssigner(BaseAssigner):
                  ignore_wrt_candidates: bool = True,
                  match_low_quality: bool = True,
                  gpu_assign_thr: float = -1,
-                 iou_calculator: dict = dict(type='BboxOverlaps2D')):
+                 iou_calculator: dict = dict(type='BboxOverlaps2D'),
+                 perm_repeat_gt_cfg=None):
         self.pos_iou_thr = pos_iou_thr
         self.neg_iou_thr = neg_iou_thr
         self.min_pos_iou = min_pos_iou
@@ -66,6 +139,7 @@ class MaxIoUAssigner(BaseAssigner):
         self.gpu_assign_thr = gpu_assign_thr
         self.match_low_quality = match_low_quality
         self.iou_calculator = TASK_UTILS.build(iou_calculator)
+        self.perm_repeat_gt_cfg = perm_repeat_gt_cfg
 
     def assign(self,
                pred_instances: InstanceData,
@@ -137,7 +211,13 @@ class MaxIoUAssigner(BaseAssigner):
             if gt_bboxes_ignore is not None:
                 gt_bboxes_ignore = gt_bboxes_ignore.cpu()
 
-        overlaps = self.iou_calculator(gt_bboxes, priors)
+        if self.perm_repeat_gt_cfg is not None and priors.numel() > 0:
+            gt_bboxes_unique = perm_repeat_bboxes(gt_bboxes,
+                                                  self.iou_calculator,
+                                                  self.perm_repeat_gt_cfg)
+        else:
+            gt_bboxes_unique = gt_bboxes
+        overlaps = self.iou_calculator(gt_bboxes_unique, priors)
 
         if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None
                 and gt_bboxes_ignore.numel() > 0 and priors.numel() > 0):

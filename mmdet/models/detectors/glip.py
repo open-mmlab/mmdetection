@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import copy
 import re
 import warnings
 from typing import Tuple, Union
@@ -101,6 +100,7 @@ def create_positive_map(tokenized,
                         max_num_entities: int = 256) -> Tensor:
     """construct a map such that positive_map[i,j] = True
     if box i is associated to token j
+
     Args:
         tokenized: The tokenized input.
         tokens_positive (list): A list of token ranges
@@ -205,22 +205,16 @@ class GLIP(SingleStageDetector):
             init_cfg=init_cfg)
         self.language_model = MODELS.build(language_model)
 
-        self._text_prompts = None
-        self._token_positive_maps = None
-        self._language_dict_features = None
-        self._entities = None
         self._special_tokens = '. '
 
     def get_tokens_and_prompts(
             self,
             original_caption: Union[str, list, tuple],
-            custom_entities: bool = False) -> Tuple[dict, str, list]:
+            custom_entities: bool = False) -> Tuple[dict, str, list, list]:
         """Get the tokens positive and prompts for the caption."""
         if isinstance(original_caption, (list, tuple)) or custom_entities:
             if custom_entities and isinstance(original_caption, str):
-                if original_caption.endswith(self._special_tokens):
-                    original_caption = original_caption.replace(
-                        self._special_tokens, '')
+                original_caption = original_caption.strip(self._special_tokens)
                 original_caption = original_caption.split(self._special_tokens)
                 original_caption = list(
                     filter(lambda x: len(x) > 0, original_caption))
@@ -236,19 +230,16 @@ class GLIP(SingleStageDetector):
                     caption_string += self._special_tokens
             tokenized = self.language_model.tokenizer([caption_string],
                                                       return_tensors='pt')
-            self._entities = original_caption
+            entities = original_caption
         else:
-            if original_caption.endswith(self._special_tokens):
-                original_caption = original_caption.replace(
-                    self._special_tokens, '')
-
+            original_caption = original_caption.strip(self._special_tokens)
             tokenized = self.language_model.tokenizer([original_caption],
                                                       return_tensors='pt')
             tokens_positive, noun_phrases = run_ner(original_caption)
-            self._entities = noun_phrases
+            entities = noun_phrases
             caption_string = original_caption
 
-        return tokenized, caption_string, tokens_positive
+        return tokenized, caption_string, tokens_positive, entities
 
     def get_positive_map(self, tokenized, tokens_positive):
         positive_map = create_positive_map(tokenized, tokens_positive)
@@ -259,13 +250,14 @@ class GLIP(SingleStageDetector):
     def get_tokens_positive_and_prompts(
             self,
             original_caption: Union[str, list, tuple],
-            custom_entities: bool = False) -> Tuple[dict, str, Tensor]:
-        tokenized, caption_string, tokens_positive = \
+            custom_entities: bool = False) -> Tuple[dict, str, Tensor, list]:
+        tokenized, caption_string, tokens_positive, entities = \
             self.get_tokens_and_prompts(
                 original_caption, custom_entities)
         positive_map_label_to_token, positive_map = self.get_positive_map(
             tokenized, tokens_positive)
-        return positive_map_label_to_token, caption_string, positive_map
+        return positive_map_label_to_token, caption_string, \
+            positive_map, entities
 
     def loss(self, batch_inputs: Tensor,
              batch_data_samples: SampleList) -> Union[dict, list]:
@@ -284,7 +276,7 @@ class GLIP(SingleStageDetector):
         if len(set(text_prompts)) == 1:
             # All the text prompts are the same,
             # so there is no need to calculate them multiple times.
-            tokenized, caption_string, tokens_positive = \
+            tokenized, caption_string, tokens_positive, _ = \
                 self.get_tokens_and_prompts(
                     text_prompts[0], True)
             new_text_prompts = [caption_string] * len(batch_inputs)
@@ -297,7 +289,7 @@ class GLIP(SingleStageDetector):
                 positive_maps.append(positive_map)
         else:
             for text_prompt, gt_label in zip(text_prompts, gt_labels):
-                tokenized, caption_string, tokens_positive = \
+                tokenized, caption_string, tokens_positive, _ = \
                     self.get_tokens_and_prompts(
                         text_prompt, True)
                 new_tokens_positive = [
@@ -361,45 +353,42 @@ class GLIP(SingleStageDetector):
         else:
             custom_entities = False
 
-        if text_prompts != self._text_prompts:
-            # avoid redundant computation
-            self._text_prompts = text_prompts
-            if len(set(text_prompts)) == 1:
-                # All the text prompts are the same,
-                # so there is no need to calculate them multiple times.
-                _positive_maps_and_prompts = [
-                    self.get_tokens_positive_and_prompts(
-                        text_prompts[0], custom_entities)
-                ] * len(batch_inputs)
-            else:
-                _positive_maps_and_prompts = [
-                    self.get_tokens_positive_and_prompts(
-                        text_prompt, custom_entities)
-                    for text_prompt in text_prompts
-                ]
+        if len(set(text_prompts)) == 1:
+            # All the text prompts are the same,
+            # so there is no need to calculate them multiple times.
+            _positive_maps_and_prompts = [
+                self.get_tokens_positive_and_prompts(text_prompts[0],
+                                                     custom_entities)
+            ] * len(batch_inputs)
+        else:
+            _positive_maps_and_prompts = [
+                self.get_tokens_positive_and_prompts(text_prompt,
+                                                     custom_entities)
+                for text_prompt in text_prompts
+            ]
 
-            self._token_positive_maps, text_prompts, _ = zip(
-                *_positive_maps_and_prompts)
-            self._language_dict_features = self.language_model(
-                list(text_prompts))
+        token_positive_maps, text_prompts, _, entities = zip(
+            *_positive_maps_and_prompts)
+
+        language_dict_features = self.language_model(list(text_prompts))
 
         for i, data_samples in enumerate(batch_data_samples):
-            data_samples.token_positive_map = self._token_positive_maps[i]
+            data_samples.token_positive_map = token_positive_maps[i]
 
         visual_features = self.extract_feat(batch_inputs)
 
         results_list = self.bbox_head.predict(
             visual_features,
-            copy.deepcopy(self._language_dict_features),
+            language_dict_features,
             batch_data_samples,
             rescale=rescale)
 
-        for data_sample, pred_instances in zip(batch_data_samples,
-                                               results_list):
+        for data_sample, pred_instances, entity in zip(batch_data_samples,
+                                                       results_list, entities):
             if len(pred_instances) > 0:
                 label_names = []
                 for labels in pred_instances.labels:
-                    if labels >= len(self._entities):
+                    if labels >= len(entity):
                         warnings.warn(
                             'The unexpected output indicates an issue with '
                             'named entity recognition. You can try '
@@ -407,7 +396,7 @@ class GLIP(SingleStageDetector):
                             'again to see if it helps.')
                         label_names.append('unobject')
                     else:
-                        label_names.append(self._entities[labels])
+                        label_names.append(entity[labels])
                 # for visualization
                 pred_instances.label_names = label_names
             data_sample.pred_instances = pred_instances

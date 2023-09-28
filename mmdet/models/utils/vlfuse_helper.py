@@ -94,7 +94,7 @@ class BiMultiHeadAttention(nn.Module):
         self.l_dim = l_dim
 
         assert (
-                self.head_dim * self.num_heads == self.embed_dim
+            self.head_dim * self.num_heads == self.embed_dim
         ), 'embed_dim must be divisible by num_heads ' \
            f'(got `embed_dim`: {self.embed_dim} ' \
            f'and `num_heads`: {self.num_heads}).'
@@ -134,10 +134,11 @@ class BiMultiHeadAttention(nn.Module):
         self.out_l_proj.bias.data.fill_(0)
 
     def forward(
-            self,
-            vision: Tensor,
-            lang: Tensor,
-            attention_mask_l: Optional[Tensor] = None
+        self,
+        vision: Tensor,
+        lang: Tensor,
+        attention_mask_v: Optional[Tensor] = None,
+        attention_mask_l: Optional[Tensor] = None,
     ) -> Tuple[Tensor, Tensor]:
         bsz, tgt_len, _ = vision.size()
 
@@ -182,6 +183,13 @@ class BiMultiHeadAttention(nn.Module):
         if self.clamp_max_for_overflow:
             # Do not increase 50000, data type half has quite limited range
             attn_weights_l = torch.clamp(attn_weights_l, max=MAX_CLAMP_VALUE)
+
+        if attention_mask_v is not None:
+            attention_mask_v = (
+                attention_mask_v[:, None,
+                                 None, :].repeat(1, self.num_heads, 1,
+                                                 1).flatten(0, 1))
+            attn_weights_l.masked_fill_(attention_mask_v, float('-inf'))
 
         attn_weights_l = attn_weights_l.softmax(dim=-1)
 
@@ -324,10 +332,11 @@ class BiAttentionBlock(nn.Module):
         return fvfs[0], fvfs[1], fvfs[2], fvfs[3], fvfs[4], new_lang_feature
 
     def single_attention_call(
-            self,
-            visual: Tensor,
-            lang: Tensor,
-            attention_mask_l: Optional[Tensor] = None
+        self,
+        visual: Tensor,
+        lang: Tensor,
+        attention_mask_v: Optional[Tensor] = None,
+        attention_mask_l: Optional[Tensor] = None,
     ) -> Tuple[Tensor, Tensor]:
         """Perform a single attention call between the visual and language
         inputs.
@@ -335,6 +344,8 @@ class BiAttentionBlock(nn.Module):
         Args:
         visual (Tensor): The visual input tensor.
         lang (Tensor): The language input tensor.
+        attention_mask_v (Optional[Tensor]):
+            An optional attention mask tensor for the visual input.
         attention_mask_l (Optional[Tensor]):
             An optional attention mask tensor for the language input.
 
@@ -345,11 +356,48 @@ class BiAttentionBlock(nn.Module):
         visual = self.layer_norm_v(visual)
         lang = self.layer_norm_l(lang)
         delta_v, delta_l = self.attn(
-            visual, lang, attention_mask_l=attention_mask_l)
+            visual,
+            lang,
+            attention_mask_v=attention_mask_v,
+            attention_mask_l=attention_mask_l)
         # visual, lang = visual + delta_v, l + delta_l
         visual = visual + self.drop_path(self.gamma_v * delta_v)
         lang = lang + self.drop_path(self.gamma_l * delta_l)
         return visual, lang
+
+
+class SingleScaleBiAttentionBlock(BiAttentionBlock):
+    """This is a single-scale implementation of `BiAttentionBlock`.
+
+    The only differenece between it and `BiAttentionBlock` is that the
+    `forward` function of `SingleScaleBiAttentionBlock` only accepts a single
+    flatten visual feature map, while the `forward` function in
+    `BiAttentionBlock` accepts multiple visual feature maps.
+    """
+
+    def forward(self,
+                visual_feature: Tensor,
+                lang_feature: Tensor,
+                attention_mask_v=None,
+                attention_mask_l=None):
+        """Single-scale forward pass.
+
+        Args:
+            visual_feature (Tensor): The visual input tensor. Tensor of
+                shape (bs, patch_len, ch).
+            lang_feature (Tensor): The language input tensor. Tensor of
+                shape (bs, text_len, ch).
+            attention_mask_v (_type_, optional): Visual feature attention
+                mask. Defaults to None.
+            attention_mask_l (_type_, optional): Language feature attention
+                mask.Defaults to None.
+        """
+        new_v, new_lang_feature = self.single_attention_call(
+            visual_feature,
+            lang_feature,
+            attention_mask_v=attention_mask_v,
+            attention_mask_l=attention_mask_l)
+        return new_v, new_lang_feature
 
 
 class VLFuse(nn.Module):
