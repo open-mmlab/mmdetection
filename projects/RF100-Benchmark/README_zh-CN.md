@@ -28,9 +28,11 @@
     ├── datasets_links_640.txt # 数据集下载链接，来自官方 repo
     ├── download_dataset.py # 数据集下载代码，来自官方 repo
     ├── download_datasets.sh # 数据集下载脚本，来自官方 repo
-    ├── labels_names.json # 数据集信息，来自官方 repo
+    ├── labels_names.json # 数据集信息，来自官方 repo,不过由于有一些错误因此我们进行了修改
     ├── parse_dataset_link.py # 下载数据集需要，来自官方 repo
-    └── train.sh # 训练和评估启动脚本
+    ├── log_extract.py # 对训练的结果进行收集和整理
+    └── dist_train.sh # 训练和评估启动脚本
+    └── slurm_train.sh # slurm 训练和评估启动脚本
 ```
 
 ## 数据集准备
@@ -103,26 +105,34 @@ Roboflow 100 数据集的特点如下图所示
 
 ```shell
 # 当前位于 projects/RF100-Benchmark/
-bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 1
+bash scripts/dist_train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 1
 # 如果想指定保存路径
-bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 1 my_work_dirs
+bash scripts/dist_train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 1 my_work_dirs
 ```
 
 2. 分布式多卡训练
 
 ```shell
-bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 8
+bash scripts/dist_train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 8
 # 如果想指定保存路径
-bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 8 my_work_dirs
+bash scripts/dist_train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 8 my_work_dirs
+```
+
+3. Slurm 训练
+
+```shell
+bash scripts/slurm_train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 8
+# 如果想指定保存路径
+bash scripts/slurm_train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 8 my_work_dirs
 ```
 
 训练完成后会在当前路径下生成 `work_dirs` 文件夹，其中包含了训练好的模型权重和日志。
 
-1. 为了方便用户调试或者只想训练特定的数据集，在 `scripts/train.sh` 中我们提供了 `DEBUG` 变量，你只需要设置为 1，并且在 `datasets_list` 变量中指定你想训练的数据集即可。
+1. 为了方便用户调试或者只想训练特定的数据集，在 `scripts/*_train.sh` 中我们提供了 `DEBUG` 变量，你只需要设置为 1，并且在 `datasets_list` 变量中指定你想训练的数据集即可。
 2. 考虑到由于各种原因，用户训练过程中可能出现某些数据集训练失败，因此我们提供了 `RETRY_PATH` 变量，你只需要传入 txt 数据集列表文件即可，程序会读取该文件中的数据集，然后只训练特定数据集。如果不提供则为全量数据集训练。
 
 ```shell
-RETRY_PATH=你的数据集列表.txt bash scripts/train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 8 my_work_dirs
+RETRY_PATH=failed_dataset_list.txt bash scripts/dist_train.sh configs/faster-rcnn_r50_fpn_ms_8xb8_tweeter-profile.py 8 my_work_dirs
 ```
 
 txt 文件中每一行代表一个数据集名称，示例如下(第 4 行的空行不可少)：
@@ -134,7 +144,33 @@ abdomen-mri
 
 ```
 
+上述 txt 文件你也可以采用后续介绍的 `log_extract.py` 脚本生成，而无需手动创建。
+
 ## 模型汇总
+
+在模型训练好或者在训练中途你想对结果进行收集，你可以执行 `log_extract.py` 脚本，该脚本会将 `work_dirs` 下的信息收集并输出为 csv 和 xlsx 格式。
+
+在运行脚本前，请确保安装了 pandas 和 openpyxl
+
+```shell
+python scripts/log_extract.py faster_rcnn --epoch --work-dirs my_work_dirs
+```
+
+运行后会在 my_work_dirs 里面生成如下三个新文件
+
+```text
+时间戳_detail.xlsx # 100 个数据集的排序后详细信息
+时间戳_sum.xlsx # 100 个数据集的汇总信息
+时间戳_eval.csv # 100 个数据集的按照训练顺序评估结果
+failed_dataset_list.txt # 失败数据集列表
+```
+
+目前我们提供了 Faster RCNN、TOOD 和 DINO 算法的评估结果(并没有进行精心的调参)。你也可以按照上述流程对自己的模型进行快速评估。
+
+注意：
+
+1. 由于 100 个数据集比较多，我们无法对每个数据集进行检查，因此如果有不合理的地方，欢迎反馈，我们将尽快修复。
+2. 我们也提供了 mAP_s 等各种尺度的汇总结果，但是由于部分数据不存在这个尺度边界框，因为汇总时候我们忽略这些数据集
 
 ## 自定义算法进行 benchmark
 

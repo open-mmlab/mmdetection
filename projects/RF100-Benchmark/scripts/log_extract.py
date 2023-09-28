@@ -78,7 +78,7 @@ def write_csv(datas, args):
             if int(latest_log_name) > int(latest_time):
                 latest_time = latest_log_name
             print('time=' + latest_log_name)
-            latest_log = latest_dir + f'/{latest_log_name}.log'  # get latest log name
+            latest_log = latest_dir + f'/{latest_log_name}.log'
             with open(latest_log, 'r') as f:
                 log = f.read()
             print(latest_log)
@@ -91,14 +91,10 @@ def write_csv(datas, args):
             if not complete_flag:
                 fail_num += 1
                 fail.append(dataset)
-                print(
-                    '------------------------------------------------------------------------------------'
-                )
+                print('-------------------------------------')
                 print(f'{dataset} train failed!')
                 print(f'{fail_num} dataset failed!')
-                print(
-                    '------------------------------------------------------------------------------------'
-                )
+                print('-------------------------------------')
                 key_value = [
                     dataset, category, class_num, num_train, num_valid, '', '',
                     '', '', ''
@@ -106,16 +102,17 @@ def write_csv(datas, args):
             else:
                 """match result."""
                 match_all = re.findall(
-                    r'The best checkpoint with ([\d.]+) coco/bbox_mAP at ([\d.]+) epoch',
-                    log)
+                    r'The best checkpoint with ([\d.]+) '
+                    r'coco/bbox_mAP at ([\d.]+) epoch', log)
                 if match_all:
                     match = match_all[-1]
                     best_epoch = match[-1]
                     print(f'best_epoch={best_epoch}')
                     # find best result
                     match_AP = re.findall(
-                        r'\[{}\]\[\d+/\d+\]    coco/bbox_mAP: (-?\d+\.?\d*)  coco/bbox_mAP_50: (-?\d+\.?\d*)  coco/bbox_mAP_75: -?\d+\.?\d*  coco/bbox_mAP_s: (-?\d+\.?\d*)  coco/bbox_mAP_m: (-?\d+\.?\d*)  coco/bbox_mAP_l: (-?\d+\.?\d*)'
-                        .format(best_epoch), log)
+                        r'\[{}\]\[\d+/\d+\]    coco/bbox_mAP: (-?\d+\.?\d*)  coco/bbox_mAP_50: (-?\d+\.?\d*)  coco/bbox_mAP_75: -?\d+\.?\d*  coco/bbox_mAP_s: (-?\d+\.?\d*)  coco/bbox_mAP_m: (-?\d+\.?\d*)  coco/bbox_mAP_l: (-?\d+\.?\d*)'  # noqa
+                        .format(best_epoch),
+                        log)
                     print(f'match_AP={match_AP}')
 
                     key_value = [
@@ -123,18 +120,14 @@ def write_csv(datas, args):
                     ]
                     key_value.extend(match_AP[0])
                 else:
-                    print(
-                        '------------------------------------------------------------------------------------'
-                    )
+                    print('----------------- --------------------------')
                     print('log has no result!')
-                    print(
-                        '------------------------------------------------------------------------------------'
-                    )
+                    print('----------------------------------------------')
                     key_value = [
                         dataset, category, class_num, num_train, num_valid, '',
                         '', '', '', ''
                     ]
-        except:
+        except RuntimeError:
             print(f"{dataset} directory doesn't exist!")
             none_exist_num += 1
             none_exist.append(dataset)
@@ -168,8 +161,9 @@ def write_csv(datas, args):
                 writer = csv.writer(f)
                 writer.writerow(key_value)
 
-    return result_csv, fail, fail_num, none_exist, none_exist_num, os.path.join(
-        args.work_dirs, latest_time[4:])
+    return result_csv, fail, fail_num, \
+        none_exist, none_exist_num, os.path.join(
+         args.work_dirs, latest_time[4:])
 
 
 def wb_align(file, pair_ls):
@@ -184,7 +178,8 @@ def wb_align(file, pair_ls):
 
 
 def sort_excel(in_csv, out_xlsx):
-    # read csv with two headers then convert it to xlsx, sort it by category name & dataset name
+    # read csv with two headers then convert it to xlsx,
+    # sort it by category name & dataset name
     df = pd.read_csv(in_csv)
     df_sorted = df.iloc[1:].sort_values(by=['Category', 'Dataset'])
     df_sort = pd.concat([df.iloc[:1], df_sorted])
@@ -192,7 +187,8 @@ def sort_excel(in_csv, out_xlsx):
 
 
 def sum_excel(in_csv, out_xlsx):
-    # read csv with two headers then convert it to xlsx, get total number of train&valid images and mean of results
+    # read csv with two headers then convert it to xlsx,
+    # get total number of train&valid images and mean of results
     df = pd.read_csv(in_csv)
     df.insert(2, 'dataset', pd.Series([]))
     df = df.iloc[:, 1:]
@@ -235,14 +231,14 @@ def sum_excel(in_csv, out_xlsx):
 def main():
     args = parse_args()
 
-    result_csv, fail, fail_num, none_exist, none_exist_num, latest_time = write_csv(
-        'rf100/', args)
+    result_csv, fail, fail_num, none_exist, \
+        none_exist_num, latest_time = write_csv('rf100/', args)
 
     os.rename(result_csv, latest_time + '_eval.csv')
     result_csv = latest_time + '_eval.csv'
 
     # write excel in the order of execution
-    if (args.origin):
+    if args.origin:
         df = pd.read_csv(result_csv)
         result_xlsx_detail = '{}_origin.xlsx'.format(latest_time)
         if os.path.exists(result_xlsx_detail):
@@ -282,9 +278,8 @@ def main():
         for item in fail:
             f.write(f'{item}\n')
 
-    print(
-        f'all {fail_num+none_exist_num} untrained datasets have been logged in {fail_txt}!'
-    )
+    print(f'all {fail_num + none_exist_num} untrained datasets '
+          f'have been logged in {fail_txt}!')
 
 
 if __name__ == '__main__':
