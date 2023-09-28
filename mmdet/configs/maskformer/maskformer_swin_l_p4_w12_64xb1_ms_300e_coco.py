@@ -1,12 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from mmengine.config import read_base
-
-with read_base():
-    from .maskformer_r50_ms_16xb1_75e_coco import *
+from mmengine.optim.scheduler import LinearLR
 
 from mmdet.models.backbones import SwinTransformer
 from mmdet.models.layers import PixelDecoder
-from mmengine.optim.scheduler import LinearLR
+
+with read_base():
+    from .maskformer_r50_ms_16xb1_75e_coco import *
 
 pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'  # noqa
 depths = [2, 2, 18, 2]
@@ -39,8 +39,7 @@ model.merge(
                 type=PixelDecoder,
                 norm_cfg=dict(type=GroupNorm, num_groups=32),
                 act_cfg=dict(type=ReLU)),
-            enforce_decoder_input_project=True))
-)
+            enforce_decoder_input_project=True)))
 
 # optimizer
 
@@ -65,8 +64,7 @@ max_epochs = 300
 
 # learning rate
 param_scheduler = [
-    dict(
-        type=LinearLR, start_factor=1e-6, by_epoch=False, begin=0, end=1500),
+    dict(type=LinearLR, start_factor=1e-6, by_epoch=False, begin=0, end=1500),
     dict(
         type=MultiStepLR,
         begin=0,
