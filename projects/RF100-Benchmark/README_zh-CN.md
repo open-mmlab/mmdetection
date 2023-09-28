@@ -153,8 +153,12 @@ abdomen-mri
 在运行脚本前，请确保安装了 pandas 和 openpyxl
 
 ```shell
-python scripts/log_extract.py faster_rcnn --epoch --work-dirs my_work_dirs
+python scripts/log_extract.py faster_rcnn --epoch 25 --work-dirs my_work_dirs
 ```
+
+- 第一个输入参数是用于生成 csv 标题，因此你可以输入任意字符串，但是建议输入模型名称，方便后续查看。
+- --epoch 参数是指的模型训练 epoch 数，用于解析 log，默认我们是对每个数据集训练 100 epoch，但是配置中采用了 RepeatDataset，因此实际训练 epoch 是 25
+- --work-dirs 是你训练模型保存的工作路径，默认是当前路径下的 work_dirs 文件夹
 
 运行后会在 my_work_dirs 里面生成如下三个新文件
 
