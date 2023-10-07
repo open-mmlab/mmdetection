@@ -19,7 +19,7 @@ export PYTHONPATH="../..":$PYTHONPATH
 
 DEBUG=0
 # example
-datasets_list=("acl-x-ray", "tweeter-profile")
+datasets_list=('bacteria-ptywi', 'circuit-elements', 'marbles', 'printed-circuit-board', 'solar-panels-taxvb')
 
 if [ -n "$RETRY_PATH" ]; then
     DEBUG=1

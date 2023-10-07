@@ -148,23 +148,19 @@ abdomen-mri
 
 ## 模型汇总
 
-<div align=center>
-<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/bb187af4-cdbf-40ba-8def-8870e239c8dd"/>
-</div>
-
 在模型训练好或者在训练中途你想对结果进行收集，你可以执行 `log_extract.py` 脚本，该脚本会将 `work_dirs` 下的信息收集并输出为 csv 和 xlsx 格式。
 
-在运行脚本前，请确保安装了 pandas 和 openpyxl
+在运行脚本前，请确保安装了 `pandas` 和 `openpyxl`
 
 ```shell
 python scripts/log_extract.py faster_rcnn --epoch 25 --work-dirs my_work_dirs
 ```
 
 - 第一个输入参数是用于生成 csv 标题，因此你可以输入任意字符串，但是建议输入模型名称，方便后续查看。
-- --epoch 参数是指的模型训练 epoch 数，用于解析 log，默认我们是对每个数据集训练 100 epoch，但是配置中采用了 RepeatDataset，因此实际训练 epoch 是 25
-- --work-dirs 是你训练模型保存的工作路径，默认是当前路径下的 work_dirs 文件夹
+- `--epoch` 参数是指模型训练 epoch 数，用于解析 log，默认我们是对每个数据集训练 100 epoch，但是配置中采用了 `RepeatDataset`，因此实际训练 epoch 是 25
+- `--work-dirs` 是你训练模型保存的工作路径，默认是当前路径下的 `work_dirs` 文件夹
 
-运行后会在 my_work_dirs 里面生成如下三个新文件
+运行后会在 `my_work_dirs` 里面生成如下三个新文件
 
 ```text
 时间戳_detail.xlsx # 100 个数据集的排序后详细信息
@@ -173,12 +169,33 @@ python scripts/log_extract.py faster_rcnn --epoch 25 --work-dirs my_work_dirs
 failed_dataset_list.txt # 失败数据集列表
 ```
 
-目前我们提供了 Faster RCNN、TOOD 和 DINO 算法的评估结果(并没有进行精心的调参)。你也可以按照上述流程对自己的模型进行快速评估。
+目前我们提供了 `Faster RCNN、TOOD 和 DINO` 算法的评估结果(并没有进行精心的调参)。你也可以按照上述流程对自己的模型进行快速评估。
 
-注意：
+## 结果分析
 
-1. 由于 100 个数据集比较多，我们无法对每个数据集进行检查，因此如果有不合理的地方，欢迎反馈，我们将尽快修复。
-2. 我们也提供了 mAP_s 等各种尺度的汇总结果，但是由于部分数据不存在这个尺度边界框，因为汇总时候我们忽略这些数据集
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/bb187af4-cdbf-40ba-8def-8870e239c8dd"/>
+</div>
+
+💎 详情表，请直接访问 [结果](https://aicarrier.feishu.cn/drive/folder/QJ4rfqLzylIVTjdjYo3cunbinMh) 💎
+
+为了确保对比公平且不存在特别的调参，`Faster RCNN、TOOD 和 DINO` 算法采用了相同的 epoch 和数据增强策略，并且都加载了 COCO 预训练权重，同时在训练中保存了验证集上性能最好的模型。其他说明如下所示：
+
+- 为了加快训练速度，所有模型都是在 8 卡 GPU 上面训练。除了 DINO 算法在部分数据集上训练 OOM 外，其余所有模型和数据集都是在 8 张 3090 上训练
+- 由于 'bacteria-ptywi', 'circuit-elements', 'marbles', 'printed-circuit-board', 'solar-panels-taxvb' 这 5 个数据集单张图片的 GT 框非常多导致 DINO 在 3090 上无法训练，因此这 5 个数据集我们在 A100 上进行训练
+
+从上图来看，`DINO` 算法性能好于 `Faster RCNN 和 TOOD` 等传统 CNN 检测算法，说明 Transformer 算法在不同的领域或者不同数据量的情况下效果也是好于传统 CNN 类检测算法的，不过如果单独分析某些领域则不一定。
+
+Roboflow 100 数据集本身也存在缺陷：
+
+- 有些数据集训练图片数非常少，如果要统一超参进行 benchmark，可能会导致其性能很差
+- 有些领域的部分数据集物体非常小且多，`Faster RCNN、TOOD 和 DINO` 在不进行特定调参情况下效果都非常差。针对这种情况，用户可以忽略这些数据集的结果
+- 有些数据集标注的类别过于随意，如果想应用于图文检测类模型，则可能会存在性能低下的现象
+
+最后需要说明：
+
+1. 由于 100 个数据集比较多，我们无法对每个数据集进行检查，因此如果有不合理的地方，欢迎反馈，我们将尽快修复
+2. 我们也提供了 `mAP_s` 等各种尺度的汇总结果，但是由于部分数据不存在这个尺度边界框，因为汇总时候我们忽略这些数据集
 
 ## 自定义算法进行 benchmark
 

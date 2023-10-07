@@ -148,10 +148,6 @@ The txt file can also be generated using the `log_extract.py` script introduced 
 
 ## Model Summary
 
-<div align=center>
-<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/bb187af4-cdbf-40ba-8def-8870e239c8dd"/>
-</div>
-
 If you want to collect the results after the model is trained or during the training, you can execute the `log_extract.py` script, which will collect the information under `work_dirs` and output it in csv and xlsx format.
 
 Before running the script, please make sure that `pandas` and `openpyxl` are installed
@@ -175,7 +171,28 @@ failed_dataset_list.txt
 
 Currently, we provide the evaluation results of the Faster RCNN, TOOD and DINO algorithms (no careful parameter tuning). You can also quickly evaluate your own model according to the above process.
 
-Note:
+## Result Analysis
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/bb187af4-cdbf-40ba-8def-8870e239c8dd"/>
+</div>
+
+💎 The detailed table can be accessed directly [here](https://aicarrier.feishu.cn/drive/folder/QJ4rfqLzylIVTjdjYo3cunbinMh) 💎
+
+To ensure a fair comparison and no special parameter tuning, the `Faster RCNN, TOOD and DINO` algorithms use the same epoch and data augmentation strategy, and all load the COCO pre-training weights, and save the best model performance on the validation set during training. Other instructions are as follows:
+
+- To speed up the training speed, all models are trained on 8-card GPUs. Except that the DINO algorithm trains OOM on some datasets, all other models and datasets are trained on 8 3090s
+- Because the GT boxes of the single image of the 5 datasets 'bacteria-ptywi', 'circuit-elements', 'marbles', 'printed-circuit-board', 'solar-panels-taxvb' are very large, which makes DINO unable to train on 3090, so we train these 5 datasets on A100
+
+From the above figure, the performance of the `DINO` algorithm is better than that of traditional CNN detection algorithms such as `Faster RCNN and TOOD`, which shows that the Transformer algorithm is also better than traditional CNN detection algorithms in different fields or different data volumes. However, if a certain field is analyzed separately, it may not be the case.
+
+Roboflow 100 datasets also have defects:
+
+- Some datasets have very few training images. If you want to benchmark with the same hyperparameters, it may cause poor performance
+- Some datasets in some fields have very small and many objects. `Faster RCNN, TOOD and DINO` have very poor results without specific parameter tuning. For this situation, users can ignore the results of these datasets
+- Some datasets have too casual annotations, which may result in poor performance if you want to apply them to image-text detection models
+
+Finally, it needs to be explained:
 
 1. Since there are a lot of 100 datasets, we cannot check each dataset, so if there is anything unreasonable, please feedback, we will fix it as soon as possible.
 2. We also provide various scale summary results such as mAP_s, but because some data does not exist this scale bounding box, we ignore these datasets when summarizing.
