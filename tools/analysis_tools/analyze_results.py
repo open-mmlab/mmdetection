@@ -372,7 +372,7 @@ def main():
                                              'RepeatDataset'):
         cfg.test_dataloader.dataset.pipeline = get_loading_pipeline(
             cfg.train_dataloader.dataset.dataset.pipeline)
-    elif cfg.train_dataloader.dataset.type in ('ConcatDataset',):
+    elif cfg.train_dataloader.dataset.type in ('ConcatDataset', ):
         cfg.test_dataloader.dataset.pipeline = get_loading_pipeline(
             cfg.train_dataloader.dataset.datasets[0].pipeline)
     else:
