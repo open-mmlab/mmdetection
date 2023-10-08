@@ -84,7 +84,7 @@ class TrackDataPreprocessor(DetDataPreprocessor):
             same format as the model input.
         """
         if self.use_det_processor and training:
-            batch_pad_shape = self.get_pad_shape(data)
+            batch_pad_shape = self._get_pad_shape(data)
         else:
             batch_pad_shape = self._get_track_pad_shape(data)
 

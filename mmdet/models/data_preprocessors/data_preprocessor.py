@@ -118,7 +118,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         Returns:
             dict: Data in the same format as the model input.
         """
-        batch_pad_shape = self.get_pad_shape(data)
+        batch_pad_shape = self._get_pad_shape(data)
         data = super().forward(data=data, training=training)
         inputs, data_samples = data['inputs'], data['data_samples']
 
@@ -148,7 +148,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
 
         return {'inputs': inputs, 'data_samples': data_samples}
 
-    def get_pad_shape(self, data: dict) -> List[tuple]:
+    def _get_pad_shape(self, data: dict) -> List[tuple]:
         """Get the pad_shape of each image based on data and
         pad_size_divisor."""
         _batch_inputs = data['inputs']
