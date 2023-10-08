@@ -375,9 +375,12 @@ def main():
     cfg.test_dataloader.pop('batch_size', 0)
     if cfg.train_dataloader.dataset.type in ('MultiImageMixDataset',
                                              'ClassBalancedDataset',
-                                             'RepeatDataset', 'ConcatDataset'):
+                                             'RepeatDataset'):
         cfg.test_dataloader.dataset.pipeline = get_loading_pipeline(
             cfg.train_dataloader.dataset.dataset.pipeline)
+    elif cfg.train_dataloader.dataset.type in ('ConcatDataset', ):
+        cfg.test_dataloader.dataset.pipeline = get_loading_pipeline(
+            cfg.train_dataloader.dataset.datasets[0].pipeline)
     else:
         cfg.test_dataloader.dataset.pipeline = get_loading_pipeline(
             cfg.train_dataloader.dataset.pipeline)
