@@ -10,18 +10,19 @@
 
 ## 案例 1： 采用 8张 24G 3090 显卡结合 FSDP 训练 `dino-5scale_swin-l_fsdp_8xb2-12e_coco.py`
 
-| ID | AMP | GC  | FSDP | Mem | Time |
-|:--:| :-: | :-: | :--: | :-: | :--: |
-| 1  |     |     |      |     |      |
-| 2  |  √  |     |      |     |      |
-| 3  |     |  √  |      |     |      |
-| 4  |  √  |  √  |      |     |      |
-| 5  |     |     |  √   |     |      |
-| 6  |     |  √  |  √   |     |      |
-| 7  |  √  |  √  |  √   |     |      |
+| ID | AMP | GC of Backbone | GC of Encoder | FSDP |   Peak Mem   | Iter Time (s) |
+|:--:|:---:|:--------------:|--------------:|:----:|:------------:|:-------------:|
+| 1  |     |                |               |      | 49000 (A100) |      0.9      |
+| 2  |  √  |                |               |      | 39300(A100)  |      1.2      |
+| 3  |     |       √        |               |      | 33000 (A100) |      1.1      |
+| 4  |  √  |       √        |               |      | 25000 (A100) |      1.3      |
+| 5  |     |       √        |            √  |      |    18000     |      2.2      |
+| 7  |     |        √        |             √ |   √   |    13500     |      2.9      |
+| 6  |  √  |       √        |             √ |      |    12500     |      1.6      |
+| 8  |  √   |        √        |             √ |   √   |     8700     |      2.4      |
 
 - AMP: Automatic Mixed Precision
-- GC: Gradient Checkpointing
-- FSDP: ZeRO-3
-- Time: Total training time for one iteration.
+- GC: Gradient/Activation checkpointing
+- FSDP: ZeRO-3 with Activation Checkpointing
+- Iter Time: Total training time for one iteration.
 
