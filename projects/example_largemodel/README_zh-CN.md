@@ -10,19 +10,26 @@
 
 ## 案例 1： 采用 8张 24G 3090 显卡结合 FSDP 训练 `dino-5scale_swin-l_fsdp_8xb2-12e_coco.py`
 
-| ID | AMP | GC of Backbone | GC of Encoder | FSDP |   Peak Mem   | Iter Time (s) |
-|:--:|:---:|:--------------:|--------------:|:----:|:------------:|:-------------:|
-| 1  |     |                |               |      | 49000 (A100) |      0.9      |
-| 2  |  √  |                |               |      | 39300(A100)  |      1.2      |
-| 3  |     |       √        |               |      | 33000 (A100) |      1.1      |
-| 4  |  √  |       √        |               |      | 25000 (A100) |      1.3      |
-| 5  |     |       √        |            √  |      |    18000     |      2.2      |
-| 7  |     |        √        |             √ |   √   |    13500     |      2.9      |
-| 6  |  √  |       √        |             √ |      |    12500     |      1.6      |
-| 8  |  √   |        √        |             √ |   √   |     8700     |      2.4      |
+| ID | AMP | GC of Backbone | GC of Encoder | FSDP | Peak Mem (GB) | Iter Time (s) |
+|:--:|:---:|:--------------:|--------------:|:----:|:-------------:|:-------------:|
+| 1  |     |                |               |      |   49 (A100)   |      0.9      |
+| 2  |  √  |                |               |      |   39 (A100)   |      1.2      |
+| 3  |     |       √        |               |      |   33 (A100)   |      1.1      |
+| 4  |  √  |       √        |               |      |   25 (A100)   |      1.3      |
+| 5  |     |       √        |            √  |      |      18       |      2.2      |
+| 6  |  √  |       √        |             √ |      |      13       |      1.6      |
+| 7  |     |        √        |             √ |   √   |      14       |      2.9      |
+| 8  |  √   |        √        |             √ |   √   |      8.5      |      2.4      |
 
-- AMP: Automatic Mixed Precision
-- GC: Gradient/Activation checkpointing
-- FSDP: ZeRO-3 with Activation Checkpointing
-- Iter Time: Total training time for one iteration.
+- AMP: Automatic Mixed Precision 混合精度训练
+- GC: Gradient/Activation checkpointing 梯度、激活值检查点
+- FSDP: ZeRO-3 with Activation Checkpointing ZeRO-3 结合梯度检查点
+- Iter Time: Total training time for one iteration. 一次迭代训练总时间
+
+从上表可以看出：
+
+1. 采用 FSDP 结合 AMP 和 GC 技术，可以将最初的 49G 显存降低为 8.5G，但是会增加 1.7 倍训练时间
+2. 在目标检测视觉模型中，占据最大显存的是激活值，而不是优化器状态，这和 LLM 不同，因此用户应该首选梯度检查点，而不是 FSDP
+3. 如果不开启梯度检查点，仅开启 FSDP 的话依然会 OOM，即使尝试了更加细致的参数切分策略
+4. 虽然 AMP 可以减少不少显存，但是有些算法使用 AMP 会导致精度下降而 FSDP 不会
 
