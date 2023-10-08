@@ -174,7 +174,7 @@ failed_dataset_list.txt # 失败数据集列表
 ## 结果分析
 
 <div align=center>
-<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/bb187af4-cdbf-40ba-8def-8870e239c8dd"/>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/86420903-36a8-410d-9251-4304b9704f7d"/>
 </div>
 
 💎 详情表，请直接访问 [结果](https://aicarrier.feishu.cn/drive/folder/QJ4rfqLzylIVTjdjYo3cunbinMh) 💎

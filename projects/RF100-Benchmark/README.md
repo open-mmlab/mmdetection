@@ -174,7 +174,7 @@ Currently, we provide the evaluation results of the Faster RCNN, TOOD and DINO a
 ## Result Analysis
 
 <div align=center>
-<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/bb187af4-cdbf-40ba-8def-8870e239c8dd"/>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/86420903-36a8-410d-9251-4304b9704f7d"/>
 </div>
 
 💎 The detailed table can be accessed directly [here](https://aicarrier.feishu.cn/drive/folder/QJ4rfqLzylIVTjdjYo3cunbinMh) 💎
