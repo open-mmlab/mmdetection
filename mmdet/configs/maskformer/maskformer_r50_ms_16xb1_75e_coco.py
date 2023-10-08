@@ -10,8 +10,7 @@ from torch.nn.modules.batchnorm import BatchNorm2d
 from torch.nn.modules.normalization import GroupNorm
 from torch.optim.adamw import AdamW
 
-from mmdet.datasets.transforms.transforms \
-    import RandomCrop
+from mmdet.datasets.transforms.transforms import RandomCrop
 from mmdet.models import MaskFormer
 from mmdet.models.backbones import ResNet
 from mmdet.models.data_preprocessors.data_preprocessor import \
@@ -19,8 +18,7 @@ from mmdet.models.data_preprocessors.data_preprocessor import \
 from mmdet.models.dense_heads.maskformer_head import MaskFormerHead
 from mmdet.models.layers.pixel_decoder import TransformerEncoderPixelDecoder
 from mmdet.models.losses import CrossEntropyLoss, DiceLoss, FocalLoss
-from mmdet.models.seg_heads.panoptic_fusion_heads.maskformer_fusion_head import \
-    MaskFormerFusionHead
+from mmdet.models.seg_heads.panoptic_fusion_heads import MaskFormerFusionHead
 from mmdet.models.task_modules.assigners.hungarian_assigner import \
     HungarianAssigner
 from mmdet.models.task_modules.assigners.match_cost import (ClassificationCost,

@@ -10,7 +10,7 @@ with read_base():
 
 pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'  # noqa
 depths = [2, 2, 18, 2]
-model.merge(
+model.update(
     dict(
         backbone=dict(
             _delete_=True,
