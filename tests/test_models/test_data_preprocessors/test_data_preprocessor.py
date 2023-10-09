@@ -34,6 +34,29 @@ class TestDetDataPreprocessor(TestCase):
         with self.assertRaises(AssertionError):
             DetDataPreprocessor(bgr_to_rgb=True, rgb_to_bgr=True)
 
+    def test_pad_shape(self):
+        processor = DetDataPreprocessor()
+        data = dict(inputs=torch.randint(0, 256, (2, 3, 10, 15)))
+        batch_pad_shape = processor._get_pad_shape(data)
+        self.assertEqual(batch_pad_shape, [(10, 15), (10, 15)])
+
+        data = dict(inputs=[torch.randint(0, 256, (3, 11, 10))])
+        self.assertEqual(processor._get_pad_shape(data), [(11, 10)])
+
+        # batch with different image sizes
+        data = dict(inputs=[
+            torch.randint(0, 256, (3, 10, 16)),
+            torch.randint(0, 256, (3, 15, 20))
+        ])
+
+        self.assertEqual(processor._get_pad_shape(data), [(10, 16), (15, 20)])
+
+        # test with pad divisor
+        processor = DetDataPreprocessor(pad_size_divisor=10)
+        data = dict(inputs=torch.randint(0, 256, (2, 3, 52, 65)))
+        self.assertAlmostEqual(
+            processor._get_pad_shape(data), [(60, 70), (60, 70)])
+
     def test_forward(self):
         processor = DetDataPreprocessor(mean=[0, 0, 0], std=[1, 1, 1])
 
