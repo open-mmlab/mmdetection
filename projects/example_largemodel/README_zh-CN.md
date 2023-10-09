@@ -18,6 +18,12 @@ fairscale # 案例 2
 
 ## 案例 1： 采用 8 张 24G 3090 显卡结合 FSDP 训练 `dino-5scale_swin-l_fsdp_8xb2-12e_coco.py`
 
+```bash
+cd mmdetection
+./tools/dist_train.sh projects/example_largemodel/dino-5scale_swin-l_fsdp_8xb2-12e_coco.py 8
+./tools/dist_train.sh projects/example_largemodel/dino-5scale_swin-l_fsdp_8xb2-12e_coco.py 8 --amp
+```
+
 | ID  | AMP | GC of Backbone | GC of Encoder | FSDP | Peak Mem (GB) | Iter Time (s) |
 | :-: | :-: | :------------: | :-----------: | :--: | :-----------: | :-----------: |
 |  1  |     |                |               |      |   49 (A100)   |      0.9      |
@@ -42,6 +48,11 @@ fairscale # 案例 2
 4. 虽然 AMP 可以减少不少显存，但是有些算法使用 AMP 会导致精度下降而 FSDP 不会
 
 ## 案例 2： 采用 8 张 24G 3090 显卡结合 DeepSpeed 训练 `dino-5scale_swin-l_deepspeed_8xb2-12e_coco.py`
+
+```bash
+cd mmdetection
+./tools/dist_train.sh projects/example_largemodel/dino-5scale_swin-l_deepspeed_8xb2-12e_coco.py 8
+```
 
 很遗憾，到目前为止这依然是一个失败的案例，因为梯度始终会溢出导致精度很低。
 

@@ -18,6 +18,12 @@ fairscale # Example 2
 
 ## Example 1: Train `dino-5scale_swin-l_fsdp_8xb2-12e_coco.py` with 8 24G 3090 GPUs and FSDP
 
+```bash
+cd mmdetection
+./tools/dist_train.sh projects/example_largemodel/dino-5scale_swin-l_fsdp_8xb2-12e_coco.py 8
+./tools/dist_train.sh projects/example_largemodel/dino-5scale_swin-l_fsdp_8xb2-12e_coco.py 8 --amp
+```
+
 | ID  | AMP | GC of Backbone | GC of Encoder | FSDP | Peak Mem (GB) | Iter Time (s) |
 | :-: | :-: | :------------: | :-----------: | :--: | :-----------: | :-----------: |
 |  1  |     |                |               |      |   49 (A100)   |      0.9      |
@@ -42,6 +48,11 @@ From the above analysis, it can be seen that:
 4. While AMP can significantly reduce memory usage, some algorithms may experience a decrease in precision when using AMP, whereas FSDP does not exhibit this issue.
 
 ## Example 2: Train `dino-5scale_swin-l_deepspeed_8xb2-12e_coco.py` with 8 24G 3090 GPUs and DeepSpeed
+
+```bash
+cd mmdetection
+./tools/dist_train.sh projects/example_largemodel/dino-5scale_swin-l_deepspeed_8xb2-12e_coco.py 8
+```
 
 It is a pity that this is still a failed case so far, because the gradient will always overflow, resulting in very low accuracy.
 
