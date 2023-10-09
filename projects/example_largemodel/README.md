@@ -19,15 +19,15 @@ fairscale # Example 2
 ## Example 1: Train `dino-5scale_swin-l_fsdp_8xb2-12e_coco.py` with 8 24G 3090 GPUs and FSDP
 
 | ID  | AMP | GC of Backbone | GC of Encoder | FSDP | Peak Mem (GB) | Iter Time (s) |
-| :-: | :-: | :------------: | ------------: | :--: | :-----------: | :-----------: |
+| :-: | :-: | :------------: | :-----------: | :--: | :-----------: | :-----------: |
 |  1  |     |                |               |      |   49 (A100)   |      0.9      |
 |  2  |  √  |                |               |      |   39 (A100)   |      1.2      |
 |  3  |     |       √        |               |      |   33 (A100)   |      1.1      |
 |  4  |  √  |       √        |               |      |   25 (A100)   |      1.3      |
-|  5  |     |       √        |             √ |      |      18       |      2.2      |
-|  6  |  √  |       √        |             √ |      |      13       |      1.6      |
-|  7  |     |       √        |             √ |  √   |      14       |      2.9      |
-|  8  |  √  |       √        |             √ |  √   |      8.5      |      2.4      |
+|  5  |     |       √        |       √       |      |      18       |      2.2      |
+|  6  |  √  |       √        |       √       |      |      13       |      1.6      |
+|  7  |     |       √        |       √       |  √   |      14       |      2.9      |
+|  8  |  √  |       √        |       √       |  √   |      8.5      |      2.4      |
 
 - AMP: Automatic Mixed Precision
 - GC: Gradient/Activation checkpointing
@@ -46,13 +46,13 @@ From the above analysis, it can be seen that:
 It is a pity that this is still a failed case so far, because the gradient will always overflow, resulting in very low accuracy.
 
 | ID  | AMP | GC of Backbone | GC of Encoder | DeepSpeed | Peak Mem (GB) | Iter Time (s) |
-| :-: | :-: | :------------: | ------------: | :-------: | :-----------: | :-----------: |
+| :-: | :-: | :------------: | :-----------: | :-------: | :-----------: | :-----------: |
 |  1  |     |                |               |           |   49 (A100)   |      0.9      |
 |  2  |  √  |                |               |           |   39 (A100)   |      1.2      |
 |  3  |  √  |       √        |               |           |   25 (A100)   |      1.3      |
 |  4  |  √  |       √        |               |     √     |     10.5      |      1.5      |
-|  5  |  √  |       √        |             √ |           |      13       |      1.6      |
-|  6  |  √  |       √        |             √ |     √     |      5.0      |      1.4      |
+|  5  |  √  |       √        |       √       |           |      13       |      1.6      |
+|  6  |  √  |       √        |       √       |     √     |      5.0      |      1.4      |
 
 From the above analysis, it can be seen that:
 
