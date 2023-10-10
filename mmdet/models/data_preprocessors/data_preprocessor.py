@@ -170,10 +170,10 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                 'or a list of tensor, but got a tensor with shape: '
                 f'{_batch_inputs.shape}')
             pad_h = int(
-                np.ceil(_batch_inputs.shape[1] /
+                np.ceil(_batch_inputs.shape[2] /
                         self.pad_size_divisor)) * self.pad_size_divisor
             pad_w = int(
-                np.ceil(_batch_inputs.shape[2] /
+                np.ceil(_batch_inputs.shape[3] /
                         self.pad_size_divisor)) * self.pad_size_divisor
             batch_pad_shape = [(pad_h, pad_w)] * _batch_inputs.shape[0]
         else:

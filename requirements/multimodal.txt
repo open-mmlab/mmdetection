@@ -1,3 +1,4 @@
+fairscale
 nltk
 pycocoevalcap
 transformers

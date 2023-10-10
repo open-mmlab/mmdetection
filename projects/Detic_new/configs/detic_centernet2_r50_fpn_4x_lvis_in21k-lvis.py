@@ -76,14 +76,7 @@ train_dataloader = dict(
 
 param_scheduler = [
     dict(
-        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
-        end=1000),
-    dict(
-        type='CosineAnnealingLR',
-        begin=0,
-        by_epoch=False,
-        T_max=90000,
-    )
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=1000)
 ]
 
 load_from = './first_stage/detic_centernet2_r50_fpn_4x_lvis_boxsup.pth'

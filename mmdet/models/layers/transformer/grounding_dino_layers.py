@@ -16,6 +16,11 @@ from .detr_layers import DetrTransformerEncoderLayer
 from .dino_layers import DinoTransformerDecoder
 from .utils import MLP, get_text_sine_pos_embed
 
+try:
+    from fairscale.nn.checkpoint import checkpoint_wrapper
+except Exception:
+    checkpoint_wrapper = None
+
 
 class GroundingDinoTransformerDecoderLayer(
         DeformableDetrTransformerDecoderLayer):
@@ -150,6 +155,16 @@ class GroundingDinoTransformerEncoder(DeformableDetrTransformerEncoder):
             for _ in range(self.num_layers)
         ])
         self.embed_dims = self.layers[0].embed_dims
+        if self.num_cp > 0:
+            if checkpoint_wrapper is None:
+                raise NotImplementedError(
+                    'If you want to reduce GPU memory usage, \
+                    please install fairscale by executing the \
+                    following command: pip install fairscale.')
+            for i in range(self.num_cp):
+                self.layers[i] = checkpoint_wrapper(self.layers[i])
+                self.fusion_layers[i] = checkpoint_wrapper(
+                    self.fusion_layers[i])
 
     def forward(self,
                 query: Tensor,
