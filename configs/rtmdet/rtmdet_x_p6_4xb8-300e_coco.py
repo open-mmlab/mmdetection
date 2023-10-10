@@ -26,7 +26,6 @@ train_pipeline = [
         ratio_range=(1.0, 1.0),
         max_cached_images=20,
         pad_val=(114, 114, 114)),
-    dict(type='DumpImage', max_imgs=100, dump_dir='work_dirs/dump'),
     dict(type='PackDetInputs')
 ]
 
