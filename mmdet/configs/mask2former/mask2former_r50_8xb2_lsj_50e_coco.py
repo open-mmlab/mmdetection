@@ -40,7 +40,7 @@ data_preprocessor.update(
         mask_pad_value=0,
         pad_seg=False,
         batch_augments=batch_augments))
-model.update(  
+model.update(
     dict(
         data_preprocessor=data_preprocessor,
         panoptic_head=dict(

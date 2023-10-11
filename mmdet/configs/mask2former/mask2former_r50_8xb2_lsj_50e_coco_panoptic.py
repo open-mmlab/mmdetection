@@ -29,8 +29,8 @@ from mmdet.models.layers.msdeformattn_pixel_decoder import \
     MSDeformAttnPixelDecoder
 from mmdet.models.losses.cross_entropy_loss import CrossEntropyLoss
 from mmdet.models.losses.dice_loss import DiceLoss
-from mmdet.models.seg_heads.panoptic_fusion_heads.maskformer_fusion_head import \
-    MaskFormerFusionHead
+from mmdet.models.seg_heads.panoptic_fusion_heads.maskformer_fusion_head \
+    import MaskFormerFusionHead
 from mmdet.models.task_modules.assigners.hungarian_assigner import \
     HungarianAssigner
 from mmdet.models.task_modules.assigners.match_cost import (
