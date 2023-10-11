@@ -14,5 +14,5 @@ model.update(dict(backbone=dict(with_cp=False)))  # noqa
 runner_type = 'FlexibleRunner'
 strategy = dict(
     type='FSDPStrategy',
-    gradient_checkpoint=dict(check_fn=checkpoint_check_fn),
+    activation_checkpointing=dict(check_fn=checkpoint_check_fn),
     model_wrapper=dict(auto_wrap_policy=dict(type=layer_auto_wrap_policy)))
