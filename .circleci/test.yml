@@ -172,8 +172,8 @@ workflows:
             - lint
       - build_cpu:
           name: maximum_version_cpu
-          torch: 2.1.0
-          torchvision: 0.16.0
+          torch: 2.0.0
+          torchvision: 0.15.1
           python: 3.9.0
           requires:
             - minimum_version_cpu
@@ -191,8 +191,8 @@ workflows:
             - hold
       - build_cuda:
           name: maximum_version_gpu
-          torch: 2.1.0
-          cuda: "11.8"
+          torch: 2.0.0
+          cuda: "11.7"
           cudnn: 8
           requires:
             - hold
