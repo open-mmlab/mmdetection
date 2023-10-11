@@ -1,4 +1,5 @@
 _base_ = 'mmdet::_base_/default_runtime.py'
+dataset_type = 'LVISV1Dataset'
 custom_imports = dict(
     imports=['projects.Detic_new.detic'], allow_failed_imports=False)
 

@@ -1,5 +1,5 @@
 _base_ = './detic_centernet2_r50_fpn_4x_lvis_boxsup.py'
-
+dataset_type = ['LVISV1Dataset', 'ImageNetLVISV1Dataset']
 image_size_det = (640, 640)
 image_size_cls = (320, 320)
 
