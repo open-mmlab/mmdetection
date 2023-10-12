@@ -12,9 +12,11 @@ from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures import SampleList
-from mmdet.structures.bbox import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
+from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_overlaps,
+                                   bbox_xyxy_to_cxcywh)
 from mmdet.utils import (ConfigType, InstanceList, OptInstanceList,
                          OptMultiConfig, reduce_mean)
+from ..losses import QualityFocalLoss
 from ..utils import multi_apply
 
 
@@ -290,8 +292,26 @@ class DETRHead(BaseModule):
                 cls_scores.new_tensor([cls_avg_factor]))
         cls_avg_factor = max(cls_avg_factor, 1)
 
-        loss_cls = self.loss_cls(
-            cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
+        if isinstance(self.loss_cls, QualityFocalLoss):
+            bg_class_ind = self.num_classes
+            pos_inds = ((labels >= 0)
+                        & (labels < bg_class_ind)).nonzero().squeeze(1)
+            scores = label_weights.new_zeros(labels.shape)
+            pos_bbox_targets = bbox_targets[pos_inds]
+            pos_decode_bbox_targets = bbox_cxcywh_to_xyxy(pos_bbox_targets)
+            pos_bbox_pred = bbox_preds.reshape(-1, 4)[pos_inds]
+            pos_decode_bbox_pred = bbox_cxcywh_to_xyxy(pos_bbox_pred)
+            scores[pos_inds] = bbox_overlaps(
+                pos_decode_bbox_pred.detach(),
+                pos_decode_bbox_targets,
+                is_aligned=True)
+            loss_cls = self.loss_cls(
+                cls_scores, (labels, scores),
+                label_weights,
+                avg_factor=cls_avg_factor)
+        else:
+            loss_cls = self.loss_cls(
+                cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
 
         # Compute the average number of gt boxes across all gpus, for
         # normalization purposes
@@ -425,8 +445,8 @@ class DETRHead(BaseModule):
         label_weights = gt_bboxes.new_ones(num_bboxes)
 
         # bbox targets
-        bbox_targets = torch.zeros_like(bbox_pred)
-        bbox_weights = torch.zeros_like(bbox_pred)
+        bbox_targets = torch.zeros_like(bbox_pred, dtype=gt_bboxes.dtype)
+        bbox_weights = torch.zeros_like(bbox_pred, dtype=gt_bboxes.dtype)
         bbox_weights[pos_inds] = 1.0
 
         # DETR regress the relative position of boxes (cxcywh) in the image.

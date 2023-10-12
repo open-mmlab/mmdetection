@@ -83,27 +83,36 @@ class DETR(DetectionTransformer):
         # construct binary masks which for the transformer.
         assert batch_data_samples is not None
         batch_input_shape = batch_data_samples[0].batch_input_shape
-        img_shape_list = [sample.img_shape for sample in batch_data_samples]
-
         input_img_h, input_img_w = batch_input_shape
-        masks = feat.new_ones((batch_size, input_img_h, input_img_w))
-        for img_id in range(batch_size):
-            img_h, img_w = img_shape_list[img_id]
-            masks[img_id, :img_h, :img_w] = 0
-        # NOTE following the official DETR repo, non-zero values represent
-        # ignored positions, while zero values mean valid positions.
+        img_shape_list = [sample.img_shape for sample in batch_data_samples]
+        same_shape_flag = all([
+            s[0] == input_img_h and s[1] == input_img_w for s in img_shape_list
+        ])
+        if torch.onnx.is_in_onnx_export() or same_shape_flag:
+            masks = None
+            # [batch_size, embed_dim, h, w]
+            pos_embed = self.positional_encoding(masks, input=feat)
+        else:
+            masks = feat.new_ones((batch_size, input_img_h, input_img_w))
+            for img_id in range(batch_size):
+                img_h, img_w = img_shape_list[img_id]
+                masks[img_id, :img_h, :img_w] = 0
+            # NOTE following the official DETR repo, non-zero values represent
+            # ignored positions, while zero values mean valid positions.
 
-        masks = F.interpolate(
-            masks.unsqueeze(1), size=feat.shape[-2:]).to(torch.bool).squeeze(1)
-        # [batch_size, embed_dim, h, w]
-        pos_embed = self.positional_encoding(masks)
+            masks = F.interpolate(
+                masks.unsqueeze(1),
+                size=feat.shape[-2:]).to(torch.bool).squeeze(1)
+            # [batch_size, embed_dim, h, w]
+            pos_embed = self.positional_encoding(masks)
 
         # use `view` instead of `flatten` for dynamically exporting to ONNX
         # [bs, c, h, w] -> [bs, h*w, c]
         feat = feat.view(batch_size, feat_dim, -1).permute(0, 2, 1)
         pos_embed = pos_embed.view(batch_size, feat_dim, -1).permute(0, 2, 1)
         # [bs, h, w] -> [bs, h*w]
-        masks = masks.view(batch_size, -1)
+        if masks is not None:
+            masks = masks.view(batch_size, -1)
 
         # prepare transformer_inputs_dict
         encoder_inputs_dict = dict(

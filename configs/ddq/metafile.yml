@@ -1,0 +1,56 @@
+Collections:
+  - Name: DDQ
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - AdamW
+        - Multi Scale Train
+        - Gradient Clip
+      Training Resources: 8x A100 GPUs
+      Architecture:
+        - ResNet
+        - Transformer
+    Paper:
+      URL: https://arxiv.org/abs/2303.12776
+      Title: 'Dense Distinct Query for End-to-End Object Detection'
+    README: configs/ddq/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/detectors/ddq_detr.py#L21
+      Version: dev-3.x
+
+Models:
+  - Name: ddq-detr-4scale_r50_8xb2-12e_coco
+    In Collection: DDQ
+    Config: configs/ddq/ddq-detr-4scale_r50_8xb2-12e_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 51.4
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/ddq/ddq-detr-4scale_r50_8xb2-12e_coco/ddq-detr-4scale_r50_8xb2-12e_coco_20230809_170711-42528127.pth
+
+  - Name: ddq-detr-5scale_r50_8xb2-12e_coco
+    In Collection: DDQ
+    Config: configs/dino/ddq-detr-5scale_r50_8xb2-12e_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 52.1
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/ddq/ddq_detr_5scale_coco_1x.pth
+
+  - Name: ddq-detr-4scale_swinl_8xb2-30e_coco
+    In Collection: DDQ
+    Config: configs/dino/ddq-detr-4scale_swinl_8xb2-30e_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 58.7
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/ddq/ddq_detr_swinl_30e.pth

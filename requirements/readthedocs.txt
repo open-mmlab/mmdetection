@@ -1,4 +1,4 @@
-mmcv>=2.0.0rc4,<2.1.0
+mmcv>=2.0.0rc4,<2.2.0
 mmengine>=0.7.1,<1.0.0
 scipy
 torch

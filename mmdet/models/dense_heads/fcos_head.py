@@ -7,6 +7,7 @@ from mmcv.cnn import Scale
 from mmengine.structures import InstanceData
 from torch import Tensor
 
+from mmdet.models.layers import NormedConv2d
 from mmdet.registry import MODELS
 from mmdet.utils import (ConfigType, InstanceList, MultiConfig,
                          OptInstanceList, RangeType, reduce_mean)
@@ -55,6 +56,8 @@ class FCOSHead(AnchorFreeHead):
         norm_cfg (:obj:`ConfigDict` or dict): dictionary to construct and
             config norm layer.  Defaults to
             ``norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)``.
+        cls_predictor_cfg (:obj:`ConfigDict` or dict): dictionary to construct and
+            config conv_cls. Defaults to None.
         init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
             dict]): Initialization config dict.
 
@@ -87,6 +90,7 @@ class FCOSHead(AnchorFreeHead):
                      loss_weight=1.0),
                  norm_cfg: ConfigType = dict(
                      type='GN', num_groups=32, requires_grad=True),
+                 cls_predictor_cfg=None,
                  init_cfg: MultiConfig = dict(
                      type='Normal',
                      layer='Conv2d',
@@ -102,6 +106,7 @@ class FCOSHead(AnchorFreeHead):
         self.center_sample_radius = center_sample_radius
         self.norm_on_bbox = norm_on_bbox
         self.centerness_on_reg = centerness_on_reg
+        self.cls_predictor_cfg = cls_predictor_cfg
         super().__init__(
             num_classes=num_classes,
             in_channels=in_channels,
@@ -117,6 +122,14 @@ class FCOSHead(AnchorFreeHead):
         super()._init_layers()
         self.conv_centerness = nn.Conv2d(self.feat_channels, 1, 3, padding=1)
         self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
+        if self.cls_predictor_cfg is not None:
+            self.cls_predictor_cfg.pop('type')
+            self.conv_cls = NormedConv2d(
+                self.feat_channels,
+                self.cls_out_channels,
+                1,
+                padding=0,
+                **self.cls_predictor_cfg)
 
     def forward(
             self, x: Tuple[Tensor]
@@ -242,6 +255,8 @@ class FCOSHead(AnchorFreeHead):
         flatten_points = torch.cat(
             [points.repeat(num_imgs, 1) for points in all_level_points])
 
+        losses = dict()
+
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
         bg_class_ind = self.num_classes
         pos_inds = ((flatten_labels >= 0)
@@ -251,6 +266,11 @@ class FCOSHead(AnchorFreeHead):
         num_pos = max(reduce_mean(num_pos), 1.0)
         loss_cls = self.loss_cls(
             flatten_cls_scores, flatten_labels, avg_factor=num_pos)
+
+        if getattr(self.loss_cls, 'custom_accuracy', False):
+            acc = self.loss_cls.get_accuracy(flatten_cls_scores,
+                                             flatten_labels)
+            losses.update(acc)
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
         pos_centerness = flatten_centerness[pos_inds]
@@ -277,10 +297,11 @@ class FCOSHead(AnchorFreeHead):
             loss_bbox = pos_bbox_preds.sum()
             loss_centerness = pos_centerness.sum()
 
-        return dict(
-            loss_cls=loss_cls,
-            loss_bbox=loss_bbox,
-            loss_centerness=loss_centerness)
+        losses['loss_cls'] = loss_cls
+        losses['loss_bbox'] = loss_bbox
+        losses['loss_centerness'] = loss_centerness
+
+        return losses
 
     def get_targets(
             self, points: List[Tensor], batch_gt_instances: InstanceList

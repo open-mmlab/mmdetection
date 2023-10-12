@@ -1,5 +1,7 @@
 # DSDL: Standard Description Language for DataSet
 
+<!-- [DATASET] -->
+
 ## 1. Abstract
 
 Data is the cornerstone of artificial intelligence. The efficiency of data acquisition, exchange, and application directly impacts the advances in technologies and applications. Over the long history of AI, a vast quantity of data sets have been developed and distributed. However, these datasets are defined in very different forms, which incurs significant overhead when it comes to exchange, integration, and utilization -- it is often the case that one needs to develop a new customized tool or script in order to incorporate a new dataset into a workflow.
@@ -35,7 +37,7 @@ To overcome such difficulties, we develop **Data Set Description Language (DSDL)
   python tools/train.py {config_file}
   ```
 
-  - using slrum:
+  - using slurm:
 
   ```
   ./tools/slurm_train.sh {partition} {job_name} {config_file} {work_dir} {gpu_nums}

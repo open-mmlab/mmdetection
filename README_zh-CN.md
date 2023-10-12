@@ -25,6 +25,7 @@
 [![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/main/LICENSE)
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 [![issue resolution](https://isitmaintained.com/badge/resolution/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
+[![Open in OpenXLab](https://cdn-static.openxlab.org.cn/app-center/openxlab_demo.svg)](https://openxlab.org.cn/apps?search=mmdet)
 
 [📘使用文档](https://mmdetection.readthedocs.io/zh_CN/latest/) |
 [🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/latest/get_started.html) |
@@ -101,6 +102,53 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ### 亮点
 
+**v3.2.0** 版本已经在 2023.10.12 发布：
+
+**1. 检测 Transformer SOTA 模型大合集**
+(1) 支持了 [DDQ](configs/ddq/README.md)、[CO-DETR](projects/CO-DETR/README.md)、[AlignDETR](projects/AlignDETR/README.md) 和 [H-DINO](projects/HDINO/README.md) 4 个更新更强的 SOTA Transformer 模型
+(2) 基于 CO-DETR,  MMDet 中发布了 COCO 性能为 64.1 mAP 的模型
+(3) DINO 等算法支持 AMP/Checkpoint/FrozenBN，可以有效降低显存
+
+**2. [提供了全面的 CNN 和 Transformer 的性能对比](projects/RF100-Benchmark/README_zh-CN.md)**
+RF100 是由 100 个现实收集的数据集组成，包括 7 个域，可以验证 DINO 等 Transformer 模型和 CNN 类算法在不同场景不同数据量下的性能差异。用户可以用这个 Benchmark 快速验证自己的算法在不同场景下的鲁棒性。
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/86420903-36a8-410d-9251-4304b9704f7d"/>
+</div>
+
+**3. 支持了 [GLIP](configs/glip/README.md) 和 [Grounding DINO](configs/grounding_dino/README.md) 微调，全网唯一支持 Grounding DINO 微调**
+MMDet 中的 Grounding DINO 是全网唯一支持微调的算法库，且性能高于官方 1 个点，当然 GLIP 也比官方高。
+我们还提供了详细的 Grounding DINO 在自定义数据集上训练评估的流程，欢迎大家试用。
+
+|       Model        | Backbone |   Style   |  COCO mAP  | Official COCO mAP |
+| :----------------: | :------: | :-------: | :--------: | :---------------: |
+|  Grounding DINO-T  |  Swin-T  | Zero-shot |    48.5    |       48.4        |
+|  Grounding DINO-T  |  Swin-T  | Finetune  | 58.1(+0.9) |       57.2        |
+|  Grounding DINO-B  |  Swin-B  | Zero-shot |    56.9    |       56.7        |
+|  Grounding DINO-B  |  Swin-B  | Finetune  |    59.7    |                   |
+| Grounding DINO-R50 |   R50    |  Scratch  | 48.9(+0.8) |       48.1        |
+
+**4. 支持开放词汇检测算法 [Detic](projects/Detic_new/README.md) 并提供多数据集联合训练可能**
+
+**5. 轻松使用 [FSDP 和 DeepSpeed 训练检测模型](projects/example_largemodel/README_zh-CN.md)**
+
+| ID  | AMP | GC of Backbone | GC of Encoder | FSDP | Peak Mem (GB) | Iter Time (s) |
+| :-: | :-: | :------------: | :-----------: | :--: | :-----------: | :-----------: |
+|  1  |     |                |               |      |   49 (A100)   |      0.9      |
+|  2  |  √  |                |               |      |   39 (A100)   |      1.2      |
+|  3  |     |       √        |               |      |   33 (A100)   |      1.1      |
+|  4  |  √  |       √        |               |      |   25 (A100)   |      1.3      |
+|  5  |     |       √        |       √       |      |      18       |      2.2      |
+|  6  |  √  |       √        |       √       |      |      13       |      1.6      |
+|  7  |     |       √        |       √       |  √   |      14       |      2.9      |
+|  8  |  √  |       √        |       √       |  √   |      8.5      |      2.4      |
+
+**6. 支持了 [V3Det](configs/v3det/README.md) 1.3w+ 类别的超大词汇检测数据集**
+
+<div align=center>
+    <img width=960 src="https://github.com/open-mmlab/mmdetection/assets/17425982/9c216387-02be-46e6-b0f2-b856f80f6d84"/>
+</div>
+
 我们很高兴向大家介绍我们在实时目标识别任务方面的最新成果 RTMDet，包含了一系列的全卷积单阶段检测模型。 RTMDet 不仅在从 tiny 到 extra-large 尺寸的目标检测模型上实现了最佳的参数量和精度的平衡，而且在实时实例分割和旋转目标检测任务上取得了最先进的成果。 更多细节请参阅[技术报告](https://arxiv.org/abs/2212.07784)。 预训练模型可以在[这里](configs/rtmdet)找到。
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/real-time-instance-segmentation-on-mscoco)](https://paperswithcode.com/sota/real-time-instance-segmentation-on-mscoco?p=rtmdet-an-empirical-study-of-designing-real)
@@ -116,13 +164,6 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 <div align=center>
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
-
-**v3.1.0** 版本已经在 2023.6.30 发布：
-
-- 支持 Tracking 类算法，包括多目标跟踪 MOT 算法 SORT、DeepSORT、StrongSORT、OCSORT、ByteTrack、QDTrack 和视频实例分割 VIS 算法 MaskTrackRCNN、Mask2Former-VIS。
-- 支持 [ViTDet](projects/ViTDet)
-- 支持多模态开放检测算法 [GLIP](configs/glip) 和 [XDecoder](projects/XDecoder) 推理和评估，并同时支持了 COCO 语义分割、COCO Caption、ADE20k 通用分割、RefCOCO 等数据集。后续将支持 GLIP 微调
-- 提供了包括 MMDetection 图片任务的 [gradio demo](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/projects/gradio_demo/README.md)，方便用户快速体验
 
 ## 安装
 
@@ -237,9 +278,12 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
             <li><a href="configs/dab_detr">DAB-DETR (ICLR'2022)</a></li>
             <li><a href="configs/dino">DINO (ICLR'2023)</a></li>
             <li><a href="configs/glip">GLIP (CVPR'2022)</a></li>
+            <li><a href="configs/ddq">DDQ (CVPR'2023)</a></li>
             <li><a href="projects/DiffusionDet">DiffusionDet (ArXiv'2023)</a></li>
             <li><a href="projects/EfficientDet">EfficientDet (CVPR'2020)</a></li>
+            <li><a href="projects/ViTDet">ViTDet (ECCV'2022)</a></li>
             <li><a href="projects/Detic">Detic (ECCV'2022)</a></li>
+            <li><a href="projects/CO-DETR">CO-DETR (ICCV'2023)</a></li>
       </ul>
       </td>
       <td>
@@ -261,6 +305,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="projects/SparseInst">SparseInst (CVPR'2022)</a></li>
           <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
           <li><a href="configs/boxinst">BoxInst (CVPR'2021)</a></li>
+          <li><a href="projects/ConvNeXt-V2">ConvNeXt-V2 (Arxiv'2023)</a></li>
         </ul>
       </td>
       <td>
@@ -268,6 +313,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
           <li><a href="configs/maskformer">MaskFormer (NeurIPS'2021)</a></li>
           <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
+          <li><a href="configs/XDecoder">XDecoder (CVPR'2023)</a></li>
         </ul>
       </td>
       <td>
@@ -443,10 +489,10 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 
 ## 欢迎加入 OpenMMLab 社区
 
-扫描下方的二维码可关注 OpenMMLab 团队的 [知乎官方账号](https://www.zhihu.com/people/openmmlab)，加入 OpenMMLab 团队的 [官方交流 QQ 群](https://jq.qq.com/?_wv=1027&k=aCvMxdr3)
+扫描下方的二维码可关注 OpenMMLab 团队的 [知乎官方账号](https://www.zhihu.com/people/openmmlab)，扫描下方微信二维码添加喵喵好友，进入 MMDectection 微信交流社群。【加好友申请格式：研究方向+地区+学校/公司+姓名】
 
 <div align="center">
-<img src="resources/zhihu_qrcode.jpg" height="400" />  <img src="resources/qq_group_qrcode.jpg" height="400" />
+<img src="resources/zhihu_qrcode.jpg" height="400" />  <img src="resources/miaomiao_qrcode.jpg" height="400" />
 </div>
 
 我们会在 OpenMMLab 社区为大家

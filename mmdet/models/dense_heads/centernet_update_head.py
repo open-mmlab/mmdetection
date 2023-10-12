@@ -366,7 +366,7 @@ class CenterNetUpdateHead(AnchorFreeHead):
         inside_gt_center3x3_mask = (dist_x <= strides[..., 0]) & \
                                    (dist_y <= strides[..., 0])
 
-        # condition3： limit the regression range for each location
+        # condition3: limit the regression range for each location
         bbox_target_wh = bbox_target[..., :2] + bbox_target[..., 2:]
         crit = (bbox_target_wh**2).sum(dim=2)**0.5 / 2
         inside_fpn_level_mask = (crit >= regress_ranges[:, [0]]) & \
