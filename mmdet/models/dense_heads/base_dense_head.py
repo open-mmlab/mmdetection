@@ -369,7 +369,13 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                                                     0).reshape(-1).sigmoid()
             cls_score = cls_score.permute(1, 2,
                                           0).reshape(-1, self.cls_out_channels)
-            if self.use_sigmoid_cls:
+
+            # the `custom_cls_channels` parameter is derived from
+            # CrossEntropyCustomLoss and FocalCustomLoss, and is currently used
+            # in v3det.
+            if getattr(self.loss_cls, 'custom_cls_channels', False):
+                scores = self.loss_cls.get_activation(cls_score)
+            elif self.use_sigmoid_cls:
                 scores = cls_score.sigmoid()
             else:
                 # remind that we set FG labels to [0, num_class-1]
@@ -461,7 +467,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             results.bboxes = scale_boxes(results.bboxes, scale_factor)
 
         if hasattr(results, 'score_factors'):
-            # TODO： Add sqrt operation in order to be consistent with
+            # TODO: Add sqrt operation in order to be consistent with
             #  the paper.
             score_factors = results.pop('score_factors')
             results.scores = results.scores * score_factors

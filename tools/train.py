@@ -1,11 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
-import logging
 import os
 import os.path as osp
 
 from mmengine.config import Config, DictAction
-from mmengine.logging import print_log
 from mmengine.registry import RUNNERS
 from mmengine.runner import Runner
 
@@ -83,18 +81,8 @@ def main():
 
     # enable automatic-mixed-precision training
     if args.amp is True:
-        optim_wrapper = cfg.optim_wrapper.type
-        if optim_wrapper == 'AmpOptimWrapper':
-            print_log(
-                'AMP training is already enabled in your config.',
-                logger='current',
-                level=logging.WARNING)
-        else:
-            assert optim_wrapper == 'OptimWrapper', (
-                '`--amp` is only supported when the optimizer wrapper type is '
-                f'`OptimWrapper` but got {optim_wrapper}.')
-            cfg.optim_wrapper.type = 'AmpOptimWrapper'
-            cfg.optim_wrapper.loss_scale = 'dynamic'
+        cfg.optim_wrapper.type = 'AmpOptimWrapper'
+        cfg.optim_wrapper.loss_scale = 'dynamic'
 
     # enable automatically scaling LR
     if args.auto_scale_lr:

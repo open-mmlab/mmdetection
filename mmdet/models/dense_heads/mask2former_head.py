@@ -398,10 +398,7 @@ class Mask2FormerHead(MaskFormerHead):
                     decoder layer. Each with shape (batch_size, num_queries, \
                     h, w).
         """
-        batch_img_metas = [
-            data_sample.metainfo for data_sample in batch_data_samples
-        ]
-        batch_size = len(batch_img_metas)
+        batch_size = x[0].shape[0]
         mask_features, multi_scale_memorys = self.pixel_decoder(x)
         # multi_scale_memorys (from low resolution to high resolution)
         decoder_inputs = []
@@ -438,9 +435,8 @@ class Mask2FormerHead(MaskFormerHead):
         for i in range(self.num_transformer_decoder_layers):
             level_idx = i % self.num_transformer_feat_level
             # if a mask is all True(all background), then set it all False.
-            attn_mask[torch.where(
-                attn_mask.sum(-1) == attn_mask.shape[-1])] = False
-
+            mask_sum = (attn_mask.sum(-1) != attn_mask.shape[-1]).unsqueeze(-1)
+            attn_mask = attn_mask & mask_sum
             # cross_attn + self_attn
             layer = self.transformer_decoder.layers[i]
             query_feat = layer(

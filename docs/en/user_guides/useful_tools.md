@@ -71,7 +71,7 @@ Description of all arguments:
 - `config` : The path of a model config file.
 - `prediction_path`:  Output result file in pickle format from `tools/test.py`
 - `show_dir`: Directory where painted GT and detection images will be saved
-- `--show`：Determines whether to show painted images, If not specified, it will be set to `False`
+- `--show`: Determines whether to show painted images, If not specified, it will be set to `False`
 - `--wait-time`: The interval of show (s), 0 is block
 - `--topk`: The number of saved images that have the highest and lowest `topk` scores after sorting. If not specified, it will be set to `20`.
 - `--show-score-thr`:  Show score threshold. If not specified, it will be set to `0`.
@@ -111,6 +111,80 @@ python tools/analysis_tools/analyze_results.py \
        --show-score-thr 0.3
 ```
 
+## Fusing results from multiple models
+
+`tools/analysis_tools/fusion_results.py` can fusing predictions using Weighted Boxes Fusion(WBF) from different object detection models. (Currently support coco format only)
+
+**Usage**
+
+```shell
+python tools/analysis_tools/fuse_results.py \
+       ${PRED_RESULTS} \
+       [--annotation ${ANNOTATION}] \
+       [--weights ${WEIGHTS}] \
+       [--fusion-iou-thr ${FUSION_IOU_THR}] \
+       [--skip-box-thr ${SKIP_BOX_THR}] \
+       [--conf-type ${CONF_TYPE}] \
+       [--eval-single ${EVAL_SINGLE}] \
+       [--save-fusion-results ${SAVE_FUSION_RESULTS}] \
+       [--out-dir ${OUT_DIR}]
+```
+
+Description of all arguments:
+
+- `pred-results`: Paths of detection results from different models.(Currently support coco format only)
+- `--annotation`: Path of ground-truth.
+- `--weights`: List of weights for each model. Default: `None`, which means weight == 1 for each model.
+- `--fusion-iou-thr`: IoU value for boxes to be a match。Default: `0.55`。
+- `--skip-box-thr`: The confidence threshold that needs to be excluded in the WBF algorithm. bboxes whose confidence is less than this value will be excluded.。Default: `0`。
+- `--conf-type`: How to calculate confidence in weighted boxes.
+  - `avg`: average value，default.
+  - `max`: maximum value.
+  - `box_and_model_avg`: box and model wise hybrid weighted average.
+  - `absent_model_aware_avg`: weighted average that takes into account the absent model.
+- `--eval-single`: Whether evaluate every single model. Default: `False`.
+- `--save-fusion-results`: Whether save fusion results. Default: `False`.
+- `--out-dir`: Path of fusion results.
+
+**Examples**:
+Assume that you have got 3 result files from corresponding models through `tools/test.py`, which paths are './faster-rcnn_r50-caffe_fpn_1x_coco.json', './retinanet_r50-caffe_fpn_1x_coco.json', './cascade-rcnn_r50-caffe_fpn_1x_coco.json' respectively. The ground-truth file path is './annotation.json'.
+
+1. Fusion of predictions from three models and evaluation of their effectiveness
+
+```shell
+python tools/analysis_tools/fuse_results.py \
+       ./faster-rcnn_r50-caffe_fpn_1x_coco.json \
+       ./retinanet_r50-caffe_fpn_1x_coco.json \
+       ./cascade-rcnn_r50-caffe_fpn_1x_coco.json \
+       --annotation ./annotation.json \
+       --weights 1 2 3 \
+```
+
+2. Simultaneously evaluate each single model and fusion results
+
+```shell
+python tools/analysis_tools/fuse_results.py \
+       ./faster-rcnn_r50-caffe_fpn_1x_coco.json \
+       ./retinanet_r50-caffe_fpn_1x_coco.json \
+       ./cascade-rcnn_r50-caffe_fpn_1x_coco.json \
+       --annotation ./annotation.json \
+       --weights 1 2 3 \
+       --eval-single
+```
+
+3. Fusion of prediction results from three models and save
+
+```shell
+python tools/analysis_tools/fuse_results.py \
+       ./faster-rcnn_r50-caffe_fpn_1x_coco.json \
+       ./retinanet_r50-caffe_fpn_1x_coco.json \
+       ./cascade-rcnn_r50-caffe_fpn_1x_coco.json \
+       --annotation ./annotation.json \
+       --weights 1 2 3 \
+       --save-fusion-results \
+       --out-dir outputs/fusion
+```
+
 ## Visualization
 
 ### Visualize Datasets
@@ -120,7 +194,7 @@ images and bounding box annotations) visually, or save the image to a
 designated directory.
 
 ```shell
-python tools/misc/browse_dataset.py ${CONFIG} [-h] [--skip-type ${SKIP_TYPE[SKIP_TYPE...]}] [--output-dir ${OUTPUT_DIR}] [--not-show] [--show-interval ${SHOW_INTERVAL}]
+python tools/analysis_tools/browse_dataset.py ${CONFIG} [-h] [--skip-type ${SKIP_TYPE[SKIP_TYPE...]}] [--output-dir ${OUTPUT_DIR}] [--not-show] [--show-interval ${SHOW_INTERVAL}]
 ```
 
 ### Visualize Models

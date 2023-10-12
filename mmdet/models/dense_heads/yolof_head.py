@@ -223,10 +223,10 @@ class YOLOFHead(AnchorHead):
         multiple images.
 
         Args:
-            cls_scores_list (list[Tensor])： Classification scores of
+            cls_scores_list (list[Tensor]): Classification scores of
                 each image. each is a 4D-tensor, the shape is
                 (h * w, num_anchors * num_classes).
-            bbox_preds_list (list[Tensor])： Bbox preds of each image.
+            bbox_preds_list (list[Tensor]): Bbox preds of each image.
                 each is a 4D-tensor, the shape is (h * w, num_anchors * 4).
             anchor_list (list[Tensor]): Anchors of each image. Each element of
                 is a tensor of shape (h * w * num_anchors, 4).

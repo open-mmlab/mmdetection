@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from mmcv.ops import RoIAlign, nms
+from mmengine.model.weight_init import PretrainedInit
 from torch.nn import BatchNorm2d
 
 from mmdet.models.backbones.resnet import ResNet
@@ -42,7 +43,8 @@ model = dict(
         norm_cfg=dict(type=BatchNorm2d, requires_grad=True),
         norm_eval=True,
         style='pytorch',
-        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
+        init_cfg=dict(
+            type=PretrainedInit, checkpoint='torchvision://resnet50')),
     neck=dict(
         type=FPN,
         in_channels=[256, 512, 1024, 2048],

@@ -46,7 +46,7 @@ class RTMDet(SingleStageDetector):
             data_preprocessor=data_preprocessor,
             init_cfg=init_cfg)
 
-        # TODO： Waiting for mmengine support
+        # TODO: Waiting for mmengine support
         if use_syncbn and get_world_size() > 1:
             torch.nn.SyncBatchNorm.convert_sync_batchnorm(self)
             print_log('Using SyncBatchNorm()', 'current')
