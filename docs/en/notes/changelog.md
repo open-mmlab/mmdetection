@@ -11,14 +11,18 @@
 - Algorithms such as DINO support AMP/Checkpoint/FrozenBN, which can effectively reduce memory usage.
 
 **(2) Comprehensive Performance Comparison between CNN and Transformer**
+
 RF100 consists of a dataset collection of 100 real-world datasets, including 7 domains. It can be used to assess the performance differences of Transformer models like DINO and CNN-based algorithms under different scenarios and data volumes. Users can utilize this benchmark to quickly evaluate the robustness of their algorithms in various scenarios.
 
 **(3) Support for GLIP and Grounding DINO fine-tuning, the only algorithm library that supports Grounding DINO fine-tuning**
+
 The Grounding DINO algorithm in MMDet is the only library that supports fine-tuning. Its performance is one point higher than the official version, and of course, GLIP also outperforms the official version.
 We also provide a detailed process for training and evaluating Grounding DINO on custom datasets. Everyone is welcome to give it a try.
 
 **(4) Support for the open-vocabulary detection algorithm Detic and multi-dataset joint training.**
+
 **(5) Training detection models using FSDP and DeepSpeed.**
+
 **(6) Support for the V3Det dataset, a large-scale detection dataset with over 13,000 categories.**
 
 ### New Features
