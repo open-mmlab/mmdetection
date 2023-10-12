@@ -28,7 +28,7 @@ It is recommended to download and extract the dataset somewhere outside the proj
 
 ### LVIS
 
-LVIS dataset is adopted as box-labeled data,  [LVIS](https://www.lvisdataset.org/) is available from official website or mirror.  You need to generate `lvis_v1_train_norare.json` according to the [official prepare datasets](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md#coco-and-lvis) for open-vocabulary LVIS, which removes the labels of 337 rare-class from training. The directory should be like this.
+LVIS dataset is adopted as box-labeled data,  [LVIS](https://www.lvisdataset.org/) is available from official website or mirror.  You need to generate `lvis_v1_train_norare.json` according to the [official prepare datasets](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md#coco-and-lvis) for open-vocabulary LVIS, which removes the labels of 337 rare-class from training. You can also download [lvis_v1_train_norare.json](download.openmmlab.com/mmdetection/v3.0/detic/data/lvis/annotations/lvis_v1_train_norare.json) from our backup. The directory should be like this.
 
 ```shell
 mmdetection
@@ -60,7 +60,7 @@ mmdetection
 
 ### Metadata
 
-`data/metadata/` is the preprocessed meta-data (included in the repo). Please follow the [official instruction](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md#metadata) to pre-process the  LVIS dataset. You will generate `lvis_v1_train_cat_info.json` for Federated loss, which contains the frequency of each category of training set of LVIS. In addition, ` lvis_v1_clip_a+cname.npy` is the pre-computed CLIP embeddings for each category of LVIS. The directory should be like this.
+`data/metadata/` is the preprocessed meta-data (included in the repo). Please follow the [official instruction](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md#metadata) to pre-process the  LVIS dataset. You will generate `lvis_v1_train_cat_info.json` for Federated loss, which contains the frequency of each category of training set of LVIS. In addition, `lvis_v1_clip_a+cname.npy` is the pre-computed CLIP embeddings for each category of LVIS. You can also choose to directly download [lvis_v1_train_cat_info](https://download.openmmlab.com/mmdetection/v3.0/detic/data/metadata/lvis_v1_train_cat_info.json) and [lvis_v1_clip_a+cname.npy](https://download.openmmlab.com/mmdetection/v3.0/detic/data/metadata/lvis_v1_clip_a%2Bcname.npy) form our backup. The directory should be like this.
 
 ```shell
 mmdetection
