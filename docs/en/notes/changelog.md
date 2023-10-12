@@ -1,5 +1,73 @@
 # Changelog of v3.x
 
+## v3.1.0 (12/10/2023)
+
+### Highlights
+
+**(1) Detection Transformer SOTA Model Collection**
+
+- Supported four updated and stronger SOTA Transformer models: DDQ, CO-DETR, AlignDETR, and H-DINO.
+- Based on CO-DETR, MMDet released a model with a COCO performance of 64.1 mAP.
+- Algorithms such as DINO support AMP/Checkpoint/FrozenBN, which can effectively reduce memory usage.
+
+**(2) Comprehensive Performance Comparison between CNN and Transformer**
+
+RF100 consists of a dataset collection of 100 real-world datasets, including 7 domains. It can be used to assess the performance differences of Transformer models like DINO and CNN-based algorithms under different scenarios and data volumes. Users can utilize this benchmark to quickly evaluate the robustness of their algorithms in various scenarios.
+
+**(3) Support for GLIP and Grounding DINO fine-tuning, the only algorithm library that supports Grounding DINO fine-tuning**
+
+The Grounding DINO algorithm in MMDet is the only library that supports fine-tuning. Its performance is one point higher than the official version, and of course, GLIP also outperforms the official version.
+We also provide a detailed process for training and evaluating Grounding DINO on custom datasets. Everyone is welcome to give it a try.
+
+**(4) Support for the open-vocabulary detection algorithm Detic and multi-dataset joint training.**
+
+**(5) Training detection models using FSDP and DeepSpeed.**
+
+**(6) Support for the V3Det dataset, a large-scale detection dataset with over 13,000 categories.**
+
+### New Features
+
+- Support CO-DETR/DDQ/AlignDETR/H-DINO
+- Support GLIP and Grounding DINO fine-tuning
+- Support Detic and Multi-Datasets training (#10926)
+- Support V3Det and benchmark (#10938)
+- Support Roboflow 100 Benchmark (#10915)
+- Add custom dataset of grounding dino (#11012)
+- Release RTMDet-X p6 (#10993)
+- Support AMP of DINO (#10827)
+- Support FrozenBN (#10845)
+- Add new configuration files for `QDTrack/DETR/RTMDet/MaskRCNN/DINO/DeformableDETR/MaskFormer` algorithm
+- Add a new script to support the WBF (#10808)
+- Add `large_image_demo` (#10719)
+- Support download dataset from OpenXLab (#10799)
+- Update to support torch2onnx for DETR series models (#10910)
+- Translation into Chinese of an English document (#10744, #10756, #10805, #10848)
+
+### Bug Fixes
+
+- Fix name error in DETR metafile.yml (#10595)
+- Fix device of the tensors in `set_nms` (#10574)
+- Remove some unicode chars from `en/` docs (#10648)
+- Fix download dataset with mim script. (#10727)
+- Fix export to torchserve (#10694)
+- Fix typo in `mask-rcnn_r50_fpn_1x-wandb_coco` (#10757)
+- Fix `eval_recalls` error in `voc_metric` (#10770)
+- Fix torch version comparison (#10934)
+- Fix incorrect behavior to access train pipeline from ConcatDataset in `analyze_results.py` (#11004)
+
+### Improvements
+
+- Update `useful_tools.md` (#10587)
+- Update Instance segmentation Tutorial (#10711)
+- Update `train.py` to compat with new config (#11025)
+- Support `torch2onnx` for maskformer series (#10782)
+
+### Contributors
+
+A total of 36 developers contributed to this release.
+
+Thank @YQisme, @nskostas, @max-unfinity, @evdcush, @Xiangxu-0103, @ZhaoCake, @RangeKing, @captainIT, @ODAncona, @aaronzs, @zeyuanyin, @gotjd709, @Musiyuan, @YanxingLiu, @RunningLeon, @ytzfhqs, @zhangzhidaSunny, @yeungkong, @crazysteeaam, @timerring, @okotaku, @apatsekin, @Morty-Xu, @Markson-Young, @ZhaoQiiii, @Kuro96, @PhoenixZ810, @yhcao6, @myownskyW7, @jiongjiongli, @Johnson-Wang, @ryylcc, @guyleaf, @agpeshal, @SimonGuoNjust, @hhaAndroid
+
 ## v3.1.0 (30/6/2023)
 
 ### Highlights
