@@ -28,7 +28,7 @@ It is recommended to download and extract the dataset somewhere outside the proj
 
 ### LVIS
 
-LVIS dataset is adopted as box-labeled data,  [LVIS](https://www.lvisdataset.org/) is available from official website or mirror.  You need to generate `lvis_v1_train_norare.json` according to the [official prepare datasets](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md#coco-and-lvis) for open-vocabulary LVIS, which removes the labels of 337 rare-class from training. You can also download [lvis_v1_train_norare.json](download.openmmlab.com/mmdetection/v3.0/detic/data/lvis/annotations/lvis_v1_train_norare.json) from our backup. The directory should be like this.
+LVIS dataset is adopted as box-labeled data,  [LVIS](https://www.lvisdataset.org/) is available from official website or mirror.  You need to generate `lvis_v1_train_norare.json` according to the [official prepare datasets](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md#coco-and-lvis) for open-vocabulary LVIS, which removes the labels of 337 rare-class from training. You can also download [lvis_v1_train_norare.json](https://download.openmmlab.com/mmdetection/v3.0/detic/data/lvis/annotations/lvis_v1_train_norare.json) from our backup. The directory should be like this.
 
 ```shell
 mmdetection
