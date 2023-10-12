@@ -8,6 +8,7 @@ from .csp_layer import CSPLayer
 from .dropblock import DropBlock
 from .ema import ExpMomentumEMA
 from .inverted_residual import InvertedResidual
+from .ln2d import LN2d
 from .matrix_nms import mask_matrix_nms
 from .msdeformattn_pixel_decoder import MSDeformAttnPixelDecoder
 from .normed_predictor import NormedConv2d, NormedLinear
@@ -61,5 +62,5 @@ __all__ = [
     'ConditionalDetrTransformerDecoderLayer', 'DinoTransformerDecoder',
     'CdnQueryGenerator', 'Mask2FormerTransformerEncoder',
     'Mask2FormerTransformerDecoderLayer', 'Mask2FormerTransformerDecoder',
-    'SinePositionalEncoding3D', 'FrozenBatchNorm2d'
+    'SinePositionalEncoding3D', 'FrozenBatchNorm2d', 'LN2d'
 ]
