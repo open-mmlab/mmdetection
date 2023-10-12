@@ -1,5 +1,5 @@
 _base_ = './detic_centernet2_r50_fpn_4x_lvis_boxsup.py'
-
+dataset_type = ['LVISV1Dataset', 'ImageNetLVISV1Dataset']
 image_size_det = (640, 640)
 image_size_cls = (320, 320)
 
@@ -52,7 +52,7 @@ dataset_det = dict(
     dataset=dict(
         type='LVISV1Dataset',
         data_root='data/lvis/',
-        ann_file='annotations/lvis_v1_train.json',
+        ann_file='annotations/lvis_v1_train_norare.json',
         data_prefix=dict(img=''),
         filter_cfg=dict(filter_empty_gt=True, min_size=32),
         pipeline=train_pipeline_det,
@@ -75,6 +75,18 @@ train_dataloader = dict(
     batch_sampler=dict(
         type='MultiDataAspectRatioBatchSampler', num_datasets=2),
     dataset=dict(type='ConcatDataset', datasets=[dataset_det, dataset_cls]))
+
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
+        end=1000),
+    dict(
+        type='CosineAnnealingLR',
+        begin=0,
+        by_epoch=False,
+        T_max=90000,
+    )
+]
 
 load_from = './first_stage/detic_centernet2_r50_fpn_4x_lvis-base_boxsup.pth'
 

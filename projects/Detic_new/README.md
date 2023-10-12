@@ -28,7 +28,7 @@ It is recommended to download and extract the dataset somewhere outside the proj
 
 ### LVIS
 
-LVIS dataset is adopted as box-labeled data,  [LVIS](https://www.lvisdataset.org/) is available from official website or mirror.  You need to generate `lvis_v1_train_norare.json` according to the [official prepare datasets](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md#coco-and-lvis) for open-vocabulary LVIS, which removes the labels of 337 rare-class from training. The directory should be like this.
+LVIS dataset is adopted as box-labeled data,  [LVIS](https://www.lvisdataset.org/) is available from official website or mirror.  You need to generate `lvis_v1_train_norare.json` according to the [official prepare datasets](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md#coco-and-lvis) for open-vocabulary LVIS, which removes the labels of 337 rare-class from training. You can also download [lvis_v1_train_norare.json](https://download.openmmlab.com/mmdetection/v3.0/detic/data/lvis/annotations/lvis_v1_train_norare.json) from our backup. The directory should be like this.
 
 ```shell
 mmdetection
@@ -60,7 +60,7 @@ mmdetection
 
 ### Metadata
 
-`data/metadata/` is the preprocessed meta-data (included in the repo). Please follow the [official instruction](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md#metadata) to pre-process the  LVIS dataset. You will generate `lvis_v1_train_cat_info.json` for Federated loss, which contains the frequency of each category of training set of LVIS. In addition, ` lvis_v1_clip_a+cname.npy` is the pre-computed CLIP embeddings for each category of LVIS. The directory should be like this.
+`data/metadata/` is the preprocessed meta-data (included in the repo). Please follow the [official instruction](https://github.com/facebookresearch/Detic/blob/main/datasets/README.md#metadata) to pre-process the  LVIS dataset. You will generate `lvis_v1_train_cat_info.json` for Federated loss, which contains the frequency of each category of training set of LVIS. In addition, `lvis_v1_clip_a+cname.npy` is the pre-computed CLIP embeddings for each category of LVIS. You can also choose to directly download [lvis_v1_train_cat_info](https://download.openmmlab.com/mmdetection/v3.0/detic/data/metadata/lvis_v1_train_cat_info.json) and [lvis_v1_clip_a+cname.npy](https://download.openmmlab.com/mmdetection/v3.0/detic/data/metadata/lvis_v1_clip_a%2Bcname.npy) form our backup. The directory should be like this.
 
 ```shell
 mmdetection
@@ -132,9 +132,9 @@ To train the baseline with box-supervised, run
 bash ./tools/dist_train.sh projects/Detic_new/detic_centernet2_r50_fpn_4x_lvis_boxsup.py 8
 ```
 
-|                                         Model (Config)                                          | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) | Download |
-| :---------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: | :------: |
-| [detic_centernet2_r50_fpn_4x_lvis_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvis_boxsup.py) |   31.6   |        31.5        |     26.6      |           25.6           |          |
+|                                         Model (Config)                                          | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) |
+| :---------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: |
+| [detic_centernet2_r50_fpn_4x_lvis_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvis_boxsup.py) |   31.6   |        31.5        |     26.6      |           25.6           |
 
 #### Second stage
 
@@ -190,25 +190,25 @@ To finetune the baseline model with image-labeled data， run:
 bash ./tools/dist_train.sh projects/Detic_new/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis.py 8
 ```
 
-|                                             Model (Config)                                              | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) | Download |
-| :-----------------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: | :------: |
-| [detic_centernet2_r50_fpn_4x_lvis_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis.py) |   32.9   |        33.2        |     30.9      |           29.7           |          |
+|                                             Model (Config)                                              | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) |
+| :-----------------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: |
+| [detic_centernet2_r50_fpn_4x_lvis_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis.py) |   32.9   |        33.2        |     30.9      |           29.7           |
 
 #### Standard LVIS Results
 
-|                                                Model (Config)                                                 | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) | Download |
-| :-----------------------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: | :------: |
-|        [detic_centernet2_r50_fpn_4x_lvis_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvis_boxsup.py)        |   31.6   |        31.5        |     26.6      |           25.6           |          |
-|    [detic_centernet2_r50_fpn_4x_lvis_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis.py)    |   32.9   |        33.2        |     30.9      |           29.7           |          |
-|     [detic_centernet2_swin-b_fpn_4x_lvis_boxsup](./configs/detic_centernet2_swin-b_fpn_4x_lvis_boxsup.py)     |   40.7   |        40.7        |     38.0      |           35.9           |          |
-| [detic_centernet2_swin-b_fpn_4x_lvis_in21k-lvis](./configs/detic_centernet2_swin-b_fpn_4x_lvis_in21k-lvis.py) |   41.7   |        41.7        |     41.7      |           41.7           |          |
+|                                                Model (Config)                                                 | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) |                                                                                                                                                                                     Download                                                                                                                                                                                     |
+| :-----------------------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|        [detic_centernet2_r50_fpn_4x_lvis_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvis_boxsup.py)        |   31.6   |        31.5        |     26.6      |           25.6           |               [model](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_r50_fpn_4x_lvis_boxsup/detic_centernet2_r50_fpn_4x_lvis_boxsup_20230911_233514-54116677.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_r50_fpn_4x_lvis_boxsup/detic_centernet2_r50_fpn_4x_lvis_boxsup_20230911_233514.log.json)               |
+|    [detic_centernet2_r50_fpn_4x_lvis_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis.py)    |   32.9   |        33.2        |     30.9      |           29.7           |       [model](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis_20230912_040619-9e7a3258.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis/detic_centernet2_r50_fpn_4x_lvis_in21k-lvis_20230912_040619.log.json)       |
+|     [detic_centernet2_swin-b_fpn_4x_lvis_boxsup](./configs/detic_centernet2_swin-b_fpn_4x_lvis_boxsup.py)     |   40.7   |        40.7        |     38.0      |           35.9           |         [model](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_swin-b_fpn_4x_lvis_boxsup/detic_centernet2_swin-b_fpn_4x_lvis_boxsup_20230825_061737-328e85f9.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_swin-b_fpn_4x_lvis_boxsup/detic_centernet2_swin-b_fpn_4x_lvis_boxsup_20230825_061737.log.json)         |
+| [detic_centernet2_swin-b_fpn_4x_lvis_in21k-lvis](./configs/detic_centernet2_swin-b_fpn_4x_lvis_in21k-lvis.py) |   41.7   |        41.7        |     41.7      |           41.7           | [model](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_swin-b_fpn_4x_lvis_in21k-lvis/detic_centernet2_swin-b_fpn_4x_lvis_in21k-lvis_20230926_235410-0c152391.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_swin-b_fpn_4x_lvis_in21k-lvis/detic_centernet2_swin-b_fpn_4x_lvis_in21k-lvis_20230926_235410.log.json) |
 
 #### Open-vocabulary LVIS Results
 
-|                                                 Model (Config)                                                  | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) | Download |
-| :-------------------------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: | :------: |
-|     [detic_centernet2_r50_fpn_4x_lvisbase_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvisbase_boxsup.py)     |   30.4   |        30.2        |     16.2      |           16.4           |          |
-| [detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvisbase_in21k-lvis.py) |   32.6   |        32.4        |     27.4      |           24.9           |          |
+|                                                  Model (Config)                                                   | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) |                                                                                                                                                                                         Download                                                                                                                                                                                         |
+| :---------------------------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|     [detic_centernet2_r50_fpn_4x_lvis-base_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvis-base_boxsup.py)     |   30.4   |        30.2        |     16.2      |           16.4           |         [model](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_r50_fpn_4x_lvis-base_boxsup/detic_centernet2_r50_fpn_4x_lvis-base_boxsup_20230921_180638-c1685ee2.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_r50_fpn_4x_lvis-base_boxsup/detic_centernet2_r50_fpn_4x_lvis-base_boxsup_20230921_180638.log.json)         |
+| [detic_centernet2_r50_fpn_4x_lvis-base_in21k-lvis](./configs/detic_centernet2_r50_fpn_4x_lvis-base_in21k-lvis.py) |   32.6   |        32.4        |     27.4      |           24.9           | [model](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_r50_fpn_4x_lvis-base_in21k-lvis/detic_centernet2_r50_fpn_4x_lvis-base_in21k-lvis_20230925_014315-2d2cc8b7.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_r50_fpn_4x_lvis-base_in21k-lvis/detic_centernet2_r50_fpn_4x_lvis-base_in21k-lvis_20230925_014315.log.json) |
 
 ### Testing
 
@@ -224,10 +224,10 @@ python ./tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE}
 
 The models are converted from the official model zoo.
 
-|                                                    Model (Config)                                                     | mask mAP | mask mAP_novel |
-| :-------------------------------------------------------------------------------------------------------------------: | :------: | :------------: |
-|     [detic_centernet2_swin-b_fpn_4x_lvisbase_boxsup](./configs/detic_centernet2_swin-b_fpn_4x_lvisbase_boxsup.py)     |   38.4   |      21.9      |
-| [detic_centernet2_swin-b_fpn_4x_lvisbase_in21k-lvis](./configs/detic_centernet2_swin-b_fpn_4x_lvisbase_in21k-lvis.py) |   40.7   |      34.0      |
+|                                                     Model (Config)                                                      | mask mAP | mask mAP_novel |                                                                                      Download                                                                                       |
+| :---------------------------------------------------------------------------------------------------------------------: | :------: | :------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|     [detic_centernet2_swin-b_fpn_4x_lvis-base_boxsup](./configs/detic_centernet2_swin-b_fpn_4x_lvis-base_boxsup.py)     |   38.4   |      21.9      |     [model](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_swin-b_fpn_4x_lvis-base_boxsup/detic_centernet2_swin-b_fpn_4x_lvis-base_boxsup-481281c8.pth)     |
+| [detic_centernet2_swin-b_fpn_4x_lvis-base_in21k-lvis](./configs/detic_centernet2_swin-b_fpn_4x_lvis-base_in21k-lvis.py) |   40.7   |      34.0      | [model](https://download.openmmlab.com/mmdetection/v3.0/detic/detic_centernet2_swin-b_fpn_4x_lvis-base_in21k-lvis/detic_centernet2_swin-b_fpn_4x_lvis-base_in21k-lvis-ec91245d.pth) |
 
 ###### Note:
 
