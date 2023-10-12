@@ -132,9 +132,9 @@ To train the baseline with box-supervised, run
 bash ./tools/dist_train.sh projects/Detic_new/detic_centernet2_r50_fpn_4x_lvis_boxsup.py 8
 ```
 
-|                                         Model (Config)                                          | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) | Download |
-| :---------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: | :------: |
-| [detic_centernet2_r50_fpn_4x_lvis_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvis_boxsup.py) |   31.6   |        31.5        |     26.6      |           25.6           |          |
+|                                         Model (Config)                                          | mask mAP | mask mAP(official) | mask mAP_rare | mask mAP_rare(officical) |
+| :---------------------------------------------------------------------------------------------: | :------: | :----------------: | :-----------: | :----------------------: |
+| [detic_centernet2_r50_fpn_4x_lvis_boxsup](./configs/detic_centernet2_r50_fpn_4x_lvis_boxsup.py) |   31.6   |        31.5        |     26.6      |           25.6           |
 
 #### Second stage
 
