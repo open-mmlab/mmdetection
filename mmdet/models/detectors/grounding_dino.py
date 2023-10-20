@@ -113,7 +113,11 @@ class GroundingDINO(DINO):
         return tokenized, caption_string, tokens_positive, entities
 
     def get_positive_map(self, tokenized, tokens_positive):
-        positive_map = create_positive_map(tokenized, tokens_positive)
+        positive_map = create_positive_map(
+            tokenized,
+            tokens_positive,
+            max_num_entities=self.bbox_head.cls_branches[
+                self.decoder.num_layers].max_text_len)
         positive_map_label_to_token = create_positive_map_label_to_token(
             positive_map, plus=1)
         return positive_map_label_to_token, positive_map
