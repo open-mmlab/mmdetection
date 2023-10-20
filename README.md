@@ -110,7 +110,7 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 (2) Based on CO-DETR, MMDet released a model with a COCO performance of 64.1 mAP.
 (3) Algorithms such as DINO support `AMP/Checkpoint/FrozenBN`, which can effectively reduce memory usage.
 
-**2. [Comprehensive Performance Comparison between CNN and Transformer](<(projects/RF100-Benchmark/README.md)>)**
+**2. [Comprehensive Performance Comparison between CNN and Transformer](projects/RF100-Benchmark/README.md)**
 RF100 consists of a dataset collection of 100 real-world datasets, including 7 domains. It can be used to assess the performance differences of Transformer models like DINO and CNN-based algorithms under different scenarios and data volumes. Users can utilize this benchmark to quickly evaluate the robustness of their algorithms in various scenarios.
 
 <div align=center>
@@ -130,7 +130,7 @@ We also provide a detailed process for training and evaluating Grounding DINO on
 | Grounding DINO-R50 |   R50    |  Scratch  | 48.9(+0.8) |       48.1        |
 
 **4. Support for the open-vocabulary detection algorithm [Detic](projects/Detic_new/README.md) and multi-dataset joint training.**
-**5. Training detection models using [FSDP and DeepSpeed](<(projects/example_largemodel/README.md)>).**
+**5. Training detection models using [FSDP and DeepSpeed](projects/example_largemodel/README.md).**
 
 | ID  | AMP | GC of Backbone | GC of Encoder | FSDP | Peak Mem (GB) | Iter Time (s) |
 | :-: | :-: | :------------: | :-----------: | :--: | :-----------: | :-----------: |
