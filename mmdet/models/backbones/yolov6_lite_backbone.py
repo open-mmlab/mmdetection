@@ -28,7 +28,7 @@ class Lite_EffiBlockS1(BaseModule):
             padding=0,
             groups=1,
             norm_cfg=dict(type='BN'),
-            act_cfg=dict(type='HardSwish')
+            act_cfg=dict(type='Hardswish')
         )
         self.conv_dw_1 = ConvModule(
             in_channels=mid_channels,
@@ -52,7 +52,7 @@ class Lite_EffiBlockS1(BaseModule):
             padding=0,
             groups=1,
             norm_cfg=dict(type='BN'),
-            act_cfg=dict(type='HardSwish')
+            act_cfg=dict(type='Hardswish')
         )
     
     def _channel_shuffle(x, groups):
@@ -100,7 +100,7 @@ class Lite_EffiBlockS2(BaseModule):
             padding=0,
             groups=1,
             norm_cfg=dict(type='BN'),
-            act_cfg=dict(type='HardSwish')
+            act_cfg=dict(type='Hardswish')
         )
         # branch 2
         self.conv_pw_2 = ConvModule(
@@ -111,7 +111,7 @@ class Lite_EffiBlockS2(BaseModule):
             padding=0,
             groups=1,
             norm_cfg=dict(type='BN'),
-            act_cfg=dict(type='HardSwish')
+            act_cfg=dict(type='Hardswish')
         )
         self.conv_dw_2 = ConvModule(
             in_channels=mid_channels // 2,
@@ -135,7 +135,7 @@ class Lite_EffiBlockS2(BaseModule):
             padding=0,
             groups=1,
             norm_cfg=dict(type='BN'),
-            act_cfg=dict(type='HardSwish')
+            act_cfg=dict(type='Hardswish')
         )
         self.conv_dw_3 = ConvModule(
             in_channels=out_channels,
@@ -145,7 +145,7 @@ class Lite_EffiBlockS2(BaseModule):
             padding=1,
             groups=out_channels,
             norm_cfg=dict(type='BN'),
-            act_cfg=dict(type='HardSwish')
+            act_cfg=dict(type='Hardswish')
         )
         self.conv_pw_3 = ConvModule(
             in_channels=out_channels,
@@ -189,7 +189,7 @@ class Lite_EffiBackbone(BaseModule):
             stride=2,
             padding=1,
             norm_cfg=dict(type='BN'),
-            act_cfg=dict(type='HardSwish')
+            act_cfg=dict(type='Hardswish')
         )
         
         self.lite_effiblock1 = self._build_lite_effiblock(num_repeat[0],

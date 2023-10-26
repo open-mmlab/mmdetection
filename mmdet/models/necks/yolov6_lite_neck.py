@@ -23,7 +23,7 @@ class Lite_EffiNeck(BaseModule):
             padding=0,
             groups=1,
             norm_cfg=dict(type='BN'),
-            act_cfg=dict(type='HardSwish')
+            act_cfg=dict(type='Hardswish')
         )
         self.reduce_layer1 = ConvModule(
             in_channels=in_channels[1],
@@ -33,7 +33,7 @@ class Lite_EffiNeck(BaseModule):
             padding=0,
             groups=1,
             norm_cfg=dict(type='BN'),
-            act_cfg=dict(type='HardSwish')
+            act_cfg=dict(type='Hardswish')
         )
         self.reduce_layer2 = ConvModule(
             in_channels=in_channels[2],
@@ -43,7 +43,7 @@ class Lite_EffiNeck(BaseModule):
             padding=0,
             groups=1,
             norm_cfg=dict(type='BN'),
-            act_cfg=dict(type='HardSwish')
+            act_cfg=dict(type='Hardswish')
         )
 
         self.upsample0 = nn.Upsample(scale_factor=2, mode='nearest')
@@ -59,7 +59,7 @@ class Lite_EffiNeck(BaseModule):
             channel_attention=False,
             use_cspnext_block=False,
             norm_cfg=dict(tyep='BN'),
-            act_cfg=dict(type='HardSwish'),
+            act_cfg=dict(type='Hardswish'),
             kernel_size=5
         )
 
@@ -73,7 +73,7 @@ class Lite_EffiNeck(BaseModule):
             channel_attention=False,
             use_cspnext_block=False,
             norm_cfg=dict(tyep='BN'),
-            act_cfg=dict(type='HardSwish'),
+            act_cfg=dict(type='Hardswish'),
             kernel_size=5
         )
 
@@ -87,7 +87,7 @@ class Lite_EffiNeck(BaseModule):
             channel_attention=False,
             use_cspnext_block=False,
             norm_cfg=dict(tyep='BN'),
-            act_cfg=dict(type='HardSwish'),
+            act_cfg=dict(type='Hardswish'),
             kernel_size=5
         )
 
@@ -101,7 +101,7 @@ class Lite_EffiNeck(BaseModule):
             channel_attention=False,
             use_cspnext_block=False,
             norm_cfg=dict(tyep='BN'),
-            act_cfg=dict(type='HardSwish'),
+            act_cfg=dict(type='Hardswish'),
             kernel_size=5
         )
 
