@@ -16,7 +16,7 @@ from terminaltables import AsciiTable
 from mmdet.datasets.api_wrappers import COCO, COCOeval, COCOevalMP
 from mmdet.registry import METRICS
 from mmdet.structures.mask import encode_mask_results
-from ..functional import eval_recalls
+from ..functional import eval_recalls, prplot
 
 
 @METRICS.register_module()
@@ -75,6 +75,7 @@ class CocoMetric(BaseMetric):
                  iou_thrs: Optional[Union[float, Sequence[float]]] = None,
                  metric_items: Optional[Sequence[str]] = None,
                  format_only: bool = False,
+                 pr_plot: bool = False,
                  outfile_prefix: Optional[str] = None,
                  file_client_args: dict = None,
                  backend_args: dict = None,
@@ -145,6 +146,8 @@ class CocoMetric(BaseMetric):
         # handle dataset lazy init
         self.cat_ids = None
         self.img_ids = None
+
+        self.pr_plot = pr_plot
 
     def fast_eval_recall(self,
                          results: List[dict],
@@ -560,6 +563,17 @@ class CocoMetric(BaseMetric):
                                 ap = float('nan')
                             t.append(f'{round(ap, 3)}')
                         results_per_category.append(tuple(t))
+                        if self.pr_plot:
+                            # plot pr curve for an individual category
+                            ps_for_plot = precisions[[0, 5], :, idx, 0, -1]
+                            ps_for_plot[ps_for_plot == -1] = 0
+                            recThrs = coco_eval.params.recThrs
+                            prplot(
+                                recThrs,
+                                ps_for_plot,
+                                class_name=nm['name'],
+                                iou_type=iou_type,
+                                types=['C50', 'C75'])
 
                     num_columns = len(results_per_category[0])
                     results_flatten = list(
@@ -591,6 +605,17 @@ class CocoMetric(BaseMetric):
                 logger.info(f'{metric}_mAP_copypaste: {ap[0]:.3f} '
                             f'{ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
                             f'{ap[4]:.3f} {ap[5]:.3f}')
+                if self.pr_plot:
+                    ps_for_plot = coco_eval.eval['precision']
+                    ps_for_plot = ps_for_plot[[0, 5], :, :, 0, -1]
+                    ps_for_plot[ps_for_plot == -1] = 0
+                    recThrs = coco_eval.params.recThrs
+                    prplot(
+                        recThrs,
+                        ps_for_plot,
+                        class_name='all_classes',
+                        iou_type=iou_type,
+                        types=['C50', 'C75'])
 
         if tmp_dir is not None:
             tmp_dir.cleanup()
