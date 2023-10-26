@@ -32,6 +32,8 @@ class DarknetBottleneck(BaseModule):
             Defaults to dict(type='BN').
         act_cfg (dict): Config dict for activation layer.
             Defaults to dict(type='Swish').
+        kernel_size (int): The kernel size of the second convolution,
+            Default to 3.
     """
 
     def __init__(self,
@@ -44,7 +46,8 @@ class DarknetBottleneck(BaseModule):
                  norm_cfg: ConfigType = dict(
                      type='BN', momentum=0.03, eps=0.001),
                  act_cfg: ConfigType = dict(type='Swish'),
-                 init_cfg: OptMultiConfig = None) -> None:
+                 init_cfg: OptMultiConfig = None,
+                 kernel_size: int = 3,) -> None:
         super().__init__(init_cfg=init_cfg)
         hidden_channels = int(out_channels * expansion)
         conv = DepthwiseSeparableConvModule if use_depthwise else ConvModule
@@ -58,7 +61,7 @@ class DarknetBottleneck(BaseModule):
         self.conv2 = conv(
             hidden_channels,
             out_channels,
-            3,
+            kernel_size,
             stride=1,
             padding=1,
             conv_cfg=conv_cfg,
@@ -176,6 +179,8 @@ class CSPLayer(BaseModule):
         init_cfg (:obj:`ConfigDict` or dict or list[dict] or
             list[:obj:`ConfigDict`], optional): Initialization config dict.
             Defaults to None.
+        kernel_size (int): The kernel size of the "blocks"
+            Default to 3.
     """
 
     def __init__(self,
@@ -191,7 +196,8 @@ class CSPLayer(BaseModule):
                  norm_cfg: ConfigType = dict(
                      type='BN', momentum=0.03, eps=0.001),
                  act_cfg: ConfigType = dict(type='Swish'),
-                 init_cfg: OptMultiConfig = None) -> None:
+                 init_cfg: OptMultiConfig = None,
+                 kernel_size: int = 3) -> None:
         super().__init__(init_cfg=init_cfg)
         block = CSPNeXtBlock if use_cspnext_block else DarknetBottleneck
         mid_channels = int(out_channels * expand_ratio)
@@ -227,7 +233,8 @@ class CSPLayer(BaseModule):
                 use_depthwise,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
-                act_cfg=act_cfg) for _ in range(num_blocks)
+                act_cfg=act_cfg,
+                kernel_size=kernel_size) for _ in range(num_blocks)
         ])
         if channel_attention:
             self.attention = ChannelAttention(2 * mid_channels)
