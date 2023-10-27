@@ -3,7 +3,7 @@ import datetime
 import os.path as osp
 import tempfile
 from collections import OrderedDict
-from collections.abc import Sequence
+from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
 import pycocotools.mask as mask_utils
@@ -62,15 +62,15 @@ class CocoOCCostMetric(BaseMetric):
     default_prefix: str | None = 'coco'
 
     def __init__(self,
-                 ann_file: str | None = None,
-                 metric: str | list[str] = 'bbox',
+                 ann_file: Optional[str] = None,
+                 metric: Union[str, List[str]] = 'bbox',
                  alpha: float = 0.5,
                  beta: float = 0.6,
-                 outfile_prefix: str | None = None,
-                 file_client_args: dict | None = None,
-                 backend_args: dict | None = None,
+                 outfile_prefix: Optional[str] = None,
+                 file_client_args: dict = None,
+                 backend_args: dict = None,
                  collect_device: str = 'cpu',
-                 prefix: str | None = None,
+                 prefix: Optional[str] = None,
                  sort_categories: bool = False) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
         if ot is None:
@@ -348,7 +348,7 @@ class CocoOCCostMetric(BaseMetric):
 
         return np.mean(ot_costs)
 
-    def compute_metrics(self, results: list) -> dict[str, float]:
+    def compute_metrics(self, results: list) -> Dict[str, float]:
         """Compute the metrics from processed results.
 
         Args:
