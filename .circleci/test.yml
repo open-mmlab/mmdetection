@@ -74,6 +74,7 @@ jobs:
             pip install -r requirements/tests.txt -r requirements/optional.txt
             pip install --force-reinstall pycocotools
             pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+            pip install POT
             pip install -r requirements/tracking.txt
             pip install git+https://github.com/cocodataset/panopticapi.git
             pip install git+https://github.com/JonathonLuiten/TrackEval.git
@@ -130,6 +131,7 @@ jobs:
             docker exec mmdetection pip install -r requirements/tests.txt -r requirements/optional.txt
             docker exec mmdetection pip install pycocotools
             docker exec mmdetection pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+            docker exec mmdetection pip install POT
             docker exec mmdetection pip install -r requirements/tracking.txt
             docker exec mmdetection pip install git+https://github.com/cocodataset/panopticapi.git
             docker exec mmdetection pip install git+https://github.com/JonathonLuiten/TrackEval.git

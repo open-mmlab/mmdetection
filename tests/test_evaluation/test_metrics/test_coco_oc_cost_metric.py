@@ -1,5 +1,6 @@
 import os.path as osp
 import tempfile
+import unittest
 from unittest import TestCase
 
 import numpy as np
@@ -8,6 +9,11 @@ import torch
 from mmengine.fileio import dump
 
 from mmdet.evaluation import CocoOCCostMetric
+
+try:
+    import ot
+except ImportError:
+    ot = None
 
 
 class TestCocoOCCostMetric(TestCase):
@@ -105,12 +111,14 @@ class TestCocoOCCostMetric(TestCase):
     def tearDown(self):
         self.tmp_dir.cleanup()
 
+    @unittest.skipIf(ot is None, 'ot is not installed')
     def test_init(self):
         fake_json_file = osp.join(self.tmp_dir.name, 'fake_data.json')
         self._create_dummy_coco_json(fake_json_file)
         with self.assertRaisesRegex(KeyError, 'metric should be one of'):
             CocoOCCostMetric(ann_file=fake_json_file, metric='unknown')
 
+    @unittest.skipIf(ot is None, 'ot is not installed')
     def test_evaluate(self):
         # create dummy data
         fake_json_file = osp.join(self.tmp_dir.name, 'fake_data.json')
@@ -142,6 +150,7 @@ class TestCocoOCCostMetric(TestCase):
         target = {'coco/bbox_OCCost': 0.007, 'coco/segm_OCCost': 0.007}
         self.assertDictEqual(eval_results, target)
 
+    @unittest.skipIf(ot is None, 'ot is not installed')
     def test_empty_results(self):
         # create dummy data
         fake_json_file = osp.join(self.tmp_dir.name, 'fake_data.json')
@@ -163,6 +172,7 @@ class TestCocoOCCostMetric(TestCase):
         # coco api Index error will be caught
         coco_metric.evaluate(size=1)
 
+    @unittest.skipIf(ot is None, 'ot is not installed')
     def test_evaluate_without_json(self):
         dummy_pred = self._create_dummy_results()
 
