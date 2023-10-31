@@ -1,14 +1,17 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import bisect
 import warnings
 from collections import OrderedDict
-from typing import Sequence, Union
+from typing import Any, Optional, Sequence, Union
 
+import numpy as np
 from mmengine.dist import (broadcast_object_list, collect_results,
                            is_main_process)
 from mmengine.evaluator import BaseMetric, Evaluator
 from mmengine.evaluator.metric import _to_cpu
+from mmengine.registry import EVALUATOR
+from mmengine.structures import BaseDataElement
 
-from mmdet.registry import EVALUATOR
 from mmdet.utils import ConfigType
 
 
@@ -32,6 +35,44 @@ class MultiDatasetsEvaluator(Evaluator):
                  dataset_prefixes: Sequence[str]) -> None:
         super().__init__(metrics)
         self.dataset_prefixes = dataset_prefixes
+        self._count = -1
+        self._setups = False
+
+    def _get_cumulative_sizes(self):
+        # ConcatDataset have a property `cumulative_sizes`
+        if isinstance(self.dataset_meta, Sequence):
+            dataset_slices = self.dataset_meta[0]['cumulative_sizes']
+            if not self._setups:
+                self._setups = True
+                for dataset_meta, metric in zip(self.dataset_meta,
+                                                self.metrics):
+                    metric.dataset_meta = dataset_meta
+        else:
+            dataset_slices = self.dataset_meta['cumulative_sizes']
+        return dataset_slices
+
+    def process(self,
+                data_samples: Sequence[BaseDataElement],
+                data_batch: Optional[Any] = None):
+        """Convert ``BaseDataSample`` to dict and invoke process method of each
+        metric.
+
+        Args:
+            data_samples (Sequence[BaseDataElement]): predictions of the model,
+                and the ground truth of the validation set.
+            data_batch (Any, optional): A batch of data from the dataloader.
+        """
+        dataset_slices = self._get_cumulative_sizes()
+        assert len(dataset_slices) == len(self.dataset_prefixes)
+
+        for data, data_sample in zip(data_batch, data_samples):
+            self._count += 1
+            dataset_idx = bisect.bisect_right(dataset_slices, self._count)
+            if isinstance(data_sample, BaseDataElement):
+                self.metrics[dataset_idx].process([data],
+                                                  [data_sample.to_dict()])
+            else:
+                self.metrics[dataset_idx].process([data], [data_sample])
 
     def evaluate(self, size: int) -> dict:
         """Invoke ``evaluate`` method of each metric and collect the metrics
@@ -49,52 +90,49 @@ class MultiDatasetsEvaluator(Evaluator):
             of the metrics, and the values are corresponding results.
         """
         metrics_results = OrderedDict()
-        dataset_slices = self.dataset_meta.get('cumulative_sizes', [size])
+        dataset_slices = self._get_cumulative_sizes()
         assert len(dataset_slices) == len(self.dataset_prefixes)
-        for metric in self.metrics:
+
+        dataset_slices.insert(0, 0)
+        dataset_slices = np.diff(dataset_slices).tolist()
+        for dataset_prefix, dataset_slice, metric in zip(
+                self.dataset_prefixes, dataset_slices, self.metrics):
             if len(metric.results) == 0:
                 warnings.warn(
                     f'{metric.__class__.__name__} got empty `self.results`.'
                     'Please ensure that the processed results are properly '
                     'added into `self.results` in `process` method.')
 
-            results = collect_results(metric.results, size,
+            results = collect_results(metric.results, dataset_slice,
                                       metric.collect_device)
 
             if is_main_process():
                 # cast all tensors in results list to cpu
                 results = _to_cpu(results)
-                for start, end, dataset_prefix in zip([0] +
-                                                      dataset_slices[:-1],
-                                                      dataset_slices,
-                                                      self.dataset_prefixes):
-                    metric_results = metric.compute_metrics(
-                        results[start:end])  # type: ignore
-                    # Add prefix to metric names
+                _metrics = metric.compute_metrics(results)
 
-                    if metric.prefix:
-                        final_prefix = '/'.join(
-                            (dataset_prefix, metric.prefix))
-                    else:
-                        final_prefix = dataset_prefix
-                    metric_results = {
-                        '/'.join((final_prefix, k)): v
-                        for k, v in metric_results.items()
-                    }
+                if metric.prefix:
+                    final_prefix = '/'.join((dataset_prefix, metric.prefix))
+                else:
+                    final_prefix = dataset_prefix
+                metric_results = {
+                    '/'.join((final_prefix, k)): v
+                    for k, v in _metrics.items()
+                }
 
-                    # Check metric name conflicts
-                    for name in metric_results.keys():
-                        if name in metrics_results:
-                            raise ValueError(
-                                'There are multiple evaluation results with '
-                                f'the same metric name {name}. Please make '
-                                'sure all metrics have different prefixes.')
-                    metrics_results.update(metric_results)
+                # Check metric name conflicts
+                for name in metric_results.keys():
+                    if name in metrics_results:
+                        raise ValueError(
+                            'There are multiple evaluation results with '
+                            f'the same metric name {name}. Please make '
+                            'sure all metrics have different prefixes.')
+                metrics_results.update(metric_results)
             metric.results.clear()
         if is_main_process():
             metrics_results = [metrics_results]
         else:
             metrics_results = [None]  # type: ignore
         broadcast_object_list(metrics_results)
-
+        self._count = -1
         return metrics_results[0]

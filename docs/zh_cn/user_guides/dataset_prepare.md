@@ -339,7 +339,7 @@ mmdetection
 ```shell
 #!/bin/bash
 
-folder="./GLIP/"
+folder="./GLIP/odinw_35/"
 
 find "$folder" -type f -name "*.zip" | while read -r file; do
     unzip "$file" -d "$(dirname "$file")"
@@ -360,5 +360,3 @@ mmdetection
 ...
 │   ├── coco
 ```
-
-
