@@ -105,14 +105,14 @@ dataset_boggleBoards = dict(
     type=dataset_type,
     metainfo=metainfo,
     data_root=_data_root,
-    ann_file='valid/annotations_without_background.json',
-    data_prefix=dict(img='valid/'),
+    ann_file='val_annotations_without_background.json',
+    data_prefix=dict(img=''),
     pipeline=_base_.test_pipeline,
     test_mode=True,
     return_classes=True)
 val_evaluator_boggleBoards = dict(
     type='CocoMetric',
-    ann_file=_data_root + 'valid/annotations_without_background.json',
+    ann_file=_data_root + 'val_annotations_without_background.json',
     metric='bbox')
 
 # ---------------------7 brackishUnderwater---------------------#
@@ -134,9 +134,12 @@ val_evaluator_brackishUnderwater = dict(
     metric='bbox')
 
 # ---------------------8 ChessPieces---------------------#
-class_name = ('  ', 'black bishop', 'black king', 'black knight', 'black pawn',
-              'black queen', 'black rook', 'white bishop', 'white king',
-              'white knight', 'white pawn', 'white queen', 'white rook')
+# TODO: check class name
+# The office name of the first class is '  ', but it is represented as "bishop" in the JSON.
+# black bishop -> black-bishop
+class_name = ('bishop', 'black-bishop', 'black-king', 'black-knight', 'black-pawn',
+              'black-queen', 'black-rook', 'white-bishop', 'white-king',
+              'white-knight', 'white-pawn', 'white-queen', 'white-rook')
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'ChessPieces/Chess Pieces.v23-raw.coco/'
 dataset_ChessPieces = dict(
@@ -179,14 +182,14 @@ dataset_dice = dict(
     type=dataset_type,
     metainfo=metainfo,
     data_root=_data_root,
-    ann_file='valid/annotations_without_background.json',
-    data_prefix=dict(img='valid/'),
+    ann_file='val_annotations_without_background.json',
+    data_prefix=dict(img=''),
     pipeline=_base_.test_pipeline,
     test_mode=True,
     return_classes=True)
 val_evaluator_dice = dict(
     type='CocoMetric',
-    ann_file=_data_root + 'valid/annotations_without_background.json',
+    ann_file=_data_root + 'val_annotations_without_background.json',
     metric='bbox')
 
 # ---------------------11 DroneControl---------------------#
@@ -544,14 +547,14 @@ dataset_selfdrivingCar = dict(
     type=dataset_type,
     metainfo=metainfo,
     data_root=_data_root,
-    ann_file='valid/annotations_without_background.json',
-    data_prefix=dict(img='valid/'),
+    ann_file='val_annotations_without_background.json',
+    data_prefix=dict(img=''),
     pipeline=_base_.test_pipeline,
     test_mode=True,
     return_classes=True)
 val_evaluator_selfdrivingCar = dict(
     type='CocoMetric',
-    ann_file=_data_root + 'valid/annotations_without_background.json',
+    ann_file=_data_root + 'val_annotations_without_background.json',
     metric='bbox')
 
 # ---------------------29 ShellfishOpenImages---------------------#

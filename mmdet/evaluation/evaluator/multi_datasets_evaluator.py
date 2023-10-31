@@ -88,6 +88,7 @@ class MultiDatasetsEvaluator(Evaluator):
                     final_prefix = '/'.join((dataset_prefix, metric.prefix))
                 else:
                     final_prefix = dataset_prefix
+                print(f'================{final_prefix}================')
                 metric_results = {
                     '/'.join((final_prefix, k)): v
                     for k, v in _metrics.items()
