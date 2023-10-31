@@ -1,16 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import bisect
 import warnings
 from collections import OrderedDict
-from typing import Any, Optional, Sequence, Union
+from typing import Sequence, Union
 
-import numpy as np
 from mmengine.dist import (broadcast_object_list, collect_results,
                            is_main_process)
 from mmengine.evaluator import BaseMetric, Evaluator
 from mmengine.evaluator.metric import _to_cpu
 from mmengine.registry import EVALUATOR
-from mmengine.structures import BaseDataElement
 
 from mmdet.utils import ConfigType
 
@@ -50,28 +47,6 @@ class MultiDatasetsEvaluator(Evaluator):
             dataset_slices = self.dataset_meta['cumulative_sizes']
         return dataset_slices
 
-    def process(self,
-                data_samples: Sequence[BaseDataElement],
-                data_batch: Optional[Any] = None):
-        """Convert ``BaseDataSample`` to dict and invoke process method of each
-        metric.
-
-        Args:
-            data_samples (Sequence[BaseDataElement]): predictions of the model,
-                and the ground truth of the validation set.
-            data_batch (Any, optional): A batch of data from the dataloader.
-        """
-        dataset_slices = self._get_cumulative_sizes()
-        assert len(dataset_slices) == len(self.dataset_prefixes)
-
-        for data, data_sample in zip(data_batch, data_samples):
-            dataset_idx = data_sample.dataset_idx
-            if isinstance(data_sample, BaseDataElement):
-                self.metrics[dataset_idx].process([data],
-                                                  [data_sample.to_dict()])
-            else:
-                self.metrics[dataset_idx].process([data], [data_sample])
-
     def evaluate(self, size: int) -> dict:
         """Invoke ``evaluate`` method of each metric and collect the metrics
         dictionary.
@@ -91,23 +66,23 @@ class MultiDatasetsEvaluator(Evaluator):
         dataset_slices = self._get_cumulative_sizes()
         assert len(dataset_slices) == len(self.dataset_prefixes)
 
-        dataset_slices.insert(0, 0)
-        dataset_slices = np.diff(dataset_slices).tolist()
-        for dataset_prefix, dataset_slice, metric in zip(
-                self.dataset_prefixes, dataset_slices, self.metrics):
+        for dataset_prefix, start, end, metric in zip(
+                self.dataset_prefixes, [0] + dataset_slices[:-1],
+                dataset_slices, self.metrics):
             if len(metric.results) == 0:
                 warnings.warn(
                     f'{metric.__class__.__name__} got empty `self.results`.'
                     'Please ensure that the processed results are properly '
                     'added into `self.results` in `process` method.')
 
-            results = collect_results(metric.results, dataset_slice,
+            results = collect_results(metric.results, size,
                                       metric.collect_device)
 
             if is_main_process():
                 # cast all tensors in results list to cpu
                 results = _to_cpu(results)
-                _metrics = metric.compute_metrics(results)
+                _metrics = metric.compute_metrics(
+                    results[start:end])  # type: ignore
 
                 if metric.prefix:
                     final_prefix = '/'.join((dataset_prefix, metric.prefix))

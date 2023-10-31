@@ -13,6 +13,7 @@ dataset_AerialMaritimeDrone = dict(
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
+    test_mode=True,
     pipeline=_base_.test_pipeline,
     return_classes=True)
 val_evaluator_AerialMaritimeDrone = dict(
@@ -39,6 +40,7 @@ dataset_Aquarium = dict(
     data_prefix=dict(img='valid/'),
     pipeline=_base_.test_pipeline,
     caption_prompt=caption_prompt,
+    test_mode=True,
     return_classes=True)
 val_evaluator_Aquarium = dict(
     type='CocoMetric',
@@ -46,7 +48,7 @@ val_evaluator_Aquarium = dict(
     metric='bbox')
 
 # ---------------------3 CottontailRabbits---------------------#
-class_name = ('Cottontail-Rabbit',)
+class_name = ('Cottontail-Rabbit', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'CottontailRabbits/'
 dataset_CottontailRabbits = dict(
@@ -56,6 +58,7 @@ dataset_CottontailRabbits = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=_base_.test_pipeline,
+    test_mode=True,
     return_classes=True)
 val_evaluator_CottontailRabbits = dict(
     type='CocoMetric',
@@ -63,7 +66,7 @@ val_evaluator_CottontailRabbits = dict(
     metric='bbox')
 
 # ---------------------4 EgoHands---------------------#
-class_name = ('hand',)
+class_name = ('hand', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'EgoHands/generic/'
 dataset_EgoHands = dict(
@@ -73,6 +76,7 @@ dataset_EgoHands = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=_base_.test_pipeline,
+    test_mode=True,
     return_classes=True)
 val_evaluator_EgoHands = dict(
     type='CocoMetric',
@@ -90,6 +94,7 @@ dataset_NorthAmericaMushrooms = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=_base_.test_pipeline,
+    test_mode=True,
     return_classes=True)
 val_evaluator_NorthAmericaMushrooms = dict(
     type='CocoMetric',
@@ -97,7 +102,7 @@ val_evaluator_NorthAmericaMushrooms = dict(
     metric='bbox')
 
 # ---------------------6 Packages---------------------#
-class_name = ('package',)
+class_name = ('package', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'Packages/Raw/'
 dataset_Packages = dict(
@@ -107,6 +112,7 @@ dataset_Packages = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=_base_.test_pipeline,
+    test_mode=True,
     return_classes=True)
 val_evaluator_Packages = dict(
     type='CocoMetric',
@@ -127,6 +133,7 @@ dataset_PascalVOC = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=_base_.test_pipeline,
+    test_mode=True,
     return_classes=True)
 val_evaluator_PascalVOC = dict(
     type='CocoMetric',
@@ -134,24 +141,25 @@ val_evaluator_PascalVOC = dict(
     metric='bbox')
 
 # ---------------------8 pistols---------------------#
-class_name = ('pistol',)
+class_name = ('pistol', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'pistols/export/'
 dataset_pistols = dict(
     type=dataset_type,
     metainfo=metainfo,
     data_root=_data_root,
-    ann_file='valid/annotations_without_background.json',
-    data_prefix=dict(img='valid/'),
+    ann_file='val_annotations_without_background.json',
+    data_prefix=dict(img=''),
     pipeline=_base_.test_pipeline,
+    test_mode=True,
     return_classes=True)
 val_evaluator_pistols = dict(
     type='CocoMetric',
-    ann_file=_data_root + 'valid/annotations_without_background.json',
+    ann_file=_data_root + 'val_annotations_without_background.json',
     metric='bbox')
 
 # ---------------------9 pothole---------------------#
-class_name = ('pothole',)
+class_name = ('pothole', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'pothole/'
 dataset_pothole = dict(
@@ -161,6 +169,7 @@ dataset_pothole = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=_base_.test_pipeline,
+    test_mode=True,
     return_classes=True)
 val_evaluator_pothole = dict(
     type='CocoMetric',
@@ -168,7 +177,7 @@ val_evaluator_pothole = dict(
     metric='bbox')
 
 # ---------------------10 Raccoon---------------------#
-class_name = ('raccoon',)
+class_name = ('raccoon', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'Raccoon/Raccoon.v2-raw.coco/'
 dataset_Raccoon = dict(
@@ -178,6 +187,7 @@ dataset_Raccoon = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=_base_.test_pipeline,
+    test_mode=True,
     return_classes=True)
 val_evaluator_Raccoon = dict(
     type='CocoMetric',
@@ -195,6 +205,7 @@ dataset_ShellfishOpenImages = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=_base_.test_pipeline,
+    test_mode=True,
     return_classes=True)
 val_evaluator_ShellfishOpenImages = dict(
     type='CocoMetric',
@@ -212,6 +223,7 @@ dataset_thermalDogsAndPeople = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=_base_.test_pipeline,
+    test_mode=True,
     return_classes=True)
 val_evaluator_thermalDogsAndPeople = dict(
     type='CocoMetric',
@@ -229,6 +241,7 @@ dataset_VehiclesOpenImages = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=_base_.test_pipeline,
+    test_mode=True,
     return_classes=True)
 val_evaluator_VehiclesOpenImages = dict(
     type='CocoMetric',

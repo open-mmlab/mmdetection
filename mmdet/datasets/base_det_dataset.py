@@ -40,7 +40,8 @@ class BaseDetDataset(BaseDataset):
         self.return_classes = return_classes
         self.caption_prompt = caption_prompt
         if self.caption_prompt is not None:
-            assert self.return_classes, 'return_classes must be True when using caption_prompt'
+            assert self.return_classes, \
+                'return_classes must be True when using caption_prompt'
         if file_client_args is not None:
             raise RuntimeError(
                 'The `file_client_args` is deprecated, '
