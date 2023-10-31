@@ -1,7 +1,7 @@
 _base_ = '../glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py'
 
 dataset_type = 'CocoDataset'
-data_root = '/home/PJLAB/huanghaian/GLIP/odinw/'
+data_root = 'data/odinw/'
 
 # ---------------------1 AerialMaritimeDrone---------------------#
 class_name = ('boat', 'car', 'dock', 'jetski', 'lift')
