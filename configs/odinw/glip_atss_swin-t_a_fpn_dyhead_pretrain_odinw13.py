@@ -25,6 +25,12 @@ class_name = ('fish', 'jellyfish', 'penguin', 'puffin', 'shark', 'starfish',
               'stingray')
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'Aquarium/Aquarium Combined.v2-raw-1024.coco/'
+
+caption_prompt = None
+# caption_prompt = {'penguin': {'suffix': ', which is black and white'},
+#                   'puffin': {'suffix': ' with orange beaks'},
+#                   'stingray': {'suffix': ' which is flat and round'},
+#                   }
 dataset_Aquarium = dict(
     type=dataset_type,
     metainfo=metainfo,
@@ -32,6 +38,7 @@ dataset_Aquarium = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=_base_.test_pipeline,
+    caption_prompt=caption_prompt,
     return_classes=True)
 val_evaluator_Aquarium = dict(
     type='CocoMetric',
@@ -39,7 +46,7 @@ val_evaluator_Aquarium = dict(
     metric='bbox')
 
 # ---------------------3 CottontailRabbits---------------------#
-class_name = ('Cottontail-Rabbit', )
+class_name = ('Cottontail-Rabbit',)
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'CottontailRabbits/'
 dataset_CottontailRabbits = dict(
@@ -56,7 +63,7 @@ val_evaluator_CottontailRabbits = dict(
     metric='bbox')
 
 # ---------------------4 EgoHands---------------------#
-class_name = ('hand', )
+class_name = ('hand',)
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'EgoHands/generic/'
 dataset_EgoHands = dict(
@@ -90,7 +97,7 @@ val_evaluator_NorthAmericaMushrooms = dict(
     metric='bbox')
 
 # ---------------------6 Packages---------------------#
-class_name = ('package', )
+class_name = ('package',)
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'Packages/Raw/'
 dataset_Packages = dict(
@@ -127,7 +134,7 @@ val_evaluator_PascalVOC = dict(
     metric='bbox')
 
 # ---------------------8 pistols---------------------#
-class_name = ('pistol', )
+class_name = ('pistol',)
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'pistols/export/'
 dataset_pistols = dict(
@@ -144,7 +151,7 @@ val_evaluator_pistols = dict(
     metric='bbox')
 
 # ---------------------9 pothole---------------------#
-class_name = ('pothole', )
+class_name = ('pothole',)
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'pothole/'
 dataset_pothole = dict(
@@ -161,7 +168,7 @@ val_evaluator_pothole = dict(
     metric='bbox')
 
 # ---------------------10 Raccoon---------------------#
-class_name = ('raccoon', )
+class_name = ('raccoon',)
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'Raccoon/Raccoon.v2-raw.coco/'
 dataset_Raccoon = dict(
