@@ -35,7 +35,6 @@ class MultiDatasetsEvaluator(Evaluator):
                  dataset_prefixes: Sequence[str]) -> None:
         super().__init__(metrics)
         self.dataset_prefixes = dataset_prefixes
-        self._count = -1
         self._setups = False
 
     def _get_cumulative_sizes(self):
@@ -66,8 +65,7 @@ class MultiDatasetsEvaluator(Evaluator):
         assert len(dataset_slices) == len(self.dataset_prefixes)
 
         for data, data_sample in zip(data_batch, data_samples):
-            self._count += 1
-            dataset_idx = bisect.bisect_right(dataset_slices, self._count)
+            dataset_idx = data_sample.dataset_idx
             if isinstance(data_sample, BaseDataElement):
                 self.metrics[dataset_idx].process([data],
                                                   [data_sample.to_dict()])
@@ -134,5 +132,4 @@ class MultiDatasetsEvaluator(Evaluator):
         else:
             metrics_results = [None]  # type: ignore
         broadcast_object_list(metrics_results)
-        self._count = -1
         return metrics_results[0]

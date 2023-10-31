@@ -258,3 +258,8 @@ class ConcatDataset(MMENGINE_ConcatDataset):
     def get_dataset_source(self, idx: int) -> int:
         dataset_idx, _ = self._get_ori_dataset_idx(idx)
         return dataset_idx
+
+    def __getitem__(self, idx):
+        data_info = super().__getitem__(idx)
+        data_info['data_samples'].dataset_idx = self.get_dataset_source(idx)
+        return data_info

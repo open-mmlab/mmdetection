@@ -252,7 +252,7 @@ datasets = [
 metrics = [
     val_evaluator_AerialMaritimeDrone, val_evaluator_Aquarium,
     val_evaluator_CottontailRabbits, val_evaluator_EgoHands,
-    dataset_NorthAmericaMushrooms, val_evaluator_Packages,
+    val_evaluator_NorthAmericaMushrooms, val_evaluator_Packages,
     val_evaluator_PascalVOC, val_evaluator_pistols, val_evaluator_pothole,
     val_evaluator_Raccoon, val_evaluator_ShellfishOpenImages,
     val_evaluator_thermalDogsAndPeople, val_evaluator_VehiclesOpenImages
