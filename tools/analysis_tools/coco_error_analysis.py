@@ -346,7 +346,8 @@ def main():
         '--score-thr',
         type=float,
         default=None,
-        help='Filter the results with score threshold',
+        help='score threshold to filter detection bboxes, only applied'
+        'when users want to change it.',
     )
     parser.add_argument(
         '--areas',
