@@ -107,7 +107,6 @@ class PointAssigner(BaseAssigner):
         assigned_gt_dist = points.new_full((num_points, ), float('inf'))
         device = get_device()
         points_range = torch.arange(points.shape[0], device=device)
-        
 
         for idx in range(num_gts):
             gt_lvl = gt_bboxes_lvl[idx]
