@@ -26,11 +26,11 @@ train_pipeline = [
     dict(type=PackDetInputs)
 ]
 
-train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
+train_dataloader.update(dict(dataset=dict(pipeline=train_pipeline)))
 
 # TODO: Use RepeatDataset to speed up training
 # training schedule for 3x
-train_cfg = dict(max_epochs=36, val_interval=3)
+train_cfg.update(dict(max_epochs=36, val_interval=3))
 
 # learning rate
 param_scheduler = [
