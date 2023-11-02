@@ -1,0 +1,30 @@
+Collections:
+  - Name: RT-DETR
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - AdamW
+        - Weight Decay
+        - Multi Scale Train
+        - Gradient Clip
+      Training Resources: 8x A100 GPUs
+      Architecture:
+        - ResNet
+        - Transformer
+    Paper:
+      URL: https://arxiv.org/abs/2304.08069
+      Title: 'DETRs Beat YOLOs on Real-time Object Detection'
+    Code:
+      Version: v3.2.0
+
+Models:
+  - Name: rtdetr_r18vd_4xb4-72e_coco
+    In Collection: RT-DETR
+    Config: configs/rtdetr/rtdetr_r18vd_4xb4-72e_coco.py
+    Metadata:
+      Epochs: 72
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 46.5

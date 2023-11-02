@@ -181,7 +181,18 @@ class Resize(MMCV_Resize):
             "nearest", "bilinear", "bicubic", "area", "lanczos" for 'cv2'
             backend, "nearest", "bilinear" for 'pillow' backend. Defaults
             to 'bilinear'.
+        random_interpolations (sequence, optional): Random interpolation
+            methods, accepted values are "nearest", "bilinear", "bicubic",
+            "area", "lanczos" for 'cv2' backend, "nearest", "bilinear" for
+            'pillow' backend. Defaults to None.
     """
+
+    def __init__(self,
+                 *args,
+                 random_interpolations: Optional[Sequence[str]] = None,
+                 **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.random_interpolations = random_interpolations
 
     def _resize_masks(self, results: dict) -> None:
         """Resize masks with ``results['scale']``"""
@@ -223,6 +234,9 @@ class Resize(MMCV_Resize):
             'scale', 'scale_factor', 'height', 'width', and 'keep_ratio' keys
             are updated in result dict.
         """
+        if self.random_interpolations is not None:
+            self.interpolation = random.choice(self.random_interpolations)
+
         if self.scale:
             results['scale'] = self.scale
         else:
