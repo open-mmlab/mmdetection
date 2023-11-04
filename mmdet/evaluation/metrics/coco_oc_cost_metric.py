@@ -308,7 +308,7 @@ class CocoOCCostMetric(BaseMetric):
                 continue
 
             if n == 0 or m == 0:
-                ot_costs.append(1)
+                ot_costs.append(self.beta)
                 continue
 
             # calculate OT cost
