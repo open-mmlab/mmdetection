@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Tuple, Union
 
 import torch
 from torch import Tensor, nn
@@ -90,8 +90,10 @@ class RTDETR(DINO):
             mlvl_feats=mlvl_feats,
             spatial_shapes=spatial_shapes)
         decoder_inputs_dict = dict(
+            memory_mask=None,
             spatial_shapes=spatial_shapes,
-            level_start_index=level_start_index)
+            level_start_index=level_start_index,
+            valid_ratios=None)
         return encoder_inputs_dict, decoder_inputs_dict
 
     def forward_encoder(self, mlvl_feats: Tuple[Tensor],
@@ -126,25 +128,28 @@ class RTDETR(DINO):
         # (bs, num_feat_points, dim)
         memory = torch.cat(feat_flatten, 1)
 
-        return dict(memory=memory, spatial_shapes=spatial_shapes)
+        encoder_outputs_dict = dict(
+            memory=memory,
+            memory_mask=None,
+            spatial_shapes=spatial_shapes)
+        return encoder_outputs_dict
 
     def pre_decoder(
         self,
         memory: Tensor,
+        memory_mask: Tensor,
         spatial_shapes: Tensor,
         batch_data_samples: OptSampleList = None,
-    ) -> Tuple[Dict, Dict]:
+    ) -> Tuple[Dict]:
         """Prepare intermediate variables before entering Transformer decoder,
-        such as `query`, and `reference_points`.
-
-        The forward procedure of the transformer is defined as:
-        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'
-        More details can be found at `TransformerDetector.forward_transformer`
-        in `mmdet/detector/base_detr.py`.
+        such as `query`, `query_pos`, and `reference_points`.
 
         Args:
             memory (Tensor): The output embeddings of the Transformer encoder,
                 has shape (bs, num_feat_points, dim).
+            memory_mask (Tensor): ByteTensor, the padding mask of the memory,
+                has shape (bs, num_feat_points). Will only be used when
+                `as_two_stage` is `True`.
             spatial_shapes (Tensor): Spatial shapes of features in all levels.
                 With shape (num_levels, 2), last dimension represents (h, w).
                 Will only be used when `as_two_stage` is `True`.
@@ -170,7 +175,7 @@ class RTDETR(DINO):
             self.decoder.num_layers].out_features
 
         output_memory, output_proposals = self.gen_encoder_output_proposals(
-            memory, spatial_shapes)
+            memory, memory_mask, spatial_shapes)
         enc_outputs_class = self.bbox_head.cls_branches[
             self.decoder.num_layers](
                 output_memory)
@@ -219,107 +224,3 @@ class RTDETR(DINO):
             enc_outputs_coord=topk_coords,
             dn_meta=dn_meta) if self.training else dict()
         return decoder_inputs_dict, head_inputs_dict
-
-    def forward_decoder(self,
-                        query: Tensor,
-                        memory: Tensor,
-                        reference_points: Tensor,
-                        spatial_shapes: Tensor,
-                        level_start_index: Tensor,
-                        dn_mask: Optional[Tensor] = None,
-                        **kwargs) -> Dict:
-        """Forward with Transformer decoder.
-
-        The forward procedure of the transformer is defined as:
-        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'
-        More details can be found at `TransformerDetector.forward_transformer`
-        in `mmdet/detector/base_detr.py`.
-
-        Args:
-            query (Tensor): The queries of decoder inputs, has shape
-                (bs, num_queries_total, dim), where `num_queries_total` is the
-                sum of `num_denoising_queries` and `num_matching_queries` when
-                `self.training` is `True`, else `num_matching_queries`.
-            memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (bs, num_feat_points, dim).
-            reference_points (Tensor): The initial reference, has shape
-                (bs, num_queries_total, 4) with the last dimension arranged as
-                (cx, cy, w, h).
-            spatial_shapes (Tensor): Spatial shapes of features in all levels,
-                has shape (num_levels, 2), last dimension represents (h, w).
-            level_start_index (Tensor): The start index of each level.
-                A tensor has shape (num_levels, ) and can be represented
-                as [0, h_0*w_0, h_0*w_0+h_1*w_1, ...].
-            dn_mask (Tensor, optional): The attention mask to prevent
-                information leakage from different denoising groups and
-                matching parts, will be used as `self_attn_mask` of the
-                `self.decoder`, has shape (num_queries_total,
-                num_queries_total).
-                It is `None` when `self.training` is `False`.
-
-        Returns:
-            dict: The dictionary of decoder outputs, which includes the
-            `hidden_states` of the decoder output and `references` including
-            the initial and intermediate reference_points.
-        """
-        inter_states, references = self.decoder(
-            query=query,
-            value=memory,
-            key_padding_mask=None,
-            self_attn_mask=dn_mask,
-            reference_points=reference_points,
-            spatial_shapes=spatial_shapes,
-            level_start_index=level_start_index,
-            valid_ratios=None,
-            reg_branches=self.bbox_head.reg_branches,
-            **kwargs)
-
-        decoder_outputs_dict = dict(
-            hidden_states=inter_states, references=list(references))
-        return decoder_outputs_dict
-
-    def gen_encoder_output_proposals(
-            self, memory: Tensor,
-            spatial_shapes: Tensor,
-            grid_size: float = 0.05) -> Tuple[Tensor, Tensor]:
-        """Generate proposals from encoded memory.
-
-        Args:
-            memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (bs, num_feat_points, dim).
-            spatial_shapes (Tensor): Spatial shapes of features in all levels,
-                has shape (num_levels, 2), last dimension represents (h, w).
-            grid_size (float): The grid size of the anchors. Defaults to 0.05.
-
-        Returns:
-            tuple: A tuple of transformed memory and proposals.
-
-            - output_memory (Tensor): The transformed memory for obtaining
-              top-k proposals, has shape (bs, num_feat_points, dim).
-            - output_proposals (Tensor): The inverse-normalized proposal, has
-              shape (batch_size, num_keys, 4) with the last dimension arranged
-              as (cx, cy, w, h).
-        """
-        device = memory.device
-        proposals = []
-        for lvl, (H, W) in enumerate(spatial_shapes):
-            grid_y, grid_x = torch.meshgrid(
-                torch.linspace(
-                    0.5, H - 0.5, H, dtype=torch.float32, device=device),
-                torch.linspace(
-                    0.5, W - 0.5, W, dtype=torch.float32, device=device))
-            grid = torch.stack((grid_x / W, grid_y / H), -1)
-            wh = torch.ones_like(grid) * (grid_size * 2**lvl)
-            proposals.append(torch.cat((grid, wh), -1).view(1, H * W, 4))
-
-        proposals = torch.cat(proposals, 1)
-        proposals_valid = ((proposals > 0.01) * (proposals < 0.99)).all(
-            -1, keepdim=True)
-        proposals = torch.log(proposals / (1 - proposals))
-        output_proposals = proposals.masked_fill(
-            ~proposals_valid, float('inf'))
-        output_memory = memory.masked_fill(~proposals_valid, float(0))
-        output_memory = self.memory_trans_fc(output_memory)
-        output_memory = self.memory_trans_norm(output_memory)
-        # [bs, sum(hw), 2]
-        return output_memory, output_proposals

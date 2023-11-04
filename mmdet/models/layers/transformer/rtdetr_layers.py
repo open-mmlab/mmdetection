@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import torch
 from torch import Tensor, nn
@@ -11,7 +11,7 @@ from mmdet.models.layers.transformer.detr_layers import DetrTransformerEncoder
 from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 
-from .deformable_detr_layers import DeformableDetrTransformerDecoder
+from .dino_layers import DinoTransformerDecoder
 from .utils import MLP, inverse_sigmoid
 
 
@@ -281,13 +281,14 @@ class RTDETRTHybridEncoder(BaseModule):
         return tuple(outs)
 
 
-class RTDETRTransformerDecoder(DeformableDetrTransformerDecoder):
+class RTDETRTransformerDecoder(DinoTransformerDecoder):
     """Transformer decoder of RT-DETR."""
 
     def _init_layers(self) -> None:
         """Initialize decoder layers."""
         super()._init_layers()
         self.ref_point_head = MLP(4, self.embed_dims * 2, self.embed_dims, 2)
+        self.norm = nn.Identity()  # without norm
 
     def forward(self, query: Tensor, value: Tensor, key_padding_mask: Tensor,
                 self_attn_mask: Tensor, reference_points: Tensor,
@@ -320,7 +321,8 @@ class RTDETRTransformerDecoder(DeformableDetrTransformerDecoder):
                 regression results.
 
         Returns:
-            tuple[Tensor]: Outputs of RT-DETR Transformer Decoder.
+            tuple[Tensor]: Output queries and references of Transformer
+                decoder
 
             - query (Tensor): Output embeddings of the last decoder, has
               shape (num_queries, bs, embed_dims) when `return_intermediate`
@@ -355,12 +357,12 @@ class RTDETRTransformerDecoder(DeformableDetrTransformerDecoder):
                 tmp = reg_branches[lid](query)
                 assert reference_points.shape[-1] == 4
                 new_reference_points = tmp + inverse_sigmoid(
-                    reference_points)
+                    reference_points, eps=1e-3)
                 new_reference_points = new_reference_points.sigmoid()
                 reference_points = new_reference_points.detach()
 
             if self.return_intermediate:
-                intermediate.append(query)  # with norm in DINO
+                intermediate.append(self.norm(query))
                 intermediate_reference_points.append(new_reference_points)
                 # NOTE this is for the "Look Forward Twice" module,
                 # in the DeformDETR, reference_points was appended.
