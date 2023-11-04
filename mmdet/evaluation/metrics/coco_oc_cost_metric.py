@@ -392,8 +392,8 @@ class CocoOCCostMetric(BaseMetric):
             mean_ot_costs = self.eval_oc_cost(preds, metric)
 
             eval_results[f'{metric}_OCCost'] = float(
-                f'{round(mean_ot_costs, 3)}')
-            logger.info(f'{metric}_OCCost: {mean_ot_costs:.3f}')
+                f'{round(mean_ot_costs, 5)}')
+            logger.info(f'{metric}_OCCost: {mean_ot_costs:.5f}')
 
         if tmp_dir is not None:
             tmp_dir.cleanup()

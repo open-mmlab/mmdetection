@@ -134,7 +134,7 @@ class TestCocoOCCostMetric(TestCase):
             {},
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = coco_metric.evaluate(size=1)
-        target = {'coco/bbox_OCCost': 0.007}
+        target = {'coco/bbox_OCCost': 0.00688}
         self.assertDictEqual(eval_results, target)
 
         # test box and segm coco dataset evaluation
@@ -147,7 +147,7 @@ class TestCocoOCCostMetric(TestCase):
             {},
             [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = coco_metric.evaluate(size=1)
-        target = {'coco/bbox_OCCost': 0.007, 'coco/segm_OCCost': 0.007}
+        target = {'coco/bbox_OCCost': 0.00688, 'coco/segm_OCCost': 0.00688}
         self.assertDictEqual(eval_results, target)
 
     @unittest.skipIf(ot is None, 'ot is not installed')
@@ -214,7 +214,7 @@ class TestCocoOCCostMetric(TestCase):
                 instances=instances)
         ])
         eval_results = coco_metric.evaluate(size=1)
-        target = {'coco/bbox_OCCost': 0.007, 'coco/segm_OCCost': 0.007}
+        target = {'coco/bbox_OCCost': 0.00688, 'coco/segm_OCCost': 0.00688}
         self.assertDictEqual(eval_results, target)
         self.assertTrue(
             osp.isfile(osp.join(self.tmp_dir.name, 'test.gt.json')))
