@@ -3,6 +3,10 @@ _base_ = '../glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py'
 dataset_type = 'CocoDataset'
 data_root = 'data/odinw/'
 
+base_test_pipeline = _base_.test_pipeline
+base_test_pipeline[-1]['meta_keys'] = ('img_id', 'img_path', 'ori_shape', 'img_shape',
+                                       'scale_factor', 'text', 'custom_entities', "caption_prompt")
+
 # ---------------------1 AerialMaritimeDrone---------------------#
 class_name = ('boat', 'car', 'dock', 'jetski', 'lift')
 metainfo = dict(classes=class_name)
@@ -14,7 +18,7 @@ dataset_AerialMaritimeDrone = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     test_mode=True,
-    pipeline=_base_.test_pipeline,
+    pipeline=base_test_pipeline,
     return_classes=True)
 val_evaluator_AerialMaritimeDrone = dict(
     type='CocoMetric',
@@ -27,18 +31,18 @@ class_name = ('fish', 'jellyfish', 'penguin', 'puffin', 'shark', 'starfish',
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'Aquarium/Aquarium Combined.v2-raw-1024.coco/'
 
-caption_prompt = None
-# caption_prompt = {'penguin': {'suffix': ', which is black and white'},
-#                   'puffin': {'suffix': ' with orange beaks'},
-#                   'stingray': {'suffix': ' which is flat and round'},
-#                   }
+# caption_prompt = None
+caption_prompt = {'penguin': {'suffix': ', which is black and white'},
+                  'puffin': {'suffix': ' with orange beaks'},
+                  'stingray': {'suffix': ' which is flat and round'},
+                  }
 dataset_Aquarium = dict(
     type=dataset_type,
     metainfo=metainfo,
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
-    pipeline=_base_.test_pipeline,
+    pipeline=base_test_pipeline,
     caption_prompt=caption_prompt,
     test_mode=True,
     return_classes=True)
@@ -48,16 +52,21 @@ val_evaluator_Aquarium = dict(
     metric='bbox')
 
 # ---------------------3 CottontailRabbits---------------------#
-class_name = ('Cottontail-Rabbit', )
+class_name = ('Cottontail-Rabbit',)
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'CottontailRabbits/'
+
+# caption_prompt = None
+caption_prompt = {'Cottontail-Rabbit': {'name': 'rabbit'}}
+
 dataset_CottontailRabbits = dict(
     type=dataset_type,
     metainfo=metainfo,
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
-    pipeline=_base_.test_pipeline,
+    pipeline=base_test_pipeline,
+    caption_prompt=caption_prompt,
     test_mode=True,
     return_classes=True)
 val_evaluator_CottontailRabbits = dict(
@@ -66,16 +75,21 @@ val_evaluator_CottontailRabbits = dict(
     metric='bbox')
 
 # ---------------------4 EgoHands---------------------#
-class_name = ('hand', )
+class_name = ('hand',)
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'EgoHands/generic/'
+
+# caption_prompt = None
+caption_prompt = {'hand': {'suffix': ' of a person'}}
+
 dataset_EgoHands = dict(
     type=dataset_type,
     metainfo=metainfo,
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
-    pipeline=_base_.test_pipeline,
+    pipeline=base_test_pipeline,
+    caption_prompt=caption_prompt,
     test_mode=True,
     return_classes=True)
 val_evaluator_EgoHands = dict(
@@ -87,13 +101,18 @@ val_evaluator_EgoHands = dict(
 class_name = ('CoW', 'chanterelle')
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'NorthAmericaMushrooms/North American Mushrooms.v1-416x416.coco/'  # noqa
+
+# caption_prompt = None
+caption_prompt = {'CoW': {'name': 'flat mushroom'}, 'chanterelle': {'name': 'yellow mushroom'}}
+
 dataset_NorthAmericaMushrooms = dict(
     type=dataset_type,
     metainfo=metainfo,
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
-    pipeline=_base_.test_pipeline,
+    pipeline=base_test_pipeline,
+    caption_prompt=caption_prompt,
     test_mode=True,
     return_classes=True)
 val_evaluator_NorthAmericaMushrooms = dict(
@@ -102,16 +121,21 @@ val_evaluator_NorthAmericaMushrooms = dict(
     metric='bbox')
 
 # ---------------------6 Packages---------------------#
-class_name = ('package', )
+class_name = ('package',)
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'Packages/Raw/'
+
+# caption_prompt = None
+caption_prompt = {'package': {"prefix": "there is a ", "suffix": " on the porch"}}
+
 dataset_Packages = dict(
     type=dataset_type,
     metainfo=metainfo,
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
-    pipeline=_base_.test_pipeline,
+    pipeline=base_test_pipeline,
+    caption_prompt=caption_prompt,
     test_mode=True,
     return_classes=True)
 val_evaluator_Packages = dict(
@@ -132,7 +156,7 @@ dataset_PascalVOC = dict(
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
-    pipeline=_base_.test_pipeline,
+    pipeline=base_test_pipeline,
     test_mode=True,
     return_classes=True)
 val_evaluator_PascalVOC = dict(
@@ -141,7 +165,7 @@ val_evaluator_PascalVOC = dict(
     metric='bbox')
 
 # ---------------------8 pistols---------------------#
-class_name = ('pistol', )
+class_name = ('pistol',)
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'pistols/export/'
 dataset_pistols = dict(
@@ -150,7 +174,7 @@ dataset_pistols = dict(
     data_root=_data_root,
     ann_file='val_annotations_without_background.json',
     data_prefix=dict(img=''),
-    pipeline=_base_.test_pipeline,
+    pipeline=base_test_pipeline,
     test_mode=True,
     return_classes=True)
 val_evaluator_pistols = dict(
@@ -159,16 +183,20 @@ val_evaluator_pistols = dict(
     metric='bbox')
 
 # ---------------------9 pothole---------------------#
-class_name = ('pothole', )
+class_name = ('pothole',)
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'pothole/'
+
+# caption_prompt = None
+caption_prompt = {'pothole': {"prefix": "there are some ", "name": 'holes', "suffix": " on the road"}}
+
 dataset_pothole = dict(
     type=dataset_type,
     metainfo=metainfo,
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
-    pipeline=_base_.test_pipeline,
+    pipeline=base_test_pipeline,
     test_mode=True,
     return_classes=True)
 val_evaluator_pothole = dict(
@@ -177,7 +205,7 @@ val_evaluator_pothole = dict(
     metric='bbox')
 
 # ---------------------10 Raccoon---------------------#
-class_name = ('raccoon', )
+class_name = ('raccoon',)
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'Raccoon/Raccoon.v2-raw.coco/'
 dataset_Raccoon = dict(
@@ -186,7 +214,7 @@ dataset_Raccoon = dict(
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
-    pipeline=_base_.test_pipeline,
+    pipeline=base_test_pipeline,
     test_mode=True,
     return_classes=True)
 val_evaluator_Raccoon = dict(
@@ -204,7 +232,7 @@ dataset_ShellfishOpenImages = dict(
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
-    pipeline=_base_.test_pipeline,
+    pipeline=base_test_pipeline,
     test_mode=True,
     return_classes=True)
 val_evaluator_ShellfishOpenImages = dict(
@@ -222,7 +250,7 @@ dataset_thermalDogsAndPeople = dict(
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
-    pipeline=_base_.test_pipeline,
+    pipeline=base_test_pipeline,
     test_mode=True,
     return_classes=True)
 val_evaluator_thermalDogsAndPeople = dict(
@@ -240,7 +268,7 @@ dataset_VehiclesOpenImages = dict(
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
-    pipeline=_base_.test_pipeline,
+    pipeline=base_test_pipeline,
     test_mode=True,
     return_classes=True)
 val_evaluator_VehiclesOpenImages = dict(
