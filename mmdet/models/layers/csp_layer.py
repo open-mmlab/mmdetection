@@ -201,7 +201,8 @@ class CSPLayer(BaseModule):
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         block = CSPNeXtBlock if use_cspnext_block else DarknetBottleneck
-        kernel_size = (5 if use_cspnext_block else 3) if kernel_size is None else kernel_size
+        kernel_size = (5 if use_cspnext_block else 3) \
+                        if kernel_size is None else kernel_size
         mid_channels = int(out_channels * expand_ratio)
         self.channel_attention = channel_attention
         self.main_conv = ConvModule(
