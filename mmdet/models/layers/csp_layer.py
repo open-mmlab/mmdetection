@@ -4,7 +4,7 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmengine.model import BaseModule
 from torch import Tensor
-from typing import Union
+from typing import Optional
 
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .se_layer import ChannelAttention
@@ -47,8 +47,8 @@ class DarknetBottleneck(BaseModule):
                  norm_cfg: ConfigType = dict(
                      type='BN', momentum=0.03, eps=0.001),
                  act_cfg: ConfigType = dict(type='Swish'),
-                 init_cfg: OptMultiConfig = None,
-                 kernel_size: int = 3) -> None:
+                 kernel_size: int = 3,
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         hidden_channels = int(out_channels * expansion)
         conv = DepthwiseSeparableConvModule if use_depthwise else ConvModule
@@ -197,8 +197,8 @@ class CSPLayer(BaseModule):
                  norm_cfg: ConfigType = dict(
                      type='BN', momentum=0.03, eps=0.001),
                  act_cfg: ConfigType = dict(type='Swish'),
-                 init_cfg: OptMultiConfig = None,
-                 kernel_size: Option[int] = None) -> None:
+                 kernel_size: Optional[int] = None,
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         block = CSPNeXtBlock if use_cspnext_block else DarknetBottleneck
         kernel_size = (5 if use_cspnext_block else 3) if kernel_size is None else kernel_size
