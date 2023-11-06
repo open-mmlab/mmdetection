@@ -4,8 +4,9 @@ dataset_type = 'CocoDataset'
 data_root = 'data/odinw/'
 
 base_test_pipeline = _base_.test_pipeline
-base_test_pipeline[-1]['meta_keys'] = ('img_id', 'img_path', 'ori_shape', 'img_shape',
-                                       'scale_factor', 'text', 'custom_entities', "caption_prompt")
+base_test_pipeline[-1]['meta_keys'] = ('img_id', 'img_path', 'ori_shape',
+                                       'img_shape', 'scale_factor', 'text',
+                                       'custom_entities', 'caption_prompt')
 
 # ---------------------1 AerialMaritimeDrone---------------------#
 class_name = ('boat', 'car', 'dock', 'jetski', 'lift')
@@ -31,11 +32,18 @@ class_name = ('fish', 'jellyfish', 'penguin', 'puffin', 'shark', 'starfish',
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'Aquarium/Aquarium Combined.v2-raw-1024.coco/'
 
-# caption_prompt = None
-caption_prompt = {'penguin': {'suffix': ', which is black and white'},
-                  'puffin': {'suffix': ' with orange beaks'},
-                  'stingray': {'suffix': ' which is flat and round'},
-                  }
+caption_prompt = None
+# caption_prompt = {
+#     'penguin': {
+#         'suffix': ', which is black and white'
+#     },
+#     'puffin': {
+#         'suffix': ' with orange beaks'
+#     },
+#     'stingray': {
+#         'suffix': ' which is flat and round'
+#     },
+# }
 dataset_Aquarium = dict(
     type=dataset_type,
     metainfo=metainfo,
@@ -52,12 +60,12 @@ val_evaluator_Aquarium = dict(
     metric='bbox')
 
 # ---------------------3 CottontailRabbits---------------------#
-class_name = ('Cottontail-Rabbit',)
+class_name = ('Cottontail-Rabbit', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'CottontailRabbits/'
 
-# caption_prompt = None
-caption_prompt = {'Cottontail-Rabbit': {'name': 'rabbit'}}
+caption_prompt = None
+# caption_prompt = {'Cottontail-Rabbit': {'name': 'rabbit'}}
 
 dataset_CottontailRabbits = dict(
     type=dataset_type,
@@ -75,12 +83,12 @@ val_evaluator_CottontailRabbits = dict(
     metric='bbox')
 
 # ---------------------4 EgoHands---------------------#
-class_name = ('hand',)
+class_name = ('hand', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'EgoHands/generic/'
 
-# caption_prompt = None
-caption_prompt = {'hand': {'suffix': ' of a person'}}
+caption_prompt = None
+# caption_prompt = {'hand': {'suffix': ' of a person'}}
 
 dataset_EgoHands = dict(
     type=dataset_type,
@@ -102,8 +110,15 @@ class_name = ('CoW', 'chanterelle')
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'NorthAmericaMushrooms/North American Mushrooms.v1-416x416.coco/'  # noqa
 
-# caption_prompt = None
-caption_prompt = {'CoW': {'name': 'flat mushroom'}, 'chanterelle': {'name': 'yellow mushroom'}}
+caption_prompt = None
+# caption_prompt = {
+#     'CoW': {
+#         'name': 'flat mushroom'
+#     },
+#     'chanterelle': {
+#         'name': 'yellow mushroom'
+#     }
+# }
 
 dataset_NorthAmericaMushrooms = dict(
     type=dataset_type,
@@ -121,12 +136,17 @@ val_evaluator_NorthAmericaMushrooms = dict(
     metric='bbox')
 
 # ---------------------6 Packages---------------------#
-class_name = ('package',)
+class_name = ('package', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'Packages/Raw/'
 
-# caption_prompt = None
-caption_prompt = {'package': {"prefix": "there is a ", "suffix": " on the porch"}}
+caption_prompt = None
+# caption_prompt = {
+#     'package': {
+#         'prefix': 'there is a ',
+#         'suffix': ' on the porch'
+#     }
+# }
 
 dataset_Packages = dict(
     type=dataset_type,
@@ -165,7 +185,7 @@ val_evaluator_PascalVOC = dict(
     metric='bbox')
 
 # ---------------------8 pistols---------------------#
-class_name = ('pistol',)
+class_name = ('pistol', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'pistols/export/'
 dataset_pistols = dict(
@@ -183,12 +203,18 @@ val_evaluator_pistols = dict(
     metric='bbox')
 
 # ---------------------9 pothole---------------------#
-class_name = ('pothole',)
+class_name = ('pothole', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'pothole/'
 
-# caption_prompt = None
-caption_prompt = {'pothole': {"prefix": "there are some ", "name": 'holes', "suffix": " on the road"}}
+caption_prompt = None
+# caption_prompt = {
+#     'pothole': {
+#         'prefix': 'there are some ',
+#         'name': 'holes',
+#         'suffix': ' on the road'
+#     }
+# }
 
 dataset_pothole = dict(
     type=dataset_type,
@@ -205,7 +231,7 @@ val_evaluator_pothole = dict(
     metric='bbox')
 
 # ---------------------10 Raccoon---------------------#
-class_name = ('raccoon',)
+class_name = ('raccoon', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'Raccoon/Raccoon.v2-raw.coco/'
 dataset_Raccoon = dict(
