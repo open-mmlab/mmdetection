@@ -198,7 +198,7 @@ class CSPLayer(BaseModule):
                      type='BN', momentum=0.03, eps=0.001),
                  act_cfg: ConfigType = dict(type='Swish'),
                  init_cfg: OptMultiConfig = None,
-                 kernel_size: Union[int, None] = None) -> None:
+                 kernel_size: Option[int] = None) -> None:
         super().__init__(init_cfg=init_cfg)
         block = CSPNeXtBlock if use_cspnext_block else DarknetBottleneck
         kernel_size = (5 if use_cspnext_block else 3) if kernel_size is None else kernel_size
