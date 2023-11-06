@@ -164,8 +164,19 @@ class IoUCost(BaseMatchCost):
         pred_bboxes = pred_instances.bboxes
         gt_bboxes = gt_instances.bboxes
 
+        # avoid fp16 overflow
+        if pred_bboxes.dtype == torch.float16:
+            fp16 = True
+            pred_bboxes = pred_bboxes.to(torch.float32)
+        else:
+            fp16 = False
+
         overlaps = bbox_overlaps(
             pred_bboxes, gt_bboxes, mode=self.iou_mode, is_aligned=False)
+
+        if fp16:
+            overlaps = overlaps.to(torch.float16)
+
         # The 1 is a constant that doesn't change the matching, so omitted.
         iou_cost = -overlaps
         return iou_cost * self.weight
@@ -321,6 +332,57 @@ class FocalLossCost(BaseMatchCost):
 
 
 @TASK_UTILS.register_module()
+class BinaryFocalLossCost(FocalLossCost):
+
+    def _focal_loss_cost(self, cls_pred: Tensor, gt_labels: Tensor) -> Tensor:
+        """
+        Args:
+            cls_pred (Tensor): Predicted classification logits, shape
+                (num_queries, num_class).
+            gt_labels (Tensor): Label of `gt_bboxes`, shape (num_gt,).
+
+        Returns:
+            torch.Tensor: cls_cost value with weight
+        """
+        cls_pred = cls_pred.flatten(1)
+        gt_labels = gt_labels.flatten(1).float()
+        cls_pred = cls_pred.sigmoid()
+        neg_cost = -(1 - cls_pred + self.eps).log() * (
+            1 - self.alpha) * cls_pred.pow(self.gamma)
+        pos_cost = -(cls_pred + self.eps).log() * self.alpha * (
+            1 - cls_pred).pow(self.gamma)
+
+        cls_cost = torch.einsum('nc,mc->nm', pos_cost, gt_labels) + \
+            torch.einsum('nc,mc->nm', neg_cost, (1 - gt_labels))
+        return cls_cost * self.weight
+
+    def __call__(self,
+                 pred_instances: InstanceData,
+                 gt_instances: InstanceData,
+                 img_meta: Optional[dict] = None,
+                 **kwargs) -> Tensor:
+        """Compute match cost.
+
+        Args:
+            pred_instances (:obj:`InstanceData`): Predicted instances which
+                must contain ``scores`` or ``masks``.
+            gt_instances (:obj:`InstanceData`): Ground truth which must contain
+                ``labels`` or ``mask``.
+            img_meta (Optional[dict]): Image information. Defaults to None.
+
+        Returns:
+            Tensor: Match Cost matrix of shape (num_preds, num_gts).
+        """
+        # gt_instances.text_token_mask is a repeated tensor of the same length
+        # of instances. Only gt_instances.text_token_mask[0] is useful
+        text_token_mask = torch.nonzero(
+            gt_instances.text_token_mask[0]).squeeze(-1)
+        pred_scores = pred_instances.scores[:, text_token_mask]
+        gt_labels = gt_instances.positive_maps[:, text_token_mask]
+        return self._focal_loss_cost(pred_scores, gt_labels)
+
+
+@TASK_UTILS.register_module()
 class DiceCost(BaseMatchCost):
     """Cost of mask assignments based on dice losses.
 
@@ -362,10 +424,10 @@ class DiceCost(BaseMatchCost):
         numerator = 2 * torch.einsum('nc,mc->nm', mask_preds, gt_masks)
         if self.naive_dice:
             denominator = mask_preds.sum(-1)[:, None] + \
-                gt_masks.sum(-1)[None, :]
+                          gt_masks.sum(-1)[None, :]
         else:
             denominator = mask_preds.pow(2).sum(1)[:, None] + \
-                gt_masks.pow(2).sum(1)[None, :]
+                          gt_masks.pow(2).sum(1)[None, :]
         loss = 1 - (numerator + self.eps) / (denominator + self.eps)
         return loss
 

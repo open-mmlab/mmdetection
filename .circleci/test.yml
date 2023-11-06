@@ -94,14 +94,14 @@ jobs:
         type: string
       cuda:
         type: enum
-        enum: ["11.1", "11.7"]
+        enum: ["11.1", "11.7", "11.8"]
       cudnn:
         type: integer
         default: 8
     machine:
-      image: ubuntu-2004-cuda-11.4:202110-01
+      image: linux-cuda-11:default
       # docker_layer_caching: true
-    resource_class: gpu.nvidia.small
+    resource_class: gpu.nvidia.small.multi
     steps:
       - checkout
       - run:
@@ -109,6 +109,12 @@ jobs:
           name: Clone Repos
           command: |
             git clone -b main --depth 1 ssh://git@github.com/open-mmlab/mmengine.git /home/circleci/mmengine
+      - run:
+          name: Install nvidia-container-toolkit and Restart Docker
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y nvidia-container-toolkit
+            sudo systemctl restart docker
       - run:
           name: Build Docker image
           command: |

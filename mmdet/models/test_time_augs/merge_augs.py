@@ -198,7 +198,7 @@ def merge_aug_masks(aug_masks: List[Tensor],
             weight = weights[i]
         else:
             weight = 1
-        flip = img_metas.get('filp', False)
+        flip = img_metas.get('flip', False)
         if flip:
             flip_direction = img_metas['flip_direction']
             if flip_direction == 'horizontal':

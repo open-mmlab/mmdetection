@@ -31,7 +31,7 @@ Models:
           box AP: 44.3
     Weights: https://download.openmmlab.com/mmdetection/v3.0/deformable_detr/deformable-detr_r50_16xb2-50e_coco/deformable-detr_r50_16xb2-50e_coco_20221029_210934-6bc7d21b.pth
 
-  - Name: deformable-detr_refine_r50_16xb2-50e_coco
+  - Name: deformable-detr-refine_r50_16xb2-50e_coco
     In Collection: Deformable DETR
     Config: configs/deformable_detr/deformable-detr-refine_r50_16xb2-50e_coco.py
     Metadata:
@@ -43,7 +43,7 @@ Models:
           box AP: 46.2
     Weights: https://download.openmmlab.com/mmdetection/v3.0/deformable_detr/deformable-detr-refine_r50_16xb2-50e_coco/deformable-detr-refine_r50_16xb2-50e_coco_20221022_225303-844e0f93.pth
 
-  - Name: deformable-detr_refine_twostage_r50_16xb2-50e_coco
+  - Name: deformable-detr-refine-twostage_r50_16xb2-50e_coco
     In Collection: Deformable DETR
     Config: configs/deformable_detr/deformable-detr-refine-twostage_r50_16xb2-50e_coco.py
     Metadata:

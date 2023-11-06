@@ -90,6 +90,20 @@ Models:
           box AP: 52.6
     Weights: https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_x_8xb32-300e_coco/rtmdet_x_8xb32-300e_coco_20220715_230555-cc79b9ae.pth
 
+  - Name: rtmdet_x_p6_4xb8-300e_coco
+    Alias:
+      - rtmdet-x_p6
+    In Collection: RTMDet
+    Config: configs/rtmdet/rtmdet_x_p6_4xb8-300e_coco.py
+    Metadata:
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 54.9
+    Weights: https://github.com/orange0-jp/orange-weights/releases/download/v0.1.0rtmdet-p6/rtmdet_x_p6_4xb8-300e_coco-bf32be58.pth
+
   - Name: rtmdet-ins_tiny_8xb32-300e_coco
     Alias:
       - rtmdet-ins-t

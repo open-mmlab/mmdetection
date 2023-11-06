@@ -12,7 +12,7 @@ import torch
 import yaml
 from mmengine.config import Config
 from mmengine.fileio import dump
-from mmengine.utils import mkdir_or_exist, scandir
+from mmengine.utils import digit_version, mkdir_or_exist, scandir
 
 
 def ordered_yaml_dump(data, stream=None, Dumper=yaml.SafeDumper, **kwds):
@@ -45,7 +45,7 @@ def process_checkpoint(in_file, out_file):
 
     # if it is necessary to remove some sensitive data in checkpoint['meta'],
     # add the code here.
-    if torch.__version__ >= '1.6':
+    if digit_version(torch.__version__) >= digit_version('1.6'):
         torch.save(checkpoint, out_file, _use_new_zipfile_serialization=False)
     else:
         torch.save(checkpoint, out_file)

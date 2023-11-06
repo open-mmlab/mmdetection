@@ -25,6 +25,7 @@
 [![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/main/LICENSE)
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 [![issue resolution](https://isitmaintained.com/badge/resolution/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
+[![Open in OpenXLab](https://cdn-static.openxlab.org.cn/app-center/openxlab_demo.svg)](https://openxlab.org.cn/apps?search=mmdet)
 
 [📘Documentation](https://mmdetection.readthedocs.io/en/latest/) |
 [🛠️Installation](https://mmdetection.readthedocs.io/en/latest/get_started.html) |
@@ -102,6 +103,52 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 
 ### Highlight
 
+**v3.2.0** was released in 12/10/2023:
+
+**1. Detection Transformer SOTA Model Collection**
+(1) Supported four updated and stronger SOTA Transformer models: [DDQ](configs/ddq/README.md), [CO-DETR](projects/CO-DETR/README.md), [AlignDETR](projects/AlignDETR/README.md), and [H-DINO](projects/HDINO/README.md).
+(2) Based on CO-DETR, MMDet released a model with a COCO performance of 64.1 mAP.
+(3) Algorithms such as DINO support `AMP/Checkpoint/FrozenBN`, which can effectively reduce memory usage.
+
+**2. [Comprehensive Performance Comparison between CNN and Transformer](<(projects/RF100-Benchmark/README.md)>)**
+RF100 consists of a dataset collection of 100 real-world datasets, including 7 domains. It can be used to assess the performance differences of Transformer models like DINO and CNN-based algorithms under different scenarios and data volumes. Users can utilize this benchmark to quickly evaluate the robustness of their algorithms in various scenarios.
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/86420903-36a8-410d-9251-4304b9704f7d"/>
+</div>
+
+**3. Support for [GLIP](configs/glip/README.md) and [Grounding DINO](configs/grounding_dino/README.md) fine-tuning, the only algorithm library that supports Grounding DINO fine-tuning**
+The Grounding DINO algorithm in MMDet is the only library that supports fine-tuning. Its performance is one point higher than the official version, and of course, GLIP also outperforms the official version.
+We also provide a detailed process for training and evaluating Grounding DINO on custom datasets. Everyone is welcome to give it a try.
+
+|       Model        | Backbone |   Style   |  COCO mAP  | Official COCO mAP |
+| :----------------: | :------: | :-------: | :--------: | :---------------: |
+|  Grounding DINO-T  |  Swin-T  | Zero-shot |    48.5    |       48.4        |
+|  Grounding DINO-T  |  Swin-T  | Finetune  | 58.1(+0.9) |       57.2        |
+|  Grounding DINO-B  |  Swin-B  | Zero-shot |    56.9    |       56.7        |
+|  Grounding DINO-B  |  Swin-B  | Finetune  |    59.7    |                   |
+| Grounding DINO-R50 |   R50    |  Scratch  | 48.9(+0.8) |       48.1        |
+
+**4. Support for the open-vocabulary detection algorithm [Detic](projects/Detic_new/README.md) and multi-dataset joint training.**
+**5. Training detection models using [FSDP and DeepSpeed](<(projects/example_largemodel/README.md)>).**
+
+| ID  | AMP | GC of Backbone | GC of Encoder | FSDP | Peak Mem (GB) | Iter Time (s) |
+| :-: | :-: | :------------: | :-----------: | :--: | :-----------: | :-----------: |
+|  1  |     |                |               |      |   49 (A100)   |      0.9      |
+|  2  |  √  |                |               |      |   39 (A100)   |      1.2      |
+|  3  |     |       √        |               |      |   33 (A100)   |      1.1      |
+|  4  |  √  |       √        |               |      |   25 (A100)   |      1.3      |
+|  5  |     |       √        |       √       |      |      18       |      2.2      |
+|  6  |  √  |       √        |       √       |      |      13       |      1.6      |
+|  7  |     |       √        |       √       |  √   |      14       |      2.9      |
+|  8  |  √  |       √        |       √       |  √   |      8.5      |      2.4      |
+
+**6. Support for the [V3Det](configs/v3det/README.md) dataset, a large-scale detection dataset with over 13,000 categories.**
+
+<div align=center>
+    <img width=960 src="https://github.com/open-mmlab/mmdetection/assets/17425982/9c216387-02be-46e6-b0f2-b856f80f6d84"/>
+</div>
+
 We are excited to announce our latest work on real-time object recognition tasks, **RTMDet**, a family of fully convolutional single-stage detectors. RTMDet not only achieves the best parameter-accuracy trade-off on object detection from tiny to extra-large model sizes but also obtains new state-of-the-art performance on instance segmentation and rotated object detection tasks. Details can be found in the [technical report](https://arxiv.org/abs/2212.07784). Pre-trained models are [here](configs/rtmdet).
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/rtmdet-an-empirical-study-of-designing-real/real-time-instance-segmentation-on-mscoco)](https://paperswithcode.com/sota/real-time-instance-segmentation-on-mscoco?p=rtmdet-an-empirical-study-of-designing-real)
@@ -117,13 +164,6 @@ We are excited to announce our latest work on real-time object recognition tasks
 <div align=center>
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
-
-**v3.1.0** was released in 30/6/2023:
-
-- Supports tracking algorithms including multi-object tracking (MOT) algorithms SORT, DeepSORT, StrongSORT, OCSORT, ByteTrack, QDTrack, and video instance segmentation (VIS) algorithm MaskTrackRCNN, Mask2Former-VIS.
-- Support [ViTDet](projects/ViTDet)
-- Supports inference and evaluation of multimodal algorithms [GLIP](configs/glip) and [XDecoder](projects/XDecoder), and also supports datasets such as COCO semantic segmentation, COCO Caption, ADE20k general segmentation, and RefCOCO. GLIP fine-tuning will be supported in the future.
-- Provides a [gradio demo](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/projects/gradio_demo/README.md) for image type tasks of MMDetection, making it easy for users to experience.
 
 ## Installation
 
@@ -236,9 +276,12 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/dab_detr">DAB-DETR (ICLR'2022)</a></li>
             <li><a href="configs/dino">DINO (ICLR'2023)</a></li>
             <li><a href="configs/glip">GLIP (CVPR'2022)</a></li>
+            <li><a href="configs/ddq">DDQ (CVPR'2023)</a></li>
             <li><a href="projects/DiffusionDet">DiffusionDet (ArXiv'2023)</a></li>
             <li><a href="projects/EfficientDet">EfficientDet (CVPR'2020)</a></li>
+            <li><a href="projects/ViTDet">ViTDet (ECCV'2022)</a></li>
             <li><a href="projects/Detic">Detic (ECCV'2022)</a></li>
+            <li><a href="projects/CO-DETR">CO-DETR (ICCV'2023)</a></li>
       </ul>
       </td>
       <td>
@@ -260,6 +303,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="projects/SparseInst">SparseInst (CVPR'2022)</a></li>
           <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
           <li><a href="configs/boxinst">BoxInst (CVPR'2021)</a></li>
+          <li><a href="projects/ConvNeXt-V2">ConvNeXt-V2 (Arxiv'2023)</a></li>
         </ul>
       </td>
       <td>
@@ -267,6 +311,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
           <li><a href="configs/maskformer">MaskFormer (NeurIPS'2021)</a></li>
           <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
+          <li><a href="configs/XDecoder">XDecoder (CVPR'2023)</a></li>
         </ul>
       </td>
       <td>

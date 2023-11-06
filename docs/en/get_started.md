@@ -105,7 +105,7 @@ You will see a list of `DetDataSample`, and the predictions are in the `pred_ins
 
 ## Tracking Installation
 
-We recommend that users follow our best practices to install MMDetection for for tracking task.
+We recommend that users follow our best practices to install MMDetection for tracking task.
 
 ### Best Practices
 
@@ -227,7 +227,7 @@ The following table lists affected algorithms.
 
 |                        Operator                         |                                          Model                                           |
 | :-----------------------------------------------------: | :--------------------------------------------------------------------------------------: |
-| Deformable Convolution/Modulated Deformable Convolution | DCN、Guided Anchoring、RepPoints、CentripetalNet、VFNet、CascadeRPN、NAS-FCOS、DetectoRS |
+| Deformable Convolution/Modulated Deformable Convolution | DCN, Guided Anchoring, RepPoints, CentripetalNet, VFNet, CascadeRPN, NAS-FCOS, DetectoRS |
 |                      MaskedConv2d                       |                                     Guided Anchoring                                     |
 |                         CARAFE                          |                                          CARAFE                                          |
 |                      SyncBatchNorm                      |                                         ResNeSt                                          |

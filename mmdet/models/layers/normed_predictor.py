@@ -2,6 +2,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mmengine.utils import digit_version
 from torch import Tensor
 
 from mmdet.registry import MODELS
@@ -91,7 +92,7 @@ class NormedConv2d(nn.Conv2d):
         if hasattr(self, 'conv2d_forward'):
             x_ = self.conv2d_forward(x_, weight_)
         else:
-            if torch.__version__ >= '1.8':
+            if digit_version(torch.__version__) >= digit_version('1.8'):
                 x_ = self._conv_forward(x_, weight_, self.bias)
             else:
                 x_ = self._conv_forward(x_, weight_)

@@ -97,3 +97,5 @@ Import:
   - configs/mask2former_vis/metafile.yml
   - configs/masktrack_rcnn/metafile.yml
   - configs/glip/metafile.yml
+  - configs/ddq/metafile.yml
+  - configs/grounding_dino/metafile.yml

@@ -108,7 +108,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         self.boxtype2tensor = boxtype2tensor
 
     def forward(self, data: dict, training: bool = False) -> dict:
-        """Perform normalization、padding and bgr2rgb conversion based on
+        """Perform normalization,padding and bgr2rgb conversion based on
         ``BaseDataPreprocessor``.
 
         Args:
@@ -170,16 +170,16 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                 'or a list of tensor, but got a tensor with shape: '
                 f'{_batch_inputs.shape}')
             pad_h = int(
-                np.ceil(_batch_inputs.shape[1] /
+                np.ceil(_batch_inputs.shape[2] /
                         self.pad_size_divisor)) * self.pad_size_divisor
             pad_w = int(
-                np.ceil(_batch_inputs.shape[2] /
+                np.ceil(_batch_inputs.shape[3] /
                         self.pad_size_divisor)) * self.pad_size_divisor
             batch_pad_shape = [(pad_h, pad_w)] * _batch_inputs.shape[0]
         else:
             raise TypeError('Output of `cast_data` should be a dict '
                             'or a tuple with inputs and data_samples, but got'
-                            f'{type(data)}： {data}')
+                            f'{type(data)}: {data}')
         return batch_pad_shape
 
     def pad_gt_masks(self,
@@ -474,7 +474,7 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
         self.data_preprocessor = MODELS.build(data_preprocessor)
 
     def forward(self, data: dict, training: bool = False) -> dict:
-        """Perform normalization、padding and bgr2rgb conversion based on
+        """Perform normalization,padding and bgr2rgb conversion based on
         ``BaseDataPreprocessor`` for multi-branch data.
 
         Args:

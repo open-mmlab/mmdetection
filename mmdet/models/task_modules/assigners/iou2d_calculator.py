@@ -66,3 +66,23 @@ class BboxOverlaps2D:
         repr_str = self.__class__.__name__ + f'(' \
             f'scale={self.scale}, dtype={self.dtype})'
         return repr_str
+
+
+@TASK_UTILS.register_module()
+class BboxOverlaps2D_GLIP(BboxOverlaps2D):
+
+    def __call__(self, bboxes1, bboxes2, mode='iou', is_aligned=False):
+        TO_REMOVE = 1
+        area1 = (bboxes1[:, 2] - bboxes1[:, 0] + TO_REMOVE) * (
+            bboxes1[:, 3] - bboxes1[:, 1] + TO_REMOVE)
+        area2 = (bboxes2[:, 2] - bboxes2[:, 0] + TO_REMOVE) * (
+            bboxes2[:, 3] - bboxes2[:, 1] + TO_REMOVE)
+
+        lt = torch.max(bboxes1[:, None, :2], bboxes2[:, :2])  # [N,M,2]
+        rb = torch.min(bboxes1[:, None, 2:], bboxes2[:, 2:])  # [N,M,2]
+
+        wh = (rb - lt + TO_REMOVE).clamp(min=0)  # [N,M,2]
+        inter = wh[:, :, 0] * wh[:, :, 1]  # [N,M]
+
+        iou = inter / (area1[:, None] + area2 - inter)
+        return iou
