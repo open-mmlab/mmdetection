@@ -134,12 +134,9 @@ val_evaluator_brackishUnderwater = dict(
     metric='bbox')
 
 # ---------------------8 ChessPieces---------------------#
-# TODO: check class name
-# The office name of the first class is '  ', but it is represented as "bishop" in the JSON.
-# black bishop -> black-bishop
-class_name = ('bishop', 'black-bishop', 'black-king', 'black-knight', 'black-pawn',
-              'black-queen', 'black-rook', 'white-bishop', 'white-king',
-              'white-knight', 'white-pawn', 'white-queen', 'white-rook')
+class_name = ('  ', 'black bishop', 'black king', 'black knight', 'black pawn',
+              'black queen', 'black rook', 'white bishop', 'white king',
+              'white knight', 'white pawn', 'white queen', 'white rook')
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'ChessPieces/Chess Pieces.v23-raw.coco/'
 dataset_ChessPieces = dict(
