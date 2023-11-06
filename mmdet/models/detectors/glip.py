@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import re
 import warnings
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 import torch
 from torch import Tensor
@@ -208,9 +208,11 @@ class GLIP(SingleStageDetector):
         self._special_tokens = '. '
 
     def get_tokens_and_prompts(
-            self,
-            original_caption: Union[str, list, tuple],
-            custom_entities: bool = False) -> Tuple[dict, str, list, list]:
+        self,
+        original_caption: Union[str, list, tuple],
+        custom_entities: bool = False,
+        enhanced_text_prompts: Optional[ConfigType] = None
+    ) -> Tuple[dict, str, list, list]:
         """Get the tokens positive and prompts for the caption."""
         if isinstance(original_caption, (list, tuple)) or custom_entities:
             if custom_entities and isinstance(original_caption, str):
@@ -219,15 +221,45 @@ class GLIP(SingleStageDetector):
                 original_caption = list(
                     filter(lambda x: len(x) > 0, original_caption))
 
-            caption_string = ''
-            tokens_positive = []
-            for idx, word in enumerate(original_caption):
-                tokens_positive.append(
-                    [[len(caption_string),
-                      len(caption_string) + len(word)]])
-                caption_string += word
-                if idx != len(original_caption) - 1:
-                    caption_string += self._special_tokens
+            if custom_entities and enhanced_text_prompts is not None:
+                caption_string = ''
+                tokens_positive = []
+                for idx, word in enumerate(original_caption):
+                    if word in enhanced_text_prompts:
+                        enhanced_text_dict = enhanced_text_prompts[word]
+                        if 'prefix' in enhanced_text_dict:
+                            caption_string += enhanced_text_dict['prefix']
+                        start_i = len(caption_string)
+                        if 'name' in enhanced_text_dict:
+                            caption_string += enhanced_text_dict['name']
+                        else:
+                            caption_string += word
+                        end_i = len(caption_string)
+                        tokens_positive.append([[start_i, end_i]])
+
+                        if 'suffix' in enhanced_text_dict:
+                            caption_string += enhanced_text_dict['suffix']
+                    else:
+                        tokens_positive.append([[
+                            len(caption_string),
+                            len(caption_string) + len(word)
+                        ]])
+                        caption_string += word
+
+                    if idx != len(original_caption) - 1:
+                        caption_string += self._special_tokens
+            else:
+                caption_string = ''
+                tokens_positive = []
+                for idx, word in enumerate(original_caption):
+                    tokens_positive.append([[
+                        len(caption_string),
+                        len(caption_string) + len(word)
+                    ]])
+                    caption_string += word
+                    if idx != len(original_caption) - 1:
+                        caption_string += self._special_tokens
+
             tokenized = self.language_model.tokenizer([caption_string],
                                                       return_tensors='pt')
             entities = original_caption
@@ -248,12 +280,14 @@ class GLIP(SingleStageDetector):
         return positive_map_label_to_token, positive_map
 
     def get_tokens_positive_and_prompts(
-            self,
-            original_caption: Union[str, list, tuple],
-            custom_entities: bool = False) -> Tuple[dict, str, Tensor, list]:
+        self,
+        original_caption: Union[str, list, tuple],
+        custom_entities: bool = False,
+        enhanced_text_prompt: Optional[ConfigType] = None
+    ) -> Tuple[dict, str, Tensor, list]:
         tokenized, caption_string, tokens_positive, entities = \
             self.get_tokens_and_prompts(
-                original_caption, custom_entities)
+                original_caption, custom_entities, enhanced_text_prompt)
         positive_map_label_to_token, positive_map = self.get_positive_map(
             tokenized, tokens_positive)
         return positive_map_label_to_token, caption_string, \
@@ -345,6 +379,9 @@ class GLIP(SingleStageDetector):
         text_prompts = [
             data_samples.text for data_samples in batch_data_samples
         ]
+        enhanced_text_prompts = [
+            data_samples.caption_prompt for data_samples in batch_data_samples
+        ]
 
         if 'custom_entities' in batch_data_samples[0]:
             # Assuming that the `custom_entities` flag
@@ -357,14 +394,16 @@ class GLIP(SingleStageDetector):
             # All the text prompts are the same,
             # so there is no need to calculate them multiple times.
             _positive_maps_and_prompts = [
-                self.get_tokens_positive_and_prompts(text_prompts[0],
-                                                     custom_entities)
+                self.get_tokens_positive_and_prompts(
+                    text_prompts[0], custom_entities, enhanced_text_prompts[0])
             ] * len(batch_inputs)
         else:
             _positive_maps_and_prompts = [
                 self.get_tokens_positive_and_prompts(text_prompt,
-                                                     custom_entities)
-                for text_prompt in text_prompts
+                                                     custom_entities,
+                                                     enhanced_text_prompt)
+                for text_prompt, enhanced_text_prompt in zip(
+                    text_prompts, enhanced_text_prompts)
             ]
 
         token_positive_maps, text_prompts, _, entities = zip(
