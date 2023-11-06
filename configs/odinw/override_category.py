@@ -72,7 +72,7 @@ def main():
                               'valid/annotations_without_background.json')
     json_data['categories'] = ChessPieces
     mmengine.dump(json_data,
-                  _data_root + 'valid/annotations_without_background.json')
+                  _data_root + 'valid/new_annotations_without_background.json')
 
     NorthAmericaMushrooms = [{
         'id': 1,
@@ -89,7 +89,7 @@ def main():
                               'valid/annotations_without_background.json')
     json_data['categories'] = NorthAmericaMushrooms
     mmengine.dump(json_data,
-                  _data_root + 'valid/annotations_without_background.json')
+                  _data_root + 'valid/new_annotations_without_background.json')
 
 
 if __name__ == '__main__':

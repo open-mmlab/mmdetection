@@ -143,14 +143,14 @@ dataset_ChessPieces = dict(
     type=dataset_type,
     metainfo=metainfo,
     data_root=_data_root,
-    ann_file='valid/annotations_without_background.json',
+    ann_file='valid/new_annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=_base_.test_pipeline,
     test_mode=True,
     return_classes=True)
 val_evaluator_ChessPieces = dict(
     type='CocoMetric',
-    ann_file=_data_root + 'valid/annotations_without_background.json',
+    ann_file=_data_root + 'valid/new_annotations_without_background.json',
     metric='bbox')
 
 # ---------------------9 CottontailRabbits---------------------#
@@ -306,14 +306,14 @@ dataset_NorthAmericaMushrooms = dict(
     type=dataset_type,
     metainfo=metainfo,
     data_root=_data_root,
-    ann_file='valid/annotations_without_background.json',
+    ann_file='valid/new_annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=_base_.test_pipeline,
     test_mode=True,
     return_classes=True)
 val_evaluator_NorthAmericaMushrooms = dict(
     type='CocoMetric',
-    ann_file=_data_root + 'valid/annotations_without_background.json',
+    ann_file=_data_root + 'valid/new_annotations_without_background.json',
     metric='bbox')
 
 # ---------------------18 openPoetryVision---------------------#
