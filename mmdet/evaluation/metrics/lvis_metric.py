@@ -1,33 +1,33 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import itertools
+import logging
 import os.path as osp
 import tempfile
 import warnings
-from collections import OrderedDict
-from typing import Dict, List, Optional, Sequence, Union, Any
-from mmengine.logging import print_log
-import torch
+from collections import OrderedDict, defaultdict
+from typing import Dict, List, Optional, Sequence, Union
+
 import numpy as np
-from mmengine.fileio import get_local_path
-from mmengine.logging import MMLogger
-from terminaltables import AsciiTable
+import torch
+from mmengine.dist import (all_gather_object, broadcast_object_list,
+                           is_main_process)
+from mmengine.evaluator import BaseMetric
 from mmengine.evaluator.metric import _to_cpu
+from mmengine.fileio import get_local_path
+from mmengine.logging import MMLogger, print_log
+from terminaltables import AsciiTable
+
 from mmdet.registry import METRICS
 from mmdet.structures.mask import encode_mask_results
 from ..functional import eval_recalls
 from .coco_metric import CocoMetric
-from mmengine.evaluator import BaseMetric
-from collections import defaultdict
-import logging
-from mmengine.dist import all_gather_object, is_main_process, broadcast_object_list
 
 try:
     import lvis
 
     if getattr(lvis, '__version__', '0') >= '10.5.3':
         warnings.warn(
-            'mmlvis is deprecated, please install official lvis-api by "pip install git+https://github.com/lvis-dataset/lvis-api.git"',
-            # noqa: E501
+            'mmlvis is deprecated, please install official lvis-api by "pip install git+https://github.com/lvis-dataset/lvis-api.git"',  # noqa: E501
             UserWarning)
     from lvis import LVIS, LVISEval, LVISResults
 except ImportError:
@@ -129,8 +129,7 @@ class LVISMetric(CocoMetric):
             raise RuntimeError(
                 'The `file_client_args` is deprecated, '
                 'please use `backend_args` instead, please refer to'
-                'https://github.com/open-mmlab/mmdetection/blob/main/configs/_base_/datasets/coco_detection.py'
-                # noqa: E501
+                'https://github.com/open-mmlab/mmdetection/blob/main/configs/_base_/datasets/coco_detection.py'  # noqa: E501
             )
 
         # if ann_file is not specified,
@@ -376,7 +375,8 @@ def _merge_lists(listA, listB, maxN, key):
     result = []
     indA, indB = 0, 0
     while (indA < len(listA) or indB < len(listB)) and len(result) < maxN:
-        if (indB < len(listB)) and (indA >= len(listA) or key(listA[indA]) < key(listB[indB])):
+        if (indB < len(listB)) and (indA >= len(listA)
+                                    or key(listA[indA]) < key(listB[indB])):
             result.append(listB[indB])
             indB += 1
         else:
@@ -417,9 +417,7 @@ class LVISFixedAPMetric(BaseMetric):
                 ann_file, backend_args=self.backend_args) as local_path:
             self._lvis_api = LVIS(local_path)
 
-        # handle dataset lazy init
-        self.cat_ids = None
-        self.img_ids = None
+        self.cat_ids = self._lvis_api.get_cat_ids()
 
         self.results = {}
         self.topk = topk
@@ -438,7 +436,8 @@ class LVISFixedAPMetric(BaseMetric):
         for data_sample in data_samples:
             pred = data_sample['pred_instances']
             xmin, ymin, xmax, ymax = pred['bboxes'].cpu().unbind(1)
-            boxes = torch.stack((xmin, ymin, xmax - xmin, ymax - ymin), dim=1).tolist()
+            boxes = torch.stack((xmin, ymin, xmax - xmin, ymax - ymin),
+                                dim=1).tolist()
 
             scores = pred['scores'].cpu().numpy()
             labels = pred['labels'].cpu().numpy()
@@ -446,28 +445,25 @@ class LVISFixedAPMetric(BaseMetric):
             if len(boxes) == 0:
                 continue
 
-            cur_results.extend(
-                [
-                    {
-                        "image_id": data_sample['img_id'],
-                        "category_id": labels[k],
-                        "bbox": box,
-                        "score": scores[k],
-                    }
-                    for k, box in enumerate(boxes)
-                ]
-            )
+            cur_results.extend([{
+                'image_id': data_sample['img_id'],
+                'category_id': self.cat_ids[labels[k]],
+                'bbox': box,
+                'score': scores[k],
+            } for k, box in enumerate(boxes)])
 
         by_cat = defaultdict(list)
         for ann in cur_results:
-            by_cat[ann["category_id"]].append(ann)
+            by_cat[ann['category_id']].append(ann)
 
         for cat, cat_anns in by_cat.items():
             if cat not in self.results:
                 self.results[cat] = []
 
-            cur = sorted(cat_anns, key=lambda x: x["score"], reverse=True)[: self.topk]
-            self.results[cat] = _merge_lists(self.results[cat], cur, self.topk, key=lambda x: x["score"])
+            cur = sorted(
+                cat_anns, key=lambda x: x['score'], reverse=True)[:self.topk]
+            self.results[cat] = _merge_lists(
+                self.results[cat], cur, self.topk, key=lambda x: x['score'])
 
     def compute_metrics(self, results: dict) -> dict:
         logger: MMLogger = MMLogger.get_current_instance()
@@ -478,25 +474,27 @@ class LVISFixedAPMetric(BaseMetric):
         for cat, cat_anns in results.items():
             if len(cat_anns) < self.topk:
                 missing_dets_cats.add(cat)
-            new_results.extend(sorted(cat_anns, key=lambda x: x["score"], reverse=True)[: self.topk])
+            new_results.extend(
+                sorted(cat_anns, key=lambda x: x['score'],
+                       reverse=True)[:self.topk])
 
         if missing_dets_cats:
             logger.info(
-                f"\n===\n"
-                f"{len(missing_dets_cats)} classes had less than {self.topk} detections!\n"
-                f"Outputting {self.topk} detections for each class will improve AP further.\n"
-                f"If using detectron2, please use the lvdevil/infer_topk.py script to "
-                f"output a results file with {self.topk} detections for each class.\n"
-                f"==="
-            )
+                f'\n===\n'
+                f'{len(missing_dets_cats)} classes had less than {self.topk} '
+                f'detections!\n Outputting {self.topk} detections for each '
+                f'class will improve AP further.\n ===')
 
         new_results = LVISResults(self._lvis_api, new_results, max_dets=-1)
-        lvis_eval = LVISEval(self._lvis_api, new_results, iou_type="bbox")
+        lvis_eval = LVISEval(self._lvis_api, new_results, iou_type='bbox')
         params = lvis_eval.params
         params.max_dets = -1  # No limit on detections per image.
         lvis_eval.run()
         lvis_eval.print_results()
-        metrics = {k: v for k, v in lvis_eval.results.items() if k.startswith("AP")}
+        metrics = {
+            k: v
+            for k, v in lvis_eval.results.items() if k.startswith('AP')
+        }
         logger.info(f'mAP_copypaste: {metrics}')
         return metrics
 
