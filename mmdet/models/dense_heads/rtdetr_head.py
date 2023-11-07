@@ -94,7 +94,8 @@ class RTDETRHead(DINOHead):
                 if len(pos_labels) > 0:
                     iou_score = bbox_overlaps(
                         bboxes.detach(), bboxes_gt, is_aligned=True)
-                    cls_iou_targets[pos_inds, pos_labels] = iou_score[pos_inds]
+                    cls_iou_targets[pos_inds, pos_labels] = \
+                        iou_score[pos_inds].type_as(cls_iou_targets)  # for amp
                 loss_cls = self.loss_cls(
                     cls_scores, cls_iou_targets, avg_factor=cls_avg_factor)
             else:
@@ -189,7 +190,8 @@ class RTDETRHead(DINOHead):
             if len(pos_labels) > 0:
                 iou_score = bbox_overlaps(
                     bboxes.detach(), bboxes_gt, is_aligned=True)
-                cls_iou_targets[pos_inds, pos_labels] = iou_score[pos_inds]
+                cls_iou_targets[pos_inds, pos_labels] = \
+                    iou_score[pos_inds].type_as(cls_iou_targets)  # for amp
             loss_cls = self.loss_cls(
                 cls_scores, cls_iou_targets, avg_factor=cls_avg_factor)
         else:
