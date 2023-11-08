@@ -246,7 +246,7 @@ class RTDETRTHybridEncoder(BaseModule):
                     device=src_flatten.device)
                 memory = self.transformer_blocks[i](
                     src_flatten, query_pos=pos_embed, key_padding_mask=None)
-                inputs[enc_ind] = memory.permute(0, 2, 1).reshape(
+                inputs[enc_ind] = memory.permute(0, 2, 1).contiguous().reshape(
                     -1, self.out_channels, h, w)
 
         # top-down path
