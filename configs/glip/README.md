@@ -56,7 +56,7 @@ model.save_pretrained("your path/bert-base-uncased")
 tokenizer.save_pretrained("your path/bert-base-uncased")
 ```
 
-## Results and Models
+## COCO Results and Models
 
 |   Model    | Zero-shot or Finetune | COCO mAP | Official COCO mAP |       Pre-Train Data       |                                 Config                                  |                                                                                                                                                                                                   Download                                                                                                                                                                                                    |
 | :--------: | :-------------------: | :------: | ----------------: | :------------------------: | :---------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
@@ -78,3 +78,24 @@ Note:
 3. Taking the GLIP-T(A) model as an example, I trained it twice using the official code, and the fine-tuning mAP were 52.5 and 52.6. Therefore, the mAP we achieved in our reproduction is higher than the official results. The main reason is that we modified the `weight_decay` parameter.
 4. Our experiments revealed that training for 24 epochs leads to overfitting. Therefore, we chose the best-performing model. If users want to train on a custom dataset, it is advisable to shorten the number of epochs and save the best-performing model.
 5. Due to the official absence of fine-tuning hyperparameters for the GLIP-L model, we have not yet reproduced the official accuracy. I have found that overfitting can also occur, so it may be necessary to consider custom modifications to data augmentation and model enhancement. Given the high cost of training, we have not conducted any research on this matter at the moment.
+
+## LVIS Results
+
+|   Model    | Official | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP | Val1.0 APr | Val1.0 APc | Val1.0 APf | Val1.0 AP |       Pre-Train Data       |                                 Config                                  |                                           Download                                           |
+| :--------: | :------: | :---------: | :---------: | :---------: | :--------: | :--------: | :--------: | :--------: | :-------: | :------------------------: | :---------------------------------------------------------------------: | :------------------------------------------------------------------------------------------: |
+| GLIP-T (A) |    ✔     |             |             |             |            |            |            |            |           |            O365            | [config](lvis/glip_atss_swin-t_a_fpn_dyhead_pretrain_zeroshot_lvis.py)  | [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth) |
+| GLIP-T (A) |          |    12.1     |    15.5     |    25.8     |    20.2    |    6.2     |    10.9    |    22.8    |   14.7    |            O365            | [config](lvis/glip_atss_swin-t_a_fpn_dyhead_pretrain_zeroshot_lvis.py)  | [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth) |
+| GLIP-T (B) |    ✔     |             |             |             |            |            |            |            |           |            O365            | [config](lvis/glip_atss_swin-t_bc_fpn_dyhead_pretrain_zeroshot_lvis.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_b_mmdet-6dfbd102.pth) |
+| GLIP-T (B) |          |     8.6     |    13.9     |    26.0     |    19.3    |    4.6     |    9.8     |    22.6    |   13.9    |            O365            | [config](lvis/glip_atss_swin-t_bc_fpn_dyhead_pretrain_zeroshot_lvis.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_b_mmdet-6dfbd102.pth) |
+| GLIP-T (C) |    ✔     |    14.3     |    19.4     |    31.1     |    24.6    |            |            |            |           |         O365,GoldG         | [config](lvis/glip_atss_swin-t_bc_fpn_dyhead_pretrain_zeroshot_lvis.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_c_mmdet-2fc427dd.pth) |
+| GLIP-T (C) |          |    14.4     |    19.8     |    31.9     |    25.2    |    8.3     |    13.2    |    28.1    |   18.2    |         O365,GoldG         | [config](lvis/glip_atss_swin-t_bc_fpn_dyhead_pretrain_zeroshot_lvis.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_c_mmdet-2fc427dd.pth) |
+|   GLIP-T   |    ✔     |             |             |             |            |            |            |            |           |    O365,GoldG,CC3M,SBU     | [config](lvis/glip_atss_swin-t_bc_fpn_dyhead_pretrain_zeroshot_lvis.py) |  [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_mmdet-c24ce662.pth)  |
+|   GLIP-T   |          |    18.1     |    21.2     |    33.1     |    26.7    |    10.8    |    14.7    |    29.0    |   19.6    |    O365,GoldG,CC3M,SBU     | [config](lvis/glip_atss_swin-t_bc_fpn_dyhead_pretrain_zeroshot_lvis.py) |  [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_mmdet-c24ce662.pth)  |
+|   GLIP-L   |    ✔     |    29.2     |    34.9     |    42.1     |    37.9    |            |            |            |           | FourODs,GoldG,CC3M+12M,SBU |  [config](lvis/glip_atss_swin-l_fpn_dyhead_pretrain_zeroshot_lvis.py)   |   [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_l_mmdet-abfe026b.pth)    |
+|   GLIP-L   |          |    27.9     |    33.7     |    39.7     |    36.1    |            |            |            |           | FourODs,GoldG,CC3M+12M,SBU |  [config](lvis/glip_atss_swin-l_fpn_dyhead_pretrain_zeroshot_lvis.py)   |   [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_l_mmdet-abfe026b.pth)    |
+
+Note:
+
+1. The above are zero-shot evaluation results.
+2. The evaluation metric we used is LVIS FixAP. For specific details, please refer to [Evaluating Large-Vocabulary Object Detectors: The Devil is in the Details](https://arxiv.org/pdf/2102.01066.pdf).
+3. We found that the performance on small models is better than the official results, but it is lower on large models. This is mainly due to the incomplete alignment of the GLIP post-processing.
