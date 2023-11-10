@@ -5,8 +5,9 @@ import math
 import warnings
 from typing import List, Optional, Sequence, Tuple, Union
 
-from mmdet.registry import TRANSFORMS
 from mmcv.transforms import BaseTransform
+
+from mmdet.registry import TRANSFORMS
 from mmdet.structures.bbox import BaseBoxes
 
 try:
@@ -17,19 +18,21 @@ except ImportError:
     HFBertModel = None
 
 import random
-import torch
 import re
+
 import numpy as np
+import torch
 
 
 def clean_name(name):
-    name = re.sub(r"\(.*\)", "", name)
-    name = re.sub(r"_", " ", name)
-    name = re.sub(r"  ", " ", name)
+    name = re.sub(r'\(.*\)', '', name)
+    name = re.sub(r'_', ' ', name)
+    name = re.sub(r'  ', ' ', name)
     return name
 
 
-def check_for_positive_overflow(gt_bboxes, gt_labels, text, tokenizer, max_tokens):
+def check_for_positive_overflow(gt_bboxes, gt_labels, text, tokenizer,
+                                max_tokens):
     # NOTE: Only call this function for OD data; DO NOT USE IT FOR GROUNDING DATA
     # NOTE: called only in coco_dt
 
@@ -44,7 +47,7 @@ def check_for_positive_overflow(gt_bboxes, gt_labels, text, tokenizer, max_token
 
     for index, label in enumerate(positive_label_list):
 
-        label_text = clean_name(text[str(label)]) + ". "
+        label_text = clean_name(text[str(label)]) + '. '
 
         tokenized = tokenizer.tokenize(label_text)
 
@@ -56,16 +59,51 @@ def check_for_positive_overflow(gt_bboxes, gt_labels, text, tokenizer, max_token
             kept_lables.append(label)
 
     keep_box_index = []
+    keep_gt_labels = []
     for i in range(len(gt_labels)):
         if gt_labels[i] in kept_lables:
             keep_box_index.append(i)
+            keep_gt_labels.append(gt_labels[i])
 
-    return gt_bboxes[keep_box_index], np.asarray(kept_lables)
+    return gt_bboxes[keep_box_index], np.array(
+        keep_gt_labels, dtype=np.long), length
+
+
+def generate_senetence_given_labels(positive_label_list, negative_label_list,
+                                    text):
+    label_to_positions = {}
+
+    label_list = negative_label_list + positive_label_list
+
+    random.shuffle(label_list)
+
+    pheso_caption = ''
+
+    for index, label in enumerate(label_list):
+
+        start_index = len(pheso_caption)
+
+        pheso_caption += clean_name(text[str(label)])
+
+        end_index = len(pheso_caption)
+
+        if label in positive_label_list:
+            label_to_positions[label] = [[start_index, end_index]]
+
+        if index != len(label_list) - 1:
+            pheso_caption += '. '
+
+    return label_to_positions, pheso_caption
 
 
 @TRANSFORMS.register_module()
 class RandomSamplingNegPos(BaseTransform):
-    def __init__(self, tokenizer_name, num_sample_negative=85, max_tokens=256):
+
+    def __init__(self,
+                 tokenizer_name,
+                 num_sample_negative=85,
+                 max_tokens=256,
+                 full_sampling_prob=0.5):
         if AutoTokenizer is None:
             raise RuntimeError(
                 'transformers is not installed, please install it by: '
@@ -73,6 +111,7 @@ class RandomSamplingNegPos(BaseTransform):
 
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         self.num_sample_negative = num_sample_negative
+        self.full_sampling_prob = full_sampling_prob
         self.max_tokens = max_tokens
 
     def transform(self, results: dict) -> dict:
@@ -80,23 +119,71 @@ class RandomSamplingNegPos(BaseTransform):
         if isinstance(gt_bboxes, BaseBoxes):
             gt_bboxes = gt_bboxes.tensor
         gt_labels = results['gt_bboxes_labels']
-        original_box_num= len(gt_labels)
+        original_box_num = len(gt_labels)
         text = results['text']
-        gt_bboxes, gt_labels = check_for_positive_overflow(gt_bboxes, gt_labels, text, self.tokenizer, self.max_tokens)
+        gt_bboxes, gt_labels, positive_caption_length = check_for_positive_overflow(
+            gt_bboxes, gt_labels, text, self.tokenizer, self.max_tokens)
 
         if len(gt_bboxes) < original_box_num:
-            print("WARNING: removed {} boxes due to positive caption overflow".format(original_box_num - len(gt_bboxes)))
+            print('WARNING: removed {} boxes due to positive caption overflow'.
+                  format(original_box_num - len(gt_bboxes)))
+
+        results['gt_bboxes'] = gt_bboxes
+        results['gt_bboxes_labels'] = gt_labels
 
         valid_negative_indexes = list(text.keys())
 
         positive_label_list = np.unique(gt_labels).tolist()
-        full_positive = len(positive_label_set)
-        if max_num_labels <= 0:
-            full_negative = random_sample_negative  # 85
+        full_negative = self.num_sample_negative
+
+        if full_negative > len(valid_negative_indexes):
+            full_negative = len(valid_negative_indexes)
+
+        outer_prob = random.random()
+
+        if outer_prob < self.full_sampling_prob:
+            # c. probability_full: add both all positive and all negatives
+            num_negatives = full_negative
         else:
-            full_negative = max(min(max_num_labels - full_positive, random_sample_negative), 0)
+            if random.random() < 1.0:
+                num_negatives = np.random.choice(max(1, full_negative)) + 1
+            else:
+                num_negatives = full_negative
 
+        # Keep some negatives
+        negative_label_list = set()
+        if num_negatives != -1:
+            if num_negatives > len(valid_negative_indexes):
+                num_negatives = len(valid_negative_indexes)
 
+            for i in np.random.choice(
+                    valid_negative_indexes, size=num_negatives, replace=False):
+                if i not in positive_label_list:
+                    negative_label_list.add(i)
 
+        random.shuffle(positive_label_list)
 
+        negative_label_list = list(negative_label_list)
+        random.shuffle(negative_label_list)
 
+        negative_max_length = self.max_tokens - positive_caption_length
+        screened_negative_label_list = []
+
+        for negative_label in negative_label_list:
+            label_text = clean_name(text[str(negative_label)]) + '. '
+
+            tokenized = self.tokenizer.tokenize(label_text)
+
+            negative_max_length -= len(tokenized)
+
+            if negative_max_length > 0:
+                screened_negative_label_list.append(negative_label)
+            else:
+                break
+        negative_label_list = screened_negative_label_list
+        label_to_positions, pheso_caption = generate_senetence_given_labels(
+            positive_label_list, negative_label_list, text)
+
+        results['text'] = pheso_caption
+        results['tokens_positive'] = label_to_positions
+        return results

@@ -17,6 +17,7 @@ from .isaid import iSAIDDataset
 from .lvis import LVISDataset, LVISV1Dataset, LVISV05Dataset
 from .mot_challenge_dataset import MOTChallengeDataset
 from .objects365 import Objects365V1Dataset, Objects365V2Dataset
+from .odvg import ODVGDataset
 from .openimages import OpenImagesChallengeDataset, OpenImagesDataset
 from .refcoco import RefCocoDataset
 from .reid_dataset import ReIDDataset
@@ -29,7 +30,6 @@ from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
 from .youtube_vis_dataset import YouTubeVISDataset
-from .odvg import ODVGDataset
 
 __all__ = [
     'XMLDataset', 'CocoDataset', 'DeepFashionDataset', 'VOCDataset',

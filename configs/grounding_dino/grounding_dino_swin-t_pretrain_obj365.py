@@ -2,7 +2,7 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-
+pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_tiny_patch4_window7_224.pth'  # noqa
 lang_model_name = 'bert-base-uncased'
 
 model = dict(
@@ -41,7 +41,9 @@ model = dict(
         patch_norm=True,
         out_indices=(1, 2, 3),
         with_cp=True,
-        convert_weights=False),
+        convert_weights=True,
+        frozen_stages=-1,
+        init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     neck=dict(
         type='ChannelMapper',
         in_channels=[192, 384, 768],
@@ -91,7 +93,7 @@ model = dict(
         type='GroundingDINOHead',
         num_classes=80,
         sync_cls_avg_factor=True,
-        contrastive_cfg=dict(max_text_len=256, log_scale=0.0, bias=False),
+        contrastive_cfg=dict(max_text_len=256, log_scale='auto', bias=True),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -151,15 +153,16 @@ train_pipeline = [
                     keep_ratio=True)
             ]
         ]),
-    dict(type='RandomSamplingNegPos',
-         tokenizer_name=lang_model_name,
-         num_sample_negative=85,
-         max_tokens=256),
+    dict(
+        type='RandomSamplingNegPos',
+        tokenizer_name=lang_model_name,
+        num_sample_negative=85,
+        max_tokens=256),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
                    'scale_factor', 'flip', 'flip_direction', 'text',
-                   'custom_entities'))
+                   'custom_entities', 'tokens_positive'))
 ]
 
 test_pipeline = [
@@ -179,24 +182,27 @@ test_pipeline = [
 ]
 
 dataset_type = 'ODVGDataset'
-data_root = '/home/PJLAB/huanghaian/dataset/coco200/'
+data_root = 'data/coco/'
+
+coco_od_dataset = dict(
+    type=dataset_type,
+    data_root=data_root,
+    ann_file='annotations/instances_train2017_od.json',
+    label_map_file='annotations/coco2017_label_map.json',
+    data_prefix=dict(img='train2017/'),
+    filter_cfg=dict(filter_empty_gt=False),
+    pipeline=train_pipeline,
+    return_classes=True,
+    backend_args=None)
 
 train_dataloader = dict(
-    batch_size=1,
-    num_workers=0,
-    persistent_workers=False,
+    _delete_=True,
+    batch_size=2,
+    num_workers=2,
+    persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     batch_sampler=dict(type='AspectRatioBatchSampler'),
-    dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='annotations/coco200.jsonl',
-        label_map_file='annotations/coco2017_label_map.json',
-        data_prefix=dict(img='train2017/'),
-        filter_cfg=dict(filter_empty_gt=False),
-        pipeline=train_pipeline,
-        return_classes=True,
-        backend_args=None))
+    dataset=dict(type='ConcatDataset', datasets=[coco_od_dataset]))
 
 val_dataloader = dict(
     dataset=dict(pipeline=test_pipeline, return_classes=True))

@@ -13,6 +13,7 @@ from .loading import (FilterAnnotations, InferencerLoader, LoadAnnotations,
                       LoadEmptyAnnotations, LoadImageFromNDArray,
                       LoadMultiChannelImageFromFiles, LoadPanopticAnnotations,
                       LoadProposals, LoadTrackAnnotations)
+from .text_transformers import RandomSamplingNegPos
 from .transformers_glip import GTBoxSubOne_GLIP, RandomFlip_GLIP
 from .transforms import (Albu, CachedMixUp, CachedMosaic, CopyPaste, CutOut,
                          Expand, FixScaleResize, FixShapeResize,
@@ -22,7 +23,6 @@ from .transforms import (Albu, CachedMixUp, CachedMosaic, CopyPaste, CutOut,
                          RandomFlip, RandomShift, Resize, ResizeShortestEdge,
                          SegRescale, YOLOXHSVRandomAug)
 from .wrappers import MultiBranch, ProposalBroadcaster, RandomOrder
-from .text_transformers import RandomSamplingNegPos
 
 __all__ = [
     'PackDetInputs', 'ToTensor', 'ImageToTensor', 'Transpose',

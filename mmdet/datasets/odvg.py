@@ -1,11 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import json
+import os.path as osp
+from typing import List, Optional
+
 from mmengine.fileio import get_local_path
 
 from mmdet.registry import DATASETS
 from .base_det_dataset import BaseDetDataset
-import os.path as osp
-from typing import List, Optional
-import json
 
 
 @DATASETS.register_module()
@@ -17,12 +18,12 @@ class ODVGDataset(BaseDetDataset):
                  data_root: str = '',
                  label_map_file: Optional[str] = None,
                  **kwargs) -> None:
-        self.dataset_mode = "VG"
+        self.dataset_mode = 'VG'
         if label_map_file:
             label_map_file = osp.join(data_root, label_map_file)
             with open(label_map_file, 'r') as file:
                 self.label_map = json.load(file)
-            self.dataset_mode = "OD"
+            self.dataset_mode = 'OD'
         super().__init__(*args, data_root=data_root, **kwargs)
         assert self.return_classes is True
 
@@ -42,10 +43,10 @@ class ODVGDataset(BaseDetDataset):
             data_info['text'] = self.label_map
 
             if self.dataset_mode is 'OD':
-                anno = data["detection"]
-                instances = [obj for obj in anno["instances"]]
-                bboxes = [obj["bbox"] for obj in instances]
-                bbox_labels = [str(obj["label"]) for obj in instances]
+                anno = data['detection']
+                instances = [obj for obj in anno['instances']]
+                bboxes = [obj['bbox'] for obj in instances]
+                bbox_labels = [str(obj['label']) for obj in instances]
 
                 instances = []
                 for bbox, label in zip(bboxes, bbox_labels):

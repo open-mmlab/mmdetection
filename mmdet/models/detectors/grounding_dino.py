@@ -265,7 +265,6 @@ class GroundingDINO(DINO):
 
     def loss(self, batch_inputs: Tensor,
              batch_data_samples: SampleList) -> Union[dict, list]:
-        # TODO: Only open vocabulary tasks are supported for training now.
         text_prompts = [
             data_samples.text for data_samples in batch_data_samples
         ]
@@ -275,34 +274,55 @@ class GroundingDINO(DINO):
             for data_samples in batch_data_samples
         ]
 
-        new_text_prompts = []
-        positive_maps = []
-        if len(set(text_prompts)) == 1:
-            # All the text prompts are the same,
-            # so there is no need to calculate them multiple times.
-            tokenized, caption_string, tokens_positive, _ = \
-                self.get_tokens_and_prompts(
-                    text_prompts[0], True)
-            new_text_prompts = [caption_string] * len(batch_inputs)
-            for gt_label in gt_labels:
+        if 'tokens_positive' in batch_data_samples[0]:
+            tokens_positive = [
+                data_samples.tokens_positive
+                for data_samples in batch_data_samples
+            ]
+            positive_maps = []
+            for token_positive, text_prompt, gt_label in zip(
+                    tokens_positive, text_prompts, gt_labels):
+                tokenized = self.language_model.tokenizer(
+                    [text_prompt],
+                    padding='max_length'
+                    if self.language_model.pad_to_max else 'longest',
+                    return_tensors='pt')
                 new_tokens_positive = [
-                    tokens_positive[label] for label in gt_label
+                    token_positive[label.item()] for label in gt_label
                 ]
                 _, positive_map = self.get_positive_map(
                     tokenized, new_tokens_positive)
                 positive_maps.append(positive_map)
+            new_text_prompts = text_prompts
         else:
-            for text_prompt, gt_label in zip(text_prompts, gt_labels):
+            new_text_prompts = []
+            positive_maps = []
+            if len(set(text_prompts)) == 1:
+                # All the text prompts are the same,
+                # so there is no need to calculate them multiple times.
                 tokenized, caption_string, tokens_positive, _ = \
                     self.get_tokens_and_prompts(
-                        text_prompt, True)
-                new_tokens_positive = [
-                    tokens_positive[label] for label in gt_label
-                ]
-                _, positive_map = self.get_positive_map(
-                    tokenized, new_tokens_positive)
-                positive_maps.append(positive_map)
-                new_text_prompts.append(caption_string)
+                        text_prompts[0], True)
+                new_text_prompts = [caption_string] * len(batch_inputs)
+                for gt_label in gt_labels:
+                    new_tokens_positive = [
+                        tokens_positive[label] for label in gt_label
+                    ]
+                    _, positive_map = self.get_positive_map(
+                        tokenized, new_tokens_positive)
+                    positive_maps.append(positive_map)
+            else:
+                for text_prompt, gt_label in zip(text_prompts, gt_labels):
+                    tokenized, caption_string, tokens_positive, _ = \
+                        self.get_tokens_and_prompts(
+                            text_prompt, True)
+                    new_tokens_positive = [
+                        tokens_positive[label] for label in gt_label
+                    ]
+                    _, positive_map = self.get_positive_map(
+                        tokenized, new_tokens_positive)
+                    positive_maps.append(positive_map)
+                    new_text_prompts.append(caption_string)
 
         text_dict = self.language_model(new_text_prompts)
         if self.text_feat_map is not None:
