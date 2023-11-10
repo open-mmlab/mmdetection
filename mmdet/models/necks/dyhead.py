@@ -115,8 +115,10 @@ class DyHeadBlock(nn.Module):
                 # https://github.com/microsoft/DynamicHead/issues/25
                 output_h = x[level + 1].shape[-2]
                 output_w = x[level + 1].shape[-1]
-                offset = offset_and_mask[:, :self.offset_dim,:output_h, :output_w]
-                mask = offset_and_mask[:, self.offset_dim:,:output_h, :output_w].sigmoid()
+                offset = offset_and_mask[:, :self.offset_dim, \
+                    :output_h, :output_w]
+                mask = offset_and_mask[:, self.offset_dim:, \
+                    :output_h, :output_w].sigmoid()
 
                 high_feat = F.interpolate(
                     self.spatial_conv_high(x[level + 1], offset, mask),
