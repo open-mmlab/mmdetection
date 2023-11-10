@@ -24,7 +24,7 @@ model = dict(
         pad_to_max=False,
         use_sub_sentence_represent=True,
         special_tokens_list=['[CLS]', '[SEP]', '.', '?'],
-        add_pooling_layer=True,
+        add_pooling_layer=False,
     ),
     backbone=dict(
         type='SwinTransformer',
