@@ -118,7 +118,6 @@ class DyHeadBlock(nn.Module):
                 offset = offset_and_mask[:, :self.offset_dim, :out_h, :out_w]
                 mask = offset_and_mask[:, self.offset_dim:, :out_h, :out_w]
                 mask = mask.sigmoid()
-                
                 high_feat = F.interpolate(
                     self.spatial_conv_high(x[level + 1], offset, mask),
                     size=x[level].shape[-2:],
