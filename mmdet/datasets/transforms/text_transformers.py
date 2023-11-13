@@ -92,8 +92,9 @@ def generate_senetence_given_labels(positive_label_list, negative_label_list,
             label_to_positions[index] = [[start_index, end_index]]
             label_remap_dict[int(label)] = index
 
-        if index != len(label_list) - 1:
-            pheso_caption += '. '
+        # if index != len(label_list) - 1:
+        #     pheso_caption += '. '
+        pheso_caption += '. '
 
     return label_to_positions, pheso_caption, label_remap_dict
 
