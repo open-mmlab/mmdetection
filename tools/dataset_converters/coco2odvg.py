@@ -188,15 +188,6 @@ def dump_label_map(output='./out.json'):
         json.dump(new_map, f)
 
 
-def coco_to_xyxy(bbox):
-    x, y, width, height = bbox
-    x1 = round(x, 2)
-    y1 = round(y, 2)
-    x2 = round(x + width, 2)
-    y2 = round(y + height, 2)
-    return [x1, y1, x2, y2]
-
-
 def coco2odvg(args):
     coco = COCO(args.input)
     cats = coco.loadCats(coco.getCatIds())
@@ -209,8 +200,21 @@ def coco2odvg(args):
         instance_list = []
         for ann_id in ann_ids:
             ann = coco.anns[ann_id]
-            bbox = ann['bbox']
-            bbox_xyxy = coco_to_xyxy(bbox)
+
+            if ann.get('ignore', False):
+                continue
+            x1, y1, w, h = ann['bbox']
+            inter_w = max(0, min(x1 + w, img_info['width']) - max(x1, 0))
+            inter_h = max(0, min(y1 + h, img_info['height']) - max(y1, 0))
+            if inter_w * inter_h == 0:
+                continue
+            if ann['area'] <= 0 or w < 1 or h < 1:
+                continue
+
+            if ann.get('iscrowd', False):
+                continue
+
+            bbox_xyxy = [x1, y1, x1 + w, y1 + h]
             label = ann['category_id']
             category = nms[label]
             ind = val_list.index(label)
