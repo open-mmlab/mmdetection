@@ -184,7 +184,9 @@ class RandomSamplingNegPos(BaseTransform):
             positive_label_list, negative_label_list, text)
 
         # label remap
-        gt_labels = np.vectorize(lambda x: label_remap_dict[x])(gt_labels)
+        if len(gt_labels) > 0:
+            gt_labels = np.vectorize(lambda x: label_remap_dict[x])(gt_labels)
+
         results['gt_bboxes'] = gt_bboxes
         results['gt_bboxes_labels'] = gt_labels
 
