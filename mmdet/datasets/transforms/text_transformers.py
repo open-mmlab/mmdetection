@@ -124,6 +124,13 @@ class RandomSamplingNegPos(BaseTransform):
         gt_labels = results['gt_bboxes_labels']
         original_box_num = len(gt_labels)
         text = results['text']
+
+        # If the category name is in the format of 'a/b' (in object365),
+        # we randomly select one of them.
+        for key, value in text.items():
+            if '/' in value:
+                text[key] = random.choice(value.split('/')).strip()
+
         gt_bboxes, gt_labels, positive_caption_length = check_for_positive_overflow(
             gt_bboxes, gt_labels, text, self.tokenizer, self.max_tokens)
 
