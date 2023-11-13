@@ -21,13 +21,13 @@ import random
 import re
 
 import numpy as np
-import torch
 
 
 def clean_name(name):
     name = re.sub(r'\(.*\)', '', name)
     name = re.sub(r'_', ' ', name)
     name = re.sub(r'  ', ' ', name)
+    name = name.lower()
     return name
 
 
@@ -79,6 +79,7 @@ def generate_senetence_given_labels(positive_label_list, negative_label_list,
 
     pheso_caption = ''
 
+    label_remap_dict = {}
     for index, label in enumerate(label_list):
 
         start_index = len(pheso_caption)
@@ -88,12 +89,13 @@ def generate_senetence_given_labels(positive_label_list, negative_label_list,
         end_index = len(pheso_caption)
 
         if label in positive_label_list:
-            label_to_positions[label] = [[start_index, end_index]]
+            label_to_positions[index] = [[start_index, end_index]]
+            label_remap_dict[int(label)] = index
 
         if index != len(label_list) - 1:
             pheso_caption += '. '
 
-    return label_to_positions, pheso_caption
+    return label_to_positions, pheso_caption, label_remap_dict
 
 
 @TRANSFORMS.register_module()
@@ -127,9 +129,6 @@ class RandomSamplingNegPos(BaseTransform):
         if len(gt_bboxes) < original_box_num:
             print('WARNING: removed {} boxes due to positive caption overflow'.
                   format(original_box_num - len(gt_bboxes)))
-
-        results['gt_bboxes'] = gt_bboxes
-        results['gt_bboxes_labels'] = gt_labels
 
         valid_negative_indexes = list(text.keys())
 
@@ -181,8 +180,13 @@ class RandomSamplingNegPos(BaseTransform):
             else:
                 break
         negative_label_list = screened_negative_label_list
-        label_to_positions, pheso_caption = generate_senetence_given_labels(
+        label_to_positions, pheso_caption, label_remap_dict = generate_senetence_given_labels(
             positive_label_list, negative_label_list, text)
+
+        # label remap
+        gt_labels = np.vectorize(lambda x: label_remap_dict[x])(gt_labels)
+        results['gt_bboxes'] = gt_bboxes
+        results['gt_bboxes_labels'] = gt_labels
 
         results['text'] = pheso_caption
         results['tokens_positive'] = label_to_positions
