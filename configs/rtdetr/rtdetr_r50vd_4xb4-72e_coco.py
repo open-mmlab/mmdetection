@@ -93,6 +93,7 @@ model = dict(
 
 # train_pipeline, NOTE the img_scale and the Pad's size_divisor is different
 # from the default setting in mmdet.
+interpolations = ['nearest', 'bilinear', 'bicubic', 'area', 'lanczos']
 train_pipeline = [
     dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -107,21 +108,28 @@ train_pipeline = [
         prob=0.8),
     dict(type='RandomFlip', prob=0.5),
     # dict(
-    #     type='RandomChoiceResize',
-    #     scales=[(480, 480), (512, 512), (544, 544), (576, 576), (608, 608),
-    #             (640, 640), (640, 640), (640, 640), (672, 672), (704, 704),
-    #             (736, 736), (768, 768), (800, 800)],
-    #     random_interpolations=(
-    #         'nearest', 'bilinear', 'bicubic', 'area', 'lanczos'),
-    #     keep_ratio=False,
-    #     clip_object_border=False),
+    #     type='RandomChoice',
+    #     transforms=[[
+    #         dict(
+    #             type='RandomChoiceResize',
+    #             scales=[(480, 480), (512, 512), (544, 544), (576, 576),
+    #                     (608, 608), (640, 640), (640, 640), (640, 640),
+    #                     (672, 672), (704, 704), (736, 736), (768, 768),
+    #                     (800, 800)],
+    #             interpolation=interpolation,
+    #             keep_ratio=False,
+    #             clip_object_border=False)]
+    #         for interpolation in interpolations]),
     dict(
-        type='Resize',
-        scale=(640, 640),
-        random_interpolations=(
-            'nearest', 'bilinear', 'bicubic', 'area', 'lanczos'),
-        keep_ratio=False,
-        clip_object_border=False),
+        type='RandomChoice',
+        transforms=[[
+            dict(
+                type='Resize',
+                scale=(640, 640),
+                interpolation=interpolation,
+                keep_ratio=False,
+                clip_object_border=False)]
+            for interpolation in interpolations]),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
     dict(type='PackDetInputs')
 ]
