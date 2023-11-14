@@ -153,6 +153,7 @@ train_pipeline = [
                     keep_ratio=True)
             ]
         ]),
+    dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(
         type='RandomSamplingNegPos',
         tokenizer_name=lang_model_name,
