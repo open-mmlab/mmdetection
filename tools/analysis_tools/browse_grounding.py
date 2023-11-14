@@ -20,6 +20,8 @@ def parse_args():
         type=str,
         help='If there is no display interface, you can save it')
     parser.add_argument('--not-show', default=False, action='store_true')
+    parser.add_argument('--show-num', '-n', type=int, default=30)
+    parser.add_argument('--shuffle', default=False, action='store_true')
     parser.add_argument(
         '--show-interval',
         type=float,
@@ -30,11 +32,11 @@ def parse_args():
         nargs='+',
         action=DictAction,
         help='override some settings in the used config, the key-value pair '
-             'in xxx=yyy format will be merged into config file. If the value to '
-             'be overwritten is a list, it should be like key="[a,b]" or key=a,b '
-             'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
-             'Note that the quotation marks are necessary and that no white space '
-             'is allowed.')
+        'in xxx=yyy format will be merged into config file. If the value to '
+        'be overwritten is a list, it should be like key="[a,b]" or key=a,b '
+        'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
+        'Note that the quotation marks are necessary and that no white space '
+        'is allowed.')
     args = parser.parse_args()
     return args
 
@@ -45,6 +47,8 @@ def main():
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 
+    assert args.show_num > 0
+
     # register all modules in mmdet into the registries
     init_default_scope(cfg.get('default_scope', 'mmdet'))
 
@@ -52,15 +56,28 @@ def main():
     visualizer = VISUALIZERS.build(cfg.visualizer)
     visualizer.dataset_meta = dataset.metainfo
 
+    dataset_index = list(range(len(dataset)))
+    if args.shuffle:
+        import random
+        random.shuffle(dataset_index)
+
     progress_bar = ProgressBar(len(dataset))
-    for item in dataset:
+    for i in dataset_index[:args.show_num]:
+        item = dataset[i]
         img = item['inputs'].permute(1, 2, 0).numpy()
         data_sample = item['data_samples'].numpy()
         print('\ntext: ', data_sample.text)
         gt_instances = data_sample.gt_instances
         tokens_positive = data_sample.tokens_positive
         for key, value in tokens_positive.items():
-            tokens_positive[key] = data_sample.text[value[0][0]:value[0][1]]
+            if len(value) == 1:
+                tokens_positive[key] = data_sample.text[
+                    value[0][0]:value[0][1]]
+            else:
+                # to visualize the multi-token grounding
+                strs = [data_sample.text[v[0]:v[1]] for v in value]
+                # print('=====', strs)
+                tokens_positive[key] = '/'.join(strs)
 
         gt_labels = gt_instances.labels
         label_names = []

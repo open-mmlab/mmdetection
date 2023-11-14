@@ -1,10 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import copy
-import inspect
-import math
-import warnings
-from typing import List, Optional, Sequence, Tuple, Union
-
 from mmcv.transforms import BaseTransform
 
 from mmdet.registry import TRANSFORMS
@@ -118,13 +112,53 @@ class RandomSamplingNegPos(BaseTransform):
         self.max_tokens = max_tokens
 
     def transform(self, results: dict) -> dict:
+        if 'phrases' in results:
+            return self.vg_aug(results)
+        else:
+            return self.od_aug(results)
+
+    def vg_aug(self, results):
         gt_bboxes = results['gt_bboxes']
         if isinstance(gt_bboxes, BaseBoxes):
             gt_bboxes = gt_bboxes.tensor
         gt_labels = results['gt_bboxes_labels']
-        original_box_num = len(gt_labels)
+        text = results['text'].lower().strip()
+        if not text.endswith('.'):
+            text = text + '. '
+
+        phrases = results['phrases']
+        # TODO: add neg
+        positive_label_list = np.unique(gt_labels).tolist()
+        label_to_positions = {}
+        for label in positive_label_list:
+            if isinstance(phrases[label], list):
+                positions = []
+                for p in phrases[label]:
+                    start_index = text.find(p.lower())
+                    end_index = start_index + len(p.lower())
+                    positions.append([start_index, end_index])
+                label_to_positions[label] = positions
+            else:
+                phrase = phrases[label].lower()
+                start_index = text.find(phrase)
+                end_index = start_index + len(phrase)
+                label_to_positions[label] = [[start_index, end_index]]
+
+        results['gt_bboxes'] = gt_bboxes
+        results['gt_bboxes_labels'] = gt_labels
+
+        results['text'] = text
+        results['tokens_positive'] = label_to_positions
+        return results
+
+    def od_aug(self, results):
+        gt_bboxes = results['gt_bboxes']
+        if isinstance(gt_bboxes, BaseBoxes):
+            gt_bboxes = gt_bboxes.tensor
+        gt_labels = results['gt_bboxes_labels']
         text = results['text']
 
+        original_box_num = len(gt_labels)
         # If the category name is in the format of 'a/b' (in object365),
         # we randomly select one of them.
         for key, value in text.items():
@@ -200,4 +234,5 @@ class RandomSamplingNegPos(BaseTransform):
 
         results['text'] = pheso_caption
         results['tokens_positive'] = label_to_positions
+
         return results

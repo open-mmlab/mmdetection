@@ -40,9 +40,8 @@ class ODVGDataset(BaseDetDataset):
             data_info['img_path'] = img_path
             data_info['height'] = data['height']
             data_info['width'] = data['width']
-            data_info['text'] = self.label_map
-
-            if self.dataset_mode is 'OD':
+            if self.dataset_mode == 'OD':
+                data_info['text'] = self.label_map
                 anno = data['detection']
                 instances = [obj for obj in anno['instances']]
                 bboxes = [obj['bbox'] for obj in instances]
@@ -65,7 +64,34 @@ class ODVGDataset(BaseDetDataset):
                 data_info['instances'] = instances
                 out_data_list.append(data_info)
             else:
-                raise NotImplementedError()
+                anno = data['grounding']
+                data_info['text'] = anno['caption']
+                regions = anno['regions']
+
+                instances = []
+                phrases = {}
+                for i, region in enumerate(regions):
+                    bbox = region['bbox']
+                    phrase = region['phrase']
+                    if not isinstance(bbox[0], list):
+                        bbox = [bbox]
+                    for box in bbox:
+                        instance = {}
+                        x1, y1, x2, y2 = box
+                        inter_w = max(0, min(x2, data['height']) - max(x1, 0))
+                        inter_h = max(0, min(y2, data['height']) - max(y1, 0))
+                        if inter_w * inter_h == 0:
+                            continue
+                        if (x2 - x1) < 1 or (y2 - y1) < 1:
+                            continue
+                        instance['ignore_flag'] = 0
+                        instance['bbox'] = box
+                        instance['bbox_label'] = i
+                        phrases[i] = phrase
+                        instances.append(instance)
+                data_info['instances'] = instances
+                data_info['phrases'] = phrases
+                out_data_list.append(data_info)
 
         del data_list
         return out_data_list
