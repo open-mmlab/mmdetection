@@ -6,11 +6,11 @@
 
 ## Get Started
 
-1. development Developmennt Setup can reger to hits /\To download dataset, you can refer to [reference document](../../docs/zh_cn/user_guides/dataset_prepare.md)
+1. development Developmennt Setup can reger to hits /\\To download dataset, you can refer to [reference document](../../docs/zh_cn/user_guides/dataset_prepare.md)
 
-2. You can use the following data to run the inference. 
+2. You can use the following data to run the inference.
 
-``` shell
+```shell
 cd $MMDETROOT
 
 python tools/test.py configs/odinw35/glip_atss_swin_t_fpn_dataset.py checkpoints/glip_tiny_a_mmdet-b3654169.pth
@@ -94,7 +94,7 @@ Note:
 
 ```
 @misc{li2022elevater,
-      title={ELEVATER: A Benchmark and Toolkit for Evaluating Language-Augmented Visual Models}, 
+      title={ELEVATER: A Benchmark and Toolkit for Evaluating Language-Augmented Visual Models},
       author={Chunyuan Li and Haotian Liu and Liunian Harold Li and Pengchuan Zhang and Jyoti Aneja and Jianwei Yang and Ping Jin and Houdong Hu and Zicheng Liu and Yong Jae Lee and Jianfeng Gao},
       year={2022},
       eprint={2204.08790},
@@ -102,4 +102,3 @@ Note:
       primaryClass={cs.CV}
 }
 ```
-
