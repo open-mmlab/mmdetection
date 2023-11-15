@@ -77,7 +77,7 @@ def goldg2odvg(args):
             key = ' '.join(phrase)
 
             if key not in regions:
-                regions[key] = {'bbox': bbox_xyxy, 'phrase': phrase}
+                regions[key] = {'bbox': bbox_xyxy, 'phrase': phrase, 'tokens_positive': tokens_positive}
             else:
                 old_box = regions[key]['bbox']
                 if isinstance(old_box[0], list):
@@ -101,7 +101,8 @@ def goldg2odvg(args):
             phrase = value['phrase']
             if len(phrase) == 1:
                 phrase = phrase[0]
-            region_list.append({'bbox': value['bbox'], 'phrase': phrase})
+            region_list.append({'bbox': value['bbox'], 'phrase': phrase,
+                                'tokens_positive': value['tokens_positive']})
         out_dict['grounding']['regions'] = region_list
         out_results.append(out_dict)
 

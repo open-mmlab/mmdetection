@@ -136,21 +136,7 @@ class RandomSamplingNegPos(BaseTransform):
         positive_label_list = np.unique(gt_labels).tolist()
         label_to_positions = {}
         for label in positive_label_list:
-            if isinstance(phrases[label], list):
-                positions = []
-                for p in phrases[label]:
-                    start_index = text.find(p.lower())
-                    end_index = start_index + len(p.lower())
-                    positions.append([start_index, end_index])
-                label_to_positions[label] = positions
-            else:
-                phrase = phrases[label].lower()
-                start_index = text.find(phrase)
-                index=find_substring_indices(text, phrase)
-                if len(index) > 1:
-                    print(text, phrase,index)
-                end_index = start_index + len(phrase)
-                label_to_positions[label] = [[start_index, end_index]]
+            label_to_positions[label] = phrases[label]['tokens_positive']
 
         results['gt_bboxes'] = gt_bboxes
         results['gt_bboxes_labels'] = gt_labels
