@@ -92,7 +92,7 @@ Note:
 |   GLIP-T   |    ✔     |             |             |             |            |            |            |            |           |    O365,GoldG,CC3M,SBU     | [config](lvis/glip_atss_swin-t_bc_fpn_dyhead_pretrain_zeroshot_lvis.py) |  [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_mmdet-c24ce662.pth)  |
 |   GLIP-T   |          |    18.1     |    21.2     |    33.1     |    26.7    |    10.8    |    14.7    |    29.0    |   19.6    |    O365,GoldG,CC3M,SBU     | [config](lvis/glip_atss_swin-t_bc_fpn_dyhead_pretrain_zeroshot_lvis.py) |  [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_mmdet-c24ce662.pth)  |
 |   GLIP-L   |    ✔     |    29.2     |    34.9     |    42.1     |    37.9    |            |            |            |           | FourODs,GoldG,CC3M+12M,SBU |  [config](lvis/glip_atss_swin-l_fpn_dyhead_pretrain_zeroshot_lvis.py)   |   [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_l_mmdet-abfe026b.pth)    |
-|   GLIP-L   |          |    27.9     |    33.7     |    39.7     |    36.1    |            |            |            |           | FourODs,GoldG,CC3M+12M,SBU |  [config](lvis/glip_atss_swin-l_fpn_dyhead_pretrain_zeroshot_lvis.py)   |   [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_l_mmdet-abfe026b.pth)    |
+|   GLIP-L   |          |    27.9     |    33.7     |    39.7     |    36.1    |    20.2    |    25.8    |    35.3    |   28.5    | FourODs,GoldG,CC3M+12M,SBU |  [config](lvis/glip_atss_swin-l_fpn_dyhead_pretrain_zeroshot_lvis.py)   |   [model](https://download.openmmlab.com/mmdetection/v3.0/glip/glip_l_mmdet-abfe026b.pth)    |
 
 Note:
 
