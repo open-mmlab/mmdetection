@@ -92,6 +92,11 @@ def generate_senetence_given_labels(positive_label_list, negative_label_list,
 
     return label_to_positions, pheso_caption, label_remap_dict
 
+def find_substring_indices(string, substring):
+    pattern = re.escape(substring)
+    matches = re.finditer(pattern, string)
+    indices = [(match.start(), match.end()) for match in matches]
+    return indices
 
 @TRANSFORMS.register_module()
 class RandomSamplingNegPos(BaseTransform):
@@ -141,6 +146,9 @@ class RandomSamplingNegPos(BaseTransform):
             else:
                 phrase = phrases[label].lower()
                 start_index = text.find(phrase)
+                index=find_substring_indices(text, phrase)
+                if len(index) > 1:
+                    print(text, phrase,index)
                 end_index = start_index + len(phrase)
                 label_to_positions[label] = [[start_index, end_index]]
 

@@ -66,7 +66,10 @@ def goldg2odvg(args):
                 start_index = token[0]
                 end_index = token[1]
                 if pre_end_index + 1 == start_index:
-                    phrase[-1] = phrase[-1] + ' ' + caption[token[0]:token[1]]
+                    if caption[token[0]-1] == ' ':
+                        phrase[-1] = phrase[-1] + ' ' + caption[token[0]:token[1]]
+                    else:
+                        phrase.append(caption[token[0]:token[1]])
                 else:
                     phrase.append(caption[token[0]:token[1]])
                 pre_end_index = end_index
