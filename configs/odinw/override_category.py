@@ -74,6 +74,19 @@ def main():
     mmengine.dump(json_data,
                   _data_root + 'valid/new_annotations_without_background.json')
 
+    CottontailRabbits = [{
+        'id': 1,
+        'name': 'rabbit',
+        'supercategory': 'Cottontail-Rabbit'
+    }]
+
+    _data_root = args.data_root + 'CottontailRabbits/'
+    json_data = mmengine.load(_data_root +
+                              'valid/annotations_without_background.json')
+    json_data['categories'] = CottontailRabbits
+    mmengine.dump(json_data,
+                  _data_root + 'valid/new_annotations_without_background.json')
+
     NorthAmericaMushrooms = [{
         'id': 1,
         'name': 'flat mushroom',
