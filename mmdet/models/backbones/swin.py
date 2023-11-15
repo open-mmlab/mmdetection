@@ -640,6 +640,8 @@ class SwinTransformer(BaseModule):
             layer = build_norm_layer(norm_cfg, self.num_features[i])[1]
             layer_name = f'norm{i}'
             self.add_module(layer_name, layer)
+        
+        self._freeze_stages()
 
     def train(self, mode=True):
         """Convert the model into training mode while keep layers freezed."""
