@@ -92,11 +92,13 @@ def generate_senetence_given_labels(positive_label_list, negative_label_list,
 
     return label_to_positions, pheso_caption, label_remap_dict
 
+
 def find_substring_indices(string, substring):
     pattern = re.escape(substring)
     matches = re.finditer(pattern, string)
     indices = [(match.start(), match.end()) for match in matches]
     return indices
+
 
 @TRANSFORMS.register_module()
 class RandomSamplingNegPos(BaseTransform):

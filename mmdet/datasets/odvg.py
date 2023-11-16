@@ -89,7 +89,10 @@ class ODVGDataset(BaseDetDataset):
                         instance['bbox'] = box
                         instance['bbox_label'] = i
                         # phrase only for vis. tokens_positive is important
-                        phrases[i] = {'phrase': phrase, "tokens_positive": tokens_positive}
+                        phrases[i] = {
+                            'phrase': phrase,
+                            'tokens_positive': tokens_positive
+                        }
                         instances.append(instance)
                 data_info['instances'] = instances
                 data_info['phrases'] = phrases

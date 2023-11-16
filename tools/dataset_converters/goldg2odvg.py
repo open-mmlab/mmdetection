@@ -66,8 +66,9 @@ def goldg2odvg(args):
                 start_index = token[0]
                 end_index = token[1]
                 if pre_end_index + 1 == start_index:
-                    if caption[token[0]-1] == ' ':
-                        phrase[-1] = phrase[-1] + ' ' + caption[token[0]:token[1]]
+                    if caption[token[0] - 1] == ' ':
+                        phrase[
+                            -1] = phrase[-1] + ' ' + caption[token[0]:token[1]]
                     else:
                         phrase.append(caption[token[0]:token[1]])
                 else:
@@ -77,7 +78,11 @@ def goldg2odvg(args):
             key = ' '.join(phrase)
 
             if key not in regions:
-                regions[key] = {'bbox': bbox_xyxy, 'phrase': phrase, 'tokens_positive': tokens_positive}
+                regions[key] = {
+                    'bbox': bbox_xyxy,
+                    'phrase': phrase,
+                    'tokens_positive': tokens_positive
+                }
             else:
                 old_box = regions[key]['bbox']
                 if isinstance(old_box[0], list):
@@ -101,8 +106,11 @@ def goldg2odvg(args):
             phrase = value['phrase']
             if len(phrase) == 1:
                 phrase = phrase[0]
-            region_list.append({'bbox': value['bbox'], 'phrase': phrase,
-                                'tokens_positive': value['tokens_positive']})
+            region_list.append({
+                'bbox': value['bbox'],
+                'phrase': phrase,
+                'tokens_positive': value['tokens_positive']
+            })
         out_dict['grounding']['regions'] = region_list
         out_results.append(out_dict)
 
