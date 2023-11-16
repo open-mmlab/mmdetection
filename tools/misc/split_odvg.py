@@ -17,7 +17,8 @@ def parse_args():
         'out_dir',
         type=str,
         help='The output directory of coco semi-supervised annotations.')
-    parser.add_argument('--label-map-file', '-m', type=str, help='label map file')
+    parser.add_argument(
+        '--label-map-file', '-m', type=str, help='label map file')
     parser.add_argument(
         '--num-img',
         '-n',
@@ -67,10 +68,12 @@ def main():
         writer.write_all(data_list[:num_img])
 
     if args.label_map_file is not None:
-        out_dir = os.path.dirname(os.path.join(args.out_dir, args.label_map_file))
+        out_dir = os.path.dirname(
+            os.path.join(args.out_dir, args.label_map_file))
         mkdir_or_exist(out_dir)
-        shutil.copyfile(os.path.join(args.data_root, args.label_map_file),
-                        os.path.join(args.out_dir, args.label_map_file))
+        shutil.copyfile(
+            os.path.join(args.data_root, args.label_map_file),
+            os.path.join(args.out_dir, args.label_map_file))
 
 
 if __name__ == '__main__':

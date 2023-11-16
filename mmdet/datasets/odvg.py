@@ -62,6 +62,7 @@ class ODVGDataset(BaseDetDataset):
                     instance['bbox_label'] = int(label)
                     instances.append(instance)
                 data_info['instances'] = instances
+                data_info['dataset_mode'] = self.dataset_mode
                 out_data_list.append(data_info)
             else:
                 anno = data['grounding']
@@ -96,6 +97,7 @@ class ODVGDataset(BaseDetDataset):
                         instances.append(instance)
                 data_info['instances'] = instances
                 data_info['phrases'] = phrases
+                data_info['dataset_mode'] = self.dataset_mode
                 out_data_list.append(data_info)
 
         del data_list

@@ -163,7 +163,7 @@ train_pipeline = [
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
                    'scale_factor', 'flip', 'flip_direction', 'text',
-                   'custom_entities', 'tokens_positive'))
+                   'custom_entities', 'tokens_positive', 'dataset_mode'))
 ]
 
 test_pipeline = [

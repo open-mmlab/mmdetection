@@ -5,7 +5,7 @@ from mmdet.registry import TRANSFORMS
 from mmdet.structures.bbox import BaseBoxes
 
 try:
-    from transformers import AutoTokenizer, BertConfig
+    from transformers import AutoTokenizer
     from transformers import BertModel as HFBertModel
 except ImportError:
     AutoTokenizer = None
