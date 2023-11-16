@@ -19,7 +19,7 @@ def parse_args():
         help='The output directory of coco semi-supervised annotations.')
     parser.add_argument(
         '--num-img',
-        default=100,
+        default=200,
         type=int,
         help='num of extract image, -1 means all images')
     parser.add_argument('--seed', default=-1, type=int, help='seed')
