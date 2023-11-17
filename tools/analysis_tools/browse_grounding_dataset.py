@@ -17,6 +17,7 @@ def parse_args():
     parser.add_argument('config', help='train config file path')
     parser.add_argument(
         '--output-dir',
+        '-o',
         default=None,
         type=str,
         help='If there is no display interface, you can save it')
@@ -98,11 +99,12 @@ def main():
         tokens_positive = data_sample.tokens_positive
 
         gt_labels = gt_instances.labels
-        img_path = osp.basename(item['data_samples'].img_path)
+
+        base_name, extension = osp.splitext(item['data_samples'].img_path)
 
         out_file = osp.join(
             args.output_dir,
-            osp.basename(img_path)) if args.output_dir is not None else None
+            base_name+"_"+str(i)+extension) if args.output_dir is not None else None
 
         img = img[..., [2, 1, 0]]  # bgr to rgb
         gt_bboxes = gt_instances.get('bboxes', None)
@@ -167,7 +169,7 @@ def main():
             data_sample.gt_instances = gt_instances
 
             visualizer.add_datasample(
-                osp.basename(img_path),
+                base_name,
                 img,
                 data_sample,
                 draw_pred=False,
@@ -187,7 +189,7 @@ def main():
         if not args.not_show:
             visualizer.show(
                 drawn_img,
-                win_name=osp.basename(img_path),
+                win_name=base_name,
                 wait_time=args.show_interval)
 
         if out_file is not None:
