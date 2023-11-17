@@ -51,7 +51,7 @@ class ODVGDataset(BaseDetDataset):
                 for bbox, label in zip(bboxes, bbox_labels):
                     instance = {}
                     x1, y1, x2, y2 = bbox
-                    inter_w = max(0, min(x2, data['height']) - max(x1, 0))
+                    inter_w = max(0, min(x2, data['width']) - max(x1, 0))
                     inter_h = max(0, min(y2, data['height']) - max(y1, 0))
                     if inter_w * inter_h == 0:
                         continue
@@ -80,7 +80,7 @@ class ODVGDataset(BaseDetDataset):
                     for box in bbox:
                         instance = {}
                         x1, y1, x2, y2 = box
-                        inter_w = max(0, min(x2, data['height']) - max(x1, 0))
+                        inter_w = max(0, min(x2, data['width']) - max(x1, 0))
                         inter_h = max(0, min(y2, data['height']) - max(y1, 0))
                         if inter_w * inter_h == 0:
                             continue
