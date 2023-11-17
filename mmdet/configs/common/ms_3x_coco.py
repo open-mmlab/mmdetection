@@ -48,7 +48,11 @@ backend_args = None
 train_pipeline = [
     dict(type=LoadImageFromFile, backend_args=backend_args),
     dict(type=LoadAnnotations, with_bbox=True),
-    dict(type=RandomResize, scale=[(1333, 640), (1333, 800)], keep_ratio=True),
+    dict(
+        type=RandomResize,
+        scale=[(1333, 640), (1333, 800)],
+        resize_type=Resize,
+        keep_ratio=True),
     dict(type=RandomFlip, prob=0.5),
     dict(type=PackDetInputs)
 ]

@@ -39,6 +39,7 @@ train_pipeline = [
         type=RandomResize,
         scale=image_size,
         ratio_range=(0.1, 2.0),
+        resize_type=Resize,
         keep_ratio=True),
     dict(
         type=RandomCrop,
