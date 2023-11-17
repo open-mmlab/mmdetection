@@ -1,0 +1,451 @@
+Collections:
+  - Name: Faster R-CNN
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - FPN
+        - RPN
+        - ResNet
+        - RoIPool
+    Paper:
+      URL: https://arxiv.org/abs/1506.01497
+      Title: "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks"
+    README: configs/faster_rcnn/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/faster_rcnn.py#L6
+      Version: v2.0.0
+
+Models:
+  - Name: faster-rcnn_r50-caffe-c4_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50-caffe_c4-1x_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 35.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_c4_1x_coco/faster_rcnn_r50_caffe_c4_1x_coco_20220316_150152-3f885b85.pth
+
+  - Name: faster-rcnn_r50-caffe-c4_mstrain_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50-caffe-c4_ms-1x_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 35.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_c4_mstrain_1x_coco/faster_rcnn_r50_caffe_c4_mstrain_1x_coco_20220316_150527-db276fed.pth
+
+  - Name: faster-rcnn_r50-caffe-dc5_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50-caffe-dc5_1x_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 37.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_dc5_1x_coco/faster_rcnn_r50_caffe_dc5_1x_coco_20201030_151909-531f0f43.pth
+
+  - Name: faster-rcnn_r50-caffe_fpn_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50-caffe_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 3.8
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 37.8
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_fpn_1x_coco/faster_rcnn_r50_caffe_fpn_1x_coco_bbox_mAP-0.378_20200504_180032-c5925ee5.pth
+
+  - Name: faster-rcnn_r50_fpn_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 4.0
+      inference time (ms/im):
+        - value: 46.73
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 37.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
+
+  - Name: faster-rcnn_r50_fpn_fp16_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50_fpn_amp-1x_coco.py
+    Metadata:
+      Training Memory (GB): 3.4
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+        - Mixed Precision Training
+      inference time (ms/im):
+        - value: 34.72
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP16
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 37.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fp16/faster_rcnn_r50_fpn_fp16_1x_coco/faster_rcnn_r50_fpn_fp16_1x_coco_20200204-d4dc1471.pth
+
+  - Name: faster-rcnn_r50_fpn_2x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50_fpn_2x_coco.py
+    Metadata:
+      Training Memory (GB): 4.0
+      inference time (ms/im):
+        - value: 46.73
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 38.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_2x_coco/faster_rcnn_r50_fpn_2x_coco_bbox_mAP-0.384_20200504_210434-a5d8aa15.pth
+
+  - Name: faster-rcnn_r101-caffe_fpn_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r101-caffe_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 5.7
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 39.8
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r101_caffe_fpn_1x_coco/faster_rcnn_r101_caffe_fpn_1x_coco_bbox_mAP-0.398_20200504_180057-b269e9dd.pth
+
+  - Name: faster-rcnn_r101_fpn_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r101_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 6.0
+      inference time (ms/im):
+        - value: 64.1
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 39.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r101_fpn_1x_coco/faster_rcnn_r101_fpn_1x_coco_20200130-f513f705.pth
+
+  - Name: faster-rcnn_r101_fpn_2x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r101_fpn_2x_coco.py
+    Metadata:
+      Training Memory (GB): 6.0
+      inference time (ms/im):
+        - value: 64.1
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 39.8
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r101_fpn_2x_coco/faster_rcnn_r101_fpn_2x_coco_bbox_mAP-0.398_20200504_210455-1d2dac9c.pth
+
+  - Name: faster-rcnn_x101-32x4d_fpn_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_x101-32x4d_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 7.2
+      inference time (ms/im):
+        - value: 72.46
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_x101_32x4d_fpn_1x_coco/faster_rcnn_x101_32x4d_fpn_1x_coco_20200203-cff10310.pth
+
+  - Name: faster-rcnn_x101-32x4d_fpn_2x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_x101-32x4d_fpn_2x_coco.py
+    Metadata:
+      Training Memory (GB): 7.2
+      inference time (ms/im):
+        - value: 72.46
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_x101_32x4d_fpn_2x_coco/faster_rcnn_x101_32x4d_fpn_2x_coco_bbox_mAP-0.412_20200506_041400-64a12c0b.pth
+
+  - Name: faster-rcnn_x101-64x4d_fpn_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_x101-64x4d_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 10.3
+      inference time (ms/im):
+        - value: 106.38
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.1
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_x101_64x4d_fpn_1x_coco/faster_rcnn_x101_64x4d_fpn_1x_coco_20200204-833ee192.pth
+
+  - Name: faster-rcnn_x101-64x4d_fpn_2x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_x101-64x4d_fpn_2x_coco.py
+    Metadata:
+      Training Memory (GB): 10.3
+      inference time (ms/im):
+        - value: 106.38
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_x101_64x4d_fpn_2x_coco/faster_rcnn_x101_64x4d_fpn_2x_coco_20200512_161033-5961fa95.pth
+
+  - Name: faster-rcnn_r50_fpn_iou_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50_fpn_iou_1x_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 37.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_iou_1x_coco/faster_rcnn_r50_fpn_iou_1x_coco_20200506_095954-938e81f0.pth
+
+  - Name: faster-rcnn_r50_fpn_giou_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50_fpn_giou_1x_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 37.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_giou_1x_coco-0eada910.pth
+
+  - Name: faster-rcnn_r50_fpn_bounded_iou_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50_fpn_bounded-iou_1x_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 37.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_bounded_iou_1x_coco-98ad993b.pth
+
+  - Name: faster-rcnn_r50-caffe-dc5_mstrain_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50-caffe-dc5_ms-1x_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 37.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_dc5_mstrain_1x_coco/faster_rcnn_r50_caffe_dc5_mstrain_1x_coco_20201028_233851-b33d21b9.pth
+
+  - Name: faster-rcnn_r50-caffe-dc5_mstrain_3x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50-caffe-dc5_ms-3x_coco.py
+    Metadata:
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 38.7
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_dc5_mstrain_3x_coco/faster_rcnn_r50_caffe_dc5_mstrain_3x_coco_20201028_002107-34a53b2c.pth
+
+  - Name: faster-rcnn_r50-caffe_fpn_ms-2x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50-caffe_fpn_ms-2x_coco.py
+    Metadata:
+      Training Memory (GB): 4.3
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 39.7
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_2x_coco/faster_rcnn_r50_caffe_fpn_mstrain_2x_coco_bbox_mAP-0.397_20200504_231813-10b2de58.pth
+
+  - Name: faster-rcnn_r50-caffe_fpn_ms-3x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50-caffe_fpn_ms-3x_coco.py
+    Metadata:
+      Training Memory (GB): 3.7
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 39.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_3x_coco/faster_rcnn_r50_caffe_fpn_mstrain_3x_coco_20210526_095054-1f77628b.pth
+
+  - Name: faster-rcnn_r50_fpn_mstrain_3x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50_fpn_ms-3x_coco.py
+    Metadata:
+      Training Memory (GB): 3.9
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.3
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_mstrain_3x_coco/faster_rcnn_r50_fpn_mstrain_3x_coco_20210524_110822-e10bd31c.pth
+
+  - Name: faster-rcnn_r101-caffe_fpn_ms-3x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r101-caffe_fpn_ms-3x_coco.py
+    Metadata:
+      Training Memory (GB): 5.6
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r101_caffe_fpn_mstrain_3x_coco/faster_rcnn_r101_caffe_fpn_mstrain_3x_coco_20210526_095742-a7ae426d.pth
+
+  - Name: faster-rcnn_r101_fpn_ms-3x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r101_fpn_ms-3x_coco.py
+    Metadata:
+      Training Memory (GB): 5.8
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.8
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r101_fpn_mstrain_3x_coco/faster_rcnn_r101_fpn_mstrain_3x_coco_20210524_110822-4d4d2ca8.pth
+
+  - Name: faster-rcnn_x101-32x4d_fpn_ms-3x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_x101-32x4d_fpn_ms-3x_coco.py
+    Metadata:
+      Training Memory (GB): 7.0
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_x101_32x4d_fpn_mstrain_3x_coco/faster_rcnn_x101_32x4d_fpn_mstrain_3x_coco_20210524_124151-16b9b260.pth
+
+  - Name: faster-rcnn_x101-32x8d_fpn_ms-3x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_x101-32x8d_fpn_ms-3x_coco.py
+    Metadata:
+      Training Memory (GB): 10.1
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_x101_32x8d_fpn_mstrain_3x_coco/faster_rcnn_x101_32x8d_fpn_mstrain_3x_coco_20210604_182954-002e082a.pth
+
+  - Name: faster-rcnn_x101-64x4d_fpn_ms-3x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_x101-64x4d_fpn_ms-3x_coco.py
+    Metadata:
+      Training Memory (GB): 10.0
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 43.1
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_x101_64x4d_fpn_mstrain_3x_coco/faster_rcnn_x101_64x4d_fpn_mstrain_3x_coco_20210524_124528-26c63de6.pth
+
+  - Name: faster-rcnn_r50_fpn_tnr-pretrain_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster-rcnn_r50-tnr-pre_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 4.0
+      inference time (ms/im):
+        - value: 46.73
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco_20220320_085147-efedfda4.pth
