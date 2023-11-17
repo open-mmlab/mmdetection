@@ -96,8 +96,6 @@ class GroundingDINO(DINO):
                     [[len(caption_string),
                       len(caption_string) + len(word)]])
                 caption_string += word
-
-            # if idx != len(original_caption) - 1:
             caption_string += self._special_tokens
         return caption_string, tokens_positive
 
@@ -109,8 +107,7 @@ class GroundingDINO(DINO):
                 [[len(caption_string),
                   len(caption_string) + len(word)]])
             caption_string += word
-            if idx != len(original_caption) - 1:
-                caption_string += self._special_tokens
+            caption_string += self._special_tokens
         return caption_string, tokens_positive
 
     def get_tokens_and_prompts(
