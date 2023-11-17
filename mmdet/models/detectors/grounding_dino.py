@@ -1,12 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import re
 import warnings
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple, Union, Optional
 
 import torch
 import torch.nn as nn
 from torch import Tensor
 
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType
 from mmdet.structures import OptSampleList, SampleList
 from ..layers import SinePositionalEncoding
 from ..layers.transformer.grounding_dino_layers import (
@@ -15,6 +17,11 @@ from .dino import DINO
 from .glip import (create_positive_map, create_positive_map_label_to_token,
                    run_ner)
 
+def clean_label_name(name: str) -> str:
+    name = re.sub(r'\(.*\)', '', name)
+    name = re.sub(r'_', ' ', name)
+    name = re.sub(r'  ', ' ', name)
+    return name
 
 @MODELS.register_module()
 class GroundingDINO(DINO):
@@ -63,11 +70,53 @@ class GroundingDINO(DINO):
         super().init_weights()
         nn.init.constant_(self.text_feat_map.bias.data, 0)
         nn.init.xavier_uniform_(self.text_feat_map.weight.data)
+        
+    def to_enhance_text_prompts(self, original_caption, enhanced_text_prompts):
+        caption_string = ''
+        tokens_positive = []
+        for idx, word in enumerate(original_caption):
+            if word in enhanced_text_prompts:
+                enhanced_text_dict = enhanced_text_prompts[word]
+                if 'prefix' in enhanced_text_dict:
+                    caption_string += enhanced_text_dict['prefix']
+                start_i = len(caption_string)
+                if 'name' in enhanced_text_dict:
+                    caption_string += enhanced_text_dict['name']
+                else:
+                    caption_string += word
+                end_i = len(caption_string)
+                tokens_positive.append([[start_i, end_i]])
+
+                if 'suffix' in enhanced_text_dict:
+                    caption_string += enhanced_text_dict['suffix']
+            else:
+                tokens_positive.append(
+                    [[len(caption_string),
+                      len(caption_string) + len(word)]])
+                caption_string += word
+
+            # if idx != len(original_caption) - 1:
+            caption_string += self._special_tokens
+        return caption_string, tokens_positive
+
+    def to_plain_text_prompts(self, original_caption):
+        caption_string = ''
+        tokens_positive = []
+        for idx, word in enumerate(original_caption):
+            tokens_positive.append(
+                [[len(caption_string),
+                  len(caption_string) + len(word)]])
+            caption_string += word
+            if idx != len(original_caption) - 1:
+                caption_string += self._special_tokens
+        return caption_string, tokens_positive
 
     def get_tokens_and_prompts(
             self,
             original_caption: Union[str, list, tuple],
-            custom_entities: bool = False) -> Tuple[dict, str, list]:
+            custom_entities: bool = False,
+            enhanced_text_prompts: Optional[ConfigType] = None
+    ) -> Tuple[dict, str, list]:
         """Get the tokens positive and prompts for the caption."""
         if isinstance(original_caption, (list, tuple)) or custom_entities:
             if custom_entities and isinstance(original_caption, str):
@@ -75,15 +124,16 @@ class GroundingDINO(DINO):
                 original_caption = original_caption.split(self._special_tokens)
                 original_caption = list(
                     filter(lambda x: len(x) > 0, original_caption))
+            
+            original_caption = [clean_label_name(i) for i in original_caption]
 
-            caption_string = ''
-            tokens_positive = []
-            for idx, word in enumerate(original_caption):
-                tokens_positive.append(
-                    [[len(caption_string),
-                      len(caption_string) + len(word)]])
-                caption_string += word
-                caption_string += self._special_tokens
+            if custom_entities and enhanced_text_prompts is not None:
+                caption_string, tokens_positive = self.to_enhance_text_prompts(
+                    original_caption, enhanced_text_prompts)
+            else:
+                caption_string, tokens_positive = self.to_plain_text_prompts(
+                    original_caption)
+
             # NOTE: Tokenizer in Grounding DINO is different from
             # that in GLIP. The tokenizer in GLIP will pad the
             # caption_string to max_length, while the tokenizer
@@ -125,7 +175,9 @@ class GroundingDINO(DINO):
     def get_tokens_positive_and_prompts(
             self,
             original_caption: Union[str, list, tuple],
-            custom_entities: bool = False) -> Tuple[dict, str, Tensor, list]:
+            custom_entities: bool = False,
+            enhanced_text_prompt: Optional[ConfigType] = None
+    ) -> Tuple[dict, str, Tensor, list]:
         """Get the tokens positive and prompts for the caption.
 
         Args:
@@ -141,7 +193,7 @@ class GroundingDINO(DINO):
         """
         tokenized, caption_string, tokens_positive, entities = \
             self.get_tokens_and_prompts(
-                original_caption, custom_entities)
+                original_caption, custom_entities, enhanced_text_prompt)
         positive_map_label_to_token, positive_map = self.get_positive_map(
             tokenized, tokens_positive)
         return positive_map_label_to_token, caption_string, \
@@ -326,9 +378,15 @@ class GroundingDINO(DINO):
         return losses
 
     def predict(self, batch_inputs, batch_data_samples, rescale: bool = True):
-        text_prompts = [
-            data_samples.text for data_samples in batch_data_samples
-        ]
+        text_prompts = []
+        enhanced_text_prompts = []
+        for data_samples in batch_data_samples:
+            text_prompts.append(data_samples.text)
+            if 'caption_prompt' in data_samples:
+                enhanced_text_prompts.append(data_samples.caption_prompt)
+            else:
+                enhanced_text_prompts.append(None)
+
         if 'custom_entities' in batch_data_samples[0]:
             # Assuming that the `custom_entities` flag
             # inside a batch is always the same. For single image inference
@@ -340,13 +398,15 @@ class GroundingDINO(DINO):
             # so there is no need to calculate them multiple times.
             _positive_maps_and_prompts = [
                 self.get_tokens_positive_and_prompts(text_prompts[0],
-                                                     custom_entities)
+                                                     custom_entities,
+                                                     enhanced_text_prompts[0])
             ] * len(batch_inputs)
         else:
             _positive_maps_and_prompts = [
                 self.get_tokens_positive_and_prompts(text_prompt,
-                                                     custom_entities)
-                for text_prompt in text_prompts
+                                                     custom_entities,
+                                                     enhanced_text_prompt)
+                for text_prompt, enhanced_text_prompt in zip(text_prompts, enhanced_text_prompts)
             ]
         token_positive_maps, text_prompts, _, entities = zip(
             *_positive_maps_and_prompts)
