@@ -217,11 +217,7 @@ val_evaluator_DroneControl = dict(
 class_name = ('hand', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'EgoHands/generic/'
-caption_prompt = {
-    'hand': {
-        'suffix': ' of a person'
-    }
-}
+caption_prompt = {'hand': {'suffix': ' of a person'}}
 dataset_EgoHands_generic = dict(
     type=dataset_type,
     metainfo=metainfo,
@@ -230,7 +226,7 @@ dataset_EgoHands_generic = dict(
     data_prefix=dict(img='valid/'),
     pipeline=base_test_pipeline,
     # NOTE w. prompt 0.548; wo. prompt 0.764
-    # caption_prompt=caption_prompt, 
+    # caption_prompt=caption_prompt,
     test_mode=True,
     return_classes=True)
 val_evaluator_EgoHands_generic = dict(
@@ -439,7 +435,7 @@ dataset_Packages = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=base_test_pipeline,
-    caption_prompt=caption_prompt, # NOTE w. prompt 0.728; wo. prompt 0.670
+    caption_prompt=caption_prompt,  # NOTE w. prompt 0.728; wo. prompt 0.670
     test_mode=True,
     return_classes=True)
 val_evaluator_Packages = dict(

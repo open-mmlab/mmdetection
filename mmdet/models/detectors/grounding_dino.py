@@ -1,15 +1,15 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import re
 import warnings
-from typing import Dict, Tuple, Union, Optional
+from typing import Dict, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
 from torch import Tensor
 
 from mmdet.registry import MODELS
-from mmdet.utils import ConfigType
 from mmdet.structures import OptSampleList, SampleList
+from mmdet.utils import ConfigType
 from ..layers import SinePositionalEncoding
 from ..layers.transformer.grounding_dino_layers import (
     GroundingDinoTransformerDecoder, GroundingDinoTransformerEncoder)
@@ -17,11 +17,13 @@ from .dino import DINO
 from .glip import (create_positive_map, create_positive_map_label_to_token,
                    run_ner)
 
+
 def clean_label_name(name: str) -> str:
     name = re.sub(r'\(.*\)', '', name)
     name = re.sub(r'_', ' ', name)
     name = re.sub(r'  ', ' ', name)
     return name
+
 
 @MODELS.register_module()
 class GroundingDINO(DINO):
@@ -70,7 +72,7 @@ class GroundingDINO(DINO):
         super().init_weights()
         nn.init.constant_(self.text_feat_map.bias.data, 0)
         nn.init.xavier_uniform_(self.text_feat_map.weight.data)
-        
+
     def to_enhance_text_prompts(self, original_caption, enhanced_text_prompts):
         caption_string = ''
         tokens_positive = []
@@ -112,10 +114,10 @@ class GroundingDINO(DINO):
         return caption_string, tokens_positive
 
     def get_tokens_and_prompts(
-            self,
-            original_caption: Union[str, list, tuple],
-            custom_entities: bool = False,
-            enhanced_text_prompts: Optional[ConfigType] = None
+        self,
+        original_caption: Union[str, list, tuple],
+        custom_entities: bool = False,
+        enhanced_text_prompts: Optional[ConfigType] = None
     ) -> Tuple[dict, str, list]:
         """Get the tokens positive and prompts for the caption."""
         if isinstance(original_caption, (list, tuple)) or custom_entities:
@@ -124,7 +126,7 @@ class GroundingDINO(DINO):
                 original_caption = original_caption.split(self._special_tokens)
                 original_caption = list(
                     filter(lambda x: len(x) > 0, original_caption))
-            
+
             original_caption = [clean_label_name(i) for i in original_caption]
 
             if custom_entities and enhanced_text_prompts is not None:
@@ -173,10 +175,10 @@ class GroundingDINO(DINO):
         return positive_map_label_to_token, positive_map
 
     def get_tokens_positive_and_prompts(
-            self,
-            original_caption: Union[str, list, tuple],
-            custom_entities: bool = False,
-            enhanced_text_prompt: Optional[ConfigType] = None
+        self,
+        original_caption: Union[str, list, tuple],
+        custom_entities: bool = False,
+        enhanced_text_prompt: Optional[ConfigType] = None
     ) -> Tuple[dict, str, Tensor, list]:
         """Get the tokens positive and prompts for the caption.
 
@@ -397,16 +399,16 @@ class GroundingDINO(DINO):
             # All the text prompts are the same,
             # so there is no need to calculate them multiple times.
             _positive_maps_and_prompts = [
-                self.get_tokens_positive_and_prompts(text_prompts[0],
-                                                     custom_entities,
-                                                     enhanced_text_prompts[0])
+                self.get_tokens_positive_and_prompts(
+                    text_prompts[0], custom_entities, enhanced_text_prompts[0])
             ] * len(batch_inputs)
         else:
             _positive_maps_and_prompts = [
                 self.get_tokens_positive_and_prompts(text_prompt,
                                                      custom_entities,
                                                      enhanced_text_prompt)
-                for text_prompt, enhanced_text_prompt in zip(text_prompts, enhanced_text_prompts)
+                for text_prompt, enhanced_text_prompt in zip(
+                    text_prompts, enhanced_text_prompts)
             ]
         token_positive_maps, text_prompts, _, entities = zip(
             *_positive_maps_and_prompts)
