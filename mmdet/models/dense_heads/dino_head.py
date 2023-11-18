@@ -459,8 +459,8 @@ class DINOHead(DeformableDETRHead):
               normalized coordinate format (cx, cy, w, h) and has shape
               (num_decoder_layers, bs, num_denoising_queries, 4).
         """
-        num_denoising_queries = dn_meta['num_denoising_queries']
         if dn_meta is not None:
+            num_denoising_queries = dn_meta['num_denoising_queries']
             all_layers_denoising_cls_scores = \
                 all_layers_cls_scores[:, :, : num_denoising_queries, :]
             all_layers_denoising_bbox_preds = \
