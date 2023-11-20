@@ -6,11 +6,11 @@
 
 ## Get Started
 
-1. development Developmennt Setup can reger to hits /\To download dataset, you can refer to [reference document](../../docs/zh_cn/user_guides/dataset_prepare.md)
+1. To download dataset, you can refer to [reference document](../../docs/zh_cn/user_guides/dataset_prepare.md)
 
-2. You can use the following data to run the inference. 
+2. You can use the following data to run the inference.
 
-``` shell
+```shell
 cd $MMDETROOT
 
 python tools/test.py configs/odinw35/glip_atss_swin_t_fpn_dataset.py checkpoints/glip_tiny_a_mmdet-b3654169.pth
@@ -34,10 +34,10 @@ Learning visual representations from natural language supervision has recently s
 | pistols               | 0.339     | 0.339     | 0.502     | 0.501     | 0.503     | 0.504     | 0.726           | 0.771           |
 | pothole               | 0.007     | 0.007     | 0.030     | 0.030     | 0.058     | 0.058     | 0.215           | 0.478           |
 | Raccoon               | 0.075     | 0.074     | 0.285     | 0.288     | 0.241     | 0.244     | 0.549           | 0.541           |
-| ShellfishOpenImages   | 0.372     | 0.253     | 0.337     | 0.338     | 0.300     | 0.302     | 0.393           | 0.650           |
+| ShellfishOpenImages   | 0.253     | 0.253     | 0.337     | 0.338     | 0.300     | 0.302     | 0.393           | 0.650           |
 | thermalDogsAndPeople  | 0.372     | 0.372     | 0.475     | 0.475     | 0.510     | 0.510     | 0.657           | 0.633           |
 | VehiclesOpenImages    | 0.574     | 0.566     | 0.562     | 0.547     | 0.549     | 0.534     | 0.613           | 0.647           |
-| Average               | **0.334** | **0.324** | **0.320** | **0.318** | **0.392** | **0.392** | **0.514**       | **0.621**       |
+| Average               | **0.325** | **0.324** | **0.320** | **0.318** | **0.392** | **0.392** | **0.514**       | **0.621**       |
 
 Note:
 
@@ -96,7 +96,7 @@ Note:
 
 ```
 @misc{li2022elevater,
-      title={ELEVATER: A Benchmark and Toolkit for Evaluating Language-Augmented Visual Models}, 
+      title={ELEVATER: A Benchmark and Toolkit for Evaluating Language-Augmented Visual Models},
       author={Chunyuan Li and Haotian Liu and Liunian Harold Li and Pengchuan Zhang and Jyoti Aneja and Jianwei Yang and Ping Jin and Houdong Hu and Zicheng Liu and Yong Jae Lee and Jianfeng Gao},
       year={2022},
       eprint={2204.08790},
@@ -104,4 +104,3 @@ Note:
       primaryClass={cs.CV}
 }
 ```
-
