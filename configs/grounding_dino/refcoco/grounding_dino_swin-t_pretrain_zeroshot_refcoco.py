@@ -2,7 +2,7 @@ _base_ = '../grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py'
 
 model = dict(test_cfg=dict(max_per_img=15))
 
-data_root = '/home/PJLAB/huanghaian/dataset/coco2014/'
+data_root = 'data/coco/'
 
 test_pipeline = [
     dict(
