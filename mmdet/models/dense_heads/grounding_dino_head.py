@@ -417,14 +417,21 @@ class GroundingDINOHead(DINOHead):
         max_per_img = self.test_cfg.get('max_per_img', len(cls_score))
         img_shape = img_meta['img_shape']
 
-        cls_score = convert_grounding_to_cls_scores(
-            logits=cls_score.sigmoid()[None],
-            positive_maps=[token_positive_maps])[0]
-        scores, indexes = cls_score.view(-1).topk(max_per_img)
-        num_classes = cls_score.shape[-1]
-        det_labels = indexes % num_classes
-        bbox_index = indexes // num_classes
-        bbox_pred = bbox_pred[bbox_index]
+        if token_positive_maps is not None:
+            cls_score = convert_grounding_to_cls_scores(
+                logits=cls_score.sigmoid()[None],
+                positive_maps=[token_positive_maps])[0]
+            scores, indexes = cls_score.view(-1).topk(max_per_img)
+            num_classes = cls_score.shape[-1]
+            det_labels = indexes % num_classes
+            bbox_index = indexes // num_classes
+            bbox_pred = bbox_pred[bbox_index]
+        else:
+            cls_score = cls_score.sigmoid()
+            scores, _ = cls_score.max(-1)
+            scores, indexes = scores.topk(max_per_img)
+            bbox_pred = bbox_pred[indexes]
+            det_labels = scores.new_zeros(scores.shape, dtype=torch.long)
 
         det_bboxes = bbox_cxcywh_to_xyxy(bbox_pred)
         det_bboxes[:, 0::2] = det_bboxes[:, 0::2] * img_shape[1]
@@ -541,13 +548,13 @@ class GroundingDINOHead(DINOHead):
 
         labels = torch.masked_select(labels, text_mask)
         label_weights = label_weights[...,
-                                      None].repeat(1, 1, text_mask.size(-1))
+        None].repeat(1, 1, text_mask.size(-1))
         label_weights = torch.masked_select(label_weights, text_mask)
 
         # classification loss
         # construct weighted avg_factor to match with the official DETR repo
         cls_avg_factor = num_total_pos * 1.0 + \
-            num_total_neg * self.bg_cls_weight
+                         num_total_neg * self.bg_cls_weight
         if self.sync_cls_avg_factor:
             cls_avg_factor = reduce_mean(
                 cls_scores.new_tensor([cls_avg_factor]))
@@ -571,7 +578,7 @@ class GroundingDINOHead(DINOHead):
             img_h, img_w, = img_meta['img_shape']
             factor = bbox_pred.new_tensor([img_w, img_h, img_w,
                                            img_h]).unsqueeze(0).repeat(
-                                               bbox_pred.size(0), 1)
+                bbox_pred.size(0), 1)
             factors.append(factor)
         factors = torch.cat(factors, 0)
 
@@ -638,7 +645,7 @@ class GroundingDINOHead(DINOHead):
         cls_scores = torch.masked_select(dn_cls_scores, text_mask).contiguous()
         labels = torch.masked_select(labels, text_mask)
         label_weights = label_weights[...,
-                                      None].repeat(1, 1, text_mask.size(-1))
+        None].repeat(1, 1, text_mask.size(-1))
         label_weights = torch.masked_select(label_weights, text_mask)
         # =======================
 
@@ -675,7 +682,7 @@ class GroundingDINOHead(DINOHead):
             img_h, img_w = img_meta['img_shape']
             factor = bbox_pred.new_tensor([img_w, img_h, img_w,
                                            img_h]).unsqueeze(0).repeat(
-                                               bbox_pred.size(0), 1)
+                bbox_pred.size(0), 1)
             factors.append(factor)
         factors = torch.cat(factors)
 
@@ -697,7 +704,7 @@ class GroundingDINOHead(DINOHead):
 
     def _get_dn_targets_single(self, gt_instances: InstanceData,
                                img_meta: dict, dn_meta: Dict[str,
-                                                             int]) -> tuple:
+            int]) -> tuple:
         """Get targets in denoising part for one image.
 
         Args:

@@ -59,7 +59,7 @@ python demo/image_demo.py \
 <img src="https://github.com/open-mmlab/mmdetection/assets/42299757/3a3bd6f1-e2ed-43d4-aa22-0bb07ee6f20b"/>
 </div>
 
-## Results and Models
+## COCO Results and Models
 
 |       Model        | Backbone |   Style   |  COCO mAP  | Official COCO mAP |                  Pre-Train Data                  |                             Config                             |                                                                                                                                                                                                                                         Download                                                                                                                                                                                                                                          |
 | :----------------: | :------: | :-------: | :--------: | :---------------: | :----------------------------------------------: | :------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
@@ -74,6 +74,20 @@ Note:
 1. The weights corresponding to the zero-shot model are adopted from the official weights and converted using the [script](../../tools/model_converters/groundingdino_to_mmdet.py). We have not retrained the model for the time being.
 2. Finetune refers to fine-tuning on the COCO 2017 dataset. The R50 model is trained using 8 NVIDIA GeForce 3090 GPUs, while the remaining models are trained using 16 NVIDIA GeForce 3090 GPUs. The GPU memory usage is approximately 8.5GB.
 3. Our performance is higher than the official model due to two reasons: we modified the initialization strategy and introduced a log scaler.
+
+## LVIS Results
+
+|       Model       | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP | Val1.0 APr | Val1.0 APc | Val1.0 APf | Val1.0 AP |       Pre-Train Data       |                                 Config                                  |                                           Download                                           |
+|:-----------------:|:-----------:|:-----------:|:-----------:|:----------:| :--------: | :--------: | :--------: | :-------: | :------------------------: | :---------------------------------------------------------------------: | :------------------------------------------------------------------------------------------: |
+| Grounding DINO-T  |    18.8     |    24.2     |    34.7     |    28.8    |            |            |            |           |            O365,GoldG,Cap4M            | [config](lvis/grounding_dino_swin-t_pretrain_zeroshot_mini-lvis.py)  | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth) |
+| Grounding DINO-B  |    27.9     |    33.4     |    37.2     |    34.7    |            |            |            |           |            COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO            | [config](lvis/grounding_dino_swin-b_pretrain_zeroshot_mini-lvis.py)  | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swinb_cogcoor_mmdet-55949c9c.pth) |
+
+
+Note:
+
+1. The above are zero-shot evaluation results.
+2. The evaluation metric we used is LVIS FixAP. For specific details, please refer to [Evaluating Large-Vocabulary Object Detectors: The Devil is in the Details](https://arxiv.org/pdf/2102.01066.pdf).
+
 
 ## Custom Dataset
 

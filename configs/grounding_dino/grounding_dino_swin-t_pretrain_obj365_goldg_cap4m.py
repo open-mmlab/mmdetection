@@ -119,7 +119,7 @@ test_pipeline = [
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor', 'text', 'custom_entities'))
+                   'scale_factor', 'text', 'custom_entities', 'tokens_positive'))
 ]
 
 val_dataloader = dict(

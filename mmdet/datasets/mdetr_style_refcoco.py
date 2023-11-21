@@ -35,6 +35,7 @@ class MDETRStyleRefCocoDataset(BaseDetDataset):
 
             data_info['text'] = raw_img_info['caption']
             data_info['custom_entities'] = False
+            data_info['tokens_positive'] = -1
 
             instances = []
             for i, ann in enumerate(raw_ann_info):

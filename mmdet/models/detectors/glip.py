@@ -79,6 +79,7 @@ def run_ner(caption: str) -> Tuple[list, list]:
     noun_phrases = find_noun_phrases(caption)
     noun_phrases = [remove_punctuation(phrase) for phrase in noun_phrases]
     noun_phrases = [phrase for phrase in noun_phrases if phrase != '']
+    print('noun_phrases:', noun_phrases)
     relevant_phrases = noun_phrases
     labels = noun_phrases
 

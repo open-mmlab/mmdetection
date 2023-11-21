@@ -187,10 +187,11 @@ class GroundingDINO(DINO):
         return positive_map_label_to_token, positive_map
 
     def get_tokens_positive_and_prompts(
-        self,
-        original_caption: Union[str, list, tuple],
-        custom_entities: bool = False,
-        enhanced_text_prompt: Optional[ConfigType] = None
+            self,
+            original_caption: Union[str, list, tuple],
+            custom_entities: bool = False,
+            enhanced_text_prompt: Optional[ConfigType] = None,
+            tokens_positive: Optional[list] = None,
     ) -> Tuple[dict, str, Tensor, list]:
         """Get the tokens positive and prompts for the caption.
 
@@ -205,6 +206,14 @@ class GroundingDINO(DINO):
             id, which is numbered from 1, to its positive token id.
             The str represents the prompts.
         """
+        if tokens_positive is not None:
+            if tokens_positive == -1:
+                if not original_caption.endswith('.'):
+                    original_caption = original_caption + self._special_tokens
+                return None, original_caption, None, original_caption
+            else:
+                pass
+
         chunked_size = self.test_cfg.get('chunked_size', -1)
         if not self.training and chunked_size > 0:
             assert isinstance(original_caption,
@@ -469,12 +478,14 @@ class GroundingDINO(DINO):
     def predict(self, batch_inputs, batch_data_samples, rescale: bool = True):
         text_prompts = []
         enhanced_text_prompts = []
+        tokens_positives = []
         for data_samples in batch_data_samples:
             text_prompts.append(data_samples.text)
             if 'caption_prompt' in data_samples:
                 enhanced_text_prompts.append(data_samples.caption_prompt)
             else:
                 enhanced_text_prompts.append(None)
+            tokens_positives.append(data_samples.get('tokens_positive', None))
 
         if 'custom_entities' in batch_data_samples[0]:
             # Assuming that the `custom_entities` flag
@@ -486,16 +497,18 @@ class GroundingDINO(DINO):
             # All the text prompts are the same,
             # so there is no need to calculate them multiple times.
             _positive_maps_and_prompts = [
-                self.get_tokens_positive_and_prompts(
-                    text_prompts[0], custom_entities, enhanced_text_prompts[0])
-            ] * len(batch_inputs)
+                                             self.get_tokens_positive_and_prompts(
+                                                 text_prompts[0], custom_entities, enhanced_text_prompts[0],
+                                                 tokens_positives[0])
+                                         ] * len(batch_inputs)
         else:
             _positive_maps_and_prompts = [
                 self.get_tokens_positive_and_prompts(text_prompt,
                                                      custom_entities,
-                                                     enhanced_text_prompt)
-                for text_prompt, enhanced_text_prompt in zip(
-                    text_prompts, enhanced_text_prompts)
+                                                     enhanced_text_prompt,
+                                                     tokens_positive)
+                for text_prompt, enhanced_text_prompt, tokens_positive in zip(
+                    text_prompts, enhanced_text_prompts, tokens_positives)
             ]
         token_positive_maps, text_prompts, _, entities = zip(
             *_positive_maps_and_prompts)
@@ -541,7 +554,12 @@ class GroundingDINO(DINO):
             if self.text_feat_map is not None:
                 text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
 
+            is_rec_tasks = []
             for i, data_samples in enumerate(batch_data_samples):
+                if token_positive_maps[i] is not None:
+                    is_rec_tasks.append(False)
+                else:
+                    is_rec_tasks.append(True)
                 data_samples.token_positive_map = token_positive_maps[i]
 
             head_inputs_dict = self.forward_transformer(visual_feats, text_dict,
@@ -551,11 +569,14 @@ class GroundingDINO(DINO):
                 rescale=rescale,
                 batch_data_samples=batch_data_samples)
 
-        for data_sample, pred_instances, entity in zip(batch_data_samples,
-                                                       results_list, entities):
+        for data_sample, pred_instances, entity, is_rec_task in zip(batch_data_samples,
+                                                                    results_list, entities, is_rec_tasks):
             if len(pred_instances) > 0:
                 label_names = []
                 for labels in pred_instances.labels:
+                    if is_rec_task:
+                        label_names.append(entity)
+                        continue
                     if labels >= len(entity):
                         warnings.warn(
                             'The unexpected output indicates an issue with '

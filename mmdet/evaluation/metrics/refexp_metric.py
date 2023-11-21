@@ -48,9 +48,9 @@ class RefExpMetric(BaseMetric):
         logger: MMLogger = MMLogger.get_current_instance()
 
         dataset2score = {
-            "refcoco": {k: 0.0 for k in self.k},
-            "refcoco+": {k: 0.0 for k in self.k},
-            "refcocog": {k: 0.0 for k in self.k},
+            "refcoco": {k: 0.0 for k in self.topk},
+            "refcoco+": {k: 0.0 for k in self.topk},
+            "refcocog": {k: 0.0 for k in self.topk},
         }
         dataset2count = {"refcoco": 0.0, "refcoco+": 0.0, "refcocog": 0.0}
 
@@ -62,11 +62,6 @@ class RefExpMetric(BaseMetric):
             img_info = self.coco.loadImgs(img_id)[0]
             target = self.coco.loadAnns(ann_ids[0])
 
-            sorted_scores_boxes = sorted(
-                zip(result["scores"].tolist(), result["boxes"].tolist()), reverse=True
-            )
-            sorted_scores, sorted_boxes = zip(*sorted_scores_boxes)
-            sorted_boxes = torch.cat([torch.as_tensor(x).view(1, 4) for x in sorted_boxes])
             target_bbox = target[0]["bbox"]
             converted_bbox = [
                 target_bbox[0],
@@ -74,11 +69,11 @@ class RefExpMetric(BaseMetric):
                 target_bbox[2] + target_bbox[0],
                 target_bbox[3] + target_bbox[1],
             ]
-            giou = bbox_overlaps(sorted_boxes, torch.as_tensor(converted_bbox).view(-1, 4))
+            giou = bbox_overlaps(result['bboxes'], np.array(converted_bbox).reshape(-1, 4))
             for k in self.topk:
                 if max(giou[:k]) >= self.iou_thrs:
-                    dataset2score[img_info["dataset_mode"]][k] += 1.0
-            dataset2count[img_info["dataset_mode"]] += 1.0
+                    dataset2score[img_info["dataset_name"]][k] += 1.0
+            dataset2count[img_info["dataset_name"]] += 1.0
 
         for key, value in dataset2score.items():
             for k in self.topk:
@@ -88,8 +83,19 @@ class RefExpMetric(BaseMetric):
                     pass
 
         results = {}
+        mean_precision = 0.0
         for key, value in dataset2score.items():
             results[key] = sorted([v for k, v in value.items()])
-            print(f" Dataset: {key} - Precision @ 1, 5, 10: {results[key]} \n")
+            mean_precision += sum(results[key])
+            logger.info(f" Dataset: {key} - Precision @ 1, 5, 10: {results[key]}")
 
-        return results
+        # `mean_precision` key is used for saving the best checkpoint
+        out_results = {'mean_precision': mean_precision / 9.0}
+
+        for i, k in enumerate(self.topk):
+            out_results[f'refcoco_precision@{k}'] = results['refcoco'][i]
+        for i, k in enumerate(self.topk):
+            out_results[f'refcoco+_precision@{k}'] = results['refcoco+'][i]
+        for i, k in enumerate(self.topk):
+            out_results[f'refcocog_precision@{k}'] = results['refcocog'][i]
+        return out_results
