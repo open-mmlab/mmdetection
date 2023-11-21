@@ -37,6 +37,11 @@ Example:
         --texts '$: lvis' --pred-score-thr 0.7 \
         --palette random --chunked-size 80
 
+        python demo/image_demo.py demo/demo.jpg \
+        grounding_dino_swin-t_pretrain_obj365_goldg_cap4m \
+        --texts '$: lvis' --pred-score-thr 0.4 \
+        --palette random --chunked-size 80
+
 
     Visualize prediction results::
 
