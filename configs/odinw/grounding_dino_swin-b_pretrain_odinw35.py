@@ -1,4 +1,4 @@
-_base_ = '../glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py'
+_base_ = '../grounding_dino/grounding_dino_swin-b_pretrain_mixeddata.py'
 
 dataset_type = 'CocoDataset'
 data_root = 'data/odinw/'
@@ -225,7 +225,8 @@ dataset_EgoHands_generic = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=base_test_pipeline,
-    caption_prompt=caption_prompt,
+    # NOTE w. prompt 0.548; wo. prompt 0.764
+    # caption_prompt=caption_prompt,
     test_mode=True,
     return_classes=True)
 val_evaluator_EgoHands_generic = dict(
@@ -434,7 +435,7 @@ dataset_Packages = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=base_test_pipeline,
-    caption_prompt=caption_prompt,
+    caption_prompt=caption_prompt,  # NOTE w. prompt 0.728; wo. prompt 0.670
     test_mode=True,
     return_classes=True)
 val_evaluator_Packages = dict(
@@ -518,7 +519,7 @@ _data_root = data_root + 'pothole/'
 caption_prompt = {
     'pothole': {
         'name': 'holes',
-        'prefix': 'there are some',
+        'prefix': 'there are some ',
         'suffix': ' on the road'
     }
 }
@@ -528,7 +529,8 @@ dataset_pothole = dict(
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
-    caption_prompt=caption_prompt,
+    # NOTE w. prompt 0.221; wo. prompt 0.478
+    # caption_prompt=caption_prompt,
     pipeline=base_test_pipeline,
     test_mode=True,
     return_classes=True)
