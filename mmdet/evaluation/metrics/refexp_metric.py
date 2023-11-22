@@ -69,9 +69,9 @@ class RefExpMetric(BaseMetric):
                 target_bbox[2] + target_bbox[0],
                 target_bbox[3] + target_bbox[1],
             ]
-            giou = bbox_overlaps(result['bboxes'], np.array(converted_bbox).reshape(-1, 4))
+            iou = bbox_overlaps(result['bboxes'], np.array(converted_bbox).reshape(-1, 4))
             for k in self.topk:
-                if max(giou[:k]) >= self.iou_thrs:
+                if max(iou[:k]) >= self.iou_thrs:
                     dataset2score[img_info["dataset_name"]][k] += 1.0
             dataset2count[img_info["dataset_name"]] += 1.0
 
