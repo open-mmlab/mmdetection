@@ -547,6 +547,7 @@ class GroundingDINO(DINO):
                 count += len(token_positive_maps_once)
                 results_list.append(pred_instances)
             results_list = [results_list[0].cat(results_list)]
+            is_rec_tasks = [False]*len(results_list)
         else:
             # extract text feats
             text_dict = self.language_model(list(text_prompts))
