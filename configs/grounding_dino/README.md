@@ -115,6 +115,8 @@ cd mmdetection
 ./tools/dist_test.sh configs/grounding_dino/refcoco/grounding_dino_swin-b_pretrain_zeroshot_refexp.py https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swinb_cogcoor_mmdet-55949c9c.pth 8
 ```
 
+## gRefcoco 
+
 ## Custom Dataset
 
 To facilitate fine-tuning on custom datasets, we use a simple cat dataset as an example, as shown in the following steps.
