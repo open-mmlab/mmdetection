@@ -90,22 +90,26 @@ Note:
 
 ## Referring Expression Comprehension Results
 
-| Method                 | Grounding DINO-T  | Grounding DINO-B  |
-|------------------------|-------------------|-------------------|
-| RefCOCO val @1,5,10    | 50.77/89.45/94.86 | 84.61/97.88/99.10 |
-| RefCOCO testA @1,5,10  | 57.45/91.29/95.62 | 88.65/98.89/99.63 |
-| RefCOCO testB @1,5,10  | 44.97/86.54/92.88 | 80.51/96.64/98.51 |
-| RefCOCO+ val @1,5,10   | 51.64/86.35/92.57 | 73.67/96.60/98.65 |
-| RefCOCO+ testA @1,5,10 | 57.25/86.74/92.65 | 82.19/97.92/99.09 |
-| RefCOCO+ testB @1,5,10 | 46.35/84.05/90.67 | 64.10/94.25/97.46 |
-| RefCOCOg val @1,5,10   | 60.42/92.10/96.18 | 78.33/97.28/98.57 |
-| RefCOCOg test @1,5,10  | 59.74/92.08/96.28 | 78.11/97.06/98.65 |
+| Method                                  | Grounding DINO-T  | Grounding DINO-B  |
+|-----------------------------------------|-------------------|-------------------|
+| RefCOCO val @1,5,10                     | 50.77/89.45/94.86 | 84.61/97.88/99.10 |
+| RefCOCO testA @1,5,10                   | 57.45/91.29/95.62 | 88.65/98.89/99.63 |
+| RefCOCO testB @1,5,10                   | 44.97/86.54/92.88 | 80.51/96.64/98.51 |
+| RefCOCO+ val @1,5,10                    | 51.64/86.35/92.57 | 73.67/96.60/98.65 |
+| RefCOCO+ testA @1,5,10                  | 57.25/86.74/92.65 | 82.19/97.92/99.09 |
+| RefCOCO+ testB @1,5,10                  | 46.35/84.05/90.67 | 64.10/94.25/97.46 |
+| RefCOCOg val @1,5,10                    | 60.42/92.10/96.18 | 78.33/97.28/98.57 |
+| RefCOCOg test @1,5,10                   | 59.74/92.08/96.28 | 78.11/97.06/98.65 |
+| gRefCOCO val Pr@(F1=1, IoU≥0.5),N-acc   | 41.32/91.82       | 46.18/81.44       |
+| gRefCOCO testA Pr@(F1=1, IoU≥0.5),N-acc | 27.23/90.24       | 38.60/76.06       |
+| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 29.70/93.49       | 35.87/80.58       |
 
 Note:
 
 1. `@1,5,10` refers to precision at the top 1, 5, and 10 positions in a predicted ranked list.
-2. The pretraining data used by Grounding DINO-T is `O365,GoldG,Cap4M`, and the corresponding evaluation configuration is (grounding_dino_swin-t_pretrain_zeroshot_refcoco)[refcoco/grounding_dino_swin-t_pretrain_zeroshot_refcoco.py].
-3. The pretraining data used by Grounding DINO-B is `COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO`, and the corresponding evaluation configuration is (grounding_dino_swin-t_pretrain_zeroshot_refcoco)[refcoco/grounding_dino_swin-b_pretrain_zeroshot_refcoco.py].
+2. `Pr@(F1=1, IoU≥0.5),N-acc` from the paper [GREC: Generalized Referring Expression Comprehension](https://arxiv.org/pdf/2308.16182.pdf)
+3. The pretraining data used by Grounding DINO-T is `O365,GoldG,Cap4M`, and the corresponding evaluation configuration is (grounding_dino_swin-t_pretrain_zeroshot_refcoco)[refcoco/grounding_dino_swin-t_pretrain_zeroshot_refcoco.py].
+4. The pretraining data used by Grounding DINO-B is `COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO`, and the corresponding evaluation configuration is (grounding_dino_swin-t_pretrain_zeroshot_refcoco)[refcoco/grounding_dino_swin-b_pretrain_zeroshot_refcoco.py].
 
 Test Command
 
@@ -114,8 +118,6 @@ cd mmdetection
 ./tools/dist_test.sh configs/grounding_dino/refcoco/grounding_dino_swin-t_pretrain_zeroshot_refexp.py https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth 8
 ./tools/dist_test.sh configs/grounding_dino/refcoco/grounding_dino_swin-b_pretrain_zeroshot_refexp.py https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swinb_cogcoor_mmdet-55949c9c.pth 8
 ```
-
-## gRefcoco 
 
 ## Custom Dataset
 

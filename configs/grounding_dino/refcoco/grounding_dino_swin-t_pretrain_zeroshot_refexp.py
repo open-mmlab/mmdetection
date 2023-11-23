@@ -1,6 +1,8 @@
 _base_ = '../grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py'
 
-model = dict(test_cfg=dict(max_per_img=15))
+# 30 is an empirical value, just set it to the maximum value
+# without affecting the evaluation result
+model = dict(test_cfg=dict(max_per_img=30))
 
 data_root = 'data/coco/'
 
