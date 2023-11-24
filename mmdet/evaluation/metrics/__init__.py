@@ -19,11 +19,13 @@ from .voc_metric import VOCMetric
 from .youtube_vis_metric import YouTubeVISMetric
 from .refexp_metric import RefExpMetric
 from .grefcoco_metric import gRefCOCOMetric
+from .dod_metric import DODCocoMetric
 
 __all__ = [
     'CityScapesMetric', 'CocoMetric', 'CocoPanopticMetric', 'OpenImagesMetric',
     'VOCMetric', 'LVISMetric', 'CrowdHumanMetric', 'DumpProposals',
     'CocoOccludedSeparatedMetric', 'DumpDetResults', 'BaseVideoMetric',
     'MOTChallengeMetric', 'CocoVideoMetric', 'ReIDMetrics', 'YouTubeVISMetric',
-    'COCOCaptionMetric', 'SemSegMetric', 'RefSegMetric', 'RefExpMetric', 'gRefCOCOMetric'
+    'COCOCaptionMetric', 'SemSegMetric', 'RefSegMetric', 'RefExpMetric', 'gRefCOCOMetric',
+    'DODCocoMetric'
 ]
