@@ -74,6 +74,3 @@ class DODDataset(BaseDetDataset):
             data_info['instances'] = instances
             data_list.append(data_info)
         return data_list
-
-    def __len__(self):
-        return 10
