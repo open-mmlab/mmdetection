@@ -159,8 +159,8 @@ test_dataloader = dict(dataset=dict(pipeline=test_pipeline))
 
 # set all layers in backbone to lr_mult=0.1
 # set all norm layers, to decay_multi=0.0
-num_blocks_list = (2, 2, 2, 2)  # r18
-downsample_norm_idx_list = (2, 3, 3, 3)  # r18
+num_blocks_list = (3, 4, 6, 3)  # r50
+downsample_norm_idx_list = (3, 3, 3, 3)  # r50
 backbone_norm_multi = dict(lr_mult=0.1, decay_mult=0.0)
 custom_keys = {'backbone': dict(lr_mult=0.1, decay_mult=1.0)}
 custom_keys.update({
