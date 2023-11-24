@@ -37,7 +37,7 @@ class DODDataset(BaseDetDataset):
                          **kwargs)
 
     def load_data_list(self) -> List[dict]:
-        coco = COCO(osp.join(self.data_root, self.ann_file))
+        coco = COCO(self.ann_file)
         data_list = []
         img_ids = self.d3.get_img_ids()
         for img_id in img_ids:
