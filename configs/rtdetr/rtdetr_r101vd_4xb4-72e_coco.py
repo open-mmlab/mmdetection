@@ -17,16 +17,11 @@ model = dict(
     bbox_head=dict(embed_dims=384))
 
 # set all layers in backbone to lr_mult=0.01
-for k, v in _base_.optim_wrapper.paramwise_cfg.custom_keys.items():
-    if 'backbone' in k:
-        v['lr_mult'] = 0.01
-
-# set all layers in backbone to lr_mult=0.1
 # set all norm layers, to decay_multi=0.0
 num_blocks_list = (3, 4, 23, 3)  # r101
 downsample_norm_idx_list = (3, 3, 3, 3)  # r101
-backbone_norm_multi = dict(lr_mult=0.1, decay_mult=0.0)
-custom_keys = {'backbone': dict(lr_mult=0.1, decay_mult=1.0)}
+backbone_norm_multi = dict(lr_mult=0.01, decay_mult=0.0)
+custom_keys = {'backbone': dict(lr_mult=0.01, decay_mult=1.0)}
 custom_keys.update({
     f'backbone.layer{stage_id + 1}.{block_id}.bn': backbone_norm_multi
     for stage_id, num_blocks in enumerate(num_blocks_list)
