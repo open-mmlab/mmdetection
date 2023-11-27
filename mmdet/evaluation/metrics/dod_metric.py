@@ -164,6 +164,7 @@ class DODCocoMetric(BaseMetric):
         eval_results['mAP_short'] = float(f'{round(map_short, 3)}')
         eval_results['mAP_mid'] = float(f'{round(map_mid, 3)}')
         eval_results['mAP_long'] = float(f'{round(map_long, 3)}')
+        eval_results['mAP_very_long'] = float(f'{round(map_very_long, 3)}')
         return eval_results
 
 

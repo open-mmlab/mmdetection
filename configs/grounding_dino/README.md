@@ -191,9 +191,13 @@ cd mmdetection
 pip install ddd-dataset
 ```
 
-|      Model       | val mAP | testA mAP | testB mAP |  Pre-Train Data  |
-|:----------------:|:-------:|:---------:|:---------:|:----------------:|
-| Grounding DINO-T |         |           |           | O365,GoldG,Cap4M |
+|      Model       | FULL | PRES | ABS | short | middle | long |  Pre-Train Data |
+|:----------------:|:----:|:----:|:---:|:-----:|:------:|:----:|:-----------------:|
+| Grounding DINO-T |      |      |     |       |        |      | O365,GoldG,Cap4M    |
+
+Note:
+
+1. Intra-scenario mAP
 
 
 ## Custom Dataset

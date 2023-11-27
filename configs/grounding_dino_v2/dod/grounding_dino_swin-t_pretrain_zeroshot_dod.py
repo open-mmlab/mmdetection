@@ -29,7 +29,6 @@ val_dataset_full = dict(type='DODDataset',
                         return_classes=True)
 
 val_evaluator_full = dict(
-    _delete_=True,
     type='DODCocoMetric',
     ann_file=data_root + 'd3_json/d3_full_annotations.json')
 
@@ -43,7 +42,6 @@ val_dataset_pres = dict(type='DODDataset',
                         backend_args=None,
                         return_classes=True)
 val_evaluator_pres = dict(
-    _delete_=True,
     type='DODCocoMetric',
     ann_file=data_root + 'd3_json/d3_pres_annotations.json')
 
@@ -57,7 +55,6 @@ val_dataset_abs = dict(type='DODDataset',
                        backend_args=None,
                        return_classes=True)
 val_evaluator_abs = dict(
-    _delete_=True,
     type='DODCocoMetric',
     ann_file=data_root + 'd3_json/d3_abs_annotations.json')
 
