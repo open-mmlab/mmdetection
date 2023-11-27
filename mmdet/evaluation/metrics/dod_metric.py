@@ -161,7 +161,9 @@ class DODCocoMetric(BaseMetric):
         logger.info(
             f"mAP over reference length: short - {map_short:.4f}, mid - {map_mid:.4f}, long - {map_long:.4f}, very long - {map_very_long:.4f}"
         )
-
+        eval_results['mAP_short'] = float(f'{round(map_short, 3)}')
+        eval_results['mAP_mid'] = float(f'{round(map_mid, 3)}')
+        eval_results['mAP_long'] = float(f'{round(map_long, 3)}')
         return eval_results
 
 
