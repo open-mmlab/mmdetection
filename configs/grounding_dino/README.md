@@ -191,9 +191,11 @@ cd mmdetection
 pip install ddd-dataset
 ```
 
-|      Model       | FULL | PRES | ABS | short | middle | long |  Pre-Train Data |
-|:----------------:|:----:|:----:|:---:|:-----:|:------:|:----:|:-----------------:|
-| Grounding DINO-T |      |      |     |       |        |      | O365,GoldG,Cap4M    |
+| Method                           | Grounding DINO-T         | Grounding DINO-B |
+|----------------------------------|--------------------------|------------------|
+| FULL/short/middle/long/very long | 17.2/18.0/18.7/14.8/16.3 |                  |
+| PRES/short/middle/long/very long | 17.8/18.3/19.2/15.2/17.3 |                  |
+| ABS/short/middle/long/very long  | 15.4/17.1/16.4/13.6/14.9 |                  |
 
 Note:
 

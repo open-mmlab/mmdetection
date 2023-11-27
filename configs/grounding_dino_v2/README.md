@@ -116,8 +116,13 @@ Learning visual representations from natural language supervision has recently s
 pip install ddd-dataset
 ```
 
-|        Model        | val mAP | testA mAP | testB mAP |  Pre-Train Data  |
-|:-------------------:|:-------:|:---------:|:---------:|:----------------:|
-|  Grounding DINO-T   |         |           |           | O365,GoldG,Cap4M |
-| Grounding DINO-T-V2 |         |           |           |    O365,GoldG    |
+| Method                           | GroundingDINO-T <br/> (O365,GoldG,Cap4M) | GroundingDINO-T-V2 <br/> (O365,GoldG) | GroundingDINO-T-V2 <br/> (O365,GoldG)-20e |
+|----------------------------------|------------------------------------------|---------------------------------------|-------------------------------------------|
+| FULL/short/middle/long/very long | 17.2/18.0/18.7/14.8/16.3                 | 15.6/17.3/16.7/14.3/13.1              | 16.3/17.2/17.2/15.1/15.1                  |
+| PRES/short/middle/long/very long | 17.8/18.3/19.2/15.2/17.3                 | 16.4/18.4/17.3/14.5/14.2              | 16.9/18.2/17.6/15.5/15.6                  |
+| ABS/short/middle/long/very long  | 15.4/17.1/16.4/13.6/14.9                 | 13.4/13.4/14.5/13.5/11.9              | 14.6/13.7/15.2/14.2/14.6                  |
+
+Note:
+
+1. Intra-scenario mAP
 
