@@ -518,7 +518,7 @@ _data_root = data_root + 'pothole/'
 caption_prompt = {
     'pothole': {
         'name': 'holes',
-        'prefix': 'there are some',
+        'prefix': 'there are some ',
         'suffix': ' on the road'
     }
 }
