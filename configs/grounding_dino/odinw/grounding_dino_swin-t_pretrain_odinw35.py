@@ -1,4 +1,4 @@
-_base_ = '../grounding_dino/grounding_dino_swin-b_pretrain_mixeddata.py'
+_base_ = '../grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py'  # noqa
 
 dataset_type = 'CocoDataset'
 data_root = 'data/odinw/'
@@ -225,7 +225,7 @@ dataset_EgoHands_generic = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=base_test_pipeline,
-    # NOTE w. prompt 0.548; wo. prompt 0.764
+    # NOTE w. prompt 0.526, wo. prompt 0.608
     # caption_prompt=caption_prompt,
     test_mode=True,
     return_classes=True)
@@ -435,7 +435,7 @@ dataset_Packages = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=base_test_pipeline,
-    caption_prompt=caption_prompt,  # NOTE w. prompt 0.728; wo. prompt 0.670
+    caption_prompt=caption_prompt,  # NOTE w. prompt 0.695; wo. prompt 0.687
     test_mode=True,
     return_classes=True)
 val_evaluator_Packages = dict(
@@ -519,7 +519,7 @@ _data_root = data_root + 'pothole/'
 caption_prompt = {
     'pothole': {
         'name': 'holes',
-        'prefix': 'there are some ',
+        'prefix': 'there are some',
         'suffix': ' on the road'
     }
 }
@@ -529,7 +529,7 @@ dataset_pothole = dict(
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
-    # NOTE w. prompt 0.221; wo. prompt 0.478
+    # NOTE w. prompt 0.137; wo. prompt 0.215
     # caption_prompt=caption_prompt,
     pipeline=base_test_pipeline,
     test_mode=True,

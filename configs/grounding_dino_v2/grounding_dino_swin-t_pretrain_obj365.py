@@ -183,14 +183,14 @@ test_pipeline = [
 ]
 
 dataset_type = 'ODVGDataset'
-data_root = 'data/coco/'
+data_root = 'data/objects365v1/'
 
 coco_od_dataset = dict(
     type=dataset_type,
     data_root=data_root,
-    ann_file='annotations/instances_train2017_od.json',
-    label_map_file='annotations/coco2017_label_map.json',
-    data_prefix=dict(img='train2017/'),
+    ann_file='o365v1_train_odvg.jsonl',
+    label_map_file='o365v1_label_map.json',
+    data_prefix=dict(img='train/'),
     filter_cfg=dict(filter_empty_gt=False),
     pipeline=train_pipeline,
     return_classes=True,
@@ -223,7 +223,7 @@ optim_wrapper = dict(
         }))
 
 # learning policy
-max_epochs = 50
+max_epochs = 30
 param_scheduler = [
     dict(type='LinearLR', start_factor=0.1, by_epoch=False, begin=0, end=1000),
     dict(
@@ -231,7 +231,7 @@ param_scheduler = [
         begin=0,
         end=max_epochs,
         by_epoch=True,
-        milestones=[30, 40],
+        milestones=[19, 26],
         gamma=0.1)
 ]
 
