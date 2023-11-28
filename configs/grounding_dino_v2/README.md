@@ -27,7 +27,7 @@ In this paper, we present an open-set object detector, called Grounding DINO, by
 |        Model        | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP | Val1.0 APr | Val1.0 APc | Val1.0 APf | Val1.0 AP |  Pre-Train Data  |   Config   | Download  |
 |:-------------------:|:-----------:|:-----------:|:-----------:|:----------:|:----------:|:----------:|:----------:|:---------:|:----------------:|:----------:|:---------:|
 |  Grounding DINO-T   |    18.8     |    24.2     |    34.7     |    28.8    |    10.1    |    15.3    |    29.9    |   20.1    | O365,GoldG,Cap4M | [config]() | [model]() |
-| Grounding DINO-T-V2 |    28.1     |    30.2     |    42.0     |    35.7    |            |            |            |           |    O365,GoldG    | [config]() | [model]() |
+| Grounding DINO-T-V2 |    28.1     |    30.2     |    42.0     |    35.7    |    17.1    |    22.4    |    36.5    |   27.0    |    O365,GoldG    | [config]() | [model]() |
 
 
 ## ODinW (Object Detection in the Wild) Results
