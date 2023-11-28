@@ -23,7 +23,7 @@ from .refcoco import RefCocoDataset
 from .reid_dataset import ReIDDataset
 from .samplers import (AspectRatioBatchSampler, ClassAwareSampler,
                        GroupMultiSourceSampler, MultiSourceSampler,
-                       TrackAspectRatioBatchSampler, TrackImgSampler)
+                       TrackAspectRatioBatchSampler, TrackImgSampler, CustomSampleSizeSampler)
 from .utils import get_loading_pipeline
 from .v3det import V3DetDataset
 from .voc import VOCDataset
@@ -46,5 +46,5 @@ __all__ = [
     'ADE20KPanopticDataset', 'CocoCaptionDataset', 'RefCocoDataset',
     'BaseSegDataset', 'ADE20KSegDataset', 'CocoSegDataset',
     'ADE20KInstanceDataset', 'iSAIDDataset', 'V3DetDataset', 'ConcatDataset',
-    'ODVGDataset', 'MDETRStyleRefCocoDataset', 'DODDataset'
+    'ODVGDataset', 'MDETRStyleRefCocoDataset', 'DODDataset', 'CustomSampleSizeSampler'
 ]
