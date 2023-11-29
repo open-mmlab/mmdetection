@@ -3,6 +3,7 @@ from mmcv.transforms import BaseTransform
 
 from mmdet.registry import TRANSFORMS
 from mmdet.structures.bbox import BaseBoxes
+import json
 
 try:
     from transformers import AutoTokenizer
@@ -107,7 +108,8 @@ class RandomSamplingNegPos(BaseTransform):
                  tokenizer_name,
                  num_sample_negative=85,
                  max_tokens=256,
-                 full_sampling_prob=0.5):
+                 full_sampling_prob=0.5,
+                 label_map_file=None):
         if AutoTokenizer is None:
             raise RuntimeError(
                 'transformers is not installed, please install it by: '
@@ -117,6 +119,10 @@ class RandomSamplingNegPos(BaseTransform):
         self.num_sample_negative = num_sample_negative
         self.full_sampling_prob = full_sampling_prob
         self.max_tokens = max_tokens
+        self.label_map = None
+        if label_map_file:
+            with open(label_map_file, 'r') as file:
+                self.label_map = json.load(file)
 
     def transform(self, results: dict) -> dict:
         if 'phrases' in results:
@@ -152,7 +158,12 @@ class RandomSamplingNegPos(BaseTransform):
         if isinstance(gt_bboxes, BaseBoxes):
             gt_bboxes = gt_bboxes.tensor
         gt_labels = results['gt_bboxes_labels']
-        text = results['text']
+
+        if 'text' not in results:
+            assert self.label_map is not None
+            text = self.label_map
+        else:
+            text = results['text']
 
         original_box_num = len(gt_labels)
         # If the category name is in the format of 'a/b' (in object365),

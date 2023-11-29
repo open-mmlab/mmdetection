@@ -17,8 +17,10 @@ class ODVGDataset(BaseDetDataset):
                  *args,
                  data_root: str = '',
                  label_map_file: Optional[str] = None,
+                 need_text: bool = True,
                  **kwargs) -> None:
         self.dataset_mode = 'VG'
+        self.need_text = need_text
         if label_map_file:
             label_map_file = osp.join(data_root, label_map_file)
             with open(label_map_file, 'r') as file:
@@ -41,7 +43,8 @@ class ODVGDataset(BaseDetDataset):
             data_info['height'] = data['height']
             data_info['width'] = data['width']
             if self.dataset_mode == 'OD':
-                data_info['text'] = self.label_map
+                if self.need_text:
+                    data_info['text'] = self.label_map
                 anno = data['detection']
                 instances = [obj for obj in anno['instances']]
                 bboxes = [obj['bbox'] for obj in instances]
