@@ -1,5 +1,6 @@
 import argparse
 import json
+import os.path
 
 import jsonlines
 from pycocotools.coco import COCO
@@ -87,11 +88,15 @@ id_map = {
     78: 89,
     79: 90
 }
-key_list = list(id_map.keys())
-val_list = list(id_map.values())
+key_list_coco = list(id_map.keys())
+val_list_coco = list(id_map.values())
+key_list_o365 = [i for i in range(365)]
+val_list_o365 = [i for i in range(1, 366)]
+key_list_v3det = [i for i in range(13204)]
+val_list_v3det = [i for i in range(1, 13205)]
 
 
-def dump_label_map(output='./out.json'):
+def dump_coco_label_map(args):
     ori_map = {
         '1': 'person',
         '2': 'bicycle',
@@ -177,11 +182,37 @@ def dump_label_map(output='./out.json'):
     new_map = {}
     for key, value in ori_map.items():
         label = int(key)
-        ind = val_list.index(label)
-        label_trans = key_list[ind]
+        ind = val_list_coco.index(label)
+        label_trans = key_list_coco[ind]
         new_map[label_trans] = value
+    output = os.path.dirname(args.input) + '/coco2017_label_map.json'
     with open(output, 'w') as f:
         json.dump(new_map, f)
+
+
+def dump_o365_label_map(args):
+    with open(args.input, 'r') as f:
+        j = json.load(f)
+    o_dict = {}
+    for category in j['categories']:
+        index = str(int(category['id']) - 1)
+        name = category['name']
+        o_dict[index] = name
+    output = os.path.dirname(args.input) + '/o365v1_label_map.json'
+    with open(output, 'w') as f:
+        json.dump(o_dict, f)
+
+def dump_v3det_label_map(args):
+    with open(args.input, 'r') as f:
+        j = json.load(f)
+    o_dict = {}
+    for category in j['categories']:
+        index = str(int(category['id']) - 1)
+        name = category['name']
+        o_dict[index] = name
+    output = os.path.dirname(args.input) + '/v3det_2023_v1_label_map.json'
+    with open(output, 'w') as f:
+        json.dump(o_dict, f)
 
 
 def coco2odvg(args):
@@ -191,7 +222,28 @@ def coco2odvg(args):
     metas = []
     out_path = args.input[:-5] + '_od.json'
 
+    if args.dataset == coco:
+        key_list = key_list_coco
+        val_list = val_list_coco
+        dump_coco_label_map(args)
+    elif args.dataset == 'o365v1':
+        key_list = key_list_o365
+        val_list = val_list_o365
+        dump_o365_label_map(args)
+    elif args.dataset == 'v3det':
+        key_list = key_list_v3det
+        val_list = val_list_v3det
+        dump_v3det_label_map(args)
+
     for img_id, img_info in tqdm(coco.imgs.items()):
+        # missing images
+        if args.dataset == 'o365v2' and img_id in [908726, 320532, 320534]:
+            print(img_info["file_name"])
+            continue
+        if args.dataset == 'o365v1' and img_id in [6, 19, 23]:
+            print(img_info["file_name"])
+            continue
+
         ann_ids = coco.getAnnIds(imgIds=img_id)
         instance_list = []
         for ann_id in ann_ids:
@@ -228,15 +280,23 @@ def coco2odvg(args):
                 'instances': instance_list
             }
         })
-    print('  == dump meta ...')
+
     with jsonlines.open(out_path, mode='w') as writer:
         writer.write_all(metas)
-    print('  == done.')
+
+    print('save to {}'.format(out_path))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('coco to odvg format.', add_help=True)
     parser.add_argument('input', type=str, help='input list name')
+    parser.add_argument(
+        "--dataset",
+        '-d',
+        required=True,
+        type=str,
+        choices=['coco', 'o365v1', 'o365v2', 'v3det'],
+    )
     args = parser.parse_args()
 
     coco2odvg(args)
