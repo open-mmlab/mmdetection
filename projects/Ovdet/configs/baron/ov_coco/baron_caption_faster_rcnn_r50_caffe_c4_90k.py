@@ -92,7 +92,7 @@ model = dict(
             reg_class_agnostic=True,
             cls_bias=-20.0,
             cls_temp=25.0,
-            cls_embeddings_pat='projects/Ovdet/metadata/' +
+            cls_embeddings_path='projects/Ovdet/metadata/' +
             'coco_clip_hand_craft_attn12.npy',
             use_attn12_output=True,
             loss_cls=dict(
