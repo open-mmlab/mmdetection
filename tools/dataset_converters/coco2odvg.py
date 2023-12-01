@@ -185,7 +185,10 @@ def dump_coco_label_map(args):
         ind = val_list_coco.index(label)
         label_trans = key_list_coco[ind]
         new_map[label_trans] = value
-    output = os.path.dirname(args.input) + '/coco2017_label_map.json'
+    if args.output is None:
+        output = os.path.dirname(args.input) + '/coco2017_label_map.json'
+    else:
+        output = os.path.dirname(args.output)
     with open(output, 'w') as f:
         json.dump(new_map, f)
 
@@ -198,9 +201,13 @@ def dump_o365_label_map(args):
         index = str(int(category['id']) - 1)
         name = category['name']
         o_dict[index] = name
-    output = os.path.dirname(args.input) + '/o365v1_label_map.json'
+    if args.output is None:
+        output = os.path.dirname(args.input) + '/o365v1_label_map.json'
+    else:
+        output = os.path.dirname(args.output)
     with open(output, 'w') as f:
         json.dump(o_dict, f)
+
 
 def dump_v3det_label_map(args):
     with open(args.input, 'r') as f:
@@ -210,7 +217,10 @@ def dump_v3det_label_map(args):
         index = str(int(category['id']) - 1)
         name = category['name']
         o_dict[index] = name
-    output = os.path.dirname(args.input) + '/v3det_2023_v1_label_map.json'
+    if args.output is None:
+        output = os.path.dirname(args.input) + '/v3det_2023_v1_label_map.json'
+    else:
+        output = os.path.dirname(args.output)
     with open(output, 'w') as f:
         json.dump(o_dict, f)
 
