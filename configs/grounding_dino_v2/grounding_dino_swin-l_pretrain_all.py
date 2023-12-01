@@ -31,11 +31,10 @@ model = dict(
     decoder=dict(layer_cfg=dict(cross_attn_cfg=dict(num_levels=num_levels))))
 
 objv2_backend_args = dict(
-    _delete_=True,
     backend='petrel',
     path_mapping=dict({
-        './data/objects365v2/': 's3://wangyudong/obj365_v2/',
-        'data/objects365v2/': 's3://wangyudong/obj365_v2/'
+        './data/objects365v2/': 'yudong:s3://wangyudong/obj365_v2/',
+        'data/objects365v2/': 'yudong:s3://wangyudong/obj365_v2/'
     }))
 
 # objv1_backend_args = dict(
@@ -120,7 +119,7 @@ flickr30k_dataset = dict(
     return_classes=True,
     backend_args=None)
 
-gqa_dataset = dict(
+mixed_dataset = dict(
     type='ODVGDataset',
     data_root='data/gqa/',
     ann_file='final_mixed_train_no_coco_vg.json',

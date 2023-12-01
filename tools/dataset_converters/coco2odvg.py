@@ -276,6 +276,14 @@ def coco2odvg(args):
             print(img_info["file_name"])
             continue
 
+        if args.dataset == 'o365v2':
+            file_name = img_info["file_name"]
+            if file_name.startswith('images/v2/'):
+                file_name = file_name.replace('images/v2/', '')
+            elif file_name.startswith('images/v1/'):
+                file_name = file_name.replace('images/v1/', '')
+            img_info["file_name"] = file_name
+
         ann_ids = coco.getAnnIds(imgIds=img_id)
         instance_list = []
         for ann_id in ann_ids:
