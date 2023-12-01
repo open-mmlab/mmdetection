@@ -20,6 +20,7 @@ from .youtube_vis_metric import YouTubeVISMetric
 from .refexp_metric import RefExpMetric
 from .grefcoco_metric import gRefCOCOMetric
 from .dod_metric import DODCocoMetric
+from .dump_odvg_results import DumpODVGResults
 
 __all__ = [
     'CityScapesMetric', 'CocoMetric', 'CocoPanopticMetric', 'OpenImagesMetric',
@@ -27,5 +28,5 @@ __all__ = [
     'CocoOccludedSeparatedMetric', 'DumpDetResults', 'BaseVideoMetric',
     'MOTChallengeMetric', 'CocoVideoMetric', 'ReIDMetrics', 'YouTubeVISMetric',
     'COCOCaptionMetric', 'SemSegMetric', 'RefSegMetric', 'RefExpMetric', 'gRefCOCOMetric',
-    'DODCocoMetric'
+    'DODCocoMetric', 'DumpODVGResults'
 ]

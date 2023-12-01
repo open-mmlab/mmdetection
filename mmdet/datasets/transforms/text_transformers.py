@@ -243,3 +243,13 @@ class RandomSamplingNegPos(BaseTransform):
         results['tokens_positive'] = label_to_positions
 
         return results
+
+
+@TRANSFORMS.register_module()
+class LoadTextAnnotations(BaseTransform):
+
+    def transform(self, results: dict) -> dict:
+        if 'phrases' in results:
+            tokens_positive = [phrase['tokens_positive'] for phrase in results['phrases'].values()]
+            results['tokens_positive'] = tokens_positive
+        return results

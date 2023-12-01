@@ -8,6 +8,7 @@ import json
 from mmdet.structures import DetDataSample
 from mmengine.structures import InstanceData
 from mmdet.visualization import DetLocalVisualizer
+from mmdet.visualization.palette import _get_adaptive_scales
 import cv2
 from mmengine.utils import mkdir_or_exist
 
@@ -145,6 +146,25 @@ def main():
                     bbox, edge_colors=colors[i], face_colors=colors[i], alpha=0.3)
                 visualizer.draw_bboxes(bbox, edge_colors=colors[i], alpha=1)
 
+                if 'score' in region:
+                    areas = (bbox[:, 3] - bbox[:, 1]) * (
+                            bbox[:, 2] - bbox[:, 0])
+                    scales = _get_adaptive_scales(areas)
+                    score = region['score'][0]
+                    score = [str(s) for s in score]
+                    font_sizes = [int(13 * scales[i]) for i in range(len(scales))]
+                    visualizer.draw_texts(
+                        score,
+                        bbox[:, :2].astype(np.int32),
+                        colors=(255, 255, 255),
+                        font_sizes=font_sizes,
+                        bboxes=[{
+                            'facecolor': 'black',
+                            'alpha': 0.8,
+                            'pad': 0.7,
+                            'edgecolor': 'none'
+                        }]*len(bbox))
+
             drawn_img = visualizer.get_image()
             new_image = np.ones((100, img.shape[1], 3), dtype=np.uint8) * 255
             visualizer.set_image(new_image)
@@ -209,7 +229,7 @@ def main():
             start_index = 2
             y_index = 5
 
-            chunk_size = max(min(img.shape[1]-400, 70), 50)
+            chunk_size = max(min(img.shape[1] - 400, 70), 50)
             for i, p in enumerate(phrases):
                 chunk_p = [p[i:i + chunk_size] for i in range(0, len(p), chunk_size)]
                 for cp in chunk_p:

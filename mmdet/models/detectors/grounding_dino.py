@@ -212,7 +212,23 @@ class GroundingDINO(DINO):
                     original_caption = original_caption + self._special_tokens
                 return None, original_caption, None, original_caption
             else:
-                pass
+                if not original_caption.endswith('.'):
+                    original_caption = original_caption + self._special_tokens
+                tokenized = self.language_model.tokenizer(
+                    [original_caption],
+                    padding='max_length'
+                    if self.language_model.pad_to_max else 'longest',
+                    return_tensors='pt')
+                positive_map_label_to_token, positive_map = self.get_positive_map(
+                    tokenized, tokens_positive)
+
+                entities = []
+                for token_positive in tokens_positive:
+                    instance_entities = []
+                    for t in token_positive:
+                        instance_entities.append(original_caption[t[0]:t[1]])
+                    entities.append(' / '.join(instance_entities))
+                return positive_map_label_to_token, original_caption, positive_map, entities
 
         chunked_size = self.test_cfg.get('chunked_size', -1)
         if not self.training and chunked_size > 0:
@@ -547,7 +563,7 @@ class GroundingDINO(DINO):
                 count += len(token_positive_maps_once)
                 results_list.append(pred_instances)
             results_list = [results_list[0].cat(results_list)]
-            is_rec_tasks = [False]*len(results_list)
+            is_rec_tasks = [False] * len(results_list)
         else:
             # extract text feats
             text_dict = self.language_model(list(text_prompts))
