@@ -188,7 +188,7 @@ def dump_coco_label_map(args):
     if args.output is None:
         output = os.path.dirname(args.input) + '/coco2017_label_map.json'
     else:
-        output = os.path.dirname(args.output)
+        output = os.path.dirname(args.output) + '/coco2017_label_map.json'
     with open(output, 'w') as f:
         json.dump(new_map, f)
 
@@ -204,7 +204,7 @@ def dump_o365_label_map(args):
     if args.output is None:
         output = os.path.dirname(args.input) + '/o365v1_label_map.json'
     else:
-        output = os.path.dirname(args.output)
+        output = os.path.dirname(args.output) + '/o365v1_label_map.json'
     with open(output, 'w') as f:
         json.dump(o_dict, f)
 
@@ -220,7 +220,7 @@ def dump_v3det_label_map(args):
     if args.output is None:
         output = os.path.dirname(args.input) + '/v3det_2023_v1_label_map.json'
     else:
-        output = os.path.dirname(args.output)
+        output = os.path.dirname(args.output) + '/v3det_2023_v1_label_map.json'
     with open(output, 'w') as f:
         json.dump(o_dict, f)
 
