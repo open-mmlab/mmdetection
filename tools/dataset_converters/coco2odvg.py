@@ -193,7 +193,7 @@ def dump_coco_label_map(args):
         json.dump(new_map, f)
 
 
-def dump_o365_label_map(args):
+def dump_o365v1_label_map(args):
     with open(args.input, 'r') as f:
         j = json.load(f)
     o_dict = {}
@@ -208,6 +208,21 @@ def dump_o365_label_map(args):
     with open(output, 'w') as f:
         json.dump(o_dict, f)
 
+
+def dump_o365v2_label_map(args):
+    with open(args.input, 'r') as f:
+        j = json.load(f)
+    o_dict = {}
+    for category in j['categories']:
+        index = str(int(category['id']) - 1)
+        name = category['name']
+        o_dict[index] = name
+    if args.output is None:
+        output = os.path.dirname(args.input) + '/o365v2_label_map.json'
+    else:
+        output = os.path.dirname(args.output) + '/o365v2_label_map.json'
+    with open(output, 'w') as f:
+        json.dump(o_dict, f)
 
 def dump_v3det_label_map(args):
     with open(args.input, 'r') as f:
@@ -242,7 +257,11 @@ def coco2odvg(args):
     elif args.dataset == 'o365v1':
         key_list = key_list_o365
         val_list = val_list_o365
-        dump_o365_label_map(args)
+        dump_o365v1_label_map(args)
+    elif args.dataset == 'o365v2':
+        key_list = key_list_o365
+        val_list = val_list_o365
+        dump_o365v2_label_map(args)
     elif args.dataset == 'v3det':
         key_list = key_list_v3det
         val_list = val_list_v3det
