@@ -2,3 +2,4 @@ fairscale
 nltk
 pycocoevalcap
 transformers
+jsonlines

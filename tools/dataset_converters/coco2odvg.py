@@ -220,7 +220,10 @@ def coco2odvg(args):
     cats = coco.loadCats(coco.getCatIds())
     nms = {cat['id']: cat['name'] for cat in cats}
     metas = []
-    out_path = args.input[:-5] + '_od.json'
+    if args.output is None:
+        out_path = args.input[:-5] + '_od.json'
+    else:
+        out_path = args.output
 
     if args.dataset == coco:
         key_list = key_list_coco
@@ -290,6 +293,7 @@ def coco2odvg(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('coco to odvg format.', add_help=True)
     parser.add_argument('input', type=str, help='input list name')
+    parser.add_argument("--output", "-o", type=str, help='input list name')
     parser.add_argument(
         "--dataset",
         '-d',
