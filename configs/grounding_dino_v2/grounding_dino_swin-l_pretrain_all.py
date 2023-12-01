@@ -30,7 +30,7 @@ model = dict(
     encoder=dict(layer_cfg=dict(self_attn_cfg=dict(num_levels=num_levels))),
     decoder=dict(layer_cfg=dict(cross_attn_cfg=dict(num_levels=num_levels))))
 
-backend_args = dict(
+objv2_backend_args = dict(
     _delete_=True,
     backend='petrel',
     path_mapping=dict({
@@ -38,7 +38,7 @@ backend_args = dict(
         'data/objects365v2/': 's3://wangyudong/obj365_v2/'
     }))
 
-# backend_args = dict(
+# objv1_backend_args = dict(
 #     backend='petrel',
 #     path_mapping=dict({
 #         './data/objects365v1/': 's3://openmmlab/datasets/detection/Objects365/',
@@ -46,7 +46,7 @@ backend_args = dict(
 #     }))
 
 oss_train_pipeline = [
-    dict(type='LoadImageFromFile', backend_args=backend_args),
+    dict(type='LoadImageFromFile', backend_args=objv2_backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomFlip', prob=0.5),
     dict(
