@@ -99,7 +99,7 @@ oss_train_pipeline = [
 o365v2_od_dataset = dict(
     type='ODVGDataset',
     data_root='data/objects365v2/',
-    ann_file='annotations/o365v2_train_odvg.jsonl',
+    ann_file='annotations/zhiyuan_objv2_train_od.json',
     label_map_file='annotations/o365v2_label_map.json',
     data_prefix=dict(img='train/'),
     filter_cfg=dict(filter_empty_gt=False),
