@@ -31,11 +31,19 @@ model = dict(
     decoder=dict(layer_cfg=dict(cross_attn_cfg=dict(num_levels=num_levels))))
 
 backend_args = dict(
+    _delete_=True,
     backend='petrel',
     path_mapping=dict({
-        './data/objects365v1/': 's3://openmmlab/datasets/detection/Objects365/',
-        'data/objects365v1/': 's3://openmmlab/datasets/detection/Objects365/'
+        './data/objects365v2/': 's3://wangyudong/obj365_v2/',
+        'data/objects365v2/': 's3://wangyudong/obj365_v2/'
     }))
+
+# backend_args = dict(
+#     backend='petrel',
+#     path_mapping=dict({
+#         './data/objects365v1/': 's3://openmmlab/datasets/detection/Objects365/',
+#         'data/objects365v1/': 's3://openmmlab/datasets/detection/Objects365/'
+#     }))
 
 oss_train_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
@@ -77,6 +85,8 @@ oss_train_pipeline = [
         type='RandomSamplingNegPos',
         tokenizer_name=_base_.lang_model_name,
         num_sample_negative=85,
+        # change this
+        label_map_file='data/objects365v2/annotations/o365v2_label_map.json',
         max_tokens=256),
     dict(
         type='PackDetInputs',
@@ -86,15 +96,16 @@ oss_train_pipeline = [
 ]
 
 
-o365v1_od_dataset = dict(
+o365v2_od_dataset = dict(
     type='ODVGDataset',
-    data_root='data/objects365v1/',
-    ann_file='o365v1_train_odvg.jsonl',
-    label_map_file='o365v1_label_map.json',
+    data_root='data/objects365v2/',
+    ann_file='annotations/o365v2_train_odvg.jsonl',
+    label_map_file='annotations/o365v2_label_map.json',
     data_prefix=dict(img='train/'),
     filter_cfg=dict(filter_empty_gt=False),
     pipeline=oss_train_pipeline,
     return_classes=True,
+    need_text=False,  # change this
     backend_args=None,
 )
 
@@ -196,5 +207,5 @@ train_dataloader = dict(
     batch_size=4,
     num_workers=4,
     sampler=dict(_delete_=True, type='CustomSampleSizeSampler', dataset_size=[-1, -1, -1, -1, 500000]),
-    dataset=dict(datasets=[o365v1_od_dataset, flickr30k_dataset, gqa_dataset, v3det_dataset, grit_dataset]))
+    dataset=dict(datasets=[o365v2_od_dataset, flickr30k_dataset, gqa_dataset, v3det_dataset, grit_dataset]))
 
