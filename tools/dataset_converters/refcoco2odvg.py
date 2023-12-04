@@ -1,104 +1,145 @@
-"""
-```text
-data
-├── coco
-│   ├── refcoco
-│   ├── instances.json
-│   ├── refs(google).p
-│   └── refs(unc).p
-│   ├── refcoco+
-│   ├── instances.json
-│   └── refs(unc).p
-|   ├── refcocog
-│   ├── instances.json
-│   ├── refs(google).p
-│   └── refs(umd).p
-|   |── train2014
-```
-"""
-
 import argparse
 import os.path as osp
-import mmengine
 import jsonlines
 from tqdm import tqdm
+from pycocotools.coco import COCO
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='refcoco to odvg')
-    parser.add_argument('data_root')
-    # refcoco refcoco+ refcocog
-    # The annotation json of the original coco2014.
-    parser.add_argument('--ann-file', default='refcocog/instances.json')
-    # refcoco/refs(unc).p refcoco+/refs(unc).p refcocog/refs(umd).p
-    parser.add_argument('--split-file', default='refcocog/refs(umd).p')
-    parser.add_argument('--split', default='train')  # train/val/testA/testB
+    parser.add_argument('mdetr_anno_dir', type=str)
+    parser.add_argument("--out-dir", "-o", type=str)
     args = parser.parse_args()
     return args
 
 
-def init_refs(instances, splits):
-    anns, imgs = {}, {}
-    for ann in instances['annotations']:
-        anns[ann['id']] = ann
-    for img in instances['images']:
-        imgs[img['id']] = img
+def _has_only_empty_bbox(anno):
+    return all(any(o <= 1 for o in obj['bbox'][2:]) for obj in anno)
 
-    refs, ref_to_ann, ref_to_img = {}, {}, {}
-    for ref in splits:
-        # ids
-        ref_id = ref['ref_id']
-        ann_id = ref['ann_id']
-        img_id = ref['image_id']
-        # add mapping related to ref
-        refs[ref_id] = ref
-        ref_to_ann[ref_id] = anns[ann_id]
-        ref_to_img[ref_id] = imgs[img_id]
-    return refs, ref_to_ann, ref_to_img
+
+def has_valid_annotation(anno):
+    # if it's empty, there is no annotation
+    if len(anno) == 0:
+        return False
+    # if all boxes have close to zero area, there is no annotation
+    if _has_only_empty_bbox(anno):
+        return False
+    return True
+
+
+def process_item(args, filename):
+    path = osp.join(args.mdetr_anno_dir, filename)
+    coco = COCO(path)
+
+    ids = list(sorted(coco.imgs.keys()))
+
+    out_results = []
+    for img_id in tqdm(ids):
+        if isinstance(img_id, str):
+            ann_ids = coco.getAnnIds(imgIds=[img_id], iscrowd=0)
+        else:
+            ann_ids = coco.getAnnIds(imgIds=img_id, iscrowd=0)
+        annos = coco.loadAnns(ann_ids)
+        if not has_valid_annotation(annos):
+            continue
+
+        img_info = coco.loadImgs(img_id)[0]
+        file_name = img_info['file_name']
+        caption = img_info['caption']
+
+        regions = {}
+
+        for anno in annos:
+            box = anno['bbox']
+            tokens_positive = anno['tokens_positive']
+            x1, y1, w, h = box
+            inter_w = max(0, min(x1 + w, int(img_info['width'])) - max(x1, 0))
+            inter_h = max(0, min(y1 + h, int(img_info['height'])) - max(y1, 0))
+            if inter_w * inter_h == 0:
+                continue
+            if anno['area'] <= 0 or w < 1 or h < 1:
+                continue
+
+            if anno.get('iscrowd', False):
+                continue
+            bbox_xyxy = [
+                x1, y1,
+                min(x1 + w, int(img_info['width'])),
+                min(y1 + h, int(img_info['height']))
+            ]
+
+            tokens_positive = sorted(tokens_positive, key=lambda x: x[0])
+
+            phrase = []
+            pre_end_index = -10
+            for token in tokens_positive:
+                start_index = token[0]
+                end_index = token[1]
+                if pre_end_index + 1 == start_index:
+                    if caption[token[0] - 1] == ' ':
+                        phrase[
+                            -1] = phrase[-1] + ' ' + caption[token[0]:token[1]]
+                    else:
+                        phrase.append(caption[token[0]:token[1]])
+                else:
+                    phrase.append(caption[token[0]:token[1]])
+                pre_end_index = end_index
+
+            key = ' '.join(phrase)
+
+            if key not in regions:
+                regions[key] = {
+                    'bbox': bbox_xyxy,
+                    'phrase': phrase,
+                    'tokens_positive': tokens_positive
+                }
+            else:
+                old_box = regions[key]['bbox']
+                if isinstance(old_box[0], list):
+                    old_box.append(bbox_xyxy)
+                else:
+                    old_box = [old_box, bbox_xyxy]
+
+                regions[key]['bbox'] = old_box
+
+        out_dict = {
+            'filename': file_name,
+            'height': int(img_info['height']),
+            'width': int(img_info['width']),
+            'grounding': {
+                'caption': caption
+            }
+        }
+
+        region_list = []
+        for key, value in regions.items():
+            phrase = value['phrase']
+            if len(phrase) == 1:
+                phrase = phrase[0]
+            region_list.append({
+                'bbox': value['bbox'],
+                'phrase': phrase,
+                'tokens_positive': value['tokens_positive']
+            })
+        out_dict['grounding']['regions'] = region_list
+        out_results.append(out_dict)
+
+    if args.out_dir is None:
+        out_path = osp.join(args.mdetr_anno_dir, filename[:-5] + '_vg.json')
+    else:
+        out_path = osp.join(args.out_dir, filename[:-5] + '_vg.json')
+
+    with jsonlines.open(out_path, mode='w') as writer:
+        writer.write_all(out_results)
+    print(f'save to {out_path}')
 
 
 def main():
     args = parse_args()
-    split_file = osp.join(args.data_root, args.split_file)
-    ann_file = osp.join(args.data_root, args.ann_file)
-
-    splits = mmengine.load(split_file, file_format='pkl')
-    instances = mmengine.load(ann_file, file_format='json')
-    refs, ref_to_ann, ref_to_img = init_refs(instances, splits)
-
-    ref_ids = [
-        ref['ref_id'] for ref in splits if ref['split'] == args.split
-    ]
-
-    metas = []
-    out_path = ann_file[:-5] + '_rec.json'
-
-    for id in tqdm(ref_ids):
-        out_dict = {}
-
-        ref = refs[id]
-        ann = ref_to_ann[id]
-        img_info = ref_to_img[id]
-
-        if ann.get('iscrowd', 0) == 1:
-            continue
-
-        out_dict['filename'] = img_info['file_name']
-        out_dict['height'] = img_info['height']
-        out_dict['width'] = img_info['width']
-        bbox = ann['bbox']
-        bbox = [bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3]]
-
-        sentence = [s['sent'] for s in ref['sentences']]
-        instance = {'bbox': bbox, 'phrase': list(set(sentence))}
-        out_dict['referring'] = [instance]
-
-        metas.append(out_dict)
-
-    print('  == dump meta ...')
-    with jsonlines.open(out_path, mode='w') as writer:
-        writer.write_all(metas)
-    print(f'save to {out_path}')
+    process_item(args, 'finetune_refcoco_train.json')
+    process_item(args, 'finetune_refcoco+_train.json')
+    process_item(args, 'finetune_refcocog_train.json')
+    process_item(args, 'finetune_grefcoco_train.json')
 
 
 if __name__ == '__main__':

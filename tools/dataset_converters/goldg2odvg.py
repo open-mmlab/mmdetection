@@ -114,16 +114,21 @@ def goldg2odvg(args):
         out_dict['grounding']['regions'] = region_list
         out_results.append(out_dict)
 
-    out_path = args.input[:-5] + '_vg.json'
+    if args.out_ann is None:
+        out_path = args.input[:-5] + '_vg.json'
+    else:
+        out_path = args.out_ann
 
     with jsonlines.open(out_path, mode='w') as writer:
         writer.write_all(out_results)
+    print(f'save to {out_path}')
 
 
-# goldg: final_mixed_train_no_coco.json + final_flickr_separateGT_train.json
+# goldg+: final_mixed_train_no_coco.json + final_flickr_separateGT_train.json + final_mixed_train_only_coco.json
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('goldg to odvg format.', add_help=True)
     parser.add_argument('input', type=str, help='input list name')
+    parser.add_argument("--out-ann", "-o", type=str)
     args = parser.parse_args()
 
     goldg2odvg(args)

@@ -67,7 +67,7 @@ def exclude_coco(args):
 
     new_json_data = gen_new_json(args.coco2017_train, coco2017_train, coco2017_train_ids)
     if args.out_ann is None:
-        out_ann = osp.dirname(args.coco2017_train)+'/instances_train2017_noref.json'
+        out_ann = osp.dirname(args.coco2017_train)+'/instances_train2017_norefval.json'
         mmengine.dump(new_json_data, out_ann)
         print('save new json to {}'.format(out_ann))
     else:
