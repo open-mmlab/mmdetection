@@ -40,7 +40,7 @@ def oi2odvg(args):
         label_map[str(idx)] = class_name
 
     if args.out_ann is None:
-        output = osp.join(osp.dirname(args.input_dir), 'openimages_label_map.json')
+        output = osp.join(args.input_dir, 'openimages_label_map.json')
     else:
         output = osp.join(osp.dirname(args.out_ann), 'openimages_label_map.json')
     with open(output, 'w') as f:
@@ -80,7 +80,8 @@ def oi2odvg(args):
             is_depiction = True if int(line[11]) == 1 else False
             is_inside = True if int(line[12]) == 1 else False
 
-            if any([is_occluded, is_truncated, is_group_of, is_depiction, is_inside]):
+            # if any([is_occluded, is_truncated, is_group_of, is_depiction, is_inside]):
+            if is_group_of:
                 print(f'skip {filename} of one instance')
                 continue
 

@@ -11,6 +11,16 @@ from mmdet.visualization import DetLocalVisualizer
 from mmdet.visualization.palette import _get_adaptive_scales
 import cv2
 from mmengine.utils import mkdir_or_exist
+from mmengine.fileio import get
+from mmcv.image import imfrombytes
+
+# backend_args = dict(
+#     backend='petrel',
+#     path_mapping=dict({
+#         './data/': 's3://openmmlab/datasets/detection/',
+#         'data/': 's3://openmmlab/datasets/detection/'
+#     }))
+backend_args = None
 
 
 def parse_args():
@@ -88,7 +98,11 @@ def main():
         item = data_list[i]
 
         img_path = osp.join(args.data_root, args.img_prefix, item['filename'])
-        img = cv2.imread(img_path)
+        if backend_args is not None:
+            img_bytes = get(img_path, backend_args)
+            img = imfrombytes(img_bytes, flag='color')
+        else:
+            img = cv2.imread(img_path)
         img = img[..., [2, 1, 0]]  # bgr to rgb
 
         base_name, extension = osp.splitext(item['filename'])
@@ -163,7 +177,7 @@ def main():
                             'alpha': 0.8,
                             'pad': 0.7,
                             'edgecolor': 'none'
-                        }]*len(bbox))
+                        }] * len(bbox))
 
             drawn_img = visualizer.get_image()
             new_image = np.ones((100, img.shape[1], 3), dtype=np.uint8) * 255
