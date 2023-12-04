@@ -87,9 +87,9 @@ def oi2odvg(args):
             # denormalize
             if filename != _filename_shape[0]:
                 if args.img_prefix is not None:
-                    _filename = osp.join(args.input_dir, '..', args.img_prefix, filename)
+                    _filename = osp.join(osp.dirname(args.input_dir), args.img_prefix, filename)
                 else:
-                    _filename = osp.join(args.input_dir, '..', filename)
+                    _filename = osp.join(osp.dirname(args.input_dir), filename)
                 img_bytes = get(_filename, backend_args)
                 img = imfrombytes(img_bytes, flag='color')
                 shape = img.shape
@@ -131,7 +131,7 @@ def oi2odvg(args):
                             'height': _h,
                             'width': _w,
                             'detection': {
-                                'instances': instances
+                                'instances': copy_instance
                             }}
                 metas.append(meta_ifo)
                 instances = []

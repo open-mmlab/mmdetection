@@ -250,7 +250,7 @@ def coco2odvg(args):
     else:
         out_path = args.output
 
-    if args.dataset == coco:
+    if args.dataset == "coco":
         key_list = key_list_coco
         val_list = val_list_coco
         dump_coco_label_map(args)
