@@ -24,8 +24,6 @@ class CustomSampleSizeSampler(Sampler):
         self.world_size = world_size
 
         self.dataset = dataset
-        self.dataset_size = dataset_size
-
         if seed is None:
             seed = sync_random_seed()
         self.seed = seed
@@ -36,21 +34,25 @@ class CustomSampleSizeSampler(Sampler):
         total_size_fake = 0
         self.dataset_index = []
         self.dataset_cycle_iter = []
+        new_dataset_size = []
         for dataset, size in zip(dataset.datasets, dataset_size):
             self.dataset_index.append(list(range(total_size_fake, len(dataset) + total_size_fake)))
             total_size_fake += len(dataset)
             if size == -1:
                 total_size += len(dataset)
                 self.dataset_cycle_iter.append(None)
+                new_dataset_size.append(len(dataset))
             else:
                 if ratio_mode:
                     size = int(size * len(dataset))
                 assert size <= len(dataset), f"dataset size {size} is larger than dataset length {len(dataset)}"
                 total_size += size
+                new_dataset_size.append(size)
 
                 g = torch.Generator()
                 g.manual_seed(self.seed)
                 self.dataset_cycle_iter.append(RandomCycleIter(self.dataset_index[-1], generator=g))
+        self.dataset_size = new_dataset_size
 
         if self.round_up:
             self.num_samples = math.ceil(total_size / world_size)
