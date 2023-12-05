@@ -404,8 +404,8 @@ train_dataloader = dict(
     sampler=dict(_delete_=True,
                  type='MultiDataSampler',
                  # OD ~ 1.74+1.67*0.5+0.18*1.5+0.12*3=3.2
-                 # vg ~ 0.15*2+0.62*1+0.49*1+0.12*2+0.12*2+0.08*3+0.19*1.2+9*0.1=3.3
-                 dataset_ratio=[1, 0.5, 1.5, 3, 2, 1, 1, 2, 2, 3, 1.2, 0.06]),
+                 # vg ~ 0.15*2+0.62*1+0.49*1+0.12*2+0.12*2+0.08*3+0.19*1.2+9*0.09=3.17
+                 dataset_ratio=[1, 0.5, 1.5, 3, 2, 1, 1, 2, 2, 3, 1.2, 0.09]),
     dataset=dict(
         datasets=
         [
@@ -427,13 +427,13 @@ train_dataloader = dict(
 # bs=256
 optim_wrapper = dict(optimizer=dict(lr=0.0008))
 
-# one epoch = (3.2+3.3)M/256 = 25390 iter
-# 30e=761700 iter
-# 19e=482270 iter
-# 26e=659140 iter
-max_iter = 761700
+# one epoch = (3.2+3.17)M/256 = 24883 iter
+# 30e=746490 iter
+# 19e=472777 iter
+# 26e=646958 iter
+max_iter = 746490
 train_cfg = dict(
-    type='IterBasedTrainLoop', max_iters=max_iter, val_interval=15000)
+    _delete_=True,type='IterBasedTrainLoop', max_iters=max_iter, val_interval=15000)
 
 param_scheduler = [
     dict(type='LinearLR', start_factor=0.1, by_epoch=False, begin=0, end=1000),
@@ -442,7 +442,7 @@ param_scheduler = [
         begin=0,
         end=max_iter,
         by_epoch=False,
-        milestones=[482270, 659140],
+        milestones=[472777, 646958],
         gamma=0.1)
 ]
 
