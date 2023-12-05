@@ -41,7 +41,7 @@ class CustomSampleSizeSampler(Sampler):
             if size == -1:
                 total_size += len(dataset)
                 self.dataset_cycle_iter.append(None)
-                new_dataset_size.append(len(dataset))
+                new_dataset_size.append(-1)
             else:
                 if ratio_mode:
                     size = int(size * len(dataset))
