@@ -273,7 +273,7 @@ gqa_dataset = dict(
 coco2014_vg_dataset = dict(
     type='ODVGDataset',
     data_root='data/coco/',
-    ann_file='mdetr_annotations/final_mixed_train_only_coco_vg.jsonn',
+    ann_file='mdetr_annotations/final_mixed_train_only_coco_vg.json',
     label_map_file=None,
     data_prefix=dict(img='train2014/'),
     filter_cfg=dict(filter_empty_gt=False),
@@ -440,7 +440,7 @@ param_scheduler = [
     dict(
         type='MultiStepLR',
         begin=0,
-        end=max_epochs,
+        end=max_iter,
         by_epoch=False,
         milestones=[482270, 659140],
         gamma=0.1)
