@@ -47,6 +47,7 @@ def oi2odvg(args):
         json.dump(label_map, f)
 
     metas = []
+    skip_count = 0
     with open(ann_file, 'r') as f:
         reader = csv.reader(f)
         last_img_id = None
@@ -83,6 +84,7 @@ def oi2odvg(args):
             # if any([is_occluded, is_truncated, is_group_of, is_depiction, is_inside]):
             if is_group_of:
                 print(f'skip {filename} of one instance')
+                skip_count += 1
                 continue
 
             # denormalize
@@ -132,7 +134,7 @@ def oi2odvg(args):
                             'height': _h,
                             'width': _w,
                             'detection': {
-                                'instances': copy_instance
+                                'instances': copy_instances
                             }}
                 metas.append(meta_ifo)
                 instances = []
@@ -159,6 +161,7 @@ def oi2odvg(args):
     with jsonlines.open(out_path, mode='w') as writer:
         writer.write_all(metas)
 
+    print('skip {} instances'.format(skip_count))
     print('save to {}'.format(out_path))
 
 

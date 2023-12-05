@@ -30,6 +30,7 @@ model = dict(
     encoder=dict(layer_cfg=dict(self_attn_cfg=dict(num_levels=num_levels))),
     decoder=dict(layer_cfg=dict(cross_attn_cfg=dict(num_levels=num_levels))))
 
+# --------------------------- object365v2 od dataset---------------------------
 objv2_backend_args = dict(
     backend='petrel',
     path_mapping=dict({
@@ -37,14 +38,7 @@ objv2_backend_args = dict(
         'data/objects365v2/': 'yudong:s3://wangyudong/obj365_v2/'
     }))
 
-# objv1_backend_args = dict(
-#     backend='petrel',
-#     path_mapping=dict({
-#         './data/objects365v1/': 's3://openmmlab/datasets/detection/Objects365/',
-#         'data/objects365v1/': 's3://openmmlab/datasets/detection/Objects365/'
-#     }))
-
-oss_train_pipeline = [
+objv2_train_pipeline = [
     dict(type='LoadImageFromFile', backend_args=objv2_backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomFlip', prob=0.5),
@@ -94,42 +88,90 @@ oss_train_pipeline = [
                    'custom_entities', 'tokens_positive', 'dataset_mode'))
 ]
 
-
-o365v2_od_dataset = dict(
+o365v2_dataset = dict(
     type='ODVGDataset',
     data_root='data/objects365v2/',
     ann_file='annotations/zhiyuan_objv2_train_od.json',
     label_map_file='annotations/o365v2_label_map.json',
     data_prefix=dict(img='train/'),
     filter_cfg=dict(filter_empty_gt=False),
-    pipeline=oss_train_pipeline,
+    pipeline=objv2_train_pipeline,
     return_classes=True,
     need_text=False,  # change this
     backend_args=None,
 )
 
-flickr30k_dataset = dict(
+# --------------------------- openimagev6 od dataset---------------------------
+oi_backend_args = dict(
+    backend='petrel',
+    path_mapping=dict({
+        './data/': 's3://openmmlab/datasets/detection/',
+        'data/': 's3://openmmlab/datasets/detection/'
+    }))
+
+oi_train_pipeline = [
+    dict(type='LoadImageFromFile', backend_args=oi_backend_args),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type='RandomFlip', prob=0.5),
+    dict(
+        type='RandomChoice',
+        transforms=[
+            [
+                dict(
+                    type='RandomChoiceResize',
+                    scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
+                            (608, 1333), (640, 1333), (672, 1333), (704, 1333),
+                            (736, 1333), (768, 1333), (800, 1333)],
+                    keep_ratio=True)
+            ],
+            [
+                dict(
+                    type='RandomChoiceResize',
+                    # The radio of all image in train dataset < 7
+                    # follow the original implement
+                    scales=[(400, 4200), (500, 4200), (600, 4200)],
+                    keep_ratio=True),
+                dict(
+                    type='RandomCrop',
+                    crop_type='absolute_range',
+                    crop_size=(384, 600),
+                    allow_negative_crop=True),
+                dict(
+                    type='RandomChoiceResize',
+                    scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
+                            (608, 1333), (640, 1333), (672, 1333), (704, 1333),
+                            (736, 1333), (768, 1333), (800, 1333)],
+                    keep_ratio=True)
+            ]
+        ]),
+    dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
+    dict(
+        type='RandomSamplingNegPos',
+        tokenizer_name=_base_.lang_model_name,
+        num_sample_negative=85,
+        # change this
+        label_map_file='data/OpenImages/annotations/openimages_label_map.json',
+        max_tokens=256),
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor', 'flip', 'flip_direction', 'text',
+                   'custom_entities', 'tokens_positive', 'dataset_mode'))
+]
+
+oiv6_dataset = dict(
     type='ODVGDataset',
-    data_root='data/flickr30k_entities/',
-    ann_file='final_flickr_separateGT_train_vg.json',
-    label_map_file=None,
-    data_prefix=dict(img='flickr30k_images/'),
+    data_root='data/OpenImages/',
+    ann_file='annotations/oidv6-train-annotations-vg.jsonl',
+    label_map_file='annotations/openimages_label_map.json',
+    data_prefix=dict(img='OpenImages/train/'),
     filter_cfg=dict(filter_empty_gt=False),
-    pipeline=_base_.train_pipeline,
+    need_text=False,  # change this
+    pipeline=oi_train_pipeline,
     return_classes=True,
     backend_args=None)
 
-mixed_dataset = dict(
-    type='ODVGDataset',
-    data_root='data/gqa/',
-    ann_file='final_mixed_train_no_coco_vg.json',
-    label_map_file=None,
-    data_prefix=dict(img='images/'),
-    filter_cfg=dict(filter_empty_gt=False),
-    pipeline=_base_.train_pipeline,
-    return_classes=True,
-    backend_args=None)
-
+# --------------------------- v3det od dataset---------------------------
 v3d_train_pipeline = [
     dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -191,20 +233,218 @@ v3det_dataset = dict(
     return_classes=True,
     backend_args=None)
 
-grit_dataset = dict(
+# --------------------------- coco2017 od dataset---------------------------
+coco2017_train_dataset = dict(
     type='ODVGDataset',
-    data_root='grit_processed/',
-    ann_file='grit20m_vg.json',
-    label_map_file=None,
-    data_prefix=dict(img=''),
+    data_root='data/coco/',
+    ann_file='instance_train2017_norefval_od.json',
+    label_map_file='coco2017_label_map.json',
+    data_prefix=dict(img='train2017'),
     filter_cfg=dict(filter_empty_gt=False),
     pipeline=_base_.train_pipeline,
     return_classes=True,
     backend_args=None)
 
+# --------------------------- flickr30k vg dataset---------------------------
+flickr30k_dataset = dict(
+    type='ODVGDataset',
+    data_root='data/flickr30k_entities/',
+    ann_file='final_flickr_separateGT_train_vg.json',
+    label_map_file=None,
+    data_prefix=dict(img='flickr30k_images/'),
+    filter_cfg=dict(filter_empty_gt=False),
+    pipeline=_base_.train_pipeline,
+    return_classes=True,
+    backend_args=None)
+
+# --------------------------- gqa vg dataset---------------------------
+gqa_dataset = dict(
+    type='ODVGDataset',
+    data_root='data/gqa/',
+    ann_file='final_mixed_train_no_coco_vg.json',
+    label_map_file=None,
+    data_prefix=dict(img='images/'),
+    filter_cfg=dict(filter_empty_gt=False),
+    pipeline=_base_.train_pipeline,
+    return_classes=True,
+    backend_args=None)
+
+# --------------------------- coco2014 vg dataset---------------------------
+coco2014_vg_dataset = dict(
+    type='ODVGDataset',
+    data_root='data/coco/',
+    ann_file='mdetr_annotations/final_mixed_train_only_coco_vg.jsonn',
+    label_map_file=None,
+    data_prefix=dict(img='train2014/'),
+    filter_cfg=dict(filter_empty_gt=False),
+    pipeline=_base_.train_pipeline,
+    return_classes=True,
+    backend_args=None)
+
+# --------------------------- refcoco vg dataset---------------------------
+refcoco_dataset = dict(
+    type='ODVGDataset',
+    data_root='data/coco/',
+    ann_file='mdetr_annotations/finetune_refcoco_train_vg.json',
+    label_map_file=None,
+    data_prefix=dict(img='train2014'),
+    filter_cfg=dict(filter_empty_gt=False),
+    pipeline=_base_.train_pipeline,
+    return_classes=True,
+    backend_args=None)
+
+# --------------------------- refcoco+ vg dataset---------------------------
+refcoco_plus_dataset = dict(
+    type='ODVGDataset',
+    data_root='data/coco/',
+    ann_file='mdetr_annotations/finetune_refcoco+_train_vg.json',
+    label_map_file=None,
+    data_prefix=dict(img='train2014'),
+    filter_cfg=dict(filter_empty_gt=False),
+    pipeline=_base_.train_pipeline,
+    return_classes=True,
+    backend_args=None)
+
+# --------------------------- refcocog vg dataset---------------------------
+refcocog_dataset = dict(
+    type='ODVGDataset',
+    data_root='data/coco/',
+    ann_file='mdetr_annotations/finetune_refcocog_train_vg.json',
+    label_map_file=None,
+    data_prefix=dict(img='train2014'),
+    filter_cfg=dict(filter_empty_gt=False),
+    pipeline=_base_.train_pipeline,
+    return_classes=True,
+    backend_args=None)
+
+# --------------------------- grefcoco vg dataset---------------------------
+grefcoco_dataset = dict(
+    type='ODVGDataset',
+    data_root='data/coco/',
+    ann_file='mdetr_annotations/finetune_grefcoco_train_vg.json',
+    label_map_file=None,
+    data_prefix=dict(img='train2014'),
+    filter_cfg=dict(filter_empty_gt=False),
+    pipeline=_base_.train_pipeline,
+    return_classes=True,
+    backend_args=None)
+
+# --------------------------- grit vg dataset---------------------------
+grit_backend_args = dict(
+    backend='petrel',
+    path_mapping=dict({
+        './data/grit/': 'yichen:s3://chenyicheng/grit/',
+        'data/grit/': 'yichen:s3://chenyicheng/grit/'
+    }))
+
+grit_train_pipeline = [
+    dict(type='LoadImageFromFile', backend_args=grit_backend_args),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type='RandomFlip', prob=0.5),
+    dict(
+        type='RandomChoice',
+        transforms=[
+            [
+                dict(
+                    type='RandomChoiceResize',
+                    scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
+                            (608, 1333), (640, 1333), (672, 1333), (704, 1333),
+                            (736, 1333), (768, 1333), (800, 1333)],
+                    keep_ratio=True)
+            ],
+            [
+                dict(
+                    type='RandomChoiceResize',
+                    # The radio of all image in train dataset < 7
+                    # follow the original implement
+                    scales=[(400, 4200), (500, 4200), (600, 4200)],
+                    keep_ratio=True),
+                dict(
+                    type='RandomCrop',
+                    crop_type='absolute_range',
+                    crop_size=(384, 600),
+                    allow_negative_crop=True),
+                dict(
+                    type='RandomChoiceResize',
+                    scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
+                            (608, 1333), (640, 1333), (672, 1333), (704, 1333),
+                            (736, 1333), (768, 1333), (800, 1333)],
+                    keep_ratio=True)
+            ]
+        ]),
+    dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
+    dict(
+        type='RandomSamplingNegPos',
+        tokenizer_name=_base_.lang_model_name,
+        num_sample_negative=85,
+        max_tokens=256),
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor', 'flip', 'flip_direction', 'text',
+                   'custom_entities', 'tokens_positive', 'dataset_mode'))
+]
+
+
+grit_dataset = dict(
+    type='ODVGDataset',
+    data_root='data/grit/',
+    ann_file='grit20m_vg.json',
+    label_map_file=None,
+    data_prefix=dict(img=''),
+    filter_cfg=dict(filter_empty_gt=False),
+    pipeline=grit_train_pipeline,
+    return_classes=True,
+    backend_args=None)
+
+# --------------------------- dataloader---------------------------
 train_dataloader = dict(
     batch_size=4,
     num_workers=4,
-    sampler=dict(_delete_=True, type='CustomSampleSizeSampler', dataset_size=[-1, -1, -1, -1, 500000]),
-    dataset=dict(datasets=[o365v2_od_dataset, flickr30k_dataset, gqa_dataset, v3det_dataset, grit_dataset]))
+    sampler=dict(_delete_=True,
+                 type='MultiDataSampler',
+                 # OD ~ 1.74+1.67*0.5+0.18*1.5+0.12*3=3.2
+                 # vg ~ 0.15*2+0.62*1+0.49*1+0.12*2+0.12*2+0.08*3+0.19*1.2+9*0.1=3.3
+                 dataset_ratio=[1, 0.5, 1.5, 3, 2, 1, 1, 2, 2, 3, 1.2, 0.06]),
+    dataset=dict(
+        datasets=
+        [
+            o365v2_dataset,  # 1.74M
+            oiv6_dataset,  # 1.67M
+            v3det_dataset,  # 0.18M
+            coco2017_train_dataset,  # 0.12M
+            flickr30k_dataset,  # 0.15M
+            gqa_dataset,  # 0.62M
+            coco2014_vg_dataset,  # 0.49M
+            refcoco_dataset,  # 0.12M
+            refcoco_plus_dataset,  # 0.12M
+            refcocog_dataset,  # 0.08M
+            grefcoco_dataset,  # 0.19M
+            grit_dataset  # 9M
+        ]
+    ))
 
+# bs=256
+optim_wrapper = dict(optimizer=dict(lr=0.0008))
+
+# one epoch = (3.2+3.3)M/256 = 25390 iter
+# 30e=761700 iter
+# 19e=482270 iter
+# 26e=659140 iter
+max_iter = 761700
+train_cfg = dict(
+    type='IterBasedTrainLoop', max_iters=max_iter, val_interval=15000)
+
+param_scheduler = [
+    dict(type='LinearLR', start_factor=0.1, by_epoch=False, begin=0, end=1000),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_epochs,
+        by_epoch=False,
+        milestones=[482270, 659140],
+        gamma=0.1)
+]
+
+default_hooks = dict(checkpoint=dict(by_epoch=False, interval=15000, max_keep_ckpts=30))
+log_processor = dict(by_epoch=False)
