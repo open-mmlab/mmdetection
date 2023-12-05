@@ -14,11 +14,11 @@ class CustomSampleSizeSampler(Sampler):
     def __init__(self,
                  dataset: Sized,
                  dataset_size: Sequence[int],
+                 ratio_mode: bool=False,
                  seed: Optional[int] = None,
                  round_up: bool = True) -> None:
         # 暂时只支持 ConcatDataset
         assert len(dataset.datasets) == len(dataset_size)
-
         rank, world_size = get_dist_info()
         self.rank = rank
         self.world_size = world_size
@@ -43,6 +43,8 @@ class CustomSampleSizeSampler(Sampler):
                 total_size += len(dataset)
                 self.dataset_cycle_iter.append(None)
             else:
+                if ratio_mode:
+                    size = int(size * len(dataset))
                 assert size <= len(dataset), f"dataset size {size} is larger than dataset length {len(dataset)}"
                 total_size += size
 

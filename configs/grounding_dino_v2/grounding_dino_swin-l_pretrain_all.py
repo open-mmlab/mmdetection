@@ -222,40 +222,49 @@ v3d_train_pipeline = [
                    'custom_entities', 'tokens_positive', 'dataset_mode'))
 ]
 v3det_dataset = dict(
-    type='ODVGDataset',
-    data_root='data/V3Det/',
-    ann_file='annotations/v3det_2023_v1_train_od.json',
-    label_map_file='annotations/v3det_2023_v1_label_map.json',
-    data_prefix=dict(img=''),
-    filter_cfg=dict(filter_empty_gt=False),
-    need_text=False,  # change this
-    pipeline=v3d_train_pipeline,
-    return_classes=True,
-    backend_args=None)
+    type='RepeatDataset',
+    times=2,
+    dataset=dict(
+        type='ODVGDataset',
+        data_root='data/V3Det/',
+        ann_file='annotations/v3det_2023_v1_train_od.json',
+        label_map_file='annotations/v3det_2023_v1_label_map.json',
+        data_prefix=dict(img=''),
+        filter_cfg=dict(filter_empty_gt=False),
+        need_text=False,  # change this
+        pipeline=v3d_train_pipeline,
+        return_classes=True,
+        backend_args=None))
 
 # --------------------------- coco2017 od dataset---------------------------
 coco2017_train_dataset = dict(
-    type='ODVGDataset',
-    data_root='data/coco/',
-    ann_file='instance_train2017_norefval_od.json',
-    label_map_file='coco2017_label_map.json',
-    data_prefix=dict(img='train2017'),
-    filter_cfg=dict(filter_empty_gt=False),
-    pipeline=_base_.train_pipeline,
-    return_classes=True,
-    backend_args=None)
+    type='RepeatDataset',
+    times=2,
+    dataset=dict(
+        type='ODVGDataset',
+        data_root='data/coco/',
+        ann_file='instance_train2017_norefval_od.json',
+        label_map_file='coco2017_label_map.json',
+        data_prefix=dict(img='train2017'),
+        filter_cfg=dict(filter_empty_gt=False),
+        pipeline=_base_.train_pipeline,
+        return_classes=True,
+        backend_args=None))
 
 # --------------------------- flickr30k vg dataset---------------------------
 flickr30k_dataset = dict(
-    type='ODVGDataset',
-    data_root='data/flickr30k_entities/',
-    ann_file='final_flickr_separateGT_train_vg.json',
-    label_map_file=None,
-    data_prefix=dict(img='flickr30k_images/'),
-    filter_cfg=dict(filter_empty_gt=False),
-    pipeline=_base_.train_pipeline,
-    return_classes=True,
-    backend_args=None)
+    type='RepeatDataset',
+    times=2,
+    dataset=dict(
+        type='ODVGDataset',
+        data_root='data/flickr30k_entities/',
+        ann_file='final_flickr_separateGT_train_vg.json',
+        label_map_file=None,
+        data_prefix=dict(img='flickr30k_images/'),
+        filter_cfg=dict(filter_empty_gt=False),
+        pipeline=_base_.train_pipeline,
+        return_classes=True,
+        backend_args=None))
 
 # --------------------------- gqa vg dataset---------------------------
 gqa_dataset = dict(
@@ -283,51 +292,63 @@ coco2014_vg_dataset = dict(
 
 # --------------------------- refcoco vg dataset---------------------------
 refcoco_dataset = dict(
-    type='ODVGDataset',
-    data_root='data/coco/',
-    ann_file='mdetr_annotations/finetune_refcoco_train_vg.json',
-    label_map_file=None,
-    data_prefix=dict(img='train2014'),
-    filter_cfg=dict(filter_empty_gt=False),
-    pipeline=_base_.train_pipeline,
-    return_classes=True,
-    backend_args=None)
+    type='RepeatDataset',
+    times=2,
+    dataset=dict(
+        type='ODVGDataset',
+        data_root='data/coco/',
+        ann_file='mdetr_annotations/finetune_refcoco_train_vg.json',
+        label_map_file=None,
+        data_prefix=dict(img='train2014'),
+        filter_cfg=dict(filter_empty_gt=False),
+        pipeline=_base_.train_pipeline,
+        return_classes=True,
+        backend_args=None))
 
 # --------------------------- refcoco+ vg dataset---------------------------
 refcoco_plus_dataset = dict(
-    type='ODVGDataset',
-    data_root='data/coco/',
-    ann_file='mdetr_annotations/finetune_refcoco+_train_vg.json',
-    label_map_file=None,
-    data_prefix=dict(img='train2014'),
-    filter_cfg=dict(filter_empty_gt=False),
-    pipeline=_base_.train_pipeline,
-    return_classes=True,
-    backend_args=None)
+    type='RepeatDataset',
+    times=2,
+    dataset=dict(
+        type='ODVGDataset',
+        data_root='data/coco/',
+        ann_file='mdetr_annotations/finetune_refcoco+_train_vg.json',
+        label_map_file=None,
+        data_prefix=dict(img='train2014'),
+        filter_cfg=dict(filter_empty_gt=False),
+        pipeline=_base_.train_pipeline,
+        return_classes=True,
+        backend_args=None))
 
 # --------------------------- refcocog vg dataset---------------------------
 refcocog_dataset = dict(
-    type='ODVGDataset',
-    data_root='data/coco/',
-    ann_file='mdetr_annotations/finetune_refcocog_train_vg.json',
-    label_map_file=None,
-    data_prefix=dict(img='train2014'),
-    filter_cfg=dict(filter_empty_gt=False),
-    pipeline=_base_.train_pipeline,
-    return_classes=True,
-    backend_args=None)
+    type='RepeatDataset',
+    times=3,
+    dataset=dict(
+        type='ODVGDataset',
+        data_root='data/coco/',
+        ann_file='mdetr_annotations/finetune_refcocog_train_vg.json',
+        label_map_file=None,
+        data_prefix=dict(img='train2014'),
+        filter_cfg=dict(filter_empty_gt=False),
+        pipeline=_base_.train_pipeline,
+        return_classes=True,
+        backend_args=None))
 
 # --------------------------- grefcoco vg dataset---------------------------
 grefcoco_dataset = dict(
-    type='ODVGDataset',
-    data_root='data/coco/',
-    ann_file='mdetr_annotations/finetune_grefcoco_train_vg.json',
-    label_map_file=None,
-    data_prefix=dict(img='train2014'),
-    filter_cfg=dict(filter_empty_gt=False),
-    pipeline=_base_.train_pipeline,
-    return_classes=True,
-    backend_args=None)
+    type='RepeatDataset',
+    times=2,
+    dataset=dict(
+        type='ODVGDataset',
+        data_root='data/coco/',
+        ann_file='mdetr_annotations/finetune_grefcoco_train_vg.json',
+        label_map_file=None,
+        data_prefix=dict(img='train2014'),
+        filter_cfg=dict(filter_empty_gt=False),
+        pipeline=_base_.train_pipeline,
+        return_classes=True,
+        backend_args=None))
 
 # --------------------------- grit vg dataset---------------------------
 grit_backend_args = dict(
@@ -402,10 +423,11 @@ train_dataloader = dict(
     batch_size=4,
     num_workers=4,
     sampler=dict(_delete_=True,
-                 type='MultiDataSampler',
-                 # OD ~ 1.74+1.67*0.5+0.18*1.5+0.12*3=3.2
-                 # vg ~ 0.15*2+0.62*1+0.49*1+0.12*2+0.12*2+0.08*3+0.19*1.2+9*0.09=3.17
-                 dataset_ratio=[1, 0.5, 1.5, 3, 2, 1, 1, 2, 2, 3, 1.2, 0.09]),
+                 type='CustomSampleSizeSampler',
+                ratio_mode=True,
+                 # OD ~ 1.74+1.67*0.5+0.18*2+0.12*2=3.175
+                 # vg ~ 0.15*2+0.62*1+0.49*1+0.12*2+0.12*2+0.08*3+0.19*2+9*0.09=3.32
+                 dataset_size=[-1, 0.5, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0.09]),
     dataset=dict(
         datasets=
         [
@@ -427,13 +449,13 @@ train_dataloader = dict(
 # bs=256
 optim_wrapper = dict(optimizer=dict(lr=0.0008))
 
-# one epoch = (3.2+3.17)M/256 = 24883 iter
-# 30e=746490 iter
-# 19e=472777 iter
-# 26e=646958 iter
-max_iter = 746490
+# one epoch = (3.175+3.32)M/256 = 25371 iter
+# 24e=608904 iter
+# 16e=405936 iter
+# 20e=507420 iter
+max_iter = 608904
 train_cfg = dict(
-    _delete_=True,type='IterBasedTrainLoop', max_iters=max_iter, val_interval=15000)
+    _delete_=True,type='IterBasedTrainLoop', max_iters=max_iter, val_interval=13000)
 
 param_scheduler = [
     dict(type='LinearLR', start_factor=0.1, by_epoch=False, begin=0, end=1000),
@@ -442,9 +464,9 @@ param_scheduler = [
         begin=0,
         end=max_iter,
         by_epoch=False,
-        milestones=[472777, 646958],
+        milestones=[405936, 507420],
         gamma=0.1)
 ]
 
-default_hooks = dict(checkpoint=dict(by_epoch=False, interval=15000, max_keep_ckpts=30))
+default_hooks = dict(checkpoint=dict(by_epoch=False, interval=13000, max_keep_ckpts=30))
 log_processor = dict(by_epoch=False)
