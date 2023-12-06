@@ -2,11 +2,10 @@ import argparse
 import concurrent.futures
 import json
 import os
-from pathlib import Path
 
 from tqdm import tqdm
 from mmengine.fileio import get
-
+from mmcv.image import imfrombytes
 
 def parse_args():
     """
@@ -45,14 +44,14 @@ def get_image_info(line, image_dir):
     file_path = os.path.join(image_dir, file_name)
     if not os.path.isfile(file_path):
         result["status"] = "NOFOUND"
-        print(line)
+        print("NOFOUND", line)
         return result
     try:
-        img_bytes = get(file_path, backend_args)
+        img_bytes = get(file_path, objv2_backend_args)
         image = imfrombytes(img_bytes, flag='color')
     except Exception as e:
         result["status"] = "TRUNCATED"
-        print(e, line)
+        print('TRUNCATED', e, line)
         return result
 
     result["status"] = "SUCCESS"
