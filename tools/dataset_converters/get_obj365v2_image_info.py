@@ -41,17 +41,22 @@ def get_image_info(line, image_dir):
 
     file_name = line["file_name"]
 
+    if file_name.startswith('images/v2/'):
+        file_name = file_name.replace('images/v2/', '')
+    elif file_name.startswith('images/v1/'):
+        file_name = file_name.replace('images/v1/', '')
+
     file_path = os.path.join(image_dir, file_name)
     if not os.path.isfile(file_path):
         result["status"] = "NOFOUND"
-        print("NOFOUND", line)
+        print("NOFOUND", file_path, line)
         return result
     try:
         img_bytes = get(file_path, objv2_backend_args)
         image = imfrombytes(img_bytes, flag='color')
     except Exception as e:
         result["status"] = "TRUNCATED"
-        print('TRUNCATED', e, line)
+        print('TRUNCATED', file_path, e, line)
         return result
 
     result["status"] = "SUCCESS"
