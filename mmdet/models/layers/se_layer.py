@@ -5,7 +5,7 @@ from mmcv.cnn import ConvModule
 from mmengine.model import BaseModule
 from mmengine.utils import digit_version, is_tuple_of
 from torch import Tensor
-
+from mmengine.device import is_cuda_available, is_musa_available
 from mmdet.utils import MultiConfig, OptConfigType, OptMultiConfig
 
 
@@ -155,8 +155,12 @@ class ChannelAttention(BaseModule):
 
     def forward(self, x: Tensor) -> Tensor:
         """Forward function for ChannelAttention."""
-        with torch.cuda.amp.autocast(enabled=False):
-            out = self.global_avgpool(x)
+        if is_cuda_available():
+            with torch.cuda.amp.autocast(enabled=False):
+                out = self.global_avgpool(x)
+        elif is_musa_available():
+            with torch.musa.amp.autocast(enabled=False):
+                out = self.global_avgpool(x)
         out = self.fc(out)
         out = self.act(out)
         return x * out

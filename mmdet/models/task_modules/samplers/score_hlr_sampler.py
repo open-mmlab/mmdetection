@@ -6,7 +6,7 @@ from mmcv.ops import nms_match
 from mmengine.structures import InstanceData
 from numpy import ndarray
 from torch import Tensor
-
+from mmengine.device import is_musa_available
 from mmdet.registry import TASK_UTILS
 from mmdet.structures.bbox import bbox2roi
 from ..assigners import AssignResult
@@ -93,6 +93,8 @@ class ScoreHLRSampler(BaseSampler):
         if not is_tensor:
             if torch.cuda.is_available():
                 device = torch.cuda.current_device()
+            elif is_musa_available():
+                device = torch.musa.current_device()
             else:
                 device = 'cpu'
             gallery = torch.tensor(gallery, dtype=torch.long, device=device)

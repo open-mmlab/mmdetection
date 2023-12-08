@@ -3,7 +3,7 @@ import torch
 
 from mmdet.registry import TASK_UTILS
 from mmdet.structures.bbox import bbox_overlaps, get_box_tensor
-
+from mmengine.device import is_musa_available
 
 def cast_tensor_type(x, scale=1., dtype=None):
     if dtype == 'fp16':
@@ -54,7 +54,7 @@ class BboxOverlaps2D:
             bboxes1 = cast_tensor_type(bboxes1, self.scale, self.dtype)
             bboxes2 = cast_tensor_type(bboxes2, self.scale, self.dtype)
             overlaps = bbox_overlaps(bboxes1, bboxes2, mode, is_aligned)
-            if not overlaps.is_cuda and overlaps.dtype == torch.float16:
+            if overlaps.is_cpu and overlaps.dtype == torch.float16:
                 # resume cpu float32
                 overlaps = overlaps.float()
             return overlaps

@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.ops import sigmoid_focal_loss as _sigmoid_focal_loss
-
+from mmengine.device import is_musa_available
 from mmdet.registry import MODELS
 from .utils import weight_reduce_loss
 
@@ -230,6 +230,8 @@ class FocalLoss(nn.Module):
                     # this means that target is already in One-Hot form.
                     calculate_loss_func = py_sigmoid_focal_loss
                 elif torch.cuda.is_available() and pred.is_cuda:
+                    calculate_loss_func = sigmoid_focal_loss
+                elif is_musa_available() and pred.is_musa:
                     calculate_loss_func = sigmoid_focal_loss
                 else:
                     num_classes = pred.size(1)
