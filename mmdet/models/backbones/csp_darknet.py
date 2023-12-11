@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmengine.model import BaseModule
-from mmengine.device import is_musa_availabble, is_cuda_available
+from mmengine.device import is_musa_available, is_cuda_available
 from torch.nn.modules.batchnorm import _BatchNorm
 from mmdet.registry import MODELS
 from ..layers import CSPLayer
@@ -119,7 +119,7 @@ class SPPBottleneck(BaseModule):
             with torch.cuda.amp.autocast(enabled=False):
                 x = torch.cat(
                     [x] + [pooling(x) for pooling in self.poolings], dim=1)
-        elif is_musa_availabble():
+        elif is_musa_available():
             with torch.musa.amp.autocast(enabled=False):
                 x = torch.cat(
                     [x] + [pooling(x) for pooling in self.poolings], dim=1)            

@@ -4,7 +4,7 @@ import sys
 import time
 
 import torch
-
+from mmengine.device import is_cuda_available, is_musa_available
 if sys.version_info >= (3, 7):
 
     @contextlib.contextmanager
@@ -18,13 +18,22 @@ if sys.version_info >= (3, 7):
         Useful as a temporary context manager to find sweet spots of code
         suitable for async implementation.
         """
-        if (not enabled) or not torch.cuda.is_available():
-            yield
-            return
-        stream = stream if stream else torch.cuda.current_stream()
-        end_stream = end_stream if end_stream else stream
-        start = torch.cuda.Event(enable_timing=True)
-        end = torch.cuda.Event(enable_timing=True)
+        if is_cuda_available():
+            if (not enabled) or not torch.cuda.is_available():
+                yield
+                return
+            stream = stream if stream else torch.cuda.current_stream()
+            end_stream = end_stream if end_stream else stream
+            start = torch.cuda.Event(enable_timing=True)
+            end = torch.cuda.Event(enable_timing=True)
+        if is_musa_available():
+            if (not enabled) or not torch.musa.is_available():
+                yield
+                return
+            stream = stream if stream else torch.musa.current_stream()
+            end_stream = end_stream if end_stream else stream
+            start = torch.musa.Event(enable_timing=True)
+            end = torch.musa.Event(enable_timing=True)
         stream.record_event(start)
         try:
             cpu_start = time.monotonic()
