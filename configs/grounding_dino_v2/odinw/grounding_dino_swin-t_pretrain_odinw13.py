@@ -64,8 +64,8 @@ class_name = ('Cottontail-Rabbit', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'CottontailRabbits/'
 
-caption_prompt = None
-# caption_prompt = {'Cottontail-Rabbit': {'name': 'rabbit'}}
+# caption_prompt = None
+caption_prompt = {'Cottontail-Rabbit': {'name': 'rabbit'}}
 
 dataset_CottontailRabbits = dict(
     type=dataset_type,
@@ -87,8 +87,8 @@ class_name = ('hand', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'EgoHands/generic/'
 
-caption_prompt = None
-# caption_prompt = {'hand': {'suffix': ' of a person'}}
+# caption_prompt = None
+caption_prompt = {'hand': {'suffix': ' of a person'}}
 
 dataset_EgoHands = dict(
     type=dataset_type,
@@ -110,15 +110,15 @@ class_name = ('CoW', 'chanterelle')
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'NorthAmericaMushrooms/North American Mushrooms.v1-416x416.coco/'  # noqa
 
-caption_prompt = None
-# caption_prompt = {
-#     'CoW': {
-#         'name': 'flat mushroom'
-#     },
-#     'chanterelle': {
-#         'name': 'yellow mushroom'
-#     }
-# }
+# caption_prompt = None
+caption_prompt = {
+    'CoW': {
+        'name': 'flat mushroom'
+    },
+    'chanterelle': {
+        'name': 'yellow mushroom'
+    }
+}
 
 dataset_NorthAmericaMushrooms = dict(
     type=dataset_type,
@@ -140,13 +140,13 @@ class_name = ('package', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'Packages/Raw/'
 
-caption_prompt = None
-# caption_prompt = {
-#     'package': {
-#         'prefix': 'there is a ',
-#         'suffix': ' on the porch'
-#     }
-# }
+# caption_prompt = None
+caption_prompt = {
+    'package': {
+        'prefix': 'there is a ',
+        'suffix': ' on the porch'
+    }
+}
 
 dataset_Packages = dict(
     type=dataset_type,
@@ -207,14 +207,14 @@ class_name = ('pothole', )
 metainfo = dict(classes=class_name)
 _data_root = data_root + 'pothole/'
 
-caption_prompt = None
-# caption_prompt = {
-#     'pothole': {
-#         'prefix': 'there are some ',
-#         'name': 'holes',
-#         'suffix': ' on the road'
-#     }
-# }
+# caption_prompt = None
+caption_prompt = {
+    'pothole': {
+        'prefix': 'there are some ',
+        'name': 'holes',
+        'suffix': ' on the road'
+    }
+}
 
 dataset_pothole = dict(
     type=dataset_type,

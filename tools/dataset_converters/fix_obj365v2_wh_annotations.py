@@ -12,7 +12,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Convert Objects365 annotations into MS Coco format"
     )
-    parser.add_argument("--root_dir", dest="data/objects365v2/", help="path to objects365 data", type=str)
+    parser.add_argument("--root-dir", default="data/objects365v2/", help="path to objects365 data", type=str)
     parser.add_argument(
         "--apply_exif",
         dest="apply_exif",

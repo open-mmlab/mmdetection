@@ -47,10 +47,6 @@ def get_image_info(line, image_dir):
         file_name = file_name.replace('images/v1/', '')
 
     file_path = os.path.join(image_dir, file_name)
-    if not os.path.isfile(file_path):
-        result["status"] = "NOFOUND"
-        print("NOFOUND", file_path, line)
-        return result
     try:
         img_bytes = get(file_path, objv2_backend_args)
         image = imfrombytes(img_bytes, flag='color')

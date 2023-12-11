@@ -225,8 +225,7 @@ dataset_EgoHands_generic = dict(
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
     pipeline=base_test_pipeline,
-    # NOTE w. prompt 0.526, wo. prompt 0.608
-    # caption_prompt=caption_prompt,
+    caption_prompt=caption_prompt,
     test_mode=True,
     return_classes=True)
 val_evaluator_EgoHands_generic = dict(
@@ -529,7 +528,7 @@ dataset_pothole = dict(
     data_root=_data_root,
     ann_file='valid/annotations_without_background.json',
     data_prefix=dict(img='valid/'),
-    # caption_prompt=caption_prompt,
+    caption_prompt=caption_prompt,
     pipeline=base_test_pipeline,
     test_mode=True,
     return_classes=True)
