@@ -14,14 +14,14 @@ In this paper, we present an open-set object detector, called Grounding DINO, by
 
 ## COCO Results and Models
 
-|        Model        | Backbone |   Style   |  COCO mAP  | Official COCO mAP |  Pre-Train Data  |                             Config                             |                                                      Download                                                      |
-|:-------------------:|:--------:|:---------:|:----------:|:-----------------:|:----------------:|:--------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------------------:|
-|  Grounding DINO-T   |  Swin-T  | Zero-shot |            |       46.7        |       O365       |                                                                |                                                                                                                    |
-|  Grounding DINO-T   |  Swin-T  | Zero-shot |            |       48.1        |    O365,GoldG    |                                                                |                                                                                                                    |
-|  Grounding DINO-T   |  Swin-T  | Zero-shot |    48.5    |       48.4        | O365,GoldG,Cap4M | [config](grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth) |
-| Grounding DINO-T-V2 |  Swin-T  | Zero-shot | 48.5(+1.8) |                   |       O365       |                           [config]()                           |                                                     [model]()                                                      |
-| Grounding DINO-T-V2 |  Swin-T  | Zero-shot | 50.4(+2.3) |                   |    O365,GoldG    |                           [config]()                           |                                                     [model]()                                                      |
-| Grounding DINO-T-V2 |  Swin-T  | Zero-shot | 50.5(+2.1) |                   | O365,GoldG,GRIT  |                           [config]()                           |                                                     [model]()                                                      |
+|        Model        | Backbone |   Style   |  COCO mAP  |  Pre-Train Data  |                             Config                             |                                                      Download                                                      |
+|:-------------------:|:--------:|:---------:|:----------:|:----------------:|:--------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------------------:|
+|  Grounding DINO-T   |  Swin-T  | Zero-shot |    46.7    |       O365       |                                                                |                                                                                                                    |
+|  Grounding DINO-T   |  Swin-T  | Zero-shot |    48.1    |    O365,GoldG    |                                                                |                                                                                                                    |
+|  Grounding DINO-T   |  Swin-T  | Zero-shot |    48.4    | O365,GoldG,Cap4M | [config](grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth) |
+| Grounding DINO-T-V2 |  Swin-T  | Zero-shot | 48.5(+1.8) |       O365       |                           [config]()                           |                                                     [model]()                                                      |
+| Grounding DINO-T-V2 |  Swin-T  | Zero-shot | 50.4(+2.3) |    O365,GoldG    |                           [config]()                           |                                                     [model]()                                                      |
+| Grounding DINO-T-V2 |  Swin-T  | Zero-shot | 50.5(+2.1) | O365,GoldG,GRIT  |                           [config]()                           |                                                     [model]()                                                      |
 
 ## LVIS Results
 
@@ -29,7 +29,7 @@ In this paper, we present an open-set object detector, called Grounding DINO, by
 |:-------------------:|:-----------:|:-----------:|:-----------:|:----------:|:----------:|:----------:|:----------:|:----------:|:----------------:|:----------:|:---------:|
 |  Grounding DINO-T   |    18.8     |    24.2     |    34.7     |    28.8    |    10.1    |    15.3    |    29.9    |    20.1    | O365,GoldG,Cap4M | [config]() | [model]() |
 | Grounding DINO-T-V2 |    28.1     |    30.2     |    42.0     | 35.7(+6.9) |    17.1    |    22.4    |    36.5    | 27.0(+6.9) |    O365,GoldG    | [config]() | [model]() |
-| Grounding DINO-T-V2 |    26.6     |    32.4     |    41.8     | 36.5(+7.7) |        |        |        |            | O365,GoldG,GRIT  | [config]() | [model]() |
+| Grounding DINO-T-V2 |    26.6     |    32.4     |    41.8     | 36.5(+7.7) |    17.3    |    22.6    |    36.4    | 27.1(+7.0) | O365,GoldG,GRIT  | [config]() | [model]() |
 
 
 ## ODinW (Object Detection in the Wild) Results
@@ -118,13 +118,17 @@ Learning visual representations from natural language supervision has recently s
 pip install ddd-dataset
 ```
 
-| Method                           | GroundingDINO-T <br/> (O365,GoldG,Cap4M) | GroundingDINO-T-V2 <br/> (O365,GoldG) | GroundingDINO-T-V2 <br/> (O365,GoldG)-20e | GroundingDINO-T-V2 <br/> (O365,GoldG,GRIT) |
-|----------------------------------|------------------------------------------|---------------------------------------|-------------------------------------------|--------------------------------------------|
-| FULL/short/middle/long/very long | 17.2/18.0/18.7/14.8/16.3                 | 15.6/17.3/16.7/14.3/13.1              | 16.3/17.2/17.2/15.1/15.1                  | 17.0/17.7/18.0/15.7/15.7                   |
-| PRES/short/middle/long/very long | 17.8/18.3/19.2/15.2/17.3                 | 16.4/18.4/17.3/14.5/14.2              | 16.9/18.2/17.6/15.5/15.6                  | 17.9/19.0/18.3/16.5/17.5                   |
-| ABS/short/middle/long/very long  | 15.4/17.1/16.4/13.6/14.9                 | 13.4/13.4/14.5/13.5/11.9              | 14.6/13.7/15.2/14.2/14.6                  | 14.5/13.1/16.7/13.6/13.3                   |
+| Method                           | mode     | Grounding DINO-T <br/> (O365,GoldG,Cap4M) | GroundingDINO-T-V2 <br/> (O365,GoldG) | GroundingDINO-T-V2 <br/> (O365,GoldG)-20e | GroundingDINO-T-V2 <br/> (O365,GoldG,GRIT) | GroundingDINO-T-V2 <br/> (O365,GoldG,GRIT)-20e |
+|----------------------------------|----------|-------------------------------------------|---------------------------------------|-------------------------------------------|--------------------------------------------|------------------------------------------------|
+| FULL/short/middle/long/very long | concat   | 17.2/18.0/18.7/14.8/16.3                  | 15.6/17.3/16.7/14.3/13.1              | 16.3/17.2/17.2/15.1/15.1                  | 17.0/17.7/18.0/15.7/15.7                   | 17.1/18.5/18.3/15.7/14.6                       |
+| FULL/short/middle/long/very long | parallel | 22.3/28.2/24.8/19.1/13.9                  |                                       |                                           | 22.5/25.6/25.1/20.5/14.9                   | 22.4/26.1/24.9/20.4/14.4                       |
+| PRES/short/middle/long/very long | concat   | 17.8/18.3/19.2/15.2/17.3                  | 16.4/18.4/17.3/14.5/14.2              | 16.9/18.2/17.6/15.5/15.6                  | 17.9/19.0/18.3/16.5/17.5                   | 17.7/19.7/18.5/16.1/15.5                       |
+| PRES/short/middle/long/very long | parallel | 21.0/27.0/22.8/17.5/12.5                  |                                       |                                           | 21.5/25.2/23.0/19.0/15.0                   | 21.4/25.8/22.9/19.0/14.6                       |                    
+| ABS/short/middle/long/very long  | concat   | 15.4/17.1/16.4/13.6/14.9                  | 13.4/13.4/14.5/13.5/11.9              | 14.6/13.7/15.2/14.2/14.6                  | 14.5/13.1/16.7/13.6/13.3                   | 15.2/14.3/17.3/14.6/13.5                       |
+| ABS/short/middle/long/very long  | parallel | 26.0/32.0/33.0/23.6/15.5                  |                                       |                                           | 25.6/26.8/33.9/24.5/14.7                   | 25.2/27.0/33.1/24.5/14.1                       |
 
 Note:
 
-1. Intra-scenario mAP
+1. Considering that the evaluation time for Inter-scenario is very long and the performance is low, it is temporarily not supported. The mentioned metrics are for Intra-scenario.
+2. `concat` is the default inference mode for Grounding DINO, where it concatenates multiple sub-sentences with "." to form a single sentence for inference. On the other hand, "parallel" performs inference on each sub-sentence in a for-loop.
 

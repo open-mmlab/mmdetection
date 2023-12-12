@@ -156,19 +156,19 @@ Learning visual representations from natural language supervision has recently s
 
 ## Referring Expression Comprehension Results
 
-| Method                                  | Grounding DINO-T  | Grounding DINO-B  |
-|-----------------------------------------|-------------------|-------------------|
-| RefCOCO val @1,5,10                     | 50.77/89.45/94.86 | 84.61/97.88/99.10 |
-| RefCOCO testA @1,5,10                   | 57.45/91.29/95.62 | 88.65/98.89/99.63 |
-| RefCOCO testB @1,5,10                   | 44.97/86.54/92.88 | 80.51/96.64/98.51 |
-| RefCOCO+ val @1,5,10                    | 51.64/86.35/92.57 | 73.67/96.60/98.65 |
-| RefCOCO+ testA @1,5,10                  | 57.25/86.74/92.65 | 82.19/97.92/99.09 |
-| RefCOCO+ testB @1,5,10                  | 46.35/84.05/90.67 | 64.10/94.25/97.46 |
-| RefCOCOg val @1,5,10                    | 60.42/92.10/96.18 | 78.33/97.28/98.57 |
-| RefCOCOg test @1,5,10                   | 59.74/92.08/96.28 | 78.11/97.06/98.65 |
-| gRefCOCO val Pr@(F1=1, IoU≥0.5),N-acc   | 41.32/91.82       | 46.18/81.44       |
-| gRefCOCO testA Pr@(F1=1, IoU≥0.5),N-acc | 27.23/90.24       | 38.60/76.06       |
-| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 29.70/93.49       | 35.87/80.58       |
+| Method                                  | Grounding DINO-T <br/> (O365,GoldG,Cap4M) | Grounding DINO-B <br/> (COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO) |
+|-----------------------------------------|-------------------------------------------|---------------------------------------------------------------------------|
+| RefCOCO val @1,5,10                     | 50.77/89.45/94.86                         | 84.61/97.88/99.10                                                         |
+| RefCOCO testA @1,5,10                   | 57.45/91.29/95.62                         | 88.65/98.89/99.63                                                         |
+| RefCOCO testB @1,5,10                   | 44.97/86.54/92.88                         | 80.51/96.64/98.51                                                         |
+| RefCOCO+ val @1,5,10                    | 51.64/86.35/92.57                         | 73.67/96.60/98.65                                                         |
+| RefCOCO+ testA @1,5,10                  | 57.25/86.74/92.65                         | 82.19/97.92/99.09                                                         |
+| RefCOCO+ testB @1,5,10                  | 46.35/84.05/90.67                         | 64.10/94.25/97.46                                                         |
+| RefCOCOg val @1,5,10                    | 60.42/92.10/96.18                         | 78.33/97.28/98.57                                                         |
+| RefCOCOg test @1,5,10                   | 59.74/92.08/96.28                         | 78.11/97.06/98.65                                                         |
+| gRefCOCO val Pr@(F1=1, IoU≥0.5),N-acc   | 41.32/91.82                               | 46.18/81.44                                                               |
+| gRefCOCO testA Pr@(F1=1, IoU≥0.5),N-acc | 27.23/90.24                               | 38.60/76.06                                                               |
+| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 29.70/93.49                               | 35.87/80.58                                                               |
 
 Note:
 
@@ -191,15 +191,19 @@ cd mmdetection
 pip install ddd-dataset
 ```
 
-| Method                           | Grounding DINO-T         | Grounding DINO-B |
-|----------------------------------|--------------------------|------------------|
-| FULL/short/middle/long/very long | 17.2/18.0/18.7/14.8/16.3 |                  |
-| PRES/short/middle/long/very long | 17.8/18.3/19.2/15.2/17.3 |                  |
-| ABS/short/middle/long/very long  | 15.4/17.1/16.4/13.6/14.9 |                  |
+| Method                           | mode     | Grounding DINO-T <br/> (O365,GoldG,Cap4M) | Grounding DINO-B <br/> (COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO) |
+|----------------------------------|----------|-------------------------------------------|---------------------------------------------------------------------------|
+| FULL/short/middle/long/very long | concat   | 17.2/18.0/18.7/14.8/16.3                  | 20.2/20.4/21.1/18.8/19.8                                                  |
+| FULL/short/middle/long/very long | parallel | 22.3/28.2/24.8/19.1/13.9                  | 25.0/26.4/27.2/23.5/19.7                                                  |
+| PRES/short/middle/long/very long | concat   | 17.8/18.3/19.2/15.2/17.3                  | 20.7/21.7/21.4/19.1/20.3                                                  |
+| PRES/short/middle/long/very long | parallel | 21.0/27.0/22.8/17.5/12.5                  | 23.7/25.8/25.1/21.9/19.3                                                  |
+| ABS/short/middle/long/very long  | concat   | 15.4/17.1/16.4/13.6/14.9                  | 18.6/16.1/19.7/18.1/19.1                                                  |
+| ABS/short/middle/long/very long  | parallel | 26.0/32.0/33.0/23.6/15.5                  | 28.8/28.1/35.8/28.2/20.2                                                  |
 
 Note:
 
-1. Intra-scenario mAP
+1. Considering that the evaluation time for Inter-scenario is very long and the performance is low, it is temporarily not supported. The mentioned metrics are for Intra-scenario.
+2. `concat` is the default inference mode for Grounding DINO, where it concatenates multiple sub-sentences with "." to form a single sentence for inference. On the other hand, "parallel" performs inference on each sub-sentence in a for-loop.
 
 
 ## Custom Dataset
