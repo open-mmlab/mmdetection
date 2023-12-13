@@ -89,7 +89,7 @@ class CSPLayer(BaseModule):
 
 
 @MODELS.register_module()
-class RTDETRTHybridEncoder(BaseModule):
+class RTDETRHybridEncoder(BaseModule):
     """HybridEncoder of RTDETR.
 
     Args:

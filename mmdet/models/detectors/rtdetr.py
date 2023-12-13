@@ -1,16 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple
 
 import torch
 from torch import Tensor, nn
 
 from mmdet.registry import MODELS
 from mmdet.structures import OptSampleList
-from ..layers import RTDETRTHybridEncoder, RTDETRTransformerDecoder
 from .deformable_detr import DeformableDETR, MultiScaleDeformableAttention
 from .dino import DINO
-
-DeviceType = Union[str, torch.device]
+from ..layers import RTDETRHybridEncoder, RTDETRTransformerDecoder
 
 
 @MODELS.register_module()
@@ -24,7 +22,7 @@ class RTDETR(DINO):
 
     def _init_layers(self) -> None:
         """Initialize layers except for backbone, neck and bbox_head."""
-        self.encoder = RTDETRTHybridEncoder(**self.encoder)
+        self.encoder = RTDETRHybridEncoder(**self.encoder)
         self.decoder = RTDETRTransformerDecoder(**self.decoder)
         self.embed_dims = self.decoder.embed_dims
         self.memory_trans_fc = nn.Linear(self.embed_dims, self.embed_dims)
