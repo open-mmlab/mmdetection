@@ -165,3 +165,10 @@ Learning visual representations from natural language supervision has recently s
 | websiteScreenshots          | 0.003     | 0.004     | 0.003     | 0.005     | 0.005     | 0.006     | 0.012           | 0.175           |
 | Average                     | **0.134** | **0.134** | **0.138** | **0.138** | **0.179** | **0.178** | **0.227**       | **0.492**       |
 
+### Results on Flickr30k
+
+| Model         | Official | Pre-Train Data | Val R@1 | Val R@5 | Val R@10 | Test R@1 | Test R@5 | Test R@10 |
+| ------------- | -------- | -------------- | ------- | ------- | -------- | -------- | -------- | --------- |
+| **GLIP-T(C)** | ✔        | O365, GoldG    | 84.8    | 94.9    | 96.3     | 85.5     | 95.4     | 96.6      |
+| **GLIP-T(C)** |          | O365, GoldG    | 84.9    | 94.9    | 96.3     | 85.6     | 95.4     | 96.7      |
+

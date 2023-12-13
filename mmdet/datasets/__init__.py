@@ -13,6 +13,7 @@ from .crowdhuman import CrowdHumanDataset
 from .dataset_wrappers import ConcatDataset, MultiImageMixDataset
 from .deepfashion import DeepFashionDataset
 from .dsdl import DSDLDetDataset
+from .flickr30k import Flickr30kDataset
 from .isaid import iSAIDDataset
 from .lvis import LVISDataset, LVISV1Dataset, LVISV05Dataset
 from .mot_challenge_dataset import MOTChallengeDataset
@@ -46,5 +47,6 @@ __all__ = [
     'ADE20KPanopticDataset', 'CocoCaptionDataset', 'RefCocoDataset',
     'BaseSegDataset', 'ADE20KSegDataset', 'CocoSegDataset',
     'ADE20KInstanceDataset', 'iSAIDDataset', 'V3DetDataset', 'ConcatDataset',
-    'ODVGDataset', 'MDETRStyleRefCocoDataset', 'DODDataset', 'CustomSampleSizeSampler'
+    'ODVGDataset', 'MDETRStyleRefCocoDataset', 'DODDataset', 'CustomSampleSizeSampler',
+    'Flickr30kDataset'
 ]

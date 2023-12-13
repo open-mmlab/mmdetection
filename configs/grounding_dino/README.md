@@ -153,6 +153,23 @@ Learning visual representations from natural language supervision has recently s
 | websiteScreenshots          | 0.003     | 0.004     | 0.003     | 0.005     | 0.005     | 0.006     | 0.012           | 0.175           |
 | Average                     | **0.134** | **0.134** | **0.138** | **0.138** | **0.179** | **0.178** | **0.227**       | **0.492**       |
 
+## Flickr30k Results
+
+|      Model       |  Pre-Train Data  | Val R@1 | Val R@5 | Val R@10 | Tesst R@1 | Test R@5 | Test R@10 |                          Config                           |                           Download                           |
+| :--------------: | :--------------: | ------- | ------- | -------- | --------- | -------- | --------- | :-------------------------------------------------------: | :----------------------------------------------------------: |
+| Grounding DINO-T | O365,GoldG,Cap4M | 87.8    | 96.6    | 98.0     | 88.1      | 96.9     | 98.2      | [config](grounding_dino_swin-t_finetune_16xb2_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco/grounding_dino_swin-t_finetune_16xb2_1x_coco_20230921_152544-5f234b20.pth)                                                                                                \| [log](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco/grounding_dino_swin-t_finetune_16xb2_1x_coco_20230921_152544.log.json) |
+
+Note:
+
+1. `@1,5,10` refers to precision at the top 1, 5, and 10 positions in a predicted ranked list.
+2. The pretraining data used by Grounding DINO-T is `O365,GoldG,Cap4M`, and the corresponding evaluation configuration is (grounding_dino_swin-t_pretrain_zeroshot_refcoco)[refcoco/grounding_dino_swin-t_pretrain_zeroshot_refcoco.py].
+
+Test Command
+
+``` shell
+cd mmdetection
+bash tools/dist_test.sh configs/grounding_dino/flickr30k/grounding_dino_swin-t-pretrain_zeroshot_flickr30k.py checkpoints/groundingdino_swint_ogc_mmdet-822d7e9d.pth 8
+```
 
 ## Referring Expression Comprehension Results
 
