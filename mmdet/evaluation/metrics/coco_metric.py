@@ -448,23 +448,20 @@ class CocoMetric(BaseMetric):
             iou_type = 'bbox' if metric == 'proposal' else metric
             if metric not in result_files:
                 raise KeyError(f'{metric} is not in results')
-            try:
-                predictions = load(result_files[metric])
-                if iou_type == 'segm':
-                    # Refer to https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/coco.py#L331  # noqa
-                    # When evaluating mask AP, if the results contain bbox,
-                    # cocoapi will use the box area instead of the mask area
-                    # for calculating the instance area. Though the overall AP
-                    # is not affected, this leads to different
-                    # small/medium/large mask AP results.
-                    for x in predictions:
-                        x.pop('bbox')
+            predictions = load(result_files[metric])
+            if iou_type == 'segm':
+                # Refer to https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/coco.py#L331  # noqa
+                # When evaluating mask AP, if the results contain bbox,
+                # cocoapi will use the box area instead of the mask area
+                # for calculating the instance area. Though the overall AP
+                # is not affected, this leads to different
+                # small/medium/large mask AP results.
+                for x in predictions:
+                    x.pop('bbox')
+            if len(predictions) > 0:
                 coco_dt = self._coco_api.loadRes(predictions)
-
-            except IndexError:
-                logger.error(
-                    'The testing results of the whole dataset is empty.')
-                break
+            else:
+                coco_dt = COCO()
 
             if self.use_mp_eval:
                 coco_eval = COCOevalMP(self._coco_api, coco_dt, iou_type)

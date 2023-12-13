@@ -305,8 +305,18 @@ class TestCocoMetric(TestCase):
         coco_metric.process(
             {},
             [dict(pred_instances=empty_pred, img_id=0, ori_shape=(640, 640))])
-        # coco api Index error will be caught
-        coco_metric.evaluate(size=1)
+        eval_results = coco_metric.evaluate(size=1)
+        target = {
+            'coco/bbox_mAP': 0.0,
+            'coco/bbox_mAP_50': 0.0,
+            'coco/bbox_mAP_75': 0.0,
+            'coco/bbox_mAP_s': 0.0,
+            'coco/bbox_mAP_m': 0.0,
+            'coco/bbox_mAP_l': 0.0,
+        }
+        self.assertDictEqual(eval_results, target)
+        self.assertTrue(
+            osp.isfile(osp.join(self.tmp_dir.name, 'test.bbox.json')))
 
     def test_evaluate_without_json(self):
         dummy_pred = self._create_dummy_results()
