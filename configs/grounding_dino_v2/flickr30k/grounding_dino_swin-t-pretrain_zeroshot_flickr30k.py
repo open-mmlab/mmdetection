@@ -1,4 +1,4 @@
-_base_ = '../grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py'
+_base_ = '../grounding_dino_swin-t_pretrain_obj365.py'
 
 dataset_type = 'Flickr30kDataset'
 data_root = 'data/flickr30k/'
