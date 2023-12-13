@@ -38,14 +38,12 @@ dataset_Flickr30k_test = dict(
 
 val_evaluator_Flickr30k = dict(
     type='Flickr30kMetric',
-    flickr_path='data/flickr30k/annotations/',
-    ann_file='data/flickr30k/mdetr_annotations/final_flickr_separateGT_val.json'
+    ann_file=data_root+'mdetr_annotations/final_flickr_separateGT_val.json'
 )
 
 test_evaluator_Flickr30k = dict(
     type='Flickr30kMetric',
-    flickr_path='data/flickr30k/annotations/',
-    ann_file='data/flickr30k/mdetr_annotations/final_flickr_separateGT_test.json'
+    ann_file=data_root+'mdetr_annotations/final_flickr_separateGT_test.json'
 )
 
 # ----------Config---------- #
