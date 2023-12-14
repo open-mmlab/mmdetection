@@ -37,49 +37,23 @@ train_pipeline = [
                     keep_ratio=True)
             ]
         ]),
-    dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
-    dict(
-        type='RandomSamplingNegPos',
-        tokenizer_name=_base_.lang_model_name,
-        num_sample_negative=85,
-        # change this
-        label_map_file='data/coco/annotations/lvis_v1_label_map.json',
-        max_tokens=256),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
                    'scale_factor', 'flip', 'flip_direction', 'text',
-                   'custom_entities', 'tokens_positive', 'dataset_mode'))
+                   'custom_entities'))
 ]
 
 train_dataloader = dict(
-    dataset=dict(_delete_=True,
-                 type='ClassBalancedDataset',
-                 oversample_thr=1e-3,
-                 dataset=dict(
-                     type='ODVGDataset',
-                     data_root=data_root,
-                     need_text=False,
-                     label_map_file='annotations/lvis_v1_label_map.json',
-                     ann_file='annotations/lvis_v1_train_od.json',
-                     data_prefix=dict(img='train2017/'),
-                     filter_cfg=dict(filter_empty_gt=False, min_size=32),
-                     pipeline=train_pipeline)))
-
-val_dataloader = dict(
     dataset=dict(
+        _delete_=True,
+        type='CocoDataset',
         data_root=data_root,
-        type='LVISV1Dataset',
-        ann_file='annotations/lvis_v1_minival_inserted_image_name.json',
-        data_prefix=dict(img='')))
-test_dataloader = val_dataloader
-
-val_evaluator = dict(
-    _delete_=True,
-    type='LVISFixedAPMetric',
-    ann_file=data_root +
-             'annotations/lvis_v1_minival_inserted_image_name.json')
-test_evaluator = val_evaluator
+        ann_file='annotations/instances_train2017.json',
+        data_prefix=dict(img='train2017/'),
+        return_classes=True,
+        filter_cfg=dict(filter_empty_gt=False, min_size=32),
+        pipeline=train_pipeline))
 
 optim_wrapper = dict(
     _delete_=True,
