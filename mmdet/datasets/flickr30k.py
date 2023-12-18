@@ -2,18 +2,22 @@
 import os.path as osp
 from typing import List
 
+from pycocotools.coco import COCO
+
 from mmdet.registry import DATASETS
 from .base_det_dataset import BaseDetDataset
 
-from pycocotools.coco import COCO
 
 @DATASETS.register_module()
 class Flickr30kDataset(BaseDetDataset):
-    """Flickr30K Dataset
-    """
+    """Flickr30K Dataset."""
+
     def convert_phrase_ids(self, a):
         unique_elements = sorted(set(a))
-        element_to_new_label = {element: label for label, element in enumerate(unique_elements)}
+        element_to_new_label = {
+            element: label
+            for label, element in enumerate(unique_elements)
+        }
         discreticed_a = [element_to_new_label[element] for element in a]
         return discreticed_a
 
@@ -29,7 +33,7 @@ class Flickr30kDataset(BaseDetDataset):
                 ann_ids = self.coco.getAnnIds(imgIds=[img_id], iscrowd=None)
             else:
                 ann_ids = self.coco.getAnnIds(imgIds=img_id, iscrowd=None)
-            
+
             coco_img = self.coco.loadImgs(img_id)[0]
 
             caption = coco_img['caption']
@@ -45,25 +49,29 @@ class Flickr30kDataset(BaseDetDataset):
             annos = self.coco.loadAnns(ann_ids)
             for anno in annos:
                 instance = {}
-                instance['bbox'] = [anno['bbox'][0], anno['bbox'][1], anno['bbox'][0] + anno['bbox'][2], anno['bbox'][1] + anno['bbox'][3]]
+                instance['bbox'] = [
+                    anno['bbox'][0], anno['bbox'][1],
+                    anno['bbox'][0] + anno['bbox'][2],
+                    anno['bbox'][1] + anno['bbox'][3]
+                ]
                 instance['bbox_label'] = anno['category_id']
                 instance['ignore_flag'] = anno['iscrowd']
                 phrase_ids.append(anno['phrase_ids'])
                 instances.append(instance)
 
             phrase_ids = self.convert_phrase_ids(phrase_ids)
-            
-            data_list.append(dict(
-                img_path=img_path,
-                img_id=img_id,
-                height=height,
-                width=width,
-                instances=instances,
-                text=caption,
-                phrase_ids=phrase_ids,
-                tokens_positive=tokens_positive,
-                phrases=phrases,
-            ))
+
+            data_list.append(
+                dict(
+                    img_path=img_path,
+                    img_id=img_id,
+                    height=height,
+                    width=width,
+                    instances=instances,
+                    text=caption,
+                    phrase_ids=phrase_ids,
+                    tokens_positive=tokens_positive,
+                    phrases=phrases,
+                ))
 
         return data_list
-    

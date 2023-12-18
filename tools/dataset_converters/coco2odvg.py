@@ -224,6 +224,7 @@ def dump_o365v2_label_map(args):
     with open(output, 'w') as f:
         json.dump(o_dict, f)
 
+
 def dump_v3det_label_map(args):
     with open(args.input, 'r') as f:
         j = json.load(f)
@@ -250,7 +251,7 @@ def coco2odvg(args):
     else:
         out_path = args.output
 
-    if args.dataset == "coco":
+    if args.dataset == 'coco':
         key_list = key_list_coco
         val_list = val_list_coco
         dump_coco_label_map(args)
@@ -270,19 +271,19 @@ def coco2odvg(args):
     for img_id, img_info in tqdm(coco.imgs.items()):
         # missing images
         if args.dataset == 'o365v2' and img_id in [908726, 320532, 320534]:
-            print(img_info["file_name"])
+            print(img_info['file_name'])
             continue
         if args.dataset == 'o365v1' and img_id in [6, 19, 23]:
-            print(img_info["file_name"])
+            print(img_info['file_name'])
             continue
 
         if args.dataset == 'o365v2':
-            file_name = img_info["file_name"]
+            file_name = img_info['file_name']
             if file_name.startswith('images/v2/'):
                 file_name = file_name.replace('images/v2/', '')
             elif file_name.startswith('images/v1/'):
                 file_name = file_name.replace('images/v1/', '')
-            img_info["file_name"] = file_name
+            img_info['file_name'] = file_name
 
         ann_ids = coco.getAnnIds(imgIds=img_id)
         instance_list = []
@@ -330,9 +331,9 @@ def coco2odvg(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('coco to odvg format.', add_help=True)
     parser.add_argument('input', type=str, help='input list name')
-    parser.add_argument("--output", "-o", type=str, help='input list name')
+    parser.add_argument('--output', '-o', type=str, help='input list name')
     parser.add_argument(
-        "--dataset",
+        '--dataset',
         '-d',
         required=True,
         type=str,

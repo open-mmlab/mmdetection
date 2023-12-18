@@ -1,9 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import json
+
 from mmcv.transforms import BaseTransform
 
 from mmdet.registry import TRANSFORMS
 from mmdet.structures.bbox import BaseBoxes
-import json
 
 try:
     from transformers import AutoTokenizer
@@ -28,13 +29,11 @@ def clean_name(name):
 
 def check_for_positive_overflow(gt_bboxes, gt_labels, text, tokenizer,
                                 max_tokens):
-    # NOTE: Only call this function for OD data; DO NOT USE IT FOR GROUNDING DATA
-    # NOTE: called only in coco_dt
-
     # Check if we have too many positive labels
     # generate a caption by appending the positive labels
     positive_label_list = np.unique(gt_labels).tolist()
-    # random shuffule so we can sample different annotations at different epochs
+    # random shuffule so we can sample different annotations
+    # at different epochs
     random.shuffle(positive_label_list)
 
     kept_lables = []
@@ -165,8 +164,9 @@ class RandomSamplingNegPos(BaseTransform):
             if '/' in value:
                 text[key] = random.choice(value.split('/')).strip()
 
-        gt_bboxes, gt_labels, positive_caption_length = check_for_positive_overflow(
-            gt_bboxes, gt_labels, text, self.tokenizer, self.max_tokens)
+        gt_bboxes, gt_labels, positive_caption_length = \
+            check_for_positive_overflow(gt_bboxes, gt_labels,
+                                        text, self.tokenizer, self.max_tokens)
 
         if len(gt_bboxes) < original_box_num:
             print('WARNING: removed {} boxes due to positive caption overflow'.
@@ -222,8 +222,9 @@ class RandomSamplingNegPos(BaseTransform):
             else:
                 break
         negative_label_list = screened_negative_label_list
-        label_to_positions, pheso_caption, label_remap_dict = generate_senetence_given_labels(
-            positive_label_list, negative_label_list, text)
+        label_to_positions, pheso_caption, label_remap_dict = \
+            generate_senetence_given_labels(positive_label_list,
+                                            negative_label_list, text)
 
         # label remap
         if len(gt_labels) > 0:
@@ -243,6 +244,9 @@ class LoadTextAnnotations(BaseTransform):
 
     def transform(self, results: dict) -> dict:
         if 'phrases' in results:
-            tokens_positive = [phrase['tokens_positive'] for phrase in results['phrases'].values()]
+            tokens_positive = [
+                phrase['tokens_positive']
+                for phrase in results['phrases'].values()
+            ]
             results['tokens_positive'] = tokens_positive
         return results

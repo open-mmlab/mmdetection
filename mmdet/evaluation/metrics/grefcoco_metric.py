@@ -47,7 +47,7 @@ class gRefCOCOMetric(BaseMetric):
 
         correct_image = 0
         num_image = 0
-        nt = {"TP": 0, "TN": 0, "FP": 0, "FN": 0}
+        nt = {'TP': 0, 'TN': 0, 'FP': 0, 'FN': 0}
 
         for result in results:
             img_id = result['img_id']
@@ -61,14 +61,15 @@ class gRefCOCOMetric(BaseMetric):
             for one_target in target:
                 if one_target['category_id'] == -1:
                     no_target_flag = True
-                target_bbox = one_target["bbox"]
+                target_bbox = one_target['bbox']
                 converted_bbox = [
                     target_bbox[0],
                     target_bbox[1],
                     target_bbox[2] + target_bbox[0],
                     target_bbox[3] + target_bbox[1],
                 ]
-                converted_bbox_all.append(np.array(converted_bbox).reshape(-1, 4))
+                converted_bbox_all.append(
+                    np.array(converted_bbox).reshape(-1, 4))
             gt_bbox_all = np.concatenate(converted_bbox_all, axis=0)
 
             idx = result['scores'] >= self.thresh_score
@@ -81,18 +82,18 @@ class gRefCOCOMetric(BaseMetric):
             num_gt = gt_bbox_all.shape[0]
             if no_target_flag:
                 if num_prediction >= 1:
-                    nt["FN"] += 1
+                    nt['FN'] += 1
                 else:
-                    nt["TP"] += 1
+                    nt['TP'] += 1
                 if num_prediction >= 1:
                     f_1 = 0.
                 else:
                     f_1 = 1.0
             else:
                 if num_prediction >= 1:
-                    nt["TN"] += 1
+                    nt['TN'] += 1
                 else:
-                    nt["FP"] += 1
+                    nt['FP'] += 1
                 for i in range(min(num_prediction, num_gt)):
                     top_value, top_index = torch.topk(iou.flatten(0, 1), 1)
                     if top_value < self.iou_thrs:
@@ -112,7 +113,10 @@ class gRefCOCOMetric(BaseMetric):
             num_image += 1
 
         score = correct_image / max(num_image, 1)
-        results = {'F1_score': score, 'T_acc': nt['TN'] / (nt['TN'] + nt['FP']),
-                   'N_acc': nt['TP'] / (nt['TP'] + nt['FN'])}
+        results = {
+            'F1_score': score,
+            'T_acc': nt['TN'] / (nt['TN'] + nt['FP']),
+            'N_acc': nt['TP'] / (nt['TP'] + nt['FN'])
+        }
         logger.info(results)
         return results

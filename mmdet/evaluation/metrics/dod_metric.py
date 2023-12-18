@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Optional, Sequence
 from collections import defaultdict
+from typing import List, Optional, Sequence
+
 import numpy as np
 from mmengine.evaluator import BaseMetric
 from mmengine.fileio import get_local_path
@@ -23,8 +24,7 @@ class DODCocoMetric(BaseMetric):
                  prefix: Optional[str] = None) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
         self.outfile_prefix = outfile_prefix
-        with get_local_path(
-                ann_file, backend_args=backend_args) as local_path:
+        with get_local_path(ann_file, backend_args=backend_args) as local_path:
             self._coco_api = COCO(local_path)
 
     def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
@@ -93,14 +93,16 @@ class DODCocoMetric(BaseMetric):
         logger: MMLogger = MMLogger.get_current_instance()
         result_files = self.results2json(results)
         d3_res = self._coco_api.loadRes(result_files)
-        cocoEval = COCOeval(self._coco_api, d3_res, "bbox")
+        cocoEval = COCOeval(self._coco_api, d3_res, 'bbox')
         cocoEval.evaluate()
         cocoEval.accumulate()
         cocoEval.summarize()
 
-        aps = cocoEval.eval["precision"][:, :, :, 0, -1]
+        aps = cocoEval.eval['precision'][:, :, :, 0, -1]
         category_ids = self._coco_api.getCatIds()
-        category_names = [cat["name"] for cat in self._coco_api.loadCats(category_ids)]
+        category_names = [
+            cat['name'] for cat in self._coco_api.loadCats(category_ids)
+        ]
 
         aps_lens = defaultdict(list)
         counter_lens = defaultdict(int)
@@ -108,22 +110,23 @@ class DODCocoMetric(BaseMetric):
             ap = aps[:, :, i]
             ap_value = ap[ap > -1].mean()
             if not np.isnan(ap_value):
-                len_ref = len(category_names[i].split(" "))
+                len_ref = len(category_names[i].split(' '))
                 aps_lens[len_ref].append(ap_value)
                 counter_lens[len_ref] += 1
 
         ap_sum_short = sum([sum(aps_lens[i]) for i in range(0, 4)])
         ap_sum_mid = sum([sum(aps_lens[i]) for i in range(4, 7)])
         ap_sum_long = sum([sum(aps_lens[i]) for i in range(7, 10)])
-        ap_sum_very_long = sum(
-            [sum(aps_lens[i]) for i in range(10, max(counter_lens.keys()) + 1)]
-        )
+        ap_sum_very_long = sum([
+            sum(aps_lens[i]) for i in range(10,
+                                            max(counter_lens.keys()) + 1)
+        ])
         c_sum_short = sum([counter_lens[i] for i in range(1, 4)])
         c_sum_mid = sum([counter_lens[i] for i in range(4, 7)])
         c_sum_long = sum([counter_lens[i] for i in range(7, 10)])
         c_sum_very_long = sum(
-            [counter_lens[i] for i in range(10, max(counter_lens.keys()) + 1)]
-        )
+            [counter_lens[i] for i in range(10,
+                                            max(counter_lens.keys()) + 1)])
         map_short = ap_sum_short / c_sum_short
         map_mid = ap_sum_mid / c_sum_mid
         map_long = ap_sum_long / c_sum_long
@@ -143,9 +146,7 @@ class DODCocoMetric(BaseMetric):
             'AR_m@1000': 10,
             'AR_l@1000': 11
         }
-        metric_items = [
-            'mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l'
-        ]
+        metric_items = ['mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l']
 
         eval_results = {}
         for metric_item in metric_items:
@@ -158,16 +159,11 @@ class DODCocoMetric(BaseMetric):
                     f'{ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
                     f'{ap[4]:.3f} {ap[5]:.3f}')
 
-        logger.info(
-            f"mAP over reference length: short - {map_short:.4f}, mid - {map_mid:.4f}, long - {map_long:.4f}, very long - {map_very_long:.4f}"
-        )
+        logger.info(f'mAP over reference length: short - {map_short:.4f}, '
+                    f'mid - {map_mid:.4f}, long - {map_long:.4f}, '
+                    f'very long - {map_very_long:.4f}')
         eval_results['mAP_short'] = float(f'{round(map_short, 3)}')
         eval_results['mAP_mid'] = float(f'{round(map_mid, 3)}')
         eval_results['mAP_long'] = float(f'{round(map_long, 3)}')
         eval_results['mAP_very_long'] = float(f'{round(map_very_long, 3)}')
         return eval_results
-
-
-
-
-

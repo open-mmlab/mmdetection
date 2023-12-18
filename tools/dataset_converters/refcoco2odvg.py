@@ -1,14 +1,15 @@
 import argparse
 import os.path as osp
+
 import jsonlines
-from tqdm import tqdm
 from pycocotools.coco import COCO
+from tqdm import tqdm
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='refcoco to odvg')
     parser.add_argument('mdetr_anno_dir', type=str)
-    parser.add_argument("--out-dir", "-o", type=str)
+    parser.add_argument('--out-dir', '-o', type=str)
     args = parser.parse_args()
     return args
 

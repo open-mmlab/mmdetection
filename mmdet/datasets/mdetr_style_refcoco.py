@@ -1,16 +1,20 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
 from typing import List
-from mmengine.fileio import get_local_path
-from mmdet.datasets import BaseDetDataset
 
+from mmengine.fileio import get_local_path
+
+from mmdet.datasets import BaseDetDataset
 from mmdet.registry import DATASETS
 from .api_wrappers import COCO
 
 
 @DATASETS.register_module()
 class MDETRStyleRefCocoDataset(BaseDetDataset):
-    """RefCOCO dataset. Only support evaluation now."""
+    """RefCOCO dataset.
+
+    Only support evaluation now.
+    """
 
     def load_data_list(self) -> List[dict]:
         with get_local_path(
@@ -26,7 +30,8 @@ class MDETRStyleRefCocoDataset(BaseDetDataset):
             raw_ann_info = coco.load_anns(ann_ids)
 
             data_info = {}
-            img_path = osp.join(self.data_prefix['img'], raw_img_info['file_name'])
+            img_path = osp.join(self.data_prefix['img'],
+                                raw_img_info['file_name'])
             data_info['img_path'] = img_path
             data_info['img_id'] = img_id
             data_info['height'] = raw_img_info['height']

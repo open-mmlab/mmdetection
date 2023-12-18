@@ -1,13 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import datetime
-import itertools
-import os.path as osp
-import tempfile
-from collections import OrderedDict
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict, Optional, Sequence
 
 import numpy as np
-import torch
 from mmengine.evaluator import BaseMetric
 from mmengine.fileio import get_local_path
 from mmengine.logging import MMLogger
@@ -48,11 +42,14 @@ class RefExpMetric(BaseMetric):
         logger: MMLogger = MMLogger.get_current_instance()
 
         dataset2score = {
-            "refcoco": {k: 0.0 for k in self.topk},
-            "refcoco+": {k: 0.0 for k in self.topk},
-            "refcocog": {k: 0.0 for k in self.topk},
+            'refcoco': {k: 0.0
+                        for k in self.topk},
+            'refcoco+': {k: 0.0
+                         for k in self.topk},
+            'refcocog': {k: 0.0
+                         for k in self.topk},
         }
-        dataset2count = {"refcoco": 0.0, "refcoco+": 0.0, "refcocog": 0.0}
+        dataset2count = {'refcoco': 0.0, 'refcoco+': 0.0, 'refcocog': 0.0}
 
         for result in results:
             img_id = result['img_id']
@@ -62,32 +59,34 @@ class RefExpMetric(BaseMetric):
             img_info = self.coco.loadImgs(img_id)[0]
             target = self.coco.loadAnns(ann_ids[0])
 
-            target_bbox = target[0]["bbox"]
+            target_bbox = target[0]['bbox']
             converted_bbox = [
                 target_bbox[0],
                 target_bbox[1],
                 target_bbox[2] + target_bbox[0],
                 target_bbox[3] + target_bbox[1],
             ]
-            iou = bbox_overlaps(result['bboxes'], np.array(converted_bbox).reshape(-1, 4))
+            iou = bbox_overlaps(result['bboxes'],
+                                np.array(converted_bbox).reshape(-1, 4))
             for k in self.topk:
                 if max(iou[:k]) >= self.iou_thrs:
-                    dataset2score[img_info["dataset_name"]][k] += 1.0
-            dataset2count[img_info["dataset_name"]] += 1.0
+                    dataset2score[img_info['dataset_name']][k] += 1.0
+            dataset2count[img_info['dataset_name']] += 1.0
 
         for key, value in dataset2score.items():
             for k in self.topk:
                 try:
                     value[k] /= dataset2count[key]
-                except:
-                    pass
+                except Exception as e:
+                    print(e)
 
         results = {}
         mean_precision = 0.0
         for key, value in dataset2score.items():
             results[key] = sorted([v for k, v in value.items()])
             mean_precision += sum(results[key])
-            logger.info(f" Dataset: {key} - Precision @ 1, 5, 10: {results[key]}")
+            logger.info(
+                f' Dataset: {key} - Precision @ 1, 5, 10: {results[key]}')
 
         # `mean_precision` key is used for saving the best checkpoint
         out_results = {'mean_precision': mean_precision / 9.0}

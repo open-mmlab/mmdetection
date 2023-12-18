@@ -1,18 +1,18 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
+import json
 import os.path as osp
 
+import cv2
 import numpy as np
-from mmcv.image import imwrite
-import json
-from mmdet.structures import DetDataSample
+from mmcv.image import imfrombytes, imwrite
+from mmengine.fileio import get
 from mmengine.structures import InstanceData
+from mmengine.utils import mkdir_or_exist
+
+from mmdet.structures import DetDataSample
 from mmdet.visualization import DetLocalVisualizer
 from mmdet.visualization.palette import _get_adaptive_scales
-import cv2
-from mmengine.utils import mkdir_or_exist
-from mmengine.fileio import get
-from mmcv.image import imfrombytes
 
 # backend_args = dict(
 #     backend='petrel',
@@ -107,9 +107,8 @@ def main():
 
         base_name, extension = osp.splitext(item['filename'])
 
-        out_file = osp.join(
-            args.output_dir,
-            base_name + "_" + str(i) + extension) if args.output_dir is not None else None
+        out_file = osp.join(args.output_dir, base_name + '_' + str(i) +
+                            extension) if args.output_dir is not None else None
 
         if args.output_dir is not None:
             mkdir_or_exist(args.output_dir)
@@ -157,16 +156,21 @@ def main():
                 tokens_positive = region['tokens_positive']
                 gt_tokens_positive.append(tokens_positive)
                 visualizer.draw_bboxes(
-                    bbox, edge_colors=colors[i], face_colors=colors[i], alpha=0.3)
+                    bbox,
+                    edge_colors=colors[i],
+                    face_colors=colors[i],
+                    alpha=0.3)
                 visualizer.draw_bboxes(bbox, edge_colors=colors[i], alpha=1)
 
                 if 'score' in region:
                     areas = (bbox[:, 3] - bbox[:, 1]) * (
-                            bbox[:, 2] - bbox[:, 0])
+                        bbox[:, 2] - bbox[:, 0])
                     scales = _get_adaptive_scales(areas)
                     score = region['score'][0]
                     score = [str(s) for s in score]
-                    font_sizes = [int(13 * scales[i]) for i in range(len(scales))]
+                    font_sizes = [
+                        int(13 * scales[i]) for i in range(len(scales))
+                    ]
                     visualizer.draw_texts(
                         score,
                         bbox[:, :2].astype(np.int32),
@@ -233,7 +237,10 @@ def main():
                 bbox = np.array(bbox).reshape(-1, 4)
 
                 visualizer.draw_bboxes(
-                    bbox, edge_colors=colors[i], face_colors=colors[i], alpha=0.3)
+                    bbox,
+                    edge_colors=colors[i],
+                    face_colors=colors[i],
+                    alpha=0.3)
                 visualizer.draw_bboxes(bbox, edge_colors=colors[i], alpha=1)
             drawn_img = visualizer.get_image()
 
@@ -245,7 +252,9 @@ def main():
 
             chunk_size = max(min(img.shape[1] - 400, 70), 50)
             for i, p in enumerate(phrases):
-                chunk_p = [p[i:i + chunk_size] for i in range(0, len(p), chunk_size)]
+                chunk_p = [
+                    p[i:i + chunk_size] for i in range(0, len(p), chunk_size)
+                ]
                 for cp in chunk_p:
                     visualizer.draw_texts(
                         cp,

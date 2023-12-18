@@ -1,11 +1,12 @@
 import argparse
-import os.path as osp
+import copy
 import csv
 import json
-from mmengine.fileio import get
-from mmcv.image import imfrombytes
+import os.path as osp
+
 import jsonlines
-import copy
+from mmcv.image import imfrombytes
+from mmengine.fileio import get
 
 
 def _parse_label_file(label_file):
@@ -43,7 +44,8 @@ def oi2odvg(args):
     if args.out_ann is None:
         output = osp.join(args.input_dir, 'openimages_label_map.json')
     else:
-        output = osp.join(osp.dirname(args.out_ann), 'openimages_label_map.json')
+        output = osp.join(
+            osp.dirname(args.out_ann), 'openimages_label_map.json')
     with open(output, 'w') as f:
         json.dump(label_map, f)
 
@@ -72,13 +74,14 @@ def oi2odvg(args):
                 float(line[7])  # ymax
             ]
 
-            is_occluded = True if int(line[8]) == 1 else False
-            is_truncated = True if int(line[9]) == 1 else False
+            # is_occluded = True if int(line[8]) == 1 else False
+            # is_truncated = True if int(line[9]) == 1 else False
             is_group_of = True if int(line[10]) == 1 else False
-            is_depiction = True if int(line[11]) == 1 else False
-            is_inside = True if int(line[12]) == 1 else False
+            # is_depiction = True if int(line[11]) == 1 else False
+            # is_inside = True if int(line[12]) == 1 else False
 
-            # if any([is_occluded, is_truncated, is_group_of, is_depiction, is_inside]):
+            # if any([is_occluded, is_truncated, is_group_of,
+            # is_depiction, is_inside]):
             if is_group_of:
                 print(f'skip {filename} of one instance')
                 skip_count += 1
@@ -87,7 +90,8 @@ def oi2odvg(args):
             # denormalize
             if filename != _filename_shape[0]:
                 if args.img_prefix is not None:
-                    _filename = osp.join(osp.dirname(args.input_dir), args.img_prefix, filename)
+                    _filename = osp.join(
+                        osp.dirname(args.input_dir), args.img_prefix, filename)
                 else:
                     _filename = osp.join(osp.dirname(args.input_dir), filename)
                 img_bytes = get(_filename, backend_args)
@@ -98,7 +102,12 @@ def oi2odvg(args):
                 shape = _filename_shape[1]
 
             h, w = shape[:2]
-            bbox = [max(bbox[0] * w, 0), max(bbox[1] * h, 0), min(bbox[2] * w, w), min(bbox[3] * h, h)]
+            bbox = [
+                max(bbox[0] * w, 0),
+                max(bbox[1] * h, 0),
+                min(bbox[2] * w, w),
+                min(bbox[3] * h, h)
+            ]
 
             x1, y1, x2, y2 = bbox
             inter_w = max(0, min(x2, w) - max(x1, 0))
@@ -124,12 +133,14 @@ def oi2odvg(args):
                     _h = copy_instance.pop('height')
                     _w = copy_instance.pop('width')
 
-                meta_ifo = {'filename': _filename,
-                            'height': _h,
-                            'width': _w,
-                            'detection': {
-                                'instances': copy_instances
-                            }}
+                meta_ifo = {
+                    'filename': _filename,
+                    'height': _h,
+                    'width': _w,
+                    'detection': {
+                        'instances': copy_instances
+                    }
+                }
                 metas.append(meta_ifo)
                 instances = []
             instances.append(instance)
@@ -139,12 +150,14 @@ def oi2odvg(args):
             _filename = instance.pop('filename')
             _h = instance.pop('height')
             _w = instance.pop('width')
-        meta_ifo = {'filename': _filename,
-                    'height': _h,
-                    'width': _w,
-                    'detection': {
-                        'instances': instances
-                    }}
+        meta_ifo = {
+            'filename': _filename,
+            'height': _h,
+            'width': _w,
+            'detection': {
+                'instances': instances
+            }
+        }
         metas.append(meta_ifo)
 
     if args.out_ann is None:
@@ -160,11 +173,15 @@ def oi2odvg(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('openimages to odvg format.', add_help=True)
-    parser.add_argument('--input-dir', default='data/OpenImages/annotations', type=str,
-                        help='input list name')
-    parser.add_argument("--img-prefix", default='OpenImages/train/')
-    parser.add_argument("--out-ann", "-o", type=str)
+    parser = argparse.ArgumentParser(
+        'openimages to odvg format.', add_help=True)
+    parser.add_argument(
+        '--input-dir',
+        default='data/OpenImages/annotations',
+        type=str,
+        help='input list name')
+    parser.add_argument('--img-prefix', default='OpenImages/train/')
+    parser.add_argument('--out-ann', '-o', type=str)
     args = parser.parse_args()
 
     oi2odvg(args)

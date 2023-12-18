@@ -19,7 +19,8 @@ test_pipeline = [
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor', 'text', 'custom_entities', 'tokens_positive'))
+                   'scale_factor', 'text', 'custom_entities',
+                   'tokens_positive'))
 ]
 
 # -------------------------------------------------#
@@ -196,20 +197,24 @@ val_evaluator_grefcoco_testB = dict(
     thresh_f1=1.0)
 
 # -------------------------------------------------#
-datasets = [val_dataset_all_val, val_dataset_refcoco_testA,
-            val_dataset_refcoco_testB, val_dataset_refcoco_plus_testA,
-            val_dataset_refcoco_plus_testB, val_dataset_refcocog_test,
-            val_dataset_grefcoco_val, val_dataset_grefcoco_testA, val_dataset_grefcoco_testB]
+datasets = [
+    val_dataset_all_val, val_dataset_refcoco_testA, val_dataset_refcoco_testB,
+    val_dataset_refcoco_plus_testA, val_dataset_refcoco_plus_testB,
+    val_dataset_refcocog_test, val_dataset_grefcoco_val,
+    val_dataset_grefcoco_testA, val_dataset_grefcoco_testB
+]
 dataset_prefixes = [
     'val', 'refcoco_testA', 'refcoco_testB', 'refcoco+_testA',
-    'refcoco+_testB', 'refcocog_test',
-    'grefcoco_val', 'grefcoco_testA', 'grefcoco_testB'
+    'refcoco+_testB', 'refcocog_test', 'grefcoco_val', 'grefcoco_testA',
+    'grefcoco_testB'
 ]
-metrics = [val_evaluator_all_val, val_evaluator_refcoco_testA,
-           val_evaluator_refcoco_testB, val_evaluator_refcoco_plus_testA,
-           val_evaluator_refcoco_plus_testB, val_evaluator_refcocog_test,
-           val_evaluator_grefcoco_val, val_evaluator_grefcoco_testA,
-           val_evaluator_grefcoco_testB]
+metrics = [
+    val_evaluator_all_val, val_evaluator_refcoco_testA,
+    val_evaluator_refcoco_testB, val_evaluator_refcoco_plus_testA,
+    val_evaluator_refcoco_plus_testB, val_evaluator_refcocog_test,
+    val_evaluator_grefcoco_val, val_evaluator_grefcoco_testA,
+    val_evaluator_grefcoco_testB
+]
 
 val_dataloader = dict(
     dataset=dict(_delete_=True, type='ConcatDataset', datasets=datasets))

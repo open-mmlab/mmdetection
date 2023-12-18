@@ -1,8 +1,10 @@
 _base_ = '../grounding_dino_swin-t_pretrain_obj365.py'
 
 data_root = 'data/cityscapes/'
-class_name = ('person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle', 'bicycle')
-palette = [(220, 20, 60), (255, 0, 0), (0, 0, 142), (0, 0, 70), (0, 60, 100), (0, 80, 100), (0, 0, 230), (119, 11, 32)]
+class_name = ('person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
+              'bicycle')
+palette = [(220, 20, 60), (255, 0, 0), (0, 0, 142), (0, 0, 70), (0, 60, 100),
+           (0, 80, 100), (0, 0, 230), (119, 11, 32)]
 
 metainfo = dict(classes=class_name, palette=palette)
 
@@ -63,8 +65,7 @@ train_dataloader = dict(
             pipeline=train_pipeline,
             return_classes=True,
             data_prefix=dict(img='leftImg8bit/train/'),
-            ann_file='annotations/instancesonly_filtered_gtFine_train.json'
-        )))
+            ann_file='annotations/instancesonly_filtered_gtFine_train.json')))
 
 val_dataloader = dict(
     dataset=dict(

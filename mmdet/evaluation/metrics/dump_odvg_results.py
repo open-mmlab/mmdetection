@@ -1,10 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional, Sequence, Any
-from mmengine.evaluator import BaseMetric
-from mmdet.registry import METRICS
+from typing import Any, Optional, Sequence
+
 import jsonlines
-from mmengine.logging import print_log
 from mmcv.ops import batched_nms
+from mmengine.evaluator import BaseMetric
+from mmengine.logging import print_log
+
+from mmdet.registry import METRICS
 
 
 @METRICS.register_module()
@@ -61,9 +63,12 @@ class DumpODVGResults(BaseMetric):
 
                 _bboxes = bboxes[labels == label]
                 _scores = scores[labels == label]
-                det_bboxes, _ = batched_nms(_bboxes, _scores, None,
-                                            dict(type='nms', iou_threshold=self.nms_thr),
-                                            class_agnostic=True)
+                det_bboxes, _ = batched_nms(
+                    _bboxes,
+                    _scores,
+                    None,
+                    dict(type='nms', iou_threshold=self.nms_thr),
+                    class_agnostic=True)
                 _scores = det_bboxes[:, -1].numpy().tolist()
                 _bboxes = det_bboxes[:, :-1].numpy().tolist()
 
@@ -71,7 +76,12 @@ class DumpODVGResults(BaseMetric):
                 for bbox in _bboxes:
                     round_bboxes.append([round(b, 2) for b in bbox])
                 _scores = [[round(s, 2) for s in _scores]]
-                region = {'phrase': pharse, 'bbox': round_bboxes, 'score': _scores, 'tokens_positive': positive}
+                region = {
+                    'phrase': pharse,
+                    'bbox': round_bboxes,
+                    'score': _scores,
+                    'tokens_positive': positive
+                }
                 region_list.append(region)
             result['grounding']['regions'] = region_list
             self.results.append(result)

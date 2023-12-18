@@ -1,19 +1,20 @@
 import argparse
-
 import json
-import jsonlines
-import os.path as osp
-import os
-from transformers import AutoTokenizer
-import emoji
 import multiprocessing
+import os
+import os.path as osp
 
-tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+import emoji
+import jsonlines
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
 is_debug = False
 
 
-def is_valid_caption(caption, rules={"↙️", "[CLS]", "[SEP]"}):
-    check_anno = caption.strip()[:-1]  # Remove the ending delimiter from the caption.
+def is_valid_caption(caption, rules={'↙️', '[CLS]', '[SEP]'}):
+    check_anno = caption.strip(
+    )[:-1]  # Remove the ending delimiter from the caption.
     for ch in rules:
         if ch in check_anno:
             return False
@@ -22,7 +23,7 @@ def is_valid_caption(caption, rules={"↙️", "[CLS]", "[SEP]"}):
 
 def process_one_file(anno_file, result_queue):
     print('processing', anno_file)
-    with open(anno_file, "r") as f:
+    with open(anno_file, 'r') as f:
         metas = json.load(f)
 
     results = []
@@ -31,8 +32,8 @@ def process_one_file(anno_file, result_queue):
         file_name = meta['key'][0:5] + '/' + meta['key'] + '.jpg'
         file_name = osp.join('images', file_name)
 
-        h = meta["height"]
-        w = meta["width"]
+        h = meta['height']
+        w = meta['width']
 
         caption = meta['caption']
         # Weird captions are filtered out from the beginning.
@@ -56,14 +57,17 @@ def process_one_file(anno_file, result_queue):
         ref_boxes = [i[2:6] for i in ref_exps]
 
         regions = {}
-        for bbox, ref_caption, tokens_positive in zip(ref_boxes, ref_captions, ref_token_positives):
+        for bbox, ref_caption, tokens_positive in zip(ref_boxes, ref_captions,
+                                                      ref_token_positives):
             #  If the current reference includes special delimiters,
             #  it will be filtered out.
-            if not is_valid_caption(caption, rules={".", "？", " ", "\'", "\""}):
+            if not is_valid_caption(
+                    caption, rules={'.', '？', ' ', "\'", "\""}):
                 if is_debug:
                     print('=====ref filtered====', caption)
                 continue
-            # 如果当前 ref 里面包括非 ascii 字符，则过滤掉
+            # If the current reference contains non-ASCII characters,
+            # it will be filtered out.
             if not str.isascii(caption):
                 if is_debug:
                     print('=====ref filtered====', caption)
@@ -75,7 +79,12 @@ def process_one_file(anno_file, result_queue):
                     print('=====ref filtered====', caption)
                 continue
 
-            box = [round(bbox[0] * w, 3), round(bbox[1] * h, 3), round((bbox[2]) * w, 3), round((bbox[3]) * h, 3)]
+            box = [
+                round(bbox[0] * w, 3),
+                round(bbox[1] * h, 3),
+                round((bbox[2]) * w, 3),
+                round((bbox[3]) * h, 3)
+            ]
             x1, y1, x2, y2 = box
             inter_w = max(0, min(x1 + w, int(w)) - max(x1, 0))
             inter_h = max(0, min(y1 + h, int(h)) - max(y1, 0))
@@ -90,9 +99,13 @@ def process_one_file(anno_file, result_queue):
 
             if ref_caption not in regions:
                 regions[ref_caption] = {
-                    'bbox': box,
-                    'phrase': ref_caption,
-                    'tokens_positive': [[int(tokens_positive[0]), int(tokens_positive[1])]],
+                    'bbox':
+                    box,
+                    'phrase':
+                    ref_caption,
+                    'tokens_positive':
+                    [[int(tokens_positive[0]),
+                      int(tokens_positive[1])]],
                 }
             else:
                 old_box = regions[ref_caption]['bbox']
@@ -140,8 +153,10 @@ def process_one_file(anno_file, result_queue):
 
 def grit2odvg(args):
     annotations_dir = osp.join(args.data_root, 'annotations')
-    annos_files = [osp.join(annotations_dir, anno) for anno in os.listdir(annotations_dir) if
-                   anno.endswith('.json') and not anno.endswith('vg.json')]
+    annos_files = [
+        osp.join(annotations_dir, anno) for anno in os.listdir(annotations_dir)
+        if anno.endswith('.json') and not anno.endswith('vg.json')
+    ]
 
     annos_files = annos_files[:2]
 
@@ -150,7 +165,7 @@ def grit2odvg(args):
     pool = multiprocessing.Pool(processes=min(len(annos_files), 16))
 
     for anno_file in annos_files:
-        pool.apply_async(process_one_file, args=(anno_file,result_queue))
+        pool.apply_async(process_one_file, args=(anno_file, result_queue))
 
     pool.close()
     pool.join()

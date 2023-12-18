@@ -119,13 +119,14 @@ val_evaluator_refcoco_testB = dict(
     topk=(1, 5, 10))
 
 # -------------------------------------------------#
-datasets = [val_dataset_all_val, val_dataset_refcoco_testA,
-            val_dataset_refcoco_testB]
-dataset_prefixes = [
-    'refcoco_val', 'refcoco_testA', 'refcoco_testB'
+datasets = [
+    val_dataset_all_val, val_dataset_refcoco_testA, val_dataset_refcoco_testB
 ]
-metrics = [val_evaluator_all_val, val_evaluator_refcoco_testA,
-           val_evaluator_refcoco_testB]
+dataset_prefixes = ['refcoco_val', 'refcoco_testA', 'refcoco_testB']
+metrics = [
+    val_evaluator_all_val, val_evaluator_refcoco_testA,
+    val_evaluator_refcoco_testB
+]
 
 val_dataloader = dict(
     dataset=dict(_delete_=True, type='ConcatDataset', datasets=datasets))
@@ -143,11 +144,12 @@ optim_wrapper = dict(
     type='OptimWrapper',
     optimizer=dict(type='AdamW', lr=0.0002, weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
-    paramwise_cfg=dict(custom_keys={
-        'absolute_pos_embed': dict(decay_mult=0.),
-        'backbone': dict(lr_mult=0.1),
-        # 'language_model': dict(lr_mult=0),
-    }))
+    paramwise_cfg=dict(
+        custom_keys={
+            'absolute_pos_embed': dict(decay_mult=0.),
+            'backbone': dict(lr_mult=0.1),
+            # 'language_model': dict(lr_mult=0),
+        }))
 
 # learning policy
 max_epochs = 5

@@ -64,8 +64,7 @@ train_dataloader = dict(
             pipeline=train_pipeline,
             return_classes=True,
             data_prefix=dict(img='train/'),
-            ann_file='train/_annotations.coco.json'
-        )))
+            ann_file='train/_annotations.coco.json')))
 
 val_dataloader = dict(
     dataset=dict(
@@ -107,4 +106,4 @@ param_scheduler = [
 train_cfg = dict(max_epochs=max_epochs, val_interval=1)
 default_hooks = dict(checkpoint=dict(max_keep_ckpts=1, save_best='auto'))
 
-load_from= ''
+load_from = ''

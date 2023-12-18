@@ -55,13 +55,13 @@ Example:
         --show
 """
 
+import ast
 from argparse import ArgumentParser
 
 from mmengine.logging import print_log
 
 from mmdet.apis import DetInferencer
 from mmdet.evaluation import get_classes
-import ast
 
 
 def parse_args():
@@ -138,9 +138,9 @@ def parse_args():
         '-p',
         type=str,
         help='Used to specify which locations in the input text are of '
-             'interest to the user. -1 indicates that no area is of interest, '
-             'None indicates ignoring this parameter. '
-             'The two-dimensional array represents the start and end positions.')
+        'interest to the user. -1 indicates that no area is of interest, '
+        'None indicates ignoring this parameter. '
+        'The two-dimensional array represents the start and end positions.')
 
     call_args = vars(parser.parse_args())
 
@@ -160,7 +160,8 @@ def parse_args():
             call_args['texts'] = [tuple(class_names)]
 
     if call_args['tokens_positive'] is not None:
-        call_args['tokens_positive'] = ast.literal_eval(call_args['tokens_positive'])
+        call_args['tokens_positive'] = ast.literal_eval(
+            call_args['tokens_positive'])
 
     init_kws = ['model', 'weights', 'device', 'palette']
     init_args = {}

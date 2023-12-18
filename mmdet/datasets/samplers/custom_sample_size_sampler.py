@@ -4,17 +4,19 @@ from typing import Iterator, Optional, Sequence, Sized
 
 import torch
 from mmengine.dist import get_dist_info, sync_random_seed
-from mmdet.registry import DATA_SAMPLERS
 from torch.utils.data import Sampler
+
+from mmdet.registry import DATA_SAMPLERS
 from .class_aware_sampler import RandomCycleIter
 
 
 @DATA_SAMPLERS.register_module()
 class CustomSampleSizeSampler(Sampler):
+
     def __init__(self,
                  dataset: Sized,
                  dataset_size: Sequence[int],
-                 ratio_mode: bool=False,
+                 ratio_mode: bool = False,
                  seed: Optional[int] = None,
                  round_up: bool = True) -> None:
         assert len(dataset.datasets) == len(dataset_size)
@@ -35,7 +37,9 @@ class CustomSampleSizeSampler(Sampler):
         self.dataset_cycle_iter = []
         new_dataset_size = []
         for dataset, size in zip(dataset.datasets, dataset_size):
-            self.dataset_index.append(list(range(total_size_fake, len(dataset) + total_size_fake)))
+            self.dataset_index.append(
+                list(range(total_size_fake,
+                           len(dataset) + total_size_fake)))
             total_size_fake += len(dataset)
             if size == -1:
                 total_size += len(dataset)
@@ -44,13 +48,17 @@ class CustomSampleSizeSampler(Sampler):
             else:
                 if ratio_mode:
                     size = int(size * len(dataset))
-                assert size <= len(dataset), f"dataset size {size} is larger than dataset length {len(dataset)}"
+                assert size <= len(
+                    dataset
+                ), f'dataset size {size} is larger than ' \
+                   f'dataset length {len(dataset)}'
                 total_size += size
                 new_dataset_size.append(size)
 
                 g = torch.Generator()
                 g.manual_seed(self.seed)
-                self.dataset_cycle_iter.append(RandomCycleIter(self.dataset_index[-1], generator=g))
+                self.dataset_cycle_iter.append(
+                    RandomCycleIter(self.dataset_index[-1], generator=g))
         self.dataset_size = new_dataset_size
 
         if self.round_up:
@@ -67,7 +75,9 @@ class CustomSampleSizeSampler(Sampler):
         g.manual_seed(self.seed + self.epoch)
 
         out_index = []
-        for data_size, data_index, cycle_iter in zip(self.dataset_size, self.dataset_index, self.dataset_cycle_iter):
+        for data_size, data_index, cycle_iter in zip(self.dataset_size,
+                                                     self.dataset_index,
+                                                     self.dataset_cycle_iter):
             if data_size == -1:
                 out_index += data_index
             else:

@@ -64,8 +64,7 @@ train_dataloader = dict(
             pipeline=train_pipeline,
             return_classes=True,
             data_prefix=dict(img='train/'),
-            ann_file='train/_annotations.coco.json'
-        )))
+            ann_file='train/_annotations.coco.json')))
 
 val_dataloader = dict(
     dataset=dict(

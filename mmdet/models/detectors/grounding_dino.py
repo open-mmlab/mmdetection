@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
 import re
 import warnings
 from typing import Dict, Optional, Tuple, Union
@@ -16,7 +17,6 @@ from ..layers.transformer.grounding_dino_layers import (
 from .dino import DINO
 from .glip import (create_positive_map, create_positive_map_label_to_token,
                    run_ner)
-import copy
 
 
 def clean_label_name(name: str) -> str:
@@ -187,11 +187,11 @@ class GroundingDINO(DINO):
         return positive_map_label_to_token, positive_map
 
     def get_tokens_positive_and_prompts(
-            self,
-            original_caption: Union[str, list, tuple],
-            custom_entities: bool = False,
-            enhanced_text_prompt: Optional[ConfigType] = None,
-            tokens_positive: Optional[list] = None,
+        self,
+        original_caption: Union[str, list, tuple],
+        custom_entities: bool = False,
+        enhanced_text_prompt: Optional[ConfigType] = None,
+        tokens_positive: Optional[list] = None,
     ) -> Tuple[dict, str, Tensor, list]:
         """Get the tokens positive and prompts for the caption.
 
@@ -219,8 +219,8 @@ class GroundingDINO(DINO):
                     padding='max_length'
                     if self.language_model.pad_to_max else 'longest',
                     return_tensors='pt')
-                positive_map_label_to_token, positive_map = self.get_positive_map(
-                    tokenized, tokens_positive)
+                positive_map_label_to_token, positive_map = \
+                    self.get_positive_map(tokenized, tokens_positive)
 
                 entities = []
                 for token_positive in tokens_positive:
@@ -228,7 +228,8 @@ class GroundingDINO(DINO):
                     for t in token_positive:
                         instance_entities.append(original_caption[t[0]:t[1]])
                     entities.append(' / '.join(instance_entities))
-                return positive_map_label_to_token, original_caption, positive_map, entities
+                return positive_map_label_to_token, original_caption, \
+                    positive_map, entities
 
         chunked_size = self.test_cfg.get('chunked_size', -1)
         if not self.training and chunked_size > 0:
@@ -513,10 +514,10 @@ class GroundingDINO(DINO):
             # All the text prompts are the same,
             # so there is no need to calculate them multiple times.
             _positive_maps_and_prompts = [
-                                             self.get_tokens_positive_and_prompts(
-                                                 text_prompts[0], custom_entities, enhanced_text_prompts[0],
-                                                 tokens_positives[0])
-                                         ] * len(batch_inputs)
+                self.get_tokens_positive_and_prompts(
+                    text_prompts[0], custom_entities, enhanced_text_prompts[0],
+                    tokens_positives[0])
+            ] * len(batch_inputs)
         else:
             _positive_maps_and_prompts = [
                 self.get_tokens_positive_and_prompts(text_prompt,
@@ -546,13 +547,14 @@ class GroundingDINO(DINO):
                 text_dict = self.language_model(text_prompts_once)
                 # text feature map layer
                 if self.text_feat_map is not None:
-                    text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
+                    text_dict['embedded'] = self.text_feat_map(
+                        text_dict['embedded'])
 
                 batch_data_samples[
                     0].token_positive_map = token_positive_maps_once
 
-                head_inputs_dict = self.forward_transformer(copy.deepcopy(visual_feats), text_dict,
-                                                            batch_data_samples)
+                head_inputs_dict = self.forward_transformer(
+                    copy.deepcopy(visual_feats), text_dict, batch_data_samples)
                 pred_instances = self.bbox_head.predict(
                     **head_inputs_dict,
                     rescale=rescale,
@@ -569,7 +571,8 @@ class GroundingDINO(DINO):
             text_dict = self.language_model(list(text_prompts))
             # text feature map layer
             if self.text_feat_map is not None:
-                text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
+                text_dict['embedded'] = self.text_feat_map(
+                    text_dict['embedded'])
 
             is_rec_tasks = []
             for i, data_samples in enumerate(batch_data_samples):
@@ -579,15 +582,15 @@ class GroundingDINO(DINO):
                     is_rec_tasks.append(True)
                 data_samples.token_positive_map = token_positive_maps[i]
 
-            head_inputs_dict = self.forward_transformer(visual_feats, text_dict,
-                                                        batch_data_samples)
+            head_inputs_dict = self.forward_transformer(
+                visual_feats, text_dict, batch_data_samples)
             results_list = self.bbox_head.predict(
                 **head_inputs_dict,
                 rescale=rescale,
                 batch_data_samples=batch_data_samples)
 
-        for data_sample, pred_instances, entity, is_rec_task in zip(batch_data_samples,
-                                                                    results_list, entities, is_rec_tasks):
+        for data_sample, pred_instances, entity, is_rec_task in zip(
+                batch_data_samples, results_list, entities, is_rec_tasks):
             if len(pred_instances) > 0:
                 label_names = []
                 for labels in pred_instances.labels:

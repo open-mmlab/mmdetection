@@ -5,7 +5,6 @@ model = dict(test_cfg=dict(
     chunked_size=40,
 ))
 
-
 dataset_type = 'LVISV1Dataset'
 data_root = 'data/coco/'
 

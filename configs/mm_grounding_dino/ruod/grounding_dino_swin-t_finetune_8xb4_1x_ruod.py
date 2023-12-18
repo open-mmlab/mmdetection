@@ -4,8 +4,8 @@ data_root = 'data/RUOD/'
 class_name = ('holothurian', 'echinus', 'scallop', 'starfish', 'fish',
               'corals', 'diver', 'cuttlefish', 'turtle', 'jellyfish')
 palette = [(235, 211, 70), (106, 90, 205), (160, 32, 240), (176, 23, 31),
-           (142, 0, 0), (230, 0, 0), (106, 0, 228), (60, 100, 0),
-           (80, 100, 0), (70, 0, 0)]
+           (142, 0, 0), (230, 0, 0), (106, 0, 228), (60, 100, 0), (80, 100, 0),
+           (70, 0, 0)]
 
 metainfo = dict(classes=class_name, palette=palette)
 

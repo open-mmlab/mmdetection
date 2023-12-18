@@ -321,16 +321,16 @@ class GLIP(SingleStageDetector):
     ) -> Tuple[dict, str, Tensor, list]:
         if tokens_positive is not None:
             if tokens_positive == -1:
-                if not original_caption.endwith('.'):
+                if not original_caption.endswith('.'):
                     original_caption = original_caption + self._special_tokens
                 return None, original_caption, None, original_caption
             else:
                 if not original_caption.endswith('.'):
-                    orifinal_caption = original_caption + self._special_tokens
+                    original_caption = original_caption + self._special_tokens
                 tokenized = self.language_model.tokenizer([original_caption],
-                                                      return_tensors='pt')
-                positive_map_label_to_token, positive_map = self.get_positive_map(
-                    tokenized, tokens_positive)
+                                                          return_tensors='pt')
+                positive_map_label_to_token, positive_map = \
+                    self.get_positive_map(tokenized, tokens_positive)
 
                 entities = []
                 for token_positive in tokens_positive:
@@ -338,8 +338,9 @@ class GLIP(SingleStageDetector):
                     for t in token_positive:
                         instance_entities.append(original_caption[t[0]:t[1]])
                     entities.append(' / '.join(instance_entities))
-                return positive_map_label_to_token, original_caption, positive_map, entities
-                
+                return positive_map_label_to_token, original_caption, \
+                    positive_map, entities
+
         chunked_size = self.test_cfg.get('chunked_size', -1)
         if not self.training and chunked_size > 0:
             assert isinstance(original_caption,
@@ -513,7 +514,8 @@ class GLIP(SingleStageDetector):
             # so there is no need to calculate them multiple times.
             _positive_maps_and_prompts = [
                 self.get_tokens_positive_and_prompts(
-                    text_prompts[0], custom_entities, enhanced_text_prompts[0], tokens_positives[0])
+                    text_prompts[0], custom_entities, enhanced_text_prompts[0],
+                    tokens_positives[0])
             ] * len(batch_inputs)
         else:
             _positive_maps_and_prompts = [
@@ -521,7 +523,7 @@ class GLIP(SingleStageDetector):
                                                      custom_entities,
                                                      enhanced_text_prompt,
                                                      tokens_positive)
-                for text_prompt, enhanced_text_prompt in zip(
+                for text_prompt, enhanced_text_prompt, tokens_positive in zip(
                     text_prompts, enhanced_text_prompts, tokens_positives)
             ]
 

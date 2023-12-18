@@ -6,7 +6,6 @@ import jsonlines
 from lvis import LVIS
 from tqdm import tqdm
 
-
 key_list_lvis = [i for i in range(1203)]
 val_list_lvis = [i for i in range(1, 1204)]
 
@@ -58,7 +57,8 @@ def lvis2odvg(args):
                 print(f'invalid wh box of {ann}')
                 continue
             if ann['area'] <= 0 or w < 1 or h < 1:
-                print(f'invalid area box of {ann}, w={img_info["width"]}, h={img_info["height"]}')
+                print(f'invalid area box of {ann}, '
+                      f'w={img_info["width"]}, h={img_info["height"]}')
                 continue
 
             if ann.get('iscrowd', False):
@@ -93,6 +93,6 @@ def lvis2odvg(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('lvis to odvg format.', add_help=True)
     parser.add_argument('input', type=str, help='input list name')
-    parser.add_argument("--output", "-o", type=str, help='input list name')
+    parser.add_argument('--output', '-o', type=str, help='input list name')
     args = parser.parse_args()
     lvis2odvg(args)

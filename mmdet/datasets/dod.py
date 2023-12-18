@@ -23,18 +23,20 @@ class DODDataset(BaseDetDataset):
                  data_prefix: dict = dict(img_path=''),
                  **kwargs) -> None:
         if D3 is None:
-            raise ImportError('Please install d3 by `pip install ddd-dataset`.')
+            raise ImportError(
+                'Please install d3 by `pip install ddd-dataset`.')
         pkl_anno_path = osp.join(data_root, data_prefix['anno'])
         self.img_root = osp.join(data_root, data_prefix['img'])
         self.d3 = D3(self.img_root, pkl_anno_path)
 
         sent_infos = self.d3.load_sents()
         classes = tuple([sent_info['raw_sent'] for sent_info in sent_infos])
-        super().__init__(*args,
-                         data_root=data_root,
-                         data_prefix=data_prefix,
-                         metainfo={'classes': classes},
-                         **kwargs)
+        super().__init__(
+            *args,
+            data_root=data_root,
+            data_prefix=data_prefix,
+            metainfo={'classes': classes},
+            **kwargs)
 
     def load_data_list(self) -> List[dict]:
         coco = COCO(self.ann_file)
@@ -44,7 +46,7 @@ class DODDataset(BaseDetDataset):
             data_info = {}
 
             img_info = self.d3.load_imgs(img_id)[0]
-            file_name = img_info["file_name"]
+            file_name = img_info['file_name']
             img_path = osp.join(self.img_root, file_name)
             data_info['img_path'] = img_path
             data_info['img_id'] = img_id
@@ -54,7 +56,7 @@ class DODDataset(BaseDetDataset):
             group_ids = self.d3.get_group_ids(img_ids=[img_id])
             sent_ids = self.d3.get_sent_ids(group_ids=group_ids)
             sent_list = self.d3.load_sents(sent_ids=sent_ids)
-            text_list = [sent["raw_sent"] for sent in sent_list]
+            text_list = [sent['raw_sent'] for sent in sent_list]
             ann_ids = coco.get_ann_ids(img_ids=[img_id])
             anno = coco.load_anns(ann_ids)
 

@@ -77,11 +77,10 @@ Note:
 
 ## LVIS Results
 
-|       Model       | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP | Val1.0 APr | Val1.0 APc | Val1.0 APf | Val1.0 AP |       Pre-Train Data       |                                 Config                                  |                                           Download                                           |
-|:-----------------:|:-----------:|:-----------:|:-----------:|:----------:|:----------:|:----------:|:----------:|:---------:| :------------------------: | :---------------------------------------------------------------------: | :------------------------------------------------------------------------------------------: |
-| Grounding DINO-T  |    18.8     |    24.2     |    34.7     |    28.8    |    10.1    |    15.3    |    29.9    |   20.1    |            O365,GoldG,Cap4M            | [config](lvis/grounding_dino_swin-t_pretrain_zeroshot_mini-lvis.py)  | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth) |
-| Grounding DINO-B  |    27.9     |    33.4     |    37.2     |    34.7    |    19.0    |    24.1    |    32.9    |   26.7    |            COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO            | [config](lvis/grounding_dino_swin-b_pretrain_zeroshot_mini-lvis.py)  | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swinb_cogcoor_mmdet-55949c9c.pth) |
-
+|      Model       | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP | Val1.0 APr | Val1.0 APc | Val1.0 APf | Val1.0 AP |                  Pre-Train Data                  |                               Config                                |                                                        Download                                                        |
+| :--------------: | :---------: | :---------: | :---------: | :--------: | :--------: | :--------: | :--------: | :-------: | :----------------------------------------------: | :-----------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------: |
+| Grounding DINO-T |    18.8     |    24.2     |    34.7     |    28.8    |    10.1    |    15.3    |    29.9    |   20.1    |                 O365,GoldG,Cap4M                 | [config](lvis/grounding_dino_swin-t_pretrain_zeroshot_mini-lvis.py) |   [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth)   |
+| Grounding DINO-B |    27.9     |    33.4     |    37.2     |    34.7    |    19.0    |    24.1    |    32.9    |   26.7    | COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO | [config](lvis/grounding_dino_swin-b_pretrain_zeroshot_mini-lvis.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swinb_cogcoor_mmdet-55949c9c.pth) |
 
 Note:
 
@@ -95,7 +94,7 @@ Learning visual representations from natural language supervision has recently s
 ### Results and models of ODinW13
 
 | Method                | GLIP-T(A) | Official  | GLIP-T(B) | Official  | GLIP-T(C) | Official  | GroundingDINO-T | GroundingDINO-B |
-|-----------------------|-----------|-----------|-----------|-----------|-----------|-----------|-----------------|-----------------|
+| --------------------- | --------- | --------- | --------- | --------- | --------- | --------- | --------------- | --------------- |
 | AerialMaritimeDrone   | 0.123     | 0.122     | 0.110     | 0.110     | 0.130     | 0.130     | 0.173           | 0.281           |
 | Aquarium              | 0.175     | 0.174     | 0.173     | 0.169     | 0.191     | 0.190     | 0.195           | 0.445           |
 | CottontailRabbits     | 0.686     | 0.686     | 0.688     | 0.688     | 0.744     | 0.744     | 0.799           | 0.808           |
@@ -111,11 +110,10 @@ Learning visual representations from natural language supervision has recently s
 | VehiclesOpenImages    | 0.574     | 0.566     | 0.562     | 0.547     | 0.549     | 0.534     | 0.613           | 0.647           |
 | Average               | **0.325** | **0.324** | **0.320** | **0.318** | **0.392** | **0.392** | **0.514**       | **0.621**       |
 
-
 ### Results and models of ODinW35
 
 | Method                      | GLIP-T(A) | Official  | GLIP-T(B) | Official  | GLIP-T(C) | Official  | GroundingDINO-T | GroundingDINO-B |
-|-----------------------------|-----------|-----------|-----------|-----------|-----------|-----------|-----------------|-----------------|
+| --------------------------- | --------- | --------- | --------- | --------- | --------- | --------- | --------------- | --------------- |
 | AerialMaritimeDrone_large   | 0.123     | 0.122     | 0.110     | 0.110     | 0.130     | 0.130     | 0.173           | 0.281           |
 | AerialMaritimeDrone_tiled   | 0.174     | 0.174     | 0.172     | 0.172     | 0.172     | 0.172     | 0.206           | 0.364           |
 | AmericanSignLanguageLetters | 0.001     | 0.001     | 0.003     | 0.003     | 0.009     | 0.009     | 0.002           | 0.096           |
@@ -155,18 +153,18 @@ Learning visual representations from natural language supervision has recently s
 
 ## Flickr30k Results
 
-|      Model       |  Pre-Train Data  | Val R@1 | Val R@5 | Val R@10 | Tesst R@1 | Test R@5 | Test R@10 |                          Config                           |                           Download                           |
-| :--------------: | :--------------: | ------- | ------- | -------- | --------- | -------- | --------- | :-------------------------------------------------------: | :----------------------------------------------------------: |
+|      Model       |  Pre-Train Data  | Val R@1 | Val R@5 | Val R@10 | Tesst R@1 | Test R@5 | Test R@10 |                          Config                           |                                                                                                                                                                                                                                         Download                                                                                                                                                                                                                                          |
+| :--------------: | :--------------: | ------- | ------- | -------- | --------- | -------- | --------- | :-------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | Grounding DINO-T | O365,GoldG,Cap4M | 87.8    | 96.6    | 98.0     | 88.1      | 96.9     | 98.2      | [config](grounding_dino_swin-t_finetune_16xb2_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco/grounding_dino_swin-t_finetune_16xb2_1x_coco_20230921_152544-5f234b20.pth)                                                                                                \| [log](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco/grounding_dino_swin-t_finetune_16xb2_1x_coco_20230921_152544.log.json) |
 
 Note:
 
 1. `@1,5,10` refers to precision at the top 1, 5, and 10 positions in a predicted ranked list.
-2. The pretraining data used by Grounding DINO-T is `O365,GoldG,Cap4M`, and the corresponding evaluation configuration is (grounding_dino_swin-t_pretrain_zeroshot_refcoco)[refcoco/grounding_dino_swin-t_pretrain_zeroshot_refcoco.py].
+2. The pretraining data used by Grounding DINO-T is `O365,GoldG,Cap4M`, and the corresponding evaluation configuration is (grounding_dino_swin-t_pretrain_zeroshot_refcoco)\[refcoco/grounding_dino_swin-t_pretrain_zeroshot_refcoco.py\].
 
 Test Command
 
-``` shell
+```shell
 cd mmdetection
 bash tools/dist_test.sh configs/grounding_dino/flickr30k/grounding_dino_swin-t-pretrain_zeroshot_flickr30k.py checkpoints/groundingdino_swint_ogc_mmdet-822d7e9d.pth 8
 ```
@@ -174,7 +172,7 @@ bash tools/dist_test.sh configs/grounding_dino/flickr30k/grounding_dino_swin-t-p
 ## Referring Expression Comprehension Results
 
 | Method                                  | Grounding DINO-T <br/> (O365,GoldG,Cap4M) | Grounding DINO-B <br/> (COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO) |
-|-----------------------------------------|-------------------------------------------|---------------------------------------------------------------------------|
+| --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------- |
 | RefCOCO val @1,5,10                     | 50.77/89.45/94.86                         | 84.61/97.88/99.10                                                         |
 | RefCOCO testA @1,5,10                   | 57.45/91.29/95.62                         | 88.65/98.89/99.63                                                         |
 | RefCOCO testB @1,5,10                   | 44.97/86.54/92.88                         | 80.51/96.64/98.51                                                         |
@@ -191,8 +189,8 @@ Note:
 
 1. `@1,5,10` refers to precision at the top 1, 5, and 10 positions in a predicted ranked list.
 2. `Pr@(F1=1, IoU≥0.5),N-acc` from the paper [GREC: Generalized Referring Expression Comprehension](https://arxiv.org/pdf/2308.16182.pdf)
-3. The pretraining data used by Grounding DINO-T is `O365,GoldG,Cap4M`, and the corresponding evaluation configuration is (grounding_dino_swin-t_pretrain_zeroshot_refcoco)[refcoco/grounding_dino_swin-t_pretrain_zeroshot_refcoco.py].
-4. The pretraining data used by Grounding DINO-B is `COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO`, and the corresponding evaluation configuration is (grounding_dino_swin-t_pretrain_zeroshot_refcoco)[refcoco/grounding_dino_swin-b_pretrain_zeroshot_refcoco.py].
+3. The pretraining data used by Grounding DINO-T is `O365,GoldG,Cap4M`, and the corresponding evaluation configuration is (grounding_dino_swin-t_pretrain_zeroshot_refcoco)\[refcoco/grounding_dino_swin-t_pretrain_zeroshot_refcoco.py\].
+4. The pretraining data used by Grounding DINO-B is `COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO`, and the corresponding evaluation configuration is (grounding_dino_swin-t_pretrain_zeroshot_refcoco)\[refcoco/grounding_dino_swin-b_pretrain_zeroshot_refcoco.py\].
 
 Test Command
 
@@ -209,7 +207,7 @@ pip install ddd-dataset
 ```
 
 | Method                           | mode     | Grounding DINO-T <br/> (O365,GoldG,Cap4M) | Grounding DINO-B <br/> (COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO) |
-|----------------------------------|----------|-------------------------------------------|---------------------------------------------------------------------------|
+| -------------------------------- | -------- | ----------------------------------------- | ------------------------------------------------------------------------- |
 | FULL/short/middle/long/very long | concat   | 17.2/18.0/18.7/14.8/16.3                  | 20.2/20.4/21.1/18.8/19.8                                                  |
 | FULL/short/middle/long/very long | parallel | 22.3/28.2/24.8/19.1/13.9                  | 25.0/26.4/27.2/23.5/19.7                                                  |
 | PRES/short/middle/long/very long | concat   | 17.8/18.3/19.2/15.2/17.3                  | 20.7/21.7/21.4/19.1/20.3                                                  |
@@ -221,7 +219,6 @@ Note:
 
 1. Considering that the evaluation time for Inter-scenario is very long and the performance is low, it is temporarily not supported. The mentioned metrics are for Intra-scenario.
 2. `concat` is the default inference mode for Grounding DINO, where it concatenates multiple sub-sentences with "." to form a single sentence for inference. On the other hand, "parallel" performs inference on each sub-sentence in a for-loop.
-
 
 ## Custom Dataset
 

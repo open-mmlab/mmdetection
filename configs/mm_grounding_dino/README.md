@@ -15,24 +15,23 @@ In this paper, we present an open-set object detector, called Grounding DINO, by
 ## COCO Results and Models
 
 |        Model        | Backbone |   Style   |  COCO mAP  |    Pre-Train Data     |                             Config                             |                                                      Download                                                      |
-|:-------------------:|:--------:|:---------:|:----------:|:---------------------:|:--------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------------------:|
+| :-----------------: | :------: | :-------: | :--------: | :-------------------: | :------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------: |
 |  Grounding DINO-T   |  Swin-T  | Zero-shot |    46.7    |         O365          |                                                                |                                                                                                                    |
 |  Grounding DINO-T   |  Swin-T  | Zero-shot |    48.1    |      O365,GoldG       |                                                                |                                                                                                                    |
 |  Grounding DINO-T   |  Swin-T  | Zero-shot |    48.4    |   O365,GoldG,Cap4M    | [config](grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth) |
-| Grounding DINO-T-V2 |  Swin-T  | Zero-shot | 48.5(+1.8) |         O365          |                           [config]()                           |                                                     [model]()                                                      |
-| Grounding DINO-T-V2 |  Swin-T  | Zero-shot | 50.4(+2.3) |      O365,GoldG       |                           [config]()                           |                                                     [model]()                                                      |
-| Grounding DINO-T-V2 |  Swin-T  | Zero-shot | 50.5(+2.1) |    O365,GoldG,GRIT    |                           [config]()                           |                                                     [model]()                                                      |
-| Grounding DINO-T-V2 |  Swin-T  | Zero-shot | 50.4(+2.0) | O365,GoldG,GRIT,V3Det |                           [config]()                           |                                                     [model]()                                                      |
+| Grounding DINO-T-V2 |  Swin-T  | Zero-shot | 48.5(+1.8) |         O365          |                          [config](<>)                          |                                                    [model](<>)                                                     |
+| Grounding DINO-T-V2 |  Swin-T  | Zero-shot | 50.4(+2.3) |      O365,GoldG       |                          [config](<>)                          |                                                    [model](<>)                                                     |
+| Grounding DINO-T-V2 |  Swin-T  | Zero-shot | 50.5(+2.1) |    O365,GoldG,GRIT    |                          [config](<>)                          |                                                    [model](<>)                                                     |
+| Grounding DINO-T-V2 |  Swin-T  | Zero-shot | 50.4(+2.0) | O365,GoldG,GRIT,V3Det |                          [config](<>)                          |                                                    [model](<>)                                                     |
 
 ## LVIS Results
 
-|        Model        | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP  | Val1.0 APr | Val1.0 APc | Val1.0 APf |  Val1.0 AP  |    Pre-Train Data     |   Config   | Download  |
-|:-------------------:|:-----------:|:-----------:|:-----------:|:-----------:|:----------:|:----------:|:----------:|:-----------:|:---------------------:|:----------:|:---------:|
-|  Grounding DINO-T   |    18.8     |    24.2     |    34.7     |    28.8     |    10.1    |    15.3    |    29.9    |    20.1     |   O365,GoldG,Cap4M    | [config]() | [model]() |
-| Grounding DINO-T-V2 |    28.1     |    30.2     |    42.0     | 35.7(+6.9)  |    17.1    |    22.4    |    36.5    | 27.0(+6.9)  |      O365,GoldG       | [config]() | [model]() |
-| Grounding DINO-T-V2 |    26.6     |    32.4     |    41.8     | 36.5(+7.7)  |    17.3    |    22.6    |    36.4    | 27.1(+7.0)  |    O365,GoldG,GRIT    | [config]() | [model]() |
-| Grounding DINO-T-V2 |    34.2     |    37.4     |    46.2     | 41.4(+12.6) |    23.6    |    27.6    |    40.5    | 31.9(+11.8) | O365,GoldG,GRIT,V3Det | [config]() | [model]() |
-
+|        Model        | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP  | Val1.0 APr | Val1.0 APc | Val1.0 APf |  Val1.0 AP  |    Pre-Train Data     |    Config    |  Download   |
+| :-----------------: | :---------: | :---------: | :---------: | :---------: | :--------: | :--------: | :--------: | :---------: | :-------------------: | :----------: | :---------: |
+|  Grounding DINO-T   |    18.8     |    24.2     |    34.7     |    28.8     |    10.1    |    15.3    |    29.9    |    20.1     |   O365,GoldG,Cap4M    | [config](<>) | [model](<>) |
+| Grounding DINO-T-V2 |    28.1     |    30.2     |    42.0     | 35.7(+6.9)  |    17.1    |    22.4    |    36.5    | 27.0(+6.9)  |      O365,GoldG       | [config](<>) | [model](<>) |
+| Grounding DINO-T-V2 |    26.6     |    32.4     |    41.8     | 36.5(+7.7)  |    17.3    |    22.6    |    36.4    | 27.1(+7.0)  |    O365,GoldG,GRIT    | [config](<>) | [model](<>) |
+| Grounding DINO-T-V2 |    34.2     |    37.4     |    46.2     | 41.4(+12.6) |    23.6    |    27.6    |    40.5    | 31.9(+11.8) | O365,GoldG,GRIT,V3Det | [config](<>) | [model](<>) |
 
 ## ODinW (Object Detection in the Wild) Results
 
@@ -41,7 +40,7 @@ Learning visual representations from natural language supervision has recently s
 ### Results and models of ODinW13
 
 | Method                | GroundingDINO-T <br/> (O365,GoldG,Cap4M) | GroundingDINO-T-V2 <br/> (O365,GoldG) | GroundingDINO-T-V2 <br/> (O365,GoldG,GRIT) | GroundingDINO-T-V2 <br/> (O365,GoldG,GRIT,V3Det) |
-|-----------------------|------------------------------------------|---------------------------------------|--------------------------------------------|--------------------------------------------------|
+| --------------------- | ---------------------------------------- | ------------------------------------- | ------------------------------------------ | ------------------------------------------------ |
 | AerialMaritimeDrone   | 0.173                                    | 0.133                                 | 0.155                                      | 0.151                                            |
 | Aquarium              | 0.195                                    | 0.252                                 | 0.261                                      | 0.283                                            |
 | CottontailRabbits     | 0.799                                    | 0.771                                 | 0.810                                      | 0.786                                            |
@@ -60,7 +59,7 @@ Learning visual representations from natural language supervision has recently s
 ### Results and models of ODinW35
 
 | Method                      | GroundingDINO-T <br/> (O365,GoldG,Cap4M) | GroundingDINO-T-V2 <br/> (O365,GoldG) | GroundingDINO-T-V2 <br/> (O365,GoldG,GRIT) | GroundingDINO-T-V2 <br/> (O365,GoldG,GRIT,V3Det) |
-|-----------------------------|------------------------------------------|---------------------------------------|--------------------------------------------|--------------------------------------------------|
+| --------------------------- | ---------------------------------------- | ------------------------------------- | ------------------------------------------ | ------------------------------------------------ |
 | AerialMaritimeDrone_large   | 0.173                                    | 0.133                                 | 0.155                                      | 0.151                                            |
 | AerialMaritimeDrone_tiled   | 0.206                                    | 0.170                                 | 0.225                                      | 0.206                                            |
 | AmericanSignLanguageLetters | 0.002                                    | 0.016                                 | 0.020                                      | 0.007                                            |
@@ -101,7 +100,7 @@ Learning visual representations from natural language supervision has recently s
 ## Referring Expression Comprehension Results
 
 | Method                                  | GroundingDINO-T <br/> (O365,GoldG,Cap4M) | GroundingDINO-T-V2 <br/> (O365,GoldG) | GroundingDINO-T-V2 <br/> (O365,GoldG,GRIT) | GroundingDINO-T-V2 <br/> (O365,GoldG,GRIT,V3Det) |
-|-----------------------------------------|------------------------------------------|---------------------------------------|--------------------------------------------|--------------------------------------------------|
+| --------------------------------------- | ---------------------------------------- | ------------------------------------- | ------------------------------------------ | ------------------------------------------------ |
 | RefCOCO val @1,5,10                     | 50.77/89.45/94.86                        | 53.06/89.91/94.69                     | 53.4/90.3/95.5                             | 53.1/89.7/95.1                                   |
 | RefCOCO testA @1,5,10                   | 57.45/91.29/95.62                        | 59.70/91.50/95.88                     | 58.8/91.70/96.2                            | 59.1/91.0/95.5                                   |
 | RefCOCO testB @1,5,10                   | 44.97/86.54/92.88                        | 46.38/86.87/92.21                     | 46.8/87.7/93.3                             | 46.8/87.8/93.6                                   |
@@ -112,7 +111,7 @@ Learning visual representations from natural language supervision has recently s
 | RefCOCOg test @1,5,10                   | 59.74/92.08/96.28                        | 61.13/93.26/96.72                     | 62.6/94.9/97.1                             | 62.9/93.9/97.43                                  |
 | gRefCOCO val Pr@(F1=1, IoU≥0.5),N-acc   | 41.32/91.82                              | 39.76/84.65                           | 40.7/89.7                                  | 41.0/91.3                                        |
 | gRefCOCO testA Pr@(F1=1, IoU≥0.5),N-acc | 27.23/90.24                              | 26.25/89.04                           | 26.0/91.9                                  | 26.1/93.0                                        |
-| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 29.70/93.49                              | 31.31/84.79                           | 30.6/90.2                                  | 30.4/92.3                                         |
+| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 29.70/93.49                              | 31.31/84.79                           | 30.6/90.2                                  | 30.4/92.3                                        |
 
 ## Description Detection Dataset
 
@@ -121,11 +120,11 @@ pip install ddd-dataset
 ```
 
 | Method                           | mode     | Grounding DINO-T <br/> (O365,GoldG,Cap4M) | GroundingDINO-T-V2 <br/> (O365,GoldG) | GroundingDINO-T-V2 <br/> (O365,GoldG,GRIT) | GroundingDINO-T-V2 <br/> (O365,GoldG,GRIT,V3Det) |
-|----------------------------------|----------|-------------------------------------------|---------------------------------------|--------------------------------------------|--------------------------------------------------|
+| -------------------------------- | -------- | ----------------------------------------- | ------------------------------------- | ------------------------------------------ | ------------------------------------------------ |
 | FULL/short/middle/long/very long | concat   | 17.2/18.0/18.7/14.8/16.3                  | 15.6/17.3/16.7/14.3/13.1              | 17.0/17.7/18.0/15.7/15.7                   | 17.5/23.4/18.3/14.7/13.8                         |
 | FULL/short/middle/long/very long | parallel | 22.3/28.2/24.8/19.1/13.9                  |                                       | 22.5/25.6/25.1/20.5/14.9                   | 22.9/28.1/25.4/20.4/14.4                         |
 | PRES/short/middle/long/very long | concat   | 17.8/18.3/19.2/15.2/17.3                  | 16.4/18.4/17.3/14.5/14.2              | 17.9/19.0/18.3/16.5/17.5                   | 18.0/23.7/18.6/15.4/13.3                         |
-| PRES/short/middle/long/very long | parallel | 21.0/27.0/22.8/17.5/12.5                  |                                       | 21.5/25.2/23.0/19.0/15.0                   | 21.9/27.4/23.2/19.1/14.2                         |                  
+| PRES/short/middle/long/very long | parallel | 21.0/27.0/22.8/17.5/12.5                  |                                       | 21.5/25.2/23.0/19.0/15.0                   | 21.9/27.4/23.2/19.1/14.2                         |
 | ABS/short/middle/long/very long  | concat   | 15.4/17.1/16.4/13.6/14.9                  | 13.4/13.4/14.5/13.5/11.9              | 14.5/13.1/16.7/13.6/13.3                   | 15.9/22.2/17.1/12.5/14.4                         |
 | ABS/short/middle/long/very long  | parallel | 26.0/32.0/33.0/23.6/15.5                  |                                       | 25.6/26.8/33.9/24.5/14.7                   | 26.0/30.3/34.1/23.9/14.6                         |
 
@@ -137,13 +136,12 @@ Note:
 ## Flickr30k Results
 
 |        Model        |    Pre-Train Data     | Val R@1 | Val R@5 | Val R@10 | Tesst R@1 | Test R@5 | Test R@10 |                          Config                           |                                                                                                                                                                                                                                         Download                                                                                                                                                                                                                                          |
-|:-------------------:|:---------------------:|---------|---------|----------|-----------|----------|-----------|:---------------------------------------------------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| :-----------------: | :-------------------: | ------- | ------- | -------- | --------- | -------- | --------- | :-------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 |  Grounding DINO-T   |   O365,GoldG,Cap4M    | 87.8    | 96.6    | 98.0     | 88.1      | 96.9     | 98.2      | [config](grounding_dino_swin-t_finetune_16xb2_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco/grounding_dino_swin-t_finetune_16xb2_1x_coco_20230921_152544-5f234b20.pth)                                                                                                \| [log](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco/grounding_dino_swin-t_finetune_16xb2_1x_coco_20230921_152544.log.json) |
-| Grounding DINO-T-V2 |      O365,GoldG       |         |         |          |           |          |           |                                                           |
-| Grounding DINO-T-V2 |    O365,GoldG,GRIT    |         |         |          |           |          |           |                                                           |
-| Grounding DINO-T-V2 | O365,GoldG,GRIT,V3Det |         |         |          |           |          |           |                                                           |
+| Grounding DINO-T-V2 |      O365,GoldG       |         |         |          |           |          |           |                                                           |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Grounding DINO-T-V2 |    O365,GoldG,GRIT    |         |         |          |           |          |           |                                                           |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Grounding DINO-T-V2 | O365,GoldG,GRIT,V3Det |         |         |          |           |          |           |                                                           |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 Note:
 
 1. `@1,5,10` refers to precision at the top 1, 5, and 10 positions in a predicted ranked list.
-

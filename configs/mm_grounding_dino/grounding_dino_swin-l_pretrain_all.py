@@ -406,7 +406,6 @@ grit_train_pipeline = [
                    'custom_entities', 'tokens_positive', 'dataset_mode'))
 ]
 
-
 grit_dataset = dict(
     type='ODVGDataset',
     data_root='data/grit/',
@@ -422,29 +421,27 @@ grit_dataset = dict(
 train_dataloader = dict(
     batch_size=4,
     num_workers=4,
-    sampler=dict(_delete_=True,
-                 type='CustomSampleSizeSampler',
-                ratio_mode=True,
-                 # OD ~ 1.74+1.67*0.5+0.18*2+0.12*2=3.175
-                 # vg ~ 0.15*2+0.62*1+0.49*1+0.12*2+0.12*2+0.08*3+0.19*2+9*0.09=3.32
-                 dataset_size=[-1, 0.5, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0.09]),
-    dataset=dict(
-        datasets=
-        [
-            o365v2_dataset,  # 1.74M
-            oiv6_dataset,  # 1.67M
-            v3det_dataset,  # 0.18M
-            coco2017_train_dataset,  # 0.12M
-            flickr30k_dataset,  # 0.15M
-            gqa_dataset,  # 0.62M
-            coco2014_vg_dataset,  # 0.49M
-            refcoco_dataset,  # 0.12M
-            refcoco_plus_dataset,  # 0.12M
-            refcocog_dataset,  # 0.08M
-            grefcoco_dataset,  # 0.19M
-            grit_dataset  # 9M
-        ]
-    ))
+    sampler=dict(
+        _delete_=True,
+        type='CustomSampleSizeSampler',
+        ratio_mode=True,
+        # OD ~ 1.74+1.67*0.5+0.18*2+0.12*2=3.175
+        # vg ~ 0.15*2+0.62*1+0.49*1+0.12*2+0.12*2+0.08*3+0.19*2+9*0.09=3.32
+        dataset_size=[-1, 0.5, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0.09]),
+    dataset=dict(datasets=[
+        o365v2_dataset,  # 1.74M
+        oiv6_dataset,  # 1.67M
+        v3det_dataset,  # 0.18M
+        coco2017_train_dataset,  # 0.12M
+        flickr30k_dataset,  # 0.15M
+        gqa_dataset,  # 0.62M
+        coco2014_vg_dataset,  # 0.49M
+        refcoco_dataset,  # 0.12M
+        refcoco_plus_dataset,  # 0.12M
+        refcocog_dataset,  # 0.08M
+        grefcoco_dataset,  # 0.19M
+        grit_dataset  # 9M
+    ]))
 
 # bs=256
 optim_wrapper = dict(optimizer=dict(lr=0.0008))
@@ -455,7 +452,10 @@ optim_wrapper = dict(optimizer=dict(lr=0.0008))
 # 20e=507420 iter
 max_iter = 608904
 train_cfg = dict(
-    _delete_=True,type='IterBasedTrainLoop', max_iters=max_iter, val_interval=13000)
+    _delete_=True,
+    type='IterBasedTrainLoop',
+    max_iters=max_iter,
+    val_interval=13000)
 
 param_scheduler = [
     dict(type='LinearLR', start_factor=0.1, by_epoch=False, begin=0, end=1000),
@@ -468,5 +468,6 @@ param_scheduler = [
         gamma=0.1)
 ]
 
-default_hooks = dict(checkpoint=dict(by_epoch=False, interval=13000, max_keep_ckpts=30))
+default_hooks = dict(
+    checkpoint=dict(by_epoch=False, interval=13000, max_keep_ckpts=30))
 log_processor = dict(by_epoch=False)

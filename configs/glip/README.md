@@ -107,7 +107,7 @@ Learning visual representations from natural language supervision has recently s
 ### Results and models of ODinW13
 
 | Method                | GLIP-T(A) | Official  | GLIP-T(B) | Official  | GLIP-T(C) | Official  | GroundingDINO-T | GroundingDINO-B |
-|-----------------------|-----------|-----------|-----------|-----------|-----------|-----------|-----------------|-----------------|
+| --------------------- | --------- | --------- | --------- | --------- | --------- | --------- | --------------- | --------------- |
 | AerialMaritimeDrone   | 0.123     | 0.122     | 0.110     | 0.110     | 0.130     | 0.130     | 0.173           | 0.281           |
 | Aquarium              | 0.175     | 0.174     | 0.173     | 0.169     | 0.191     | 0.190     | 0.195           | 0.445           |
 | CottontailRabbits     | 0.686     | 0.686     | 0.688     | 0.688     | 0.744     | 0.744     | 0.799           | 0.808           |
@@ -123,11 +123,10 @@ Learning visual representations from natural language supervision has recently s
 | VehiclesOpenImages    | 0.574     | 0.566     | 0.562     | 0.547     | 0.549     | 0.534     | 0.613           | 0.647           |
 | Average               | **0.325** | **0.324** | **0.320** | **0.318** | **0.392** | **0.392** | **0.514**       | **0.621**       |
 
-
 ### Results and models of ODinW35
 
 | Method                      | GLIP-T(A) | Official  | GLIP-T(B) | Official  | GLIP-T(C) | Official  | GroundingDINO-T | GroundingDINO-B |
-|-----------------------------|-----------|-----------|-----------|-----------|-----------|-----------|-----------------|-----------------|
+| --------------------------- | --------- | --------- | --------- | --------- | --------- | --------- | --------------- | --------------- |
 | AerialMaritimeDrone_large   | 0.123     | 0.122     | 0.110     | 0.110     | 0.130     | 0.130     | 0.173           | 0.281           |
 | AerialMaritimeDrone_tiled   | 0.174     | 0.174     | 0.172     | 0.172     | 0.172     | 0.172     | 0.206           | 0.364           |
 | AmericanSignLanguageLetters | 0.001     | 0.001     | 0.003     | 0.003     | 0.009     | 0.009     | 0.002           | 0.096           |
@@ -171,4 +170,3 @@ Learning visual representations from natural language supervision has recently s
 | ------------- | -------- | -------------- | ------- | ------- | -------- | -------- | -------- | --------- |
 | **GLIP-T(C)** | ✔        | O365, GoldG    | 84.8    | 94.9    | 96.3     | 85.5     | 95.4     | 96.6      |
 | **GLIP-T(C)** |          | O365, GoldG    | 84.9    | 94.9    | 96.3     | 85.6     | 95.4     | 96.7      |
-

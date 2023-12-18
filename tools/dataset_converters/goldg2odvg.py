@@ -124,11 +124,13 @@ def goldg2odvg(args):
     print(f'save to {out_path}')
 
 
-# goldg+: final_mixed_train_no_coco.json + final_flickr_separateGT_train.json + final_mixed_train_only_coco.json
+# goldg+: final_mixed_train_no_coco.json +
+# final_flickr_separateGT_train.json +
+# final_mixed_train_only_coco.json
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('goldg to odvg format.', add_help=True)
     parser.add_argument('input', type=str, help='input list name')
-    parser.add_argument("--out-ann", "-o", type=str)
+    parser.add_argument('--out-ann', '-o', type=str)
     args = parser.parse_args()
 
     goldg2odvg(args)

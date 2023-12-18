@@ -16,8 +16,8 @@ test_pipeline = [
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor', 'text', 'custom_entities', 'tokens_positive', 
-                   'phrase_ids', 'phrases'))
+                   'scale_factor', 'text', 'custom_entities',
+                   'tokens_positive', 'phrase_ids', 'phrases'))
 ]
 
 dataset_Flickr30k_val = dict(
@@ -36,24 +36,14 @@ dataset_Flickr30k_test = dict(
     pipeline=test_pipeline,
 )
 
-val_evaluator_Flickr30k = dict(
-    type='Flickr30kMetric'
-)
+val_evaluator_Flickr30k = dict(type='Flickr30kMetric')
 
-test_evaluator_Flickr30k = dict(
-    type='Flickr30kMetric'
-)
+test_evaluator_Flickr30k = dict(type='Flickr30kMetric')
 
 # ----------Config---------- #
-dataset_prefixes = [
-    'Flickr30kVal', 'Flickr30kTest'
-]
-datasets = [
-    dataset_Flickr30k_val, dataset_Flickr30k_test
-]
-metrics = [
-    val_evaluator_Flickr30k, test_evaluator_Flickr30k
-]
+dataset_prefixes = ['Flickr30kVal', 'Flickr30kTest']
+datasets = [dataset_Flickr30k_val, dataset_Flickr30k_test]
+metrics = [val_evaluator_Flickr30k, test_evaluator_Flickr30k]
 
 val_dataloader = dict(
     dataset=dict(_delete_=True, type='ConcatDataset', datasets=datasets))

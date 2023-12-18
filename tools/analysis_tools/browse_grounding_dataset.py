@@ -103,9 +103,8 @@ def main():
         base_name = osp.basename(item['data_samples'].img_path)
         name, extension = osp.splitext(base_name)
 
-        out_file = osp.join(
-            args.output_dir,
-            name+"_"+str(i)+extension) if args.output_dir is not None else None
+        out_file = osp.join(args.output_dir, name + '_' + str(i) +
+                            extension) if args.output_dir is not None else None
 
         img = img[..., [2, 1, 0]]  # bgr to rgb
         gt_bboxes = gt_instances.get('bboxes', None)
@@ -189,9 +188,7 @@ def main():
 
         if not args.not_show:
             visualizer.show(
-                drawn_img,
-                win_name=base_name,
-                wait_time=args.show_interval)
+                drawn_img, win_name=base_name, wait_time=args.show_interval)
 
         if out_file is not None:
             imwrite(drawn_img[..., ::-1], out_file)

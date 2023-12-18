@@ -1,7 +1,8 @@
 import argparse
+import os.path as osp
+
 import mmengine
 from pycocotools.coco import COCO
-import os.path as osp
 
 
 def extract_coco(args):
@@ -26,7 +27,8 @@ def extract_coco(args):
             img_ann_info = coco.loadAnns(ann_ids)
             new_json_data['annotations'].extend(img_ann_info)
     if args.out_ann is None:
-        out_ann = osp.dirname(args.mixed_ann) + '/final_mixed_train_only_coco.json'
+        out_ann = osp.dirname(
+            args.mixed_ann) + '/final_mixed_train_only_coco.json'
         mmengine.dump(new_json_data, out_ann)
         print('save new json to {}'.format(out_ann))
     else:
@@ -34,9 +36,10 @@ def extract_coco(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('split mixed goldg to coco.', add_help=True)
+    parser = argparse.ArgumentParser(
+        'split mixed goldg to coco.', add_help=True)
     parser.add_argument('mixed_ann', type=str)
-    parser.add_argument("--out-ann", "-o", type=str)
+    parser.add_argument('--out-ann', '-o', type=str)
     args = parser.parse_args()
 
     extract_coco(args)

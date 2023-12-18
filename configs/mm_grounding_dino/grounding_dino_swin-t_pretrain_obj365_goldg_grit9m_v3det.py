@@ -107,5 +107,11 @@ grit_dataset = dict(
     backend_args=None)
 
 train_dataloader = dict(
-    sampler=dict(_delete_=True, type='CustomSampleSizeSampler', dataset_size=[-1, -1, -1, -1, 500000]),
-    dataset=dict(datasets=[o365v1_od_dataset, flickr30k_dataset, gqa_dataset, v3det_dataset, grit_dataset]))
+    sampler=dict(
+        _delete_=True,
+        type='CustomSampleSizeSampler',
+        dataset_size=[-1, -1, -1, -1, 500000]),
+    dataset=dict(datasets=[
+        o365v1_od_dataset, flickr30k_dataset, gqa_dataset, v3det_dataset,
+        grit_dataset
+    ]))

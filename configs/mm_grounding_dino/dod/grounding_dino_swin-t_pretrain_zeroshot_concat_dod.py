@@ -19,41 +19,44 @@ test_pipeline = [
 ]
 
 # -------------------------------------------------#
-val_dataset_full = dict(type='DODDataset',
-                        data_root=data_root,
-                        ann_file='d3_json/d3_full_annotations.json',
-                        data_prefix=dict(img='d3_images/', anno='d3_pkl'),
-                        pipeline=test_pipeline,
-                        test_mode=True,
-                        backend_args=None,
-                        return_classes=True)
+val_dataset_full = dict(
+    type='DODDataset',
+    data_root=data_root,
+    ann_file='d3_json/d3_full_annotations.json',
+    data_prefix=dict(img='d3_images/', anno='d3_pkl'),
+    pipeline=test_pipeline,
+    test_mode=True,
+    backend_args=None,
+    return_classes=True)
 
 val_evaluator_full = dict(
     type='DODCocoMetric',
     ann_file=data_root + 'd3_json/d3_full_annotations.json')
 
 # -------------------------------------------------#
-val_dataset_pres = dict(type='DODDataset',
-                        data_root=data_root,
-                        ann_file='d3_json/d3_pres_annotations.json',
-                        data_prefix=dict(img='d3_images/', anno='d3_pkl'),
-                        pipeline=test_pipeline,
-                        test_mode=True,
-                        backend_args=None,
-                        return_classes=True)
+val_dataset_pres = dict(
+    type='DODDataset',
+    data_root=data_root,
+    ann_file='d3_json/d3_pres_annotations.json',
+    data_prefix=dict(img='d3_images/', anno='d3_pkl'),
+    pipeline=test_pipeline,
+    test_mode=True,
+    backend_args=None,
+    return_classes=True)
 val_evaluator_pres = dict(
     type='DODCocoMetric',
     ann_file=data_root + 'd3_json/d3_pres_annotations.json')
 
 # -------------------------------------------------#
-val_dataset_abs = dict(type='DODDataset',
-                       data_root=data_root,
-                       ann_file='d3_json/d3_abs_annotations.json',
-                       data_prefix=dict(img='d3_images/', anno='d3_pkl'),
-                       pipeline=test_pipeline,
-                       test_mode=True,
-                       backend_args=None,
-                       return_classes=True)
+val_dataset_abs = dict(
+    type='DODDataset',
+    data_root=data_root,
+    ann_file='d3_json/d3_abs_annotations.json',
+    data_prefix=dict(img='d3_images/', anno='d3_pkl'),
+    pipeline=test_pipeline,
+    test_mode=True,
+    backend_args=None,
+    return_classes=True)
 val_evaluator_abs = dict(
     type='DODCocoMetric',
     ann_file=data_root + 'd3_json/d3_abs_annotations.json')

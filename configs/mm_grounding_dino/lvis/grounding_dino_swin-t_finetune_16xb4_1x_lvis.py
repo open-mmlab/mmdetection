@@ -58,19 +58,20 @@ train_pipeline = [
 ]
 
 train_dataloader = dict(
-    dataset=dict(_delete_=True,
-                 type='ClassBalancedDataset',
-                 oversample_thr=1e-3,
-                 dataset=dict(
-                     type='ODVGDataset',
-                     data_root=data_root,
-                     need_text=False,
-                     label_map_file='annotations/lvis_v1_label_map.json',
-                     ann_file='annotations/lvis_v1_train_od.json',
-                     data_prefix=dict(img=''),
-                     filter_cfg=dict(filter_empty_gt=False, min_size=32),
-                     return_classes=True,
-                     pipeline=train_pipeline)))
+    dataset=dict(
+        _delete_=True,
+        type='ClassBalancedDataset',
+        oversample_thr=1e-3,
+        dataset=dict(
+            type='ODVGDataset',
+            data_root=data_root,
+            need_text=False,
+            label_map_file='annotations/lvis_v1_label_map.json',
+            ann_file='annotations/lvis_v1_train_od.json',
+            data_prefix=dict(img=''),
+            filter_cfg=dict(filter_empty_gt=False, min_size=32),
+            return_classes=True,
+            pipeline=train_pipeline)))
 
 val_dataloader = dict(
     dataset=dict(
@@ -84,7 +85,7 @@ val_evaluator = dict(
     _delete_=True,
     type='LVISFixedAPMetric',
     ann_file=data_root +
-             'annotations/lvis_v1_minival_inserted_image_name.json')
+    'annotations/lvis_v1_minival_inserted_image_name.json')
 test_evaluator = val_evaluator
 
 optim_wrapper = dict(
@@ -92,11 +93,12 @@ optim_wrapper = dict(
     type='OptimWrapper',
     optimizer=dict(type='AdamW', lr=0.0002, weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
-    paramwise_cfg=dict(custom_keys={
-        'absolute_pos_embed': dict(decay_mult=0.),
-        'backbone': dict(lr_mult=0.1),
-        # 'language_model': dict(lr_mult=0),
-    }))
+    paramwise_cfg=dict(
+        custom_keys={
+            'absolute_pos_embed': dict(decay_mult=0.),
+            'backbone': dict(lr_mult=0.1),
+            # 'language_model': dict(lr_mult=0),
+        }))
 
 # learning policy
 max_epochs = 12
@@ -111,6 +113,8 @@ param_scheduler = [
 ]
 train_cfg = dict(max_epochs=max_epochs, val_interval=3)
 
-default_hooks = dict(checkpoint=dict(max_keep_ckpts=1, save_best='lvis_fixed_ap/AP', rule='greater'))
+default_hooks = dict(
+    checkpoint=dict(
+        max_keep_ckpts=1, save_best='lvis_fixed_ap/AP', rule='greater'))
 
 load_from = ''
