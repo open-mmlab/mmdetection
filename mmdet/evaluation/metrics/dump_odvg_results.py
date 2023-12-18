@@ -1,12 +1,16 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import Any, Optional, Sequence
 
-import jsonlines
 from mmcv.ops import batched_nms
 from mmengine.evaluator import BaseMetric
 from mmengine.logging import print_log
 
 from mmdet.registry import METRICS
+
+try:
+    import jsonlines
+except ImportError:
+    jsonlines = None
 
 
 @METRICS.register_module()
@@ -25,6 +29,10 @@ class DumpODVGResults(BaseMetric):
         self.score_thr = score_thr
         self.img_prefix = img_prefix
         self.nms_thr = nms_thr
+
+        if jsonlines is None:
+            raise ImportError('Please run "pip install jsonlines" to install '
+                              'this package.')
 
     def process(self, data_batch: Any, data_samples: Sequence[dict]) -> None:
         for data_sample in data_samples:
