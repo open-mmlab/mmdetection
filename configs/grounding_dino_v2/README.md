@@ -121,16 +121,29 @@ pip install ddd-dataset
 ```
 
 | Method                           | mode     | Grounding DINO-T <br/> (O365,GoldG,Cap4M) | GroundingDINO-T-V2 <br/> (O365,GoldG) | GroundingDINO-T-V2 <br/> (O365,GoldG,GRIT) | GroundingDINO-T-V2 <br/> (O365,GoldG,GRIT,V3Det) |
-|----------------------------------|----------|-------------------------------------------|---------------------------------------|-------------------------------------|--------------------------------------------------|
-| FULL/short/middle/long/very long | concat   | 17.2/18.0/18.7/14.8/16.3                  | 15.6/17.3/16.7/14.3/13.1              | 17.0/17.7/18.0/15.7/15.7            |  17.5/23.4/18.3/14.7/13.8                         |
-| FULL/short/middle/long/very long | parallel | 22.3/28.2/24.8/19.1/13.9                  |                                       | 22.5/25.6/25.1/20.5/14.9            |  22.9/28.1/25.4/20.4/14.4                         |
-| PRES/short/middle/long/very long | concat   | 17.8/18.3/19.2/15.2/17.3                  | 16.4/18.4/17.3/14.5/14.2              | 17.9/19.0/18.3/16.5/17.5            |  18.0/23.7/18.6/15.4/13.3                         |
-| PRES/short/middle/long/very long | parallel | 21.0/27.0/22.8/17.5/12.5                  |                                       | 21.5/25.2/23.0/19.0/15.0            |  21.9/27.4/23.2/19.1/14.2                         |                  
-| ABS/short/middle/long/very long  | concat   | 15.4/17.1/16.4/13.6/14.9                  | 13.4/13.4/14.5/13.5/11.9              | 14.5/13.1/16.7/13.6/13.3            |  15.9/22.2/17.1/12.5/14.4                         |
-| ABS/short/middle/long/very long  | parallel | 26.0/32.0/33.0/23.6/15.5                  |                                       | 25.6/26.8/33.9/24.5/14.7            |  26.0/30.3/34.1/23.9/14.6                         |
+|----------------------------------|----------|-------------------------------------------|---------------------------------------|--------------------------------------------|--------------------------------------------------|
+| FULL/short/middle/long/very long | concat   | 17.2/18.0/18.7/14.8/16.3                  | 15.6/17.3/16.7/14.3/13.1              | 17.0/17.7/18.0/15.7/15.7                   | 17.5/23.4/18.3/14.7/13.8                         |
+| FULL/short/middle/long/very long | parallel | 22.3/28.2/24.8/19.1/13.9                  |                                       | 22.5/25.6/25.1/20.5/14.9                   | 22.9/28.1/25.4/20.4/14.4                         |
+| PRES/short/middle/long/very long | concat   | 17.8/18.3/19.2/15.2/17.3                  | 16.4/18.4/17.3/14.5/14.2              | 17.9/19.0/18.3/16.5/17.5                   | 18.0/23.7/18.6/15.4/13.3                         |
+| PRES/short/middle/long/very long | parallel | 21.0/27.0/22.8/17.5/12.5                  |                                       | 21.5/25.2/23.0/19.0/15.0                   | 21.9/27.4/23.2/19.1/14.2                         |                  
+| ABS/short/middle/long/very long  | concat   | 15.4/17.1/16.4/13.6/14.9                  | 13.4/13.4/14.5/13.5/11.9              | 14.5/13.1/16.7/13.6/13.3                   | 15.9/22.2/17.1/12.5/14.4                         |
+| ABS/short/middle/long/very long  | parallel | 26.0/32.0/33.0/23.6/15.5                  |                                       | 25.6/26.8/33.9/24.5/14.7                   | 26.0/30.3/34.1/23.9/14.6                         |
 
 Note:
 
 1. Considering that the evaluation time for Inter-scenario is very long and the performance is low, it is temporarily not supported. The mentioned metrics are for Intra-scenario.
 2. `concat` is the default inference mode for Grounding DINO, where it concatenates multiple sub-sentences with "." to form a single sentence for inference. On the other hand, "parallel" performs inference on each sub-sentence in a for-loop.
+
+## Flickr30k Results
+
+|        Model        |    Pre-Train Data     | Val R@1 | Val R@5 | Val R@10 | Tesst R@1 | Test R@5 | Test R@10 |                          Config                           |                                                                                                                                                                                                                                         Download                                                                                                                                                                                                                                          |
+|:-------------------:|:---------------------:|---------|---------|----------|-----------|----------|-----------|:---------------------------------------------------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+|  Grounding DINO-T   |   O365,GoldG,Cap4M    | 87.8    | 96.6    | 98.0     | 88.1      | 96.9     | 98.2      | [config](grounding_dino_swin-t_finetune_16xb2_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco/grounding_dino_swin-t_finetune_16xb2_1x_coco_20230921_152544-5f234b20.pth)                                                                                                \| [log](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco/grounding_dino_swin-t_finetune_16xb2_1x_coco_20230921_152544.log.json) |
+| Grounding DINO-T-V2 |      O365,GoldG       |         |         |          |           |          |           |                                                           |
+| Grounding DINO-T-V2 |    O365,GoldG,GRIT    |         |         |          |           |          |           |                                                           |
+| Grounding DINO-T-V2 | O365,GoldG,GRIT,V3Det |         |         |          |           |          |           |                                                           |
+
+Note:
+
+1. `@1,5,10` refers to precision at the top 1, 5, and 10 positions in a predicted ranked list.
 
