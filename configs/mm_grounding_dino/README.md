@@ -26,12 +26,12 @@ In this paper, we present an open-set object detector, called Grounding DINO, by
 
 ## LVIS Results
 
-|        Model        | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP | Val1.0 APr | Val1.0 APc | Val1.0 APf | Val1.0 AP  |    Pre-Train Data     |   Config   | Download  |
-|:-------------------:|:-----------:|:-----------:|:-----------:|:----------:|:----------:|:----------:|:----------:|:----------:|:---------------------:|:----------:|:---------:|
-|  Grounding DINO-T   |    18.8     |    24.2     |    34.7     |    28.8    |    10.1    |    15.3    |    29.9    |    20.1    |   O365,GoldG,Cap4M    | [config]() | [model]() |
-| Grounding DINO-T-V2 |    28.1     |    30.2     |    42.0     | 35.7(+6.9) |    17.1    |    22.4    |    36.5    | 27.0(+6.9) |      O365,GoldG       | [config]() | [model]() |
-| Grounding DINO-T-V2 |    26.6     |    32.4     |    41.8     | 36.5(+7.7) |    17.3    |    22.6    |    36.4    | 27.1(+7.0) |    O365,GoldG,GRIT    | [config]() | [model]() |
-| Grounding DINO-T-V2 |    34.2     |    37.4     |    46.2     |    41.4    |        |        |       |  | O365,GoldG,GRIT,V3Det | [config]() | [model]() |
+|        Model        | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP  | Val1.0 APr | Val1.0 APc | Val1.0 APf |  Val1.0 AP  |    Pre-Train Data     |   Config   | Download  |
+|:-------------------:|:-----------:|:-----------:|:-----------:|:-----------:|:----------:|:----------:|:----------:|:-----------:|:---------------------:|:----------:|:---------:|
+|  Grounding DINO-T   |    18.8     |    24.2     |    34.7     |    28.8     |    10.1    |    15.3    |    29.9    |    20.1     |   O365,GoldG,Cap4M    | [config]() | [model]() |
+| Grounding DINO-T-V2 |    28.1     |    30.2     |    42.0     | 35.7(+6.9)  |    17.1    |    22.4    |    36.5    | 27.0(+6.9)  |      O365,GoldG       | [config]() | [model]() |
+| Grounding DINO-T-V2 |    26.6     |    32.4     |    41.8     | 36.5(+7.7)  |    17.3    |    22.6    |    36.4    | 27.1(+7.0)  |    O365,GoldG,GRIT    | [config]() | [model]() |
+| Grounding DINO-T-V2 |    34.2     |    37.4     |    46.2     | 41.4(+12.6) |    23.6    |    27.6    |    40.5    | 31.9(+11.8) | O365,GoldG,GRIT,V3Det | [config]() | [model]() |
 
 
 ## ODinW (Object Detection in the Wild) Results
