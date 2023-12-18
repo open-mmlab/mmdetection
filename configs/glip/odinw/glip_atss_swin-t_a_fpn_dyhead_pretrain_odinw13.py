@@ -1,4 +1,4 @@
-_base_ = '../grounding_dino/grounding_dino_swin-b_pretrain_mixeddata.py'
+_base_ = '../glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py'
 
 dataset_type = 'CocoDataset'
 data_root = 'data/odinw/'

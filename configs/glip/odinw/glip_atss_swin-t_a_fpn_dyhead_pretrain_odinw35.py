@@ -1,4 +1,4 @@
-_base_ = '../glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py'
+_base_ = '../glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py'
 
 dataset_type = 'CocoDataset'
 data_root = 'data/odinw/'
@@ -518,7 +518,7 @@ _data_root = data_root + 'pothole/'
 caption_prompt = {
     'pothole': {
         'name': 'holes',
-        'prefix': 'there are some',
+        'prefix': 'there are some ',
         'suffix': ' on the road'
     }
 }

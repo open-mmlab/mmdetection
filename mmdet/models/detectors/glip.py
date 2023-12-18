@@ -79,6 +79,7 @@ def run_ner(caption: str) -> Tuple[list, list]:
     noun_phrases = find_noun_phrases(caption)
     noun_phrases = [remove_punctuation(phrase) for phrase in noun_phrases]
     noun_phrases = [phrase for phrase in noun_phrases if phrase != '']
+    print('noun_phrases:', noun_phrases)
     relevant_phrases = noun_phrases
     labels = noun_phrases
 
@@ -315,8 +316,31 @@ class GLIP(SingleStageDetector):
         self,
         original_caption: Union[str, list, tuple],
         custom_entities: bool = False,
-        enhanced_text_prompt: Optional[ConfigType] = None
+        enhanced_text_prompt: Optional[ConfigType] = None,
+        tokens_positive: Optional[list] = None,
     ) -> Tuple[dict, str, Tensor, list]:
+        if tokens_positive is not None:
+            if tokens_positive == -1:
+                if not original_caption.endswith('.'):
+                    original_caption = original_caption + self._special_tokens
+                return None, original_caption, None, original_caption
+            else:
+                if not original_caption.endswith('.'):
+                    original_caption = original_caption + self._special_tokens
+                tokenized = self.language_model.tokenizer([original_caption],
+                                                          return_tensors='pt')
+                positive_map_label_to_token, positive_map = \
+                    self.get_positive_map(tokenized, tokens_positive)
+
+                entities = []
+                for token_positive in tokens_positive:
+                    instance_entities = []
+                    for t in token_positive:
+                        instance_entities.append(original_caption[t[0]:t[1]])
+                    entities.append(' / '.join(instance_entities))
+                return positive_map_label_to_token, original_caption, \
+                    positive_map, entities
+
         chunked_size = self.test_cfg.get('chunked_size', -1)
         if not self.training and chunked_size > 0:
             assert isinstance(original_caption,
@@ -469,12 +493,14 @@ class GLIP(SingleStageDetector):
         """
         text_prompts = []
         enhanced_text_prompts = []
+        tokens_positives = []
         for data_samples in batch_data_samples:
             text_prompts.append(data_samples.text)
             if 'caption_prompt' in data_samples:
                 enhanced_text_prompts.append(data_samples.caption_prompt)
             else:
                 enhanced_text_prompts.append(None)
+            tokens_positives.append(data_samples.get('tokens_positive', None))
 
         if 'custom_entities' in batch_data_samples[0]:
             # Assuming that the `custom_entities` flag
@@ -488,15 +514,17 @@ class GLIP(SingleStageDetector):
             # so there is no need to calculate them multiple times.
             _positive_maps_and_prompts = [
                 self.get_tokens_positive_and_prompts(
-                    text_prompts[0], custom_entities, enhanced_text_prompts[0])
+                    text_prompts[0], custom_entities, enhanced_text_prompts[0],
+                    tokens_positives[0])
             ] * len(batch_inputs)
         else:
             _positive_maps_and_prompts = [
                 self.get_tokens_positive_and_prompts(text_prompt,
                                                      custom_entities,
-                                                     enhanced_text_prompt)
-                for text_prompt, enhanced_text_prompt in zip(
-                    text_prompts, enhanced_text_prompts)
+                                                     enhanced_text_prompt,
+                                                     tokens_positive)
+                for text_prompt, enhanced_text_prompt, tokens_positive in zip(
+                    text_prompts, enhanced_text_prompts, tokens_positives)
             ]
 
         token_positive_maps, text_prompts, _, entities = zip(

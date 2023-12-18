@@ -313,8 +313,10 @@ class DetInferencer(BaseInferencer):
             texts: Optional[Union[str, list]] = None,
             # by open panoptic task
             stuff_texts: Optional[Union[str, list]] = None,
-            # by GLIP
+            # by GLIP and Grounding DINO
             custom_entities: bool = False,
+            # by Grounding DINO
+            tokens_positive: Optional[Union[int, list]] = None,
             **kwargs) -> dict:
         """Call the inferencer.
 
@@ -343,7 +345,7 @@ class DetInferencer(BaseInferencer):
             stuff_texts (str | list[str]): Stuff text prompts of open
                 panoptic task. Defaults to None.
             custom_entities (bool): Whether to use custom entities.
-                Defaults to False. Only used in GLIP.
+                Defaults to False. Only used in GLIP and Grounding DINO.
             **kwargs: Other keyword arguments passed to :meth:`preprocess`,
                 :meth:`forward`, :meth:`visualize` and :meth:`postprocess`.
                 Each key in kwargs should be in the corresponding set of
@@ -366,6 +368,10 @@ class DetInferencer(BaseInferencer):
             texts = [texts] * len(ori_inputs)
         if stuff_texts is not None and isinstance(stuff_texts, str):
             stuff_texts = [stuff_texts] * len(ori_inputs)
+
+        # Currently only supports bs=1
+        tokens_positive = [tokens_positive] * len(ori_inputs)
+
         if texts is not None:
             assert len(texts) == len(ori_inputs)
             for i in range(len(texts)):
@@ -373,13 +379,15 @@ class DetInferencer(BaseInferencer):
                     ori_inputs[i] = {
                         'text': texts[i],
                         'img_path': ori_inputs[i],
-                        'custom_entities': custom_entities
+                        'custom_entities': custom_entities,
+                        'tokens_positive': tokens_positive[i]
                     }
                 else:
                     ori_inputs[i] = {
                         'text': texts[i],
                         'img': ori_inputs[i],
-                        'custom_entities': custom_entities
+                        'custom_entities': custom_entities,
+                        'tokens_positive': tokens_positive[i]
                     }
         if stuff_texts is not None:
             assert len(stuff_texts) == len(ori_inputs)

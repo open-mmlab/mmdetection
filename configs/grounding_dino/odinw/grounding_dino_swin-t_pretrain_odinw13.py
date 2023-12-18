@@ -1,4 +1,4 @@
-_base_ = '../grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py'  # noqa
+_base_ = '../grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py'  # noqa
 
 dataset_type = 'CocoDataset'
 data_root = 'data/odinw/'

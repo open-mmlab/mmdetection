@@ -37,6 +37,15 @@ Example:
         --texts '$: lvis' --pred-score-thr 0.7 \
         --palette random --chunked-size 80
 
+        python demo/image_demo.py demo/demo.jpg \
+        grounding_dino_swin-t_pretrain_obj365_goldg_cap4m \
+        --texts '$: lvis' --pred-score-thr 0.4 \
+        --palette random --chunked-size 80
+
+        python demo/image_demo.py demo/demo.jpg \
+        grounding_dino_swin-t_pretrain_obj365_goldg_cap4m \
+        --texts "a red car in the upper right corner" \
+        --tokens-positive -1
 
     Visualize prediction results::
 
@@ -46,6 +55,7 @@ Example:
         --show
 """
 
+import ast
 from argparse import ArgumentParser
 
 from mmengine.logging import print_log
@@ -122,6 +132,15 @@ def parse_args():
         default=-1,
         help='If the number of categories is very large, '
         'you can specify this parameter to truncate multiple predictions.')
+    # only for Grounding DINO
+    parser.add_argument(
+        '--tokens-positive',
+        '-p',
+        type=str,
+        help='Used to specify which locations in the input text are of '
+        'interest to the user. -1 indicates that no area is of interest, '
+        'None indicates ignoring this parameter. '
+        'The two-dimensional array represents the start and end positions.')
 
     call_args = vars(parser.parse_args())
 
@@ -139,6 +158,10 @@ def parse_args():
             dataset_name = call_args['texts'][3:].strip()
             class_names = get_classes(dataset_name)
             call_args['texts'] = [tuple(class_names)]
+
+    if call_args['tokens_positive'] is not None:
+        call_args['tokens_positive'] = ast.literal_eval(
+            call_args['tokens_positive'])
 
     init_kws = ['model', 'weights', 'device', 'palette']
     init_args = {}
