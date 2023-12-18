@@ -111,6 +111,6 @@ param_scheduler = [
 ]
 train_cfg = dict(max_epochs=max_epochs, val_interval=3)
 
-default_hooks = dict(checkpoint=dict(max_keep_ckpts=1, save_best='auto'))
+default_hooks = dict(checkpoint=dict(max_keep_ckpts=1, save_best='lvis_fixed_ap/AP', rule='greater'))
 
 load_from = ''
