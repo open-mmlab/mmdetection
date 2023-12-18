@@ -17,7 +17,6 @@ class CustomSampleSizeSampler(Sampler):
                  ratio_mode: bool=False,
                  seed: Optional[int] = None,
                  round_up: bool = True) -> None:
-        # 暂时只支持 ConcatDataset
         assert len(dataset.datasets) == len(dataset_size)
         rank, world_size = get_dist_info()
         self.rank = rank
@@ -70,14 +69,11 @@ class CustomSampleSizeSampler(Sampler):
         out_index = []
         for data_size, data_index, cycle_iter in zip(self.dataset_size, self.dataset_index, self.dataset_cycle_iter):
             if data_size == -1:
-                # 全部采样
                 out_index += data_index
             else:
-                # 循环采样, 确保可以循环完整个数据集
                 index = [next(cycle_iter) for _ in range(data_size)]
                 out_index += index
 
-        # 全部采样后，再随机打乱
         index = torch.randperm(len(out_index), generator=g).numpy().tolist()
         indices = [out_index[i] for i in index]
 

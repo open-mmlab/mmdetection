@@ -2,3 +2,4 @@ cityscapesscripts
 fairscale
 imagecorruptions
 scikit-learn
+emoji

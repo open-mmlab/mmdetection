@@ -13,7 +13,7 @@ is_debug = False
 
 
 def is_valid_caption(caption, rules={"↙️", "[CLS]", "[SEP]"}):
-    check_anno = caption.strip()[:-1]  # 去掉 caption 最后的结束符
+    check_anno = caption.strip()[:-1]  # Remove the ending delimiter from the caption.
     for ch in rules:
         if ch in check_anno:
             return False
@@ -35,13 +35,14 @@ def process_one_file(anno_file, result_queue):
         w = meta["width"]
 
         caption = meta['caption']
-        # 奇怪的 caption 首先就过滤掉
+        # Weird captions are filtered out from the beginning.
         if not is_valid_caption(caption):
             if is_debug:
                 print('=====caption filtered====', caption)
             continue
 
-        # 超过 240 token 的 caption 过滤掉, 240 是经验值
+        # Captions exceeding 240 tokens are filtered out,
+        # where 240 is an empirical value.
         tokenized = tokenizer([caption], return_tensors='pt')
         if tokenized.input_ids.shape[1] >= 240:
             if is_debug:
@@ -56,7 +57,8 @@ def process_one_file(anno_file, result_queue):
 
         regions = {}
         for bbox, ref_caption, tokens_positive in zip(ref_boxes, ref_captions, ref_token_positives):
-            # 如果当前 ref 里面包括特殊分隔符，则过滤掉
+            #  If the current reference includes special delimiters,
+            #  it will be filtered out.
             if not is_valid_caption(caption, rules={".", "？", " ", "\'", "\""}):
                 if is_debug:
                     print('=====ref filtered====', caption)
@@ -66,7 +68,8 @@ def process_one_file(anno_file, result_queue):
                 if is_debug:
                     print('=====ref filtered====', caption)
                 continue
-            # 如果当前 ref 里面包括 emoji 字符，则过滤掉
+            # If the current reference includes non-ASCII characters,
+            # it will be filtered out.
             if emoji.emoji_count(caption):
                 if is_debug:
                     print('=====ref filtered====', caption)

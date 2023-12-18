@@ -33,9 +33,11 @@ def gen_new_json(coco2017_train_path, json_data, coco2017_train_ids):
     return new_json_data
 
 
-# coco2017 val 和 final_mixed_train.json 没有交集，无需去重
-# coco2017 val 和 refcoco 等基于 coco2014 train 的数据集没有交集，无需去重
-# coco2017 train 和 refcoco 等基于 coco2014 train 的数据集标注的验证集有交集，需要去重
+# coco2017 val and final_mixed_train.json have no intersection, so deduplication is not necessary.
+# coco2017 val and datasets like refcoco based on coco2014 train have no intersection,
+# so deduplication is not necessary.
+# coco2017 train and datasets like refcoco based on coco2014 train have overlapping
+# annotations in the validation set, so deduplication is required.
 def exclude_coco(args):
     with open(args.coco2017_train, 'r') as f:
         coco2017_train = json.load(f)

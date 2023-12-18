@@ -20,12 +20,13 @@ def _parse_label_file(label_file):
     return classes_names, index_mapping
 
 
-backend_args = dict(
-    backend='petrel',
-    path_mapping=dict({
-        './data/': 's3://openmmlab/datasets/detection/',
-        'data/': 's3://openmmlab/datasets/detection/'
-    }))
+# backend_args = dict(
+#     backend='petrel',
+#     path_mapping=dict({
+#         './data/': 's3://openmmlab/datasets/detection/',
+#         'data/': 's3://openmmlab/datasets/detection/'
+#     }))
+backend_args = None
 
 
 def oi2odvg(args):
@@ -54,10 +55,6 @@ def oi2odvg(args):
         _filename_shape = [0, 0]
         instances = []
         for i, line in enumerate(reader):
-            # debug
-            # if i == 2000:
-            #     break
-
             if i == 0:
                 continue
             img_id = line[0]
@@ -96,9 +93,6 @@ def oi2odvg(args):
                 img_bytes = get(_filename, backend_args)
                 img = imfrombytes(img_bytes, flag='color')
                 shape = img.shape
-                # debug
-                # shape = [100, 100, 3]
-
                 _filename_shape = [filename, shape]
             else:
                 shape = _filename_shape[1]
