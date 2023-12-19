@@ -164,6 +164,5 @@ param_scheduler = [
 ]
 train_cfg = dict(max_epochs=max_epochs, val_interval=1)
 
-default_hooks = dict(checkpoint=dict(max_keep_ckpts=1, save_best='auto'))
 
 load_from = ''

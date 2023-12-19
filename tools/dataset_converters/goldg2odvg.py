@@ -129,7 +129,7 @@ def goldg2odvg(args):
 # final_mixed_train_only_coco.json
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('goldg to odvg format.', add_help=True)
-    parser.add_argument('input', type=str, help='input list name')
+    parser.add_argument('input', type=str, help='input json file name')
     parser.add_argument('--out-ann', '-o', type=str)
     args = parser.parse_args()
 
