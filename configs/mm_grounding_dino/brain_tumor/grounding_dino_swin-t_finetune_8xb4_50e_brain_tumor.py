@@ -2,7 +2,11 @@ _base_ = '../grounding_dino_swin-t_pretrain_obj365.py'
 
 # https://universe.roboflow.com/roboflow-100/brain-tumor-m2pbp/dataset/2
 data_root = 'data/brain_tumor_v2/'
-class_name = ('label0', 'label1', 'label2')
+# class_name = ('label0', 'label1', 'label2')
+# label_name = '_annotations.coco.json'
+class_name = ('edema', 'non-enhancing tumor', 'enhancing tumor')
+label_name = '_annotations_new_label.coco.json'
+
 palette = [(220, 20, 60), (255, 0, 0), (0, 0, 142)]
 
 metainfo = dict(classes=class_name, palette=palette)
@@ -64,20 +68,20 @@ train_dataloader = dict(
             pipeline=train_pipeline,
             return_classes=True,
             data_prefix=dict(img='train/'),
-            ann_file='train/_annotations.coco.json')))
+            ann_file='train/' + label_name)))
 
 val_dataloader = dict(
     dataset=dict(
         metainfo=metainfo,
         data_root=data_root,
         return_classes=True,
-        ann_file='valid/_annotations.coco.json',
+        ann_file='valid/' + label_name,
         data_prefix=dict(img='valid/')))
 test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=data_root + 'valid/_annotations.coco.json',
+    ann_file=data_root + 'valid/' + label_name,
     metric='bbox',
     format_only=False)
 test_evaluator = val_evaluator
