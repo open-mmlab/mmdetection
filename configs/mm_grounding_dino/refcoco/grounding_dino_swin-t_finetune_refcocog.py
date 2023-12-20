@@ -81,8 +81,8 @@ val_evaluator_all_val = dict(
     topk=(1, 5, 10))
 
 # -------------------------------------------------#
-ann_file = 'mdetr_annotations/finetune_refcocog_testA.json'
-val_dataset_refcoco_testA = dict(
+ann_file = 'mdetr_annotations/finetune_refcocog_test.json'
+val_dataset_refcoco_test = dict(
     type='MDETRStyleRefCocoDataset',
     data_root=data_root,
     ann_file=ann_file,
@@ -92,7 +92,7 @@ val_dataset_refcoco_testA = dict(
     pipeline=_base_.test_pipeline,
     backend_args=None)
 
-val_evaluator_refcoco_testA = dict(
+val_evaluator_refcoco_test = dict(
     type='RefExpMetric',
     ann_file=data_root + ann_file,
     metric='bbox',
@@ -100,33 +100,9 @@ val_evaluator_refcoco_testA = dict(
     topk=(1, 5, 10))
 
 # -------------------------------------------------#
-ann_file = 'mdetr_annotations/finetune_refcocog_testB.json'
-val_dataset_refcoco_testB = dict(
-    type='MDETRStyleRefCocoDataset',
-    data_root=data_root,
-    ann_file=ann_file,
-    data_prefix=dict(img='train2014/'),
-    test_mode=True,
-    return_classes=True,
-    pipeline=_base_.test_pipeline,
-    backend_args=None)
-
-val_evaluator_refcoco_testB = dict(
-    type='RefExpMetric',
-    ann_file=data_root + ann_file,
-    metric='bbox',
-    iou_thrs=0.5,
-    topk=(1, 5, 10))
-
-# -------------------------------------------------#
-datasets = [
-    val_dataset_all_val, val_dataset_refcoco_testA, val_dataset_refcoco_testB
-]
-dataset_prefixes = ['refcocog_val', 'refcocog_testA', 'refcocog_testB']
-metrics = [
-    val_evaluator_all_val, val_evaluator_refcoco_testA,
-    val_evaluator_refcoco_testB
-]
+datasets = [val_dataset_all_val, val_dataset_refcoco_test]
+dataset_prefixes = ['refcocog_val', 'refcocog_test']
+metrics = [val_evaluator_all_val, val_evaluator_refcoco_test]
 
 val_dataloader = dict(
     dataset=dict(_delete_=True, type='ConcatDataset', datasets=datasets))
@@ -164,5 +140,6 @@ param_scheduler = [
 ]
 train_cfg = dict(max_epochs=max_epochs, val_interval=1)
 
+default_hooks = dict(checkpoint=dict(max_keep_ckpts=1, save_best='auto'))
 
 load_from = ''

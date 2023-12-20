@@ -2,10 +2,8 @@ _base_ = '../grounding_dino_swin-t_pretrain_obj365.py'
 
 # https://universe.roboflow.com/roboflow-100/brain-tumor-m2pbp/dataset/2
 data_root = 'data/brain_tumor_v2/'
-# class_name = ('label0', 'label1', 'label2')
-# label_name = '_annotations.coco.json'
-class_name = ('edema', 'non-enhancing tumor', 'enhancing tumor')
-label_name = '_annotations_new_label.coco.json'
+class_name = ('label0', 'label1', 'label2')
+label_name = '_annotations.coco.json'
 
 palette = [(220, 20, 60), (255, 0, 0), (0, 0, 142)]
 

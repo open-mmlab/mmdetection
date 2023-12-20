@@ -76,9 +76,9 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-### 3 GoldG 
+### 3 GoldG
 
-下载该数据集后就可以训练 [grounding_dino_swin-t_pretrain_obj365_goldg](./grounding_dino_swin-t_pretrain_obj365_goldg.py) 配置了。 
+下载该数据集后就可以训练 [grounding_dino_swin-t_pretrain_obj365_goldg](./grounding_dino_swin-t_pretrain_obj365_goldg.py) 配置了。
 
 GoldG 数据集包括 `GQA` 和 `Flickr30k` 两个数据集，来自 GLIP 论文中提到的 MixedGrounding 数据集，其排除了 COCO 数据集。下载链接为 [mdetr_annotations](https://huggingface.co/GLIPModel/GLIP/tree/main/mdetr_annotations)，我们目前需要的是 `mdetr_annotations/final_mixed_train_no_coco.json` 和 `mdetr_annotations/final_flickr_separateGT_train.json` 文件。
 
@@ -154,7 +154,7 @@ mmdetection
 
 ### 5 V3Det
 
-对应的训练配置为 
+对应的训练配置为
 
 - [grounding_dino_swin-t_pretrain_obj365_goldg_v3det](./grounding_dino_swin-t_pretrain_obj365_goldg_v3det.py)
 - [grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det](./grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det.py)
@@ -162,7 +162,7 @@ mmdetection
 V3Det 数据集下载可以从 [opendatalab](https://opendatalab.com/V3Det/V3Det) 下载，下载并解压后，将其放置或者软链接到 `data/v3det` 目录下，目录结构如下：
 
 ```text
-mmdetection 
+mmdetection
 ├── configs
 ├── data
 │   ├── v3det
@@ -183,7 +183,7 @@ python tools/dataset_converters/coco2odvg.py data/v3det/annotations/v3det_2023_v
 程序运行完成后会在 `data/v3det/annotations` 目录下创建目录下创建 `v3det_2023_v1_train_od.json` 和 `v3det_2023_v1_label_map.json` 两个新文件，完整结构如下：
 
 ```text
-mmdetection 
+mmdetection
 ├── configs
 ├── data
 │   ├── v3det
@@ -217,7 +217,7 @@ python tools/misc/split_odvg.py data/object365_v1/ o365v1_train_od.json train yo
 
 ```shell
 python tools/analysis_tools/browse_grounding_raw.py data/object365_v1/ o365v1_train_od.json train --label-map-file o365v1_label_map.json -o your_output_dir --not-show
-```        
+```
 
 上述脚本运行后会在 `your_output_dir` 目录下生成同时包括图片和标签的图片，方便用户查看。
 
@@ -234,7 +234,9 @@ python tools/analysis_tools/browse_grounding_dataset.py configs/mm_grounding_din
 ## MM-GDINO-L 预训练数据准备和处理
 
 ## 评测数据集准备
+
 ### 1 COCO 2017
+
 数据准备流程和前面描述一致，最终结构如下：
 
 ```text
@@ -253,23 +255,367 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-### 2 LVIS 1.0 
+### 2 LVIS 1.0
 
+LVIS 1.0 val 数据集包括 mini 和全量两个版本，mini 版本存在的意义是：
 
+1. LVIS val 全量评测数据集比较大，评测一次需要比较久的时间
+2. LVIS val 全量数据集中包括了 15000 张 COCO2017 train, 如果用户使用了 COCO2017 数据进行训练，那么将存在数据泄露问题
+
+LVIS 1.0 图片和 COCO2017 数据集图片完全一样，只是提供了新的标注而已，minival 标注文件可以从 [这里](https://huggingface.co/GLIPModel/GLIP/blob/main/lvis_v1_minival_inserted_image_name.json)下载， val 1.0 标注文件可以从 [这里](https://huggingface.co/GLIPModel/GLIP/blob/main/lvis_od_val.json) 下载。 最终结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── instances_val2017.json
+│   │   │   ├── lvis_v1_minival_inserted_image_name.json
+│   │   │   ├── lvis_od_val.json
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+```
 
 ### 3 ODinW
-### 4 D-CUBE
+
+ODinw 全称为 Object Detection in the Wild，是用于验证 grounding 预训练模型在不同实际场景中的泛化能力的数据集，其包括两个子集，分别是 ODinW13 和 ODinW35，代表是由 13 和 35 个数据集组成的。你可以从 [这里](https://huggingface.co/GLIPModel/GLIP/tree/main/odinw_35)下载，然后对每个文件进行解压，最终结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── odinw
+│   │   ├── AerialMaritimeDrone
+│   │   |   |── large
+│   │   |   |   ├── test
+│   │   |   |   ├── train
+│   │   |   |   ├── valid
+│   │   |   |── tiled
+│   │   ├── AmericanSignLanguageLetters
+│   │   ├── Aquarium
+│   │   ├── BCCD
+│   │   ├── ...
+```
+
+在评测 ODinW3535 时候由于需要自定义 prompt，因此需要提前对标注的 json 文件进行处理，你可以使用 [override_category.py](./odinw/override_category.py) 脚本进行处理，处理后会生成新的标注文件，不会覆盖原先的标注文件。
+
+```shell
+python configs/mm_grounding_dino/odinw/override_category.py data/odinw/
+```
+
+### 4 DOD
+
+DOD 来自 [Described Object Detection: Liberating Object Detection with Flexible Expressions](https://arxiv.org/abs/2307.12813)。其数据集可以从 [这里](https://github.com/shikras/d-cube?tab=readme-ov-file#download)下载，最终的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── d3
+│   │   ├── d3_images
+│   │   ├── d3_json
+│   │   ├── d3_pkl
+```
+
 ### 5 Flickr30k
+
+在前面 GoldG 数据准备章节中我们已经下载了 Flickr30k 训练所需文件，评估所需的文件是 2 个 json 文件，你可以从 [这里](https://huggingface.co/GLIPModel/GLIP/blob/main/mdetr_annotations/final_flickr_separateGT_val.json) 和 [这里](https://huggingface.co/GLIPModel/GLIP/blob/main/mdetr_annotations/final_flickr_separateGT_test.json)下载，最终的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── flickr30k_entities
+│   │   ├── final_flickr_separateGT_train.json
+│   │   ├── final_flickr_separateGT_val.json
+│   │   ├── final_flickr_separateGT_test.json
+│   │   ├── final_flickr_separateGT_train_vg.json
+│   │   ├── flickr30k_images
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+```
+
 ### 6 Referring Expression Comprehension
 
+指代性表达式理解包括 4 个数据集： RefCOCO, RefCOCO+, RefCOCOg, gRefCOCO。这 4 个数据集所采用的图片都来自于 COCO2014 train，和 COCO2017 类似，你可以从 COCO 官方或者 opendatalab 中下载，而标注可以直接从 [这里](https://huggingface.co/GLIPModel/GLIP/tree/main/mdetr_annotations) 下载，mdetr_annotations 文件夹里面包括了其他大量的标注，你如果觉得数量过多，可以只下载所需要的几个 json 文件即可。最终的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── instances_val2017.json
+│   │   │   ├── instances_train2014.json
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+│   │   ├── train2014
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── mdetr_annotations
+│   │   │   ├── final_refexp_val.json
+│   │   │   ├── finetune_refcoco_testA.json
+│   │   │   ├── finetune_refcoco_testB.json
+│   │   │   ├── finetune_refcoco+_testA.json
+│   │   │   ├── finetune_refcoco+_testB.json
+│   │   │   ├── finetune_refcocog_test.json
+│   │   │   ├── finetune_refcocog_test.json
+```
+
+注意 gRefCOCO 是在 [GREC: Generalized Referring Expression Comprehension](https://arxiv.org/abs/2308.16182) 被提出，并不在 `mdetr_annotations` 文件夹中，需要自行处理。具体步骤为：
+
+1. 下载 [gRefCOCO](https://github.com/henghuiding/gRefCOCO?tab=readme-ov-file#grefcoco-dataset-download)，并解压到 data/coco/ 文件夹中
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── instances_val2017.json
+│   │   │   ├── instances_train2014.json
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+│   │   ├── train2014
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── mdetr_annotations
+│   │   ├── grefs
+│   │   │   ├── grefs(unc).json
+│   │   │   ├── instances.json
+```
+
+2. 转换为 coco 格式
+
+你可以使用 gRefCOCO 官方提供的[转换脚本](https://github.com/henghuiding/gRefCOCO/blob/b4b1e55b4d3a41df26d6b7d843ea011d581127d4/mdetr/scripts/fine-tuning/grefexp_coco_format.py)。注意需要将被注释的 161 行打开，并注释 160 行才可以得到全量的 json 文件。
+
+```shell
+# 需要克隆官方 repo
+git clone https://github.com/henghuiding/gRefCOCO.git
+cd gRefCOCO/mdetr
+python scripts/fine-tuning/grefexp_coco_format.py --data_path ../../data/coco/grefs --out_path ../../data/coco/mdetr_annotations/ --coco_path ../../data/coco
+```
+
+会在 `data/coco/mdetr_annotations/` 文件夹中生成 4 个 json 文件，完整的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── instances_val2017.json
+│   │   │   ├── instances_train2014.json
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+│   │   ├── train2014
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── mdetr_annotations
+│   │   │   ├── final_refexp_val.json
+│   │   │   ├── finetune_refcoco_testA.json
+│   │   │   ├── finetune_refcoco_testB.json
+│   │   │   ├── finetune_grefcoco_train.json
+│   │   │   ├── finetune_grefcoco_val.json
+│   │   │   ├── finetune_grefcoco_testA.json
+│   │   │   ├── finetune_grefcoco_testB.json
+```
+
 ## 微调数据集准备
-### 1 COCO
-### 2 LVIS 1.0 
+
+### 1 COCO 2017
+
+### 2 LVIS 1.0
+
 ### 3 RTTS
+
+RTTS 是一个浓雾天气数据集，该数据集包含 4,322 张雾天图像，包含五个类：自行车 (bicycle)、公共汽车 (bus)、汽车 (car)、摩托车 (motorbike) 和人 (person)。可以从 [这里](https://drive.google.com/file/d/15Ei1cHGVqR1mXFep43BO7nkHq1IEGh1e/view)下载, 然后解压到 `data/RTTS/` 文件夹中。完整的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── RTTS
+│   │   ├── annotations_json
+│   │   ├── annotations_xml
+│   │   ├── ImageSets
+│   │   ├── JPEGImages
+```
+
 ### 4 RUOD
+
+RUOD 是一个水下目标检测数据集，你可以从 [这里](https://drive.google.com/file/d/1hxtbdgfVveUm_DJk5QXkNLokSCTa_E5o/view)下载, 然后解压到 `data/RUOD/` 文件夹中。完整的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── RUOD
+│   │   ├── Environment_pic
+│   │   ├── Environmet_ANN
+│   │   ├── RUOD_ANN
+│   │   ├── RUOD_pic
+```
+
 ### 5 Brain Tumor
+
+Brain Tumor 是一个医学领域的 2d 检测数据集，你可以从 [这里](https://universe.roboflow.com/roboflow-100/brain-tumor-m2pbp/dataset/2)下载, 请注意选择 `COCO JSON` 格式。然后解压到 `data/brain_tumor_v2/` 文件夹中。完整的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── brain_tumor_v2
+│   │   ├── test
+│   │   ├── train
+│   │   ├── valid
+```
+
 ### 6 Cityscapes
+
+Cityscapes 是一个城市街景数据集，你可以从 [这里](https://www.cityscapes-dataset.com/) 或者 opendatalab 中下载, 然后解压到 `data/cityscapes/` 文件夹中。完整的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── cityscapes
+│   │   ├── annotations
+│   │   ├── leftImg8bit
+│   │   │   ├── train
+│   │   │   ├── val
+│   │   ├── gtFine
+│   │   │   ├── train
+│   │   │   ├── val
+```
+
+在下载后，然后使用 [cityscapes.py](../../tools/dataset_converters/cityscapes.py) 脚本生成我们所需要的 json 格式
+
+```shell
+python tools/dataset_converters/cityscapes.py data/cityscapes/
+```
+
+会在 annotations 中生成 3 个新的 json 文件。完整的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── cityscapes
+│   │   ├── annotations
+│   │   │   ├── instancesonly_filtered_gtFine_train.json
+│   │   │   ├── instancesonly_filtered_gtFine_val.json
+│   │   │   ├── instancesonly_filtered_gtFine_test.json
+│   │   ├── leftImg8bit
+│   │   │   ├── train
+│   │   │   ├── val
+│   │   ├── gtFine
+│   │   │   ├── train
+│   │   │   ├── val
+```
+
 ### 7 People in Painting
+
+People in Painting 是一个油画数据集，你可以从 [这里](https://universe.roboflow.com/roboflow-100/people-in-paintings/dataset/2), 请注意选择 `COCO JSON` 格式。然后解压到 `data/people_in_painting_v2/` 文件夹中。完整的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── people_in_painting_v2
+│   │   ├── test
+│   │   ├── train
+│   │   ├── valid
+```
+
 ### 8 Referring Expression Comprehension
 
+指代性表达式理解的微调和前面一样，也是包括 4 个数据集，在评测数据准备阶段已经全部整理好了，完整的数据集结构如下：
 
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── instances_val2017.json
+│   │   │   ├── instances_train2014.json
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+│   │   ├── train2014
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── mdetr_annotations
+│   │   │   ├── final_refexp_val.json
+│   │   │   ├── finetune_refcoco_testA.json
+│   │   │   ├── finetune_refcoco_testB.json
+│   │   │   ├── finetune_refcoco+_testA.json
+│   │   │   ├── finetune_refcoco+_testB.json
+│   │   │   ├── finetune_refcocog_test.json
+│   │   │   ├── finetune_refcocog_test.json
+```
+
+然后我们需要将其转换为所需的 ODVG 格式，请使用 [refcoco2odvg.py](../../tools/dataset_converters/refcoco2odvg.py) 脚本转换，
+
+```shell
+python tools/dataset_converters/refcoco2odvg.py data/coco/mdetr_annotations
+```
+
+会在 `data/coco/mdetr_annotations` 中生成新的 4 个 json 文件。 转换后的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── instances_val2017.json
+│   │   │   ├── instances_train2014.json
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+│   │   ├── train2014
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── mdetr_annotations
+│   │   │   ├── final_refexp_val.json
+│   │   │   ├── finetune_refcoco_testA.json
+│   │   │   ├── finetune_refcoco_testB.json
+│   │   │   ├── finetune_refcoco+_testA.json
+│   │   │   ├── finetune_refcoco+_testB.json
+│   │   │   ├── finetune_refcocog_test.json
+│   │   │   ├── finetune_refcoco_train_vg.json
+│   │   │   ├── finetune_refcoco+_train_vg.json
+│   │   │   ├── finetune_refcocog_train_vg.json
+│   │   │   ├── finetune_grefcoco_train_vg.json
+```
