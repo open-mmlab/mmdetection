@@ -74,11 +74,12 @@ val_dataset_all_val = dict(
     pipeline=_base_.test_pipeline,
     backend_args=None)
 val_evaluator_all_val = dict(
-    type='RefExpMetric',
+    type='gRefCOCOMetric',
     ann_file=data_root + ann_file,
     metric='bbox',
     iou_thrs=0.5,
-    topk=(1, 5, 10))
+    thresh_score=0.7,
+    thresh_f1=1.0)
 
 # -------------------------------------------------#
 ann_file = 'mdetr_annotations/finetune_grefcoco_testA.json'
@@ -93,11 +94,12 @@ val_dataset_refcoco_testA = dict(
     backend_args=None)
 
 val_evaluator_refcoco_testA = dict(
-    type='RefExpMetric',
+    type='gRefCOCOMetric',
     ann_file=data_root + ann_file,
     metric='bbox',
     iou_thrs=0.5,
-    topk=(1, 5, 10))
+    thresh_score=0.7,
+    thresh_f1=1.0)
 
 # -------------------------------------------------#
 ann_file = 'mdetr_annotations/finetune_grefcoco_testB.json'
@@ -112,11 +114,12 @@ val_dataset_refcoco_testB = dict(
     backend_args=None)
 
 val_evaluator_refcoco_testB = dict(
-    type='RefExpMetric',
+    type='gRefCOCOMetric',
     ann_file=data_root + ann_file,
     metric='bbox',
     iou_thrs=0.5,
-    topk=(1, 5, 10))
+    thresh_score=0.7,
+    thresh_f1=1.0)
 
 # -------------------------------------------------#
 datasets = [

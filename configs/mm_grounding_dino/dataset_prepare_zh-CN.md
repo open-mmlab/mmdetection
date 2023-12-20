@@ -131,10 +131,10 @@ mmdetection
 对于 Flickr30k 数据集，你需要使用 [goldg2odvg.py](../../tools/dataset_converters/goldg2odvg.py) 转换为训练所需的 ODVG 格式：
 
 ```shell
-python tools/dataset_converters/goldg2odvg.py data/gqa/final_mixed_train_no_coco.json
+python tools/dataset_converters/goldg2odvg.py data/flickr30k_entities/final_flickr_separateGT_train.json
 ```
 
-程序运行完成后会在 `data/gqa` 目录下创建 `final_flickr_separateGT_train_vg.json` 新文件，完整结构如下：
+程序运行完成后会在 `data/flickr30k_entities` 目录下创建 `final_flickr_separateGT_train_vg.json` 新文件，完整结构如下：
 
 ```text
 mmdetection
