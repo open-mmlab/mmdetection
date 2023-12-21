@@ -45,7 +45,7 @@ nltk.download('averaged_perceptron_tagger', download_dir='~/nltk_data')
 
 ### MM Grounding DINO-T 模型权重下载
 
-为了方便演示，恁可以提前下载 MM Grounding DINO-T 模型权重到当前路径下
+为了方便演示，您可以提前下载 MM Grounding DINO-T 模型权重到当前路径下
 
 ```shell
 wget https://download.openmmlab.com/mmdetection/v3.0/multimodal/mm_grounding_dino/mm_grounding_dino_t.pth
@@ -90,7 +90,7 @@ python demo/image_demo.py images/animals.png \
 <img src="https://github.com/open-mmlab/mmdetection/assets/17425982/93554cf5-a1c5-4318-8e16-615cd2270fb6" width="70%"/>
 </div>
 
-不同的 `--chunked-size` 会导致不同的预测效果，恁可以自行尝试。
+不同的 `--chunked-size` 会导致不同的预测效果，您可以自行尝试。
 
 **(2) 开放词汇目标检测**
 
@@ -111,7 +111,7 @@ python demo/image_demo.py images/animals.png \
 
 Phrase Grounding 是指的用户输入一句语言描述，模型自动对其涉及到的名词短语想对应的 bbox 进行检测，有两种用法
 
-1. 通过 nltk 库自动提取名词短语，然后进行检测
+1. 通过 NLTK 库自动提取名词短语，然后进行检测
 
 ```shell
 python demo/image_demo.py images/apples.jpg \
@@ -126,7 +126,7 @@ python demo/image_demo.py images/apples.jpg \
 
 程序内部会自动切分出 `many apples` 作为名词短语，然后检测出对应物体。不同的输入描述对预测结果影响很大。
 
-2. 用户自己指定句子中哪些为名词短语，避免 nltk 提取错误的情况
+2. 用户自己指定句子中哪些为名词短语，避免 NLTK 提取错误的情况
 
 ```shell
 python demo/image_demo.py images/fruit.jpg \
@@ -224,7 +224,7 @@ python tools/test.py configs/mm_grounding_dino/odinw/grounding_dino_swin-t_pretr
 
 label字典中所对应的数值需要和相应的 label_map 一致。 instances 列表中的每一项都对应一个 bbox (x1y1x2y2 格式)。
 
-**(2) phrase grounding 数据格式 vg**
+**(2) phrase grounding 数据格式 VG**
 
 ```text
 {"filename": "2405116.jpg",
@@ -246,7 +246,7 @@ tokens_positive 表示当前 phrase 在 caption 中的字符位置。
 
 为了方便用户针对自定义数据集进行下游微调，我们特意提供了以简单的 cat 数据集为例的微调训练案例。
 
-### 1. 数据准备
+### 1 数据准备
 
 ```shell
 cd mmdetection
@@ -260,13 +260,13 @@ cat 数据集是一个单类别数据集，包含 144 张图片，已经转换�
 <img src="https://user-images.githubusercontent.com/25873202/205423220-c4b8f2fd-22ba-4937-8e47-1b3f6a8facd8.png" alt="cat dataset"/>
 </div>
 
-### 2. 配置准备
+### 2 配置准备
 
 由于 cat 数据集的简单性和数量较少，我们使用 8 卡训练 20 个 epoch，相应的缩放学习率，不训练语言模型，只训练视觉模型。
 
-详细的配置信息可以在 [grounding_dino_swin-t_finetune_8xb2_20e_cat](grounding_dino_swin-t_finetune_8xb2_20e_cat.py) 中找到。
+详细的配置信息可以在 [grounding_dino_swin-t_finetune_8xb4_20e_cat](grounding_dino_swin-t_finetune_8xb4_20e_cat.py) 中找到。
 
-### 3. 可视化和 Zero-Shot 评估
+### 3 可视化和 Zero-Shot 评估
 
 由于 MM Grounding DINO 是一个开放的检测模型，所以即使没有在 cat 数据集上训练，也可以进行检测和评估。
 
@@ -274,13 +274,13 @@ cat 数据集是一个单类别数据集，包含 144 张图片，已经转换�
 
 ```shell
 cd mmdetection
-python demo/image_demo.py data/cat/images/IMG_20211205_120756.jpg configs/mm_grounding_dino/grounding_dino_swin-t_finetune_8xb2_20e_cat.py --weights mm_grounding_dino_t.pth --texts cat.
+python demo/image_demo.py data/cat/images/IMG_20211205_120756.jpg configs/mm_grounding_dino/grounding_dino_swin-t_finetune_8xb4_20e_cat.py --weights mm_grounding_dino_t.pth --texts cat.
 ```
 
 测试集上的 Zero-Shot 评估结果如下：
 
 ```shell
-python tools/test.py configs/mm_grounding_dino/grounding_dino_swin-t_finetune_8xb2_20e_cat.py mm_grounding_dino_t.pth
+python tools/test.py configs/mm_grounding_dino/grounding_dino_swin-t_finetune_8xb4_20e_cat.py mm_grounding_dino_t.pth
 ```
 
 ```text
@@ -298,7 +298,7 @@ python tools/test.py configs/mm_grounding_dino/grounding_dino_swin-t_finetune_8x
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=1000 ] = 0.913
 ```
 
-### 4. 模型训练
+### 4 模型训练
 
 ```shell
 ./tools/dist_train.sh configs/mm_grounding_dino/grounding_dino_swin-t_finetune_8xb4_20e_cat.py 8 --work-dir cat_work_dir
@@ -329,7 +329,7 @@ python tools/test.py configs/mm_grounding_dino/grounding_dino_swin-t_finetune_8x
 
 由于我们定义了两种数据格式，为了演示我们也将分别进行说明。
 
-**(1) 目标检测格式**
+### 1 目标检测格式
 
 此处我们依然采用上述的 cat 数据集为例，假设我们目前只有一系列图片和预定义的类别，并不存在标注。
 
@@ -382,7 +382,7 @@ python tools/analysis_tools/browse_grounding_raw.py data/cat/ cat_train_od_v1.js
 
 在得到伪标签后，你可以混合一些预训练数据联合进行继续预训练，提升模型在当前数据集上的性能，然后重新运行 2 步骤，得到更准确的伪标签，如此循环迭代即可。
 
-**(2) Phrase Grounding 格式**
+### 2 Phrase Grounding 格式
 
 1. 生成初始 odvg 格式文件
 
@@ -438,7 +438,7 @@ python tools/analysis_tools/browse_grounding_raw.py data/flickr30k_entities/ fli
 会在 `your_output_dir` 目录下生成可视化结果，如下图所示：
 
 <div align=center>
-<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/7a956ac9-bcbf-4f33-be0d-23ffdea99ced" alt="cat dataset"/>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/a1c72d52-fa52-4ebe-b793-716d34e7b83f" width="50%"/>
 </div>
 
 3. 继续训练提高性能
