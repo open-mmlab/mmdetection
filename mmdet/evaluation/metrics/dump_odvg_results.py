@@ -49,10 +49,6 @@ class DumpODVGResults(BaseMetric):
             result['height'] = height
             result['width'] = width
 
-            caption = data_sample['text']
-            result['grounding'] = {}
-            result['grounding']['caption'] = caption
-
             pred_instances = data_sample['pred_instances']
 
             bboxes = pred_instances['bboxes'].cpu()
@@ -63,36 +59,75 @@ class DumpODVGResults(BaseMetric):
             labels = labels[scores > self.score_thr]
             scores = scores[scores > self.score_thr]
 
-            tokens_positive = data_sample['tokens_positive']
+            if 'tokens_positive' in data_sample:
+                task = 'vg'
+            else:
+                task = 'od'
 
-            region_list = []
-            for label, positive in enumerate(tokens_positive):
-                pharse = [caption[pos[0]:pos[1]] for pos in positive]
+            if task == 'od':
+                classes_name = data_sample['text']
+                result['detection'] = {}
 
-                _bboxes = bboxes[labels == label]
-                _scores = scores[labels == label]
-                det_bboxes, _ = batched_nms(
-                    _bboxes,
-                    _scores,
-                    None,
-                    dict(type='nms', iou_threshold=self.nms_thr),
-                    class_agnostic=True)
-                _scores = det_bboxes[:, -1].numpy().tolist()
-                _bboxes = det_bboxes[:, :-1].numpy().tolist()
+                if len(bboxes) > 0:
+                    det_bboxes, keep = batched_nms(
+                        bboxes, scores, labels,
+                        dict(type='nms', iou_threshold=self.nms_thr))
+                    _scores = det_bboxes[:, -1]
+                    _bboxes = det_bboxes[:, :-1]
+                    _labels = labels[keep]
 
-                round_bboxes = []
-                for bbox in _bboxes:
-                    round_bboxes.append([round(b, 2) for b in bbox])
-                _scores = [[round(s, 2) for s in _scores]]
-                region = {
-                    'phrase': pharse,
-                    'bbox': round_bboxes,
-                    'score': _scores,
-                    'tokens_positive': positive
-                }
-                region_list.append(region)
-            result['grounding']['regions'] = region_list
-            self.results.append(result)
+                    instances = []
+                    _bboxes = _bboxes.numpy().tolist()
+                    _scores = _scores.numpy().tolist()
+                    _labels = _labels.numpy().tolist()
+                    for bbox, score, label in zip(_bboxes, _scores, _labels):
+                        round_bbox = [round(b, 2) for b in bbox]
+                        round_score = round(score, 2)
+                        instances.append({
+                            'bbox': round_bbox,
+                            'score': round_score,
+                            'label': label,
+                            'category': classes_name[label]
+                        })
+                    result['detection']['instances'] = instances
+                else:
+                    result['detection']['instances'] = []
+                self.results.append(result)
+            else:
+                caption = data_sample['text']
+                result['grounding'] = {}
+                result['grounding']['caption'] = caption
+
+                tokens_positive = data_sample['tokens_positive']
+
+                region_list = []
+                for label, positive in enumerate(tokens_positive):
+                    phrase = [caption[pos[0]:pos[1]] for pos in positive]
+
+                    _bboxes = bboxes[labels == label]
+                    _scores = scores[labels == label]
+                    det_bboxes, _ = batched_nms(
+                        _bboxes,
+                        _scores,
+                        None,
+                        dict(type='nms', iou_threshold=self.nms_thr),
+                        class_agnostic=True)
+                    _scores = det_bboxes[:, -1].numpy().tolist()
+                    _bboxes = det_bboxes[:, :-1].numpy().tolist()
+
+                    round_bboxes = []
+                    for bbox in _bboxes:
+                        round_bboxes.append([round(b, 2) for b in bbox])
+                    _scores = [[round(s, 2) for s in _scores]]
+                    region = {
+                        'phrase': phrase,
+                        'bbox': round_bboxes,
+                        'score': _scores,
+                        'tokens_positive': positive
+                    }
+                    region_list.append(region)
+                result['grounding']['regions'] = region_list
+                self.results.append(result)
 
     def compute_metrics(self, results: list) -> dict:
         with jsonlines.open(self.outfile_path, mode='w') as writer:

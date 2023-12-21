@@ -45,8 +45,8 @@ class ODVGDataset(BaseDetDataset):
             if self.dataset_mode == 'OD':
                 if self.need_text:
                     data_info['text'] = self.label_map
-                anno = data['detection']
-                instances = [obj for obj in anno['instances']]
+                anno = data.get('detection', {})
+                instances = [obj for obj in anno.get('instances', [])]
                 bboxes = [obj['bbox'] for obj in instances]
                 bbox_labels = [str(obj['label']) for obj in instances]
 

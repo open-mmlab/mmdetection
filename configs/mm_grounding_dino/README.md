@@ -12,37 +12,13 @@ In this paper, we present an open-set object detector, called Grounding DINO, by
 <img src="https://github.com/open-mmlab/mmdetection/assets/42299757/0ed51aeb-3d53-42d8-8563-f6d21364ac95"/>
 </div>
 
-## Installation
+## Dataset Preparation
 
-```shell
-cd $MMDETROOT
+Please refer to [dataset_prepare.md](dataset_prepare.md)
 
-pip install -r requirements/multimodal.txt
-pip install emoji lvis ddd-dataset 
-```
+## Usage
 
-Due to the incompatibility of the lvis library with numpy >= 1.24, please make sure that your numpy version meets the requirement. It is recommended to install numpy version 1.23.
-
-## NOTE
-
-Grounding DINO utilizes BERT as the language model, which requires access to https://huggingface.co/. If you encounter connection errors due to network access, you can download the required files on a computer with internet access and save them locally. Finally, modify the `lang_model_name` field in the config to the local path. Please refer to the following code:
-
-```python
-from transformers import BertConfig, BertModel
-from transformers import AutoTokenizer
-
-config = BertConfig.from_pretrained("bert-base-uncased")
-model = BertModel.from_pretrained("bert-base-uncased", add_pooling_layer=False, config=config)
-tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-
-config.save_pretrained("your path/bert-base-uncased")
-model.save_pretrained("your path/bert-base-uncased")
-tokenizer.save_pretrained("your path/bert-base-uncased")
-```
-
-## Inference
-
-
+Please refer to [usage.md](usage.md)
 
 ## COCO Results and Models
 
@@ -267,7 +243,7 @@ Results from MMDetection
 ### LVIS
 
 |    Architecture     | Backbone | Lr schd | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP | Val1.0 APr | Val1.0 APc | Val1.0 APf | Val1.0 AP |
-| :-----------------: | :------: | :-----: | :---------: | :---------: | :---------: | :--------: |:----------:|:----------:|:----------:|:---------:|
+| :-----------------: | :------: | :-----: | :---------: | :---------: | :---------: | :--------: | :--------: | :--------: | :--------: | :-------: |
 |   GLIP(zero-shot)   |  Swin-T  |         |    18.1     |    21.2     |    33.1     |    26.7    |    10.8    |    14.7    |    29.0    |   19.6    |
 |  GDINO(zero-shot)   |  Swin-T  |         |    18.8     |    24.2     |    34.7     |    28.8    |    10.1    |    15.3    |    29.9    |   20.1    |
 | MM-GDINO(zero-shot) |  Swin-T  |         |    34.2     |    37.4     |    46.2     |    41.4    |    23.6    |    27.6    |    40.5    |   31.9    |
@@ -300,7 +276,7 @@ Results from MMDetection
 |  GDINO(zero-shot)   |  Swin-T  |         |  60.4  |  92.1  |  96.2   |  59.7   |  92.1   |   96.3   |
 | MM-GDINO(zero-shot) |  Swin-T  |         |  62.9  |  93.3  |  97.2   |  62.9   |  93.9   |   97.4   |
 |        GDINO        |  Swin-T  |   UNK   |  84.2  |        |         |  84.9   |         |          |
-|      MM-GDINO       |  Swin-T  |   5e    |        |        |         |         |         |          |
+|      MM-GDINO       |  Swin-T  |   5e    |  85.5  |  98.4  |  99.4   |  85.8   |  98.6   |   99.4   |
 
 #### gRefCOCO
 
@@ -308,4 +284,4 @@ Results from MMDetection
 | :-----------------: | :------: | :-----: | :--------------------: | :-------: | :----------------------: | :---------: | :----------------------: | :---------: |
 |  GDINO(zero-shot)   |  Swin-T  |         |          41.3          |   91.8    |           27.2           |    90.2     |           29.7           |    93.5     |
 | MM-GDINO(zero-shot) |  Swin-T  |         |          41.0          |   91.3    |           26.1           |    93.0     |           30.4           |    92.3     |
-|      MM-GDINO       |  Swin-T  |   5e    |                        |           |                          |             |                          |             |
+|      MM-GDINO       |  Swin-T  |   5e    |          45.1          |   64.7    |           42.5           |    65.5     |           40.3           |    63.2     |
