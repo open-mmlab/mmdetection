@@ -2,6 +2,8 @@ _base_ = '../grounding_dino_swin-t_pretrain_obj365.py'
 
 data_root = 'data/coco/'
 
+# model = dict(bbox_head=dict(num_classes=80))
+
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -64,7 +66,7 @@ optim_wrapper = dict(
         custom_keys={
             'absolute_pos_embed': dict(decay_mult=0.),
             'backbone': dict(lr_mult=0.1),
-            # 'language_model': dict(lr_mult=0),
+            'language_model': dict(lr_mult=0.1),
         }))
 
 # learning policy
@@ -75,7 +77,7 @@ param_scheduler = [
         begin=0,
         end=max_epochs,
         by_epoch=True,
-        milestones=[11],
+        milestones=[8, 11],
         gamma=0.1)
 ]
 train_cfg = dict(max_epochs=max_epochs, val_interval=1)

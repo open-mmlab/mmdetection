@@ -227,7 +227,7 @@ Results from https://arxiv.org/abs/2307.11035
 Results from MMDetection
 
 |    Architecture     | Backbone | Lr schd | box AP |
-| :-----------------: | :------: | ------- | ------ |
+| :-----------------: | :------: | ------- |--------|
 |    Faster R-CNN     |   R-50   | 1x      | 37.4   |
 |    Cascade R-CNN    |   R-50   | 1x      | 40.3   |
 |        ATSS         |   R-50   | 1x      | 39.4   |
@@ -238,7 +238,7 @@ Results from MMDetection
 | MM-GDINO(zero-shot) |  Swin-T  |         | 50.4   |
 |        GLIP         |  Swin-T  | 1x      | 55.4   |
 |        GDINO        |  Swin-T  | 1x      | 58.1   |
-|      MM-GDINO       |  Swin-T  | 1x      |        |
+|      MM-GDINO       |  Swin-T  | 1x      | 58.2   |
 
 ### LVIS
 
