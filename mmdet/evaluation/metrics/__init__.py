@@ -16,6 +16,7 @@ from .grefcoco_metric import gRefCOCOMetric
 from .lvis_metric import LVISMetric
 from .mot_challenge_metric import MOTChallengeMetric
 from .openimages_metric import OpenImagesMetric
+from .ov_coco_metric import OVCocoMetric
 from .refexp_metric import RefExpMetric
 from .refseg_metric import RefSegMetric
 from .reid_metric import ReIDMetrics
@@ -29,5 +30,6 @@ __all__ = [
     'CocoOccludedSeparatedMetric', 'DumpDetResults', 'BaseVideoMetric',
     'MOTChallengeMetric', 'CocoVideoMetric', 'ReIDMetrics', 'YouTubeVISMetric',
     'COCOCaptionMetric', 'SemSegMetric', 'RefSegMetric', 'RefExpMetric',
-    'gRefCOCOMetric', 'DODCocoMetric', 'DumpODVGResults', 'Flickr30kMetric'
+    'gRefCOCOMetric', 'DODCocoMetric', 'DumpODVGResults', 'Flickr30kMetric',
+    'OVCocoMetric'
 ]
