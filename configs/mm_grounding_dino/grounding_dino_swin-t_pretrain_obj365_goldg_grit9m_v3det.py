@@ -3,7 +3,7 @@ _base_ = 'grounding_dino_swin-t_pretrain_obj365.py'
 o365v1_od_dataset = dict(
     type='ODVGDataset',
     data_root='data/objects365v1/',
-    ann_file='o365v1_train_odvg.jsonl',
+    ann_file='o365v1_train_odvg.json',
     label_map_file='o365v1_label_map.json',
     data_prefix=dict(img='train/'),
     filter_cfg=dict(filter_empty_gt=False),

@@ -189,7 +189,7 @@ data_root = 'data/objects365v1/'
 coco_od_dataset = dict(
     type=dataset_type,
     data_root=data_root,
-    ann_file='o365v1_train_odvg.jsonl',
+    ann_file='o365v1_train_odvg.json',
     label_map_file='o365v1_label_map.json',
     data_prefix=dict(img='train/'),
     filter_cfg=dict(filter_empty_gt=False),
