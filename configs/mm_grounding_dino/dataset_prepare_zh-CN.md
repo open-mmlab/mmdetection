@@ -446,7 +446,187 @@ mmdetection
 
 ### 1 COCO 2017
 
+COCO 是检测领域最常用的数据集，我们希望能够更充分探索其微调模式。从目前发展来看，一共有 3 种微调方式：
+
+1. 闭集微调，即微调后文本端将无法修改描述，转变为闭集算法，在 COCO 上性能能够最大化，但是失去了通用性。
+2. 开集继续预训练微调，即对 COCO 数据集采用和预训练一致的预训练手段。此时有两种做法，第一种是降低学习率并固定某些模块，仅仅在 COCO 数据上预训练，第二种是将 COCO 数据和部分预训练数据混合一起训练，两种方式的目的都是在尽可能不降低泛化性时提高 COCO 数据集性能
+3. 开放词汇微调，即采用 OVD 领域常用做法，将 COCO 类别分成 base 类和 novel 类，训练时候仅仅在 base 类上进行，评测在 base 和 novel 类上进行。这种方式可以验证 COCO OVD 能力，目的也是在尽可能不降低泛化性时提高 COCO 数据集性能
+
+**(1) 闭集微调**
+
+这个部分无需准备数据，直接用之前的数据即可。
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── instances_val2017.json
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+```
+
+**(2) 开集继续预训练微调**
+这种方式需要将 COCO 训练数据转换为 ODVG 格式，你可以使用如下命令转换：
+
+```shell
+python tools/convert_datasets/coco2odvg.py data/coco/annotations/instances_train2017.json -d coco
+```
+
+会在 `data/coco/annotations/` 下生成新的 `instances_train2017_od.json` 和 `coco2017_label_map.json`，完整的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── instances_train2017_od.json
+│   │   │   ├── coco2017_label_map.json
+│   │   │   ├── instances_val2017.json
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+```
+
+在得到数据后，你可以自行选择单独预习还是混合预训练方式。
+
+**(3) 开放词汇微调**
+这种方式需要将 COCO 训练数据转换为 OVD 格式，你可以使用如下命令转换：
+
+```shell
+python tools/convert_datasets/coco2ovd.py data/coco/
+```
+
+会在 `data/coco/annotations/` 下生成新的 `instances_val2017_all_2.json` 和 `instances_val2017_seen_2.json`，完整的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── instances_train2017_od.json
+│   │   │   ├── instances_val2017_all_2.json
+│   │   │   ├── instances_val2017_seen_2.json
+│   │   │   ├── coco2017_label_map.json
+│   │   │   ├── instances_val2017.json
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+```
+
+然后可以直接使用 [配置](coco/grounding_dino_swin-t_finetune_16xb4_1x_coco_48_17.py) 进行训练和测试。
+
 ### 2 LVIS 1.0
+
+LVIS 是一个包括 1203 类的数据集，同时也是一个长尾联邦数据集，对其进行微调很有意义。 由于其类别过多，我们无法对其进行闭集微调，因此只能采用开集继续预训练微调和开放词汇微调。
+
+你需要先准备好 LVIS 训练 JSON 文件，你可以从 [这里](https://www.lvisdataset.org/dataset) 下载，我们只需要 `lvis_v1_train.json` 和 `lvis_v1_val.json`，然后将其放到 `data/coco/annotations/` 下，然后运行如下命令：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── lvis_v1_train.json
+│   │   │   ├── lvis_v1_val.json
+│   │   │   ├── instances_val2017.json
+│   │   │   ├── lvis_v1_minival_inserted_image_name.json
+│   │   │   ├── lvis_od_val.json
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+```
+
+(1) 开集继续预训练微调
+
+使用如下命令转换为 ODVG 格式：
+
+```shell
+python tools/convert_datasets/lvis2odvg.py data/coco/annotations/lvis_v1_train.json
+```
+
+会在 `data/coco/annotations/` 下生成新的 `lvis_v1_train_od.json` 和 `lvis_v1_label_map.json`，完整的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── lvis_v1_train.json
+│   │   │   ├── lvis_v1_val.json
+│   │   │   ├── lvis_v1_train_od.json
+│   │   │   ├── lvis_v1_label_map.json
+│   │   │   ├── instances_val2017.json
+│   │   │   ├── lvis_v1_minival_inserted_image_name.json
+│   │   │   ├── lvis_od_val.json
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+```
+
+然后可以直接使用 [配置](lvis/grounding_dino_swin-t_finetune_16xb4_1x_lvis.py) 进行训练测试，或者你修改配置将其和部分预训练数据集混合使用。
+
+**(2) 开放词汇微调**
+
+使用如下命令转换为 OVD 格式：
+
+```shell
+python tools/convert_datasets/lvis2ovd.py data/coco/
+```
+
+会在 `data/coco/annotations/` 下生成新的 `lvis_v1_train_od_norare.json` 和 `lvis_v1_label_map_norare.json`，完整的数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── lvis_v1_train.json
+│   │   │   ├── lvis_v1_val.json
+│   │   │   ├── lvis_v1_train_od.json
+│   │   │   ├── lvis_v1_label_map.json
+│   │   │   ├── instances_val2017.json
+│   │   │   ├── lvis_v1_minival_inserted_image_name.json
+│   │   │   ├── lvis_od_val.json
+│   │   │   ├── lvis_v1_train_od_norare.json
+│   │   │   ├── lvis_v1_label_map_norare.json
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+```
+
+然后可以直接使用 [配置](lvis/grounding_dino_swin-t_finetune_16xb4_1x_lvis_866_337.py) 进行训练测试
 
 ### 3 RTTS
 
