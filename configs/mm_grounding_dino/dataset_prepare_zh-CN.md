@@ -476,7 +476,7 @@ mmdetection
 这种方式需要将 COCO 训练数据转换为 ODVG 格式，你可以使用如下命令转换：
 
 ```shell
-python tools/convert_datasets/coco2odvg.py data/coco/annotations/instances_train2017.json -d coco
+python tools/dataset_converters/coco2odvg.py data/coco/annotations/instances_train2017.json -d coco
 ```
 
 会在 `data/coco/annotations/` 下生成新的 `instances_train2017_od.json` 和 `coco2017_label_map.json`，完整的数据集结构如下：
@@ -505,7 +505,7 @@ mmdetection
 这种方式需要将 COCO 训练数据转换为 OVD 格式，你可以使用如下命令转换：
 
 ```shell
-python tools/convert_datasets/coco2ovd.py data/coco/
+python tools/dataset_converters/coco2ovd.py data/coco/
 ```
 
 会在 `data/coco/annotations/` 下生成新的 `instances_val2017_all_2.json` 和 `instances_val2017_seen_2.json`，完整的数据集结构如下：
@@ -563,7 +563,7 @@ mmdetection
 使用如下命令转换为 ODVG 格式：
 
 ```shell
-python tools/convert_datasets/lvis2odvg.py data/coco/annotations/lvis_v1_train.json
+python tools/dataset_converters/lvis2odvg.py data/coco/annotations/lvis_v1_train.json
 ```
 
 会在 `data/coco/annotations/` 下生成新的 `lvis_v1_train_od.json` 和 `lvis_v1_label_map.json`，完整的数据集结构如下：
@@ -597,7 +597,7 @@ mmdetection
 使用如下命令转换为 OVD 格式：
 
 ```shell
-python tools/convert_datasets/lvis2ovd.py data/coco/
+python tools/dataset_converters/lvis2ovd.py data/coco/
 ```
 
 会在 `data/coco/annotations/` 下生成新的 `lvis_v1_train_od_norare.json` 和 `lvis_v1_label_map_norare.json`，完整的数据集结构如下：

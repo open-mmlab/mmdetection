@@ -226,8 +226,10 @@ Results from https://arxiv.org/abs/2307.11035
 
 Results from MMDetection
 
+**(1) Closed-set performance**
+
 |    Architecture     | Backbone | Lr schd | box AP |
-| :-----------------: | :------: | ------- |--------|
+| :-----------------: | :------: | ------- | ------ |
 |    Faster R-CNN     |   R-50   | 1x      | 37.4   |
 |    Cascade R-CNN    |   R-50   | 1x      | 40.3   |
 |        ATSS         |   R-50   | 1x      | 39.4   |
@@ -240,7 +242,16 @@ Results from MMDetection
 |        GDINO        |  Swin-T  | 1x      | 58.1   |
 |      MM-GDINO       |  Swin-T  | 1x      | 58.2   |
 
-### LVIS
+**(2) Open vocabulary performance**
+
+|    Architecture     | Backbone | Lr schd | box AP | Base box AP | Novel box AP | box AP@50 | Base box AP@50 | Novel box AP@50 |
+| :-----------------: | :------: | :-----: | :----: | :---------: | :----------: | :-------: | :------------: | :-------------: |
+| MM-GDINO(zero-shot) |  Swin-T  |         |  51.1  |    48.4     |     58.9     |   66.7    |      64.0      |      74.2       |
+|      MM-GDINO       |  Swin-T  |   1x    |  57.2  |    56.1     |     60.4     |   73.6    |      73.0      |      75.3       |
+
+### LVIS 1.0
+
+**(1) Open-set continuing pretraining performance**
 
 |    Architecture     | Backbone | Lr schd | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP | Val1.0 APr | Val1.0 APc | Val1.0 APf | Val1.0 AP |
 | :-----------------: | :------: | :-----: | :---------: | :---------: | :---------: | :--------: | :--------: | :--------: | :--------: | :-------: |
@@ -248,6 +259,15 @@ Results from MMDetection
 |  GDINO(zero-shot)   |  Swin-T  |         |    18.8     |    24.2     |    34.7     |    28.8    |    10.1    |    15.3    |    29.9    |   20.1    |
 | MM-GDINO(zero-shot) |  Swin-T  |         |    34.2     |    37.4     |    46.2     |    41.4    |    23.6    |    27.6    |    40.5    |   31.9    |
 |      MM-GDINO       |  Swin-T  |   1x    |    50.7     |    58.8     |    60.1     |    58.7    |    45.2    |    50.2    |    56.1    |   51.7    |
+
+**(2) Open vocabulary performance**
+
+|    Architecture     | Backbone | Lr schd | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP |
+| :-----------------: | :------: | :-----: | :---------: | :---------: | :---------: | :--------: |
+| MM-GDINO(zero-shot) |  Swin-T  |         |    34.2     |    37.4     |    46.2     |    41.4    |
+|      MM-GDINO       |  Swin-T  |   1x    |    50.8     |    53.3     |    57.0     |    54.9    |
+
+- Due to the limited annotations for rare classes in LVIS, the impact of including them in training has little effect on the performance of rare classes.
 
 ### RefEXP
 
