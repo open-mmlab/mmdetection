@@ -1,12 +1,34 @@
 _base_ = '../grounding_dino_swin-t_pretrain_obj365.py'
 
 data_root = 'data/coco/'
-base_classes = ("person", "bicycle", "car", "motorcycle", "train", "truck", "boat", "bench", "bird", "horse", "sheep", "bear", "zebra", "giraffe", "backpack", "handbag", "suitcase", "frisbee", "skis", "kite", "surfboard", "bottle", "fork", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "pizza", "donut", "chair", "bed", "toilet", "tv", "laptop", "mouse", "remote", "microwave", "oven", "toaster", "refrigerator", "book", "clock", "vase", "toothbrush")
-novel_classes = ("airplane", "bus", "cat", "dog", "cow", "elephant", "umbrella", "tie", "snowboard", "skateboard", "cup", "knife", "cake", "couch", "keyboard", "sink", "scissors")
-all_classes = ("person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "kite", "skateboard", "surfboard", "bottle", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "pizza", "donut", "cake", "chair", "couch", "bed", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "toothbrush")
+base_classes = ('person', 'bicycle', 'car', 'motorcycle', 'train', 'truck',
+                'boat', 'bench', 'bird', 'horse', 'sheep', 'bear', 'zebra',
+                'giraffe', 'backpack', 'handbag', 'suitcase', 'frisbee',
+                'skis', 'kite', 'surfboard', 'bottle', 'fork', 'spoon', 'bowl',
+                'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot',
+                'pizza', 'donut', 'chair', 'bed', 'toilet', 'tv', 'laptop',
+                'mouse', 'remote', 'microwave', 'oven', 'toaster',
+                'refrigerator', 'book', 'clock', 'vase', 'toothbrush')
+novel_classes = ('airplane', 'bus', 'cat', 'dog', 'cow', 'elephant',
+                 'umbrella', 'tie', 'snowboard', 'skateboard', 'cup', 'knife',
+                 'cake', 'couch', 'keyboard', 'sink', 'scissors')
+all_classes = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
+               'train', 'truck', 'boat', 'bench', 'bird', 'cat', 'dog',
+               'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe',
+               'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
+               'skis', 'snowboard', 'kite', 'skateboard', 'surfboard',
+               'bottle', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana',
+               'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'pizza',
+               'donut', 'cake', 'chair', 'couch', 'bed', 'toilet', 'tv',
+               'laptop', 'mouse', 'remote', 'keyboard', 'microwave', 'oven',
+               'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
+               'scissors', 'toothbrush')
 
 train_metainfo = dict(classes=base_classes)
-test_metainfo = dict(classes=all_classes, base_classes=base_classes, novel_classes=novel_classes)
+test_metainfo = dict(
+    classes=all_classes,
+    base_classes=base_classes,
+    novel_classes=novel_classes)
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -94,19 +116,15 @@ val_dataloader = dict(
         test_mode=True,
         pipeline=test_pipeline,
         return_classes=True,
-    )
-)
+    ))
 test_dataloader = val_dataloader
-
 
 val_evaluator = dict(
     type='OVCocoMetric',
     ann_file=data_root + 'zero-shot/instances_val2017_all_2.json',
     metric='bbox',
-    format_only=False
-)
+    format_only=False)
 test_evaluator = val_evaluator
-
 
 optim_wrapper = dict(
     _delete_=True,
@@ -133,6 +151,8 @@ param_scheduler = [
 ]
 train_cfg = dict(max_epochs=max_epochs, val_interval=1)
 
-default_hooks = dict(checkpoint=dict(max_keep_ckpts=1, save_best='coco/novel_ap50', rule='greater'))
+default_hooks = dict(
+    checkpoint=dict(
+        max_keep_ckpts=1, save_best='coco/novel_ap50', rule='greater'))
 
-load_from = "epoch_30.pth"
+load_from = 'epoch_30.pth'

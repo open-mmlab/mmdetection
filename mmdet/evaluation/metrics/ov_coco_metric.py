@@ -1,10 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import datetime
 import itertools
 import os.path as osp
 import tempfile
 from collections import OrderedDict
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict
 
 import numpy as np
 from mmengine.fileio import load
@@ -14,6 +13,7 @@ from terminaltables import AsciiTable
 from mmdet.datasets.api_wrappers import COCO, COCOeval, COCOevalMP
 from mmdet.registry import METRICS
 from .coco_metric import CocoMetric
+
 
 @METRICS.register_module()
 class OVCocoMetric(CocoMetric):
@@ -217,7 +217,7 @@ class OVCocoMetric(CocoMetric):
                     table = AsciiTable(table_data)
                     logger.info('\n' + table.table)
 
-                # -----------------get novel_ap50 and base_ap50------------------
+                # ------------get novel_ap50 and base_ap50---------
                 precisions = coco_eval.eval['precision']
                 assert len(self.cat_ids) == precisions.shape[2]
                 base_inds, novel_inds = [], []
@@ -245,7 +245,7 @@ class OVCocoMetric(CocoMetric):
                 eval_results['novel_ap50'] = np.mean(
                     novel_ap50[novel_ap50 > -1]) if len(
                         novel_ap50[novel_ap50 > -1]) else -1
-                # -----------------get novel_ap50 and base_ap50------------------
+                # ------------get novel_ap50 and base_ap50---------
                 if metric_items is None:
                     metric_items = [
                         'mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l'
