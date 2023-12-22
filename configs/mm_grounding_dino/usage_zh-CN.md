@@ -188,7 +188,52 @@ python tools/test.py configs/mm_grounding_dino/odinw/grounding_dino_swin-t_pretr
 
 ## 评测数据集结果可视化
 
-我们提供了一个配置，允许您将模型预测结果保存起来，然后通过 [脚本](../../tools/analysis_tools/browse_grounding_raw.py) 进行可视化
+为了方便大家对模型预测结果进行可视化和分析，我们支持了评测数据集预测结果可视化，以指代性表达式理解为例用法如下：
+
+```shell
+python tools/test.py configs/mm_grounding_dino/refcoco/grounding_dino_swin-t_pretrain_zeroshot_refexp \
+        mm_grounding_dino_t.pth --work-dir refcoco_result --show-dir save_path
+```
+
+模型在推理过程中会将可视化结果保存到  `refcoco_result/{当前时间戳}/save_path` 路径下。其余评测数据集可视化只需要替换配置文件即可。
+
+下面展示一些数据集的可视化结果： 左图为 GT，右图为预测结果
+
+1. COCO2017 val 结果：
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/3a0fa894-c0a5-4c1f-bdf0-1c6fd17abafa" width="70%"/>
+</div>
+
+2. Flickr30k Entities 结果：
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/e9f2667f-9dca-464b-b995-599aa2731b34" width="70%"/>
+</div>
+
+3. DOD 结果：
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/c71a306b-1055-4344-ba1d-ae4c57f2cb2f" width="70%"/>
+</div>
+
+4. RefCOCO val 结果：
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/b175959d-d788-4b5e-8b11-e8e34753457f" width="70%"/>
+</div>
+
+5. RefCOCO testA 结果：
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/c087f889-f96c-4355-8a15-7dc2738b4223" width="70%"/>
+</div>
+
+6. gRefCOCO val 结果：
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/96c2e783-17da-462e-a7cf-937555e26c90" width="70%"/>
+</div>
 
 ## 模型训练
 

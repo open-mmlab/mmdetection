@@ -243,3 +243,5 @@ train_cfg = dict(
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (16 GPUs) x (2 samples per GPU)
 auto_scale_lr = dict(base_batch_size=64)
+
+default_hooks = dict(visualization=dict(type='GroundingVisualizationHook'))
