@@ -12,8 +12,11 @@ model = dict(
         batch_augments=[
             dict(
                 type='BatchSyncRandomResize',
-                # interval=1,
-                random_size_range=(480, 800))],
+                interval=1,
+                interpolations=['nearest', 'bilinear', 'bicubic', 'area'],
+                random_sizes=[
+                    480, 512, 544, 576, 608, 640, 640, 640,
+                    672, 704, 736,768, 800])],
         mean=[0, 0, 0],  # [123.675, 116.28, 103.53] for DINO
         std=[255, 255, 255],  # [58.395, 57.12, 57.375] for DINO
         bgr_to_rgb=True,
@@ -42,6 +45,7 @@ model = dict(
         out_channels=256,
         expansion=1.0,
         norm_cfg=dict(type='SyncBN', requires_grad=True),
+        init_cfg=dict(type='Caffe2Xavier', layer='Conv2d'),
         layer_cfg=dict(
             self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
             ffn_cfg=dict(
@@ -101,34 +105,21 @@ train_pipeline = [
         type='RandomApply',
         transforms=dict(type='PhotoMetricDistortion'),
         prob=0.8),
-    dict(type='Expand', mean=[103.53, 116.28, 123.675]),
+    dict(type='Expand', mean=[0, 0, 0]),
     dict(
         type='RandomApply',
-        transforms=dict(type='MinIoURandomCrop', bbox_clip_border=False),
+        transforms=dict(type='MinIoURandomCrop'),
         prob=0.8),
+    dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
     dict(type='RandomFlip', prob=0.5),
-    # dict(
-    #     type='RandomChoice',
-    #     transforms=[[
-    #         dict(
-    #             type='RandomChoiceResize',
-    #             scales=[(480, 480), (512, 512), (544, 544), (576, 576),
-    #                     (608, 608), (640, 640), (640, 640), (640, 640),
-    #                     (672, 672), (704, 704), (736, 736), (768, 768),
-    #                     (800, 800)],
-    #             interpolation=interpolation,
-    #             keep_ratio=False,
-    #             clip_object_border=False)]
-    #         for interpolation in interpolations]),
     dict(
         type='RandomChoice',
         transforms=[[
             dict(
                 type='Resize',
                 scale=(640, 640),
-                interpolation=interpolation,
                 keep_ratio=False,
-                clip_object_border=False)]
+                interpolation=interpolation)]
             for interpolation in interpolations]),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
     dict(type='PackDetInputs')
@@ -157,22 +148,6 @@ train_dataloader = dict(
 val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
 test_dataloader = dict(dataset=dict(pipeline=test_pipeline))
 
-# set all layers in backbone to lr_mult=0.1
-# set all norm layers, to decay_multi=0.0
-num_blocks_list = (3, 4, 6, 3)  # r50
-downsample_norm_idx_list = (3, 3, 3, 3)  # r50
-backbone_norm_multi = dict(lr_mult=0.1, decay_mult=0.0)
-custom_keys = {'backbone': dict(lr_mult=0.1, decay_mult=1.0)}
-custom_keys.update({
-    f'backbone.layer{stage_id + 1}.{block_id}.bn': backbone_norm_multi
-    for stage_id, num_blocks in enumerate(num_blocks_list)
-    for block_id in range(num_blocks)
-})
-custom_keys.update({
-    f'backbone.layer{stage_id + 1}.{block_id}.downsample.{downsample_norm_idx - 1}': backbone_norm_multi   # noqa
-    for stage_id, (num_blocks, downsample_norm_idx) in enumerate(zip(num_blocks_list, downsample_norm_idx_list))  # noqa
-    for block_id in range(num_blocks)
-})
 # optimizer
 optim_wrapper = dict(
     type='OptimWrapper',
@@ -181,7 +156,10 @@ optim_wrapper = dict(
         lr=0.0001,
         weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
-    paramwise_cfg=dict(custom_keys=custom_keys, norm_decay_mult=0.0))
+    paramwise_cfg=dict(
+        custom_keys={'backbone': dict(lr_mult=0.1)},
+        norm_decay_mult=0,
+        bypass_duplicate=True))
 
 # learning policy
 max_epochs = 72

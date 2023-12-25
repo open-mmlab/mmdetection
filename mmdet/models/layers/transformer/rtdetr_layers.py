@@ -116,6 +116,9 @@ class RTDETRHybridEncoder(BaseModule):
             normalization layers. Defaults to dict(type='BN').
         act_cfg (:obj:`ConfigDict` or dict, optional): The config dict for
             activation layers. Defaults to dict(type='SiLU', inplace=True).
+        init_cfg (:obj:`ConfigDict` or dict or list[dict] or
+            list[:obj:`ConfigDict`], optional): Initialization config dict.
+            Defaults to None.
     """
 
     def __init__(self,
@@ -127,11 +130,13 @@ class RTDETRHybridEncoder(BaseModule):
                  expansion: float = 1.0,
                  depth_mult: float = 1.0,
                  pe_temperature: float = 10000.0,
-                 upsample_cfg: ConfigType = dict(scale_factor=2, mode='nearest'),
+                 upsample_cfg: ConfigType = dict(
+                     scale_factor=2, mode='nearest'),
                  conv_cfg: OptConfigType = None,
                  norm_cfg: OptConfigType = dict(type='BN', requires_grad=True),
-                 act_cfg: OptConfigType = dict(type='SiLU', inplace=True)):
-        super().__init__()
+                 act_cfg: OptConfigType = dict(type='SiLU', inplace=True),
+                 init_cfg: OptMultiConfig = None) -> None:
+        super().__init__(init_cfg=init_cfg)
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.use_encoder_idx = use_encoder_idx
