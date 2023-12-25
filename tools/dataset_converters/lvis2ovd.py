@@ -10,7 +10,7 @@ def lvis2ovd(args):
 
     lvis = json.load(open(ann_path + 'lvis_v1_val.json'))
     base_class_ids = [
-        cat['id']-1 for cat in lvis['categories'] if cat['frequency'] != 'r'
+        cat['id'] - 1 for cat in lvis['categories'] if cat['frequency'] != 'r'
     ]
 
     with open(ann_path + 'lvis_v1_train_od.json') as f:

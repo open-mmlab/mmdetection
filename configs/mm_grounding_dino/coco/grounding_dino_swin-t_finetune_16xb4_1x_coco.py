@@ -2,8 +2,6 @@ _base_ = '../grounding_dino_swin-t_pretrain_obj365.py'
 
 data_root = 'data/coco/'
 
-# model = dict(bbox_head=dict(num_classes=80))
-
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),

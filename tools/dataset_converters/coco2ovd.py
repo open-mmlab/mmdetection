@@ -51,7 +51,7 @@ def coco2ovd(args):
             class_id_to_split[item['id']] = 'unseen'
 
     filter_annotation(coco_train_anno_all, ['seen'], class_id_to_split)
-    with open(ann_path + 'instances_val2017_seen_2.json', 'w') as fout:
+    with open(ann_path + 'instances_train2017_seen_2.json', 'w') as fout:
         json.dump(coco_train_anno_all, fout)
 
     with open(ann_path + 'instances_val2017.json', 'r') as fin:

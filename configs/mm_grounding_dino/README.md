@@ -30,6 +30,7 @@ Please refer to [usage.md](usage.md)
 | MM-GDINO-T |  Swin-T  | Zero-shot | 48.5(+1.8) |         O365          |                          [config](<>)                          |                                                    [model](<>)                                                     |
 | MM-GDINO-T |  Swin-T  | Zero-shot | 50.4(+2.3) |      O365,GoldG       |                          [config](<>)                          |                                                    [model](<>)                                                     |
 | MM-GDINO-T |  Swin-T  | Zero-shot | 50.5(+2.1) |    O365,GoldG,GRIT    |                          [config](<>)                          |                                                    [model](<>)                                                     |
+| MM-GDINO-T |  Swin-T  | Zero-shot | 50.6(+2.2) |   O365,GoldG,V3Det    |                          [config](<>)                          |                                                    [model](<>)                                                     |
 | MM-GDINO-T |  Swin-T  | Zero-shot | 50.4(+2.0) | O365,GoldG,GRIT,V3Det |                          [config](<>)                          |                                                    [model](<>)                                                     |
 
 ## LVIS Results
@@ -39,6 +40,7 @@ Please refer to [usage.md](usage.md)
 |  GDINO-T   |    18.8     |    24.2     |    34.7     |    28.8     |    10.1    |    15.3    |    29.9    |    20.1     |   O365,GoldG,Cap4M    | [config](<>) | [model](<>) |
 | MM-GDINO-T |    28.1     |    30.2     |    42.0     | 35.7(+6.9)  |    17.1    |    22.4    |    36.5    | 27.0(+6.9)  |      O365,GoldG       | [config](<>) | [model](<>) |
 | MM-GDINO-T |    26.6     |    32.4     |    41.8     | 36.5(+7.7)  |    17.3    |    22.6    |    36.4    | 27.1(+7.0)  |    O365,GoldG,GRIT    | [config](<>) | [model](<>) |
+| MM-GDINO-T |    33.0     |    36.0     |    45.9     | 40.5(+11.7) |    21.5    |    25.5    |    40.2    | 30.6(+10.5) |   O365,GoldG,V3Det    | [config](<>) | [model](<>) |
 | MM-GDINO-T |    34.2     |    37.4     |    46.2     | 41.4(+12.6) |    23.6    |    27.6    |    40.5    | 31.9(+11.8) | O365,GoldG,GRIT,V3Det | [config](<>) | [model](<>) |
 
 ## ODinW (Object Detection in the Wild) Results
@@ -47,79 +49,91 @@ Learning visual representations from natural language supervision has recently s
 
 ### Results and models of ODinW13
 
-| Method                | GDINO-T <br/> (O365,GoldG,Cap4M) | MM-GDINO-T <br/> (O365,GoldG) | MM-GDINO-T <br/> (O365,GoldG,GRIT) | MM-GDINO-T <br/> (O365,GoldG,GRIT,V3Det) |
-| --------------------- | -------------------------------- | ----------------------------- | ---------------------------------- | ---------------------------------------- |
-| AerialMaritimeDrone   | 0.173                            | 0.133                         | 0.155                              | 0.151                                    |
-| Aquarium              | 0.195                            | 0.252                         | 0.261                              | 0.283                                    |
-| CottontailRabbits     | 0.799                            | 0.771                         | 0.810                              | 0.786                                    |
-| EgoHands              | 0.608                            | 0.499                         | 0.537                              | 0.519                                    |
-| NorthAmericaMushrooms | 0.507                            | 0.331                         | 0.462                              | 0.767                                    |
-| Packages              | 0.687                            | 0.707                         | 0.687                              | 0.706                                    |
-| PascalVOC             | 0.563                            | 0.565                         | 0.580                              | 0.566                                    |
-| pistols               | 0.726                            | 0.585                         | 0.709                              | 0.729                                    |
-| pothole               | 0.215                            | 0.136                         | 0.285                              | 0.243                                    |
-| Raccoon               | 0.549                            | 0.469                         | 0.511                              | 0.535                                    |
-| ShellfishOpenImages   | 0.393                            | 0.321                         | 0.437                              | 0.488                                    |
-| thermalDogsAndPeople  | 0.657                            | 0.556                         | 0.603                              | 0.542                                    |
-| VehiclesOpenImages    | 0.613                            | 0.566                         | 0.603                              | 0.615                                    |
-| Average               | **0.514**                        | **0.453**                     | **0.511**                          | **0.533**                                |
+| Method                | GDINO-T <br/> (O365,GoldG,Cap4M) | MM-GDINO-T <br/> (O365,GoldG) | MM-GDINO-T <br/> (O365,GoldG,GRIT) | MM-GDINO-T <br/> (O365,GoldG,V3Det) | MM-GDINO-T <br/> (O365,GoldG,GRIT,V3Det) |
+| --------------------- | -------------------------------- | ----------------------------- | ---------------------------------- | ----------------------------------- | ---------------------------------------- |
+| AerialMaritimeDrone   | 0.173                            | 0.133                         | 0.155                              | 0.177                               | 0.151                                    |
+| Aquarium              | 0.195                            | 0.252                         | 0.261                              | 0.266                               | 0.283                                    |
+| CottontailRabbits     | 0.799                            | 0.771                         | 0.810                              | 0.778                               | 0.786                                    |
+| EgoHands              | 0.608                            | 0.499                         | 0.537                              | 0.506                               | 0.519                                    |
+| NorthAmericaMushrooms | 0.507                            | 0.331                         | 0.462                              | 0.669                               | 0.767                                    |
+| Packages              | 0.687                            | 0.707                         | 0.687                              | 0.710                               | 0.706                                    |
+| PascalVOC             | 0.563                            | 0.565                         | 0.580                              | 0.556                               | 0.566                                    |
+| pistols               | 0.726                            | 0.585                         | 0.709                              | 0.671                               | 0.729                                    |
+| pothole               | 0.215                            | 0.136                         | 0.285                              | 0.199                               | 0.243                                    |
+| Raccoon               | 0.549                            | 0.469                         | 0.511                              | 0.553                               | 0.535                                    |
+| ShellfishOpenImages   | 0.393                            | 0.321                         | 0.437                              | 0.519                               | 0.488                                    |
+| thermalDogsAndPeople  | 0.657                            | 0.556                         | 0.603                              | 0.493                               | 0.542                                    |
+| VehiclesOpenImages    | 0.613                            | 0.566                         | 0.603                              | 0.614                               | 0.615                                    |
+| Average               | **0.514**                        | **0.453**                     | **0.511**                          | **0.516**                           | **0.533**                                |
 
 ### Results and models of ODinW35
 
-| Method                      | GDINO-T <br/> (O365,GoldG,Cap4M) | MM-GDINO-T <br/> (O365,GoldG) | MM-GDINO-T <br/> (O365,GoldG,GRIT) | MM-GDINO-T <br/> (O365,GoldG,GRIT,V3Det) |
-| --------------------------- | -------------------------------- | ----------------------------- | ---------------------------------- | ---------------------------------------- |
-| AerialMaritimeDrone_large   | 0.173                            | 0.133                         | 0.155                              | 0.151                                    |
-| AerialMaritimeDrone_tiled   | 0.206                            | 0.170                         | 0.225                              | 0.206                                    |
-| AmericanSignLanguageLetters | 0.002                            | 0.016                         | 0.020                              | 0.007                                    |
-| Aquarium                    | 0.195                            | 0.252                         | 0.261                              | 0.283                                    |
-| BCCD                        | 0.161                            | 0.069                         | 0.118                              | 0.077                                    |
-| boggleBoards                | 0.000                            | 0.002                         | 0.001                              | 0.002                                    |
-| brackishUnderwater          | 0.021                            | 0.033                         | 0.021                              | 0.025                                    |
-| ChessPieces                 | 0.000                            | 0.000                         | 0.000                              | 0.000                                    |
-| CottontailRabbits           | 0.806                            | 0.771                         | 0.810                              | 0.786                                    |
-| dice                        | 0.004                            | 0.002                         | 0.005                              | 0.001                                    |
-| DroneControl                | 0.042                            | 0.047                         | 0.097                              | 0.074                                    |
-| EgoHands_generic            | 0.608                            | 0.527                         | 0.537                              | 0.519                                    |
-| EgoHands_specific           | 0.002                            | 0.001                         | 0.005                              | 0.003                                    |
-| HardHatWorkers              | 0.046                            | 0.048                         | 0.070                              | 0.108                                    |
-| MaskWearing                 | 0.004                            | 0.009                         | 0.004                              | 0.009                                    |
-| MountainDewCommercial       | 0.430                            | 0.453                         | 0.465                              | 0.430                                    |
-| NorthAmericaMushrooms       | 0.471                            | 0.331                         | 0.462                              | 0.767                                    |
-| openPoetryVision            | 0.000                            | 0.001                         | 0.000                              | 0.000                                    |
-| OxfordPets_by_breed         | 0.003                            | 0.002                         | 0.004                              | 0.004                                    |
-| OxfordPets_by_species       | 0.011                            | 0.019                         | 0.016                              | 0.015                                    |
-| PKLot                       | 0.001                            | 0.004                         | 0.002                              | 0.007                                    |
-| Packages                    | 0.695                            | 0.707                         | 0.687                              | 0.706                                    |
-| PascalVOC                   | 0.563                            | 0.565                         | 0.580                              | 0.566                                    |
-| pistols                     | 0.726                            | 0.585                         | 0.709                              | 0.729                                    |
-| plantdoc                    | 0.005                            | 0.005                         | 0.007                              | 0.011                                    |
-| pothole                     | 0.215                            | 0.136                         | 0.219                              | 0.168                                    |
-| Raccoons                    | 0.549                            | 0.469                         | 0.511                              | 0.535                                    |
-| selfdrivingCar              | 0.089                            | 0.091                         | 0.076                              | 0.083                                    |
-| ShellfishOpenImages         | 0.393                            | 0.321                         | 0.437                              | 0.488                                    |
-| ThermalCheetah              | 0.087                            | 0.063                         | 0.081                              | 0.045                                    |
-| thermalDogsAndPeople        | 0.657                            | 0.556                         | 0.603                              | 0.543                                    |
-| UnoCards                    | 0.006                            | 0.012                         | 0.010                              | 0.005                                    |
-| VehiclesOpenImages          | 0.613                            | 0.566                         | 0.603                              | 0.615                                    |
-| WildfireSmoke               | 0.134                            | 0.106                         | 0.154                              | 0.127                                    |
-| websiteScreenshots          | 0.012                            | 0.02                          | 0.016                              | 0.016                                    |
-| Average                     | **0.227**                        | **0.202**                     | **0.228**                          | **0.284**                                |
+| Method                      | GDINO-T <br/> (O365,GoldG,Cap4M) | MM-GDINO-T <br/> (O365,GoldG) | MM-GDINO-T <br/> (O365,GoldG,GRIT) | MM-GDINO-T <br/> (O365,GoldG,V3Det) | MM-GDINO-T <br/> (O365,GoldG,GRIT,V3Det) |
+| --------------------------- | -------------------------------- | ----------------------------- | ---------------------------------- | ----------------------------------- | ---------------------------------------- |
+| AerialMaritimeDrone_large   | 0.173                            | 0.133                         | 0.155                              | 0.177                               | 0.151                                    |
+| AerialMaritimeDrone_tiled   | 0.206                            | 0.170                         | 0.225                              | 0.184                               | 0.206                                    |
+| AmericanSignLanguageLetters | 0.002                            | 0.016                         | 0.020                              | 0.011                               | 0.007                                    |
+| Aquarium                    | 0.195                            | 0.252                         | 0.261                              | 0.266                               | 0.283                                    |
+| BCCD                        | 0.161                            | 0.069                         | 0.118                              | 0.083                               | 0.077                                    |
+| boggleBoards                | 0.000                            | 0.002                         | 0.001                              | 0.001                               | 0.002                                    |
+| brackishUnderwater          | 0.021                            | 0.033                         | 0.021                              | 0.025                               | 0.025                                    |
+| ChessPieces                 | 0.000                            | 0.000                         | 0.000                              | 0.000                               | 0.000                                    |
+| CottontailRabbits           | 0.806                            | 0.771                         | 0.810                              | 0.778                               | 0.786                                    |
+| dice                        | 0.004                            | 0.002                         | 0.005                              | 0.001                               | 0.001                                    |
+| DroneControl                | 0.042                            | 0.047                         | 0.097                              | 0.088                               | 0.074                                    |
+| EgoHands_generic            | 0.608                            | 0.527                         | 0.537                              | 0.506                               | 0.519                                    |
+| EgoHands_specific           | 0.002                            | 0.001                         | 0.005                              | 0.007                               | 0.003                                    |
+| HardHatWorkers              | 0.046                            | 0.048                         | 0.070                              | 0.070                               | 0.108                                    |
+| MaskWearing                 | 0.004                            | 0.009                         | 0.004                              | 0.011                               | 0.009                                    |
+| MountainDewCommercial       | 0.430                            | 0.453                         | 0.465                              | 0.194                               | 0.430                                    |
+| NorthAmericaMushrooms       | 0.471                            | 0.331                         | 0.462                              | 0.669                               | 0.767                                    |
+| openPoetryVision            | 0.000                            | 0.001                         | 0.000                              | 0.000                               | 0.000                                    |
+| OxfordPets_by_breed         | 0.003                            | 0.002                         | 0.004                              | 0.006                               | 0.004                                    |
+| OxfordPets_by_species       | 0.011                            | 0.019                         | 0.016                              | 0.020                               | 0.015                                    |
+| PKLot                       | 0.001                            | 0.004                         | 0.002                              | 0.008                               | 0.007                                    |
+| Packages                    | 0.695                            | 0.707                         | 0.687                              | 0.710                               | 0.706                                    |
+| PascalVOC                   | 0.563                            | 0.565                         | 0.580                              | 0.566                               | 0.566                                    |
+| pistols                     | 0.726                            | 0.585                         | 0.709                              | 0.671                               | 0.729                                    |
+| plantdoc                    | 0.005                            | 0.005                         | 0.007                              | 0.008                               | 0.011                                    |
+| pothole                     | 0.215                            | 0.136                         | 0.219                              | 0.077                               | 0.168                                    |
+| Raccoons                    | 0.549                            | 0.469                         | 0.511                              | 0.553                               | 0.535                                    |
+| selfdrivingCar              | 0.089                            | 0.091                         | 0.076                              | 0.094                               | 0.083                                    |
+| ShellfishOpenImages         | 0.393                            | 0.321                         | 0.437                              | 0.519                               | 0.488                                    |
+| ThermalCheetah              | 0.087                            | 0.063                         | 0.081                              | 0.030                               | 0.045                                    |
+| thermalDogsAndPeople        | 0.657                            | 0.556                         | 0.603                              | 0.493                               | 0.543                                    |
+| UnoCards                    | 0.006                            | 0.012                         | 0.010                              | 0.009                               | 0.005                                    |
+| VehiclesOpenImages          | 0.613                            | 0.566                         | 0.603                              | 0.614                               | 0.615                                    |
+| WildfireSmoke               | 0.134                            | 0.106                         | 0.154                              | 0.042                               | 0.127                                    |
+| websiteScreenshots          | 0.012                            | 0.02                          | 0.016                              | 0.016                               | 0.016                                    |
+| Average                     | **0.227**                        | **0.202**                     | **0.228**                          | **0.214**                           | **0.284**                                |
 
 ## Referring Expression Comprehension Results
 
-| Method                                  | GDINO-T <br/> (O365,GoldG,Cap4M) | MM-GDINO-T <br/> (O365,GoldG) | MM-GDINO-T <br/> (O365,GoldG,GRIT) | MM-GDINO-T <br/> (O365,GoldG,GRIT,V3Det) |
-| --------------------------------------- | -------------------------------- | ----------------------------- | ---------------------------------- | ---------------------------------------- |
-| RefCOCO val @1,5,10                     | 50.8/89.5/94.9                   | 53.1/89.9/94.7                | 53.4/90.3/95.5                     | 53.1/89.7/95.1                           |
-| RefCOCO testA @1,5,10                   | 57.4/91.3/95.6                   | 59.7/91.5/95.9                | 58.8/91.70/96.2                    | 59.1/91.0/95.5                           |
-| RefCOCO testB @1,5,10                   | 45.0/86.5/92.9                   | 46.4/86.9/92.2                | 46.8/87.7/93.3                     | 46.8/87.8/93.6                           |
-| RefCOCO+ val @1,5,10                    | 51.6/86.4/92.6                   | 53.1/87.0/92.8                | 53.5/88.0/93.7                     | 52.7/87.7/93.5                           |
-| RefCOCO+ testA @1,5,10                  | 57.3/86.7/92.7                   | 58.9/87.3/92.9                | 59.0/88.1/93.7                     | 58.7/87.2/93.1                           |
-| RefCOCO+ testB @1,5,10                  | 46.4/84.1/90.7                   | 47.9/84.3/91.0                | 47.9/85.5/92.7                     | 48.4/85.8/92.1                           |
-| RefCOCOg val @1,5,10                    | 60.4/92.1/96.2                   | 61.2/92.6/96.1                | 62.7/93.3/97.0                     | 62.9/93.3/97.2                           |
-| RefCOCOg test @1,5,10                   | 59.7/92.1/96.3                   | 61.1/93.3/96.7                | 62.6/94.9/97.1                     | 62.9/93.9/97.4                           |
-| gRefCOCO val Pr@(F1=1, IoU≥0.5),N-acc   | 41.3/91.8                        | 39.8/84.7                     | 40.7/89.7                          | 41.0/91.3                                |
-| gRefCOCO testA Pr@(F1=1, IoU≥0.5),N-acc | 27.2/90.2                        | 26.3/89.0                     | 26.0/91.9                          | 26.1/93.0                                |
-| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 29.7/93.5                        | 31.3/84.8                     | 30.6/90.2                          | 30.4/92.3                                |
+| Method                 | GDINO-T <br/> (O365,GoldG,Cap4M) | MM-GDINO-T <br/> (O365,GoldG) | MM-GDINO-T <br/> (O365,GoldG,GRIT) | MM-GDINO-T <br/> (O365,GoldG,V3Det) | MM-GDINO-T <br/> (O365,GoldG,GRIT,V3Det) |
+| ---------------------- | -------------------------------- | ----------------------------- | ---------------------------------- | ----------------------------------- | ---------------------------------------- |
+| RefCOCO val @1,5,10    | 50.8/89.5/94.9                   | 53.1/89.9/94.7                | 53.4/90.3/95.5                     | 52.1/89.8/95.0                      | 53.1/89.7/95.1                           |
+| RefCOCO testA @1,5,10  | 57.4/91.3/95.6                   | 59.7/91.5/95.9                | 58.8/91.70/96.2                    | 58.4/86.8/95.6                      | 59.1/91.0/95.5                           |
+| RefCOCO testB @1,5,10  | 45.0/86.5/92.9                   | 46.4/86.9/92.2                | 46.8/87.7/93.3                     | 45.4/86.2/92.6                      | 46.8/87.8/93.6                           |
+| RefCOCO+ val @1,5,10   | 51.6/86.4/92.6                   | 53.1/87.0/92.8                | 53.5/88.0/93.7                     | 52.5/86.8/93.2                      | 52.7/87.7/93.5                           |
+| RefCOCO+ testA @1,5,10 | 57.3/86.7/92.7                   | 58.9/87.3/92.9                | 59.0/88.1/93.7                     | 58.1/86.7/93.5                      | 58.7/87.2/93.1                           |
+| RefCOCO+ testB @1,5,10 | 46.4/84.1/90.7                   | 47.9/84.3/91.0                | 47.9/85.5/92.7                     | 46.9/83.7/91.5                      | 48.4/85.8/92.1                           |
+| RefCOCOg val @1,5,10   | 60.4/92.1/96.2                   | 61.2/92.6/96.1                | 62.7/93.3/97.0                     | 61.7/92.9/96.6                      | 62.9/93.3/97.2                           |
+| RefCOCOg test @1,5,10  | 59.7/92.1/96.3                   | 61.1/93.3/96.7                | 62.6/94.9/97.1                     | 61.0/93.1/96.8                      | 62.9/93.9/97.4                           |
+
+| Method                                  | thresh_score | GDINO-T <br/> (O365,GoldG,Cap4M) | MM-GDINO-T <br/> (O365,GoldG) | MM-GDINO-T <br/> (O365,GoldG,GRIT) | MM-GDINO-T <br/> (O365,GoldG,V3Det) | MM-GDINO-T <br/> (O365,GoldG,GRIT,V3Det) |
+| --------------------------------------- | ------------ | -------------------------------- | ----------------------------- | ---------------------------------- | ----------------------------------- | ---------------------------------------- |
+| gRefCOCO val Pr@(F1=1, IoU≥0.5),N-acc   | 0.5          | 39.3/70.4                        |                               |                                    |                                     | 39.4/67.5                                |
+| gRefCOCO val Pr@(F1=1, IoU≥0.5),N-acc   | 0.6          | 40.5/83.8                        |                               |                                    |                                     | 40.6/83.1                                |
+| gRefCOCO val Pr@(F1=1, IoU≥0.5),N-acc   | 0.7          | 41.3/91.8                        | 39.8/84.7                     | 40.7/89.7                          | 40.3/88.8                           | 41.0/91.3                                |
+| gRefCOCO val Pr@(F1=1, IoU≥0.5),N-acc   | 0.8          | 41.5/96.8                        |                               |                                    |                                     | 41.1/96.4                                |
+| gRefCOCO testA Pr@(F1=1, IoU≥0.5),N-acc | 0.5          | 31.9/70.4                        |                               |                                    |                                     | 33.1/69.5                                |
+| gRefCOCO testA Pr@(F1=1, IoU≥0.5),N-acc | 0.6          | 29.3/82.9                        |                               |                                    |                                     | 29.2/84.3                                |
+| gRefCOCO testA Pr@(F1=1, IoU≥0.5),N-acc | 0.7          | 27.2/90.2                        | 26.3/89.0                     | 26.0/91.9                          | 25.4/91.8                           | 26.1/93.0                                |
+| gRefCOCO testA Pr@(F1=1, IoU≥0.5),N-acc | 0.8          | 25.1/96.3                        |                               |                                    |                                     | 23.8/97.2                                |
+| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 0.5          | 30.9/72.5                        |                               |                                    |                                     | 33.0/69.6                                |
+| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 0.6          | 30.0/86.1                        |                               |                                    |                                     | 31.6/96.7                                |
+| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 0.7          | 29.7/93.5                        | 31.3/84.8                     | 30.6/90.2                          | 30.7/89.9                           | 30.4/92.3                                |
+| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 0.8          | 29.1/97.4                        |                               |                                    |                                     | 29.5/84.2                                |
 
 ## Description Detection Dataset(DOD)
 
@@ -127,14 +141,14 @@ Learning visual representations from natural language supervision has recently s
 pip install ddd-dataset
 ```
 
-| Method                           | mode     | GDINO-T <br/> (O365,GoldG,Cap4M) | MM-GDINO-T <br/> (O365,GoldG) | MM-GDINO-T <br/> (O365,GoldG,GRIT) | MM-GDINO-T <br/> (O365,GoldG,GRIT,V3Det) |
-| -------------------------------- | -------- | -------------------------------- | ----------------------------- | ---------------------------------- | ---------------------------------------- |
-| FULL/short/middle/long/very long | concat   | 17.2/18.0/18.7/14.8/16.3         | 15.6/17.3/16.7/14.3/13.1      | 17.0/17.7/18.0/15.7/15.7           | 17.5/23.4/18.3/14.7/13.8                 |
-| FULL/short/middle/long/very long | parallel | 22.3/28.2/24.8/19.1/13.9         | 21.7/24.7/24.0/20.2/13.7      | 22.5/25.6/25.1/20.5/14.9           | 22.9/28.1/25.4/20.4/14.4                 |
-| PRES/short/middle/long/very long | concat   | 17.8/18.3/19.2/15.2/17.3         | 16.4/18.4/17.3/14.5/14.2      | 17.9/19.0/18.3/16.5/17.5           | 18.0/23.7/18.6/15.4/13.3                 |
-| PRES/short/middle/long/very long | parallel | 21.0/27.0/22.8/17.5/12.5         | 21.3/25.5/22.8/19.2/12.9      | 21.5/25.2/23.0/19.0/15.0           | 21.9/27.4/23.2/19.1/14.2                 |
-| ABS/short/middle/long/very long  | concat   | 15.4/17.1/16.4/13.6/14.9         | 13.4/13.4/14.5/13.5/11.9      | 14.5/13.1/16.7/13.6/13.3           | 15.9/22.2/17.1/12.5/14.4                 |
-| ABS/short/middle/long/very long  | parallel | 26.0/32.0/33.0/23.6/15.5         | 22.8/22.2/28.7/22.9/14.7      | 25.6/26.8/33.9/24.5/14.7           | 26.0/30.3/34.1/23.9/14.6                 |
+| Method                           | mode     | GDINO-T <br/> (O365,GoldG,Cap4M) | MM-GDINO-T <br/> (O365,GoldG) | MM-GDINO-T <br/> (O365,GoldG,GRIT) | MM-GDINO-T <br/> (O365,GoldG,V3Det) | MM-GDINO-T <br/> (O365,GoldG,GRIT,V3Det) |
+| -------------------------------- | -------- | -------------------------------- | ----------------------------- | ---------------------------------- | ----------------------------------- | ---------------------------------------- |
+| FULL/short/middle/long/very long | concat   | 17.2/18.0/18.7/14.8/16.3         | 15.6/17.3/16.7/14.3/13.1      | 17.0/17.7/18.0/15.7/15.7           | 16.2/17.4/16.8/14.9/15.4            | 17.5/23.4/18.3/14.7/13.8                 |
+| FULL/short/middle/long/very long | parallel | 22.3/28.2/24.8/19.1/13.9         | 21.7/24.7/24.0/20.2/13.7      | 22.5/25.6/25.1/20.5/14.9           | 22.3/25.6/24.5/20.6/14.7            | 22.9/28.1/25.4/20.4/14.4                 |
+| PRES/short/middle/long/very long | concat   | 17.8/18.3/19.2/15.2/17.3         | 16.4/18.4/17.3/14.5/14.2      | 17.9/19.0/18.3/16.5/17.5           | 16.6/18.8/17.1/15.1/15.0            | 18.0/23.7/18.6/15.4/13.3                 |
+| PRES/short/middle/long/very long | parallel | 21.0/27.0/22.8/17.5/12.5         | 21.3/25.5/22.8/19.2/12.9      | 21.5/25.2/23.0/19.0/15.0           | 21.6/25.7/23.0/19.5/14.8            | 21.9/27.4/23.2/19.1/14.2                 |
+| ABS/short/middle/long/very long  | concat   | 15.4/17.1/16.4/13.6/14.9         | 13.4/13.4/14.5/13.5/11.9      | 14.5/13.1/16.7/13.6/13.3           | 14.8/12.5/15.6/14.3/15.8            | 15.9/22.2/17.1/12.5/14.4                 |
+| ABS/short/middle/long/very long  | parallel | 26.0/32.0/33.0/23.6/15.5         | 22.8/22.2/28.7/22.9/14.7      | 25.6/26.8/33.9/24.5/14.7           | 24.1/24.9/30.7/23.8/14.7            | 26.0/30.3/34.1/23.9/14.6                 |
 
 Note:
 
@@ -150,6 +164,7 @@ Note:
 |  GDINO-T   |   O365,GoldG,Cap4M    | 87.8    | 96.6    | 98.0     | 88.1     | 96.9     | 98.2      | [config](grounding_dino_swin-t_finetune_16xb2_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco/grounding_dino_swin-t_finetune_16xb2_1x_coco_20230921_152544-5f234b20.pth)                                                                                                \| [log](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco/grounding_dino_swin-t_finetune_16xb2_1x_coco_20230921_152544.log.json) |
 | MM-GDINO-T |      O365,GoldG       | 85.5    | 95.6    | 97.2     | 86.2     | 95.7     | 97.4      |                                                           |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | MM-GDINO-T |    O365,GoldG,GRIT    | 86.7    | 95.8    | 97.6     | 87.0     | 96.2     | 97.7      |                                                           |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| MM-GDINO-T |   O365,GoldG,V3Det    | 85.9    | 95.7    | 97.4     | 86.3     | 95.7     | 97.4      |                                                           |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | MM-GDINO-T | O365,GoldG,GRIT,V3Det | 86.7    | 96.0    | 97.6     | 87.2     | 96.2     | 97.7      |                                                           |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 Note:
@@ -265,9 +280,7 @@ Results from MMDetection
 |    Architecture     | Backbone | Lr schd | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP |
 | :-----------------: | :------: | :-----: | :---------: | :---------: | :---------: | :--------: |
 | MM-GDINO(zero-shot) |  Swin-T  |         |    34.2     |    37.4     |    46.2     |    41.4    |
-|      MM-GDINO       |  Swin-T  |   1x    |    50.8     |    53.3     |    57.0     |    54.9    |
-
-- Due to the limited annotations for rare classes in LVIS, the impact of including them in training has little effect on the performance of rare classes.
+|      MM-GDINO       |  Swin-T  |   1x    |    43.2     |    57.4     |    59.3     |    57.1    |
 
 ### RefEXP
 
