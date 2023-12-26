@@ -249,4 +249,7 @@ class LoadTextAnnotations(BaseTransform):
                 for phrase in results['phrases'].values()
             ]
             results['tokens_positive'] = tokens_positive
+        else:
+            text = results['text']
+            results['text'] = list(text.values())
         return results

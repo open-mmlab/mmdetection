@@ -8,21 +8,20 @@ base_classes = ('person', 'bicycle', 'car', 'motorcycle', 'train', 'truck',
                 'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot',
                 'pizza', 'donut', 'chair', 'bed', 'toilet', 'tv', 'laptop',
                 'mouse', 'remote', 'microwave', 'oven', 'toaster',
-                'refrigerator', 'book', 'clock', 'vase', 'toothbrush')
+                'refrigerator', 'book', 'clock', 'vase', 'toothbrush')  # 48
 novel_classes = ('airplane', 'bus', 'cat', 'dog', 'cow', 'elephant',
                  'umbrella', 'tie', 'snowboard', 'skateboard', 'cup', 'knife',
-                 'cake', 'couch', 'keyboard', 'sink', 'scissors')
-all_classes = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
-               'train', 'truck', 'boat', 'bench', 'bird', 'cat', 'dog',
-               'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe',
-               'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-               'skis', 'snowboard', 'kite', 'skateboard', 'surfboard',
-               'bottle', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana',
-               'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'pizza',
-               'donut', 'cake', 'chair', 'couch', 'bed', 'toilet', 'tv',
-               'laptop', 'mouse', 'remote', 'keyboard', 'microwave', 'oven',
-               'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
-               'scissors', 'toothbrush')
+                 'cake', 'couch', 'keyboard', 'sink', 'scissors')  # 17
+all_classes = (
+    'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
+    'truck', 'boat', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
+    'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag',
+    'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'kite', 'skateboard',
+    'surfboard', 'bottle', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana',
+    'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'pizza', 'donut',
+    'cake', 'chair', 'couch', 'bed', 'toilet', 'tv', 'laptop', 'mouse',
+    'remote', 'keyboard', 'microwave', 'oven', 'toaster', 'sink',
+    'refrigerator', 'book', 'clock', 'vase', 'scissors', 'toothbrush')  # 65
 
 train_metainfo = dict(classes=base_classes)
 test_metainfo = dict(
@@ -95,7 +94,7 @@ train_dataloader = dict(
         type='CocoDataset',
         metainfo=train_metainfo,
         data_root=data_root,
-        ann_file='zero-shot/instances_train2017_seen_2.json',
+        ann_file='annotations/instances_train2017_seen_2.json',
         data_prefix=dict(img='train2017/'),
         return_classes=True,
         filter_cfg=dict(filter_empty_gt=False, min_size=32),
@@ -111,7 +110,7 @@ val_dataloader = dict(
         type='CocoDataset',
         metainfo=test_metainfo,
         data_root=data_root,
-        ann_file='zero-shot/instances_val2017_all_2.json',
+        ann_file='annotations/instances_val2017_all_2.json',
         data_prefix=dict(img='val2017/'),
         test_mode=True,
         pipeline=test_pipeline,
@@ -121,7 +120,7 @@ test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='OVCocoMetric',
-    ann_file=data_root + 'zero-shot/instances_val2017_all_2.json',
+    ann_file=data_root + 'annotations/instances_val2017_all_2.json',
     metric='bbox',
     format_only=False)
 test_evaluator = val_evaluator
@@ -155,4 +154,4 @@ default_hooks = dict(
     checkpoint=dict(
         max_keep_ckpts=1, save_best='coco/novel_ap50', rule='greater'))
 
-load_from = 'epoch_30.pth'
+load_from = 'https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth'  # noqa

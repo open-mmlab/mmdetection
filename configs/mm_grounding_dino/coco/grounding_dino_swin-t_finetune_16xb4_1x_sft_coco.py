@@ -1,13 +1,6 @@
 _base_ = '../grounding_dino_swin-t_pretrain_obj365.py'
 
-# https://universe.roboflow.com/roboflow-100/brain-tumor-m2pbp/dataset/2
-data_root = 'data/brain_tumor_v2/'
-class_name = ('label0', 'label1', 'label2')
-label_name = '_annotations.coco.json'
-
-palette = [(220, 20, 60), (255, 0, 0), (0, 0, 142)]
-
-metainfo = dict(classes=class_name, palette=palette)
+data_root = 'data/coco/'
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -45,64 +38,52 @@ train_pipeline = [
             ]
         ]),
     dict(
+        type='RandomSamplingNegPos',
+        tokenizer_name=_base_.lang_model_name,
+        num_sample_negative=20,  # ======= important =====
+        label_map_file='data/coco/annotations/coco2017_label_map.json',
+        max_tokens=256),
+    dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
                    'scale_factor', 'flip', 'flip_direction', 'text',
-                   'custom_entities'))
+                   'custom_entities', 'tokens_positive', 'dataset_mode'))
 ]
 
 train_dataloader = dict(
-    sampler=dict(_delete_=True, type='DefaultSampler', shuffle=True),
-    batch_sampler=dict(type='AspectRatioBatchSampler'),
     dataset=dict(
         _delete_=True,
-        type='RepeatDataset',
-        times=10,
-        dataset=dict(
-            type='CocoDataset',
-            data_root=data_root,
-            metainfo=metainfo,
-            filter_cfg=dict(filter_empty_gt=False, min_size=32),
-            pipeline=train_pipeline,
-            return_classes=True,
-            data_prefix=dict(img='train/'),
-            ann_file='train/' + label_name)))
-
-val_dataloader = dict(
-    dataset=dict(
-        metainfo=metainfo,
+        type='ODVGDataset',
+        need_text=False,
         data_root=data_root,
+        ann_file='annotations/instances_train2017_od.json',
+        label_map_file='annotations/coco2017_label_map.json',
+        data_prefix=dict(img='train2017/'),
         return_classes=True,
-        ann_file='valid/' + label_name,
-        data_prefix=dict(img='valid/')))
-test_dataloader = val_dataloader
-
-val_evaluator = dict(
-    type='CocoMetric',
-    ann_file=data_root + 'valid/' + label_name,
-    metric='bbox',
-    format_only=False)
-test_evaluator = val_evaluator
+        filter_cfg=dict(filter_empty_gt=False, min_size=32),
+        pipeline=train_pipeline))
 
 optim_wrapper = dict(
     _delete_=True,
     type='OptimWrapper',
-    optimizer=dict(type='AdamW', lr=0.0001, weight_decay=0.0001),
+    optimizer=dict(type='AdamW', lr=0.00005, weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
-    paramwise_cfg=dict(custom_keys={
-        'absolute_pos_embed': dict(decay_mult=0.),
-        'backbone': dict(lr_mult=0.1)
-    }))
+    paramwise_cfg=dict(
+        custom_keys={
+            'absolute_pos_embed': dict(decay_mult=0.),
+            'backbone': dict(lr_mult=0.1),
+            'language_model': dict(lr_mult=0.0),
+        }))
 
 # learning policy
-max_epochs = 5
+max_epochs = 12
 param_scheduler = [
     dict(
         type='MultiStepLR',
         begin=0,
         end=max_epochs,
         by_epoch=True,
-        milestones=[4],
+        milestones=[8, 11],
         gamma=0.1)
 ]
 train_cfg = dict(max_epochs=max_epochs, val_interval=1)

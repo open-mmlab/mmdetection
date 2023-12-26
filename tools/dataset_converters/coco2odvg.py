@@ -330,8 +330,9 @@ def coco2odvg(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('coco to odvg format.', add_help=True)
-    parser.add_argument('input', type=str, help='input list name')
-    parser.add_argument('--output', '-o', type=str, help='input list name')
+    parser.add_argument('input', type=str, help='input json file name')
+    parser.add_argument(
+        '--output', '-o', type=str, help='output json file name')
     parser.add_argument(
         '--dataset',
         '-d',

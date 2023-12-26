@@ -189,7 +189,7 @@ data_root = 'data/objects365v1/'
 coco_od_dataset = dict(
     type=dataset_type,
     data_root=data_root,
-    ann_file='o365v1_train_odvg.jsonl',
+    ann_file='o365v1_train_odvg.json',
     label_map_file='o365v1_label_map.json',
     data_prefix=dict(img='train/'),
     filter_cfg=dict(filter_empty_gt=False),
@@ -243,3 +243,5 @@ train_cfg = dict(
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (16 GPUs) x (2 samples per GPU)
 auto_scale_lr = dict(base_batch_size=64)
+
+default_hooks = dict(visualization=dict(type='GroundingVisualizationHook'))

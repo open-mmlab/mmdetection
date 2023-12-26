@@ -122,11 +122,15 @@ def main():
             label_names = [label_map[str(label)] for label in bbox_labels]
 
             data_sample = DetDataSample()
-            instances = InstanceData()
-            instances['bboxes'] = np.array(bboxes).reshape(-1, 4)
-            instances['labels'] = np.array(bbox_labels)
-            instances['label_names'] = label_names
-            data_sample.gt_instances = instances
+            gt_instances = InstanceData()
+            if len(instances) > 0 and 'score' in instances[0]:
+                score = [obj['score'] for obj in instances]
+                gt_instances['scores'] = np.array(score)
+
+            gt_instances['bboxes'] = np.array(bboxes).reshape(-1, 4)
+            gt_instances['labels'] = np.array(bbox_labels)
+            gt_instances['label_names'] = label_names
+            data_sample.gt_instances = gt_instances
 
             visualizer.add_datasample(
                 osp.basename(img_path),

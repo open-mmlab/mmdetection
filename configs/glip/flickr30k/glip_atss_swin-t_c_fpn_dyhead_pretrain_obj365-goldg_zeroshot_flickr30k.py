@@ -2,10 +2,10 @@ _base_ = '../glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py'
 
 lang_model_name = 'bert-base-uncased'
 
-model = dict(bbox_head=dict(early_fuse=True), )
+model = dict(bbox_head=dict(early_fuse=True))
 
 dataset_type = 'Flickr30kDataset'
-data_root = 'data/flickr30k/'
+data_root = 'data/flickr30k_entities/'
 
 test_pipeline = [
     dict(
@@ -27,7 +27,7 @@ test_pipeline = [
 dataset_Flickr30k_val = dict(
     type=dataset_type,
     data_root=data_root,
-    ann_file='mdetr_annotations/final_flickr_separateGT_val.json',
+    ann_file='final_flickr_separateGT_val.json',
     data_prefix=dict(img='flickr30k_images/'),
     pipeline=test_pipeline,
 )
@@ -35,7 +35,7 @@ dataset_Flickr30k_val = dict(
 dataset_Flickr30k_test = dict(
     type=dataset_type,
     data_root=data_root,
-    ann_file='mdetr_annotations/final_flickr_separateGT_test.json',
+    ann_file='final_flickr_separateGT_test.json',
     data_prefix=dict(img='flickr30k_images/'),
     pipeline=test_pipeline,
 )

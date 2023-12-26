@@ -45,8 +45,8 @@ class ODVGDataset(BaseDetDataset):
             if self.dataset_mode == 'OD':
                 if self.need_text:
                     data_info['text'] = self.label_map
-                anno = data['detection']
-                instances = [obj for obj in anno['instances']]
+                anno = data.get('detection', {})
+                instances = [obj for obj in anno.get('instances', [])]
                 bboxes = [obj['bbox'] for obj in instances]
                 bbox_labels = [str(obj['label']) for obj in instances]
 
@@ -92,7 +92,6 @@ class ODVGDataset(BaseDetDataset):
                         instance['ignore_flag'] = 0
                         instance['bbox'] = box
                         instance['bbox_label'] = i
-                        # phrase only for vis. tokens_positive is important
                         phrases[i] = {
                             'phrase': phrase,
                             'tokens_positive': tokens_positive

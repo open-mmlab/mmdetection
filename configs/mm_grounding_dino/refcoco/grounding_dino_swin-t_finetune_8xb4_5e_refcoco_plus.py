@@ -56,14 +56,14 @@ train_dataloader = dict(
         _delete_=True,
         type='ODVGDataset',
         data_root=data_root,
-        ann_file='mdetr_annotations/finetune_refcocog_train_vg.json',
+        ann_file='mdetr_annotations/finetune_refcoco+_train_vg.json',
         data_prefix=dict(img='train2014/'),
         filter_cfg=dict(filter_empty_gt=False, min_size=32),
         return_classes=True,
         pipeline=train_pipeline))
 
 # -------------------------------------------------#
-ann_file = 'mdetr_annotations/finetune_refcocog_val.json'
+ann_file = 'mdetr_annotations/finetune_refcoco+_val.json'
 val_dataset_all_val = dict(
     type='MDETRStyleRefCocoDataset',
     data_root=data_root,
@@ -81,7 +81,7 @@ val_evaluator_all_val = dict(
     topk=(1, 5, 10))
 
 # -------------------------------------------------#
-ann_file = 'mdetr_annotations/finetune_refcocog_testA.json'
+ann_file = 'mdetr_annotations/finetune_refcoco+_testA.json'
 val_dataset_refcoco_testA = dict(
     type='MDETRStyleRefCocoDataset',
     data_root=data_root,
@@ -100,7 +100,7 @@ val_evaluator_refcoco_testA = dict(
     topk=(1, 5, 10))
 
 # -------------------------------------------------#
-ann_file = 'mdetr_annotations/finetune_refcocog_testB.json'
+ann_file = 'mdetr_annotations/finetune_refcoco+_testB.json'
 val_dataset_refcoco_testB = dict(
     type='MDETRStyleRefCocoDataset',
     data_root=data_root,
@@ -122,7 +122,7 @@ val_evaluator_refcoco_testB = dict(
 datasets = [
     val_dataset_all_val, val_dataset_refcoco_testA, val_dataset_refcoco_testB
 ]
-dataset_prefixes = ['refcocog_val', 'refcocog_testA', 'refcocog_testB']
+dataset_prefixes = ['refcoco+_val', 'refcoco+_testA', 'refcoco+_testB']
 metrics = [
     val_evaluator_all_val, val_evaluator_refcoco_testA,
     val_evaluator_refcoco_testB
@@ -164,6 +164,4 @@ param_scheduler = [
 ]
 train_cfg = dict(max_epochs=max_epochs, val_interval=1)
 
-default_hooks = dict(checkpoint=dict(max_keep_ckpts=1, save_best='auto'))
-
-load_from = ''
+load_from = 'https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth'  # noqa

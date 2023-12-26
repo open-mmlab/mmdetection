@@ -1,6 +1,6 @@
 _base_ = '../grounding_dino_swin-t_pretrain_obj365.py'
 
-data_root = 'data/lvis/'
+data_root = 'data/coco/'
 
 model = dict(test_cfg=dict(
     max_per_img=300,
@@ -48,7 +48,7 @@ train_pipeline = [
         tokenizer_name=_base_.lang_model_name,
         num_sample_negative=85,
         # change this
-        label_map_file='data/lvis/annotations/lvis_v1_label_map_norare.json',
+        label_map_file='data/coco/annotations/lvis_v1_label_map_norare.json',
         max_tokens=256),
     dict(
         type='PackDetInputs',
@@ -117,4 +117,4 @@ default_hooks = dict(
     checkpoint=dict(
         max_keep_ckpts=3, save_best='lvis_fixed_ap/AP', rule='greater'))
 
-load_from = 'epoch_30.pth'
+load_from = 'https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth'  # noqa

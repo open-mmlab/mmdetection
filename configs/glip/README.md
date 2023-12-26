@@ -166,7 +166,8 @@ Learning visual representations from natural language supervision has recently s
 
 ### Results on Flickr30k
 
-| Model         | Official | Pre-Train Data | Val R@1 | Val R@5 | Val R@10 | Test R@1 | Test R@5 | Test R@10 |
-| ------------- | -------- | -------------- | ------- | ------- | -------- | -------- | -------- | --------- |
-| **GLIP-T(C)** | ✔        | O365, GoldG    | 84.8    | 94.9    | 96.3     | 85.5     | 95.4     | 96.6      |
-| **GLIP-T(C)** |          | O365, GoldG    | 84.9    | 94.9    | 96.3     | 85.6     | 95.4     | 96.7      |
+| Model         | Official | Pre-Train Data      | Val R@1 | Val R@5 | Val R@10 | Test R@1 | Test R@5 | Test R@10 |
+| ------------- | -------- | ------------------- | ------- | ------- | -------- | -------- | -------- | --------- |
+| **GLIP-T(C)** | ✔        | O365, GoldG         | 84.8    | 94.9    | 96.3     | 85.5     | 95.4     | 96.6      |
+| **GLIP-T(C)** |          | O365, GoldG         | 84.9    | 94.9    | 96.3     | 85.6     | 95.4     | 96.7      |
+| **GLIP-T**    |          | O365,GoldG,CC3M,SBU | 85.3    | 95.5    | 96.9     | 86.0     | 95.9     | 97.2      |

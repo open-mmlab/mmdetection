@@ -145,7 +145,6 @@ class Flickr30kMetric(BaseMetric):
                 ious = bbox_overlaps(
                     np.asarray(cur_boxes), np.asarray(tar_boxes))
                 for k in self.topk:
-                    maxi = 0
                     if k == -1:
                         maxi = ious.max()
                     else:
@@ -161,8 +160,6 @@ class Flickr30kMetric(BaseMetric):
                         # for phrase_type in phrase['phrase_type']:
                         #     recall_tracker.add_negative(k, phrase_type)
 
-        self.results = recall_tracker.report()
-
-        logger.info(self.results)
-
-        return self.results
+        results = recall_tracker.report()
+        logger.info(results)
+        return results

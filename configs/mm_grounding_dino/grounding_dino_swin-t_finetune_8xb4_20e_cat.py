@@ -1,13 +1,11 @@
-_base_ = '../grounding_dino_swin-t_pretrain_obj365.py'
+_base_ = 'grounding_dino_swin-t_pretrain_obj365.py'
 
-# https://universe.roboflow.com/roboflow-100/brain-tumor-m2pbp/dataset/2
-data_root = 'data/brain_tumor_v2/'
-class_name = ('label0', 'label1', 'label2')
-label_name = '_annotations.coco.json'
+data_root = 'data/cat/'
+class_name = ('cat', )
+num_classes = len(class_name)
+metainfo = dict(classes=class_name, palette=[(220, 20, 60)])
 
-palette = [(220, 20, 60), (255, 0, 0), (0, 0, 142)]
-
-metainfo = dict(classes=class_name, palette=palette)
+model = dict(bbox_head=dict(num_classes=num_classes))
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -52,61 +50,53 @@ train_pipeline = [
 ]
 
 train_dataloader = dict(
-    sampler=dict(_delete_=True, type='DefaultSampler', shuffle=True),
-    batch_sampler=dict(type='AspectRatioBatchSampler'),
     dataset=dict(
         _delete_=True,
-        type='RepeatDataset',
-        times=10,
-        dataset=dict(
-            type='CocoDataset',
-            data_root=data_root,
-            metainfo=metainfo,
-            filter_cfg=dict(filter_empty_gt=False, min_size=32),
-            pipeline=train_pipeline,
-            return_classes=True,
-            data_prefix=dict(img='train/'),
-            ann_file='train/' + label_name)))
+        type='CocoDataset',
+        data_root=data_root,
+        metainfo=metainfo,
+        return_classes=True,
+        pipeline=train_pipeline,
+        filter_cfg=dict(filter_empty_gt=False, min_size=32),
+        ann_file='annotations/trainval.json',
+        data_prefix=dict(img='images/')))
 
 val_dataloader = dict(
     dataset=dict(
         metainfo=metainfo,
         data_root=data_root,
-        return_classes=True,
-        ann_file='valid/' + label_name,
-        data_prefix=dict(img='valid/')))
+        ann_file='annotations/test.json',
+        data_prefix=dict(img='images/')))
+
 test_dataloader = val_dataloader
 
-val_evaluator = dict(
-    type='CocoMetric',
-    ann_file=data_root + 'valid/' + label_name,
-    metric='bbox',
-    format_only=False)
+val_evaluator = dict(ann_file=data_root + 'annotations/test.json')
 test_evaluator = val_evaluator
 
-optim_wrapper = dict(
-    _delete_=True,
-    type='OptimWrapper',
-    optimizer=dict(type='AdamW', lr=0.0001, weight_decay=0.0001),
-    clip_grad=dict(max_norm=0.1, norm_type=2),
-    paramwise_cfg=dict(custom_keys={
-        'absolute_pos_embed': dict(decay_mult=0.),
-        'backbone': dict(lr_mult=0.1)
-    }))
+max_epoch = 20
 
-# learning policy
-max_epochs = 5
+default_hooks = dict(
+    checkpoint=dict(interval=1, max_keep_ckpts=1, save_best='auto'),
+    logger=dict(type='LoggerHook', interval=5))
+train_cfg = dict(max_epochs=max_epoch, val_interval=1)
+
 param_scheduler = [
     dict(
         type='MultiStepLR',
         begin=0,
-        end=max_epochs,
+        end=max_epoch,
         by_epoch=True,
-        milestones=[4],
+        milestones=[15],
         gamma=0.1)
 ]
-train_cfg = dict(max_epochs=max_epochs, val_interval=1)
 
-default_hooks = dict(checkpoint=dict(max_keep_ckpts=1, save_best='auto'))
+optim_wrapper = dict(
+    optimizer=dict(lr=0.0001),
+    paramwise_cfg=dict(
+        custom_keys={
+            'absolute_pos_embed': dict(decay_mult=0.),
+            'backbone': dict(lr_mult=0.0),
+            'language_model': dict(lr_mult=0.0)
+        }))
 
 load_from = 'https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth'  # noqa

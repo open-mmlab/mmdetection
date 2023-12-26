@@ -1,7 +1,7 @@
 _base_ = '../grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py'
 
 dataset_type = 'Flickr30kDataset'
-data_root = 'data/flickr30k/'
+data_root = 'data/flickr30k_entities/'
 
 test_pipeline = [
     dict(
@@ -23,7 +23,7 @@ test_pipeline = [
 dataset_Flickr30k_val = dict(
     type=dataset_type,
     data_root=data_root,
-    ann_file='mdetr_annotations/final_flickr_separateGT_val.json',
+    ann_file='final_flickr_separateGT_val.json',
     data_prefix=dict(img='flickr30k_images/'),
     pipeline=test_pipeline,
 )
@@ -31,7 +31,7 @@ dataset_Flickr30k_val = dict(
 dataset_Flickr30k_test = dict(
     type=dataset_type,
     data_root=data_root,
-    ann_file='mdetr_annotations/final_flickr_separateGT_test.json',
+    ann_file='final_flickr_separateGT_test.json',
     data_prefix=dict(img='flickr30k_images/'),
     pipeline=test_pipeline,
 )

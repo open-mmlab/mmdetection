@@ -95,23 +95,7 @@ v3det_dataset = dict(
     return_classes=True,
     backend_args=None)
 
-grit_dataset = dict(
-    type='ODVGDataset',
-    data_root='grit_processed/',
-    ann_file='grit20m_vg.json',
-    label_map_file=None,
-    data_prefix=dict(img=''),
-    filter_cfg=dict(filter_empty_gt=False),
-    pipeline=_base_.train_pipeline,
-    return_classes=True,
-    backend_args=None)
-
 train_dataloader = dict(
-    sampler=dict(
-        _delete_=True,
-        type='CustomSampleSizeSampler',
-        dataset_size=[-1, -1, -1, -1, 500000]),
     dataset=dict(datasets=[
-        o365v1_od_dataset, flickr30k_dataset, gqa_dataset, v3det_dataset,
-        grit_dataset
+        o365v1_od_dataset, flickr30k_dataset, gqa_dataset, v3det_dataset
     ]))
