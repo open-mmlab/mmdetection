@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Reference: https://github.com/shenyunhang/APE/blob/main/datasets/tools/objects3652coco/fix_o365_names.py # noqa
 import argparse
 import copy
 import json
@@ -25,11 +25,6 @@ if __name__ == '__main__':
     cat_info = copy.deepcopy(data['categories'])
 
     for x in cat_info:
-        if old_names[x['id']].strip() != x['name'].strip():
-            print('{} {} {}'.format(x, old_names[x['id']], new_names[x['id']]))
-            import pdb
-
-            pdb.set_trace()
         if old_names[x['id']] != new_names[x['id']]:
             print('Renaming', x['id'], x['name'], new_names[x['id']])
             x['name'] = new_names[x['id']]

@@ -1,16 +1,8 @@
-# Grounding DINO: Marrying DINO with Grounded Pre-Training for Open-Set Object Detection
-
-[Grounding DINO: Marrying DINO with Grounded Pre-Training for Open-Set Object Detection](https://arxiv.org/abs/2303.05499)
+# MM Grounding DINO
 
 <!-- [ALGORITHM] -->
 
 ## Abstract
-
-In this paper, we present an open-set object detector, called Grounding DINO, by marrying Transformer-based detector DINO with grounded pre-training, which can detect arbitrary objects with human inputs such as category names or referring expressions. The key solution of open-set object detection is introducing language to a closed-set detector for open-set concept generalization. To effectively fuse language and vision modalities, we conceptually divide a closed-set detector into three phases and propose a tight fusion solution, which includes a feature enhancer, a language-guided query selection, and a cross-modality decoder for cross-modality fusion. While previous works mainly evaluate open-set object detection on novel categories, we propose to also perform evaluations on referring expression comprehension for objects specified with attributes. Grounding DINO performs remarkably well on all three settings, including benchmarks on COCO, LVIS, ODinW, and RefCOCO/+/g. Grounding DINO achieves a 52.5 AP on the COCO detection zero-shot transfer benchmark, i.e., without any training data from COCO. It sets a new record on the ODinW zero-shot benchmark with a mean 26.1 AP.
-
-<div align=center>
-<img src="https://github.com/open-mmlab/mmdetection/assets/42299757/0ed51aeb-3d53-42d8-8563-f6d21364ac95"/>
-</div>
 
 ## Dataset Preparation
 
@@ -20,7 +12,7 @@ Please refer to [dataset_prepare.md](dataset_prepare.md)
 
 Please refer to [usage.md](usage.md)
 
-## COCO Results and Models
+## Zero-Shot COCO Results and Models
 
 |   Model    | Backbone |   Style   |  COCO mAP  |    Pre-Train Data     |                             Config                             |                                                      Download                                                      |
 | :--------: | :------: | :-------: | :--------: | :-------------------: | :------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------: |
@@ -33,7 +25,7 @@ Please refer to [usage.md](usage.md)
 | MM-GDINO-T |  Swin-T  | Zero-shot | 50.6(+2.2) |   O365,GoldG,V3Det    |                          [config](<>)                          |                                                    [model](<>)                                                     |
 | MM-GDINO-T |  Swin-T  | Zero-shot | 50.4(+2.0) | O365,GoldG,GRIT,V3Det |                          [config](<>)                          |                                                    [model](<>)                                                     |
 
-## LVIS Results
+## Zero-Shot LVIS Results
 
 |   Model    | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP  | Val1.0 APr | Val1.0 APc | Val1.0 APf |  Val1.0 AP  |    Pre-Train Data     |    Config    |  Download   |
 | :--------: | :---------: | :---------: | :---------: | :---------: | :--------: | :--------: | :--------: | :---------: | :-------------------: | :----------: | :---------: |
@@ -43,7 +35,7 @@ Please refer to [usage.md](usage.md)
 | MM-GDINO-T |    33.0     |    36.0     |    45.9     | 40.5(+11.7) |    21.5    |    25.5    |    40.2    | 30.6(+10.5) |   O365,GoldG,V3Det    | [config](<>) | [model](<>) |
 | MM-GDINO-T |    34.2     |    37.4     |    46.2     | 41.4(+12.6) |    23.6    |    27.6    |    40.5    | 31.9(+11.8) | O365,GoldG,GRIT,V3Det | [config](<>) | [model](<>) |
 
-## ODinW (Object Detection in the Wild) Results
+## Zero-Shot ODinW (Object Detection in the Wild) Results
 
 Learning visual representations from natural language supervision has recently shown great promise in a number of pioneering works. In general, these language-augmented visual models demonstrate strong transferability to a variety of datasets and tasks. However, it remains challenging to evaluate the transferablity of these models due to the lack of easy-to-use evaluation toolkits and public benchmarks. To tackle this, we build ELEVATER 1 , the first benchmark and toolkit for evaluating (pre-trained) language-augmented visual models. ELEVATER is composed of three components. (i) Datasets. As downstream evaluation suites, it consists of 20 image classification datasets and 35 object detection datasets, each of which is augmented with external knowledge. (ii) Toolkit. An automatic hyper-parameter tuning toolkit is developed to facilitate model evaluation on downstream tasks. (iii) Metrics. A variety of evaluation metrics are used to measure sample-efficiency (zero-shot and few-shot) and parameter-efficiency (linear probing and full model fine-tuning). ELEVATER is platform for Computer Vision in the Wild (CVinW), and is publicly released at https://computer-vision-in-the-wild.github.io/ELEVATER/
 
@@ -107,7 +99,7 @@ Learning visual representations from natural language supervision has recently s
 | websiteScreenshots          | 0.012                            | 0.02                          | 0.016                              | 0.016                               | 0.016                                    |
 | Average                     | **0.227**                        | **0.202**                     | **0.228**                          | **0.214**                           | **0.284**                                |
 
-## Referring Expression Comprehension Results
+## Zero-Shot Referring Expression Comprehension Results
 
 | Method                 | GDINO-T <br/> (O365,GoldG,Cap4M) | MM-GDINO-T <br/> (O365,GoldG) | MM-GDINO-T <br/> (O365,GoldG,GRIT) | MM-GDINO-T <br/> (O365,GoldG,V3Det) | MM-GDINO-T <br/> (O365,GoldG,GRIT,V3Det) |
 | ---------------------- | -------------------------------- | ----------------------------- | ---------------------------------- | ----------------------------------- | ---------------------------------------- |
@@ -135,7 +127,7 @@ Learning visual representations from natural language supervision has recently s
 | gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 0.7          | 29.7/93.5                        | 31.3/84.8                     | 30.6/90.2                          | 30.7/89.9                           | 30.4/92.3                                |
 | gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 0.8          | 29.1/97.4                        |                               |                                    |                                     | 29.5/84.2                                |
 
-## Description Detection Dataset(DOD)
+## Zero-Shot Description Detection Dataset(DOD)
 
 ```shell
 pip install ddd-dataset
@@ -155,7 +147,7 @@ Note:
 1. Considering that the evaluation time for Inter-scenario is very long and the performance is low, it is temporarily not supported. The mentioned metrics are for Intra-scenario.
 2. `concat` is the default inference mode for Grounding DINO, where it concatenates multiple sub-sentences with "." to form a single sentence for inference. On the other hand, "parallel" performs inference on each sub-sentence in a for-loop.
 
-## Flickr30k Results
+## Pretrain Flickr30k Results
 
 |   Model    |    Pre-Train Data     | Val R@1 | Val R@5 | Val R@10 | Test R@1 | Test R@5 | Test R@10 |                          Config                           |                                                                                                                                                                                                                                         Download                                                                                                                                                                                                                                          |
 | :--------: | :-------------------: | ------- | ------- | -------- | -------- | -------- | --------- | :-------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
@@ -175,8 +167,6 @@ Note:
 
 ### RTTS
 
-Results from https://github.com/BIGWangYuDong/lqit/tree/main/configs/detection/rtts_dataset
-
 |    Architecture     | Backbone | Lr schd | box AP   |
 | :-----------------: | :------: | ------- | -------- |
 |    Faster R-CNN     |   R-50   | 1x      | 48.1     |
@@ -186,9 +176,9 @@ Results from https://github.com/BIGWangYuDong/lqit/tree/main/configs/detection/r
 | MM-GDINO(zero-shot) |  Swin-T  |         | 49.8     |
 |      MM-GDINO       |  Swin-T  | 1x      | **69.1** |
 
-### RUOD
+- The reference metrics come from https://github.com/BIGWangYuDong/lqit/tree/main/configs/detection/rtts_dataset
 
-Results from https://github.com/BIGWangYuDong/lqit/tree/main/configs/detection/ruod_dataset
+### RUOD
 
 |    Architecture     | Backbone | Lr schd | box AP   |
 | :-----------------: | :------: | ------- | -------- |
@@ -199,9 +189,9 @@ Results from https://github.com/BIGWangYuDong/lqit/tree/main/configs/detection/r
 | MM-GDINO(zero-shot) |  Swin-T  |         | 29.8     |
 |      MM-GDINO       |  Swin-T  | 1x      | **65.5** |
 
-### Brain Tumor
+- The reference metrics come from https://github.com/BIGWangYuDong/lqit/tree/main/configs/detection/ruod_dataset
 
-Results from  https://arxiv.org/abs/2307.11035
+### Brain Tumor
 
 | Architecture  | Backbone | Lr schd | box AP |
 | :-----------: | :------: | ------- | ------ |
@@ -211,9 +201,9 @@ Results from  https://arxiv.org/abs/2307.11035
 | Cascade-DINO  |   R-50   | 50e     | 48.6   |
 |   MM-GDINO    |  Swin-T  | 50e     | 47.5   |
 
-### Cityscapes
+- The reference metrics come from https://arxiv.org/abs/2307.11035
 
-Results from https://arxiv.org/abs/2307.11035
+### Cityscapes
 
 |    Architecture     | Backbone | Lr schd | box AP   |
 | :-----------------: | :------: | ------- | -------- |
@@ -224,9 +214,9 @@ Results from https://arxiv.org/abs/2307.11035
 | MM-GDINO(zero-shot) |  Swin-T  |         | 34.2     |
 |      MM-GDINO       |  Swin-T  | 50e     | **51.5** |
 
-### People in Painting
+- The reference metrics come from https://arxiv.org/abs/2307.11035
 
-Results from https://arxiv.org/abs/2307.11035
+### People in Painting
 
 |    Architecture     | Backbone | Lr schd | box AP   |
 | :-----------------: | :------: | ------- | -------- |
@@ -237,9 +227,9 @@ Results from https://arxiv.org/abs/2307.11035
 | MM-GDINO(zero-shot) |  Swin-T  |         | 23.1     |
 |      MM-GDINO       |  Swin-T  | 50e     | **38.9** |
 
-### COCO
+- The reference metrics come from https://arxiv.org/abs/2307.11035
 
-Results from MMDetection
+### COCO
 
 **(1) Closed-set performance**
 
@@ -257,7 +247,16 @@ Results from MMDetection
 |        GDINO        |  Swin-T  | 1x      | 58.1   |
 |      MM-GDINO       |  Swin-T  | 1x      | 58.2   |
 
-**(2) Open vocabulary performance**
+**(2) Open-set continuing pretraining performance**
+
+|    Architecture     | Backbone | Lr schd | box AP |
+| :-----------------: | :------: | :-----: | :----: |
+|   GLIP(zero-shot)   |  Swin-T  |         |  46.7  |
+|  GDINO(zero-shot)   |  Swin-T  |         |  48.5  |
+| MM-GDINO(zero-shot) |  Swin-T  |         |  50.4  |
+|      MM-GDINO       |  Swin-T  |   1x    |        |
+
+**(3) Open vocabulary performance**
 
 |    Architecture     | Backbone | Lr schd | box AP | Base box AP | Novel box AP | box AP@50 | Base box AP@50 | Novel box AP@50 |
 | :-----------------: | :------: | :-----: | :----: | :---------: | :----------: | :-------: | :------------: | :-------------: |

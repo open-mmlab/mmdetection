@@ -233,6 +233,328 @@ python tools/analysis_tools/browse_grounding_dataset.py configs/mm_grounding_din
 
 ## MM-GDINO-L 预训练数据准备和处理
 
+### 1 Object365 v2
+
+Objects365_v2 可以从 [opendatalab](https://opendatalab.com/OpenDataLab/Objects365) 下载，其提供了 CLI 和 SDK 两者下载方式。
+
+下载并解压后，将其放置或者软链接到 `data/objects365v2` 目录下，目录结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── objects365v2
+│   │   ├── annotations
+│   │   │   ├── zhiyuan_objv2_train.json
+│   │   ├── train
+│   │   │   ├── patch0
+│   │   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+```
+
+由于 objects365v2 类别中有部分类名是错误的，因此需要先进行修正。
+
+```shell
+python tools/dataset_converters/fix_o365_names.py
+```
+
+会在 `data/objects365v2/annotations` 下生成新的标注文件 `zhiyuan_objv2_train_fixname.json`。
+
+然后使用 [coco2odvg.py](../../tools/dataset_converters/coco2odvg.py) 转换为训练所需的 ODVG 格式：
+
+```shell
+python tools/dataset_converters/coco2odvg.py data/objects365v2/annotations/zhiyuan_objv2_train_fixname.json -d o365v2
+```
+
+程序运行完成后会在 `data/objects365v2` 目录下创建 `zhiyuan_objv2_train_fixname_od.json` 和 `o365v2_label_map.json` 两个新文件，完整结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── objects365v2
+│   │   ├── annotations
+│   │   │   ├── zhiyuan_objv2_train.json
+│   │   │   ├── zhiyuan_objv2_train_fixname.json
+│   │   │   ├── zhiyuan_objv2_train_fixname_od.json
+│   │   │   ├── o365v2_label_map.json
+│   │   ├── train
+│   │   │   ├── patch0
+│   │   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+```
+
+### 2 OpenImages v6
+
+OpenImages v6 可以从 [官网](https://storage.googleapis.com/openimages/web/download_v6.html) 下载，由于数据集比较大，需要花费一定的时间，下载完成后文件结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── OpenImages
+│   │   ├── annotations
+|   │   │   ├── oidv6-train-annotations-bbox.csv
+|   │   │   ├── class-descriptions-boxable.csv
+│   │   ├── OpenImages
+│   │   │   ├── train
+│   │   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+```
+
+然后使用 [openimages2odvg.py](../../tools/dataset_converters/openimages2odvg.py) 转换为训练所需的 ODVG 格式：
+
+```shell
+python tools/dataset_converters/openimages2odvg.py data/OpenImages/annotations
+```
+
+程序运行完成后会在 `data/OpenImages/annotations` 目录下创建 `oidv6-train-annotation_od.json` 和 `openimages_label_map.json` 两个新文件，完整结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── OpenImages
+│   │   ├── annotations
+|   │   │   ├── oidv6-train-annotations-bbox.csv
+|   │   │   ├── class-descriptions-boxable.csv
+|   │   │   ├── oidv6-train-annotations_od.json
+|   │   │   ├── openimages_label_map.json
+│   │   ├── OpenImages
+│   │   │   ├── train
+│   │   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+```
+
+### 3 V3Det
+
+参见前面的 MM-GDINO-T 预训练数据准备和处理 数据准备部分，完整数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── v3det
+│   │   ├── annotations
+│   │   |   ├── v3det_2023_v1_train.json
+│   │   |   ├── v3det_2023_v1_train_od.json
+│   │   |   ├── v3det_2023_v1_label_map.json
+│   │   ├── images
+│   │   │   ├── a00000066
+│   │   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+```
+
+### 4 LVIS 1.0
+
+参加后面的 `微调数据集准备` 的 `2 LVIS 1.0` 部分。完整数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── lvis_v1_train.json
+│   │   │   ├── lvis_v1_val.json
+│   │   │   ├── lvis_v1_train_od.json
+│   │   │   ├── lvis_v1_label_map.json
+│   │   │   ├── instances_val2017.json
+│   │   │   ├── lvis_v1_minival_inserted_image_name.json
+│   │   │   ├── lvis_od_val.json
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+```
+
+### 5 COCO2017 OD
+
+数据准备可以参考前面的 `MM-GDINO-T 预训练数据准备和处理` 部分。为了方便后续处理，请将下载的 [mdetr_annotations](https://huggingface.co/GLIPModel/GLIP/tree/main/mdetr_annotations) 文件夹软链接或者移动到 `data/coco` 路径下
+完整数据集结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── instances_val2017.json
+│   │   ├── mdetr_annotations
+│   │   │   ├── final_refexp_val.json
+│   │   │   ├── finetune_refcoco_testA.json
+│   │   │   ├── ...
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+```
+
+由于 COCO2017 train 和 RefCOCO/RefCOCO+/RefCOCOg/gRefCOCO val 中存在部分重叠，如果不提前移除，在评测 RefExp 时候会存在数据泄露。
+
+```shell
+python tools/dataset_converters/remove_cocotrain2017_from_refcoco.py data/coco/mdetr_annotations data/coco/annotations/instances_train2017.json
+```
+
+会在 `data/coco/annotations` 目录下创建 `instances_train2017_norefval.json` 新文件。最后使用 [coco2odvg.py](../../tools/dataset_converters/coco2odvg.py) 转换为训练所需的 ODVG 格式：
+
+```shell
+python tools/dataset_converters/coco2odvg.py data/coco/annotations/instances_train2017_norefval.json -d coco
+```
+
+会在 `data/coco/annotations` 目录下创建 `instances_train2017_norefval_od.json` 和 `coco_label_map.json` 两个新文件，完整结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── instances_val2017.json
+│   │   │   ├── instances_train2017_norefval_od.json
+│   │   │   ├── coco_label_map.json
+│   │   ├── mdetr_annotations
+│   │   │   ├── final_refexp_val.json
+│   │   │   ├── finetune_refcoco_testA.json
+│   │   │   ├── ...
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+```
+
+注意： COCO2017 train 和 LVIS 1.0 val 数据集有 15000 张图片重复，因此一旦在训练中使用了 COCO2017 train，那么 LVIS 1.0 val 的评测结果就存在数据泄露问题，LVIS 1.0 minival 没有这个问题。
+
+### 6 GoldG
+
+参见 MM-GDINO-T 预训练数据准备和处理 部分
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── flickr30k_entities
+│   │   ├── final_flickr_separateGT_train.json
+│   │   ├── final_flickr_separateGT_train_vg.json
+│   │   ├── flickr30k_images
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   ├── gqa
+|   |   ├── final_mixed_train_no_coco.json
+|   |   ├── final_mixed_train_no_coco_vg.json
+│   │   ├── images
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+```
+
+### 7 COCO2014 VG
+
+MDetr 中提供了 COCO2014 train 的 Phrase Grounding 版本标注， 最原始标注文件为 `final_mixed_train.json`，和之前类似，文件结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── instances_val2017.json
+│   │   ├── mdetr_annotations
+│   │   │   ├── final_mixed_train.json
+│   │   │   ├── ...
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── train2014
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+```
+
+我们可以从 `final_mixed_train.json` 中提取出 COCO 部分数据
+
+```shell
+python tools/dataset_converters/extract_coco_from_mixed.py data/coco/mdetr_annotations/final_mixed_train.json
+```
+
+会在 `data/coco/mdetr_annotations` 目录下创建 `final_mixed_train_only_coco.json` 新文件，最后使用 [goldg2odvg.py](../../tools/dataset_converters/goldg2odvg.py) 转换为训练所需的 ODVG 格式：
+
+```shell
+python tools/dataset_converters/goldg2odvg.py data/coco/mdetr_annotations/final_mixed_train_only_coco.json
+```
+
+会在 `data/coco/mdetr_annotations` 目录下创建 `final_mixed_train_only_coco_vg.json` 新文件，完整结构如下：
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── instances_val2017.json
+│   │   ├── mdetr_annotations
+│   │   │   ├── final_mixed_train.json
+│   │   │   ├── final_mixed_train_only_coco.json
+│   │   │   ├── final_mixed_train_only_coco_vg.json
+│   │   │   ├── ...
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── train2014
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+```
+
+注意： COCO2014 train 和 COCO2017 val 没有重复图片，因此不用担心 COCO 评测的数据泄露问题。
+
+### 8 Referring Expression Comprehension
+
+其一共包括 4 个数据集。数据准备部分请参见 微调数据集准备 部分。
+
+```text
+mmdetection
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── instances_train2017.json
+│   │   │   ├── instances_val2017.json
+│   │   │   ├── instances_train2014.json
+│   │   ├── train2017
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── val2017
+│   │   │   ├── xxxx.jpg
+│   │   │   ├── ...
+│   │   ├── train2014
+│   │   │   ├── xxx.jpg
+│   │   │   ├── ...
+│   │   ├── mdetr_annotations
+│   │   │   ├── final_refexp_val.json
+│   │   │   ├── finetune_refcoco_testA.json
+│   │   │   ├── finetune_refcoco_testB.json
+│   │   │   ├── finetune_refcoco+_testA.json
+│   │   │   ├── finetune_refcoco+_testB.json
+│   │   │   ├── finetune_refcocog_test.json
+│   │   │   ├── finetune_refcoco_train_vg.json
+│   │   │   ├── finetune_refcoco+_train_vg.json
+│   │   │   ├── finetune_refcocog_train_vg.json
+│   │   │   ├── finetune_grefcoco_train_vg.json
+```
+
+### 9 GRIT-20M
+
+参见 MM-GDINO-T 预训练数据准备和处理 部分
+
 ## 评测数据集准备
 
 ### 1 COCO 2017
@@ -323,7 +645,7 @@ mmdetection
 │   │   ├── d3_pkl
 ```
 
-### 5 Flickr30k
+### 5 Flickr30k Entities
 
 在前面 GoldG 数据准备章节中我们已经下载了 Flickr30k 训练所需文件，评估所需的文件是 2 个 json 文件，你可以从 [这里](https://huggingface.co/GLIPModel/GLIP/blob/main/mdetr_annotations/final_flickr_separateGT_val.json) 和 [这里](https://huggingface.co/GLIPModel/GLIP/blob/main/mdetr_annotations/final_flickr_separateGT_test.json)下载，最终的数据集结构如下：
 

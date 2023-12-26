@@ -164,7 +164,7 @@ oi_train_pipeline = [
 oiv6_dataset = dict(
     type='ODVGDataset',
     data_root='data/OpenImages/',
-    ann_file='annotations/oidv6-train-annotations-vg.jsonl',
+    ann_file='annotations/oidv6-train-annotations_od.json',
     label_map_file='annotations/openimages_label_map.json',
     data_prefix=dict(img='OpenImages/train/'),
     filter_cfg=dict(filter_empty_gt=False),
@@ -280,7 +280,7 @@ lvis_train_pipeline = [
         tokenizer_name=_base_.lang_model_name,
         num_sample_negative=85,
         # change this
-        label_map_file='data/coco/lvis_v1_label_map.json',
+        label_map_file='data/coco/annotations/lvis_v1_label_map.json',
         max_tokens=256),
     dict(
         type='PackDetInputs',
@@ -294,8 +294,8 @@ lvis_dataset = dict(
     dataset=dict(
         type='ODVGDataset',
         data_root='data/coco/',
-        ann_file='lvis_v1_train_od.json',
-        label_map_file='lvis_v1_label_map.json',
+        ann_file='annotations/lvis_v1_train_od.json',
+        label_map_file='annotations/lvis_v1_label_map.json',
         data_prefix=dict(img=''),
         filter_cfg=dict(filter_empty_gt=False),
         need_text=False,  # change this
@@ -310,8 +310,8 @@ coco2017_train_dataset = dict(
     dataset=dict(
         type='ODVGDataset',
         data_root='data/coco/',
-        ann_file='instance_train2017_norefval_od.json',
-        label_map_file='coco2017_label_map.json',
+        ann_file='annotations/instance_train2017_norefval_od.json',
+        label_map_file='annotations/coco2017_label_map.json',
         data_prefix=dict(img='train2017'),
         filter_cfg=dict(filter_empty_gt=False),
         pipeline=_base_.train_pipeline,

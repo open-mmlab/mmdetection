@@ -161,7 +161,7 @@ def oi2odvg(args):
         metas.append(meta_ifo)
 
     if args.out_ann is None:
-        out_path = osp.join(args.input_dir, 'oidv6-train-annotations-vg.jsonl')
+        out_path = osp.join(args.input_dir, 'oidv6-train-annotations_od.json')
     else:
         out_path = args.out_ann
 
