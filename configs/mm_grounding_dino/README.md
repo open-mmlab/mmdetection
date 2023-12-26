@@ -8,11 +8,11 @@ TODO
 
 ## Dataset Preparation
 
-Please refer to [dataset_prepare.md](dataset_prepare.md)
+Please refer to [dataset_prepare.md](dataset_prepare.md) or [中文版数据准备](dataset_prepare_zh-CN.md)
 
 ## Usage
 
-Please refer to [usage.md](usage.md)
+Please refer to [usage.md](usage.md) or [中文版用法说明](usage_zh-CN.md)
 
 ## Zero-Shot COCO Results and Models
 
@@ -40,8 +40,6 @@ Please refer to [usage.md](usage.md)
 - The MM-GDINO-T config file is [mini-lvis](lvis/grounding_dino_swin-t_pretrain_zeroshot_mini-lvis.py) and [lvis 1.0](lvis/grounding_dino_swin-t_pretrain_zeroshot_lvis.py)
 
 ## Zero-Shot ODinW (Object Detection in the Wild) Results
-
-Learning visual representations from natural language supervision has recently shown great promise in a number of pioneering works. In general, these language-augmented visual models demonstrate strong transferability to a variety of datasets and tasks. However, it remains challenging to evaluate the transferablity of these models due to the lack of easy-to-use evaluation toolkits and public benchmarks. To tackle this, we build ELEVATER 1 , the first benchmark and toolkit for evaluating (pre-trained) language-augmented visual models. ELEVATER is composed of three components. (i) Datasets. As downstream evaluation suites, it consists of 20 image classification datasets and 35 object detection datasets, each of which is augmented with external knowledge. (ii) Toolkit. An automatic hyper-parameter tuning toolkit is developed to facilitate model evaluation on downstream tasks. (iii) Metrics. A variety of evaluation metrics are used to measure sample-efficiency (zero-shot and few-shot) and parameter-efficiency (linear probing and full model fine-tuning). ELEVATER is platform for Computer Vision in the Wild (CVinW), and is publicly released at https://computer-vision-in-the-wild.github.io/ELEVATER/
 
 ### Results and models of ODinW13
 
