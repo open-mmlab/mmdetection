@@ -48,7 +48,7 @@ nltk.download('averaged_perceptron_tagger', download_dir='~/nltk_data')
 为了方便演示，您可以提前下载 MM Grounding DINO-T 模型权重到当前路径下
 
 ```shell
-wget https://download.openmmlab.com/mmdetection/v3.0/multimodal/mm_grounding_dino/mm_grounding_dino_t.pth
+wget load_from = 'https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth' # noqa
 ```
 
 ## 推理
@@ -64,7 +64,7 @@ MM Grounding DINO 支持了闭集目标检测，开放词汇目标检测，Phras
 ```shell
 python demo/image_demo.py images/animals.png \
         configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365.py \
-        --weights mm_grounding_dino_t.pth \
+        --weights grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth \
         --texts '$: coco'
 ```
 
@@ -81,7 +81,7 @@ python demo/image_demo.py images/animals.png \
 ```shell
 python demo/image_demo.py images/animals.png \
         configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365.py \
-        --weights mm_grounding_dino_t.pth \
+        --weights grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth \
         --texts '$: lvis'  --chunked-size 70 \
         --palette random
 ```
@@ -99,7 +99,7 @@ python demo/image_demo.py images/animals.png \
 ```shell
 python demo/image_demo.py images/animals.png \
         configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365.py \
-        --weights mm_grounding_dino_t.pth \
+        --weights grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth \
         --texts 'zebra. giraffe' -c
 ```
 
@@ -116,7 +116,7 @@ Phrase Grounding 是指的用户输入一句语言描述，模型自动对其涉
 ```shell
 python demo/image_demo.py images/apples.jpg \
         configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365.py \
-        --weights mm_grounding_dino_t.pth \
+        --weights grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth \
         --texts 'There are many apples here.'
 ```
 
@@ -131,7 +131,7 @@ python demo/image_demo.py images/apples.jpg \
 ```shell
 python demo/image_demo.py images/fruit.jpg \
         configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365.py \
-        --weights mm_grounding_dino_t.pth \
+        --weights grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth \
         --texts 'The picture contains watermelon, flower, and a white bottle.' \
         --tokens-positive "[[[21,30]], [[45,59]]]"  --pred-score-thr 0.12
 ```
@@ -149,7 +149,7 @@ python demo/image_demo.py images/fruit.jpg \
 ```shell
 python demo/image_demo.py images/apples.jpg \
         configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365.py \
-        --weights mm_grounding_dino_t.pth \
+        --weights grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth \
         --texts 'red apple.' \
         --tokens-positive -1
 ```
@@ -167,11 +167,11 @@ python demo/image_demo.py images/apples.jpg \
 ```shell
 # 单卡
 python tools/test.py configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365.py \
-        mm_grounding_dino_t.pth
+        grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth
 
 # 8 卡
 ./tools/dist_test.sh configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365.py \
-        mm_grounding_dino_t.pth 8
+        grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth 8
 ```
 
 (2) Zero-Shot ODinW13
@@ -179,11 +179,11 @@ python tools/test.py configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_ob
 ```shell
 # 单卡
 python tools/test.py configs/mm_grounding_dino/odinw/grounding_dino_swin-t_pretrain_odinw13.py \
-        mm_grounding_dino_t.pth
+        grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth
 
 # 8 卡
 ./tools/dist_test.sh configs/mm_grounding_dino/odinw/grounding_dino_swin-t_pretrain_odinw13.py \
-        mm_grounding_dino_t.pth 8
+        grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth 8
 ```
 
 ## 评测数据集结果可视化
@@ -192,7 +192,7 @@ python tools/test.py configs/mm_grounding_dino/odinw/grounding_dino_swin-t_pretr
 
 ```shell
 python tools/test.py configs/mm_grounding_dino/refcoco/grounding_dino_swin-t_pretrain_zeroshot_refexp \
-        mm_grounding_dino_t.pth --work-dir refcoco_result --show-dir save_path
+        grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth --work-dir refcoco_result --show-dir save_path
 ```
 
 模型在推理过程中会将可视化结果保存到  `refcoco_result/{当前时间戳}/save_path` 路径下。其余评测数据集可视化只需要替换配置文件即可。
@@ -319,13 +319,13 @@ cat 数据集是一个单类别数据集，包含 144 张图片，已经转换�
 
 ```shell
 cd mmdetection
-python demo/image_demo.py data/cat/images/IMG_20211205_120756.jpg configs/mm_grounding_dino/grounding_dino_swin-t_finetune_8xb4_20e_cat.py --weights mm_grounding_dino_t.pth --texts cat.
+python demo/image_demo.py data/cat/images/IMG_20211205_120756.jpg configs/mm_grounding_dino/grounding_dino_swin-t_finetune_8xb4_20e_cat.py --weights grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth --texts cat.
 ```
 
 测试集上的 Zero-Shot 评估结果如下：
 
 ```shell
-python tools/test.py configs/mm_grounding_dino/grounding_dino_swin-t_finetune_8xb4_20e_cat.py mm_grounding_dino_t.pth
+python tools/test.py configs/mm_grounding_dino/grounding_dino_swin-t_finetune_8xb4_20e_cat.py grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth
 ```
 
 ```text
@@ -412,7 +412,7 @@ with open(label_map_path, 'w') as f:
 
 ```shell
 python tools/test.py configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_pseudo-labeling_cat.py \
-    mm_grounding_dino_t.pth
+    grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth
 ```
 
 会在 `data/cat` 目录下新生成 `cat_train_od_v1.json` 文件，你可以手动打开确认或者使用 [脚本](../../tools/analysis_tools/browse_grounding_raw.py) 可视化效果
@@ -471,7 +471,7 @@ Phrase Grounding 的自举流程要求初始时候提供每张图片对应的 ca
 
 ```shell
 python tools/test.py configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_pseudo-labeling_flickr30k.py \
-    mm_grounding_dino_t.pth
+    grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth
 ```
 
 会在 `data/flickr30k_entities` 目录下新生成 `flickr_simple_train_vg_v1.json` 文件，你可以手动打开确认或者使用 [脚本](../../tools/analysis_tools/browse_grounding_raw.py) 可视化效果

@@ -3,10 +3,9 @@ _base_ = '../grounding_dino_swin-t_pretrain_obj365.py'
 data_root = 'data/coco/'
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
+    dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    # change this
-    dict(type='RandomFlip', prob=0.0),
+    dict(type='RandomFlip', prob=0.5),
     dict(
         type='RandomChoice',
         transforms=[
@@ -38,11 +37,11 @@ train_pipeline = [
                     keep_ratio=True)
             ]
         ]),
-    dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(
         type='RandomSamplingNegPos',
         tokenizer_name=_base_.lang_model_name,
-        num_sample_negative=85,
+        num_sample_negative=20,  # ======= important =====
+        label_map_file='data/coco/annotations/coco2017_label_map.json',
         max_tokens=256),
     dict(
         type='PackDetInputs',
@@ -55,91 +54,40 @@ train_dataloader = dict(
     dataset=dict(
         _delete_=True,
         type='ODVGDataset',
+        need_text=False,
         data_root=data_root,
-        ann_file='mdetr_annotations/finetune_refcocog_train_vg.json',
-        data_prefix=dict(img='train2014/'),
-        filter_cfg=dict(filter_empty_gt=False, min_size=32),
+        ann_file='annotations/instances_train2017_od.json',
+        label_map_file='annotations/coco2017_label_map.json',
+        data_prefix=dict(img='train2017/'),
         return_classes=True,
+        filter_cfg=dict(filter_empty_gt=False, min_size=32),
         pipeline=train_pipeline))
-
-# -------------------------------------------------#
-ann_file = 'mdetr_annotations/finetune_refcocog_val.json'
-val_dataset_all_val = dict(
-    type='MDETRStyleRefCocoDataset',
-    data_root=data_root,
-    ann_file=ann_file,
-    data_prefix=dict(img='train2014/'),
-    test_mode=True,
-    return_classes=True,
-    pipeline=_base_.test_pipeline,
-    backend_args=None)
-val_evaluator_all_val = dict(
-    type='RefExpMetric',
-    ann_file=data_root + ann_file,
-    metric='bbox',
-    iou_thrs=0.5,
-    topk=(1, 5, 10))
-
-# -------------------------------------------------#
-ann_file = 'mdetr_annotations/finetune_refcocog_test.json'
-val_dataset_refcoco_test = dict(
-    type='MDETRStyleRefCocoDataset',
-    data_root=data_root,
-    ann_file=ann_file,
-    data_prefix=dict(img='train2014/'),
-    test_mode=True,
-    return_classes=True,
-    pipeline=_base_.test_pipeline,
-    backend_args=None)
-
-val_evaluator_refcoco_test = dict(
-    type='RefExpMetric',
-    ann_file=data_root + ann_file,
-    metric='bbox',
-    iou_thrs=0.5,
-    topk=(1, 5, 10))
-
-# -------------------------------------------------#
-datasets = [val_dataset_all_val, val_dataset_refcoco_test]
-dataset_prefixes = ['refcocog_val', 'refcocog_test']
-metrics = [val_evaluator_all_val, val_evaluator_refcoco_test]
-
-val_dataloader = dict(
-    dataset=dict(_delete_=True, type='ConcatDataset', datasets=datasets))
-test_dataloader = val_dataloader
-
-val_evaluator = dict(
-    _delete_=True,
-    type='MultiDatasetsEvaluator',
-    metrics=metrics,
-    dataset_prefixes=dataset_prefixes)
-test_evaluator = val_evaluator
 
 optim_wrapper = dict(
     _delete_=True,
     type='OptimWrapper',
-    optimizer=dict(type='AdamW', lr=0.0002, weight_decay=0.0001),
+    optimizer=dict(type='AdamW', lr=0.00005, weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
     paramwise_cfg=dict(
         custom_keys={
             'absolute_pos_embed': dict(decay_mult=0.),
             'backbone': dict(lr_mult=0.1),
-            # 'language_model': dict(lr_mult=0),
+            'language_model': dict(lr_mult=0.0),
         }))
 
 # learning policy
-max_epochs = 5
+max_epochs = 12
 param_scheduler = [
     dict(
         type='MultiStepLR',
         begin=0,
         end=max_epochs,
         by_epoch=True,
-        milestones=[3],
+        milestones=[8, 11],
         gamma=0.1)
 ]
 train_cfg = dict(max_epochs=max_epochs, val_interval=1)
 
 default_hooks = dict(checkpoint=dict(max_keep_ckpts=1, save_best='auto'))
 
-load_from = ''
+load_from = 'https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth'  # noqa

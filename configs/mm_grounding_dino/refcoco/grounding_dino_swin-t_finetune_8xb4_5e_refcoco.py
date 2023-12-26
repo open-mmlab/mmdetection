@@ -2,15 +2,11 @@ _base_ = '../grounding_dino_swin-t_pretrain_obj365.py'
 
 data_root = 'data/coco/'
 
-model = dict(test_cfg=dict(
-    max_per_img=300,
-    chunked_size=40,
-))
-
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='RandomFlip', prob=0.5),
+    # change this
+    dict(type='RandomFlip', prob=0.0),
     dict(
         type='RandomChoice',
         transforms=[
@@ -47,8 +43,6 @@ train_pipeline = [
         type='RandomSamplingNegPos',
         tokenizer_name=_base_.lang_model_name,
         num_sample_negative=85,
-        # change this
-        label_map_file='data/coco/annotations/lvis_v1_label_map_norare.json',
         max_tokens=256),
     dict(
         type='PackDetInputs',
@@ -60,38 +54,95 @@ train_pipeline = [
 train_dataloader = dict(
     dataset=dict(
         _delete_=True,
-        type='ClassBalancedDataset',
-        oversample_thr=1e-3,
-        dataset=dict(
-            type='ODVGDataset',
-            data_root=data_root,
-            need_text=False,
-            label_map_file='annotations/lvis_v1_label_map_norare.json',
-            ann_file='annotations/lvis_v1_train_od_norare.json',
-            data_prefix=dict(img=''),
-            filter_cfg=dict(filter_empty_gt=False, min_size=32),
-            return_classes=True,
-            pipeline=train_pipeline)))
+        type='ODVGDataset',
+        data_root=data_root,
+        ann_file='mdetr_annotations/finetune_refcoco_train_vg.json',
+        data_prefix=dict(img='train2014/'),
+        filter_cfg=dict(filter_empty_gt=False, min_size=32),
+        return_classes=True,
+        pipeline=train_pipeline))
+
+# -------------------------------------------------#
+ann_file = 'mdetr_annotations/finetune_refcoco_val.json'
+val_dataset_all_val = dict(
+    type='MDETRStyleRefCocoDataset',
+    data_root=data_root,
+    ann_file=ann_file,
+    data_prefix=dict(img='train2014/'),
+    test_mode=True,
+    return_classes=True,
+    pipeline=_base_.test_pipeline,
+    backend_args=None)
+val_evaluator_all_val = dict(
+    type='RefExpMetric',
+    ann_file=data_root + ann_file,
+    metric='bbox',
+    iou_thrs=0.5,
+    topk=(1, 5, 10))
+
+# -------------------------------------------------#
+ann_file = 'mdetr_annotations/finetune_refcoco_testA.json'
+val_dataset_refcoco_testA = dict(
+    type='MDETRStyleRefCocoDataset',
+    data_root=data_root,
+    ann_file=ann_file,
+    data_prefix=dict(img='train2014/'),
+    test_mode=True,
+    return_classes=True,
+    pipeline=_base_.test_pipeline,
+    backend_args=None)
+
+val_evaluator_refcoco_testA = dict(
+    type='RefExpMetric',
+    ann_file=data_root + ann_file,
+    metric='bbox',
+    iou_thrs=0.5,
+    topk=(1, 5, 10))
+
+# -------------------------------------------------#
+ann_file = 'mdetr_annotations/finetune_refcoco_testB.json'
+val_dataset_refcoco_testB = dict(
+    type='MDETRStyleRefCocoDataset',
+    data_root=data_root,
+    ann_file=ann_file,
+    data_prefix=dict(img='train2014/'),
+    test_mode=True,
+    return_classes=True,
+    pipeline=_base_.test_pipeline,
+    backend_args=None)
+
+val_evaluator_refcoco_testB = dict(
+    type='RefExpMetric',
+    ann_file=data_root + ann_file,
+    metric='bbox',
+    iou_thrs=0.5,
+    topk=(1, 5, 10))
+
+# -------------------------------------------------#
+datasets = [
+    val_dataset_all_val, val_dataset_refcoco_testA, val_dataset_refcoco_testB
+]
+dataset_prefixes = ['refcoco_val', 'refcoco_testA', 'refcoco_testB']
+metrics = [
+    val_evaluator_all_val, val_evaluator_refcoco_testA,
+    val_evaluator_refcoco_testB
+]
 
 val_dataloader = dict(
-    dataset=dict(
-        data_root=data_root,
-        type='LVISV1Dataset',
-        ann_file='annotations/lvis_v1_minival_inserted_image_name.json',
-        data_prefix=dict(img='')))
+    dataset=dict(_delete_=True, type='ConcatDataset', datasets=datasets))
 test_dataloader = val_dataloader
 
 val_evaluator = dict(
     _delete_=True,
-    type='LVISFixedAPMetric',
-    ann_file=data_root +
-    'annotations/lvis_v1_minival_inserted_image_name.json')
+    type='MultiDatasetsEvaluator',
+    metrics=metrics,
+    dataset_prefixes=dataset_prefixes)
 test_evaluator = val_evaluator
 
 optim_wrapper = dict(
     _delete_=True,
     type='OptimWrapper',
-    optimizer=dict(type='AdamW', lr=0.00005, weight_decay=0.0001),
+    optimizer=dict(type='AdamW', lr=0.0002, weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
     paramwise_cfg=dict(
         custom_keys={
@@ -101,20 +152,16 @@ optim_wrapper = dict(
         }))
 
 # learning policy
-max_epochs = 12
+max_epochs = 5
 param_scheduler = [
     dict(
         type='MultiStepLR',
         begin=0,
         end=max_epochs,
         by_epoch=True,
-        milestones=[8, 11],
+        milestones=[3],
         gamma=0.1)
 ]
-train_cfg = dict(max_epochs=max_epochs, val_interval=3)
-
-default_hooks = dict(
-    checkpoint=dict(
-        max_keep_ckpts=3, save_best='lvis_fixed_ap/AP', rule='greater'))
+train_cfg = dict(max_epochs=max_epochs, val_interval=1)
 
 load_from = 'https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth'  # noqa

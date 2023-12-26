@@ -14,26 +14,28 @@ Please refer to [usage.md](usage.md)
 
 ## Zero-Shot COCO Results and Models
 
-|   Model    | Backbone |   Style   |  COCO mAP  |    Pre-Train Data     |                             Config                             |                                                      Download                                                      |
-| :--------: | :------: | :-------: | :--------: | :-------------------: | :------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------: |
-|  GDINO-T   |  Swin-T  | Zero-shot |    46.7    |         O365          |                                                                |                                                                                                                    |
-|  GDINO-T   |  Swin-T  | Zero-shot |    48.1    |      O365,GoldG       |                                                                |                                                                                                                    |
-|  GDINO-T   |  Swin-T  | Zero-shot |    48.4    |   O365,GoldG,Cap4M    | [config](grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth) |
-| MM-GDINO-T |  Swin-T  | Zero-shot | 48.5(+1.8) |         O365          |                          [config](<>)                          |                                                    [model](<>)                                                     |
-| MM-GDINO-T |  Swin-T  | Zero-shot | 50.4(+2.3) |      O365,GoldG       |                          [config](<>)                          |                                                    [model](<>)                                                     |
-| MM-GDINO-T |  Swin-T  | Zero-shot | 50.5(+2.1) |    O365,GoldG,GRIT    |                          [config](<>)                          |                                                    [model](<>)                                                     |
-| MM-GDINO-T |  Swin-T  | Zero-shot | 50.6(+2.2) |   O365,GoldG,V3Det    |                          [config](<>)                          |                                                    [model](<>)                                                     |
-| MM-GDINO-T |  Swin-T  | Zero-shot | 50.4(+2.0) | O365,GoldG,GRIT,V3Det |                          [config](<>)                          |                                                    [model](<>)                                                     |
+|   Model    | Backbone |   Style   |  COCO mAP  |    Pre-Train Data     |                                      Config                                      |                                                                                                                                                                                                                     Download                                                                                                                                                                                                                      |
+| :--------: | :------: | :-------: | :--------: | :-------------------: | :------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|  GDINO-T   |  Swin-T  | Zero-shot |    46.7    |         O365          |                                                                                  |                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+|  GDINO-T   |  Swin-T  | Zero-shot |    48.1    |      O365,GoldG       |                                                                                  |                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+|  GDINO-T   |  Swin-T  | Zero-shot |    48.4    |   O365,GoldG,Cap4M    | [config](../grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_cap4m.py) |                                                                                                                                                                [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth)                                                                                                                                                                 |
+| MM-GDINO-T |  Swin-T  | Zero-shot | 48.5(+1.8) |         O365          |                [config](grounding_dino_swin-t_pretrain_obj365.py)                |                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| MM-GDINO-T |  Swin-T  | Zero-shot | 50.4(+2.3) |      O365,GoldG       |             [config](grounding_dino_swin-t_pretrain_obj365_goldg.py)             |                           [model](https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg/grounding_dino_swin-t_pretrain_obj365_goldg_20231122_132602-4ea751ce.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg/grounding_dino_swin-t_pretrain_obj365_goldg_20231122_132602.log.json)                            |
+| MM-GDINO-T |  Swin-T  | Zero-shot | 50.5(+2.1) |    O365,GoldG,GRIT    |         [config](grounding_dino_swin-t_pretrain_obj365_goldg_grit9m.py)          |             [model](https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_20231128_200818-169cc352.pth) \| [log](https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_20231128_200818.log.json)              |
+| MM-GDINO-T |  Swin-T  | Zero-shot | 50.6(+2.2) |   O365,GoldG,V3Det    |          [config](grounding_dino_swin-t_pretrain_obj365_goldg_v3det.py)          |             [model](https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_v3det_20231218_095741-e316e297.pth)      \| [log](https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_v3det_20231218_095741.log.json)             |
+| MM-GDINO-T |  Swin-T  | Zero-shot | 50.4(+2.0) | O365,GoldG,GRIT,V3Det |      [config](grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det.py)       | [model](https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth)  \| [log](https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047.log.json) |
 
 ## Zero-Shot LVIS Results
 
-|   Model    | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP  | Val1.0 APr | Val1.0 APc | Val1.0 APf |  Val1.0 AP  |    Pre-Train Data     |    Config    |  Download   |
-| :--------: | :---------: | :---------: | :---------: | :---------: | :--------: | :--------: | :--------: | :---------: | :-------------------: | :----------: | :---------: |
-|  GDINO-T   |    18.8     |    24.2     |    34.7     |    28.8     |    10.1    |    15.3    |    29.9    |    20.1     |   O365,GoldG,Cap4M    | [config](<>) | [model](<>) |
-| MM-GDINO-T |    28.1     |    30.2     |    42.0     | 35.7(+6.9)  |    17.1    |    22.4    |    36.5    | 27.0(+6.9)  |      O365,GoldG       | [config](<>) | [model](<>) |
-| MM-GDINO-T |    26.6     |    32.4     |    41.8     | 36.5(+7.7)  |    17.3    |    22.6    |    36.4    | 27.1(+7.0)  |    O365,GoldG,GRIT    | [config](<>) | [model](<>) |
-| MM-GDINO-T |    33.0     |    36.0     |    45.9     | 40.5(+11.7) |    21.5    |    25.5    |    40.2    | 30.6(+10.5) |   O365,GoldG,V3Det    | [config](<>) | [model](<>) |
-| MM-GDINO-T |    34.2     |    37.4     |    46.2     | 41.4(+12.6) |    23.6    |    27.6    |    40.5    | 31.9(+11.8) | O365,GoldG,GRIT,V3Det | [config](<>) | [model](<>) |
+|   Model    | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP  | Val1.0 APr | Val1.0 APc | Val1.0 APf |  Val1.0 AP  |    Pre-Train Data     |
+| :--------: | :---------: | :---------: | :---------: | :---------: | :--------: | :--------: | :--------: | :---------: | :-------------------: |
+|  GDINO-T   |    18.8     |    24.2     |    34.7     |    28.8     |    10.1    |    15.3    |    29.9    |    20.1     |   O365,GoldG,Cap4M    |
+| MM-GDINO-T |    28.1     |    30.2     |    42.0     | 35.7(+6.9)  |    17.1    |    22.4    |    36.5    | 27.0(+6.9)  |      O365,GoldG       |
+| MM-GDINO-T |    26.6     |    32.4     |    41.8     | 36.5(+7.7)  |    17.3    |    22.6    |    36.4    | 27.1(+7.0)  |    O365,GoldG,GRIT    |
+| MM-GDINO-T |    33.0     |    36.0     |    45.9     | 40.5(+11.7) |    21.5    |    25.5    |    40.2    | 30.6(+10.5) |   O365,GoldG,V3Det    |
+| MM-GDINO-T |    34.2     |    37.4     |    46.2     | 41.4(+12.6) |    23.6    |    27.6    |    40.5    | 31.9(+11.8) | O365,GoldG,GRIT,V3Det |
+
+- The MM-GDINO-T config file is [mini-lvis](lvis/grounding_dino_swin-t_pretrain_zeroshot_mini-lvis.py) and [lvis 1.0](lvis/grounding_dino_swin-t_pretrain_zeroshot_lvis.py)
 
 ## Zero-Shot ODinW (Object Detection in the Wild) Results
 
@@ -57,6 +59,8 @@ Learning visual representations from natural language supervision has recently s
 | thermalDogsAndPeople  | 0.657                            | 0.556                         | 0.603                              | 0.493                               | 0.542                                    |
 | VehiclesOpenImages    | 0.613                            | 0.566                         | 0.603                              | 0.614                               | 0.615                                    |
 | Average               | **0.514**                        | **0.453**                     | **0.511**                          | **0.516**                           | **0.533**                                |
+
+- The MM-GDINO-T config file is [odinw13](odinw/grounding_dino_swin-t_pretrain_odinw13.py)
 
 ### Results and models of ODinW35
 
@@ -99,6 +103,8 @@ Learning visual representations from natural language supervision has recently s
 | websiteScreenshots          | 0.012                            | 0.02                          | 0.016                              | 0.016                               | 0.016                                    |
 | Average                     | **0.227**                        | **0.202**                     | **0.228**                          | **0.214**                           | **0.284**                                |
 
+- The MM-GDINO-T config file is [odinw35](odinw/grounding_dino_swin-t_pretrain_odinw35.py)
+
 ## Zero-Shot Referring Expression Comprehension Results
 
 | Method                 | GDINO-T <br/> (O365,GoldG,Cap4M) | MM-GDINO-T <br/> (O365,GoldG) | MM-GDINO-T <br/> (O365,GoldG,GRIT) | MM-GDINO-T <br/> (O365,GoldG,V3Det) | MM-GDINO-T <br/> (O365,GoldG,GRIT,V3Det) |
@@ -127,6 +133,8 @@ Learning visual representations from natural language supervision has recently s
 | gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 0.7          | 29.7/93.5                        | 31.3/84.8                     | 30.6/90.2                          | 30.7/89.9                           | 30.4/92.3                                |
 | gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 0.8          | 29.1/97.4                        |                               |                                    |                                     | 29.5/84.2                                |
 
+- The MM-GDINO-T config file is [here](refcoco/grounding_dino_swin-t_pretrain_zeroshot_refexp.py)
+
 ## Zero-Shot Description Detection Dataset(DOD)
 
 ```shell
@@ -146,22 +154,24 @@ Note:
 
 1. Considering that the evaluation time for Inter-scenario is very long and the performance is low, it is temporarily not supported. The mentioned metrics are for Intra-scenario.
 2. `concat` is the default inference mode for Grounding DINO, where it concatenates multiple sub-sentences with "." to form a single sentence for inference. On the other hand, "parallel" performs inference on each sub-sentence in a for-loop.
+3. The MM-GDINO-T config file is [concat_dod](dod/grounding_dino_swin-t_pretrain_zeroshot_concat_dod.py) and [parallel_dod](dod/grounding_dino_swin-t_pretrain_zeroshot_parallel_dod.py)
 
 ## Pretrain Flickr30k Results
 
-|   Model    |    Pre-Train Data     | Val R@1 | Val R@5 | Val R@10 | Test R@1 | Test R@5 | Test R@10 |                          Config                           |                                                                                                                                                                                                                                         Download                                                                                                                                                                                                                                          |
-| :--------: | :-------------------: | ------- | ------- | -------- | -------- | -------- | --------- | :-------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|   GLIP-T   |      O365,GoldG       | 84.9    | 94.9    | 96.3     | 85.6     | 95.4     | 96.7      |                       [config](<>)                        | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco/grounding_dino_swin-t_finetune_16xb2_1x_coco_20230921_152544-5f234b20.pth)                                                                                                \| [log](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco/grounding_dino_swin-t_finetune_16xb2_1x_coco_20230921_152544.log.json) |
-|   GLIP-T   |  O365,GoldG,CC3M,SBU  | 85.3    | 95.5    | 96.9     | 86.0     | 95.9     | 97.2      |                                                           |                                                                                                                                                                                                                                       [config](<>)                                                                                                                                                                                                                                        |
-|  GDINO-T   |   O365,GoldG,Cap4M    | 87.8    | 96.6    | 98.0     | 88.1     | 96.9     | 98.2      | [config](grounding_dino_swin-t_finetune_16xb2_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco/grounding_dino_swin-t_finetune_16xb2_1x_coco_20230921_152544-5f234b20.pth)                                                                                                \| [log](https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/grounding_dino_swin-t_finetune_16xb2_1x_coco/grounding_dino_swin-t_finetune_16xb2_1x_coco_20230921_152544.log.json) |
-| MM-GDINO-T |      O365,GoldG       | 85.5    | 95.6    | 97.2     | 86.2     | 95.7     | 97.4      |                                                           |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| MM-GDINO-T |    O365,GoldG,GRIT    | 86.7    | 95.8    | 97.6     | 87.0     | 96.2     | 97.7      |                                                           |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| MM-GDINO-T |   O365,GoldG,V3Det    | 85.9    | 95.7    | 97.4     | 86.3     | 95.7     | 97.4      |                                                           |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| MM-GDINO-T | O365,GoldG,GRIT,V3Det | 86.7    | 96.0    | 97.6     | 87.2     | 96.2     | 97.7      |                                                           |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+|   Model    |    Pre-Train Data     | Val R@1 | Val R@5 | Val R@10 | Test R@1 | Test R@5 | Test R@10 |
+| :--------: | :-------------------: | ------- | ------- | -------- | -------- | -------- | --------- |
+|   GLIP-T   |      O365,GoldG       | 84.9    | 94.9    | 96.3     | 85.6     | 95.4     | 96.7      |
+|   GLIP-T   |  O365,GoldG,CC3M,SBU  | 85.3    | 95.5    | 96.9     | 86.0     | 95.9     | 97.2      |
+|  GDINO-T   |   O365,GoldG,Cap4M    | 87.8    | 96.6    | 98.0     | 88.1     | 96.9     | 98.2      |
+| MM-GDINO-T |      O365,GoldG       | 85.5    | 95.6    | 97.2     | 86.2     | 95.7     | 97.4      |
+| MM-GDINO-T |    O365,GoldG,GRIT    | 86.7    | 95.8    | 97.6     | 87.0     | 96.2     | 97.7      |
+| MM-GDINO-T |   O365,GoldG,V3Det    | 85.9    | 95.7    | 97.4     | 86.3     | 95.7     | 97.4      |
+| MM-GDINO-T | O365,GoldG,GRIT,V3Det | 86.7    | 96.0    | 97.6     | 87.2     | 96.2     | 97.7      |
 
 Note:
 
 1. `@1,5,10` refers to precision at the top 1, 5, and 10 positions in a predicted ranked list.
+2. The MM-GDINO-T config file is [here](flickr30k/grounding_dino_swin-t-pretrain_flickr30k.py)
 
 ## Validating the generalization of a pre-trained model through fine-tuning
 
@@ -177,6 +187,7 @@ Note:
 |      MM-GDINO       |  Swin-T  | 1x      | **69.1** |
 
 - The reference metrics come from https://github.com/BIGWangYuDong/lqit/tree/main/configs/detection/rtts_dataset
+- The MM-GDINO-T config file is [here](rtts/grounding_dino_swin-t_finetune_8xb4_1x_rtts.py)
 
 ### RUOD
 
@@ -190,6 +201,7 @@ Note:
 |      MM-GDINO       |  Swin-T  | 1x      | **65.5** |
 
 - The reference metrics come from https://github.com/BIGWangYuDong/lqit/tree/main/configs/detection/ruod_dataset
+- The MM-GDINO-T config file is [here](ruod/grounding_dino_swin-t_finetune_8xb4_1x_ruod.py)
 
 ### Brain Tumor
 
@@ -202,6 +214,7 @@ Note:
 |   MM-GDINO    |  Swin-T  | 50e     | 47.5   |
 
 - The reference metrics come from https://arxiv.org/abs/2307.11035
+- The MM-GDINO-T config file is [here](brain_tumor/grounding_dino_swin-t_finetune_8xb4_50e_brain_tumor.py)
 
 ### Cityscapes
 
@@ -215,6 +228,7 @@ Note:
 |      MM-GDINO       |  Swin-T  | 50e     | **51.5** |
 
 - The reference metrics come from https://arxiv.org/abs/2307.11035
+- The MM-GDINO-T config file is [here](cityscapes/grounding_dino_swin-t_finetune_8xb4_50e_cityscapes.py)
 
 ### People in Painting
 
@@ -228,6 +242,7 @@ Note:
 |      MM-GDINO       |  Swin-T  | 50e     | **38.9** |
 
 - The reference metrics come from https://arxiv.org/abs/2307.11035
+- The MM-GDINO-T config file is [here](people_in_painting/grounding_dino_swin-t_finetune_8xb4_50e_people_in_painting.py)
 
 ### COCO
 
@@ -247,6 +262,8 @@ Note:
 |        GDINO        |  Swin-T  | 1x      | 58.1   |
 |      MM-GDINO       |  Swin-T  | 1x      | 58.2   |
 
+- The MM-GDINO-T config file is [here](coco/grounding_dino_swin-t_finetune_16xb4_1x_coco.py)
+
 **(2) Open-set continuing pretraining performance**
 
 |    Architecture     | Backbone | Lr schd | box AP |
@@ -254,7 +271,10 @@ Note:
 |   GLIP(zero-shot)   |  Swin-T  |         |  46.7  |
 |  GDINO(zero-shot)   |  Swin-T  |         |  48.5  |
 | MM-GDINO(zero-shot) |  Swin-T  |         |  50.4  |
-|      MM-GDINO       |  Swin-T  |   1x    |        |
+|      MM-GDINO       |  Swin-T  |   1x    |  54.7  |
+
+- The MM-GDINO-T config file is [here](coco/grounding_dino_swin-t_finetune_16xb4_1x_sft_coco.py)
+- Due to the small size of the COCO dataset, continuing pretraining solely on COCO can easily lead to overfitting. The results shown above are from the third epoch. I do not recommend you train using this approach.
 
 **(3) Open vocabulary performance**
 
@@ -262,6 +282,8 @@ Note:
 | :-----------------: | :------: | :-----: | :----: | :---------: | :----------: | :-------: | :------------: | :-------------: |
 | MM-GDINO(zero-shot) |  Swin-T  |         |  51.1  |    48.4     |     58.9     |   66.7    |      64.0      |      74.2       |
 |      MM-GDINO       |  Swin-T  |   1x    |  57.2  |    56.1     |     60.4     |   73.6    |      73.0      |      75.3       |
+
+- The MM-GDINO-T config file is [here](coco/grounding_dino_swin-t_finetune_16xb4_1x_coco_48_17.py)
 
 ### LVIS 1.0
 
@@ -274,12 +296,16 @@ Note:
 | MM-GDINO(zero-shot) |  Swin-T  |         |    34.2     |    37.4     |    46.2     |    41.4    |    23.6    |    27.6    |    40.5    |   31.9    |
 |      MM-GDINO       |  Swin-T  |   1x    |    50.7     |    58.8     |    60.1     |    58.7    |    45.2    |    50.2    |    56.1    |   51.7    |
 
+- The MM-GDINO-T config file is [here](lvis/grounding_dino_swin-t_finetune_16xb4_1x_lvis.py)
+
 **(2) Open vocabulary performance**
 
 |    Architecture     | Backbone | Lr schd | MiniVal APr | MiniVal APc | MiniVal APf | MiniVal AP |
 | :-----------------: | :------: | :-----: | :---------: | :---------: | :---------: | :--------: |
 | MM-GDINO(zero-shot) |  Swin-T  |         |    34.2     |    37.4     |    46.2     |    41.4    |
 |      MM-GDINO       |  Swin-T  |   1x    |    43.2     |    57.4     |    59.3     |    57.1    |
+
+- The MM-GDINO-T config file is [here](lvis/grounding_dino_swin-t_finetune_16xb4_1x_lvis_866_337.py)
 
 ### RefEXP
 
@@ -292,6 +318,8 @@ Note:
 |        GDINO        |  Swin-T  |   UNK   |  89.2  |        |         |   91.9   |          |           |   86.0   |          |           |
 |      MM-GDINO       |  Swin-T  |   5e    |  89.5  |  98.6  |  99.4   |   91.4   |   99.2   |   99.8    |   86.6   |   97.9   |   99.1    |
 
+- The MM-GDINO-T config file is [here](refcoco/grounding_dino_swin-t_finetune_8xb4_5e_refcoco.py)
+
 #### RefCOCO+
 
 |    Architecture     | Backbone | Lr schd | val @1 | val @5 | val @10 | testA @1 | testA @5 | testA @10 | testB @1 | testB @5 | testB @10 |
@@ -300,6 +328,8 @@ Note:
 | MM-GDINO(zero-shot) |  Swin-T  |         |  52.7  |  87.7  |  93.5   |   58.7   |   87.2   |   93.1    |   48.4   |   85.8   |   92.1    |
 |        GDINO        |  Swin-T  |   UNK   |  81.1  |        |         |   87.4   |          |           |   74.7   |          |           |
 |      MM-GDINO       |  Swin-T  |   5e    |  82.1  |  97.8  |  99.2   |   87.5   |   99.2   |   99.7    |   74.0   |   96.3   |   96.4    |
+
+- The MM-GDINO-T config file is [here](refcoco/grounding_dino_swin-t_finetune_8xb4_5e_refcoco_plus.py)
 
 #### RefCOCOg
 
@@ -310,6 +340,8 @@ Note:
 |        GDINO        |  Swin-T  |   UNK   |  84.2  |        |         |  84.9   |         |          |
 |      MM-GDINO       |  Swin-T  |   5e    |  85.5  |  98.4  |  99.4   |  85.8   |  98.6   |   99.4   |
 
+- The MM-GDINO-T config file is [here](refcoco/grounding_dino_swin-t_finetune_8xb4_5e_refcocog.py)
+
 #### gRefCOCO
 
 |    Architecture     | Backbone | Lr schd | val Pr@(F1=1, IoU≥0.5) | val N-acc | testA Pr@(F1=1, IoU≥0.5) | testA N-acc | testB Pr@(F1=1, IoU≥0.5) | testB N-acc |
@@ -317,3 +349,5 @@ Note:
 |  GDINO(zero-shot)   |  Swin-T  |         |          41.3          |   91.8    |           27.2           |    90.2     |           29.7           |    93.5     |
 | MM-GDINO(zero-shot) |  Swin-T  |         |          41.0          |   91.3    |           26.1           |    93.0     |           30.4           |    92.3     |
 |      MM-GDINO       |  Swin-T  |   5e    |          45.1          |   64.7    |           42.5           |    65.5     |           40.3           |    63.2     |
+
+- The MM-GDINO-T config file is [here](refcoco/grounding_dino_swin-t_finetune_8xb4_5e_grefcoco.py)
