@@ -92,7 +92,6 @@ class ODVGDataset(BaseDetDataset):
                         instance['ignore_flag'] = 0
                         instance['bbox'] = box
                         instance['bbox_label'] = i
-                        # phrase only for vis. tokens_positive is important
                         phrases[i] = {
                             'phrase': phrase,
                             'tokens_positive': tokens_positive

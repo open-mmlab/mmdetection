@@ -8,18 +8,19 @@ from mmdet.registry import DATASETS
 from .base_det_dataset import BaseDetDataset
 
 
+def convert_phrase_ids(phrase_ids: list) -> list:
+    unique_elements = sorted(set(phrase_ids))
+    element_to_new_label = {
+        element: label
+        for label, element in enumerate(unique_elements)
+    }
+    phrase_ids = [element_to_new_label[element] for element in phrase_ids]
+    return phrase_ids
+
+
 @DATASETS.register_module()
 class Flickr30kDataset(BaseDetDataset):
     """Flickr30K Dataset."""
-
-    def convert_phrase_ids(self, a):
-        unique_elements = sorted(set(a))
-        element_to_new_label = {
-            element: label
-            for label, element in enumerate(unique_elements)
-        }
-        discreticed_a = [element_to_new_label[element] for element in a]
-        return discreticed_a
 
     def load_data_list(self) -> List[dict]:
 
@@ -48,18 +49,21 @@ class Flickr30kDataset(BaseDetDataset):
             instances = []
             annos = self.coco.loadAnns(ann_ids)
             for anno in annos:
-                instance = {}
-                instance['bbox'] = [
-                    anno['bbox'][0], anno['bbox'][1],
-                    anno['bbox'][0] + anno['bbox'][2],
-                    anno['bbox'][1] + anno['bbox'][3]
-                ]
-                instance['bbox_label'] = anno['category_id']
-                instance['ignore_flag'] = anno['iscrowd']
+                instance = {
+                    'bbox': [
+                        anno['bbox'][0], anno['bbox'][1],
+                        anno['bbox'][0] + anno['bbox'][2],
+                        anno['bbox'][1] + anno['bbox'][3]
+                    ],
+                    'bbox_label':
+                    anno['category_id'],
+                    'ignore_flag':
+                    anno['iscrowd']
+                }
                 phrase_ids.append(anno['phrase_ids'])
                 instances.append(instance)
 
-            phrase_ids = self.convert_phrase_ids(phrase_ids)
+            phrase_ids = convert_phrase_ids(phrase_ids)
 
             data_list.append(
                 dict(
