@@ -14,6 +14,7 @@ except ImportError:
     HFBertModel = None
 
 from mmdet.registry import MODELS
+from mmdet.models.utils import align_tensor
 
 
 def generate_masks_with_special_tokens_and_transfer_map(
@@ -70,6 +71,14 @@ def generate_masks_with_special_tokens_and_transfer_map(
 
     return attention_mask, position_ids.to(torch.long)
 
+def split_tensor(tensor, num_levels):
+    level_targets = []
+    start = 0
+    for n in num_levels:
+        end = start + n
+        level_targets.append(target[:, start:end])
+        start = end
+    return level_targets
 
 @MODELS.register_module()
 class BertModel(BaseModel):
@@ -134,9 +143,14 @@ class BertModel(BaseModel):
             self.special_tokens = self.tokenizer.convert_tokens_to_ids(
                 special_tokens_list)
 
-    def forward(self, captions: Sequence[str], **kwargs) -> dict:
+    def forward(self, captions: Sequence[str], task='VG', **kwargs) -> dict:
         """Forward function."""
         device = next(self.language_backbone.parameters()).device
+
+        if task == 'OD':
+            batch_len_captions = [len(item) for item in captions]
+            captions = [item for sublist in captions for item in sublist]
+
         tokenized = self.tokenizer.batch_encode_plus(
             captions,
             max_length=self.max_tokens,
@@ -145,12 +159,11 @@ class BertModel(BaseModel):
             return_tensors='pt',
             truncation=True).to(device)
         input_ids = tokenized.input_ids
-        if self.use_sub_sentence_represent:
+        if self.use_sub_sentence_represent and task == 'VG':
             attention_mask, position_ids = \
                 generate_masks_with_special_tokens_and_transfer_map(
                     tokenized, self.special_tokens)
             token_type_ids = tokenized['token_type_ids']
-
         else:
             attention_mask = tokenized.attention_mask
             position_ids = None
@@ -163,10 +176,30 @@ class BertModel(BaseModel):
             'token_type_ids': token_type_ids
         }
         language_dict_features = self.language_backbone(tokenizer_input)
-        if self.use_sub_sentence_represent:
+        if self.use_sub_sentence_represent and task == 'VG':
             language_dict_features['position_ids'] = position_ids
             language_dict_features[
                 'text_token_mask'] = tokenized.attention_mask.bool()
+        else:
+            end_token_idx = input_ids.argmin(dim=-1) - 1
+            embedded = language_dict_features['embedded']
+            embedded = embedded[torch.arange(embedded.shape[0]), end_token_idx]
+
+            batch_embedded = []
+            batch_mask=[]
+            batch_text_token_mask=[]
+
+            embedded = split_tensor(embedded, batch_len_captions)
+            embedded = align_tensor(embedded)
+            attention_mask = split_tensor(tokenized.attention_mask.bool(), batch_len_captions)
+            attention_mask = align_tensor(attention_mask)
+            mask = split_tensor(language_dict_features['mask'], batch_len_captions)
+            mask = align_tensor(mask)
+
+            language_dict_features['embedded'] = embedded
+            language_dict_features['hidden'] = embedded
+            language_dict_features['text_token_mask'] = attention_mask
+            language_dict_features['mask'] = mask
         return language_dict_features
 
 
