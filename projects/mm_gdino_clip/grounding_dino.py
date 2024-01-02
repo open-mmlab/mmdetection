@@ -52,3 +52,32 @@ class GroundingDINOV2(GroundingDINO):
             losses = self.bbox_head.loss(
                 **head_inputs_dict, batch_data_samples=batch_data_samples)
             return losses
+
+    def predict(self, batch_inputs, batch_data_samples, rescale: bool = True):
+        # only od eval for now
+        text_prompts = [data_samples.text for data_samples in batch_data_samples]
+        text_prompts = text_prompts[0]
+
+        visual_feats = self.extract_feat(batch_inputs)
+
+        text_dict = self.language_model([text_prompts], task='REC')
+        if self.text_feat_map is not None:
+            text_dict['embedded'] = self.text_feat_map(
+                text_dict['embedded'])
+        head_inputs_dict = self.forward_transformer(
+            visual_feats, text_dict, batch_data_samples)
+        results_list = self.bbox_head.predict(
+            **head_inputs_dict,
+            rescale=rescale,
+            batch_data_samples=batch_data_samples)
+
+        for data_sample, pred_instances in zip(
+                batch_data_samples, results_list):
+            if len(pred_instances) > 0:
+                label_names = []
+                for labels in pred_instances.labels:
+                    label_names.append(text_prompts[labels])
+                # for visualization
+                pred_instances.label_names = label_names
+            data_sample.pred_instances = pred_instances
+        return batch_data_samples

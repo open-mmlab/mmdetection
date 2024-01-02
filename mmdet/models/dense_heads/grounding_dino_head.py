@@ -328,12 +328,17 @@ class GroundingDINOHead(DINOHead):
         batch_img_metas = [
             data_samples.metainfo for data_samples in batch_data_samples
         ]
-        batch_token_positive_maps = [
-            data_samples.token_positive_map
-            for data_samples in batch_data_samples
-        ]
 
-        outs = self(hidden_states, references, memory_text, text_token_mask)
+        need_expand = True
+        batch_token_positive_maps = []
+        for data_samples in batch_data_samples:
+            if 'token_positive_map' in data_samples:
+                batch_token_positive_maps.append(data_samples.token_positive_map)
+            else:
+                batch_token_positive_maps.append(None)
+                need_expand = False
+
+        outs = self(hidden_states, references, memory_text, text_token_mask, need_expand=False)
 
         predictions = self.predict_by_feat(
             *outs,
@@ -710,7 +715,7 @@ class GroundingDINOHead(DINOHead):
             img_h, img_w = img_meta['img_shape']
             factor = bbox_pred.new_tensor([img_w, img_h, img_w,
                                            img_h]).unsqueeze(0).repeat(
-                                               bbox_pred.size(0), 1)
+                bbox_pred.size(0), 1)
             factors.append(factor)
         factors = torch.cat(factors)
 
@@ -732,7 +737,7 @@ class GroundingDINOHead(DINOHead):
 
     def _get_dn_targets_single(self, gt_instances: InstanceData,
                                img_meta: dict, dn_meta: Dict[str,
-                                                             int]) -> tuple:
+            int]) -> tuple:
         """Get targets in denoising part for one image.
 
         Args:
