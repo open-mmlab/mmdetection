@@ -28,6 +28,7 @@ model = dict(
         use_sub_sentence_represent=True,
         special_tokens_list=['[CLS]', '[SEP]', '.', '?'],
         add_pooling_layer=False,
+        use_checkpoint=True,  # change this
     ),
     backbone=dict(
         type='SwinTransformer',
@@ -125,42 +126,42 @@ train_pipeline = [
     dict(type='LoadImageFromFile', backend_args=_base_.backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomFlip', prob=0.5),
-    dict(
-        type='FixScaleResize',
-        scale=(400, 1340033),
-        keep_ratio=True,
-        backend='pillow'),
     # dict(
-    #     type='RandomChoice',
-    #     transforms=[
-    #         [
-    #             dict(
-    #                 type='RandomChoiceResize',
-    #                 scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
-    #                         (608, 1333), (640, 1333), (672, 1333), (704, 1333),
-    #                         (736, 1333), (768, 1333), (800, 1333)],
-    #                 keep_ratio=True)
-    #         ],
-    #         [
-    #             dict(
-    #                 type='RandomChoiceResize',
-    #                 # The radio of all image in train dataset < 7
-    #                 # follow the original implement
-    #                 scales=[(400, 4200), (500, 4200), (600, 4200)],
-    #                 keep_ratio=True),
-    #             dict(
-    #                 type='RandomCrop',
-    #                 crop_type='absolute_range',
-    #                 crop_size=(384, 600),
-    #                 allow_negative_crop=True),
-    #             dict(
-    #                 type='RandomChoiceResize',
-    #                 scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
-    #                         (608, 1333), (640, 1333), (672, 1333), (704, 1333),
-    #                         (736, 1333), (768, 1333), (800, 1333)],
-    #                 keep_ratio=True)
-    #         ]
-    #     ]),
+    #     type='FixScaleResize',
+    #     scale=(400, 400),
+    #     keep_ratio=True,
+    #     backend='pillow'),
+    dict(
+        type='RandomChoice',
+        transforms=[
+            [
+                dict(
+                    type='RandomChoiceResize',
+                    scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
+                            (608, 1333), (640, 1333), (672, 1333), (704, 1333),
+                            (736, 1333), (768, 1333), (800, 1333)],
+                    keep_ratio=True)
+            ],
+            [
+                dict(
+                    type='RandomChoiceResize',
+                    # The radio of all image in train dataset < 7
+                    # follow the original implement
+                    scales=[(400, 4200), (500, 4200), (600, 4200)],
+                    keep_ratio=True),
+                dict(
+                    type='RandomCrop',
+                    crop_type='absolute_range',
+                    crop_size=(384, 600),
+                    allow_negative_crop=True),
+                dict(
+                    type='RandomChoiceResize',
+                    scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
+                            (608, 1333), (640, 1333), (672, 1333), (704, 1333),
+                            (736, 1333), (768, 1333), (800, 1333)],
+                    keep_ratio=True)
+            ]
+        ]),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(
         type='RandomSamplingNegPosV2',
@@ -180,7 +181,7 @@ test_pipeline = [
         imdecode_backend='pillow'),
     dict(
         type='FixScaleResize',
-        scale=(400, 400),
+        scale=(1333, 800),
         keep_ratio=True,
         backend='pillow'),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -193,7 +194,7 @@ test_pipeline = [
 
 dataset_type = 'ODVGRECDataset'
 
-o365_data_root = '/home/PJLAB/huanghaian/dataset/grounding/obj365v1_200/'
+o365_data_root = 'obj365v1_200/'
 obj365_od_dataset = dict(
     type=dataset_type,
     data_root=o365_data_root,
@@ -205,7 +206,7 @@ obj365_od_dataset = dict(
     return_classes=True,
     backend_args=None)
 
-rec_data_root = '/home/PJLAB/huanghaian/dataset/coco2014/'
+rec_data_root = 'data/coco/'
 rec_rec_dataset = dict(
     type=dataset_type,
     data_root=rec_data_root,
@@ -216,7 +217,7 @@ rec_rec_dataset = dict(
     return_classes=True,
     backend_args=None)
 
-flickr30k_vg_data_root = '/home/PJLAB/huanghaian/dataset/grounding/flickr30k_200/'
+flickr30k_vg_data_root = 'flickr30k_200/'
 flickr30k_vg_dataset = dict(
     type=dataset_type,
     data_root=flickr30k_vg_data_root,
@@ -229,12 +230,12 @@ flickr30k_vg_dataset = dict(
 
 train_dataloader = dict(
     _delete_=True,
-    batch_size=2,
-    num_workers=0,
-    persistent_workers=False,
+    batch_size=4,
+    num_workers=2,
+    persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
-    batch_sampler=dict(type='MultiTaskAspectRatioBatchSampler'),
-    dataset=dict(type='ConcatDataset', datasets=[obj365_od_dataset, rec_rec_dataset, flickr30k_vg_dataset]))
+    batch_sampler=dict(type='MultiTaskAspectRatioBatchSampler', od_to_rec_prob=0.7),
+    dataset=dict(type='ConcatDataset', datasets=[obj365_od_dataset, flickr30k_vg_dataset]))
 
 val_dataloader = dict(
     dataset=dict(pipeline=test_pipeline, return_classes=True))

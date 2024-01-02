@@ -119,10 +119,8 @@ class RandomSamplingNegPosV2(BaseTransform):
     def transform(self, results: dict) -> dict:
         dataset_mode = results['dataset_mode']
         if dataset_mode == 'OD':
-            if np.random.rand() > 0.3:
-                return self.rec_aug(results)
-            else:
-                return self.od_aug(results)
+            results['dataset_mode'] = 'VG'
+            return self.od_aug(results)
         elif dataset_mode == 'VG':
             return self.vg_aug(results)
         else:
@@ -140,11 +138,11 @@ class RandomSamplingNegPosV2(BaseTransform):
         else:
             text = results['text']
 
-        if results['dataset_mode'] == 'REC':
-            assert 'image_to_exp' in results
+        if 'image_to_exp' in results:  # REC
             keys = list(results['image_to_exp'].keys())
             positive_label_list = np.unique(gt_labels).tolist()
 
+            # 85 有点大，会消耗比较多显存，稍微改小点
             full_negative = self.num_sample_negative
 
             if full_negative > len(keys):
@@ -205,7 +203,7 @@ class RandomSamplingNegPosV2(BaseTransform):
             results['gt_bboxes'] = gt_bboxes
             results['gt_bboxes_labels'] = gt_labels
             results['text'] = new_text
-        else:
+        else:  # OD
             valid_negative_indexes = list(text.keys())
 
             positive_label_list = np.unique(gt_labels).tolist()
@@ -257,6 +255,9 @@ class RandomSamplingNegPosV2(BaseTransform):
             results['text'] = [text[str(l)] for l in label_list]
 
         results['dataset_mode'] = 'REC'
+        if 'tokens_positive' in results:
+            del results['tokens_positive']
+
         return results
 
     def vg_aug(self, results):

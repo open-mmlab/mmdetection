@@ -329,8 +329,8 @@ class GroundingDINO(DINO):
             # for text encoder
             memory_text=text_dict['embedded'],
             text_attention_mask=~text_token_mask,
-            position_ids=text_dict['position_ids'],
-            text_self_attention_masks=text_dict['masks'])
+            position_ids=text_dict.get('position_ids', None),
+            text_self_attention_masks=text_dict.get('masks', None))
         encoder_outputs_dict = dict(
             memory=memory,
             memory_mask=feat_mask,
@@ -353,13 +353,14 @@ class GroundingDINO(DINO):
         output_memory, output_proposals = self.gen_encoder_output_proposals(
             memory, memory_mask, spatial_shapes)
 
+        if 'tokens_positive' in batch_data_samples[0]:
+            need_expand = True
+        else:
+            need_expand = False
         enc_outputs_class = self.bbox_head.cls_branches[
-            self.decoder.num_layers](output_memory, memory_text,
-                                     text_token_mask)
-        cls_out_features = self.bbox_head.cls_branches[
-            self.decoder.num_layers].max_text_len
+            self.decoder.num_layers](output_memory, memory_text, text_token_mask, need_expand)
         enc_outputs_coord_unact = self.bbox_head.reg_branches[
-            self.decoder.num_layers](output_memory) + output_proposals
+                                      self.decoder.num_layers](output_memory) + output_proposals
 
         # NOTE The DINO selects top-k proposals according to scores of
         # multi-class classification, while DeformDETR, where the input
@@ -370,7 +371,7 @@ class GroundingDINO(DINO):
 
         topk_score = torch.gather(
             enc_outputs_class, 1,
-            topk_indices.unsqueeze(-1).repeat(1, 1, cls_out_features))
+            topk_indices.unsqueeze(-1).repeat(1, 1, enc_outputs_class.shape[-1]))
         topk_coords_unact = torch.gather(
             enc_outputs_coord_unact, 1,
             topk_indices.unsqueeze(-1).repeat(1, 1, 4))

@@ -334,6 +334,25 @@ class FocalLossCost(BaseMatchCost):
 @TASK_UTILS.register_module()
 class BinaryFocalLossCost(FocalLossCost):
 
+    def _default_focal_loss_cost(self, cls_pred: Tensor, gt_labels: Tensor) -> Tensor:
+        """
+        Args:
+            cls_pred (Tensor): Predicted classification logits, shape
+                (num_queries, num_class).
+            gt_labels (Tensor): Label of `gt_bboxes`, shape (num_gt,).
+
+        Returns:
+            torch.Tensor: cls_cost value with weight
+        """
+        cls_pred = cls_pred.sigmoid()
+        neg_cost = -(1 - cls_pred + self.eps).log() * (
+                1 - self.alpha) * cls_pred.pow(self.gamma)
+        pos_cost = -(cls_pred + self.eps).log() * self.alpha * (
+                1 - cls_pred).pow(self.gamma)
+
+        cls_cost = pos_cost[:, gt_labels] - neg_cost[:, gt_labels]
+        return cls_cost * self.weight
+
     def _focal_loss_cost(self, cls_pred: Tensor, gt_labels: Tensor) -> Tensor:
         """
         Args:
@@ -378,8 +397,12 @@ class BinaryFocalLossCost(FocalLossCost):
         text_token_mask = torch.nonzero(
             gt_instances.text_token_mask[0]).squeeze(-1)
         pred_scores = pred_instances.scores[:, text_token_mask]
-        gt_labels = gt_instances.positive_maps[:, text_token_mask]
-        return self._focal_loss_cost(pred_scores, gt_labels)
+        if 'positive_maps' in gt_instances:
+            gt_labels = gt_instances.positive_maps[:, text_token_mask]
+            return self._focal_loss_cost(pred_scores, gt_labels)
+        else:
+            gt_labels = gt_instances.labels
+            return self._default_focal_loss_cost(pred_scores, gt_labels)
 
 
 @TASK_UTILS.register_module()

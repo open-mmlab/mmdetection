@@ -240,7 +240,7 @@ class GroundingDinoTransformerEncoder(DeformableDetrTransformerEncoder):
                     query=memory_text,
                     query_pos=(pos_text if pos_text is not None else None),
                     attn_mask=~text_self_attention_masks.repeat(
-                        text_num_heads, 1, 1),  # note we use ~ for mask here
+                        text_num_heads, 1, 1) if text_self_attention_masks is not None else None,  # note we use ~ for mask here
                     key_padding_mask=None,
                 )
             output = layer(

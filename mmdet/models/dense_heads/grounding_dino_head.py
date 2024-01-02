@@ -18,6 +18,7 @@ from mmdet.utils import InstanceList, reduce_mean
 from ..layers import inverse_sigmoid
 from .atss_vlfusion_head import convert_grounding_to_cls_scores
 from .dino_head import DINOHead
+import torch.nn.functional as F
 
 
 class ContrastiveEmbed(nn.Module):
@@ -60,7 +61,7 @@ class ContrastiveEmbed(nn.Module):
                 torch.Tensor([bias_value]), requires_grad=True)
 
     def forward(self, visual_feat: Tensor, text_feat: Tensor,
-                text_token_mask: Tensor) -> Tensor:
+                text_token_mask: Tensor, need_expand=True) -> Tensor:
         """Forward function.
 
         Args:
@@ -79,13 +80,14 @@ class ContrastiveEmbed(nn.Module):
             res = res / math.sqrt(visual_feat.shape[-1])
         if self.bias is not None:
             res = res + self.bias
-        res.masked_fill_(~text_token_mask[:, None, :], float('-inf'))
-
-        new_res = torch.full((*res.shape[:-1], self.max_text_len),
-                             float('-inf'),
-                             device=res.device)
-        new_res[..., :res.shape[-1]] = res
-
+        if need_expand:
+            res.masked_fill_(~text_token_mask[:, None, :], float('-inf'))
+            new_res = torch.full((*res.shape[:-1], self.max_text_len),
+                                 float('-inf'),
+                                 device=res.device)
+            new_res[..., :res.shape[-1]] = res
+        else:
+            new_res = res
         return new_res
 
 
@@ -190,10 +192,16 @@ class GroundingDINOHead(DINOHead):
 
         # Major changes. The labels are 0-1 binary labels for each bbox
         # and text tokens.
-        labels = gt_bboxes.new_full((num_bboxes, self.max_text_len),
-                                    0,
-                                    dtype=torch.float32)
-        labels[pos_inds] = gt_instances.positive_maps[pos_assigned_gt_inds]
+        if 'positive_maps' in gt_instances:
+            labels = gt_bboxes.new_full((num_bboxes, self.max_text_len),
+                                        0,
+                                        dtype=torch.float32)
+            labels[pos_inds] = gt_instances.positive_maps[pos_assigned_gt_inds]
+        else:
+            labels = gt_bboxes.new_full((num_bboxes,),
+                                        cls_score.size(1),
+                                        dtype=torch.long)
+            labels[pos_inds] = gt_instances.labels[pos_assigned_gt_inds]
         label_weights = gt_bboxes.new_ones(num_bboxes)
 
         # bbox targets
@@ -211,11 +219,12 @@ class GroundingDINOHead(DINOHead):
                 neg_inds)
 
     def forward(
-        self,
-        hidden_states: Tensor,
-        references: List[Tensor],
-        memory_text: Tensor,
-        text_token_mask: Tensor,
+            self,
+            hidden_states: Tensor,
+            references: List[Tensor],
+            memory_text: Tensor,
+            text_token_mask: Tensor,
+            need_expand=True
     ) -> Tuple[Tensor]:
         """Forward function.
 
@@ -257,7 +266,7 @@ class GroundingDINOHead(DINOHead):
             hidden_state = hidden_states[layer_id]
             outputs_class = self.cls_branches[layer_id](hidden_state,
                                                         memory_text,
-                                                        text_token_mask)
+                                                        text_token_mask, need_expand)
             tmp_reg_preds = self.reg_branches[layer_id](hidden_state)
             if reference.shape[-1] == 4:
                 # When `layer` is 0 and `as_two_stage` of the detector
@@ -492,7 +501,12 @@ class GroundingDINOHead(DINOHead):
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
 
-        outs = self(hidden_states, references, memory_text, text_token_mask)
+        if 'tokens_positive' in batch_data_samples[0]:
+            need_expand = True
+        else:
+            need_expand = False
+
+        outs = self(hidden_states, references, memory_text, text_token_mask, need_expand)
         self.text_masks = text_token_mask
         loss_inputs = outs + (enc_outputs_class, enc_outputs_coord,
                               batch_gt_instances, batch_img_metas, dn_meta)
@@ -539,22 +553,28 @@ class GroundingDINOHead(DINOHead):
         # ===== this change =====
         # Loss is not computed for the padded regions of the text.
         assert (self.text_masks.dim() == 2)
-        text_masks = self.text_masks.new_zeros(
-            (self.text_masks.size(0), self.max_text_len))
-        text_masks[:, :self.text_masks.size(1)] = self.text_masks
+        if 'positive_maps' in batch_gt_instances[0]:
+            text_masks = self.text_masks.new_zeros(
+                (self.text_masks.size(0), self.max_text_len))
+            text_masks[:, :self.text_masks.size(1)] = self.text_masks
+        else:
+            text_masks = self.text_masks
+            num_classes = cls_scores.size(-1)
+            labels = F.one_hot(labels, num_classes=num_classes + 1)
+            labels = labels[..., :num_classes]
         text_mask = (text_masks > 0).unsqueeze(1)
         text_mask = text_mask.repeat(1, cls_scores.size(1), 1)
         cls_scores = torch.masked_select(cls_scores, text_mask).contiguous()
 
         labels = torch.masked_select(labels, text_mask)
         label_weights = label_weights[...,
-                                      None].repeat(1, 1, text_mask.size(-1))
+        None].repeat(1, 1, text_mask.size(-1))
         label_weights = torch.masked_select(label_weights, text_mask)
 
         # classification loss
         # construct weighted avg_factor to match with the official DETR repo
         cls_avg_factor = num_total_pos * 1.0 + \
-            num_total_neg * self.bg_cls_weight
+                         num_total_neg * self.bg_cls_weight
         if self.sync_cls_avg_factor:
             cls_avg_factor = reduce_mean(
                 cls_scores.new_tensor([cls_avg_factor]))
@@ -578,7 +598,7 @@ class GroundingDINOHead(DINOHead):
             img_h, img_w, = img_meta['img_shape']
             factor = bbox_pred.new_tensor([img_w, img_h, img_w,
                                            img_h]).unsqueeze(0).repeat(
-                                               bbox_pred.size(0), 1)
+                bbox_pred.size(0), 1)
             factors.append(factor)
         factors = torch.cat(factors, 0)
 
@@ -637,15 +657,23 @@ class GroundingDINOHead(DINOHead):
         # ===== this change =====
         # Loss is not computed for the padded regions of the text.
         assert (self.text_masks.dim() == 2)
-        text_masks = self.text_masks.new_zeros(
-            (self.text_masks.size(0), self.max_text_len))
-        text_masks[:, :self.text_masks.size(1)] = self.text_masks
+        if 'positive_maps' in batch_gt_instances[0]:
+            text_masks = self.text_masks.new_zeros(
+                (self.text_masks.size(0), self.max_text_len))
+            text_masks[:, :self.text_masks.size(1)] = self.text_masks
+        else:
+            text_masks = self.text_masks
+            num_classes = dn_cls_scores.size(-1)
+            # 临时方案，由于 _get_dn_targets_single 获取不到 dn_cls_scores
+            labels[labels == self.max_text_len] = num_classes
+            labels = F.one_hot(labels, num_classes=num_classes + 1)
+            labels = labels[..., :num_classes]
         text_mask = (text_masks > 0).unsqueeze(1)
         text_mask = text_mask.repeat(1, dn_cls_scores.size(1), 1)
         cls_scores = torch.masked_select(dn_cls_scores, text_mask).contiguous()
+
         labels = torch.masked_select(labels, text_mask)
-        label_weights = label_weights[...,
-                                      None].repeat(1, 1, text_mask.size(-1))
+        label_weights = label_weights[..., None].repeat(1, 1, text_mask.size(-1))
         label_weights = torch.masked_select(label_weights, text_mask)
         # =======================
 
@@ -749,10 +777,17 @@ class GroundingDINOHead(DINOHead):
         neg_inds = pos_inds + num_queries_each_group // 2
         # label targets
         # this change
-        labels = gt_bboxes.new_full((num_denoising_queries, self.max_text_len),
-                                    0,
-                                    dtype=torch.float32)
-        labels[pos_inds] = gt_instances.positive_maps[pos_assigned_gt_inds]
+
+        if 'positive_maps' in gt_instances:
+            labels = gt_bboxes.new_full((num_denoising_queries, self.max_text_len),
+                                        0,
+                                        dtype=torch.float32)
+            labels[pos_inds] = gt_instances.positive_maps[pos_assigned_gt_inds]
+        else:
+            labels = gt_bboxes.new_full((num_denoising_queries,),
+                                        self.max_text_len,
+                                        dtype=torch.long)
+            labels[pos_inds] = gt_labels[pos_assigned_gt_inds]
         label_weights = gt_bboxes.new_ones(num_denoising_queries)
 
         # bbox targets

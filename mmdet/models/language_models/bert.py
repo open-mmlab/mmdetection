@@ -71,14 +71,16 @@ def generate_masks_with_special_tokens_and_transfer_map(
 
     return attention_mask, position_ids.to(torch.long)
 
+
 def split_tensor(tensor, num_levels):
     level_targets = []
     start = 0
     for n in num_levels:
         end = start + n
-        level_targets.append(target[:, start:end])
+        level_targets.append(tensor[start:end])
         start = end
     return level_targets
+
 
 @MODELS.register_module()
 class BertModel(BaseModel):
@@ -147,7 +149,7 @@ class BertModel(BaseModel):
         """Forward function."""
         device = next(self.language_backbone.parameters()).device
 
-        if task == 'OD':
+        if task == 'REC':
             batch_len_captions = [len(item) for item in captions]
             captions = [item for sublist in captions for item in sublist]
 
@@ -185,21 +187,16 @@ class BertModel(BaseModel):
             embedded = language_dict_features['embedded']
             embedded = embedded[torch.arange(embedded.shape[0]), end_token_idx]
 
-            batch_embedded = []
-            batch_mask=[]
-            batch_text_token_mask=[]
-
             embedded = split_tensor(embedded, batch_len_captions)
             embedded = align_tensor(embedded)
-            attention_mask = split_tensor(tokenized.attention_mask.bool(), batch_len_captions)
+            attention_mask = split_tensor(embedded.new_ones((len(tokenized.attention_mask))).bool(), batch_len_captions)
             attention_mask = align_tensor(attention_mask)
-            mask = split_tensor(language_dict_features['mask'], batch_len_captions)
-            mask = align_tensor(mask)
-
+            # mask = split_tensor(language_dict_features['masks'], batch_len_captions)
+            # mask = align_tensor(mask)
+            del language_dict_features['masks']
+            del language_dict_features['hidden']
             language_dict_features['embedded'] = embedded
-            language_dict_features['hidden'] = embedded
             language_dict_features['text_token_mask'] = attention_mask
-            language_dict_features['mask'] = mask
         return language_dict_features
 
 
