@@ -152,7 +152,7 @@ mmdetection
 
 对应的训练配置为 [grounding_dino_swin-t_pretrain_obj365_goldg_grit9m](./grounding_dino_swin-t_pretrain_obj365_goldg_grit9m.py)
 
-GRIT数据集可以从[GRIT](https://huggingface.co/datasets/zzliang/GRIT#download-image)中使用img2dataset包下载，默认指令下载后数据集大小为1.1T，下载和处理预估需要至少2T硬盘空间，可根据硬盘容量酌情下载。下载后原始格式为：
+GRIT数据集可以从 [GRIT](https://huggingface.co/datasets/zzliang/GRIT#download-image) 中使用 img2dataset 包下载，默认指令下载后数据集大小为 1.1T，下载和处理预估需要至少 2T 硬盘空间，可根据硬盘容量酌情下载。下载后原始格式为：
 ```text
 mmdetection
 ├── configs
@@ -176,6 +176,34 @@ mmdetection
 ├── configs
 ├── data
 │    ├── grit_processed
+│    │    ├── annotations
+│    │    │   ├── 00000.json
+│    │    │   ├── 00001.json
+│    │    │   ├── ...
+│    │    ├── images
+│    │    │   ├── 00000
+│    │    │   │   ├── 000000000.jpg
+│    │    │   │   ├── 000000003.jpg
+│    │    │   │   ├── 000000004.jpg
+│    │    │   │   ├── ...
+│    │    │   ├── 00001
+│    │    │   ├── ...
+```
+
+对于 GRIT 数据集，你需要使用 [grit2odvg.py](../../tools/dataset_converters/grit2odvg.py) 转化成需要的 ODVG 格式：
+
+``` python
+python tools/dataset_converters/grit2odvg.py data/grit_processed/
+```
+
+程序运行完成后会在 `data/grit_processed` 目录下创建 `grit20m_vg.json` 新文件，大概包含 9M 数据，完整结构如下：
+
+``` text
+mmdetection
+├── configs
+├── data
+│    ├── grit_processed
+|    |    ├── grit20m_vg.json
 │    │    ├── annotations
 │    │    │   ├── 00000.json
 │    │    │   ├── 00001.json

@@ -16,7 +16,7 @@ Please note that since the LVIS third-party library does not currently support n
 
 ## Instructions
 
-### Download BERT Weight 
+### Download BERT Weight
 
 MM Grounding DINO uses BERT as its language model and requires access to https://huggingface.co/. If you encounter connection errors due to network access issues, you can download the necessary files on a computer with network access and save them locally. Finally, modify the `lang_model_name` field in the configuration file to the local path. For specific instructions, please refer to the following code:
 
@@ -455,7 +455,7 @@ The bootstrapping process of Phrase Grounding requires providing captions corres
 ]
 ```
 
-Bbox needs to be set to `[0, 0, 1, 1]` for initilization to make sure the programme could run, but this value would not be utilized. 
+Bbox needs to be set to `[0, 0, 1, 1]` for initilization to make sure the programme could run, but this value would not be utilized.
 
 ```text
 {"filename": "3028766968.jpg", "height": 375, "width": 500, "grounding": {"caption": "Man with a black shirt on sit behind a desk sorting threw a giant stack of people work with a smirk on his face .", "regions": [{"bbox": [0, 0, 1, 1], "phrase": "a giant stack of people", "tokens_positive": [[58, 81]]}, {"bbox": [0, 0, 1, 1], "phrase": "a black shirt", "tokens_positive": [[9, 22]]}, {"bbox": [0, 0, 1, 1], "phrase": "a desk", "tokens_positive": [[37, 43]]}, {"bbox": [0, 0, 1, 1], "phrase": "his face", "tokens_positive": [[103, 111]]}, {"bbox": [0, 0, 1, 1], "phrase": "Man", "tokens_positive": [[0, 3]]}]}}
@@ -488,4 +488,3 @@ The visualization results will be generated in the `your_output_dir` directory, 
 3. Continue training to boost performance
 
 After obtaining the pseudo-labels, you can mix some pre-training data to continue pre-training jointly, which enhances the model's performance on the current dataset. Then, rerun step 2 to obtain more accurate pseudo-labels, and repeat this cycle iteratively.
-

@@ -190,6 +190,34 @@ mmdetection
 │    │    │   ├── ...
 ```
 
+As for the GRIT dataset, you need to use [grit2odvg.py](../../tools/dataset_converters/grit2odvg.py) to convert it to the format of ODVG:
+
+``` python
+python tools/dataset_converters/grit2odvg.py data/grit_processed/
+```
+
+After the program has run, a new file `grit20m_vg.json` will be created in the `data/grit_processed` directory, which has about 9M data, with the complete structure as follows:
+
+``` text
+mmdetection
+├── configs
+├── data
+│    ├── grit_processed
+|    |    ├── grit20m_vg.json
+│    │    ├── annotations
+│    │    │   ├── 00000.json
+│    │    │   ├── 00001.json
+│    │    │   ├── ...
+│    │    ├── images
+│    │    │   ├── 00000
+│    │    │   │   ├── 000000000.jpg
+│    │    │   │   ├── 000000003.jpg
+│    │    │   │   ├── 000000004.jpg
+│    │    │   │   ├── ...
+│    │    │   ├── 00001
+│    │    │   ├── ...
+```
+
 ### 5 V3Det
 
 The corresponding training configurations are:
