@@ -33,6 +33,7 @@ class MultiTaskAspectRatioBatchSampler(BatchSampler):
             width, height = data_info['width'], data_info['height']
             bucket_id = 0 if width < height else 1
 
+            # BUG
             if data_info['dataset_mode'] == 'OD':
                 if np.random.random() > 1 - self.od_to_rec_prob:
                     data_info['dataset_mode'] = 'REC'

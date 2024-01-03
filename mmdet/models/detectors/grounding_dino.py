@@ -353,7 +353,7 @@ class GroundingDINO(DINO):
         output_memory, output_proposals = self.gen_encoder_output_proposals(
             memory, memory_mask, spatial_shapes)
 
-        if 'tokens_positive' in batch_data_samples[0]:
+        if 'tokens_positive' in batch_data_samples[0] or 'token_positive_map' in batch_data_samples[0]:
             need_expand = True
         else:
             need_expand = False

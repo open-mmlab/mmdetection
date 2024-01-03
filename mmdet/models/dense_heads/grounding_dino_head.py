@@ -87,6 +87,7 @@ class ContrastiveEmbed(nn.Module):
                                  device=res.device)
             new_res[..., :res.shape[-1]] = res
         else:
+            res.masked_fill_(~text_token_mask[:, None, :], float('-inf'))
             new_res = res
         return new_res
 
@@ -338,7 +339,7 @@ class GroundingDINOHead(DINOHead):
                 batch_token_positive_maps.append(None)
                 need_expand = False
 
-        outs = self(hidden_states, references, memory_text, text_token_mask, need_expand=False)
+        outs = self(hidden_states, references, memory_text, text_token_mask, need_expand=need_expand)
 
         predictions = self.predict_by_feat(
             *outs,
