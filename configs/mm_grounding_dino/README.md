@@ -4,7 +4,11 @@
 
 ## Abstract
 
-TODO
+We will publish a technical report.
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/4214e282-a553-4abf-b8a4-84ea566851c9"/>
+</div>
 
 ## Dataset Preparation
 

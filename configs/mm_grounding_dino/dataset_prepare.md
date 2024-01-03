@@ -197,7 +197,7 @@ mmdetection
 
 As for the GRIT dataset, you need to use [grit2odvg.py](../../tools/dataset_converters/grit2odvg.py) to convert it to the format of ODVG:
 
-```python
+```shell
 python tools/dataset_converters/grit2odvg.py data/grit_processed/
 ```
 

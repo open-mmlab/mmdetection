@@ -133,14 +133,15 @@ python demo/image_demo.py images/fruit.jpg \
         configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365.py \
         --weights grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth \
         --texts 'The picture contains watermelon, flower, and a white bottle.' \
-        --tokens-positive "[[[21,30]], [[45,59]]]"  --pred-score-thr 0.12
+        --tokens-positive "[[[21,31]], [[45,59]]]"  --pred-score-thr 0.12
 ```
 
-The noun phrase corresponding to positions 21-30 is `watermelon`, and the noun phrase corresponding to positions 45-59 is `a white bottle`.
+The noun phrase corresponding to positions 21-31 is `watermelon`, and the noun phrase corresponding to positions 45-59 is `a white bottle`.
 
 <div align=center>
-<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/82253bf7-dce8-4057-98a9-77bf850afdd0" width="70%"/>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/15080faf-048d-4201-a126-a9c773580f5e" width="70%"/>
 </div>
+
 **(4) Referential Expression Comprehension**
 
 Referential expression understanding refers to the model automatically comprehending the referential expressions involved in a user's language description without the need for noun phrase extraction.

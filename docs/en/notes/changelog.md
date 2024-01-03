@@ -1,6 +1,32 @@
 # Changelog of v3.x
 
-## v3.1.0 (12/10/2023)
+## v3.3.0 (05/01/2024)
+
+### Highlights
+
+### New Features
+
+- Add RTMDet Swin / ConvNeXt backbone and results (#11259)
+- Add `odinw` configs and evaluation results of `GLIP` (#11175)
+- Add optional score threshold option to `coco_error_analysis.py` (#11117)
+- Add new configs for `panoptic_fpn` (#11109)
+- Replace partially weighted download links with OpenXLab for the `Faster-RCNN` (#11173)
+
+### Bug Fixes
+
+- Fix `Grounding DINO` nan when class tokens exceeds 256 (#11066)
+- Fix the `CO-DETR` config files error (#11325)
+- Fix `CO-DETR` load_from url in config (#11220)
+- Fixed mask shape after Albu postprocess (#11280)
+- Fix bug in `convert_coco_format`  and `youtubevis2coco` (#11251, #11086)
+
+### Contributors
+
+A total of 15 developers contributed to this release.
+
+Thank @adnan-mujagic, @Cycyes, @ilcopione, @returnL, @honeybadger78, @okotaku, @xushilin1, @keyhsw, @guyleaf, @Crescent-Saturn, @LRJKD, @aaronzs, @Divadi, @AwePhD, @hhaAndroid
+
+## v3.2.0 (12/10/2023)
 
 ### Highlights
 
