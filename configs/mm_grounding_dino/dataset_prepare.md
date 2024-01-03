@@ -1,16 +1,16 @@
-# 数据准备和处理
+# Data Prepare and Process
 
-## MM-GDINO-T 预训练数据准备和处理
+## MM-GDINO-T Pre-train Dataset
 
-MM-GDINO-T 模型中我们一共提供了 5 种不同数据组合的预训练配置，数据采用逐步累加的方式进行训练，因此用户可以根据自己的实际需求准备数据。
+For the MM-GDINO-T model, we provide a total of 5 different data combination pre-training configurations. The data is trained in a progressive accumulation manner, so users can prepare it according to their actual needs.
 
-### 1 Objects365 v1
+### 1 Objects365v1
 
-对应的训练配置为 [grounding_dino_swin-t_pretrain_obj365](./grounding_dino_swin-t_pretrain_obj365.py)
+The corresponding training config is [grounding_dino_swin-t_pretrain_obj365](./grounding_dino_swin-t_pretrain_obj365.py)
 
-Objects365_v1 可以从 [opendatalab](https://opendatalab.com/OpenDataLab/Objects365_v1) 下载，其提供了 CLI 和 SDK 两者下载方式。
+Objects365v1 can be downloaded from [opendatalab](https://opendatalab.com/OpenDataLab/Objects365_v1). It offers two methods of download: CLI and SDK.
 
-下载并解压后，将其放置或者软链接到 `data/objects365v1` 目录下，目录结构如下：
+After downloading and unzipping, place the dataset or create a symbolic link to the `data/objects365v1` directory. The directory structure is as follows:
 
 ```text
 mmdetection
@@ -28,13 +28,13 @@ mmdetection
 │   │   ├── test
 ```
 
-然后使用 [coco2odvg.py](../../tools/dataset_converters/coco2odvg.py) 转换为训练所需的 ODVG 格式：
+Then, use [coco2odvg.py](../../tools/dataset_converters/coco2odvg.py) to convert it into the ODVG format required for training.
 
 ```shell
 python tools/dataset_converters/coco2odvg.py data/objects365v1/objects365_train.json -d o365v1
 ```
 
-程序运行完成后会在 `data/objects365v1` 目录下创建 `o365v1_train_od.json` 和 `o365v1_label_map.json` 两个新文件，完整结构如下：
+After the program runs successfully, it will create two new files, `o365v1_train_od.json` and `o365v1_label_map.json`, in the `data/objects365v1` directory. The complete structure is as follows:
 
 ```text
 mmdetection
@@ -56,9 +56,9 @@ mmdetection
 
 ### 2 COCO 2017
 
-上述配置在训练过程中会评估 COCO 2017 数据集的性能，因此需要准备 COCO 2017 数据集。你可以从 [COCO](https://cocodataset.org/) 官网下载或者从 [opendatalab](https://opendatalab.com/OpenDataLab/COCO_2017) 下载
+The above configuration will evaluate the performance on the COCO 2017 dataset during the training process. Therefore, it is necessary to prepare the COCO 2017 dataset. You can download it from the [COCO](https://cocodataset.org/) official website or from [opendatalab](https://opendatalab.com/OpenDataLab/COCO_2017).
 
-下载并解压后，将其放置或者软链接到 `data/coco` 目录下，目录结构如下：
+After downloading and unzipping, place the dataset or create a symbolic link to the `data/coco` directory. The directory structure is as follows:
 
 ```text
 mmdetection
@@ -78,11 +78,11 @@ mmdetection
 
 ### 3 GoldG
 
-下载该数据集后就可以训练 [grounding_dino_swin-t_pretrain_obj365_goldg](./grounding_dino_swin-t_pretrain_obj365_goldg.py) 配置了。
+After downloading the dataset, you can start training with the [grounding_dino_swin-t_pretrain_obj365_goldg](./grounding_dino_swin-t_pretrain_obj365_goldg.py) configuration.
 
-GoldG 数据集包括 `GQA` 和 `Flickr30k` 两个数据集，来自 GLIP 论文中提到的 MixedGrounding 数据集，其排除了 COCO 数据集。下载链接为 [mdetr_annotations](https://huggingface.co/GLIPModel/GLIP/tree/main/mdetr_annotations)，我们目前需要的是 `mdetr_annotations/final_mixed_train_no_coco.json` 和 `mdetr_annotations/final_flickr_separateGT_train.json` 文件。
+The GoldG dataset includes the `GQA` and `Flickr30k` datasets, which are part of the MixedGrounding dataset mentioned in the GLIP paper, excluding the COCO dataset. The download links are [mdetr_annotations](https://huggingface.co/GLIPModel/GLIP/tree/main/mdetr_annotations), and the specific files currently needed are `mdetr_annotations/final_mixed_train_no_coco.json` and `mdetr_annotations/final_flickr_separateGT_train.json`.
 
-然后下载 [GQA images](https://nlp.stanford.edu/data/gqa/images.zip) 图片。下载并解压后，将其放置或者软链接到 `data/gqa` 目录下，目录结构如下：
+Then download the [GQA images](https://nlp.stanford.edu/data/gqa/images.zip). After downloading and unzipping, place the dataset or create a symbolic link to them in the `data/gqa` directory, with the following directory structure:
 
 ```text
 mmdetection
@@ -95,7 +95,7 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-然后下载 [Flickr30k images](http://shannon.cs.illinois.edu/DenotationGraph/) 图片。这个数据下载需要先申请，再获得下载链接后才可以下载。下载并解压后，将其放置或者软链接到 `data/flickr30k_entities` 目录下，目录结构如下：
+Then download the [Flickr30k images](http://shannon.cs.illinois.edu/DenotationGraph/). You need to apply for access to this dataset and then download it using the provided link. After downloading and unzipping, place the dataset or create a symbolic link to them in the `data/flickr30k_entities` directory, with the following directory structure:
 
 ```text
 mmdetection
@@ -108,13 +108,13 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-对于 GQA 数据集，你需要使用 [goldg2odvg.py](../../tools/dataset_converters/goldg2odvg.py) 转换为训练所需的 ODVG 格式：
+For the GQA dataset, you need to use [goldg2odvg.py](../../tools/dataset_converters/goldg2odvg.py) to convert it into the ODVG format required for training:
 
 ```shell
 python tools/dataset_converters/goldg2odvg.py data/gqa/final_mixed_train_no_coco.json
 ```
 
-程序运行完成后会在 `data/gqa` 目录下创建 `final_mixed_train_no_coco_vg.json` 新文件，完整结构如下：
+After the program has run, a new file `final_mixed_train_no_coco_vg.json` will be created in the `data/gqa` directory, with the complete structure as follows:
 
 ```text
 mmdetection
@@ -128,13 +128,13 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-对于 Flickr30k 数据集，你需要使用 [goldg2odvg.py](../../tools/dataset_converters/goldg2odvg.py) 转换为训练所需的 ODVG 格式：
+For the Flickr30k dataset, you need to use [goldg2odvg.py](../../tools/dataset_converters/goldg2odvg.py) to convert it into the ODVG format required for training:
 
 ```shell
 python tools/dataset_converters/goldg2odvg.py data/flickr30k_entities/final_flickr_separateGT_train.json
 ```
 
-程序运行完成后会在 `data/flickr30k_entities` 目录下创建 `final_flickr_separateGT_train_vg.json` 新文件，完整结构如下：
+After the program has run, a new file `final_flickr_separateGT_train_vg.json` will be created in the `data/flickr30k_entities` directory, with the complete structure as follows:
 
 ```text
 mmdetection
@@ -150,9 +150,9 @@ mmdetection
 
 ### 4 GRIT-20M
 
-对应的训练配置为 [grounding_dino_swin-t_pretrain_obj365_goldg_grit9m](./grounding_dino_swin-t_pretrain_obj365_goldg_grit9m.py)
+The corresponding training configuration is [grounding_dino_swin-t_pretrain_obj365_goldg_grit9m](./grounding_dino_swin-t_pretrain_obj365_goldg_grit9m.py).
 
-GRIT数据集可以从 [GRIT](https://huggingface.co/datasets/zzliang/GRIT#download-image) 中使用 img2dataset 包下载，默认指令下载后数据集大小为 1.1T，下载和处理预估需要至少 2T 硬盘空间，可根据硬盘容量酌情下载。下载后原始格式为：
+The GRIT dataset can be downloaded using the img2dataset package from [GRIT](https://huggingface.co/datasets/zzliang/GRIT#download-image). By default, the dataset size is 1.1T, and downloading and processing it may require at least 2T of disk space, depending on your available storage capacity. After downloading, the dataset is in its original format, which includes:
 
 ```text
 mmdetection
@@ -168,13 +168,13 @@ mmdetection
 │    │    ├── ...
 ```
 
-下载后需要对格式进行进一步处理:
+After downloading, further format processing is required:
 
 ```shell
 python tools/dataset_converters/grit_processing.py data/grit_raw data/grit_processed
 ```
 
-处理后的格式为：
+The processed format is as follows:
 
 ```text
 mmdetection
@@ -195,13 +195,13 @@ mmdetection
 │    │    │   ├── ...
 ```
 
-对于 GRIT 数据集，你需要使用 [grit2odvg.py](../../tools/dataset_converters/grit2odvg.py) 转化成需要的 ODVG 格式：
+As for the GRIT dataset, you need to use [grit2odvg.py](../../tools/dataset_converters/grit2odvg.py) to convert it to the format of ODVG:
 
 ```python
 python tools/dataset_converters/grit2odvg.py data/grit_processed/
 ```
 
-程序运行完成后会在 `data/grit_processed` 目录下创建 `grit20m_vg.json` 新文件，大概包含 9M 数据，完整结构如下：
+After the program has run, a new file `grit20m_vg.json` will be created in the `data/grit_processed` directory, which has about 9M data, with the complete structure as follows:
 
 ```text
 mmdetection
@@ -225,12 +225,12 @@ mmdetection
 
 ### 5 V3Det
 
-对应的训练配置为
+The corresponding training configurations are:
 
 - [grounding_dino_swin-t_pretrain_obj365_goldg_v3det](./grounding_dino_swin-t_pretrain_obj365_goldg_v3det.py)
 - [grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det](./grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det.py)
 
-V3Det 数据集下载可以从 [opendatalab](https://opendatalab.com/V3Det/V3Det) 下载，下载并解压后，将其放置或者软链接到 `data/v3det` 目录下，目录结构如下：
+The V3Det dataset can be downloaded from [opendatalab](https://opendatalab.com/V3Det/V3Det). After downloading and unzipping, place the dataset or create a symbolic link to it in the `data/v3det` directory, with the following directory structure:
 
 ```text
 mmdetection
@@ -245,13 +245,13 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-然后使用 [coco2odvg.py](../../tools/dataset_converters/coco2odvg.py) 转换为训练所需的 ODVG 格式：
+Then use [coco2odvg.py](../../tools/dataset_converters/coco2odvg.py) to convert it into the ODVG format required for training:
 
 ```shell
 python tools/dataset_converters/coco2odvg.py data/v3det/annotations/v3det_2023_v1_train.json -d v3det
 ```
 
-程序运行完成后会在 `data/v3det/annotations` 目录下创建目录下创建 `v3det_2023_v1_train_od.json` 和 `v3det_2023_v1_label_map.json` 两个新文件，完整结构如下：
+After the program has run, two new files `v3det_2023_v1_train_od.json` and `v3det_2023_v1_label_map.json` will be created in the `data/v3det/annotations` directory, with the complete structure as follows:
 
 ```text
 mmdetection
@@ -268,47 +268,47 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-### 6 数据切分和可视化
+### 6 Data Splitting and Visualization
 
-考虑到用户需要准备的数据集过多，不方便对图片和标注进行训练前确认，因此我们提供了一个数据切分和可视化的工具，可以将数据集切分为 tiny 版本，然后使用可视化脚本查看图片和标签正确性。
+Considering that users need to prepare many datasets, which is inconvenient for confirming images and annotations before training, we provide a data splitting and visualization tool. This tool can split the dataset into a tiny version and then use a visualization script to check the correctness of the images and labels.
 
-1. 切分数据集
+1. Splitting the Dataset
 
-脚本位于 [这里](../../tools/misc/split_odvg.py), 以 `Object365 v1` 为例，切分数据集的命令如下：
+The script is located [here](../../tools/misc/split_odvg.py). Taking `Object365 v1` as an example, the command to split the dataset is as follows:
 
 ```shell
 python tools/misc/split_odvg.py data/object365_v1/ o365v1_train_od.json train your_output_dir --label-map-file o365v1_label_map.json -n 200
 ```
 
-上述脚本运行后会在 `your_output_dir` 目录下创建和 `data/object365_v1/` 一样的文件夹结构，但是只会保存 200 张训练图片和对应的 json，方便用户查看。
+After running the above script, it will create a folder structure in the `your_output_dir` directory identical to `data/object365_v1/`, but it will only save 200 training images and their corresponding json files for convenient user review.
 
-2. 可视化原始数据集
+2. Visualizing the Original Dataset
 
-脚本位于 [这里](../../tools/analysis_tools/browse_grounding_raw.py), 以 `Object365 v1` 为例，可视化数据集的命令如下：
+The script is located [here](../../tools/analysis_tools/browse_grounding_raw.py). Taking `Object365 v1` as an example, the command to visualize the dataset is as follows:
 
 ```shell
 python tools/analysis_tools/browse_grounding_raw.py data/object365_v1/ o365v1_train_od.json train --label-map-file o365v1_label_map.json -o your_output_dir --not-show
 ```
 
-上述脚本运行后会在 `your_output_dir` 目录下生成同时包括图片和标签的图片，方便用户查看。
+After running the above script, it will generate images in the `your_output_dir` directory that include both the pictures and their labels, making it convenient for users to review.
 
-3. 可视化 dataset 输出的数据集
+3. Visualizing the Output Dataset
 
-脚本位于 [这里](../../tools/analysis_tools/browse_grounding_dataset.py), 用户可以通过该脚本查看 dataset 输出的结果即包括了数据增强的结果。 以 `Object365 v1` 为例，可视化数据集的命令如下：
+The script is located [here](../../tools/analysis_tools/browse_grounding_dataset.py). Users can use this script to view the results of the dataset output, including the results of data augmentation. Taking `Object365 v1` as an example, the command to visualize the dataset is as follows:
 
 ```shell
 python tools/analysis_tools/browse_grounding_dataset.py configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365.py  -o your_output_dir --not-show
 ```
 
-上述脚本运行后会在 `your_output_dir` 目录下生成同时包括图片和标签的图片，方便用户查看。
+After running the above script, it will generate images in the `your_output_dir` directory that include both the pictures and their labels, making it convenient for users to review.
 
-## MM-GDINO-L 预训练数据准备和处理
+## MM-GDINO-L Pre-training Data Preparation and Processing
 
 ### 1 Object365 v2
 
-Objects365_v2 可以从 [opendatalab](https://opendatalab.com/OpenDataLab/Objects365) 下载，其提供了 CLI 和 SDK 两者下载方式。
+Objects365_v2 can be downloaded from [opendatalab](https://opendatalab.com/OpenDataLab/Objects365). It offers two download methods: CLI and SDK.
 
-下载并解压后，将其放置或者软链接到 `data/objects365v2` 目录下，目录结构如下：
+After downloading and unzipping, place the dataset or create a symbolic link to it in the `data/objects365v2` directory, with the following directory structure:
 
 ```text
 mmdetection
@@ -323,21 +323,21 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-由于 objects365v2 类别中有部分类名是错误的，因此需要先进行修正。
+Since some category names in Objects365v2 are incorrect, it is necessary to correct them first.
 
 ```shell
 python tools/dataset_converters/fix_o365_names.py
 ```
 
-会在 `data/objects365v2/annotations` 下生成新的标注文件 `zhiyuan_objv2_train_fixname.json`。
+A new annotation file `zhiyuan_objv2_train_fixname.json` will be generated in the `data/objects365v2/annotations` directory.
 
-然后使用 [coco2odvg.py](../../tools/dataset_converters/coco2odvg.py) 转换为训练所需的 ODVG 格式：
+Then use [coco2odvg.py](../../tools/dataset_converters/coco2odvg.py) to convert it into the ODVG format required for training:
 
 ```shell
 python tools/dataset_converters/coco2odvg.py data/objects365v2/annotations/zhiyuan_objv2_train_fixname.json -d o365v2
 ```
 
-程序运行完成后会在 `data/objects365v2` 目录下创建 `zhiyuan_objv2_train_fixname_od.json` 和 `o365v2_label_map.json` 两个新文件，完整结构如下：
+After the program has run, two new files `zhiyuan_objv2_train_fixname_od.json` and `o365v2_label_map.json` will be created in the `data/objects365v2` directory, with the complete structure as follows:
 
 ```text
 mmdetection
@@ -357,7 +357,7 @@ mmdetection
 
 ### 2 OpenImages v6
 
-OpenImages v6 可以从 [官网](https://storage.googleapis.com/openimages/web/download_v6.html) 下载，由于数据集比较大，需要花费一定的时间，下载完成后文件结构如下：
+OpenImages v6 can be downloaded from the [official website](https://storage.googleapis.com/openimages/web/download_v6.html). Due to the large size of the dataset, it may take some time to download. After completion, the file structure is as follows:
 
 ```text
 mmdetection
@@ -373,13 +373,13 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-然后使用 [openimages2odvg.py](../../tools/dataset_converters/openimages2odvg.py) 转换为训练所需的 ODVG 格式：
+Then use [openimages2odvg.py](../../tools/dataset_converters/openimages2odvg.py) to convert it into the ODVG format required for training:
 
 ```shell
 python tools/dataset_converters/openimages2odvg.py data/OpenImages/annotations
 ```
 
-程序运行完成后会在 `data/OpenImages/annotations` 目录下创建 `oidv6-train-annotation_od.json` 和 `openimages_label_map.json` 两个新文件，完整结构如下：
+After the program has run, two new files `oidv6-train-annotation_od.json` and `openimages_label_map.json` will be created in the `data/OpenImages/annotations` directory, with the complete structure as follows:
 
 ```text
 mmdetection
@@ -399,7 +399,7 @@ mmdetection
 
 ### 3 V3Det
 
-参见前面的 MM-GDINO-T 预训练数据准备和处理 数据准备部分，完整数据集结构如下：
+Referring to the data preparation section of the previously mentioned MM-GDINO-T pre-training data preparation and processing, the complete dataset structure is as follows:
 
 ```text
 mmdetection
@@ -418,7 +418,7 @@ mmdetection
 
 ### 4 LVIS 1.0
 
-参见后面的 `微调数据集准备` 的 `2 LVIS 1.0` 部分。完整数据集结构如下：
+Please refer to the `2 LVIS 1.0` section of the later `Fine-tuning Dataset Preparation`. The complete dataset structure is as follows:
 
 ```text
 mmdetection
@@ -444,8 +444,7 @@ mmdetection
 
 ### 5 COCO2017 OD
 
-数据准备可以参考前面的 `MM-GDINO-T 预训练数据准备和处理` 部分。为了方便后续处理，请将下载的 [mdetr_annotations](https://huggingface.co/GLIPModel/GLIP/tree/main/mdetr_annotations) 文件夹软链接或者移动到 `data/coco` 路径下
-完整数据集结构如下：
+You can refer to the earlier section `MM-GDINO-T Pre-training Data Preparation and Processing` for data preparation. For convenience in subsequent processing, please create a symbolic link or move the downloaded [mdetr_annotations](https://huggingface.co/GLIPModel/GLIP/tree/main/mdetr_annotations) folder to the `data/coco` path. The complete dataset structure is as follows:
 
 ```text
 mmdetection
@@ -467,19 +466,19 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-由于 COCO2017 train 和 RefCOCO/RefCOCO+/RefCOCOg/gRefCOCO val 中存在部分重叠，如果不提前移除，在评测 RefExp 时候会存在数据泄露。
+Due to some overlap between COCO2017 train and RefCOCO/RefCOCO+/RefCOCOg/gRefCOCO val, if not removed in advance, there will be data leakage when evaluating RefExp.
 
 ```shell
 python tools/dataset_converters/remove_cocotrain2017_from_refcoco.py data/coco/mdetr_annotations data/coco/annotations/instances_train2017.json
 ```
 
-会在 `data/coco/annotations` 目录下创建 `instances_train2017_norefval.json` 新文件。最后使用 [coco2odvg.py](../../tools/dataset_converters/coco2odvg.py) 转换为训练所需的 ODVG 格式：
+A new file `instances_train2017_norefval.json` will be created in the `data/coco/annotations` directory. Finally, use [coco2odvg.py](../../tools/dataset_converters/coco2odvg.py) to convert it into the ODVG format required for training:
 
 ```shell
 python tools/dataset_converters/coco2odvg.py data/coco/annotations/instances_train2017_norefval.json -d coco
 ```
 
-会在 `data/coco/annotations` 目录下创建 `instances_train2017_norefval_od.json` 和 `coco_label_map.json` 两个新文件，完整结构如下：
+Two new files `instances_train2017_norefval_od.json` and `coco_label_map.json` will be created in the `data/coco/annotations` directory, with the complete structure as follows:
 
 ```text
 mmdetection
@@ -503,11 +502,11 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-注意： COCO2017 train 和 LVIS 1.0 val 数据集有 15000 张图片重复，因此一旦在训练中使用了 COCO2017 train，那么 LVIS 1.0 val 的评测结果就存在数据泄露问题，LVIS 1.0 minival 没有这个问题。
+Note: There are 15,000 images that overlap between the COCO2017 train and LVIS 1.0 val datasets. Therefore, if the COCO2017 train dataset is used in training, the evaluation results of LVIS 1.0 val will have a data leakage issue. However, LVIS 1.0 minival does not have this problem.
 
 ### 6 GoldG
 
-参见 MM-GDINO-T 预训练数据准备和处理 部分
+Please refer to the section on `MM-GDINO-T Pre-training Data Preparation and Processing`.
 
 ```text
 mmdetection
@@ -529,7 +528,7 @@ mmdetection
 
 ### 7 COCO2014 VG
 
-MDetr 中提供了 COCO2014 train 的 Phrase Grounding 版本标注， 最原始标注文件为 `final_mixed_train.json`，和之前类似，文件结构如下：
+MDetr provides a Phrase Grounding version of the COCO2014 train annotations. The original annotation file is named `final_mixed_train.json`, and similar to the previous structure, the file structure is as follows:
 
 ```text
 mmdetection
@@ -550,19 +549,19 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-我们可以从 `final_mixed_train.json` 中提取出 COCO 部分数据
+We can extract the COCO portion of the data from `final_mixed_train.json`.
 
 ```shell
 python tools/dataset_converters/extract_coco_from_mixed.py data/coco/mdetr_annotations/final_mixed_train.json
 ```
 
-会在 `data/coco/mdetr_annotations` 目录下创建 `final_mixed_train_only_coco.json` 新文件，最后使用 [goldg2odvg.py](../../tools/dataset_converters/goldg2odvg.py) 转换为训练所需的 ODVG 格式：
+A new file named `final_mixed_train_only_coco.json` will be created in the `data/coco/mdetr_annotations` directory. Finally, use [goldg2odvg.py](../../tools/dataset_converters/goldg2odvg.py) to convert it into the ODVG format required for training:
 
 ```shell
 python tools/dataset_converters/goldg2odvg.py data/coco/mdetr_annotations/final_mixed_train_only_coco.json
 ```
 
-会在 `data/coco/mdetr_annotations` 目录下创建 `final_mixed_train_only_coco_vg.json` 新文件，完整结构如下：
+A new file named `final_mixed_train_only_coco_vg.json` will be created in the `data/coco/mdetr_annotations` directory, with the complete structure as follows:
 
 ```text
 mmdetection
@@ -585,11 +584,11 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-注意： COCO2014 train 和 COCO2017 val 没有重复图片，因此不用担心 COCO 评测的数据泄露问题。
+Note: COCO2014 train and COCO2017 val do not have duplicate images, so there is no need to worry about data leakage issues in COCO evaluation.
 
 ### 8 Referring Expression Comprehension
 
-其一共包括 4 个数据集。数据准备部分请参见 微调数据集准备 部分。
+There are a total of 4 datasets included. For data preparation, please refer to the `Fine-tuning Dataset Preparation` section.
 
 ```text
 mmdetection
@@ -624,13 +623,13 @@ mmdetection
 
 ### 9 GRIT-20M
 
-参见 MM-GDINO-T 预训练数据准备和处理 部分
+Please refer to the `MM-GDINO-T Pre-training Data Preparation and Processing` section.
 
-## 评测数据集准备
+## Preparation of Evaluation Dataset
 
 ### 1 COCO 2017
 
-数据准备流程和前面描述一致，最终结构如下：
+The data preparation process is consistent with the previous descriptions, and the final structure is as follows:
 
 ```text
 mmdetection
@@ -650,12 +649,12 @@ mmdetection
 
 ### 2 LVIS 1.0
 
-LVIS 1.0 val 数据集包括 mini 和全量两个版本，mini 版本存在的意义是：
+The LVIS 1.0 val dataset includes both mini and full versions. The significance of the mini version is:
 
-1. LVIS val 全量评测数据集比较大，评测一次需要比较久的时间
-2. LVIS val 全量数据集中包括了 15000 张 COCO2017 train, 如果用户使用了 COCO2017 数据进行训练，那么将存在数据泄露问题
+1. The full LVIS val evaluation dataset is quite large, and conducting an evaluation with it can take a significant amount of time.
+2. In the full LVIS val dataset, there are 15,000 images from the COCO2017 train dataset. If a user has used the COCO2017 data for training, there can be a data leakage issue when evaluating on the full LVIS val dataset
 
-LVIS 1.0 图片和 COCO2017 数据集图片完全一样，只是提供了新的标注而已，minival 标注文件可以从 [这里](https://huggingface.co/GLIPModel/GLIP/blob/main/lvis_v1_minival_inserted_image_name.json)下载， val 1.0 标注文件可以从 [这里](https://huggingface.co/GLIPModel/GLIP/blob/main/lvis_od_val.json) 下载。 最终结构如下：
+The LVIS 1.0 dataset contains images that are exactly the same as the COCO2017 dataset, with the addition of new annotations. You can download the minival annotation file from [here](https://huggingface.co/GLIPModel/GLIP/blob/main/lvis_v1_minival_inserted_image_name.json), and the val 1.0 annotation file from [here](https://huggingface.co/GLIPModel/GLIP/blob/main/lvis_od_val.json). The final structure is as follows:
 
 ```text
 mmdetection
@@ -677,7 +676,7 @@ mmdetection
 
 ### 3 ODinW
 
-ODinw 全称为 Object Detection in the Wild，是用于验证 grounding 预训练模型在不同实际场景中的泛化能力的数据集，其包括两个子集，分别是 ODinW13 和 ODinW35，代表是由 13 和 35 个数据集组成的。你可以从 [这里](https://huggingface.co/GLIPModel/GLIP/tree/main/odinw_35)下载，然后对每个文件进行解压，最终结构如下：
+ODinW, which stands for Object Detection in the Wild, is a dataset used to evaluate the generalization capability of grounding pre-trained models in different real-world scenarios. It consists of two subsets, ODinW13 and ODinW35, representing datasets composed of 13 and 35 different datasets, respectively. You can download it from [here](https://huggingface.co/GLIPModel/GLIP/tree/main/odinw_35), and then unzip each file. The final structure is as follows:
 
 ```text
 mmdetection
@@ -696,7 +695,7 @@ mmdetection
 │   │   ├── ...
 ```
 
-在评测 ODinW3535 时候由于需要自定义 prompt，因此需要提前对标注的 json 文件进行处理，你可以使用 [override_category.py](./odinw/override_category.py) 脚本进行处理，处理后会生成新的标注文件，不会覆盖原先的标注文件。
+When evaluating ODinW35, custom prompts are required. Therefore, it's necessary to preprocess the annotated JSON files in advance. You can use the [override_category.py](./odinw/override_category.py) script for this purpose. After processing, it will generate new annotation files without overwriting the original ones.
 
 ```shell
 python configs/mm_grounding_dino/odinw/override_category.py data/odinw/
@@ -704,7 +703,7 @@ python configs/mm_grounding_dino/odinw/override_category.py data/odinw/
 
 ### 4 DOD
 
-DOD 来自 [Described Object Detection: Liberating Object Detection with Flexible Expressions](https://arxiv.org/abs/2307.12813)。其数据集可以从 [这里](https://github.com/shikras/d-cube?tab=readme-ov-file#download)下载，最终的数据集结构如下：
+DOD stands for Described Object Detection, and it is introduced in the paper titled [Described Object Detection: Liberating Object Detection with Flexible Expressions](https://arxiv.org/abs/2307.12813). You can download the dataset from [here](https://github.com/shikras/d-cube?tab=readme-ov-file). The final structure of the dataset is as follows:
 
 ```text
 mmdetection
@@ -718,7 +717,7 @@ mmdetection
 
 ### 5 Flickr30k Entities
 
-在前面 GoldG 数据准备章节中我们已经下载了 Flickr30k 训练所需文件，评估所需的文件是 2 个 json 文件，你可以从 [这里](https://huggingface.co/GLIPModel/GLIP/blob/main/mdetr_annotations/final_flickr_separateGT_val.json) 和 [这里](https://huggingface.co/GLIPModel/GLIP/blob/main/mdetr_annotations/final_flickr_separateGT_test.json)下载，最终的数据集结构如下：
+In the previous GoldG data preparation section, we downloaded the necessary files for training with Flickr30k. For evaluation, you will need 2 JSON files, which you can download from [here](https://huggingface.co/GLIPModel/GLIP/blob/main/mdetr_annotations/final_flickr_separateGT_val.json) and [here](https://huggingface.co/GLIPModel/GLIP/blob/main/mdetr_annotations/final_flickr_separateGT_test.json). The final structure of the dataset is as follows:
 
 ```text
 mmdetection
@@ -736,7 +735,7 @@ mmdetection
 
 ### 6 Referring Expression Comprehension
 
-指代性表达式理解包括 4 个数据集： RefCOCO, RefCOCO+, RefCOCOg, gRefCOCO。这 4 个数据集所采用的图片都来自于 COCO2014 train，和 COCO2017 类似，你可以从 COCO 官方或者 opendatalab 中下载，而标注可以直接从 [这里](https://huggingface.co/GLIPModel/GLIP/tree/main/mdetr_annotations) 下载，mdetr_annotations 文件夹里面包括了其他大量的标注，你如果觉得数量过多，可以只下载所需要的几个 json 文件即可。最终的数据集结构如下：
+Referential Expression Comprehension includes 4 datasets: RefCOCO, RefCOCO+, RefCOCOg, and gRefCOCO. The images used in these 4 datasets are from COCO2014 train, similar to COCO2017. You can download the images from the official COCO website or opendatalab. The annotations can be directly downloaded from [here](https://huggingface.co/GLIPModel/GLIP/tree/main/mdetr_annotations). The mdetr_annotations folder contains a large number of annotations, so you can choose to download only the JSON files you need. The final structure of the dataset is as follows:
 
 ```text
 mmdetection
@@ -766,9 +765,9 @@ mmdetection
 │   │   │   ├── finetune_refcocog_test.json
 ```
 
-注意 gRefCOCO 是在 [GREC: Generalized Referring Expression Comprehension](https://arxiv.org/abs/2308.16182) 被提出，并不在 `mdetr_annotations` 文件夹中，需要自行处理。具体步骤为：
+Please note that gRefCOCO is introduced in [GREC: Generalized Referring Expression Comprehension](https://arxiv.org/abs/2308.16182) and is not available in the `mdetr_annotations` folder. You will need to handle it separately. Here are the specific steps:
 
-1. 下载 [gRefCOCO](https://github.com/henghuiding/gRefCOCO?tab=readme-ov-file#grefcoco-dataset-download)，并解压到 data/coco/ 文件夹中
+1. Download [gRefCOCO](https://github.com/henghuiding/gRefCOCO?tab=readme-ov-file) and unzip it into the `data/coco/` folder.
 
 ```text
 mmdetection
@@ -794,18 +793,18 @@ mmdetection
 │   │   │   ├── instances.json
 ```
 
-2. 转换为 coco 格式
+2. Convert to COCO format
 
-你可以使用 gRefCOCO 官方提供的[转换脚本](https://github.com/henghuiding/gRefCOCO/blob/b4b1e55b4d3a41df26d6b7d843ea011d581127d4/mdetr/scripts/fine-tuning/grefexp_coco_format.py)。注意需要将被注释的 161 行打开，并注释 160 行才可以得到全量的 json 文件。
+You can use the official [conversion script](https://github.com/henghuiding/gRefCOCO/blob/b4b1e55b4d3a41df26d6b7d843ea011d581127d4/mdetr/scripts/fine-tuning/grefexp_coco_format.py) provided by gRefCOCO. Please note that you need to uncomment line 161 and comment out line 160 in the script to obtain the full JSON file.
 
 ```shell
-# 需要克隆官方 repo
+# you need to clone the official repo
 git clone https://github.com/henghuiding/gRefCOCO.git
 cd gRefCOCO/mdetr
 python scripts/fine-tuning/grefexp_coco_format.py --data_path ../../data/coco/grefs --out_path ../../data/coco/mdetr_annotations/ --coco_path ../../data/coco
 ```
 
-会在 `data/coco/mdetr_annotations/` 文件夹中生成 4 个 json 文件，完整的数据集结构如下：
+Four JSON files will be generated in the `data/coco/mdetr_annotations/` folder. The complete dataset structure is as follows:
 
 ```text
 mmdetection
@@ -835,19 +834,19 @@ mmdetection
 │   │   │   ├── finetune_grefcoco_testB.json
 ```
 
-## 微调数据集准备
+## Fine-Tuning Dataset Preparation
 
 ### 1 COCO 2017
 
-COCO 是检测领域最常用的数据集，我们希望能够更充分探索其微调模式。从目前发展来看，一共有 3 种微调方式：
+COCO is the most commonly used dataset in the field of object detection, and we aim to explore its fine-tuning modes more comprehensively. From current developments, there are a total of three fine-tuning modes:
 
-1. 闭集微调，即微调后文本端将无法修改描述，转变为闭集算法，在 COCO 上性能能够最大化，但是失去了通用性。
-2. 开集继续预训练微调，即对 COCO 数据集采用和预训练一致的预训练手段。此时有两种做法，第一种是降低学习率并固定某些模块，仅仅在 COCO 数据上预训练，第二种是将 COCO 数据和部分预训练数据混合一起训练，两种方式的目的都是在尽可能不降低泛化性时提高 COCO 数据集性能
-3. 开放词汇微调，即采用 OVD 领域常用做法，将 COCO 类别分成 base 类和 novel 类，训练时候仅仅在 base 类上进行，评测在 base 和 novel 类上进行。这种方式可以验证 COCO OVD 能力，目的也是在尽可能不降低泛化性时提高 COCO 数据集性能
+1. Closed-set fine-tuning, where the description on the text side cannot be modified after fine-tuning, transforms into a closed-set algorithm. This approach maximizes performance on COCO but loses generality.
+2. Open-set continued pretraining fine-tuning involves using pretraining methods consistent with the COCO dataset. There are two approaches to this: the first is to reduce the learning rate and fix certain modules, fine-tuning only on the COCO dataset; the second is to mix COCO data with some of the pre-trained data. The goal of both approaches is to improve performance on the COCO dataset as much as possible without compromising generalization.
+3. Open-vocabulary fine-tuning involves adopting a common practice in the OVD (Open-Vocabulary Detection) domain. It divides COCO categories into base classes and novel classes. During training, fine-tuning is performed only on the base classes, while evaluation is conducted on both base and novel classes. This approach allows for the assessment of COCO OVD capabilities, with the goal of improving COCO dataset performance without compromising generalization as much as possible.
 
-**(1) 闭集微调**
+\*\*(1) Closed-set Fine-tuning \*\*
 
-这个部分无需准备数据，直接用之前的数据即可。
+This section does not require data preparation; you can directly use the data you have prepared previously.
 
 ```text
 mmdetection
@@ -865,14 +864,14 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-**(2) 开集继续预训练微调**
-这种方式需要将 COCO 训练数据转换为 ODVG 格式，你可以使用如下命令转换：
+**(2) Open-set Continued Pretraining Fine-tuning**
+To use this approach, you need to convert the COCO training data into ODVG format. You can use the following command for conversion:
 
 ```shell
 python tools/dataset_converters/coco2odvg.py data/coco/annotations/instances_train2017.json -d coco
 ```
 
-会在 `data/coco/annotations/` 下生成新的 `instances_train2017_od.json` 和 `coco2017_label_map.json`，完整的数据集结构如下：
+This will generate new files, `instances_train2017_od.json` and `coco2017_label_map.json`, in the `data/coco/annotations/` directory. The complete dataset structure is as follows:
 
 ```text
 mmdetection
@@ -892,16 +891,16 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-在得到数据后，你可以自行选择单独预习还是混合预训练方式。
+Once you have obtained the data, you can choose whether to perform individual pretraining or mixed pretraining.
 
-**(3) 开放词汇微调**
-这种方式需要将 COCO 训练数据转换为 OVD 格式，你可以使用如下命令转换：
+**(3) Open-vocabulary Fine-tuning**
+For this approach, you need to convert the COCO training data into OVD (Open-Vocabulary Detection) format. You can use the following command for conversion:
 
 ```shell
 python tools/dataset_converters/coco2ovd.py data/coco/
 ```
 
-会在 `data/coco/annotations/` 下生成新的 `instances_val2017_all_2.json` 和 `instances_val2017_seen_2.json`，完整的数据集结构如下：
+This will generate new files, `instances_val2017_all_2.json` and `instances_val2017_seen_2.json`, in the `data/coco/annotations/` directory. The complete dataset structure is as follows:
 
 ```text
 mmdetection
@@ -923,13 +922,13 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-然后可以直接使用 [配置](coco/grounding_dino_swin-t_finetune_16xb4_1x_coco_48_17.py) 进行训练和测试。
+You can then proceed to train and test directly using the [configuration](coco/grounding_dino_swin-t_finetune_16xb4_1x_coco_48_17.py).
 
 ### 2 LVIS 1.0
 
-LVIS 是一个包括 1203 类的数据集，同时也是一个长尾联邦数据集，对其进行微调很有意义。 由于其类别过多，我们无法对其进行闭集微调，因此只能采用开集继续预训练微调和开放词汇微调。
+LVIS is a dataset that includes 1,203 classes, making it a valuable dataset for fine-tuning. Due to its large number of classes, it's not feasible to perform closed-set fine-tuning. Therefore, we can only use open-set continued pretraining fine-tuning and open-vocabulary fine-tuning on LVIS.
 
-你需要先准备好 LVIS 训练 JSON 文件，你可以从 [这里](https://www.lvisdataset.org/dataset) 下载，我们只需要 `lvis_v1_train.json` 和 `lvis_v1_val.json`，然后将其放到 `data/coco/annotations/` 下，然后运行如下命令：
+You need to prepare the LVIS training JSON files first, which you can download from [here](https://www.lvisdataset.org/dataset). We only need `lvis_v1_train.json` and `lvis_v1_val.json`. After downloading them, place them in the `data/coco/annotations/` directory, and then run the following command:
 
 ```text
 mmdetection
@@ -951,15 +950,15 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-(1) 开集继续预训练微调
+(1) Open-set continued pretraining fine-tuning
 
-使用如下命令转换为 ODVG 格式：
+Convert to ODVG format using the following command:
 
 ```shell
 python tools/dataset_converters/lvis2odvg.py data/coco/annotations/lvis_v1_train.json
 ```
 
-会在 `data/coco/annotations/` 下生成新的 `lvis_v1_train_od.json` 和 `lvis_v1_label_map.json`，完整的数据集结构如下：
+It will generate new files, `lvis_v1_train_od.json` and `lvis_v1_label_map.json`, in the `data/coco/annotations/` directory, and the complete dataset structure will look like this:
 
 ```text
 mmdetection
@@ -983,17 +982,17 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-然后可以直接使用 [配置](lvis/grounding_dino_swin-t_finetune_16xb4_1x_lvis.py) 进行训练测试，或者你修改配置将其和部分预训练数据集混合使用。
+You can directly use the provided [configuration](lvis/grounding_dino_swin-t_finetune_16xb4_1x_lvis.py) for training and testing, or you can modify the configuration to mix it with some of the pretraining datasets as needed.
 
-**(2) 开放词汇微调**
+**(2) Open Vocabulary Fine-tuning**
 
-使用如下命令转换为 OVD 格式：
+Convert to OVD format using the following command:
 
 ```shell
 python tools/dataset_converters/lvis2ovd.py data/coco/
 ```
 
-会在 `data/coco/annotations/` 下生成新的 `lvis_v1_train_od_norare.json` 和 `lvis_v1_label_map_norare.json`，完整的数据集结构如下：
+New `lvis_v1_train_od_norare.json` and `lvis_v1_label_map_norare.json` will be generated under `data/coco/annotations/`, and the complete dataset structure is as follows:
 
 ```text
 mmdetection
@@ -1019,11 +1018,11 @@ mmdetection
 │   │   │   ├── ...
 ```
 
-然后可以直接使用 [配置](lvis/grounding_dino_swin-t_finetune_16xb4_1x_lvis_866_337.py) 进行训练测试
+然Then you can directly use the [configuration](lvis/grounding_dino_swin-t_finetune_16xb4_1x_lvis_866_337.py) for training and testing.
 
 ### 3 RTTS
 
-RTTS 是一个浓雾天气数据集，该数据集包含 4,322 张雾天图像，包含五个类：自行车 (bicycle)、公共汽车 (bus)、汽车 (car)、摩托车 (motorbike) 和人 (person)。可以从 [这里](https://drive.google.com/file/d/15Ei1cHGVqR1mXFep43BO7nkHq1IEGh1e/view)下载, 然后解压到 `data/RTTS/` 文件夹中。完整的数据集结构如下：
+RTTS is a foggy weather dataset, which contains 4,322 foggy images, including five classes: bicycle, bus, car, motorbike, and person. It can be downloaded from [here](https://drive.google.com/file/d/15Ei1cHGVqR1mXFep43BO7nkHq1IEGh1e/view), and then extracted to the `data/RTTS/` folder. The complete dataset structure is as follows:
 
 ```text
 mmdetection
@@ -1038,7 +1037,7 @@ mmdetection
 
 ### 4 RUOD
 
-RUOD 是一个水下目标检测数据集，你可以从 [这里](https://drive.google.com/file/d/1hxtbdgfVveUm_DJk5QXkNLokSCTa_E5o/view)下载, 然后解压到 `data/RUOD/` 文件夹中。完整的数据集结构如下：
+RUOD is an underwater object detection dataset. You can download it from [here](https://drive.google.com/file/d/1hxtbdgfVveUm_DJk5QXkNLokSCTa_E5o/view), and then extract it to the `data/RUOD/` folder. The complete dataset structure is as follows:
 
 ```text
 mmdetection
@@ -1053,7 +1052,7 @@ mmdetection
 
 ### 5 Brain Tumor
 
-Brain Tumor 是一个医学领域的 2d 检测数据集，你可以从 [这里](https://universe.roboflow.com/roboflow-100/brain-tumor-m2pbp/dataset/2)下载, 请注意选择 `COCO JSON` 格式。然后解压到 `data/brain_tumor_v2/` 文件夹中。完整的数据集结构如下：
+Brain Tumor is a 2D detection dataset in the medical field. You can download it from [here](https://universe.roboflow.com/roboflow-100/brain-tumor-m2pbp/dataset/2), please make sure to choose the `COCO JSON` format. Then extract it to the `data/brain_tumor_v2/` folder. The complete dataset structure is as follows:
 
 ```text
 mmdetection
@@ -1067,7 +1066,7 @@ mmdetection
 
 ### 6 Cityscapes
 
-Cityscapes 是一个城市街景数据集，你可以从 [这里](https://www.cityscapes-dataset.com/) 或者 opendatalab 中下载, 然后解压到 `data/cityscapes/` 文件夹中。完整的数据集结构如下：
+Cityscapes is an urban street scene dataset. You can download it from [here](https://www.cityscapes-dataset.com/) or from opendatalab, and then extract it to the `data/cityscapes/` folder. The complete dataset structure is as follows:
 
 ```text
 mmdetection
@@ -1083,13 +1082,13 @@ mmdetection
 │   │   │   ├── val
 ```
 
-在下载后，然后使用 [cityscapes.py](../../tools/dataset_converters/cityscapes.py) 脚本生成我们所需要的 json 格式
+After downloading, you can use the [cityscapes.py](../../tools/dataset_converters/cityscapes.py) script to generate the required JSON format.
 
 ```shell
 python tools/dataset_converters/cityscapes.py data/cityscapes/
 ```
 
-会在 annotations 中生成 3 个新的 json 文件。完整的数据集结构如下：
+Three new JSON files will be generated in the annotations directory. The complete dataset structure is as follows:
 
 ```text
 mmdetection
@@ -1110,7 +1109,7 @@ mmdetection
 
 ### 7 People in Painting
 
-People in Painting 是一个油画数据集，你可以从 [这里](https://universe.roboflow.com/roboflow-100/people-in-paintings/dataset/2), 请注意选择 `COCO JSON` 格式。然后解压到 `data/people_in_painting_v2/` 文件夹中。完整的数据集结构如下：
+People in Painting is an oil painting dataset that you can download from [here](https://universe.roboflow.com/roboflow-100/people-in-paintings/dataset/2). Please make sure to choose the `COCO JSON` format. After downloading, unzip the dataset to the `data/people_in_painting_v2/` folder. The complete dataset structure is as follows:
 
 ```text
 mmdetection
@@ -1124,7 +1123,7 @@ mmdetection
 
 ### 8 Referring Expression Comprehension
 
-指代性表达式理解的微调和前面一样，也是包括 4 个数据集，在评测数据准备阶段已经全部整理好了，完整的数据集结构如下：
+Fine-tuning for Referential Expression Comprehension is similar to what was described earlier and includes four datasets. The dataset preparation for evaluation has already been organized. The complete dataset structure is as follows:
 
 ```text
 mmdetection
@@ -1154,13 +1153,13 @@ mmdetection
 │   │   │   ├── finetune_refcocog_test.json
 ```
 
-然后我们需要将其转换为所需的 ODVG 格式，请使用 [refcoco2odvg.py](../../tools/dataset_converters/refcoco2odvg.py) 脚本转换，
+Then we need to convert it to the required ODVG format. Please use the [refcoco2odvg.py](../../tools/dataset_converters/refcoco2odvg.py) script to perform the conversion.
 
 ```shell
 python tools/dataset_converters/refcoco2odvg.py data/coco/mdetr_annotations
 ```
 
-会在 `data/coco/mdetr_annotations` 中生成新的 4 个 json 文件。 转换后的数据集结构如下：
+The converted dataset structure will include 4 new JSON files in the `data/coco/mdetr_annotations` directory. Here is the structure of the converted dataset:
 
 ```text
 mmdetection
