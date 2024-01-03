@@ -455,7 +455,7 @@ The bootstrapping process of Phrase Grounding requires providing captions corres
 ]
 ```
 
-Bbox needs to be set to `[0, 0, 1, 1]` for initilization to make sure the programme could run, but this value would not be utilized.
+Bbox needs to be set to `[0, 0, 1, 1]` for initialization to make sure the programme could run, but this value would not be utilized.
 
 ```text
 {"filename": "3028766968.jpg", "height": 375, "width": 500, "grounding": {"caption": "Man with a black shirt on sit behind a desk sorting threw a giant stack of people work with a smirk on his face .", "regions": [{"bbox": [0, 0, 1, 1], "phrase": "a giant stack of people", "tokens_positive": [[58, 81]]}, {"bbox": [0, 0, 1, 1], "phrase": "a black shirt", "tokens_positive": [[9, 22]]}, {"bbox": [0, 0, 1, 1], "phrase": "a desk", "tokens_positive": [[37, 43]]}, {"bbox": [0, 0, 1, 1], "phrase": "his face", "tokens_positive": [[103, 111]]}, {"bbox": [0, 0, 1, 1], "phrase": "Man", "tokens_positive": [[0, 3]]}]}}

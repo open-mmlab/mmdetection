@@ -12,7 +12,7 @@ Objects365v1 can be downloaded from [opendatalab](https://opendatalab.com/OpenDa
 
 After downloading and unzipping, place the dataset or create a symbolic link to the `data/objects365v1` directory. The directory structure is as follows:
 
- ``` text
+```text
 mmdetection
 ├── configs
 ├── data
@@ -26,17 +26,17 @@ mmdetection
 │   │   │   ├── xxxx.jpg
 │   │   │   ├── ...
 │   │   ├── test
- ```
+```
 
 Then, use [coco2odvg.py](../../tools/dataset_converters/coco2odvg.py) to convert it into the ODVG format required for training.
 
-``` shell
+```shell
 python tools/dataset_converters/coco2odvg.py data/objects365v1/objects365_train.json -d o365v1
 ```
 
-After the program runs successfully, it will create two new files, `o365v1_train_od.json` and `o365v1_label_map.json`, in the `data/objects365v1` directory. The complete structure is as follows: 
+After the program runs successfully, it will create two new files, `o365v1_train_od.json` and `o365v1_label_map.json`, in the `data/objects365v1` directory. The complete structure is as follows:
 
-``` text
+```text
 mmdetection
 ├── configs
 ├── data
@@ -60,7 +60,7 @@ The above configuration will evaluate the performance on the COCO 2017 dataset d
 
 After downloading and unzipping, place the dataset or create a symbolic link to the `data/coco` directory. The directory structure is as follows:
 
-``` text
+```text
 mmdetection
 ├── configs
 ├── data
@@ -153,6 +153,7 @@ mmdetection
 The corresponding training configuration is [grounding_dino_swin-t_pretrain_obj365_goldg_grit9m](./grounding_dino_swin-t_pretrain_obj365_goldg_grit9m.py).
 
 The GRIT dataset can be downloaded using the img2dataset package from [GRIT](https://huggingface.co/datasets/zzliang/GRIT#download-image). By default, the dataset size is 1.1T, and downloading and processing it may require at least 2T of disk space, depending on your available storage capacity. After downloading, the dataset is in its original format, which includes:
+
 ```text
 mmdetection
 ├── configs
@@ -166,11 +167,15 @@ mmdetection
 │    │    ├── 00001.tar
 │    │    ├── ...
 ```
+
 After downloading, further format processing is required:
+
 ```shell
 python tools/dataset_converters/grit_processing.py data/grit_raw data/grit_processed
 ```
+
 The processed format is as follows:
+
 ```text
 mmdetection
 ├── configs
@@ -192,13 +197,13 @@ mmdetection
 
 As for the GRIT dataset, you need to use [grit2odvg.py](../../tools/dataset_converters/grit2odvg.py) to convert it to the format of ODVG:
 
-``` python
+```python
 python tools/dataset_converters/grit2odvg.py data/grit_processed/
 ```
 
 After the program has run, a new file `grit20m_vg.json` will be created in the `data/grit_processed` directory, which has about 9M data, with the complete structure as follows:
 
-``` text
+```text
 mmdetection
 ├── configs
 ├── data
@@ -287,7 +292,7 @@ python tools/analysis_tools/browse_grounding_raw.py data/object365_v1/ o365v1_tr
 
 After running the above script, it will generate images in the `your_output_dir` directory that include both the pictures and their labels, making it convenient for users to review.
 
-3. Visualizing the Output Dataset 
+3. Visualizing the Output Dataset
 
 The script is located [here](../../tools/analysis_tools/browse_grounding_dataset.py). Users can use this script to view the results of the dataset output, including the results of data augmentation. Taking `Object365 v1` as an example, the command to visualize the dataset is as follows:
 
@@ -620,7 +625,7 @@ mmdetection
 
 Please refer to the `MM-GDINO-T Pre-training Data Preparation and Processing` section.
 
-## Preparation of Evaluation Dataset 
+## Preparation of Evaluation Dataset
 
 ### 1 COCO 2017
 
@@ -839,7 +844,7 @@ COCO is the most commonly used dataset in the field of object detection, and we 
 2. Open-set continued pretraining fine-tuning involves using pretraining methods consistent with the COCO dataset. There are two approaches to this: the first is to reduce the learning rate and fix certain modules, fine-tuning only on the COCO dataset; the second is to mix COCO data with some of the pre-trained data. The goal of both approaches is to improve performance on the COCO dataset as much as possible without compromising generalization.
 3. Open-vocabulary fine-tuning involves adopting a common practice in the OVD (Open-Vocabulary Detection) domain. It divides COCO categories into base classes and novel classes. During training, fine-tuning is performed only on the base classes, while evaluation is conducted on both base and novel classes. This approach allows for the assessment of COCO OVD capabilities, with the goal of improving COCO dataset performance without compromising generalization as much as possible.
 
-**(1) Closed-set Fine-tuning **
+\*\*(1) Closed-set Fine-tuning \*\*
 
 This section does not require data preparation; you can directly use the data you have prepared previously.
 

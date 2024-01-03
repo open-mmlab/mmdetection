@@ -6,9 +6,6 @@ import tarfile
 from functools import partial
 from multiprocessing import Pool
 
-import pandas as pd
-import tqdm
-
 
 def create_logger(output_file):
     logger = logging.getLogger('grit_logger')
@@ -54,17 +51,17 @@ def tar_processing(tar_path, output_dir, logger):
     json_files = [f for f in os.listdir(filepath) if f.endswith('.json')]
     # 初始化一个空的列表来存储所有的数据
     all_data = []
-    l = 0
+    cnt = 0
 
     for file in json_files:
         with open(os.path.join(filepath, file), 'r') as f:
             df = json.load(f)
-        l = l + 1
+        cnt = cnt + 1
         # 将DataFrame转换为.json格式，并添加到all_data列表中
         all_data.extend([df])
     dir_name = os.path.basename(filepath)
-    # wite all data to a json file
-    logger.info(f'{dir_name} has {l} jsons')
+    # write all data to a json file
+    logger.info(f'{dir_name} has {cnt} jsons')
     json_name = os.path.basename(filepath) + '.json'
     if not os.path.exists(os.path.join(output_dir, 'annotations')):
         os.mkdir(os.path.join(output_dir, 'annotations'))
@@ -123,7 +120,7 @@ def main(args):
     logger = create_logger(args.log_name)
     # if args.download_json_dir != None:
     #     count_download_image(args.download_json_dir, logger)
-    if args.image_dir != None:
+    if args.image_dir is not None:
         all_file_name = [
             os.path.join(args.image_dir, file)
             for file in os.listdir(args.image_dir) if file.endswith('.tar')
