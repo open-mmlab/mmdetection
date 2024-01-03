@@ -362,7 +362,7 @@ class RTDETRTransformerDecoder(DinoTransformerDecoder):
                 tmp = reg_branches[lid](query)
                 assert reference_points.shape[-1] == 4
                 new_reference_points = tmp + inverse_sigmoid(
-                    reference_points, eps=1e-3)
+                    reference_points).type_as(tmp)
                 new_reference_points = new_reference_points.sigmoid()
                 reference_points = new_reference_points.detach()
 
