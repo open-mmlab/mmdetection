@@ -330,7 +330,7 @@ class CocoPanopticMetric(BaseMetric):
             # parse pred
             img_id = data_sample['img_id']
             segm_file = osp.basename(data_sample['img_path']).replace(
-                'jpg', 'png')
+                '.jpg', '.png')
             result = self._parse_predictions(
                 pred=data_sample,
                 img_id=img_id,
@@ -397,7 +397,7 @@ class CocoPanopticMetric(BaseMetric):
             # parse pred
             img_id = data_sample['img_id']
             segm_file = osp.basename(data_sample['img_path']).replace(
-                'jpg', 'png')
+                '.jpg', '.png')
             result = self._parse_predictions(
                 pred=data_sample, img_id=img_id, segm_file=segm_file)
 
