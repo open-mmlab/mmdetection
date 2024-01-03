@@ -25,6 +25,7 @@ class MultiTaskAspectRatioBatchSampler(BatchSampler):
         # two groups for w < h and w >= h and two task
         self._aspect_ratio_buckets = [[] for _ in range(2 * 2)]
         self.od_to_rec_prob = od_to_rec_prob
+        assert drop_last is True
 
     def __iter__(self) -> Sequence[int]:
         for idx in self.sampler:
@@ -33,7 +34,7 @@ class MultiTaskAspectRatioBatchSampler(BatchSampler):
             bucket_id = 0 if width < height else 1
 
             if data_info['dataset_mode'] == 'OD':
-                if np.random.random() > 1-self.od_to_rec_prob:
+                if np.random.random() > 1 - self.od_to_rec_prob:
                     data_info['dataset_mode'] = 'REC'
 
             # REC: 0 2
@@ -50,17 +51,34 @@ class MultiTaskAspectRatioBatchSampler(BatchSampler):
                 del bucket[:]
 
         # yield the rest data and reset the bucket
-        # left_data = self._aspect_ratio_buckets[0] + self._aspect_ratio_buckets[
-        #     1] + self._aspect_ratio_buckets[2] + self._aspect_ratio_buckets[3]
+        left_rec_data = self._aspect_ratio_buckets[0] + self._aspect_ratio_buckets[2]
+        left_vg_data = self._aspect_ratio_buckets[1] + self._aspect_ratio_buckets[3]
         self._aspect_ratio_buckets = [[] for _ in range(2 * 2)]
-        # while len(left_data) > 0:
-        #     if len(left_data) <= self.batch_size:
-        #         if not self.drop_last:
-        #             yield left_data[:]
-        #         left_data = []
-        #     else:
-        #         yield left_data[:self.batch_size]
-        #         left_data = left_data[self.batch_size:]
+
+        while len(left_rec_data) > 0:
+            if len(left_rec_data) > self.batch_size:
+                yield left_rec_data[:self.batch_size]
+                left_rec_data = left_rec_data[self.batch_size:]
+            else:
+                break
+
+        while len(left_vg_data) > 0:
+            if len(left_vg_data) > self.batch_size:
+                yield left_vg_data[:self.batch_size]
+                left_vg_data = left_vg_data[self.batch_size:]
+            else:
+                break
+
+        if 0 < len(left_rec_data) < self.batch_size:
+            left_rec_data.extend([left_rec_data[-1]] * (self.batch_size - len(left_rec_data)))
+
+        if 0 < len(left_vg_data) < self.batch_size:
+            left_vg_data.extend([left_vg_data[-1]] * (self.batch_size - len(left_vg_data)))
+
+        all_left_data = left_rec_data + left_vg_data
+        while len(all_left_data) > 0:
+            yield all_left_data[:self.batch_size]
+            all_left_data = all_left_data[self.batch_size:]
 
     def __len__(self) -> int:
         if self.drop_last:
