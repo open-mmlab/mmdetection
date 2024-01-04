@@ -92,7 +92,7 @@ class COCOPanoptic(COCO):
         if 'images' in self.dataset:
             for img_info in self.dataset['images']:
                 img_info['segm_file'] = img_info['file_name'].replace(
-                    'jpg', 'png')
+                    '.jpg', '.png')
                 imgs[img_info['id']] = img_info
 
         if 'categories' in self.dataset:
