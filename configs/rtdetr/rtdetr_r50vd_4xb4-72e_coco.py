@@ -1,6 +1,7 @@
 _base_ = [
     '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
 ]
+pretrained = 'https://github.com/flytocc/mmdetection/releases/download/model_zoo/resnet50vd_ssld_v2_pretrained_d037e232.pth'  # noqa
 
 model = dict(
     type='RTDETR',
@@ -16,11 +17,11 @@ model = dict(
                 interpolations=['nearest', 'bilinear', 'bicubic', 'area'],
                 random_sizes=[
                     480, 512, 544, 576, 608, 640, 640, 640,
-                    672, 704, 736,768, 800])],
+                    672, 704, 736, 768, 800])],
         mean=[0, 0, 0],  # [123.675, 116.28, 103.53] for DINO
         std=[255, 255, 255],  # [58.395, 57.12, 57.375] for DINO
         bgr_to_rgb=True,
-        pad_size_divisor=32),  # 1 for DINO
+        pad_size_divisor=1),
     backbone=dict(
         type='ResNetV1d',  # ResNet for DINO
         depth=50,
@@ -29,7 +30,8 @@ model = dict(
         frozen_stages=0,  # -1 for DINO
         norm_cfg=dict(type='SyncBN', requires_grad=False),  # BN for DINO
         norm_eval=True,
-        style='pytorch'),
+        style='pytorch',
+        init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     neck=dict(
         type='ChannelMapper',
         in_channels=[512, 1024, 2048],
@@ -74,8 +76,9 @@ model = dict(
         loss_cls=dict(
             type='RTDETRVarifocalLoss',  # FocalLoss in DINO
             use_sigmoid=True,
+            alpha=0.75,
             gamma=2.0,
-            alpha=0.75,  # 0.25 in DINO
+            iou_weighted=True,
             loss_weight=1.0),
         loss_bbox=dict(type='L1Loss', loss_weight=5.0),
         loss_iou=dict(type='GIoULoss', loss_weight=2.0)),
@@ -185,5 +188,5 @@ custom_hooks = [
         ema_type='ExpMomentumEMA',
         momentum=0.0001,
         update_buffers=True,
-        priority=49),
+        priority=49)
 ]
