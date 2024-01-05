@@ -104,11 +104,12 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 **v3.3.0** 版本已经在 2024.1.5 发布：
 
-MM-Grounding-DINO: 轻松涨点，数据到评测全面开源
+**MM-Grounding-DINO: 轻松涨点，数据到评测全面开源**
 
 Grounding DINO 是一个统一了 2d 开放词汇目标检测和 Phrase Grounding 的检测预训练模型，应用广泛，但是其训练部分并未开源，为此提出了 MM-Grounding-DINO。其不仅作为 Grounding DINO 的开源复现版，MM-Grounding-DINO 基于重新构建的数据类型出发，在探索了不同数据集组合和初始化策略基础上实现了 Grounding DINO 的性能极大提升，并且从多个维度包括 OOD、REC、Phrase Grounding、OVD 和 Finetune 等方面进行评测，充分挖掘 Grounding 预训练优缺点，希望能为后续工作提供启发。
 
 arxiv 技术报告：https://arxiv.org/abs/2401.02361
+
 代码地址: [mm_grounding_dino/README.md](configs/mm_grounding_dino/README.md)
 
 <div align=center>
