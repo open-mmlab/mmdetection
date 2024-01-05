@@ -47,6 +47,7 @@ Compatible MMDetection, MMEngine, and MMCV versions are shown as below. Please c
 | MMDetection version |      MMCV version       |     MMEngine version     |
 | :-----------------: | :---------------------: | :----------------------: |
 |        main         |  mmcv>=2.0.0, \<2.2.0   | mmengine>=0.7.1, \<1.0.0 |
+|        3.3.0        |  mmcv>=2.0.0, \<2.2.0   | mmengine>=0.7.1, \<1.0.0 |
 |        3.2.0        |  mmcv>=2.0.0, \<2.2.0   | mmengine>=0.7.1, \<1.0.0 |
 |        3.1.0        |  mmcv>=2.0.0, \<2.1.0   | mmengine>=0.7.1, \<1.0.0 |
 |        3.0.0        |  mmcv>=2.0.0, \<2.1.0   | mmengine>=0.7.1, \<1.0.0 |

@@ -43,13 +43,8 @@ def count_download_image(download_json_dir, logger):
 
 
 def tar_processing(tar_path, output_dir, logger):
-    """解压tar文件到对应名字的文件夹，并提取所有的json combine后，删除其他保存图片."""
-    # 创建文件夹并解压
     filepath = untar(tar_path, logger)
-    '''将所有json融合为一个json'''
-    # 获取解压后目录下所有的.json文件
     json_files = [f for f in os.listdir(filepath) if f.endswith('.json')]
-    # 初始化一个空的列表来存储所有的数据
     all_data = []
     cnt = 0
 
@@ -57,7 +52,6 @@ def tar_processing(tar_path, output_dir, logger):
         with open(os.path.join(filepath, file), 'r') as f:
             df = json.load(f)
         cnt = cnt + 1
-        # 将DataFrame转换为.json格式，并添加到all_data列表中
         all_data.extend([df])
     dir_name = os.path.basename(filepath)
     # write all data to a json file
@@ -73,19 +67,15 @@ def tar_processing(tar_path, output_dir, logger):
 
 
 def untar(filepath, logger):
-    # 如果文件是tar文件，就解压它
     if tarfile.is_tarfile(filepath):
-        # 创建一个新的文件夹，和tar文件同名，但去掉后缀
         new_folder = os.path.splitext(filepath)[0]
         tar_name = os.path.basename(filepath)
         with tarfile.open(filepath) as tar:
-            # 获取tar文件中的所有成员
             members = tar.getmembers()
             if not os.path.exists(new_folder):
                 os.mkdir(new_folder)
             else:
                 f = os.listdir(new_folder)
-                # 打开tar文件，并解压到新的文件夹中
                 if len(members) == len(f):
                     logger.info(f'{tar_name} already decompressed')
                     return new_folder
@@ -107,32 +97,25 @@ def cp_rm(filepath, output_dir):
     os.system('mv -f {} {}'.format(filepath, target_dir))
 
 
-parser = argparse.ArgumentParser()
-# parser.add_argument('-d', '--download_json_dir', type=str, default=None)
-parser.add_argument('image_dir', type=str)  # grit raw directory
-parser.add_argument('output_dir', type=str)  # processed grit output dir
-parser.add_argument('--log_name', type=str, default='grit_processing.log')
-
-args = parser.parse_args()
-
-
 def main(args):
     logger = create_logger(args.log_name)
-    # if args.download_json_dir != None:
-    #     count_download_image(args.download_json_dir, logger)
-    if args.image_dir is not None:
-        all_file_name = [
-            os.path.join(args.image_dir, file)
-            for file in os.listdir(args.image_dir) if file.endswith('.tar')
-        ]
-        all_file_name.sort()
-        func = partial(
-            tar_processing, output_dir=args.output_dir, logger=logger)
-        with Pool(processes=10) as pool:
-            result = pool.imap(func=func, iterable=all_file_name)
-            for r in result:
-                print(result)
+    all_file_name = [
+        os.path.join(args.image_dir, file)
+        for file in os.listdir(args.image_dir) if file.endswith('.tar')
+    ]
+    all_file_name.sort()
+    func = partial(tar_processing, output_dir=args.output_dir, logger=logger)
+    with Pool(processes=args.num_process) as pool:
+        result = pool.imap(func=func, iterable=all_file_name)  # noqa
+        # print(result)
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('image_dir', type=str)  # grit raw directory
+    parser.add_argument('output_dir', type=str)
+    parser.add_argument('--num-process', default=10)
+    parser.add_argument('--log-name', type=str, default='grit_processing.log')
+    args = parser.parse_args()
+
     main(args)

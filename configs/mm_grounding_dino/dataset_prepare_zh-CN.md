@@ -197,11 +197,11 @@ mmdetection
 
 对于 GRIT 数据集，你需要使用 [grit2odvg.py](../../tools/dataset_converters/grit2odvg.py) 转化成需要的 ODVG 格式：
 
-```python
+```shell
 python tools/dataset_converters/grit2odvg.py data/grit_processed/
 ```
 
-程序运行完成后会在 `data/grit_processed` 目录下创建 `grit20m_vg.json` 新文件，大概包含 9M 数据，完整结构如下：
+程序运行完成后会在 `data/grit_processed` 目录下创建 `grit20m_vg.json` 新文件，大概包含 9M 条数据，完整结构如下：
 
 ```text
 mmdetection
