@@ -105,11 +105,9 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 
 **v3.3.0** was released in 5/1/2024:
 
-**MM-Grounding-DINO: An Open and Comprehensive Pipeline for Unified Object Grounding and Detection**
+**[MM-Grounding-DINO: An Open and Comprehensive Pipeline for Unified Object Grounding and Detection](https://arxiv.org/abs/2401.02361)**
 
 Grounding DINO is a grounding pre-training model that unifies 2d open vocabulary object detection and phrase grounding, with wide applications. However, its training part has not been open sourced. Therefore, we propose MM-Grounding-DINO, which not only serves as an open source replication version of Grounding DINO, but also achieves significant performance improvement based on reconstructed data types, exploring different dataset combinations and initialization strategies. Moreover, we conduct evaluations from multiple dimensions, including OOD, REC, Phrase Grounding, OVD, and Fine-tune, to fully excavate the advantages and disadvantages of Grounding pre-training, hoping to provide inspiration for future work.
-
-arxiv tech report：https://arxiv.org/abs/2401.02361
 
 code: [mm_grounding_dino/README.md](configs/mm_grounding_dino/README.md)
 
