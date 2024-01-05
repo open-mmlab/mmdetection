@@ -28,6 +28,25 @@ Example:
         glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365 \
         --texts 'There are a lot of cars here.'
 
+        python demo/image_demo.py demo/demo.jpg \
+        glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365 \
+        --texts '$: coco'
+
+        python demo/image_demo.py demo/demo.jpg \
+        glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365 \
+        --texts '$: lvis' --pred-score-thr 0.7 \
+        --palette random --chunked-size 80
+
+        python demo/image_demo.py demo/demo.jpg \
+        grounding_dino_swin-t_pretrain_obj365_goldg_cap4m \
+        --texts '$: lvis' --pred-score-thr 0.4 \
+        --palette random --chunked-size 80
+
+        python demo/image_demo.py demo/demo.jpg \
+        grounding_dino_swin-t_pretrain_obj365_goldg_cap4m \
+        --texts "a red car in the upper right corner" \
+        --tokens-positive -1
+
     Visualize prediction results::
 
         python demo/image_demo.py demo/demo.jpg rtmdet-ins-s --show
@@ -36,11 +55,13 @@ Example:
         --show
 """
 
+import ast
 from argparse import ArgumentParser
 
 from mmengine.logging import print_log
 
 from mmdet.apis import DetInferencer
+from mmdet.evaluation import get_classes
 
 
 def parse_args():
@@ -60,7 +81,12 @@ def parse_args():
         type=str,
         default='outputs',
         help='Output directory of images or prediction results.')
-    parser.add_argument('--texts', help='text prompt')
+    # Once you input a format similar to $: xxx, it indicates that
+    # the prompt is based on the dataset class name.
+    # support $: coco, $: voc, $: cityscapes, $: lvis, $: imagenet_det.
+    # detail to `mmdet/evaluation/functional/class_names.py`
+    parser.add_argument(
+        '--texts', help='text prompt, such as "bench . car .", "$: coco"')
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
@@ -91,7 +117,7 @@ def parse_args():
         default='none',
         choices=['coco', 'voc', 'citys', 'random', 'none'],
         help='Color palette used for visualization')
-    # only for GLIP
+    # only for GLIP and Grounding DINO
     parser.add_argument(
         '--custom-entities',
         '-c',
@@ -99,6 +125,22 @@ def parse_args():
         help='Whether to customize entity names? '
         'If so, the input text should be '
         '"cls_name1 . cls_name2 . cls_name3 ." format')
+    parser.add_argument(
+        '--chunked-size',
+        '-s',
+        type=int,
+        default=-1,
+        help='If the number of categories is very large, '
+        'you can specify this parameter to truncate multiple predictions.')
+    # only for Grounding DINO
+    parser.add_argument(
+        '--tokens-positive',
+        '-p',
+        type=str,
+        help='Used to specify which locations in the input text are of '
+        'interest to the user. -1 indicates that no area is of interest, '
+        'None indicates ignoring this parameter. '
+        'The two-dimensional array represents the start and end positions.')
 
     call_args = vars(parser.parse_args())
 
@@ -110,6 +152,16 @@ def parse_args():
                   'assign the model to --weights')
         call_args['weights'] = call_args['model']
         call_args['model'] = None
+
+    if call_args['texts'] is not None:
+        if call_args['texts'].startswith('$:'):
+            dataset_name = call_args['texts'][3:].strip()
+            class_names = get_classes(dataset_name)
+            call_args['texts'] = [tuple(class_names)]
+
+    if call_args['tokens_positive'] is not None:
+        call_args['tokens_positive'] = ast.literal_eval(
+            call_args['tokens_positive'])
 
     init_kws = ['model', 'weights', 'device', 'palette']
     init_args = {}
@@ -125,6 +177,10 @@ def main():
     #  may consume too much memory if your input folder has a lot of images.
     #  We will be optimized later.
     inferencer = DetInferencer(**init_args)
+
+    chunked_size = call_args.pop('chunked_size')
+    inferencer.model.test_cfg.chunked_size = chunked_size
+
     inferencer(**call_args)
 
     if call_args['out_dir'] != '' and not (call_args['no_save_vis']

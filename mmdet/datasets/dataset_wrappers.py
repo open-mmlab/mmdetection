@@ -247,6 +247,14 @@ class ConcatDataset(MMENGINE_ConcatDataset):
         if not lazy_init:
             self.full_init()
 
+            if is_all_same:
+                self._metainfo.update(
+                    dict(cumulative_sizes=self.cumulative_sizes))
+            else:
+                for i, dataset in enumerate(self.datasets):
+                    self._metainfo[i].update(
+                        dict(cumulative_sizes=self.cumulative_sizes))
+
     def get_dataset_source(self, idx: int) -> int:
         dataset_idx, _ = self._get_ori_dataset_idx(idx)
         return dataset_idx

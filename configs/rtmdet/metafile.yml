@@ -104,6 +104,48 @@ Models:
           box AP: 54.9
     Weights: https://github.com/orange0-jp/orange-weights/releases/download/v0.1.0rtmdet-p6/rtmdet_x_p6_4xb8-300e_coco-bf32be58.pth
 
+  - Name: rtmdet_l_convnext_b_4xb32-100e_coco
+    Alias:
+      - rtmdet-l_convnext_b
+    In Collection: RTMDet
+    Config: configs/rtmdet/rtmdet_l_convnext_b_4xb32-100e_coco.py
+    Metadata:
+      Epochs: 100
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 53.1
+    Weights: https://github.com/orange0-jp/orange-weights/releases/download/v0.1.0rtmdet-swin-convnext/rtmdet_l_convnext_b_4xb32-100e_coco-d4731b3d.pth
+
+  - Name: rtmdet_l_swin_b_4xb32-100e_coco
+    Alias:
+      - rtmdet-l_swin_b
+    In Collection: RTMDet
+    Config: configs/rtmdet/rtmdet_l_swin_b_4xb32-100e_coco.py
+    Metadata:
+      Epochs: 100
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 52.4
+    Weights: https://github.com/orange0-jp/orange-weights/releases/download/v0.1.0rtmdet-swin-convnext/rtmdet_l_swin_b_4xb32-100e_coco-0828ce5d.pth
+
+  - Name: rtmdet_l_swin_b_p6_4xb16-100e_coco
+    Alias:
+      - rtmdet-l_swin_b_p6
+    In Collection: RTMDet
+    Config: configs/rtmdet/rtmdet_l_swin_b_p6_4xb16-100e_coco.py
+    Metadata:
+      Epochs: 100
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 56.4
+    Weights: https://github.com/orange0-jp/orange-weights/releases/download/v0.1.0rtmdet-swin-convnext/rtmdet_l_swin_b_p6_4xb16-100e_coco-a1486b6f.pth
+
   - Name: rtmdet-ins_tiny_8xb32-300e_coco
     Alias:
       - rtmdet-ins-t

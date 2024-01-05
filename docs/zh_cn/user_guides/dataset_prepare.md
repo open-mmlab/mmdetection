@@ -305,3 +305,58 @@ mim download mmdet --dataset voc2012
 # download coco2017 and preprocess by MIM
 mim download mmdet --dataset coco2017
 ```
+
+### ODinW 数据集准备
+
+ODinW 数据集来自 GLIP 论文，用于评估预训练模型泛化性能。一共包括 ODinW-13 和 ODinW-35 两个版本，其中 ODinW-35 包括了 ODinW-13 的所有数据。 目前数据托管在 [huggingface](https://huggingface.co/GLIPModel/GLIP)
+
+请确保你提前安装好了 [git lfs](https://git-lfs.com), 然后按照如下命令下载
+
+```shell
+cd mmdetection
+
+git lfs install
+# 我们不需要下载权重
+GIT_LFS_SKIP_SMUDGE=1 git clone https://huggingface.co/GLIPModel/GLIP
+
+cd GLIP
+git lfs pull --include="odinw_35"
+```
+
+下载完成后，目录结构如下所示：
+
+```text
+mmdetection
+├── GLIP
+|     ├── odinw_35
+|     |   ├── AerialMaritimeDrone.zip
+|     |   ├── AmericanSignLanguageLetters.zip
+...
+```
+
+你可以采用如下命令全部解压并移动到 `mmdetection/data` 路径下：
+
+```shell
+#!/bin/bash
+
+folder="./GLIP/odinw_35/"
+
+find "$folder" -type f -name "*.zip" | while read -r file; do
+    unzip "$file" -d "$(dirname "$file")"
+done
+
+mv GLIP/odinw_35 data/
+```
+
+最终结构如下所示：
+
+```text
+mmdetection
+├── tools
+├── configs
+├── data
+|   ├── odinw_35
+|   |   ├── AerialMaritimeDrone
+...
+│   ├── coco
+```
