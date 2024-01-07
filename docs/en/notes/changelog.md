@@ -1,6 +1,34 @@
 # Changelog of v3.x
 
-## v3.1.0 (12/10/2023)
+## v3.3.0 (05/01/2024)
+
+### Highlights
+
+Grounding-DINO is a state-of-the-art open-set detection model that tackles multiple vision tasks including Open-Vocabulary Detection (OVD), Phrase Grounding (PG), and Referring Expression Comprehension (REC). Its effectiveness has led to its widespread adoption as a mainstream architecture for various downstream applications. However, despite its significance, the original Grounding-DINO model lacks comprehensive public technical details due to the unavailability of its training code. To bridge this gap, we present MM-Grounding-DINO, an open-source, comprehensive, and user-friendly baseline, which is built with the MMDetection toolbox. It adopts abundant vision datasets for pre-training and various detection and grounding datasets for fine-tuning. We give a comprehensive analysis of each reported result and detailed settings for reproduction. The extensive experiments on the benchmarks mentioned demonstrate that our MM-Grounding-DINO-Tiny outperforms the Grounding-DINO-Tiny baseline. We release all our models to the research community.
+
+### New Features
+
+- Add RTMDet Swin / ConvNeXt backbone and results (#11259)
+- Add `odinw` configs and evaluation results of `GLIP` (#11175)
+- Add optional score threshold option to `coco_error_analysis.py` (#11117)
+- Add new configs for `panoptic_fpn` (#11109)
+- Replace partially weighted download links with OpenXLab for the `Faster-RCNN` (#11173)
+
+### Bug Fixes
+
+- Fix `Grounding DINO` nan when class tokens exceeds 256 (#11066)
+- Fix the `CO-DETR` config files error (#11325)
+- Fix `CO-DETR` load_from url in config (#11220)
+- Fixed mask shape after Albu postprocess (#11280)
+- Fix bug in `convert_coco_format`  and `youtubevis2coco` (#11251, #11086)
+
+### Contributors
+
+A total of 15 developers contributed to this release.
+
+Thank @adnan-mujagic, @Cycyes, @ilcopione, @returnL, @honeybadger78, @okotaku, @xushilin1, @keyhsw, @guyleaf, @Crescent-Saturn, @LRJKD, @aaronzs, @Divadi, @AwePhD, @hhaAndroid
+
+## v3.2.0 (12/10/2023)
 
 ### Highlights
 

@@ -208,7 +208,7 @@ class CocoPanopticDataset(CocoDataset):
         if self.data_prefix.get('seg', None):
             seg_map_path = osp.join(
                 self.data_prefix['seg'],
-                img_info['file_name'].replace('jpg', 'png'))
+                img_info['file_name'].replace('.jpg', '.png'))
         else:
             seg_map_path = None
         data_info['img_path'] = img_path

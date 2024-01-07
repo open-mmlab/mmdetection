@@ -102,51 +102,18 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ### 亮点
 
-**v3.2.0** 版本已经在 2023.10.12 发布：
+**v3.3.0** 版本已经在 2024.1.5 发布：
 
-**1. 检测 Transformer SOTA 模型大合集**
-(1) 支持了 [DDQ](configs/ddq/README.md)、[CO-DETR](projects/CO-DETR/README.md)、[AlignDETR](projects/AlignDETR/README.md) 和 [H-DINO](projects/HDINO/README.md) 4 个更新更强的 SOTA Transformer 模型
-(2) 基于 CO-DETR,  MMDet 中发布了 COCO 性能为 64.1 mAP 的模型
-(3) DINO 等算法支持 AMP/Checkpoint/FrozenBN，可以有效降低显存
+**MM-Grounding-DINO: 轻松涨点，数据到评测全面开源**
 
-**2. [提供了全面的 CNN 和 Transformer 的性能对比](projects/RF100-Benchmark/README_zh-CN.md)**
-RF100 是由 100 个现实收集的数据集组成，包括 7 个域，可以验证 DINO 等 Transformer 模型和 CNN 类算法在不同场景不同数据量下的性能差异。用户可以用这个 Benchmark 快速验证自己的算法在不同场景下的鲁棒性。
+Grounding DINO 是一个统一了 2d 开放词汇目标检测和 Phrase Grounding 的检测预训练模型，应用广泛，但是其训练部分并未开源，为此提出了 MM-Grounding-DINO。其不仅作为 Grounding DINO 的开源复现版，MM-Grounding-DINO 基于重新构建的数据类型出发，在探索了不同数据集组合和初始化策略基础上实现了 Grounding DINO 的性能极大提升，并且从多个维度包括 OOD、REC、Phrase Grounding、OVD 和 Finetune 等方面进行评测，充分挖掘 Grounding 预训练优缺点，希望能为后续工作提供启发。
 
-<div align=center>
-<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/86420903-36a8-410d-9251-4304b9704f7d"/>
-</div>
+arxiv 技术报告：https://arxiv.org/abs/2401.02361
 
-**3. 支持了 [GLIP](configs/glip/README.md) 和 [Grounding DINO](configs/grounding_dino/README.md) 微调，全网唯一支持 Grounding DINO 微调**
-MMDet 中的 Grounding DINO 是全网唯一支持微调的算法库，且性能高于官方 1 个点，当然 GLIP 也比官方高。
-我们还提供了详细的 Grounding DINO 在自定义数据集上训练评估的流程，欢迎大家试用。
-
-|       Model        | Backbone |   Style   |  COCO mAP  | Official COCO mAP |
-| :----------------: | :------: | :-------: | :--------: | :---------------: |
-|  Grounding DINO-T  |  Swin-T  | Zero-shot |    48.5    |       48.4        |
-|  Grounding DINO-T  |  Swin-T  | Finetune  | 58.1(+0.9) |       57.2        |
-|  Grounding DINO-B  |  Swin-B  | Zero-shot |    56.9    |       56.7        |
-|  Grounding DINO-B  |  Swin-B  | Finetune  |    59.7    |                   |
-| Grounding DINO-R50 |   R50    |  Scratch  | 48.9(+0.8) |       48.1        |
-
-**4. 支持开放词汇检测算法 [Detic](projects/Detic_new/README.md) 并提供多数据集联合训练可能**
-
-**5. 轻松使用 [FSDP 和 DeepSpeed 训练检测模型](projects/example_largemodel/README_zh-CN.md)**
-
-| ID  | AMP | GC of Backbone | GC of Encoder | FSDP | Peak Mem (GB) | Iter Time (s) |
-| :-: | :-: | :------------: | :-----------: | :--: | :-----------: | :-----------: |
-|  1  |     |                |               |      |   49 (A100)   |      0.9      |
-|  2  |  √  |                |               |      |   39 (A100)   |      1.2      |
-|  3  |     |       √        |               |      |   33 (A100)   |      1.1      |
-|  4  |  √  |       √        |               |      |   25 (A100)   |      1.3      |
-|  5  |     |       √        |       √       |      |      18       |      2.2      |
-|  6  |  √  |       √        |       √       |      |      13       |      1.6      |
-|  7  |     |       √        |       √       |  √   |      14       |      2.9      |
-|  8  |  √  |       √        |       √       |  √   |      8.5      |      2.4      |
-
-**6. 支持了 [V3Det](configs/v3det/README.md) 1.3w+ 类别的超大词汇检测数据集**
+代码地址: [mm_grounding_dino/README.md](configs/mm_grounding_dino/README.md)
 
 <div align=center>
-    <img width=960 src="https://github.com/open-mmlab/mmdetection/assets/17425982/9c216387-02be-46e6-b0f2-b856f80f6d84"/>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/fb14d1ee-5469-44d2-b865-aac9850c429c"/>
 </div>
 
 我们很高兴向大家介绍我们在实时目标识别任务方面的最新成果 RTMDet，包含了一系列的全卷积单阶段检测模型。 RTMDet 不仅在从 tiny 到 extra-large 尺寸的目标检测模型上实现了最佳的参数量和精度的平衡，而且在实时实例分割和旋转目标检测任务上取得了最先进的成果。 更多细节请参阅[技术报告](https://arxiv.org/abs/2212.07784)。 预训练模型可以在[这里](configs/rtmdet)找到。

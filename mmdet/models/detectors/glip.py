@@ -1,7 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
 import re
 import warnings
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 import torch
 from torch import Tensor
@@ -26,8 +27,8 @@ def find_noun_phrases(caption: str) -> list:
     """
     try:
         import nltk
-        nltk.download('punkt')
-        nltk.download('averaged_perceptron_tagger')
+        nltk.download('punkt', download_dir='~/nltk_data')
+        nltk.download('averaged_perceptron_tagger', download_dir='~/nltk_data')
     except ImportError:
         raise RuntimeError('nltk is not installed, please install it by: '
                            'pip install nltk.')
@@ -78,6 +79,7 @@ def run_ner(caption: str) -> Tuple[list, list]:
     noun_phrases = find_noun_phrases(caption)
     noun_phrases = [remove_punctuation(phrase) for phrase in noun_phrases]
     noun_phrases = [phrase for phrase in noun_phrases if phrase != '']
+    print('noun_phrases:', noun_phrases)
     relevant_phrases = noun_phrases
     labels = noun_phrases
 
@@ -166,6 +168,27 @@ def create_positive_map_label_to_token(positive_map: Tensor,
     return positive_map_label_to_token
 
 
+def clean_label_name(name: str) -> str:
+    name = re.sub(r'\(.*\)', '', name)
+    name = re.sub(r'_', ' ', name)
+    name = re.sub(r'  ', ' ', name)
+    return name
+
+
+def chunks(lst: list, n: int) -> list:
+    """Yield successive n-sized chunks from lst."""
+    all_ = []
+    for i in range(0, len(lst), n):
+        data_index = lst[i:i + n]
+        all_.append(data_index)
+    counter = 0
+    for i in all_:
+        counter += len(i)
+    assert (counter == len(lst))
+
+    return all_
+
+
 @MODELS.register_module()
 class GLIP(SingleStageDetector):
     """Implementation of `GLIP <https://arxiv.org/abs/2112.03857>`_
@@ -207,10 +230,52 @@ class GLIP(SingleStageDetector):
 
         self._special_tokens = '. '
 
+    def to_enhance_text_prompts(self, original_caption, enhanced_text_prompts):
+        caption_string = ''
+        tokens_positive = []
+        for idx, word in enumerate(original_caption):
+            if word in enhanced_text_prompts:
+                enhanced_text_dict = enhanced_text_prompts[word]
+                if 'prefix' in enhanced_text_dict:
+                    caption_string += enhanced_text_dict['prefix']
+                start_i = len(caption_string)
+                if 'name' in enhanced_text_dict:
+                    caption_string += enhanced_text_dict['name']
+                else:
+                    caption_string += word
+                end_i = len(caption_string)
+                tokens_positive.append([[start_i, end_i]])
+
+                if 'suffix' in enhanced_text_dict:
+                    caption_string += enhanced_text_dict['suffix']
+            else:
+                tokens_positive.append(
+                    [[len(caption_string),
+                      len(caption_string) + len(word)]])
+                caption_string += word
+
+            if idx != len(original_caption) - 1:
+                caption_string += self._special_tokens
+        return caption_string, tokens_positive
+
+    def to_plain_text_prompts(self, original_caption):
+        caption_string = ''
+        tokens_positive = []
+        for idx, word in enumerate(original_caption):
+            tokens_positive.append(
+                [[len(caption_string),
+                  len(caption_string) + len(word)]])
+            caption_string += word
+            if idx != len(original_caption) - 1:
+                caption_string += self._special_tokens
+        return caption_string, tokens_positive
+
     def get_tokens_and_prompts(
-            self,
-            original_caption: Union[str, list, tuple],
-            custom_entities: bool = False) -> Tuple[dict, str, list, list]:
+        self,
+        original_caption: Union[str, list, tuple],
+        custom_entities: bool = False,
+        enhanced_text_prompts: Optional[ConfigType] = None
+    ) -> Tuple[dict, str, list, list]:
         """Get the tokens positive and prompts for the caption."""
         if isinstance(original_caption, (list, tuple)) or custom_entities:
             if custom_entities and isinstance(original_caption, str):
@@ -219,15 +284,15 @@ class GLIP(SingleStageDetector):
                 original_caption = list(
                     filter(lambda x: len(x) > 0, original_caption))
 
-            caption_string = ''
-            tokens_positive = []
-            for idx, word in enumerate(original_caption):
-                tokens_positive.append(
-                    [[len(caption_string),
-                      len(caption_string) + len(word)]])
-                caption_string += word
-                if idx != len(original_caption) - 1:
-                    caption_string += self._special_tokens
+            original_caption = [clean_label_name(i) for i in original_caption]
+
+            if custom_entities and enhanced_text_prompts is not None:
+                caption_string, tokens_positive = self.to_enhance_text_prompts(
+                    original_caption, enhanced_text_prompts)
+            else:
+                caption_string, tokens_positive = self.to_plain_text_prompts(
+                    original_caption)
+
             tokenized = self.language_model.tokenizer([caption_string],
                                                       return_tensors='pt')
             entities = original_caption
@@ -248,16 +313,100 @@ class GLIP(SingleStageDetector):
         return positive_map_label_to_token, positive_map
 
     def get_tokens_positive_and_prompts(
-            self,
-            original_caption: Union[str, list, tuple],
-            custom_entities: bool = False) -> Tuple[dict, str, Tensor, list]:
-        tokenized, caption_string, tokens_positive, entities = \
-            self.get_tokens_and_prompts(
-                original_caption, custom_entities)
-        positive_map_label_to_token, positive_map = self.get_positive_map(
-            tokenized, tokens_positive)
+        self,
+        original_caption: Union[str, list, tuple],
+        custom_entities: bool = False,
+        enhanced_text_prompt: Optional[ConfigType] = None,
+        tokens_positive: Optional[list] = None,
+    ) -> Tuple[dict, str, Tensor, list]:
+        if tokens_positive is not None:
+            if tokens_positive == -1:
+                if not original_caption.endswith('.'):
+                    original_caption = original_caption + self._special_tokens
+                return None, original_caption, None, original_caption
+            else:
+                if not original_caption.endswith('.'):
+                    original_caption = original_caption + self._special_tokens
+                tokenized = self.language_model.tokenizer([original_caption],
+                                                          return_tensors='pt')
+                positive_map_label_to_token, positive_map = \
+                    self.get_positive_map(tokenized, tokens_positive)
+
+                entities = []
+                for token_positive in tokens_positive:
+                    instance_entities = []
+                    for t in token_positive:
+                        instance_entities.append(original_caption[t[0]:t[1]])
+                    entities.append(' / '.join(instance_entities))
+                return positive_map_label_to_token, original_caption, \
+                    positive_map, entities
+
+        chunked_size = self.test_cfg.get('chunked_size', -1)
+        if not self.training and chunked_size > 0:
+            assert isinstance(original_caption,
+                              (list, tuple)) or custom_entities is True
+            all_output = self.get_tokens_positive_and_prompts_chunked(
+                original_caption, enhanced_text_prompt)
+            positive_map_label_to_token, \
+                caption_string, \
+                positive_map, \
+                entities = all_output
+        else:
+            tokenized, caption_string, tokens_positive, entities = \
+                self.get_tokens_and_prompts(
+                    original_caption, custom_entities, enhanced_text_prompt)
+            positive_map_label_to_token, positive_map = self.get_positive_map(
+                tokenized, tokens_positive)
+            if tokenized.input_ids.shape[1] > self.language_model.max_tokens:
+                warnings.warn('Inputting a text that is too long will result '
+                              'in poor prediction performance. '
+                              'Please reduce the text length.')
         return positive_map_label_to_token, caption_string, \
             positive_map, entities
+
+    def get_tokens_positive_and_prompts_chunked(
+            self,
+            original_caption: Union[list, tuple],
+            enhanced_text_prompts: Optional[ConfigType] = None):
+        chunked_size = self.test_cfg.get('chunked_size', -1)
+        original_caption = [clean_label_name(i) for i in original_caption]
+
+        original_caption_chunked = chunks(original_caption, chunked_size)
+        ids_chunked = chunks(
+            list(range(1,
+                       len(original_caption) + 1)), chunked_size)
+
+        positive_map_label_to_token_chunked = []
+        caption_string_chunked = []
+        positive_map_chunked = []
+        entities_chunked = []
+
+        for i in range(len(ids_chunked)):
+            if enhanced_text_prompts is not None:
+                caption_string, tokens_positive = self.to_enhance_text_prompts(
+                    original_caption_chunked[i], enhanced_text_prompts)
+            else:
+                caption_string, tokens_positive = self.to_plain_text_prompts(
+                    original_caption_chunked[i])
+            tokenized = self.language_model.tokenizer([caption_string],
+                                                      return_tensors='pt')
+            if tokenized.input_ids.shape[1] > self.language_model.max_tokens:
+                warnings.warn('Inputting a text that is too long will result '
+                              'in poor prediction performance. '
+                              'Please reduce the --chunked-size.')
+            positive_map_label_to_token, positive_map = self.get_positive_map(
+                tokenized, tokens_positive)
+
+            caption_string_chunked.append(caption_string)
+            positive_map_label_to_token_chunked.append(
+                positive_map_label_to_token)
+            positive_map_chunked.append(positive_map)
+            entities_chunked.append(original_caption_chunked[i])
+
+        return positive_map_label_to_token_chunked, \
+            caption_string_chunked, \
+            positive_map_chunked, \
+            entities_chunked
 
     def loss(self, batch_inputs: Tensor,
              batch_data_samples: SampleList) -> Union[dict, list]:
@@ -342,9 +491,16 @@ class GLIP(SingleStageDetector):
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                     the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        text_prompts = [
-            data_samples.text for data_samples in batch_data_samples
-        ]
+        text_prompts = []
+        enhanced_text_prompts = []
+        tokens_positives = []
+        for data_samples in batch_data_samples:
+            text_prompts.append(data_samples.text)
+            if 'caption_prompt' in data_samples:
+                enhanced_text_prompts.append(data_samples.caption_prompt)
+            else:
+                enhanced_text_prompts.append(None)
+            tokens_positives.append(data_samples.get('tokens_positive', None))
 
         if 'custom_entities' in batch_data_samples[0]:
             # Assuming that the `custom_entities` flag
@@ -357,31 +513,62 @@ class GLIP(SingleStageDetector):
             # All the text prompts are the same,
             # so there is no need to calculate them multiple times.
             _positive_maps_and_prompts = [
-                self.get_tokens_positive_and_prompts(text_prompts[0],
-                                                     custom_entities)
+                self.get_tokens_positive_and_prompts(
+                    text_prompts[0], custom_entities, enhanced_text_prompts[0],
+                    tokens_positives[0])
             ] * len(batch_inputs)
         else:
             _positive_maps_and_prompts = [
                 self.get_tokens_positive_and_prompts(text_prompt,
-                                                     custom_entities)
-                for text_prompt in text_prompts
+                                                     custom_entities,
+                                                     enhanced_text_prompt,
+                                                     tokens_positive)
+                for text_prompt, enhanced_text_prompt, tokens_positive in zip(
+                    text_prompts, enhanced_text_prompts, tokens_positives)
             ]
 
         token_positive_maps, text_prompts, _, entities = zip(
             *_positive_maps_and_prompts)
 
-        language_dict_features = self.language_model(list(text_prompts))
-
-        for i, data_samples in enumerate(batch_data_samples):
-            data_samples.token_positive_map = token_positive_maps[i]
-
         visual_features = self.extract_feat(batch_inputs)
 
-        results_list = self.bbox_head.predict(
-            visual_features,
-            language_dict_features,
-            batch_data_samples,
-            rescale=rescale)
+        if isinstance(text_prompts[0], list):
+            # chunked text prompts, only bs=1 is supported
+            assert len(batch_inputs) == 1
+            count = 0
+            results_list = []
+
+            entities = [[item for lst in entities[0] for item in lst]]
+
+            for b in range(len(text_prompts[0])):
+                text_prompts_once = [text_prompts[0][b]]
+                token_positive_maps_once = token_positive_maps[0][b]
+                language_dict_features = self.language_model(text_prompts_once)
+                batch_data_samples[
+                    0].token_positive_map = token_positive_maps_once
+
+                pred_instances = self.bbox_head.predict(
+                    copy.deepcopy(visual_features),
+                    language_dict_features,
+                    batch_data_samples,
+                    rescale=rescale)[0]
+
+                if len(pred_instances) > 0:
+                    pred_instances.labels += count
+                count += len(token_positive_maps_once)
+                results_list.append(pred_instances)
+            results_list = [results_list[0].cat(results_list)]
+        else:
+            language_dict_features = self.language_model(list(text_prompts))
+
+            for i, data_samples in enumerate(batch_data_samples):
+                data_samples.token_positive_map = token_positive_maps[i]
+
+            results_list = self.bbox_head.predict(
+                visual_features,
+                language_dict_features,
+                batch_data_samples,
+                rescale=rescale)
 
         for data_sample, pred_instances, entity in zip(batch_data_samples,
                                                        results_list, entities):
