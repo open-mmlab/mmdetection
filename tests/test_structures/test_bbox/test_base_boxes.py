@@ -2,8 +2,9 @@ from unittest import TestCase
 
 import numpy as np
 import torch
-from mmengine.testing import assert_allclose
 from mmengine.device import is_musa_available
+from mmengine.testing import assert_allclose
+
 from .utils import ToyBaseBoxes
 
 

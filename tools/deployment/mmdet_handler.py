@@ -5,10 +5,11 @@ import os
 import mmcv
 import numpy as np
 import torch
+from mmengine.device import is_musa_available
 from ts.torch_handler.base_handler import BaseHandler
 
 from mmdet.apis import inference_detector, init_detector
-from mmengine.device import is_musa_available
+
 
 class MMdetHandler(BaseHandler):
     threshold = 0.5
@@ -23,7 +24,7 @@ class MMdetHandler(BaseHandler):
         if is_musa_available():
             self.map_location = 'musa'
             self.device = torch.device(self.map_location + ':' +
-                                   str(properties.get('gpu_id')))
+                                       str(properties.get('gpu_id')))
         self.manifest = context.manifest
 
         model_dir = properties.get('model_dir')

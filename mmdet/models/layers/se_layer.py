@@ -2,10 +2,11 @@
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
+from mmengine.device import is_cuda_available, is_musa_available
 from mmengine.model import BaseModule
 from mmengine.utils import digit_version, is_tuple_of
 from torch import Tensor
-from mmengine.device import is_cuda_available, is_musa_available
+
 from mmdet.utils import MultiConfig, OptConfigType, OptMultiConfig
 
 

@@ -5,8 +5,9 @@ import logging
 import os
 import time
 from typing import List
-from mmengine.device import is_cuda_available, is_musa_available
+
 import torch
+from mmengine.device import is_cuda_available, is_musa_available
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +37,14 @@ async def completed(trace_name='',
 
     if is_cuda_available():
         end_events = [
-            torch.cuda.Event(enable_timing=DEBUG_COMPLETED_TIME) for _ in streams
+            torch.cuda.Event(enable_timing=DEBUG_COMPLETED_TIME)
+            for _ in streams
         ]
 
     if is_musa_available():
         end_events = [
-            torch.musa.Event(enable_timing=DEBUG_COMPLETED_TIME) for _ in streams
+            torch.musa.Event(enable_timing=DEBUG_COMPLETED_TIME)
+            for _ in streams
         ]
 
     if DEBUG_COMPLETED_TIME:
@@ -61,7 +64,7 @@ async def completed(trace_name='',
         if is_cuda_available():
             current_stream = torch.cuda.current_stream()
         elif is_musa_available():
-            current_stream = torch.musa.current_stream()                        
+            current_stream = torch.musa.current_stream()
 
         assert current_stream == stream_before_context_switch
 
@@ -107,7 +110,7 @@ async def completed(trace_name='',
                         are_done,
                         streams,
                     )
-            current_stream = torch.musa.current_stream()          
+            current_stream = torch.musa.current_stream()
         assert current_stream == stream_before_context_switch
 
         if DEBUG_COMPLETED_TIME:
@@ -143,13 +146,13 @@ async def concurrent(streamqueue: asyncio.Queue,
 
             try:
                 with torch.cuda.stream(stream):
-                    logger.debug('%s %s is starting, stream: %s', trace_name, name,
-                                stream)
+                    logger.debug('%s %s is starting, stream: %s', trace_name,
+                                 name, stream)
                     yield
                     current = torch.cuda.current_stream()
                     assert current == stream
                     logger.debug('%s %s has finished, stream: %s', trace_name,
-                                name, stream)
+                                 name, stream)
             finally:
                 streamqueue.task_done()
                 streamqueue.put_nowait(stream)
@@ -162,13 +165,13 @@ async def concurrent(streamqueue: asyncio.Queue,
 
             try:
                 with torch.musa.stream(stream):
-                    logger.debug('%s %s is starting, stream: %s', trace_name, name,
-                                stream)
+                    logger.debug('%s %s is starting, stream: %s', trace_name,
+                                 name, stream)
                     yield
                     current = torch.musa.current_stream()
                     assert current == stream
                     logger.debug('%s %s has finished, stream: %s', trace_name,
-                                name, stream)
+                                 name, stream)
             finally:
                 streamqueue.task_done()
                 streamqueue.put_nowait(stream)

@@ -3,8 +3,9 @@ import unittest
 from unittest import TestCase
 
 import torch
-from parameterized import parameterized
 from mmengine.device import is_musa_available
+from parameterized import parameterized
+
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
 from mmdet.utils import register_all_modules
@@ -28,7 +29,7 @@ class TestPISARoIHead(TestCase):
             # RoI pooling only support in GPU
             return unittest.skip('test requires GPU and torch+cuda')
         if not is_musa_available() and device == 'musa':
-            return unittest.skip('test requires GPU and torch+musa')   
+            return unittest.skip('test requires GPU and torch+musa')
         roi_head = MODELS.build(self.roi_head_cfg)
         roi_head = roi_head.to(device=device)
         s = 256

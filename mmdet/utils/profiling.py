@@ -5,6 +5,7 @@ import time
 
 import torch
 from mmengine.device import is_cuda_available, is_musa_available
+
 if sys.version_info >= (3, 7):
 
     @contextlib.contextmanager

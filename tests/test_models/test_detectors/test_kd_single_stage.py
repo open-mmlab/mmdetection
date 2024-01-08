@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import unittest
 from unittest import TestCase
 
 import torch
-from parameterized import parameterized
 from mmengine.device import is_musa_available
+from parameterized import parameterized
+
 from mmdet import *  # noqa
 from mmdet.structures import DetDataSample
 from mmdet.testing import demo_mm_inputs, get_detector_cfg
@@ -27,9 +27,8 @@ class TestKDSingleStageDetector(TestCase):
         self.assertTrue(detector.neck)
         self.assertTrue(detector.bbox_head)
 
-    @parameterized.expand([('ld/ld_r18-gflv1-r101_fpn_1x_coco.py', ('cpu',
-                                                                    'cuda',
-                                                                    'musa'))])
+    @parameterized.expand([('ld/ld_r18-gflv1-r101_fpn_1x_coco.py',
+                            ('cpu', 'cuda', 'musa'))])
     def test_single_stage_forward_train(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
@@ -43,13 +42,13 @@ class TestKDSingleStageDetector(TestCase):
             if device == 'cuda':
                 if not torch.cuda.is_available():
                     continue
-            
+
                 detector = detector.cuda()
 
             if device == 'musa':
                 if not is_musa_available():
                     continue
-            
+
                 detector = detector.musa()
             packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
             data = detector.data_preprocessor(packed_inputs, True)
@@ -57,9 +56,8 @@ class TestKDSingleStageDetector(TestCase):
             losses = detector.forward(**data, mode='loss')
             self.assertIsInstance(losses, dict)
 
-    @parameterized.expand([('ld/ld_r18-gflv1-r101_fpn_1x_coco.py', ('cpu',
-                                                                    'cuda',
-                                                                    'musa'))])
+    @parameterized.expand([('ld/ld_r18-gflv1-r101_fpn_1x_coco.py',
+                            ('cpu', 'cuda', 'musa'))])
     def test_single_stage_forward_test(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None

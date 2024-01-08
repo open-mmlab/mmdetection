@@ -4,11 +4,12 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device import is_musa_available
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
 from mmdet.utils import register_all_modules
-from mmengine.device import is_musa_available
+
 
 class TestTridentRoIHead(TestCase):
 

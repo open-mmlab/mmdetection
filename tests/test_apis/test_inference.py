@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import torch
 from mmengine.device import is_musa_available
+
 from mmdet.apis import inference_detector, init_detector
 from mmdet.structures import DetDataSample
 from mmdet.utils import register_all_modules

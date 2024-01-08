@@ -12,7 +12,8 @@ from mmcv.cnn import fuse_conv_bn
 # from mmcv.runner import wrap_fp16_model
 from mmengine import MMLogger
 from mmengine.config import Config
-from mmengine.device import get_max_cuda_memory,get_max_musa_memory, is_cuda_available, is_musa_available
+from mmengine.device import (get_max_cuda_memory, get_max_musa_memory,
+                             is_cuda_available, is_musa_available)
 from mmengine.dist import get_world_size
 from mmengine.runner import Runner, load_checkpoint
 from mmengine.utils.dl_utils import set_multi_processing
@@ -198,11 +199,11 @@ class InferenceBenchmark(BaseBenchmark):
                     broadcast_buffers=False,
                     find_unused_parameters=False)
             elif is_musa_available():
-                 model = DistributedDataParallel(
+                model = DistributedDataParallel(
                     model,
                     device_ids=[torch.musa.current_device()],
                     broadcast_buffers=False,
-                    find_unused_parameters=False)               
+                    find_unused_parameters=False)
 
         model.eval()
         return model
@@ -220,7 +221,7 @@ class InferenceBenchmark(BaseBenchmark):
                 torch.cuda.synchronize()
             elif is_musa_available():
                 torch.musa.synchronize()
-   
+
             start_time = time.perf_counter()
 
             with torch.no_grad():
@@ -251,7 +252,7 @@ class InferenceBenchmark(BaseBenchmark):
                             f'Done image [{i + 1:<3}/{self.max_iter}], '
                             f'fps: {fps:.1f} img/s, '
                             f'times per image: {1000 / fps:.1f} ms/img, '
-                            f'musa memory: {musa_memory} MB', self.logger)                       
+                            f'musa memory: {musa_memory} MB', self.logger)
                     print_process_memory(self._process, self.logger)
 
             if (i + 1) == self.max_iter:

@@ -1,9 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import unittest
 from unittest import TestCase
-from mmengine.device import is_musa_available
+
 import torch
 from mmengine.config import ConfigDict
+from mmengine.device import is_musa_available
 from mmengine.structures import InstanceData
 from parameterized import parameterized
 

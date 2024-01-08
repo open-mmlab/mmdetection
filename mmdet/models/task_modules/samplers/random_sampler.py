@@ -2,9 +2,10 @@
 from typing import Union
 
 import torch
+from mmengine.device import is_musa_available
 from numpy import ndarray
 from torch import Tensor
-from mmengine.device import is_musa_available,is_cuda_available
+
 from mmdet.registry import TASK_UTILS
 from ..assigners import AssignResult
 from .base_sampler import BaseSampler
@@ -59,7 +60,7 @@ class RandomSampler(BaseSampler):
             if torch.cuda.is_available():
                 device = torch.cuda.current_device()
             elif is_musa_available():
-                device=torch.musa.current_device()
+                device = torch.musa.current_device()
             else:
                 device = 'cpu'
             gallery = torch.tensor(gallery, dtype=torch.long, device=device)

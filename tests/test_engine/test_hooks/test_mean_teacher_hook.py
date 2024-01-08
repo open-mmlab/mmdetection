@@ -5,12 +5,12 @@ from unittest import TestCase
 
 import torch
 import torch.nn as nn
+from mmengine.device import is_musa_available
 from mmengine.evaluator import BaseMetric
 from mmengine.model import BaseModel
 from mmengine.optim import OptimWrapper
 from mmengine.registry import MODEL_WRAPPERS
 from mmengine.runner import Runner
-from mmengine.device import is_musa_available
 from torch.utils.data import Dataset
 
 from mmdet.registry import DATASETS

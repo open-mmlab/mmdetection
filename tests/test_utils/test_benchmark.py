@@ -6,6 +6,7 @@ import unittest
 import torch
 from mmengine import Config, MMLogger
 from mmengine.dataset import Compose
+from mmengine.device import is_musa_available
 from mmengine.model import BaseModel
 from torch.utils.data import Dataset
 
@@ -13,7 +14,7 @@ from mmdet.registry import DATASETS, MODELS
 from mmdet.utils import register_all_modules
 from mmdet.utils.benchmark import (DataLoaderBenchmark, DatasetBenchmark,
                                    InferenceBenchmark)
-from mmengine.device import is_musa_available
+
 
 @MODELS.register_module()
 class ToyDetector(BaseModel):

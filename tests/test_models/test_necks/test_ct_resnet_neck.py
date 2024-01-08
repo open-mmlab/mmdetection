@@ -2,9 +2,10 @@
 import unittest
 
 import torch
+from mmengine.device import is_musa_available
 
 from mmdet.models.necks import CTResNetNeck
-from mmengine.device import is_musa_available
+
 
 class TestCTResNetNeck(unittest.TestCase):
 

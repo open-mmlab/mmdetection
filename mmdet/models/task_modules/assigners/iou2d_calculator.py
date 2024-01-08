@@ -3,7 +3,7 @@ import torch
 
 from mmdet.registry import TASK_UTILS
 from mmdet.structures.bbox import bbox_overlaps, get_box_tensor
-from mmengine.device import is_musa_available
+
 
 def cast_tensor_type(x, scale=1., dtype=None):
     if dtype == 'fp16':

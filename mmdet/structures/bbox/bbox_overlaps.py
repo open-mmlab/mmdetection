@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
-from mmengine.device import is_musa_available
+
 
 def fp16_clamp(x, min=None, max=None):
     if x.is_cpu and x.dtype == torch.float16:

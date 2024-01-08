@@ -3,11 +3,12 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device import is_musa_available
 from parameterized import parameterized
 from torch import Tensor
 
 from mmdet.models.roi_heads.mask_heads import GlobalContextHead
-from mmengine.device import is_musa_available
+
 
 class TestGlobalContextHead(TestCase):
 

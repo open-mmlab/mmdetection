@@ -3,10 +3,11 @@ from typing import Union
 
 import torch
 from mmcv.ops import nms_match
+from mmengine.device import is_musa_available
 from mmengine.structures import InstanceData
 from numpy import ndarray
 from torch import Tensor
-from mmengine.device import is_musa_available
+
 from mmdet.registry import TASK_UTILS
 from mmdet.structures.bbox import bbox2roi
 from ..assigners import AssignResult

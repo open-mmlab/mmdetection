@@ -9,6 +9,7 @@ import pytest
 import torch
 from mmengine.device import is_musa_available
 
+
 def test_standard_points_generator():
     from mmdet.models.task_modules import build_prior_generator
 

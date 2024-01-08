@@ -1,10 +1,11 @@
 import unittest
 
 import torch
+from mmengine.device import is_musa_available
 from parameterized import parameterized
 
 from mmdet.models.roi_heads.mask_heads import CoarseMaskHead
-from mmengine.device import is_musa_available
+
 
 class TestCoarseMaskHead(unittest.TestCase):
 

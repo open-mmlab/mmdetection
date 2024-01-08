@@ -3,12 +3,13 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device import is_musa_available
 from parameterized import parameterized
 
 from mmdet.models.roi_heads import HybridTaskCascadeRoIHead  # noqa
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
-from mmengine.device import is_musa_available
+
 
 class TestHTCRoIHead(TestCase):
 
@@ -38,7 +39,7 @@ class TestHTCRoIHead(TestCase):
         if torch.cuda.is_available():
             device = 'cuda'
         elif is_musa_available():
-            device = 'musa'    
+            device = 'musa'
         roi_head = roi_head.to(device)
         feats = []
         for i in range(len(roi_head_cfg.bbox_roi_extractor.featmap_strides)):
@@ -99,7 +100,7 @@ class TestHTCRoIHead(TestCase):
         if torch.cuda.is_available():
             device = 'cuda'
         elif is_musa_available():
-            device = 'musa'    
+            device = 'musa'
         roi_head = roi_head.to(device)
         feats = []
         for i in range(len(roi_head_cfg.bbox_roi_extractor.featmap_strides)):

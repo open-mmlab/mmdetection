@@ -3,11 +3,12 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device import is_musa_available
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
 from mmdet.utils import register_all_modules
-from mmengine.device import is_musa_available
+
 
 class TestMaskScoringRoiHead(TestCase):
 
@@ -31,7 +32,7 @@ class TestMaskScoringRoiHead(TestCase):
         if torch.cuda.is_available():
             device = 'cuda'
         elif is_musa_available():
-            device = 'musa'    
+            device = 'musa'
         roi_head = roi_head.to(device)
         s = 256
         feats = []
@@ -91,7 +92,7 @@ class TestMaskScoringRoiHead(TestCase):
         if torch.cuda.is_available():
             device = 'cuda'
         elif is_musa_available():
-            device = 'musa'     
+            device = 'musa'
         roi_head = roi_head.to(device)
         s = 256
         feats = []
@@ -121,7 +122,7 @@ class TestMaskScoringRoiHead(TestCase):
         if torch.cuda.is_available():
             device = 'cuda'
         elif is_musa_available():
-            device = 'musa'     
+            device = 'musa'
         roi_head = roi_head.to(device)
         s = 256
         feats = []

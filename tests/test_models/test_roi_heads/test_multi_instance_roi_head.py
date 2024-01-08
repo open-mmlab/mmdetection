@@ -5,6 +5,7 @@ from unittest import TestCase
 import torch
 from mmengine.config import Config
 from mmengine.device import is_musa_available
+
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals
 from mmdet.utils import register_all_modules
@@ -90,7 +91,7 @@ class TestMultiInstanceRoIHead(TestCase):
         if torch.cuda.is_available():
             device = 'cuda'
         elif is_musa_available():
-            device = 'musa'     
+            device = 'musa'
         roi_head = roi_head.to(device)
         feats = []
         for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):

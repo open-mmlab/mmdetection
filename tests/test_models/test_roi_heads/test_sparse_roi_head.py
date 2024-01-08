@@ -4,8 +4,9 @@ from unittest import TestCase
 
 import torch
 import torch.nn as nn
-from parameterized import parameterized
 from mmengine.device import is_musa_available
+from parameterized import parameterized
+
 from mmdet.models.roi_heads import StandardRoIHead  # noqa
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
@@ -53,7 +54,8 @@ class TestCascadeRoIHead(TestCase):
         img_shape_list = [(3, s, s) for _ in img_metas]
         proposal_list = demo_mm_proposals(img_shape_list, 100, device=device)
         # add import elements into proposal
-        init_proposal_features = nn.Embedding(100, 256).to(device).weight.clone()
+        init_proposal_features = nn.Embedding(100,
+                                              256).to(device).weight.clone()
         for proposal in proposal_list:
             proposal.features = init_proposal_features
             proposal.imgs_whwh = feats[0].new_tensor([[s, s, s,
@@ -75,7 +77,8 @@ class TestCascadeRoIHead(TestCase):
         # there should be no box and mask loss.
         proposal_list = demo_mm_proposals(img_shape_list, 100, device=device)
         # add import elements into proposal
-        init_proposal_features = nn.Embedding(100, 256).to(device).weight.clone()
+        init_proposal_features = nn.Embedding(100,
+                                              256).to(device).weight.clone()
         for proposal in proposal_list:
             proposal.features = init_proposal_features
             proposal.imgs_whwh = feats[0].new_tensor([[s, s, s,

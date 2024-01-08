@@ -4,6 +4,7 @@ from unittest import TestCase
 
 import torch
 from mmengine.config import ConfigDict
+from mmengine.device import is_musa_available
 from mmengine.structures import InstanceData
 from parameterized import parameterized
 
@@ -11,7 +12,7 @@ from mmdet.models.roi_heads.mask_heads import GridHead
 from mmdet.models.utils import unpack_gt_instances
 from mmdet.testing import (demo_mm_inputs, demo_mm_proposals,
                            demo_mm_sampling_results)
-from mmengine.device import is_musa_available
+
 
 class TestGridHead(TestCase):
 

@@ -2,13 +2,14 @@
 import unittest
 
 import torch
+from mmengine.device import is_musa_available
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
 from mmdet.testing._utils import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
-from mmengine.device import is_musa_available
+
 
 class TestMaskFormer(unittest.TestCase):
 
@@ -83,7 +84,7 @@ class TestMaskFormer(unittest.TestCase):
         if device == 'cuda' and not torch.cuda.is_available():
             return
         if device == 'musa' and not is_musa_available():
-            return        
+            return
         detector = detector.to(device)
         packed_inputs = demo_mm_inputs(
             2,
@@ -241,7 +242,7 @@ class TestMask2Former(unittest.TestCase):
         if device == 'cuda' and not torch.cuda.is_available():
             return
         if device == 'musa' and not is_musa_available():
-            print("musa!!!")
+            print('musa!!!')
             return
         detector = detector.to(device)
 

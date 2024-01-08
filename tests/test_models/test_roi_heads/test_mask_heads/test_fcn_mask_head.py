@@ -4,11 +4,12 @@ from unittest import TestCase
 
 import torch
 from mmengine.config import ConfigDict
+from mmengine.device import is_musa_available
 from mmengine.structures import InstanceData
 from parameterized import parameterized
 
 from mmdet.models.roi_heads.mask_heads import FCNMaskHead
-from mmengine.device import is_musa_available
+
 
 class TestFCNMaskHead(TestCase):
 

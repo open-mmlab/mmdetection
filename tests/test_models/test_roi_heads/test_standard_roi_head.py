@@ -4,12 +4,13 @@ from unittest import TestCase
 
 import torch
 from mmengine.config import Config
+from mmengine.device import is_musa_available
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals
 from mmdet.utils import register_all_modules
-from mmengine.device import is_musa_available
+
 register_all_modules()
 
 

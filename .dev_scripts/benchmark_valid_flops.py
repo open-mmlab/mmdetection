@@ -5,13 +5,14 @@ from argparse import ArgumentParser
 from collections import OrderedDict
 from functools import partial
 from pathlib import Path
-from mmengine.device import is_musa_available
+
 import numpy as np
 import pandas as pd
 import torch
 from mmengine import Config, DictAction
 from mmengine.analysis import get_model_complexity_info
 from mmengine.analysis.print_helper import _format_size
+from mmengine.device import is_musa_available
 from mmengine.fileio import FileClient
 from mmengine.logging import MMLogger
 from mmengine.model import revert_sync_batchnorm
@@ -122,7 +123,7 @@ def inference(config_file, checkpoint, work_dir, args, exp_name):
                 input = input.cuda()
             if is_musa_available:
                 model.musa()
-                input = input.musa()  
+                input = input.musa()
             model = revert_sync_batchnorm(model)
             inputs = (input, )
             model.eval()

@@ -5,11 +5,11 @@ from unittest.mock import Mock
 
 import torch
 import torch.nn as nn
+from mmengine.device import is_musa_available
 from mmengine.evaluator import Evaluator
 from mmengine.model import BaseModel
 from mmengine.optim import OptimWrapper
 from mmengine.runner import Runner
-from mmengine.device import is_musa_available
 from torch.utils.data import Dataset
 
 from mmdet.registry import DATASETS

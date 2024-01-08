@@ -2,8 +2,9 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
+from mmengine.device import is_cuda_available, is_musa_available
 from mmengine.logging import print_log
-from mmengine.device import is_musa_available,is_cuda_available
+
 from .text_encoder import CLIPTextEncoder
 
 # download from
