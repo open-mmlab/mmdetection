@@ -145,7 +145,7 @@ class TestDetInferencer(TestCase):
                 'palette': 'random'
             }
 
-        res = inferencer(img_path, return_datasample=True)
+        res = inferencer(img_path, return_datasamples=True)
         self.assertTrue(is_list_of(res['predictions'], DetDataSample))
 
         with tempfile.TemporaryDirectory() as tmp_dir:

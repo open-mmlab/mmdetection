@@ -74,6 +74,7 @@ Import:
   - configs/scratch/metafile.yml
   - configs/seesaw_loss/metafile.yml
   - configs/simple_copy_paste/metafile.yml
+  - configs/soft_teacher/metafile.yml
   - configs/sparse_rcnn/metafile.yml
   - configs/solo/metafile.yml
   - configs/solov2/metafile.yml
@@ -87,3 +88,15 @@ Import:
   - configs/yolo/metafile.yml
   - configs/yolof/metafile.yml
   - configs/yolox/metafile.yml
+  - configs/bytetrack/metafile.yml
+  - configs/strongsort/metafile.yml
+  - configs/ocsort/metafile.yml
+  - configs/sort/metafile.yml
+  - configs/deepsort/metafile.yml
+  - configs/qdtrack/metafile.yml
+  - configs/mask2former_vis/metafile.yml
+  - configs/masktrack_rcnn/metafile.yml
+  - configs/glip/metafile.yml
+  - configs/ddq/metafile.yml
+  - configs/grounding_dino/metafile.yml
+  - configs/mm_grounding_dino/metafile.yml

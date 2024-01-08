@@ -4,6 +4,7 @@ import subprocess
 
 import torch
 from mmengine.logging import print_log
+from mmengine.utils import digit_version
 
 
 def parse_args():
@@ -37,7 +38,7 @@ def process_checkpoint(in_file, out_file, save_keys=['meta', 'state_dict']):
 
     # if it is necessary to remove some sensitive data in checkpoint['meta'],
     # add the code here.
-    if torch.__version__ >= '1.6':
+    if digit_version(torch.__version__) >= digit_version('1.6'):
         torch.save(checkpoint, out_file, _use_new_zipfile_serialization=False)
     else:
         torch.save(checkpoint, out_file)

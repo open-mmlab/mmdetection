@@ -5,15 +5,15 @@ This section will show how to train _predefined_ models (under [configs](../../.
 
 ## Prepare datasets
 
-Training requires preparing datasets too. See section [Prepare datasets](#prepare-datasets) above for details.
+Preparing datasets is also necessary for training. See section [Prepare datasets](#prepare-datasets) above for details.
 
 **Note**:
 Currently, the config files under `configs/cityscapes` use COCO pre-trained weights to initialize.
-You could download the existing models in advance if the network connection is unavailable or slow. Otherwise, it would cause errors at the beginning of training.
+If your network connection is slow or unavailable, it's advisable to download existing models before beginning training to avoid errors.
 
 ## Learning rate auto scaling
 
-**Important**: The default learning rate in config files is for 8 GPUs and 2 sample per GPU (batch size = 8 * 2 = 16). And it had been set to `auto_scale_lr.base_batch_size` in `config/_base_/schedules/schedule_1x.py`. Learning rate will be automatically scaled base on this value when the batch size is `16`. Meanwhile, in order not to affect other codebase which based on mmdet, the flag `auto_scale_lr.enable` is set to `False` by default.
+**Important**: The default learning rate in config files is for 8 GPUs and 2 sample per GPU (batch size = 8 * 2 = 16). And it had been set to `auto_scale_lr.base_batch_size` in `config/_base_/schedules/schedule_1x.py`. The learning rate will be automatically scaled based on the value at a batch size of 16. Meanwhile, to avoid affecting other codebases that use mmdet, the default setting for the `auto_scale_lr.enable` flag is `False`.
 
 If you want to enable this feature, you need to add argument `--auto-scale-lr`. And you need to check the config name which you want to use before you process the command, because the config name indicates the default batch size.
 By default, it is `8 x 2 = 16 batch size`, like `faster_rcnn_r50_caffe_fpn_90k_coco.py` or `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`. In other cases, you will see the config file name have `_NxM_` in dictating, like `cornernet_hourglass104_mstest_32x3_210e_coco.py` which batch size is `32 x 3 = 96`, or `scnet_x101_64x4d_fpn_8x1_20e_coco.py` which batch size is `8 x 1 = 8`.
@@ -56,8 +56,15 @@ train_cfg = dict(val_interval=12)
 This tool accepts several optional arguments, including:
 
 - `--work-dir ${WORK_DIR}`: Override the working directory.
-- `--auto-resume`: resume from the latest checkpoint in the work_dir automatically.
+- `--resume`: resume from the latest checkpoint in the work_dir automatically.
+- `--resume ${CHECKPOINT_FILE}`: resume from the specific checkpoint.
 - `--cfg-options 'Key=value'`: Overrides other settings in the used config.
+
+**Note:**
+
+There is a difference between `resume` and `load-from`:
+
+`resume` loads both the weights of the model and the state of the optimizer, and it inherits the iteration number from the specified checkpoint, so training does not start again from scratch. `load-from`, on the other hand, only loads the weights of the model, and its training starts from scratch. It is often used for fine-tuning a model. `load-from` needs to be written in the config file, while `resume` is passed as a command line argument.
 
 ## Training on CPU
 
@@ -141,8 +148,8 @@ When using Slurm, the port option needs to be set in one of the following ways:
 1. Set the port through `--options`. This is more recommended since it does not change the original configs.
 
    ```shell
-   CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR} --options 'dist_params.port=29500'
-   CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR} --options 'dist_params.port=29501'
+   CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR} --cfg-options 'dist_params.port=29500'
+   CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR} --cfg-options 'dist_params.port=29501'
    ```
 
 2. Modify the config files to set different communication ports.
@@ -385,7 +392,7 @@ Using the function above, users can successfully convert the annotation file int
 
 ## Prepare a config
 
-The second step is to prepare a config thus the dataset could be successfully loaded. Assume that we want to use Mask R-CNN with FPN, the config to train the detector on balloon dataset is as below. Assume the config is under directory `configs/balloon/` and named as `mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py`, the config is as below.
+The second step is to prepare a config thus the dataset could be successfully loaded. Assume that we want to use Mask R-CNN with FPN, the config to train the detector on balloon dataset is as below. Assume the config is under directory `configs/balloon/` and named as `mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py`, the config is as below. Please refer [Learn about Configs - MMDetection 3.0.0 documentation](https://mmdetection.readthedocs.io/en/latest/user_guides/config.html) to get detailed information about config files.
 
 ```python
 # The new config inherits a base config to highlight the necessary modification

@@ -1,5 +1,141 @@
 # Changelog of v3.x
 
+## v3.3.0 (05/01/2024)
+
+### Highlights
+
+Grounding-DINO is a state-of-the-art open-set detection model that tackles multiple vision tasks including Open-Vocabulary Detection (OVD), Phrase Grounding (PG), and Referring Expression Comprehension (REC). Its effectiveness has led to its widespread adoption as a mainstream architecture for various downstream applications. However, despite its significance, the original Grounding-DINO model lacks comprehensive public technical details due to the unavailability of its training code. To bridge this gap, we present MM-Grounding-DINO, an open-source, comprehensive, and user-friendly baseline, which is built with the MMDetection toolbox. It adopts abundant vision datasets for pre-training and various detection and grounding datasets for fine-tuning. We give a comprehensive analysis of each reported result and detailed settings for reproduction. The extensive experiments on the benchmarks mentioned demonstrate that our MM-Grounding-DINO-Tiny outperforms the Grounding-DINO-Tiny baseline. We release all our models to the research community.
+
+### New Features
+
+- Add RTMDet Swin / ConvNeXt backbone and results (#11259)
+- Add `odinw` configs and evaluation results of `GLIP` (#11175)
+- Add optional score threshold option to `coco_error_analysis.py` (#11117)
+- Add new configs for `panoptic_fpn` (#11109)
+- Replace partially weighted download links with OpenXLab for the `Faster-RCNN` (#11173)
+
+### Bug Fixes
+
+- Fix `Grounding DINO` nan when class tokens exceeds 256 (#11066)
+- Fix the `CO-DETR` config files error (#11325)
+- Fix `CO-DETR` load_from url in config (#11220)
+- Fixed mask shape after Albu postprocess (#11280)
+- Fix bug in `convert_coco_format`  and `youtubevis2coco` (#11251, #11086)
+
+### Contributors
+
+A total of 15 developers contributed to this release.
+
+Thank @adnan-mujagic, @Cycyes, @ilcopione, @returnL, @honeybadger78, @okotaku, @xushilin1, @keyhsw, @guyleaf, @Crescent-Saturn, @LRJKD, @aaronzs, @Divadi, @AwePhD, @hhaAndroid
+
+## v3.2.0 (12/10/2023)
+
+### Highlights
+
+**(1) Detection Transformer SOTA Model Collection**
+
+- Supported four updated and stronger SOTA Transformer models: DDQ, CO-DETR, AlignDETR, and H-DINO.
+- Based on CO-DETR, MMDet released a model with a COCO performance of 64.1 mAP.
+- Algorithms such as DINO support AMP/Checkpoint/FrozenBN, which can effectively reduce memory usage.
+
+**(2) Comprehensive Performance Comparison between CNN and Transformer**
+
+RF100 consists of a dataset collection of 100 real-world datasets, including 7 domains. It can be used to assess the performance differences of Transformer models like DINO and CNN-based algorithms under different scenarios and data volumes. Users can utilize this benchmark to quickly evaluate the robustness of their algorithms in various scenarios.
+
+**(3) Support for GLIP and Grounding DINO fine-tuning, the only algorithm library that supports Grounding DINO fine-tuning**
+
+The Grounding DINO algorithm in MMDet is the only library that supports fine-tuning. Its performance is one point higher than the official version, and of course, GLIP also outperforms the official version.
+We also provide a detailed process for training and evaluating Grounding DINO on custom datasets. Everyone is welcome to give it a try.
+
+**(4) Support for the open-vocabulary detection algorithm Detic and multi-dataset joint training.**
+
+**(5) Training detection models using FSDP and DeepSpeed.**
+
+**(6) Support for the V3Det dataset, a large-scale detection dataset with over 13,000 categories.**
+
+### New Features
+
+- Support CO-DETR/DDQ/AlignDETR/H-DINO
+- Support GLIP and Grounding DINO fine-tuning
+- Support Detic and Multi-Datasets training (#10926)
+- Support V3Det and benchmark (#10938)
+- Support Roboflow 100 Benchmark (#10915)
+- Add custom dataset of grounding dino (#11012)
+- Release RTMDet-X p6 (#10993)
+- Support AMP of DINO (#10827)
+- Support FrozenBN (#10845)
+- Add new configuration files for `QDTrack/DETR/RTMDet/MaskRCNN/DINO/DeformableDETR/MaskFormer` algorithm
+- Add a new script to support the WBF (#10808)
+- Add `large_image_demo` (#10719)
+- Support download dataset from OpenXLab (#10799)
+- Update to support torch2onnx for DETR series models (#10910)
+- Translation into Chinese of an English document (#10744, #10756, #10805, #10848)
+
+### Bug Fixes
+
+- Fix name error in DETR metafile.yml (#10595)
+- Fix device of the tensors in `set_nms` (#10574)
+- Remove some unicode chars from `en/` docs (#10648)
+- Fix download dataset with mim script. (#10727)
+- Fix export to torchserve (#10694)
+- Fix typo in `mask-rcnn_r50_fpn_1x-wandb_coco` (#10757)
+- Fix `eval_recalls` error in `voc_metric` (#10770)
+- Fix torch version comparison (#10934)
+- Fix incorrect behavior to access train pipeline from ConcatDataset in `analyze_results.py` (#11004)
+
+### Improvements
+
+- Update `useful_tools.md` (#10587)
+- Update Instance segmentation Tutorial (#10711)
+- Update `train.py` to compat with new config (#11025)
+- Support `torch2onnx` for maskformer series (#10782)
+
+### Contributors
+
+A total of 36 developers contributed to this release.
+
+Thank @YQisme, @nskostas, @max-unfinity, @evdcush, @Xiangxu-0103, @ZhaoCake, @RangeKing, @captainIT, @ODAncona, @aaronzs, @zeyuanyin, @gotjd709, @Musiyuan, @YanxingLiu, @RunningLeon, @ytzfhqs, @zhangzhidaSunny, @yeungkong, @crazysteeaam, @timerring, @okotaku, @apatsekin, @Morty-Xu, @Markson-Young, @ZhaoQiiii, @Kuro96, @PhoenixZ810, @yhcao6, @myownskyW7, @jiongjiongli, @Johnson-Wang, @ryylcc, @guyleaf, @agpeshal, @SimonGuoNjust, @hhaAndroid
+
+## v3.1.0 (30/6/2023)
+
+### Highlights
+
+- Supports tracking algorithms including multi-object tracking (MOT) algorithms SORT, DeepSORT, StrongSORT, OCSORT, ByteTrack, QDTrack, and video instance segmentation (VIS) algorithm MaskTrackRCNN, Mask2Former-VIS.
+- Support [ViTDet](../../../projects/ViTDet)
+- Supports inference and evaluation of multimodal algorithms [GLIP](../../../configs/glip) and [XDecoder](../../../projects/XDecoder), and also supports datasets such as COCO semantic segmentation, COCO Caption, ADE20k general segmentation, and RefCOCO. GLIP fine-tuning will be supported in the future.
+- Provides a [gradio demo](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/projects/gradio_demo/README.md) for image type tasks of MMDetection, making it easy for users to experience.
+
+### New Features
+
+- Support DSDL Dataset (#9801)
+- Support iSAID dataset (#10028)
+- Support VISION dataset (#10530)
+- Release SoftTeacher checkpoints (#10119)
+- Release `centernet-update_r50-caffe_fpn_ms-1x_coco` checkpoints  (#10327)
+- Support SIoULoss (#10290)
+- Support Eqlv2 loss (#10120)
+- Support CopyPaste when mask is not available (#10509)
+- Support MIM to download ODL dataset (#10460)
+- Support new config (#10566)
+
+### Bug Fixes
+
+- Fix benchmark scripts error in windows (#10128)
+- Fix error of `YOLOXModeSwitchHook` does not switch the mode when resumed from the checkpoint after switched (#10116)
+- Fix pred and weight dims unmatch in SmoothL1Loss (#10423)
+
+### Improvements
+
+- Update MMDet_Tutorial.ipynb (#10081)
+- Support to hide inference progress (#10519)
+- Replace mmcls with mmpretrain  (#10545)
+
+### Contributors
+
+A total of 29 developers contributed to this release.
+
+Thanks @lovelykite, @minato-ellie, @freepoet, @wufan-tb, @yalibian, @keyakiluo, @gihanjayatilaka, @i-aki-y, @xin-li-67, @RangeKing, @JingweiZhang12, @MambaWong, @lucianovk, @tall-josh, @xiuqhou, @jamiechoi1995, @YQisme, @yechenzhi, @bjzhb666, @xiexinch, @jamiechoi1995, @yarkable, @Renzhihan, @nijkah, @amaizr, @Lum1104, @zwhus, @Czm369, @hhaAndroid
+
 ## v3.0.0 (6/4/2023)
 
 ### Highlights
@@ -218,7 +354,7 @@ Thanks @liuyanyi, @RangeKing, @lihua199710, @MambaWong, @sanbuphy, @Xiangxu-0103
 
 - Update the docs of GIoU Loss in README (#8810)
 - Handle dataset wrapper in `inference_detector` (#9144)
-- Update the type of `counts` in COCO’s compressed RLE (#9274)
+- Update the type of `counts` in COCO's compressed RLE (#9274)
 - Support saving config file in `print_config` (#9276)
 - Update docs about video inference (#9305)
 - Update guide about model deployment (#9344)

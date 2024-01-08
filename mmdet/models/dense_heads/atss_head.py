@@ -191,8 +191,8 @@ class ATSSHead(AnchorHead):
                 (N, num_total_anchors).
             label_weights (Tensor): Label weights of each anchor with shape
                 (N, num_total_anchors)
-            bbox_targets (Tensor): BBox regression targets of each anchor
-                weight shape (N, num_total_anchors, 4).
+            bbox_targets (Tensor): BBox regression targets of each anchor with
+                shape (N, num_total_anchors, 4).
             avg_factor (float): Average factor that is used to average
                 the loss. When using sampling method, avg_factor is usually
                 the sum of positive and negative priors. When using
@@ -281,7 +281,7 @@ class ATSSHead(AnchorHead):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
+        featmap_sizes = [featmap.size()[-2:] for featmap in bbox_preds]
         assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device

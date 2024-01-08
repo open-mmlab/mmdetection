@@ -74,7 +74,8 @@ class DeformableDETRHead(DETRHead):
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             for m in self.cls_branches:
-                nn.init.constant_(m.bias, bias_init)
+                if hasattr(m, 'bias') and m.bias is not None:
+                    nn.init.constant_(m.bias, bias_init)
         for m in self.reg_branches:
             constant_init(m[-1], 0, bias=0)
         nn.init.constant_(self.reg_branches[0][-1].bias.data[2:], -2.0)
@@ -83,7 +84,7 @@ class DeformableDETRHead(DETRHead):
                 nn.init.constant_(m[-1].bias.data[2:], 0.0)
 
     def forward(self, hidden_states: Tensor,
-                references: List[Tensor]) -> Tuple[Tensor]:
+                references: List[Tensor]) -> Tuple[Tensor, Tensor]:
         """Forward function.
 
         Args:

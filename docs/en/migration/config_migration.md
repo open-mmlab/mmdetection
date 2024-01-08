@@ -31,7 +31,7 @@ pipeline=[
 
 </td>
 <tr>
-<td>2.x Config</td>
+<td>3.x Config</td>
 <td>
 
 ```python
@@ -713,7 +713,7 @@ log_config = dict(interval=50)
 ```python
 default_hooks = dict(
     logger=dict(type='LoggerHook', interval=50))
-# Optional： set moving average window size
+# Optional: set moving average window size
 log_processor = dict(
     type='LogProcessor', window_size=50)
 ```

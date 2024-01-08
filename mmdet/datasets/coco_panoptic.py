@@ -208,7 +208,7 @@ class CocoPanopticDataset(CocoDataset):
         if self.data_prefix.get('seg', None):
             seg_map_path = osp.join(
                 self.data_prefix['seg'],
-                img_info['file_name'].replace('jpg', 'png'))
+                img_info['file_name'].replace('.jpg', '.png'))
         else:
             seg_map_path = None
         data_info['img_path'] = img_path
@@ -216,6 +216,11 @@ class CocoPanopticDataset(CocoDataset):
         data_info['seg_map_path'] = seg_map_path
         data_info['height'] = img_info['height']
         data_info['width'] = img_info['width']
+
+        if self.return_classes:
+            data_info['text'] = self.metainfo['thing_classes']
+            data_info['stuff_text'] = self.metainfo['stuff_classes']
+            data_info['custom_entities'] = True  # no important
 
         instances = []
         segments_info = []

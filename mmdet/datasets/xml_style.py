@@ -64,7 +64,7 @@ class XMLDataset(BaseDetDataset):
         return data_list
 
     @property
-    def bbox_min_size(self) -> Optional[str]:
+    def bbox_min_size(self) -> Optional[int]:
         """Return the minimum size of bounding boxes in the images."""
         if self.filter_cfg is not None:
             return self.filter_cfg.get('bbox_min_size', None)

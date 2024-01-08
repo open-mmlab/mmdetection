@@ -12,6 +12,11 @@ from .detr_layers import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DetrTransformerEncoder, DetrTransformerEncoderLayer)
 from .utils import inverse_sigmoid
 
+try:
+    from fairscale.nn.checkpoint import checkpoint_wrapper
+except Exception:
+    checkpoint_wrapper = None
+
 
 class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
     """Transformer encoder of Deformable DETR."""
@@ -22,6 +27,16 @@ class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
             DeformableDetrTransformerEncoderLayer(**self.layer_cfg)
             for _ in range(self.num_layers)
         ])
+
+        if self.num_cp > 0:
+            if checkpoint_wrapper is None:
+                raise NotImplementedError(
+                    'If you want to reduce GPU memory usage, \
+                    please install fairscale by executing the \
+                    following command: pip install fairscale.')
+            for i in range(self.num_cp):
+                self.layers[i] = checkpoint_wrapper(self.layers[i])
+
         self.embed_dims = self.layers[0].embed_dims
 
     def forward(self, query: Tensor, query_pos: Tensor,

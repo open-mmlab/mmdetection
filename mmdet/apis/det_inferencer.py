@@ -2,12 +2,13 @@
 import copy
 import os.path as osp
 import warnings
-from typing import Dict, Iterable, List, Optional, Sequence, Union
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 import mmcv
 import mmengine
 import numpy as np
 import torch.nn as nn
+from mmcv.transforms import LoadImageFromFile
 from mmengine.dataset import Compose
 from mmengine.fileio import (get_file_backend, isdir, join_path,
                              list_dir_or_file)
@@ -60,6 +61,8 @@ class DetInferencer(BaseInferencer):
         scope (str, optional): The scope of the model. Defaults to mmdet.
         palette (str): Color palette used for visualization. The order of
             priority is palette -> config -> checkpoint. Defaults to 'none'.
+        show_progress (bool): Control whether to display the progress
+            bar during the inference process. Defaults to True.
     """
 
     preprocess_kwargs: set = set()
@@ -76,7 +79,7 @@ class DetInferencer(BaseInferencer):
     postprocess_kwargs: set = {
         'print_result',
         'pred_out_dir',
-        'return_datasample',
+        'return_datasamples',
         'no_save_pred',
     }
 
@@ -85,7 +88,8 @@ class DetInferencer(BaseInferencer):
                  weights: Optional[str] = None,
                  device: Optional[str] = None,
                  scope: Optional[str] = 'mmdet',
-                 palette: str = 'none') -> None:
+                 palette: str = 'none',
+                 show_progress: bool = True) -> None:
         # A global counter tracking the number of images processed, for
         # naming of the output images
         self.num_visualized_imgs = 0
@@ -95,6 +99,7 @@ class DetInferencer(BaseInferencer):
         super().__init__(
             model=model, weights=weights, device=device, scope=scope)
         self.model = revert_sync_batchnorm(self.model)
+        self.show_progress = show_progress
 
     def _load_weights_to_model(self, model: nn.Module,
                                checkpoint: Optional[dict],
@@ -161,21 +166,22 @@ class DetInferencer(BaseInferencer):
                 meta_key for meta_key in pipeline_cfg[-1]['meta_keys']
                 if meta_key != 'img_id')
 
-        load_img_idx = self._get_transform_idx(pipeline_cfg,
-                                               'LoadImageFromFile')
+        load_img_idx = self._get_transform_idx(
+            pipeline_cfg, ('LoadImageFromFile', LoadImageFromFile))
         if load_img_idx == -1:
             raise ValueError(
                 'LoadImageFromFile is not found in the test pipeline')
         pipeline_cfg[load_img_idx]['type'] = 'mmdet.InferencerLoader'
         return Compose(pipeline_cfg)
 
-    def _get_transform_idx(self, pipeline_cfg: ConfigType, name: str) -> int:
+    def _get_transform_idx(self, pipeline_cfg: ConfigType,
+                           name: Union[str, Tuple[str, type]]) -> int:
         """Returns the index of the transform in a pipeline.
 
         If the transform is not found, returns -1.
         """
         for i, transform in enumerate(pipeline_cfg):
-            if transform['type'] == name:
+            if transform['type'] in name:
                 return i
         return -1
 
@@ -270,7 +276,16 @@ class DetInferencer(BaseInferencer):
                 chunk_data = []
                 for _ in range(chunk_size):
                     inputs_ = next(inputs_iter)
-                    chunk_data.append((inputs_, self.pipeline(inputs_)))
+                    if isinstance(inputs_, dict):
+                        if 'img' in inputs_:
+                            ori_inputs_ = inputs_['img']
+                        else:
+                            ori_inputs_ = inputs_['img_path']
+                        chunk_data.append(
+                            (ori_inputs_,
+                             self.pipeline(copy.deepcopy(inputs_))))
+                    else:
+                        chunk_data.append((inputs_, self.pipeline(inputs_)))
                 yield chunk_data
             except StopIteration:
                 if chunk_data:
@@ -280,20 +295,29 @@ class DetInferencer(BaseInferencer):
     # TODO: Video and Webcam are currently not supported and
     #  may consume too much memory if your input folder has a lot of images.
     #  We will be optimized later.
-    def __call__(self,
-                 inputs: InputsType,
-                 batch_size: int = 1,
-                 return_vis: bool = False,
-                 show: bool = False,
-                 wait_time: int = 0,
-                 no_save_vis: bool = False,
-                 draw_pred: bool = True,
-                 pred_score_thr: float = 0.3,
-                 return_datasample: bool = False,
-                 print_result: bool = False,
-                 no_save_pred: bool = True,
-                 out_dir: str = '',
-                 **kwargs) -> dict:
+    def __call__(
+            self,
+            inputs: InputsType,
+            batch_size: int = 1,
+            return_vis: bool = False,
+            show: bool = False,
+            wait_time: int = 0,
+            no_save_vis: bool = False,
+            draw_pred: bool = True,
+            pred_score_thr: float = 0.3,
+            return_datasamples: bool = False,
+            print_result: bool = False,
+            no_save_pred: bool = True,
+            out_dir: str = '',
+            # by open image task
+            texts: Optional[Union[str, list]] = None,
+            # by open panoptic task
+            stuff_texts: Optional[Union[str, list]] = None,
+            # by GLIP and Grounding DINO
+            custom_entities: bool = False,
+            # by Grounding DINO
+            tokens_positive: Optional[Union[int, list]] = None,
+            **kwargs) -> dict:
         """Call the inferencer.
 
         Args:
@@ -308,16 +332,20 @@ class DetInferencer(BaseInferencer):
                 Defaults to True.
             pred_score_thr (float): Minimum score of bboxes to draw.
                 Defaults to 0.3.
-            return_datasample (bool): Whether to return results as
+            return_datasamples (bool): Whether to return results as
                 :obj:`DetDataSample`. Defaults to False.
             print_result (bool): Whether to print the inference result w/o
                 visualization to the console. Defaults to False.
             no_save_pred (bool): Whether to force not to save prediction
                 results. Defaults to True.
-            out_file: Dir to save the inference results or
+            out_dir: Dir to save the inference results or
                 visualization. If left as empty, no file will be saved.
                 Defaults to ''.
-
+            texts (str | list[str]): Text prompts. Defaults to None.
+            stuff_texts (str | list[str]): Stuff text prompts of open
+                panoptic task. Defaults to None.
+            custom_entities (bool): Whether to use custom entities.
+                Defaults to False. Only used in GLIP and Grounding DINO.
             **kwargs: Other keyword arguments passed to :meth:`preprocess`,
                 :meth:`forward`, :meth:`visualize` and :meth:`postprocess`.
                 Each key in kwargs should be in the corresponding set of
@@ -335,14 +363,46 @@ class DetInferencer(BaseInferencer):
         ) = self._dispatch_kwargs(**kwargs)
 
         ori_inputs = self._inputs_to_list(inputs)
+
+        if texts is not None and isinstance(texts, str):
+            texts = [texts] * len(ori_inputs)
+        if stuff_texts is not None and isinstance(stuff_texts, str):
+            stuff_texts = [stuff_texts] * len(ori_inputs)
+
+        # Currently only supports bs=1
+        tokens_positive = [tokens_positive] * len(ori_inputs)
+
+        if texts is not None:
+            assert len(texts) == len(ori_inputs)
+            for i in range(len(texts)):
+                if isinstance(ori_inputs[i], str):
+                    ori_inputs[i] = {
+                        'text': texts[i],
+                        'img_path': ori_inputs[i],
+                        'custom_entities': custom_entities,
+                        'tokens_positive': tokens_positive[i]
+                    }
+                else:
+                    ori_inputs[i] = {
+                        'text': texts[i],
+                        'img': ori_inputs[i],
+                        'custom_entities': custom_entities,
+                        'tokens_positive': tokens_positive[i]
+                    }
+        if stuff_texts is not None:
+            assert len(stuff_texts) == len(ori_inputs)
+            for i in range(len(stuff_texts)):
+                ori_inputs[i]['stuff_text'] = stuff_texts[i]
+
         inputs = self.preprocess(
             ori_inputs, batch_size=batch_size, **preprocess_kwargs)
 
         results_dict = {'predictions': [], 'visualization': []}
-        for ori_inputs, data in track(inputs, description='Inference'):
+        for ori_imgs, data in (track(inputs, description='Inference')
+                               if self.show_progress else inputs):
             preds = self.forward(data, **forward_kwargs)
             visualization = self.visualize(
-                ori_inputs,
+                ori_imgs,
                 preds,
                 return_vis=return_vis,
                 show=show,
@@ -355,7 +415,7 @@ class DetInferencer(BaseInferencer):
             results = self.postprocess(
                 preds,
                 visualization,
-                return_datasample=return_datasample,
+                return_datasamples=return_datasamples,
                 print_result=print_result,
                 no_save_pred=no_save_pred,
                 pred_out_dir=out_dir,
@@ -448,7 +508,7 @@ class DetInferencer(BaseInferencer):
         self,
         preds: PredType,
         visualization: Optional[List[np.ndarray]] = None,
-        return_datasample: bool = False,
+        return_datasamples: bool = False,
         print_result: bool = False,
         no_save_pred: bool = False,
         pred_out_dir: str = '',
@@ -466,7 +526,7 @@ class DetInferencer(BaseInferencer):
         Args:
             preds (List[:obj:`DetDataSample`]): Predictions of the model.
             visualization (Optional[np.ndarray]): Visualized predictions.
-            return_datasample (bool): Whether to use Datasample to store
+            return_datasamples (bool): Whether to use Datasample to store
                 inference results. If False, dict will be used.
             print_result (bool): Whether to print the inference result w/o
                 visualization to the console. Defaults to False.
@@ -483,7 +543,7 @@ class DetInferencer(BaseInferencer):
             - ``visualization`` (Any): Returned by :meth:`visualize`.
             - ``predictions`` (dict or DataSample): Returned by
                 :meth:`forward` and processed in :meth:`postprocess`.
-                If ``return_datasample=False``, it usually should be a
+                If ``return_datasamples=False``, it usually should be a
                 json-serializable dict containing only basic data elements such
                 as strings and numbers.
         """
@@ -492,14 +552,14 @@ class DetInferencer(BaseInferencer):
 
         result_dict = {}
         results = preds
-        if not return_datasample:
+        if not return_datasamples:
             results = []
             for pred in preds:
                 result = self.pred2dict(pred, pred_out_dir)
                 results.append(result)
         elif pred_out_dir != '':
             warnings.warn('Currently does not support saving datasample '
-                          'when return_datasample is set to True. '
+                          'when return_datasamples is set to True. '
                           'Prediction results are not saved!')
         # Add img to the results after printing and dumping
         result_dict['predictions'] = results
@@ -551,12 +611,14 @@ class DetInferencer(BaseInferencer):
             masks = data_sample.pred_instances.get('masks')
             pred_instances = data_sample.pred_instances.numpy()
             result = {
-                'bboxes': pred_instances.bboxes.tolist(),
                 'labels': pred_instances.labels.tolist(),
                 'scores': pred_instances.scores.tolist()
             }
+            if 'bboxes' in pred_instances:
+                result['bboxes'] = pred_instances.bboxes.tolist()
             if masks is not None:
-                if pred_instances.bboxes.sum() == 0:
+                if 'bboxes' not in pred_instances or pred_instances.bboxes.sum(
+                ) == 0:
                     # Fake bbox, such as the SOLO.
                     bboxes = mask2bbox(masks.cpu()).numpy().tolist()
                     result['bboxes'] = bboxes

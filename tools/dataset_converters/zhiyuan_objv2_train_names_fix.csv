@@ -1,0 +1,365 @@
+1,Person,Person
+2,Sneakers,Sneakers
+3,Chair,Chair
+4,Other Shoes,Other Shoes
+5,Hat,Hat
+6,Car,Car
+7,Lamp,Lamp
+8,Glasses,Glasses
+9,Bottle,Bottle
+10,Desk,Desk
+11,Cup,Cup
+12,Street Lights,Street Lights
+13,Cabinet/shelf,Cabinet/shelf
+14,Handbag/Satchel,Handbag/Satchel
+15,Bracelet,Bracelet
+16,Plate,Plate
+17,Picture/Frame,Picture/Frame
+18,Helmet,Helmet
+19,Book,Book
+20,Gloves,Gloves
+21,Storage box,Storage box
+22,Boat,Boat
+23,Leather Shoes,Leather Shoes
+24,Flower,Flower
+25,Bench,Bench
+26,Potted Plant,Potted Plant
+27,Bowl/Basin,Bowl/Basin
+28,Flag,Flag
+29,Pillow,Pillow
+30,Boots,Boots
+31,Vase,Vase
+32,Microphone,Microphone
+33,Necklace,Necklace
+34,Ring,Ring
+35,SUV,SUV
+36,Wine Glass,Wine Glass
+37,Belt,Belt
+38,Moniter/TV,Monitor/TV
+39,Backpack,Backpack
+40,Umbrella,Umbrella
+41,Traffic Light,Traffic Light
+42,Speaker,Speaker
+43,Watch,Watch
+44,Tie,Tie
+45,Trash bin Can,Trash bin Can
+46,Slippers,Slippers
+47,Bicycle,Bicycle
+48,Stool,Stool
+49,Barrel/bucket,Barrel/bucket
+50,Van,Van
+51,Couch,Couch
+52,Sandals,Sandals
+53,Bakset,Basket
+54,Drum,Drum
+55,Pen/Pencil,Pen/Pencil
+56,Bus,Bus
+57,Wild Bird,Wild Bird
+58,High Heels,High Heels
+59,Motorcycle,Motorcycle
+60,Guitar,Guitar
+61,Carpet,Carpet
+62,Cell Phone,Cell Phone
+63,Bread,Bread
+64,Camera,Camera
+65,Canned,Canned
+66,Truck,Truck
+67,Traffic cone,Traffic cone
+68,Cymbal,Cymbal
+69,Lifesaver,Lifesaver
+70,Towel,Towel
+71,Stuffed Toy,Stuffed Toy
+72,Candle,Candle
+73,Sailboat,Sailboat
+74,Laptop,Laptop
+75,Awning,Awning
+76,Bed,Bed
+77,Faucet,Faucet
+78,Tent,Tent
+79,Horse,Horse
+80,Mirror,Mirror
+81,Power outlet,Power outlet
+82,Sink,Sink
+83,Apple,Apple
+84,Air Conditioner,Air Conditioner
+85,Knife,Knife
+86,Hockey Stick,Hockey Stick
+87,Paddle,Paddle
+88,Pickup Truck,Pickup Truck
+89,Fork,Fork
+90,Traffic Sign,Traffic Sign
+91,Ballon,Ballon
+92,Tripod,Tripod
+93,Dog,Dog
+94,Spoon,Spoon
+95,Clock,Clock
+96,Pot,Pot
+97,Cow,Cow
+98,Cake,Cake
+99,Dinning Table,Dining Table
+100,Sheep,Sheep
+101,Hanger,Hanger
+102,Blackboard/Whiteboard,Blackboard/Whiteboard
+103,Napkin,Napkin
+104,Other Fish,Other Fish
+105,Orange/Tangerine,Orange/Tangerine
+106,Toiletry,Toiletry
+107,Keyboard,Keyboard
+108,Tomato,Tomato
+109,Lantern,Lantern
+110,Machinery Vehicle,Machinery Vehicle
+111,Fan,Fan
+112,Green Vegetables,Green Vegetables
+113,Banana,Banana
+114,Baseball Glove,Baseball Glove
+115,Airplane,Airplane
+116,Mouse,Mouse
+117,Train,Train
+118,Pumpkin,Pumpkin
+119,Soccer,Soccer
+120,Skiboard,Skiboard
+121,Luggage,Luggage
+122,Nightstand,Nightstand
+123,Tea pot,Teapot
+124,Telephone,Telephone
+125,Trolley,Trolley
+126,Head Phone,Head Phone
+127,Sports Car,Sports Car
+128,Stop Sign,Stop Sign
+129,Dessert,Dessert
+130,Scooter,Scooter
+131,Stroller,Stroller
+132,Crane,Crane
+133,Remote,Remote
+134,Refrigerator,Refrigerator
+135,Oven,Oven
+136,Lemon,Lemon
+137,Duck,Duck
+138,Baseball Bat,Baseball Bat
+139,Surveillance Camera,Surveillance Camera
+140,Cat,Cat
+141,Jug,Jug
+142,Broccoli,Broccoli
+143,Piano,Piano
+144,Pizza,Pizza
+145,Elephant,Elephant
+146,Skateboard,Skateboard
+147,Surfboard,Surfboard
+148,Gun,Gun
+149,Skating and Skiing shoes,Skating and Skiing shoes
+150,Gas stove,Gas stove
+151,Donut,Donut
+152,Bow Tie,Bow Tie
+153,Carrot,Carrot
+154,Toilet,Toilet
+155,Kite,Kite
+156,Strawberry,Strawberry
+157,Other Balls,Other Balls
+158,Shovel,Shovel
+159,Pepper,Pepper
+160,Computer Box,Computer Box
+161,Toilet Paper,Toilet Paper
+162,Cleaning Products,Cleaning Products
+163,Chopsticks,Chopsticks
+164,Microwave,Microwave
+165,Pigeon,Pigeon
+166,Baseball,Baseball
+167,Cutting/chopping Board,Cutting/chopping Board
+168,Coffee Table,Coffee Table
+169,Side Table,Side Table
+170,Scissors,Scissors
+171,Marker,Marker
+172,Pie,Pie
+173,Ladder,Ladder
+174,Snowboard,Snowboard
+175,Cookies,Cookies
+176,Radiator,Radiator
+177,Fire Hydrant,Fire Hydrant
+178,Basketball,Basketball
+179,Zebra,Zebra
+180,Grape,Grape
+181,Giraffe,Giraffe
+182,Potato,Potato
+183,Sausage,Sausage
+184,Tricycle,Tricycle
+185,Violin,Violin
+186,Egg,Egg
+187,Fire Extinguisher,Fire Extinguisher
+188,Candy,Candy
+189,Fire Truck,Fire Truck
+190,Billards,Billiards
+191,Converter,Converter
+192,Bathtub,Bathtub
+193,Wheelchair,Wheelchair
+194,Golf Club,Golf Club
+195,Briefcase,Briefcase
+196,Cucumber,Cucumber
+197,Cigar/Cigarette,Cigar/Cigarette
+198,Paint Brush,Paint Brush
+199,Pear,Pear
+200,Heavy Truck,Heavy Truck
+201,Hamburger,Hamburger
+202,Extractor,Extractor
+203,Extention Cord,Extension Cord
+204,Tong,Tong
+205,Tennis Racket,Tennis Racket
+206,Folder,Folder
+207,American Football,American Football
+208,earphone,earphone
+209,Mask,Mask
+210,Kettle,Kettle
+211,Tennis,Tennis
+212,Ship,Ship
+213,Swing,Swing
+214,Coffee Machine,Coffee Machine
+215,Slide,Slide
+216,Carriage,Carriage
+217,Onion,Onion
+218,Green beans,Green beans
+219,Projector,Projector
+220,Frisbee,Frisbee
+221,Washing Machine/Drying Machine,Washing Machine/Drying Machine
+222,Chicken,Chicken
+223,Printer,Printer
+224,Watermelon,Watermelon
+225,Saxophone,Saxophone
+226,Tissue,Tissue
+227,Toothbrush,Toothbrush
+228,Ice cream,Ice cream
+229,Hotair ballon,Hot air balloon
+230,Cello,Cello
+231,French Fries,French Fries
+232,Scale,Scale
+233,Trophy,Trophy
+234,Cabbage,Cabbage
+235,Hot dog,Hot dog
+236,Blender,Blender
+237,Peach,Peach
+238,Rice,Rice
+239,Wallet/Purse,Wallet/Purse
+240,Volleyball,Volleyball
+241,Deer,Deer
+242,Goose,Goose
+243,Tape,Tape
+244,Tablet,Tablet
+245,Cosmetics,Cosmetics
+246,Trumpet,Trumpet
+247,Pineapple,Pineapple
+248,Golf Ball,Golf Ball
+249,Ambulance,Ambulance
+250,Parking meter,Parking meter
+251,Mango,Mango
+252,Key,Key
+253,Hurdle,Hurdle
+254,Fishing Rod,Fishing Rod
+255,Medal,Medal
+256,Flute,Flute
+257,Brush,Brush
+258,Penguin,Penguin
+259,Megaphone,Megaphone
+260,Corn,Corn
+261,Lettuce,Lettuce
+262,Garlic,Garlic
+263,Swan,Swan
+264,Helicopter,Helicopter
+265,Green Onion,Green Onion
+266,Sandwich,Sandwich
+267,Nuts,Nuts
+268,Speed Limit Sign,Speed Limit Sign
+269,Induction Cooker,Induction Cooker
+270,Broom,Broom
+271,Trombone,Trombone
+272,Plum,Plum
+273,Rickshaw,Rickshaw
+274,Goldfish,Goldfish
+275,Kiwi fruit,Kiwi fruit
+276,Router/modem,Router/modem
+277,Poker Card,Poker Card
+278,Toaster,Toaster
+279,Shrimp,Shrimp
+280,Sushi,Sushi
+281,Cheese,Cheese
+282,Notepaper,Notepaper
+283,Cherry,Cherry
+284,Pliers,Pliers
+285,CD,CD
+286,Pasta,Pasta
+287,Hammer,Hammer
+288,Cue,Cue
+289,Avocado,Avocado
+290,Hamimelon,Hami melon
+291,Flask,Flask
+292,Mushroon,Mushroom
+293,Screwdriver,Screwdriver
+294,Soap,Soap
+295,Recorder,Recorder
+296,Bear,Bear
+297,Eggplant,Eggplant
+298,Board Eraser,Board Eraser
+299,Coconut,Coconut
+300,Tape Measur/ Ruler,Tape Measure/ Ruler
+301,Pig,Pig
+302,Showerhead,Showerhead
+303,Globe,Globe
+304,Chips,Chips
+305,Steak,Steak
+306,Crosswalk Sign,Crosswalk Sign
+307,Stapler,Stapler
+308,Campel,Camel
+309,Formula 1,Formula 1
+310,Pomegranate,Pomegranate
+311,Dishwasher,Dishwasher
+312,Crab,Crab
+313,Hoverboard,Hoverboard
+314,Meat ball,Meatball
+315,Rice Cooker,Rice Cooker
+316,Tuba,Tuba
+317,Calculator,Calculator
+318,Papaya,Papaya
+319,Antelope,Antelope
+320,Parrot,Parrot
+321,Seal,Seal
+322,Buttefly,Butterfly
+323,Dumbbell,Dumbbell
+324,Donkey,Donkey
+325,Lion,Lion
+326,Urinal,Urinal
+327,Dolphin,Dolphin
+328,Electric Drill,Electric Drill
+329,Hair Dryer,Hair Dryer
+330,Egg tart,Egg tart
+331,Jellyfish,Jellyfish
+332,Treadmill,Treadmill
+333,Lighter,Lighter
+334,Grapefruit,Grapefruit
+335,Game board,Game board
+336,Mop,Mop
+337,Radish,Radish
+338,Baozi,Baozi
+339,Target,Target
+340,French,French
+341,Spring Rolls,Spring Rolls
+342,Monkey,Monkey
+343,Rabbit,Rabbit
+344,Pencil Case,Pencil Case
+345,Yak,Yak
+346,Red Cabbage,Red Cabbage
+347,Binoculars,Binoculars
+348,Asparagus,Asparagus
+349,Barbell,Barbell
+350,Scallop,Scallop
+351,Noddles,Noddles
+352,Comb,Comb
+353,Dumpling,Dumpling
+354,Oyster,Oyster
+355,Table Teniis paddle,Table Tennis paddle
+356,Cosmetics Brush/Eyeliner Pencil,Cosmetics Brush/Eyeliner Pencil
+357,Chainsaw,Chainsaw
+358,Eraser,Eraser
+359,Lobster,Lobster
+360,Durian,Durian
+361,Okra,Okra
+362,Lipstick,Lipstick
+363,Cosmetics Mirror,Cosmetics Mirror
+364,Curling,Curling
+365,Table Tennis,Table Tennis

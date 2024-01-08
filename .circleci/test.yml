@@ -62,6 +62,7 @@ jobs:
             equal: ["3.9.0", << parameters.python >>]
           steps:
             - run: pip install "protobuf <= 3.20.1" && sudo apt-get update && sudo apt-get -y install libprotobuf-dev protobuf-compiler cmake
+            - run: pip install dsdl
       - run:
           name: Install mmdet dependencies
           # numpy may be downgraded after building pycocotools, which causes `ImportError: numpy.core.multiarray failed to import`
@@ -73,7 +74,9 @@ jobs:
             pip install -r requirements/tests.txt -r requirements/optional.txt
             pip install --force-reinstall pycocotools
             pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+            pip install -r requirements/tracking.txt
             pip install git+https://github.com/cocodataset/panopticapi.git
+            pip install git+https://github.com/JonathonLuiten/TrackEval.git
       - run:
           name: Build and install
           command: |
@@ -91,14 +94,14 @@ jobs:
         type: string
       cuda:
         type: enum
-        enum: ["10.1", "10.2", "11.1", "11.7"]
+        enum: ["11.1", "11.7", "11.8"]
       cudnn:
         type: integer
-        default: 7
+        default: 8
     machine:
-      image: ubuntu-2004-cuda-11.4:202110-01
+      image: linux-cuda-11:default
       # docker_layer_caching: true
-    resource_class: gpu.nvidia.small
+    resource_class: gpu.nvidia.small.multi
     steps:
       - checkout
       - run:
@@ -106,6 +109,12 @@ jobs:
           name: Clone Repos
           command: |
             git clone -b main --depth 1 ssh://git@github.com/open-mmlab/mmengine.git /home/circleci/mmengine
+      - run:
+          name: Install nvidia-container-toolkit and Restart Docker
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y nvidia-container-toolkit
+            sudo systemctl restart docker
       - run:
           name: Build Docker image
           command: |
@@ -121,7 +130,9 @@ jobs:
             docker exec mmdetection pip install -r requirements/tests.txt -r requirements/optional.txt
             docker exec mmdetection pip install pycocotools
             docker exec mmdetection pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+            docker exec mmdetection pip install -r requirements/tracking.txt
             docker exec mmdetection pip install git+https://github.com/cocodataset/panopticapi.git
+            docker exec mmdetection pip install git+https://github.com/JonathonLuiten/TrackEval.git
             docker exec mmdetection python -c 'import mmcv; print(mmcv.__version__)'
       - run:
           name: Build and install
@@ -154,9 +165,9 @@ workflows:
                 - dev-3.x
       - build_cpu:
           name: minimum_version_cpu
-          torch: 1.6.0
-          torchvision: 0.7.0
-          python: 3.7.4 # The lowest python 3.7.x version available on CircleCI images
+          torch: 1.8.0
+          torchvision: 0.9.0
+          python: 3.7.16
           requires:
             - lint
       - build_cpu:
@@ -175,7 +186,7 @@ workflows:
           torch: 1.8.1
           # Use double quotation mark to explicitly specify its type
           # as string instead of number
-          cuda: "10.2"
+          cuda: "11.1"
           requires:
             - hold
       - build_cuda:
@@ -191,8 +202,8 @@ workflows:
     jobs:
       - build_cuda:
           name: minimum_version_gpu
-          torch: 1.6.0
-          cuda: "10.1"
+          torch: 1.8.0
+          cuda: "11.1"
           filters:
             branches:
               only:

@@ -1,23 +1,26 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import json
+
 import pytest
 import torch
 import torch.nn.functional as F
 from mmengine.utils import digit_version
 
-from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DiceLoss,
-                                 DistributionFocalLoss, FocalLoss,
-                                 GaussianFocalLoss,
+from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DDQAuxLoss,
+                                 DiceLoss, DistributionFocalLoss, EQLV2Loss,
+                                 FocalLoss, GaussianFocalLoss,
                                  KnowledgeDistillationKLDivLoss, L1Loss,
-                                 MSELoss, QualityFocalLoss, SeesawLoss,
-                                 SmoothL1Loss, VarifocalLoss)
+                                 MarginL2Loss, MSELoss, QualityFocalLoss,
+                                 SeesawLoss, SmoothL1Loss, VarifocalLoss)
 from mmdet.models.losses.ghm_loss import GHMC, GHMR
 from mmdet.models.losses.iou_loss import (BoundedIoULoss, CIoULoss, DIoULoss,
-                                          EIoULoss, GIoULoss, IoULoss)
+                                          EIoULoss, GIoULoss, IoULoss,
+                                          SIoULoss)
 
 
-@pytest.mark.parametrize(
-    'loss_class',
-    [IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss, EIoULoss])
+@pytest.mark.parametrize('loss_class', [
+    IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss, EIoULoss, SIoULoss
+])
 def test_iou_type_loss_zeros_weight(loss_class):
     pred = torch.rand((10, 4))
     target = torch.rand((10, 4))
@@ -29,7 +32,7 @@ def test_iou_type_loss_zeros_weight(loss_class):
 
 @pytest.mark.parametrize('loss_class', [
     BalancedL1Loss, BoundedIoULoss, CIoULoss, CrossEntropyLoss, DIoULoss,
-    EIoULoss, FocalLoss, DistributionFocalLoss, MSELoss, SeesawLoss,
+    EIoULoss, SIoULoss, FocalLoss, DistributionFocalLoss, MSELoss, SeesawLoss,
     GaussianFocalLoss, GIoULoss, QualityFocalLoss, IoULoss, L1Loss,
     VarifocalLoss, GHMR, GHMC, SmoothL1Loss, KnowledgeDistillationKLDivLoss,
     DiceLoss
@@ -68,8 +71,8 @@ def test_QualityFocalLoss_Loss(loss_class, activated):
 
 
 @pytest.mark.parametrize('loss_class', [
-    IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss, EIoULoss, MSELoss,
-    L1Loss, SmoothL1Loss, BalancedL1Loss
+    IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss, EIoULoss, SIoULoss,
+    MSELoss, L1Loss, SmoothL1Loss, BalancedL1Loss, MarginL2Loss
 ])
 @pytest.mark.parametrize('input_shape', [(10, 4), (0, 4)])
 def test_regression_losses(loss_class, input_shape):
@@ -289,3 +292,55 @@ def test_dice_loss(naive_dice):
     with pytest.raises(AssertionError):
         weight = torch.rand((8))
         loss_class(naive_dice=naive_dice)(pred, target, weight)
+
+
+@pytest.mark.parametrize('loss_class', [EQLV2Loss])
+@pytest.mark.parametrize('reduction', ['mean'])
+def test_eqlv2_loss(loss_class, reduction):
+    cls_score = torch.randn((1204, 1204))
+    label = torch.randint(0, 2, (1204, ))
+    weight = None
+
+    loss = loss_class()(cls_score, label, weight)
+    assert isinstance(loss, torch.Tensor)
+
+
+@pytest.mark.parametrize('loss_class', [DDQAuxLoss])
+def test_ddq_aux_loss(loss_class):
+    data_sample_file_path = 'tests/data/coco_batched_sample.json'
+    num_classes = 80
+    num_pred = 1350
+
+    with open(data_sample_file_path, 'r') as file_stream:
+        data_sample_infos = json.load(file_stream)
+
+    gt_bboxes = []
+    img_metas = []
+    gt_labels = []
+
+    for data_sample_info in data_sample_infos:
+        metainfo = data_sample_info['metainfo']
+        labels = torch.LongTensor(data_sample_info['labels'])
+        bboxes = torch.Tensor(data_sample_info['bboxes'])
+
+        img_metas.append(metainfo)
+        gt_labels.append(labels)
+        gt_bboxes.append(bboxes)
+
+    batch_size = len(data_sample_infos)
+    pred_classes = torch.rand([batch_size, num_pred, num_classes])
+    pred_bboxes = torch.rand([batch_size, num_pred, 4])
+
+    aux_loss_for_dense = loss_class(
+        train_cfg=dict(assigner=dict(type='TopkHungarianAssigner', topk=4)))
+
+    aux_loss = aux_loss_for_dense.loss(pred_classes, pred_bboxes, gt_bboxes,
+                                       gt_labels, img_metas)
+
+    assert isinstance(aux_loss, dict)
+
+    for loss_name, batch_losses in aux_loss.items():
+        assert isinstance(batch_losses, list)
+
+        for loss in batch_losses:
+            assert isinstance(loss, torch.Tensor)

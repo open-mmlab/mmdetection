@@ -2,11 +2,13 @@
 import copy
 import inspect
 import math
+import warnings
 from typing import List, Optional, Sequence, Tuple, Union
 
 import cv2
 import mmcv
 import numpy as np
+from mmcv.image import imresize
 from mmcv.image.geometric import _scale_size
 from mmcv.transforms import BaseTransform
 from mmcv.transforms import Pad as MMCV_Pad
@@ -35,6 +37,98 @@ except ImportError:
     Compose = None
 
 Number = Union[int, float]
+
+
+def _fixed_scale_size(
+    size: Tuple[int, int],
+    scale: Union[float, int, tuple],
+) -> Tuple[int, int]:
+    """Rescale a size by a ratio.
+
+    Args:
+        size (tuple[int]): (w, h).
+        scale (float | tuple(float)): Scaling factor.
+
+    Returns:
+        tuple[int]: scaled size.
+    """
+    if isinstance(scale, (float, int)):
+        scale = (scale, scale)
+    w, h = size
+    # don't need o.5 offset
+    return int(w * float(scale[0])), int(h * float(scale[1]))
+
+
+def rescale_size(old_size: tuple,
+                 scale: Union[float, int, tuple],
+                 return_scale: bool = False) -> tuple:
+    """Calculate the new size to be rescaled to.
+
+    Args:
+        old_size (tuple[int]): The old size (w, h) of image.
+        scale (float | tuple[int]): The scaling factor or maximum size.
+            If it is a float number, then the image will be rescaled by this
+            factor, else if it is a tuple of 2 integers, then the image will
+            be rescaled as large as possible within the scale.
+        return_scale (bool): Whether to return the scaling factor besides the
+            rescaled image size.
+
+    Returns:
+        tuple[int]: The new rescaled image size.
+    """
+    w, h = old_size
+    if isinstance(scale, (float, int)):
+        if scale <= 0:
+            raise ValueError(f'Invalid scale {scale}, must be positive.')
+        scale_factor = scale
+    elif isinstance(scale, tuple):
+        max_long_edge = max(scale)
+        max_short_edge = min(scale)
+        scale_factor = min(max_long_edge / max(h, w),
+                           max_short_edge / min(h, w))
+    else:
+        raise TypeError(
+            f'Scale must be a number or tuple of int, but got {type(scale)}')
+    # only change this
+    new_size = _fixed_scale_size((w, h), scale_factor)
+
+    if return_scale:
+        return new_size, scale_factor
+    else:
+        return new_size
+
+
+def imrescale(
+    img: np.ndarray,
+    scale: Union[float, Tuple[int, int]],
+    return_scale: bool = False,
+    interpolation: str = 'bilinear',
+    backend: Optional[str] = None
+) -> Union[np.ndarray, Tuple[np.ndarray, float]]:
+    """Resize image while keeping the aspect ratio.
+
+    Args:
+        img (ndarray): The input image.
+        scale (float | tuple[int]): The scaling factor or maximum size.
+            If it is a float number, then the image will be rescaled by this
+            factor, else if it is a tuple of 2 integers, then the image will
+            be rescaled as large as possible within the scale.
+        return_scale (bool): Whether to return the scaling factor besides the
+            rescaled image.
+        interpolation (str): Same as :func:`resize`.
+        backend (str | None): Same as :func:`resize`.
+
+    Returns:
+        ndarray: The rescaled image.
+    """
+    h, w = img.shape[:2]
+    new_size, scale_factor = rescale_size((w, h), scale, return_scale=True)
+    rescaled_img = imresize(
+        img, new_size, interpolation=interpolation, backend=backend)
+    if return_scale:
+        return rescaled_img, scale_factor
+    else:
+        return rescaled_img
 
 
 @TRANSFORMS.register_module()
@@ -106,23 +200,6 @@ class Resize(MMCV_Resize):
             if self.clip_object_border:
                 results['gt_bboxes'].clip_(results['img_shape'])
 
-    def _resize_seg(self, results: dict) -> None:
-        """Resize semantic segmentation map with ``results['scale']``."""
-        if results.get('gt_seg_map', None) is not None:
-            if self.keep_ratio:
-                gt_seg = mmcv.imrescale(
-                    results['gt_seg_map'],
-                    results['scale'],
-                    interpolation='nearest',
-                    backend=self.backend)
-            else:
-                gt_seg = mmcv.imresize(
-                    results['gt_seg_map'],
-                    results['scale'],
-                    interpolation='nearest',
-                    backend=self.backend)
-            results['gt_seg_map'] = gt_seg
-
     def _record_homography_matrix(self, results: dict) -> None:
         """Record the homography matrix for the Resize."""
         w_scale, h_scale = results['scale_factor']
@@ -167,6 +244,115 @@ class Resize(MMCV_Resize):
         repr_str += f'backend={self.backend}), '
         repr_str += f'interpolation={self.interpolation})'
         return repr_str
+
+
+@TRANSFORMS.register_module()
+class FixScaleResize(Resize):
+    """Compared to Resize, FixScaleResize fixes the scaling issue when
+    `keep_ratio=true`."""
+
+    def _resize_img(self, results):
+        """Resize images with ``results['scale']``."""
+        if results.get('img', None) is not None:
+            if self.keep_ratio:
+                img, scale_factor = imrescale(
+                    results['img'],
+                    results['scale'],
+                    interpolation=self.interpolation,
+                    return_scale=True,
+                    backend=self.backend)
+                new_h, new_w = img.shape[:2]
+                h, w = results['img'].shape[:2]
+                w_scale = new_w / w
+                h_scale = new_h / h
+            else:
+                img, w_scale, h_scale = mmcv.imresize(
+                    results['img'],
+                    results['scale'],
+                    interpolation=self.interpolation,
+                    return_scale=True,
+                    backend=self.backend)
+            results['img'] = img
+            results['img_shape'] = img.shape[:2]
+            results['scale_factor'] = (w_scale, h_scale)
+            results['keep_ratio'] = self.keep_ratio
+
+
+@TRANSFORMS.register_module()
+class ResizeShortestEdge(BaseTransform):
+    """Resize the image and mask while keeping the aspect ratio unchanged.
+
+    Modified from https://github.com/facebookresearch/detectron2/blob/main/detectron2/data/transforms/augmentation_impl.py#L130 # noqa:E501
+
+    This transform attempts to scale the shorter edge to the given
+    `scale`, as long as the longer edge does not exceed `max_size`.
+    If `max_size` is reached, then downscale so that the longer
+    edge does not exceed `max_size`.
+
+    Required Keys:
+        - img
+        - gt_seg_map (optional)
+    Modified Keys:
+        - img
+        - img_shape
+        - gt_seg_map (optional))
+    Added Keys:
+        - scale
+        - scale_factor
+        - keep_ratio
+
+    Args:
+        scale (Union[int, Tuple[int, int]]): The target short edge length.
+            If it's tuple, will select the min value as the short edge length.
+        max_size (int): The maximum allowed longest edge length.
+    """
+
+    def __init__(self,
+                 scale: Union[int, Tuple[int, int]],
+                 max_size: Optional[int] = None,
+                 resize_type: str = 'Resize',
+                 **resize_kwargs) -> None:
+        super().__init__()
+        self.scale = scale
+        self.max_size = max_size
+
+        self.resize_cfg = dict(type=resize_type, **resize_kwargs)
+        self.resize = TRANSFORMS.build({'scale': 0, **self.resize_cfg})
+
+    def _get_output_shape(
+            self, img: np.ndarray,
+            short_edge_length: Union[int, Tuple[int, int]]) -> Tuple[int, int]:
+        """Compute the target image shape with the given `short_edge_length`.
+
+        Args:
+            img (np.ndarray): The input image.
+            short_edge_length (Union[int, Tuple[int, int]]): The target short
+                edge length. If it's tuple, will select the min value as the
+                short edge length.
+        """
+        h, w = img.shape[:2]
+        if isinstance(short_edge_length, int):
+            size = short_edge_length * 1.0
+        elif isinstance(short_edge_length, tuple):
+            size = min(short_edge_length) * 1.0
+        scale = size / min(h, w)
+        if h < w:
+            new_h, new_w = size, scale * w
+        else:
+            new_h, new_w = scale * h, size
+
+        if self.max_size and max(new_h, new_w) > self.max_size:
+            scale = self.max_size * 1.0 / max(new_h, new_w)
+            new_h *= scale
+            new_w *= scale
+
+        new_h = int(new_h + 0.5)
+        new_w = int(new_w + 0.5)
+        return new_w, new_h
+
+    def transform(self, results: dict) -> dict:
+        self.resize.scale = self._get_output_shape(results['img'], self.scale)
+        return self.resize(results)
 
 
 @TRANSFORMS.register_module()
@@ -623,6 +809,7 @@ class RandomCrop(BaseTransform):
     - gt_masks (optional)
     - gt_ignore_flags (optional)
     - gt_seg_map (optional)
+    - gt_instances_ids (options, only used in MOT/VIS)
 
     Added Keys:
 
@@ -753,6 +940,11 @@ class RandomCrop(BaseTransform):
                 if self.recompute_bbox:
                     results['gt_bboxes'] = results['gt_masks'].get_bboxes(
                         type(results['gt_bboxes']))
+
+            # We should remove the instance ids corresponding to invalid boxes.
+            if results.get('gt_instances_ids', None) is not None:
+                results['gt_instances_ids'] = \
+                    results['gt_instances_ids'][valid_inds]
 
         # crop semantic seg
         if results.get('gt_seg_map', None) is not None:
@@ -1574,8 +1766,10 @@ class Albu(BaseTransform):
                     results['masks'] = np.array(
                         [results['masks'][i] for i in results['idx_mapper']])
                     results['masks'] = ori_masks.__class__(
-                        results['masks'], ori_masks.height, ori_masks.width)
-
+                        results['masks'],
+                        results['masks'][0].shape[0],
+                        results['masks'][0].shape[1],
+                    )
                 if (not len(results['idx_mapper'])
                         and self.skip_img_without_anno):
                     return None
@@ -2109,7 +2303,7 @@ class Mosaic(BaseTransform):
     - gt_ignore_flags (optional)
 
     Args:
-        img_scale (Sequence[int]): Image size after mosaic pipeline of single
+        img_scale (Sequence[int]): Image size before mosaic pipeline of single
             image. The shape order should be (width, height).
             Defaults to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
@@ -2438,7 +2632,7 @@ class MixUp(BaseTransform):
         retrieve_img = retrieve_results['img']
 
         jit_factor = random.uniform(*self.ratio_range)
-        is_filp = random.uniform(0, 1) > self.flip_ratio
+        is_flip = random.uniform(0, 1) > self.flip_ratio
 
         if len(retrieve_img.shape) == 3:
             out_img = np.ones(
@@ -2465,7 +2659,7 @@ class MixUp(BaseTransform):
                                           int(out_img.shape[0] * jit_factor)))
 
         # 4. flip
-        if is_filp:
+        if is_flip:
             out_img = out_img[:, ::-1, :]
 
         # 5. random crop
@@ -2491,7 +2685,7 @@ class MixUp(BaseTransform):
         if self.bbox_clip_border:
             retrieve_gt_bboxes.clip_([origin_h, origin_w])
 
-        if is_filp:
+        if is_flip:
             retrieve_gt_bboxes.flip_([origin_h, origin_w],
                                      direction='horizontal')
 
@@ -2816,6 +3010,9 @@ class CopyPaste(BaseTransform):
             all objects of the source image will be pasted to the
             destination image.
             Defaults to True.
+        paste_by_box (bool): Whether use boxes as masks when masks are not
+            available.
+            Defaults to False.
     """
 
     def __init__(
@@ -2824,11 +3021,13 @@ class CopyPaste(BaseTransform):
         bbox_occluded_thr: int = 10,
         mask_occluded_thr: int = 300,
         selected: bool = True,
+        paste_by_box: bool = False,
     ) -> None:
         self.max_num_pasted = max_num_pasted
         self.bbox_occluded_thr = bbox_occluded_thr
         self.mask_occluded_thr = mask_occluded_thr
         self.selected = selected
+        self.paste_by_box = paste_by_box
 
     @cache_randomness
     def get_indexes(self, dataset: BaseDataset) -> int:
@@ -2867,11 +3066,31 @@ class CopyPaste(BaseTransform):
         num_pasted = np.random.randint(0, max_num_pasted)
         return np.random.choice(num_bboxes, size=num_pasted, replace=False)
 
+    def get_gt_masks(self, results: dict) -> BitmapMasks:
+        """Get gt_masks originally or generated based on bboxes.
+
+        If gt_masks is not contained in results,
+        it will be generated based on gt_bboxes.
+        Args:
+            results (dict): Result dict.
+        Returns:
+            BitmapMasks: gt_masks, originally or generated based on bboxes.
+        """
+        if results.get('gt_masks', None) is not None:
+            if self.paste_by_box:
+                warnings.warn('gt_masks is already contained in results, '
+                              'so paste_by_box is disabled.')
+            return results['gt_masks']
+        else:
+            if not self.paste_by_box:
+                raise RuntimeError('results does not contain masks.')
+            return results['gt_bboxes'].create_masks(results['img'].shape[:2])
+
     def _select_object(self, results: dict) -> dict:
         """Select some objects from the source results."""
         bboxes = results['gt_bboxes']
         labels = results['gt_bboxes_labels']
-        masks = results['gt_masks']
+        masks = self.get_gt_masks(results)
         ignore_flags = results['gt_ignore_flags']
 
         selected_inds = self._get_selected_inds(bboxes.shape[0])
@@ -2899,7 +3118,7 @@ class CopyPaste(BaseTransform):
         dst_img = dst_results['img']
         dst_bboxes = dst_results['gt_bboxes']
         dst_labels = dst_results['gt_bboxes_labels']
-        dst_masks = dst_results['gt_masks']
+        dst_masks = self.get_gt_masks(dst_results)
         dst_ignore_flags = dst_results['gt_ignore_flags']
 
         src_img = src_results['img']
@@ -2957,7 +3176,8 @@ class CopyPaste(BaseTransform):
         repr_str += f'(max_num_pasted={self.max_num_pasted}, '
         repr_str += f'bbox_occluded_thr={self.bbox_occluded_thr}, '
         repr_str += f'mask_occluded_thr={self.mask_occluded_thr}, '
-        repr_str += f'selected={self.selected})'
+        repr_str += f'selected={self.selected}), '
+        repr_str += f'paste_by_box={self.paste_by_box})'
         return repr_str
 
 
@@ -3170,7 +3390,7 @@ class CachedMosaic(Mosaic):
     - gt_ignore_flags (optional)
 
     Args:
-        img_scale (Sequence[int]): Image size after mosaic pipeline of single
+        img_scale (Sequence[int]): Image size before mosaic pipeline of single
             image. The shape order should be (width, height).
             Defaults to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
@@ -3509,7 +3729,7 @@ class CachedMixUp(BaseTransform):
         with_mask = True if 'gt_masks' in results else False
 
         jit_factor = random.uniform(*self.ratio_range)
-        is_filp = random.uniform(0, 1) > self.flip_ratio
+        is_flip = random.uniform(0, 1) > self.flip_ratio
 
         if len(retrieve_img.shape) == 3:
             out_img = np.ones(
@@ -3536,7 +3756,7 @@ class CachedMixUp(BaseTransform):
                                           int(out_img.shape[0] * jit_factor)))
 
         # 4. flip
-        if is_filp:
+        if is_flip:
             out_img = out_img[:, ::-1, :]
 
         # 5. random crop
@@ -3566,7 +3786,7 @@ class CachedMixUp(BaseTransform):
         if self.bbox_clip_border:
             retrieve_gt_bboxes.clip_([origin_h, origin_w])
 
-        if is_filp:
+        if is_flip:
             retrieve_gt_bboxes.flip_([origin_h, origin_w],
                                      direction='horizontal')
             if with_mask:

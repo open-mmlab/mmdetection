@@ -1,0 +1,111 @@
+Collections:
+  - Name: GLIP
+    Metadata:
+      Training Data: Objects365, GoldG, CC3M, SBU and COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: A100 GPUs
+      Architecture:
+        - Swin Transformer
+        - DYHead
+        - BERT
+    Paper:
+      URL: https://arxiv.org/abs/2112.03857
+      Title: 'GLIP: Grounded Language-Image Pre-training'
+    README: configs/glip/README.md
+    Code:
+      URL:
+      Version: v3.0.0
+
+Models:
+  - Name: glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365
+    In Collection: GLIP
+    Config: configs/glip/glip_atss_swin-t_a_fpn_dyhead_pretrain_obj365.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 43.0
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_a_mmdet-b3654169.pth
+  - Name: glip_atss_swin-t_b_fpn_dyhead_pretrain_obj365
+    In Collection: GLIP
+    Config: configs/glip/glip_atss_swin-t_b_fpn_dyhead_pretrain_obj365.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 44.9
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_b_mmdet-6dfbd102.pth
+  - Name: glip_atss_swin-t_c_fpn_dyhead_pretrain_obj365-goldg
+    In Collection: GLIP
+    Config: configs/glip/glip_atss_swin-t_c_fpn_dyhead_pretrain_obj365-goldg.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 46.7
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_c_mmdet-2fc427dd.pth
+  - Name: glip_atss_swin-t_fpn_dyhead_pretrain_obj365-goldg-cc3m-sub
+    In Collection: GLIP
+    Config: configs/glip/glip_atss_swin-t_fpn_dyhead_pretrain_obj365-goldg-cc3m-sub.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 46.4
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/glip/glip_tiny_mmdet-c24ce662.pth
+  - Name: glip_atss_swin-l_fpn_dyhead_pretrain_mixeddata
+    In Collection: GLIP
+    Config: configs/glip/glip_atss_swin-l_fpn_dyhead_pretrain_mixeddata.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 51.3
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/glip/glip_l_mmdet-abfe026b.pth
+  - Name: glip_atss_swin-t_a_fpn_dyhead_16xb2_ms-2x_funtune_coco
+    In Collection: GLIP
+    Config: configs/glip/glip_atss_swin-t_a_fpn_dyhead_16xb2_ms-2x_funtune_coco.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 53.3
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/glip/glip_atss_swin-t_a_fpn_dyhead_16xb2_ms-2x_funtune_coco/glip_atss_swin-t_a_fpn_dyhead_16xb2_ms-2x_funtune_coco_20230914_180419-e6addd96.pth
+  - Name: glip_atss_swin-t_b_fpn_dyhead_16xb2_ms-2x_funtune_coco
+    In Collection: GLIP
+    Config: configs/glip/glip_atss_swin-t_b_fpn_dyhead_16xb2_ms-2x_funtune_coco.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 54.1
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/glip/glip_atss_swin-t_b_fpn_dyhead_16xb2_ms-2x_funtune_coco/glip_atss_swin-t_b_fpn_dyhead_16xb2_ms-2x_funtune_coco_20230916_163538-650323ba.pth
+  - Name: glip_atss_swin-t_c_fpn_dyhead_16xb2_ms-2x_funtune_coco
+    In Collection: GLIP
+    Config: configs/glip/glip_atss_swin-t_c_fpn_dyhead_16xb2_ms-2x_funtune_coco.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 55.2
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/glip/glip_atss_swin-t_c_fpn_dyhead_16xb2_ms-2x_funtune_coco/glip_atss_swin-t_c_fpn_dyhead_16xb2_ms-2x_funtune_coco_20230914_182935-4ba3fc3b.pth
+  - Name: glip_atss_swin-t_fpn_dyhead_16xb2_ms-2x_funtune_coco
+    In Collection: GLIP
+    Config: configs/glip/glip_atss_swin-t_fpn_dyhead_16xb2_ms-2x_funtune_coco.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 55.4
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/glip/glip_atss_swin-t_fpn_dyhead_16xb2_ms-2x_funtune_coco/glip_atss_swin-t_fpn_dyhead_16xb2_ms-2x_funtune_coco_20230914_224410-ba97be24.pth
+  - Name: glip_atss_swin-l_fpn_dyhead_16xb2_ms-2x_funtune_coco
+    In Collection: GLIP
+    Config: configs/glip/glip_atss_swin-l_fpn_dyhead_16xb2_ms-2x_funtune_coco.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 59.4
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/glip/glip_atss_swin-l_fpn_dyhead_16xb2_ms-2x_funtune_coco/glip_atss_swin-l_fpn_dyhead_16xb2_ms-2x_funtune_coco_20230910_100800-e9be4274.pth
