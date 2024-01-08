@@ -40,6 +40,8 @@ class TestHTCRoIHead(TestCase):
         if torch.cuda.is_available():
             device = 'cuda'
         elif is_musa_available():
+            # TODO not supported by musa yet! haowen.han@mthreads.com
+            return
             device = 'musa'
         roi_head = roi_head.to(device)
         feats = []

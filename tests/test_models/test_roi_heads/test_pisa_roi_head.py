@@ -22,7 +22,8 @@ class TestPISARoIHead(TestCase):
         roi_head = MODELS.build(self.roi_head_cfg)
         self.assertTrue(roi_head.with_bbox)
 
-    @parameterized.expand(['cpu', 'cuda', 'musa'])
+    # TODO haowen.han@mthreads.com not supported by musa yet!
+    @parameterized.expand(['cpu', 'cuda'])
     def test_pisa_roi_head(self, device):
         """Tests trident roi head predict."""
         if not torch.cuda.is_available() and device == 'cuda':

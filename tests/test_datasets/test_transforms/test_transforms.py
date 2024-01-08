@@ -1619,8 +1619,6 @@ class TestCorrupt(unittest.TestCase):
 
         # Execute transforms
         results = load(results)
-        import pdb
-        pdb.set_trace()
         results = corrupt_transform(results)
 
         self.assertEqual(results['img'].dtype, np.uint8)
