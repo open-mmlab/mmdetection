@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from collections import OrderedDict
 from functools import partial
 from pathlib import Path
-
+from mmengine.device import is_musa_available
 import numpy as np
 import pandas as pd
 import torch
@@ -120,6 +120,9 @@ def inference(config_file, checkpoint, work_dir, args, exp_name):
             if torch.cuda.is_available():
                 model.cuda()
                 input = input.cuda()
+            if is_musa_available:
+                model.musa()
+                input = input.musa()  
             model = revert_sync_batchnorm(model)
             inputs = (input, )
             model.eval()
@@ -145,6 +148,8 @@ def inference(config_file, checkpoint, work_dir, args, exp_name):
             model = MODELS.build(cfg.model)
             if torch.cuda.is_available():
                 model = model.cuda()
+            if is_musa_available:
+                model = model.musa()
             model = revert_sync_batchnorm(model)
             model.eval()
             _forward = model.forward

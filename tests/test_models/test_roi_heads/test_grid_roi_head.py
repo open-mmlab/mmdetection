@@ -4,7 +4,7 @@ from unittest import TestCase
 
 import torch
 from parameterized import parameterized
-
+from mmengine.device import is_musa_available
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
 from mmdet.utils import register_all_modules
@@ -21,13 +21,15 @@ class TestGridRoIHead(TestCase):
         roi_head = MODELS.build(self.roi_head_cfg)
         self.assertTrue(roi_head.with_bbox)
 
-    @parameterized.expand(['cpu', 'cuda'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_grid_roi_head_loss(self, device):
         """Tests trident roi head predict."""
         if device == 'cuda':
             if not torch.cuda.is_available():
                 return unittest.skip('test requires GPU and torch+cuda')
-
+        if device=='musa':
+            if not is_musa_available():
+                return  unittest.skip('test requires GPU and torch+musa')
         roi_head = MODELS.build(self.roi_head_cfg)
         roi_head = roi_head.to(device=device)
         s = 256
@@ -71,13 +73,15 @@ class TestGridRoIHead(TestCase):
             'loss_grid', out,
             'grid loss should be passed when there are no true boxes')
 
-    @parameterized.expand(['cpu', 'cuda'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_grid_roi_head_predict(self, device):
         """Tests trident roi head predict."""
         if device == 'cuda':
             if not torch.cuda.is_available():
                 return unittest.skip('test requires GPU and torch+cuda')
-
+        if device == 'musa':
+            if not is_musa_available():
+                return unittest.skip('test requires GPU and torch+musa')
         roi_head = MODELS.build(self.roi_head_cfg)
         roi_head = roi_head.to(device=device)
         s = 256
@@ -99,12 +103,15 @@ class TestGridRoIHead(TestCase):
             image_shapes=image_shapes, num_proposals=100, device=device)
         roi_head.predict(feats, proposals_list, batch_data_samples)
 
-    @parameterized.expand(['cpu', 'cuda'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_grid_roi_head_forward(self, device):
         """Tests trident roi head forward."""
         if device == 'cuda':
             if not torch.cuda.is_available():
                 return unittest.skip('test requires GPU and torch+cuda')
+        if device == 'musa':
+            if not is_musa_available():
+                return unittest.skip('test requires GPU and torch+musa')
 
         roi_head = MODELS.build(self.roi_head_cfg)
         roi_head = roi_head.to(device=device)

@@ -4,7 +4,7 @@ from unittest import TestCase
 
 import torch
 from parameterized import parameterized
-
+from mmengine.device import is_musa_available
 from mmdet.structures import DetDataSample
 from mmdet.testing import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
@@ -55,10 +55,12 @@ class TestTwoStageBBox(TestCase):
         from mmdet.registry import MODELS
         detector = MODELS.build(model)
 
-        if not torch.cuda.is_available():
-            return unittest.skip('test requires GPU and torch+cuda')
-        detector = detector.cuda()
-
+        if not (torch.cuda.is_available() or is_musa_available()):
+            return unittest.skip('test requires GPU and torch+cuda/MUSA')
+        if torch.cuda.is_available():
+            detector = detector.cuda()
+        elif is_musa_available():
+            detector = detector.musa()
         packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
 
         data = detector.data_preprocessor(packed_inputs, True)
@@ -81,9 +83,13 @@ class TestTwoStageBBox(TestCase):
         from mmdet.registry import MODELS
         detector = MODELS.build(model)
 
-        if not torch.cuda.is_available():
-            return unittest.skip('test requires GPU and torch+cuda')
-        detector = detector.cuda()
+        if not (torch.cuda.is_available() or is_musa_available()):
+            return unittest.skip('test requires GPU and torch+cuda/MUSA')
+        if torch.cuda.is_available():
+            detector = detector.cuda()
+        if is_musa_available():
+            detector = detector.musa()
+
 
         packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
         data = detector.data_preprocessor(packed_inputs, False)
@@ -169,10 +175,13 @@ class TestTwoStageMask(TestCase):
         from mmdet.registry import MODELS
         detector = MODELS.build(model)
 
-        if not torch.cuda.is_available():
-            return unittest.skip('test requires GPU and torch+cuda')
-        detector = detector.cuda()
-
+        if not (torch.cuda.is_available() or is_musa_available()):
+            return unittest.skip('test requires GPU and torch+cuda/MUSA')
+        if torch.cuda.is_available():
+            detector = detector.cuda()
+        elif is_musa_available():
+            detector = detector.musa()
+            
         packed_inputs = demo_mm_inputs(
             2, [[3, 128, 128], [3, 125, 130]], with_mask=True)
         data = detector.data_preprocessor(packed_inputs, True)
@@ -195,10 +204,12 @@ class TestTwoStageMask(TestCase):
         from mmdet.registry import MODELS
         detector = MODELS.build(model)
 
-        if not torch.cuda.is_available():
-            return unittest.skip('test requires GPU and torch+cuda')
-        detector = detector.cuda()
-
+        if not (torch.cuda.is_available() or is_musa_available()):
+            return unittest.skip('test requires GPU and torch+cuda/MUSA')
+        if torch.cuda.is_available():
+            detector = detector.cuda()
+        elif is_musa_available():
+            detector = detector.musa()           
         packed_inputs = demo_mm_inputs(2, [[3, 256, 256], [3, 255, 260]])
         data = detector.data_preprocessor(packed_inputs, False)
         # Test forward test

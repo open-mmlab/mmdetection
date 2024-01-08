@@ -8,7 +8,7 @@ from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
 from mmdet.testing._utils import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
-
+from mmengine.device import is_musa_available
 
 class TestMaskFormer(unittest.TestCase):
 
@@ -54,13 +54,15 @@ class TestMaskFormer(unittest.TestCase):
         assert detector.backbone
         assert detector.panoptic_head
 
-    @parameterized.expand([('cpu', ), ('cuda', )])
+    @parameterized.expand([('cpu', ), ('cuda', ), ('musa', )])
     def test_forward_loss_mode(self, device):
         model_cfg = self._create_model_cfg()
         detector = MODELS.build(model_cfg)
 
         if device == 'cuda' and not torch.cuda.is_available():
-            return unittest.skip('test requires GPU and torch+cuda')
+            return
+        if device == 'musa' and not is_musa_available():
+            return
         detector = detector.to(device)
 
         packed_inputs = demo_mm_inputs(
@@ -74,12 +76,14 @@ class TestMaskFormer(unittest.TestCase):
         losses = detector.forward(**data, mode='loss')
         self.assertIsInstance(losses, dict)
 
-    @parameterized.expand([('cpu', ), ('cuda', )])
+    @parameterized.expand([('cpu', ), ('cuda', ), ('cuda', )])
     def test_forward_predict_mode(self, device):
         model_cfg = self._create_model_cfg()
         detector = MODELS.build(model_cfg)
         if device == 'cuda' and not torch.cuda.is_available():
-            return unittest.skip('test requires GPU and torch+cuda')
+            return
+        if device == 'musa' and not is_musa_available():
+            return        
         detector = detector.to(device)
         packed_inputs = demo_mm_inputs(
             2,
@@ -95,12 +99,14 @@ class TestMaskFormer(unittest.TestCase):
             self.assertEqual(len(batch_results), 2)
             self.assertIsInstance(batch_results[0], DetDataSample)
 
-    @parameterized.expand([('cpu', ), ('cuda', )])
+    @parameterized.expand([('cpu', ), ('cuda', ), ('musa', )])
     def test_forward_tensor_mode(self, device):
         model_cfg = self._create_model_cfg()
         detector = MODELS.build(model_cfg)
         if device == 'cuda' and not torch.cuda.is_available():
-            return unittest.skip('test requires GPU and torch+cuda')
+            return
+        if device == 'musa' and not is_musa_available():
+            return
         detector = detector.to(device)
 
         packed_inputs = demo_mm_inputs(
@@ -162,7 +168,9 @@ class TestMask2Former(unittest.TestCase):
         ('cpu', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
         ('cpu', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py'),
         ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
-        ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py')
+        ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py'),
+        ('musa', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
+        ('musa', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py')
     ])
     def test_forward_loss_mode(self, device, cfg_path):
         print(device, cfg_path)
@@ -171,7 +179,9 @@ class TestMask2Former(unittest.TestCase):
         detector = MODELS.build(model_cfg)
 
         if device == 'cuda' and not torch.cuda.is_available():
-            return unittest.skip('test requires GPU and torch+cuda')
+            return
+        if device == 'musa' and not is_musa_available():
+            return
         detector = detector.to(device)
 
         packed_inputs = demo_mm_inputs(
@@ -189,14 +199,18 @@ class TestMask2Former(unittest.TestCase):
         ('cpu', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
         ('cpu', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py'),
         ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
-        ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py')
+        ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py'),
+        ('musa', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
+        ('musa', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py')
     ])
     def test_forward_predict_mode(self, device, cfg_path):
         with_semantic = 'panoptic' in cfg_path
         model_cfg = self._create_model_cfg(cfg_path)
         detector = MODELS.build(model_cfg)
         if device == 'cuda' and not torch.cuda.is_available():
-            return unittest.skip('test requires GPU and torch+cuda')
+            return
+        if device == 'musa' and not is_musa_available():
+            return
         detector = detector.to(device)
         packed_inputs = demo_mm_inputs(
             2,
@@ -216,14 +230,19 @@ class TestMask2Former(unittest.TestCase):
         ('cpu', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
         ('cpu', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py'),
         ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
-        ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py')
+        ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py'),
+        ('musa', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
+        ('musa', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py')
     ])
     def test_forward_tensor_mode(self, device, cfg_path):
         with_semantic = 'panoptic' in cfg_path
         model_cfg = self._create_model_cfg(cfg_path)
         detector = MODELS.build(model_cfg)
         if device == 'cuda' and not torch.cuda.is_available():
-            return unittest.skip('test requires GPU and torch+cuda')
+            return
+        if device == 'musa' and not is_musa_available():
+            print("musa!!!")
+            return
         detector = detector.to(device)
 
         packed_inputs = demo_mm_inputs(

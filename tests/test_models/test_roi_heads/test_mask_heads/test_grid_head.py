@@ -11,15 +11,18 @@ from mmdet.models.roi_heads.mask_heads import GridHead
 from mmdet.models.utils import unpack_gt_instances
 from mmdet.testing import (demo_mm_inputs, demo_mm_proposals,
                            demo_mm_sampling_results)
-
+from mmengine.device import is_musa_available
 
 class TestGridHead(TestCase):
 
-    @parameterized.expand(['cpu', 'cuda'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_grid_head_loss(self, device):
         if device == 'cuda':
             if not torch.cuda.is_available():
                 return unittest.skip('test requires GPU and torch+cuda')
+        if device == 'musa':
+            if not is_musa_available():
+                return unittest.skip('test requires GPU and torch+musa')
 
         grid_head = GridHead()
         grid_head.to(device=device)
@@ -54,11 +57,14 @@ class TestGridHead(TestCase):
 
         grid_head.loss(grid_pred, sample_idx, sampling_results, train_cfg)
 
-    @parameterized.expand(['cpu', 'cuda'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_mask_iou_head_predict_by_feat(self, device):
         if device == 'cuda':
             if not torch.cuda.is_available():
                 return unittest.skip('test requires GPU and torch+cuda')
+        if device == 'musa':
+            if not is_musa_available():
+                return unittest.skip('test requires GPU and torch+musa')
 
         grid_head = GridHead()
         grid_head.to(device=device)

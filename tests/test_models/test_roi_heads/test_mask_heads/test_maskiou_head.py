@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import unittest
 from unittest import TestCase
-
+from mmengine.device import is_musa_available
 import torch
 from mmengine.config import ConfigDict
 from mmengine.structures import InstanceData
@@ -16,12 +16,14 @@ from mmdet.testing import (demo_mm_inputs, demo_mm_proposals,
 
 class TestMaskIoUHead(TestCase):
 
-    @parameterized.expand(['cpu', 'cuda'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_mask_iou_head_loss_and_target(self, device):
         if device == 'cuda':
             if not torch.cuda.is_available():
                 return unittest.skip('test requires GPU and torch+cuda')
-
+        if device == 'musa':
+            if not is_musa_available():
+                return unittest.skip('test requires GPU and torch+musa')
         mask_iou_head = MaskIoUHead(num_classes=4)
         mask_iou_head.to(device=device)
 
@@ -67,11 +69,14 @@ class TestMaskIoUHead(TestCase):
                                       mask_targets, sampling_results,
                                       batch_gt_instances, train_cfg)
 
-    @parameterized.expand(['cpu', 'cuda'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_mask_iou_head_predict_by_feat(self, device):
         if device == 'cuda':
             if not torch.cuda.is_available():
                 return unittest.skip('test requires GPU and torch+cuda')
+        if device == 'musa':
+            if not is_musa_available():
+                return unittest.skip('test requires GPU and torch+musa')
 
         mask_iou_head = MaskIoUHead(num_classes=4)
         mask_iou_head.to(device=device)

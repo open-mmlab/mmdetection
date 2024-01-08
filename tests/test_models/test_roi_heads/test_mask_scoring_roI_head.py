@@ -7,7 +7,7 @@ import torch
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
 from mmdet.utils import register_all_modules
-
+from mmengine.device import is_musa_available
 
 class TestMaskScoringRoiHead(TestCase):
 
@@ -24,17 +24,21 @@ class TestMaskScoringRoiHead(TestCase):
 
     def test_mask_scoring_roi_head_loss(self):
         """Tests trident roi head predict."""
-        if not torch.cuda.is_available():
+        if not (torch.cuda.is_available() or is_musa_available()):
             # RoI pooling only support in GPU
-            return unittest.skip('test requires GPU and torch+cuda')
+            return unittest.skip('test requires GPU and torch+cuda/musa')
         roi_head = MODELS.build(self.roi_head_cfg)
-        roi_head = roi_head.cuda()
+        if torch.cuda.is_available():
+            device = 'cuda'
+        elif is_musa_available():
+            device = 'musa'    
+        roi_head = roi_head.to(device)
         s = 256
         feats = []
         for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
             feats.append(
                 torch.rand(1, 256, s // (2**(i + 2)),
-                           s // (2**(i + 2))).to(device='cuda'))
+                           s // (2**(i + 2))).to(device=device))
 
         image_shapes = [(3, s, s)]
         batch_data_samples = demo_mm_inputs(
@@ -43,9 +47,9 @@ class TestMaskScoringRoiHead(TestCase):
             num_items=[1],
             num_classes=4,
             with_mask=True,
-            device='cuda')['data_samples']
+            device=device)['data_samples']
         proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100, device='cuda')
+            image_shapes=image_shapes, num_proposals=100, device=device)
 
         out = roi_head.loss(feats, proposals_list, batch_data_samples)
         loss_cls = out['loss_cls']
@@ -61,9 +65,9 @@ class TestMaskScoringRoiHead(TestCase):
             num_items=[0],
             num_classes=4,
             with_mask=True,
-            device='cuda')['data_samples']
+            device=device)['data_samples']
         proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100, device='cuda')
+            image_shapes=image_shapes, num_proposals=100, device=device)
 
         out = roi_head.loss(feats, proposals_list, batch_data_samples)
         empty_cls_loss = out['loss_cls']
@@ -80,17 +84,21 @@ class TestMaskScoringRoiHead(TestCase):
 
     def test_mask_scoring_roi_head_predict(self):
         """Tests trident roi head predict."""
-        if not torch.cuda.is_available():
+        if not (torch.cuda.is_available() or is_musa_available()):
             # RoI pooling only support in GPU
-            return unittest.skip('test requires GPU and torch+cuda')
+            return unittest.skip('test requires GPU and torch+cuda/musa')
         roi_head = MODELS.build(self.roi_head_cfg)
-        roi_head = roi_head.cuda()
+        if torch.cuda.is_available():
+            device = 'cuda'
+        elif is_musa_available():
+            device = 'musa'     
+        roi_head = roi_head.to(device)
         s = 256
         feats = []
         for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
             feats.append(
                 torch.rand(1, 256, s // (2**(i + 2)),
-                           s // (2**(i + 2))).to(device='cuda'))
+                           s // (2**(i + 2))).to(device=device))
 
         image_shapes = [(3, s, s)]
         batch_data_samples = demo_mm_inputs(
@@ -99,26 +107,30 @@ class TestMaskScoringRoiHead(TestCase):
             num_items=[0],
             num_classes=4,
             with_mask=True,
-            device='cuda')['data_samples']
+            device=device)['data_samples']
         proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100, device='cuda')
+            image_shapes=image_shapes, num_proposals=100, device=device)
         roi_head.predict(feats, proposals_list, batch_data_samples)
 
     def test_mask_scoring_roi_head_forward(self):
         """Tests trident roi head forward."""
-        if not torch.cuda.is_available():
+        if not (torch.cuda.is_available() or is_musa_available()):
             # RoI pooling only support in GPU
-            return unittest.skip('test requires GPU and torch+cuda')
+            return unittest.skip('test requires GPU and torch+cuda/musa')
         roi_head = MODELS.build(self.roi_head_cfg)
-        roi_head = roi_head.cuda()
+        if torch.cuda.is_available():
+            device = 'cuda'
+        elif is_musa_available():
+            device = 'musa'     
+        roi_head = roi_head.to(device)
         s = 256
         feats = []
         for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
             feats.append(
                 torch.rand(1, 256, s // (2**(i + 2)),
-                           s // (2**(i + 2))).to(device='cuda'))
+                           s // (2**(i + 2))).to(device=device))
 
         image_shapes = [(3, s, s)]
         proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100, device='cuda')
+            image_shapes=image_shapes, num_proposals=100, device=device)
         roi_head.forward(feats, proposals_list)

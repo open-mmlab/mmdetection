@@ -8,7 +8,7 @@ from parameterized import parameterized
 from mmdet.structures import DetDataSample
 from mmdet.testing import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
-
+from mmengine.device import is_musa_available
 
 class TestSingleStageInstanceSegmentor(TestCase):
 
@@ -36,12 +36,12 @@ class TestSingleStageInstanceSegmentor(TestCase):
             self.assertTrue(detector.bbox_head)
 
     @parameterized.expand([
-        ('solo/solo_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('solo/decoupled-solo_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('solo/decoupled-solo-light_r50_fpn_3x_coco.py', ('cpu', 'cuda')),
-        ('solov2/solov2_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('solov2/solov2-light_r18_fpn_ms-3x_coco.py', ('cpu', 'cuda')),
-        ('yolact/yolact_r50_1xb8-55e_coco.py', ('cpu', 'cuda')),
+        ('solo/solo_r50_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('solo/decoupled-solo_r50_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('solo/decoupled-solo-light_r50_fpn_3x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('solov2/solov2_r50_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('solov2/solov2-light_r18_fpn_ms-3x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('yolact/yolact_r50_1xb8-55e_coco.py', ('cpu', 'cuda', 'musa')),
     ])
     def test_single_stage_forward_loss_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
@@ -51,7 +51,7 @@ class TestSingleStageInstanceSegmentor(TestCase):
         model.backbone.init_cfg = None
 
         from mmdet.registry import MODELS
-        assert all([device in ['cpu', 'cuda'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             detector = MODELS.build(model)
@@ -59,8 +59,15 @@ class TestSingleStageInstanceSegmentor(TestCase):
 
             if device == 'cuda':
                 if not torch.cuda.is_available():
-                    return unittest.skip('test requires GPU and torch+cuda')
+                    continue
                 detector = detector.cuda()
+
+
+            if device == 'musa':
+                if not is_musa_available():
+                    continue
+                detector = detector.musa()
+
 
             packed_inputs = demo_mm_inputs(
                 2, [[3, 128, 128], [3, 125, 130]], with_mask=True)
@@ -69,12 +76,12 @@ class TestSingleStageInstanceSegmentor(TestCase):
             self.assertIsInstance(losses, dict)
 
     @parameterized.expand([
-        ('solo/solo_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('solo/decoupled-solo_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('solo/decoupled-solo-light_r50_fpn_3x_coco.py', ('cpu', 'cuda')),
-        ('solov2/solov2_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('solov2/solov2-light_r18_fpn_ms-3x_coco.py', ('cpu', 'cuda')),
-        ('yolact/yolact_r50_1xb8-55e_coco.py', ('cpu', 'cuda')),
+        ('solo/solo_r50_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('solo/decoupled-solo_r50_fpn_1x_coco.py', ('cpu', 'cuda','musa')),
+        ('solo/decoupled-solo-light_r50_fpn_3x_coco.py', ('cpu', 'cuda','musa')),
+        ('solov2/solov2_r50_fpn_1x_coco.py', ('cpu', 'cuda','musa')),
+        ('solov2/solov2-light_r18_fpn_ms-3x_coco.py', ('cpu', 'cuda','musa')),
+        ('yolact/yolact_r50_1xb8-55e_coco.py', ('cpu', 'cuda','musa')),
     ])
     def test_single_stage_forward_predict_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
@@ -84,15 +91,20 @@ class TestSingleStageInstanceSegmentor(TestCase):
         model.backbone.init_cfg = None
 
         from mmdet.registry import MODELS
-        assert all([device in ['cpu', 'cuda'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             detector = MODELS.build(model)
 
             if device == 'cuda':
                 if not torch.cuda.is_available():
-                    return unittest.skip('test requires GPU and torch+cuda')
+                    continue
                 detector = detector.cuda()
+
+            if device == 'musa':
+                if not is_musa_available():
+                    continue
+                detector = detector.musa()
 
             packed_inputs = demo_mm_inputs(
                 2, [[3, 128, 128], [3, 125, 130]], with_mask=True)
@@ -105,27 +117,33 @@ class TestSingleStageInstanceSegmentor(TestCase):
                 self.assertIsInstance(batch_results[0], DetDataSample)
 
     @parameterized.expand([
-        ('solo/solo_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('solo/decoupled-solo_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('solo/decoupled-solo-light_r50_fpn_3x_coco.py', ('cpu', 'cuda')),
-        ('solov2/solov2_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('solov2/solov2-light_r18_fpn_ms-3x_coco.py', ('cpu', 'cuda')),
-        ('yolact/yolact_r50_1xb8-55e_coco.py', ('cpu', 'cuda')),
+        ('solo/solo_r50_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('solo/decoupled-solo_r50_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('solo/decoupled-solo-light_r50_fpn_3x_coco.py', ('cpu', 'cuda','musa')),
+        ('solov2/solov2_r50_fpn_1x_coco.py', ('cpu', 'cuda','musa')),
+        ('solov2/solov2-light_r18_fpn_ms-3x_coco.py', ('cpu', 'cuda','musa')),
+        ('yolact/yolact_r50_1xb8-55e_coco.py', ('cpu', 'cuda','musa')),
     ])
     def test_single_stage_forward_tensor_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
 
         from mmdet.registry import MODELS
-        assert all([device in ['cpu', 'cuda'] for device in devices])
+        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
 
         for device in devices:
             detector = MODELS.build(model)
 
             if device == 'cuda':
                 if not torch.cuda.is_available():
-                    return unittest.skip('test requires GPU and torch+cuda')
+                    continue
                 detector = detector.cuda()
+
+            if device == 'musa':
+                if not is_musa_available():
+                    continue
+                detector = detector.musa()
+
 
             packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
             data = detector.data_preprocessor(packed_inputs, False)

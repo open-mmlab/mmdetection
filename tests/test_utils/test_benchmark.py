@@ -13,7 +13,7 @@ from mmdet.registry import DATASETS, MODELS
 from mmdet.utils import register_all_modules
 from mmdet.utils.benchmark import (DataLoaderBenchmark, DatasetBenchmark,
                                    InferenceBenchmark)
-
+from mmengine.device import is_musa_available
 
 @MODELS.register_module()
 class ToyDetector(BaseModel):
@@ -83,8 +83,8 @@ class TestInferenceBenchmark(unittest.TestCase):
         self.max_iter = 10
         self.log_interval = 5
 
-    @unittest.skipIf(not torch.cuda.is_available(),
-                     'test requires GPU and torch+cuda')
+    @unittest.skipIf(not (torch.cuda.is_available() or is_musa_available()),
+                     'test requires GPU and torch+cuda/musa')
     def test_init_and_run(self):
         checkpoint_path = os.path.join(tempfile.gettempdir(), 'checkpoint.pth')
         torch.save(ToyDetector().state_dict(), checkpoint_path)

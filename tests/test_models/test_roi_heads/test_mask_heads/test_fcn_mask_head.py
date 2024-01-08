@@ -8,15 +8,18 @@ from mmengine.structures import InstanceData
 from parameterized import parameterized
 
 from mmdet.models.roi_heads.mask_heads import FCNMaskHead
-
+from mmengine.device import is_musa_available
 
 class TestFCNMaskHead(TestCase):
 
-    @parameterized.expand(['cpu', 'cuda'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_get_seg_masks(self, device):
         if device == 'cuda':
             if not torch.cuda.is_available():
                 return unittest.skip('test requires GPU and torch+cuda')
+        if device == 'musa':
+            if not is_musa_available():
+                return unittest.skip('test requires GPU and torch+musa')
         num_classes = 6
         mask_head = FCNMaskHead(
             num_convs=1,
