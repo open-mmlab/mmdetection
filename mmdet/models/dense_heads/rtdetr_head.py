@@ -59,23 +59,6 @@ class RTDETRHead(DINOHead):
         bbox_targets = torch.cat(bbox_targets_list, 0)
         bbox_weights = torch.cat(bbox_weights_list, 0)
 
-        # construct factors used for rescale bboxes
-        factors = []
-        for img_meta, bbox_pred in zip(batch_img_metas, dn_bbox_preds):
-            img_h, img_w = img_meta['img_shape']
-            factor = bbox_pred.new_tensor([img_w, img_h, img_w,
-                                           img_h]).unsqueeze(0).repeat(
-                                               bbox_pred.size(0), 1)
-            factors.append(factor)
-        factors = torch.cat(factors)
-
-        # DETR regress the relative position of boxes (cxcywh) in the image,
-        # thus the learning target is normalized by the image size. So here
-        # we need to re-scale them for calculating IoU loss
-        bbox_preds = dn_bbox_preds.reshape(-1, 4)
-        bboxes = bbox_cxcywh_to_xyxy(bbox_preds) * factors
-        bboxes_gt = bbox_cxcywh_to_xyxy(bbox_targets) * factors
-
         # classification loss
         cls_scores = dn_cls_scores.reshape(-1, self.cls_out_channels)
         # construct weighted avg_factor to match with the official DETR repo
@@ -88,14 +71,19 @@ class RTDETRHead(DINOHead):
 
         if len(cls_scores) > 0:
             if isinstance(self.loss_cls, RTDETRVarifocalLoss):
-                cls_iou_targets = torch.zeros_like(cls_scores)
-                pos_inds = labels != self.num_classes
+                bg_class_ind = self.num_classes
+                pos_inds = ((labels >= 0)
+                            & (labels < bg_class_ind)).nonzero().squeeze(1)
+                cls_iou_targets = label_weights.new_zeros(cls_scores.shape)
+                pos_bbox_targets = bbox_targets[pos_inds]
+                pos_decode_bbox_targets = bbox_cxcywh_to_xyxy(pos_bbox_targets)
+                pos_bbox_pred = dn_bbox_preds.reshape(-1, 4)[pos_inds]
+                pos_decode_bbox_pred = bbox_cxcywh_to_xyxy(pos_bbox_pred)
                 pos_labels = labels[pos_inds]
-                if len(pos_labels) > 0:
-                    iou_score = bbox_overlaps(
-                        bboxes.detach(), bboxes_gt, is_aligned=True)
-                    cls_iou_targets[pos_inds, pos_labels] = \
-                        iou_score[pos_inds].type_as(cls_iou_targets)  # for amp
+                cls_iou_targets[pos_inds, pos_labels] = bbox_overlaps(
+                    pos_decode_bbox_pred.detach(),
+                    pos_decode_bbox_targets,
+                    is_aligned=True)
                 loss_cls = self.loss_cls(
                     cls_scores, cls_iou_targets, avg_factor=cls_avg_factor)
             else:
@@ -112,6 +100,23 @@ class RTDETRHead(DINOHead):
         # normalization purposes
         num_total_pos = loss_cls.new_tensor([num_total_pos])
         num_total_pos = torch.clamp(reduce_mean(num_total_pos), min=1).item()
+
+        # construct factors used for rescale bboxes
+        factors = []
+        for img_meta, bbox_pred in zip(batch_img_metas, dn_bbox_preds):
+            img_h, img_w = img_meta['img_shape']
+            factor = bbox_pred.new_tensor([img_w, img_h, img_w,
+                                           img_h]).unsqueeze(0).repeat(
+                                               bbox_pred.size(0), 1)
+            factors.append(factor)
+        factors = torch.cat(factors)
+
+        # DETR regress the relative position of boxes (cxcywh) in the image,
+        # thus the learning target is normalized by the image size. So here
+        # we need to re-scale them for calculating IoU loss
+        bbox_preds = dn_bbox_preds.reshape(-1, 4)
+        bboxes = bbox_cxcywh_to_xyxy(bbox_preds) * factors
+        bboxes_gt = bbox_cxcywh_to_xyxy(bbox_targets) * factors
 
         # regression IoU loss, defaultly GIoU loss
         loss_iou = self.loss_iou(
@@ -156,6 +161,41 @@ class RTDETRHead(DINOHead):
         bbox_targets = torch.cat(bbox_targets_list, 0)
         bbox_weights = torch.cat(bbox_weights_list, 0)
 
+        # classification loss
+        cls_scores = cls_scores.reshape(-1, self.cls_out_channels)
+        # construct weighted avg_factor to match with the official DETR repo
+        cls_avg_factor = num_total_pos * 1.0 + \
+            num_total_neg * self.bg_cls_weight
+        if self.sync_cls_avg_factor:
+            cls_avg_factor = reduce_mean(
+                cls_scores.new_tensor([cls_avg_factor]))
+        cls_avg_factor = max(cls_avg_factor, 1)
+
+        if isinstance(self.loss_cls, RTDETRVarifocalLoss):
+            bg_class_ind = self.num_classes
+            pos_inds = ((labels >= 0)
+                        & (labels < bg_class_ind)).nonzero().squeeze(1)
+            cls_iou_targets = label_weights.new_zeros(cls_scores.shape)
+            pos_bbox_targets = bbox_targets[pos_inds]
+            pos_decode_bbox_targets = bbox_cxcywh_to_xyxy(pos_bbox_targets)
+            pos_bbox_pred = bbox_preds.reshape(-1, 4)[pos_inds]
+            pos_decode_bbox_pred = bbox_cxcywh_to_xyxy(pos_bbox_pred)
+            pos_labels = labels[pos_inds]
+            cls_iou_targets[pos_inds, pos_labels] = bbox_overlaps(
+                pos_decode_bbox_pred.detach(),
+                pos_decode_bbox_targets,
+                is_aligned=True)
+            loss_cls = self.loss_cls(
+                cls_scores, cls_iou_targets, avg_factor=cls_avg_factor)
+        else:
+            loss_cls = self.loss_cls(
+                cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
+
+        # Compute the average number of gt boxes across all gpus, for
+        # normalization purposes
+        num_total_pos = loss_cls.new_tensor([num_total_pos])
+        num_total_pos = torch.clamp(reduce_mean(num_total_pos), min=1).item()
+
         # construct factors used for rescale bboxes
         factors = []
         for img_meta, bbox_pred in zip(batch_img_metas, bbox_preds):
@@ -172,36 +212,6 @@ class RTDETRHead(DINOHead):
         bbox_preds = bbox_preds.reshape(-1, 4)
         bboxes = bbox_cxcywh_to_xyxy(bbox_preds) * factors
         bboxes_gt = bbox_cxcywh_to_xyxy(bbox_targets) * factors
-
-        # classification loss
-        cls_scores = cls_scores.reshape(-1, self.cls_out_channels)
-        # construct weighted avg_factor to match with the official DETR repo
-        cls_avg_factor = num_total_pos * 1.0 + \
-            num_total_neg * self.bg_cls_weight
-        if self.sync_cls_avg_factor:
-            cls_avg_factor = reduce_mean(
-                cls_scores.new_tensor([cls_avg_factor]))
-        cls_avg_factor = max(cls_avg_factor, 1)
-
-        if isinstance(self.loss_cls, RTDETRVarifocalLoss):
-            cls_iou_targets = torch.zeros_like(cls_scores)
-            pos_inds = labels != self.num_classes
-            pos_labels = labels[pos_inds]
-            if len(pos_labels) > 0:
-                iou_score = bbox_overlaps(
-                    bboxes.detach(), bboxes_gt, is_aligned=True)
-                cls_iou_targets[pos_inds, pos_labels] = \
-                    iou_score[pos_inds].type_as(cls_iou_targets)  # for amp
-            loss_cls = self.loss_cls(
-                cls_scores, cls_iou_targets, avg_factor=cls_avg_factor)
-        else:
-            loss_cls = self.loss_cls(
-                cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
-
-        # Compute the average number of gt boxes across all gpus, for
-        # normalization purposes
-        num_total_pos = loss_cls.new_tensor([num_total_pos])
-        num_total_pos = torch.clamp(reduce_mean(num_total_pos), min=1).item()
 
         # regression IoU loss, defaultly GIoU loss
         loss_iou = self.loss_iou(
