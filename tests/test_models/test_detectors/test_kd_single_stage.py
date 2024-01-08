@@ -27,8 +27,10 @@ class TestKDSingleStageDetector(TestCase):
         self.assertTrue(detector.neck)
         self.assertTrue(detector.bbox_head)
 
-    @parameterized.expand([('ld/ld_r18-gflv1-r101_fpn_1x_coco.py',
-                            ('cpu', 'cuda', 'musa'))])
+    # TODO haowen.han@mthreads.com MUSA do not support it yet
+    # because some ops is not implemented!
+    @parameterized.expand([('ld/ld_r18-gflv1-r101_fpn_1x_coco.py', ('cpu',
+                                                                    'cuda'))])
     def test_single_stage_forward_train(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None

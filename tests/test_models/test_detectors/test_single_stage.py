@@ -35,16 +35,19 @@ class TestSingleStageDetector(TestCase):
         self.assertTrue(detector.neck)
         self.assertTrue(detector.bbox_head)
 
+    # TODO some ops is not supported by musa yet! haowen.han@mthreads.com
     @parameterized.expand([
         ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
         ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu', 'cuda',
                                                                 'musa')),
-        ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
-        ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda', 'musa')),
-        ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda',
-                                                            'musa')),
-        ('reppoints/reppoints-minmax_r50_fpn-gn_head-gn_1x_coco.py',
-         ('cpu', 'cuda', 'musa')),
+        ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
+        ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda')),
+        ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', (
+            'cpu',
+            'cuda',
+        )),
+        ('reppoints/reppoints-minmax_r50_fpn-gn_head-gn_1x_coco.py', ('cpu',
+                                                                      'cuda')),
     ])
     def test_single_stage_forward_loss_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
@@ -76,11 +79,12 @@ class TestSingleStageDetector(TestCase):
             losses = detector.forward(**data, mode='loss')
             self.assertIsInstance(losses, dict)
 
+    # TODO some ops is not supported by musa yet! haowen.han@mthreads.com
     @parameterized.expand([
         ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
         ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu', 'cuda',
                                                                 'musa')),
-        ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda', 'musa')),
         ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda',
                                                             'musa')),

@@ -22,7 +22,8 @@ class TestDynamicRoIHead(TestCase):
         roi_head = MODELS.build(self.roi_head_cfg)
         self.assertTrue(roi_head.with_bbox)
 
-    @parameterized.expand(['cpu', 'cuda', 'musa'])
+    # TODO: some ops is not supported by musa yet! haowen.han@mthreads.com
+    @parameterized.expand(['cpu', 'cuda'])
     def test_dynamic_roi_head_loss(self, device):
         """Tests trident roi head predict."""
         if not torch.cuda.is_available() and device == 'cuda':
