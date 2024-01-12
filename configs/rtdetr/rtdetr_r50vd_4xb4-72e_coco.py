@@ -47,7 +47,6 @@ model = dict(
         out_channels=256,
         expansion=1.0,
         norm_cfg=dict(type='SyncBN', requires_grad=True),
-        init_cfg=dict(type='Caffe2Xavier', layer='Conv2d'),
         layer_cfg=dict(
             self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
             ffn_cfg=dict(

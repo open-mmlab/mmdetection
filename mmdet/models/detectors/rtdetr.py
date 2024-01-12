@@ -31,9 +31,6 @@ class RTDETR(DINO):
     def init_weights(self) -> None:
         """Initialize weights for Transformer and other components."""
         super(DeformableDETR, self).init_weights()
-        for p in self.encoder.transformer_blocks.parameters():
-            if p.dim() > 1:
-                nn.init.xavier_uniform_(p)
         for p in self.decoder.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
