@@ -16,8 +16,10 @@ model = dict(
                 interval=1,
                 interpolations=['nearest', 'bilinear', 'bicubic', 'area'],
                 random_sizes=[
-                    480, 512, 544, 576, 608, 640, 640, 640,
-                    672, 704, 736, 768, 800])],
+                    480, 512, 544, 576, 608, 640, 640, 640, 672, 704, 736, 768,
+                    800
+                ])
+        ],
         mean=[0, 0, 0],  # [123.675, 116.28, 103.53] for DINO
         std=[255, 255, 255],  # [58.395, 57.12, 57.375] for DINO
         bgr_to_rgb=True,
@@ -109,8 +111,7 @@ train_pipeline = [
         prob=0.8),
     dict(type='Expand', mean=[0, 0, 0]),
     dict(
-        type='RandomApply',
-        transforms=dict(type='MinIoURandomCrop'),
+        type='RandomApply', transforms=dict(type='MinIoURandomCrop'),
         prob=0.8),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
     dict(type='RandomFlip', prob=0.5),
@@ -121,8 +122,8 @@ train_pipeline = [
                 type='Resize',
                 scale=(640, 640),
                 keep_ratio=False,
-                interpolation=interpolation)]
-            for interpolation in interpolations]),
+                interpolation=interpolation)
+        ] for interpolation in interpolations]),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
     dict(type='PackDetInputs')
 ]
@@ -153,10 +154,7 @@ test_dataloader = dict(dataset=dict(pipeline=test_pipeline))
 # optimizer
 optim_wrapper = dict(
     type='OptimWrapper',
-    optimizer=dict(
-        type='AdamW',
-        lr=0.0001,
-        weight_decay=0.0001),
+    optimizer=dict(type='AdamW', lr=0.0001, weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1)},

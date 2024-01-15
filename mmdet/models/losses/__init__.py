@@ -24,7 +24,7 @@ from .seesaw_loss import SeesawLoss
 from .smooth_l1_loss import L1Loss, SmoothL1Loss, l1_loss, smooth_l1_loss
 from .triplet_loss import TripletLoss
 from .utils import reduce_loss, weight_reduce_loss, weighted_loss
-from .varifocal_loss import VarifocalLoss, RTDETRVarifocalLoss
+from .varifocal_loss import RTDETRVarifocalLoss, VarifocalLoss
 
 __all__ = [
     'accuracy', 'Accuracy', 'cross_entropy', 'binary_cross_entropy',

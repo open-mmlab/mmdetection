@@ -23,7 +23,9 @@ _base_.optim_wrapper.paramwise_cfg.custom_keys.update({
     for block_id in range(num_blocks)
 })
 _base_.optim_wrapper.paramwise_cfg.custom_keys.update({
-    f'backbone.layer{stage_id + 1}.{block_id}.downsample.{downsample_norm_idx - 1}': backbone_norm_multi   # noqa
-    for stage_id, (num_blocks, downsample_norm_idx) in enumerate(zip(num_blocks_list, downsample_norm_idx_list))  # noqa
+    f'backbone.layer{stage_id + 1}.{block_id}.downsample.{downsample_norm_idx - 1}':  # noqa
+    backbone_norm_multi
+    for stage_id, (num_blocks, downsample_norm_idx) in enumerate(
+        zip(num_blocks_list, downsample_norm_idx_list))
     for block_id in range(num_blocks)
 })

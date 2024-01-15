@@ -243,8 +243,9 @@ class BatchSyncRandomResize(nn.Module):
                 '`random_size_range` and `random_sizes` '
                 'cannot be set at the same time')
             _random_sizes = list(
-                range(round(random_size_range[0] / size_divisor),
-                      round(random_size_range[1] / size_divisor) + 1))
+                range(
+                    round(random_size_range[0] / size_divisor),
+                    round(random_size_range[1] / size_divisor) + 1))
         else:
             assert random_size_range is None, (
                 '`random_size_range` and `random_sizes` '
@@ -260,7 +261,7 @@ class BatchSyncRandomResize(nn.Module):
         supported_interpolations = {'nearest', 'bilinear', 'bicubic', 'area'}
         for interp in interpolations:
             assert interp in supported_interpolations, (
-                f"unsupported interpolation method: {interp}")
+                f'unsupported interpolation method: {interp}')
         self._interpolations = interpolations
 
     def forward(
@@ -276,9 +277,7 @@ class BatchSyncRandomResize(nn.Module):
         scale_x = self._input_size[1] / w
         if scale_x != 1 or scale_y != 1:
             inputs = F.interpolate(
-                inputs,
-                size=self._input_size,
-                mode=self._interp)
+                inputs, size=self._input_size, mode=self._interp)
             for data_sample in data_samples:
                 img_shape = (int(data_sample.img_shape[0] * scale_y),
                              int(data_sample.img_shape[1] * scale_x))

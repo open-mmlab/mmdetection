@@ -6,9 +6,9 @@ from torch import Tensor, nn
 
 from mmdet.registry import MODELS
 from mmdet.structures import OptSampleList
+from ..layers import RTDETRHybridEncoder, RTDETRTransformerDecoder
 from .deformable_detr import DeformableDETR, MultiScaleDeformableAttention
 from .dino import DINO
-from ..layers import RTDETRHybridEncoder, RTDETRTransformerDecoder
 
 
 @MODELS.register_module()
@@ -82,8 +82,7 @@ class RTDETR(DINO):
             spatial_shapes.prod(1).cumsum(0)[:-1]))
 
         encoder_inputs_dict = dict(
-            mlvl_feats=mlvl_feats,
-            spatial_shapes=spatial_shapes)
+            mlvl_feats=mlvl_feats, spatial_shapes=spatial_shapes)
         decoder_inputs_dict = dict(
             memory_mask=None,
             spatial_shapes=spatial_shapes,
@@ -124,9 +123,7 @@ class RTDETR(DINO):
         memory = torch.cat(feat_flatten, 1)
 
         encoder_outputs_dict = dict(
-            memory=memory,
-            memory_mask=None,
-            spatial_shapes=spatial_shapes)
+            memory=memory, memory_mask=None, spatial_shapes=spatial_shapes)
         return encoder_outputs_dict
 
     def pre_decoder(
