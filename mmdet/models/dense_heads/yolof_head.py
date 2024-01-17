@@ -187,8 +187,6 @@ class YOLOFHead(AnchorHead):
         cls_score = cls_scores[0].permute(0, 2, 3,
                                           1).reshape(-1, self.cls_out_channels)
 
-        # avg_factor = reduce_mean(
-        #     torch.tensor(avg_factor, dtype=torch.float, device=device)).item()
 
         # classification loss
         loss_cls = self.loss_cls(
