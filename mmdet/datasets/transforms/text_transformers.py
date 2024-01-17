@@ -199,7 +199,7 @@ class RandomSamplingNegPos(BaseTransform):
 
             for i in np.random.choice(
                     valid_negative_indexes, size=num_negatives, replace=False):
-                if i not in positive_label_list:
+                if int(i) not in positive_label_list:
                     negative_label_list.add(i)
 
         random.shuffle(positive_label_list)
