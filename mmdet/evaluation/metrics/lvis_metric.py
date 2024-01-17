@@ -1,14 +1,20 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import itertools
+import logging
 import os.path as osp
 import tempfile
 import warnings
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
+import torch
+from mmengine.dist import (all_gather_object, broadcast_object_list,
+                           is_main_process)
+from mmengine.evaluator import BaseMetric
+from mmengine.evaluator.metric import _to_cpu
 from mmengine.fileio import get_local_path
-from mmengine.logging import MMLogger
+from mmengine.logging import MMLogger, print_log
 from terminaltables import AsciiTable
 
 from mmdet.registry import METRICS
@@ -18,6 +24,7 @@ from .coco_metric import CocoMetric
 
 try:
     import lvis
+
     if getattr(lvis, '__version__', '0') >= '10.5.3':
         warnings.warn(
             'mmlvis is deprecated, please install official lvis-api by "pip install git+https://github.com/lvis-dataset/lvis-api.git"',  # noqa: E501
@@ -362,3 +369,166 @@ class LVISMetric(CocoMetric):
         if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results
+
+
+def _merge_lists(listA, listB, maxN, key):
+    result = []
+    indA, indB = 0, 0
+    while (indA < len(listA) or indB < len(listB)) and len(result) < maxN:
+        if (indB < len(listB)) and (indA >= len(listA)
+                                    or key(listA[indA]) < key(listB[indB])):
+            result.append(listB[indB])
+            indB += 1
+        else:
+            result.append(listA[indA])
+            indA += 1
+    return result
+
+
+@METRICS.register_module()
+class LVISFixedAPMetric(BaseMetric):
+    default_prefix: Optional[str] = 'lvis_fixed_ap'
+
+    def __init__(self,
+                 ann_file: str,
+                 topk: int = 10000,
+                 format_only: bool = False,
+                 outfile_prefix: Optional[str] = None,
+                 collect_device: str = 'cpu',
+                 prefix: Optional[str] = None,
+                 backend_args: dict = None) -> None:
+
+        if lvis is None:
+            raise RuntimeError(
+                'Package lvis is not installed. Please run "pip install '
+                'git+https://github.com/lvis-dataset/lvis-api.git".')
+        super().__init__(collect_device=collect_device, prefix=prefix)
+
+        self.format_only = format_only
+        if self.format_only:
+            assert outfile_prefix is not None, 'outfile_prefix must be not'
+            'None when format_only is True, otherwise the result files will'
+            'be saved to a temp directory which will be cleaned up at the end.'
+
+        self.outfile_prefix = outfile_prefix
+        self.backend_args = backend_args
+
+        with get_local_path(
+                ann_file, backend_args=self.backend_args) as local_path:
+            self._lvis_api = LVIS(local_path)
+
+        self.cat_ids = self._lvis_api.get_cat_ids()
+
+        self.results = {}
+        self.topk = topk
+
+    def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
+        """Process one batch of data samples and predictions. The processed
+        results should be stored in ``self.results``, which will be used to
+        compute the metrics when all batches have been processed.
+
+        Args:
+            data_batch (dict): A batch of data from the dataloader.
+            data_samples (Sequence[dict]): A batch of data samples that
+                contain annotations and predictions.
+        """
+        cur_results = []
+        for data_sample in data_samples:
+            pred = data_sample['pred_instances']
+            xmin, ymin, xmax, ymax = pred['bboxes'].cpu().unbind(1)
+            boxes = torch.stack((xmin, ymin, xmax - xmin, ymax - ymin),
+                                dim=1).tolist()
+
+            scores = pred['scores'].cpu().numpy()
+            labels = pred['labels'].cpu().numpy()
+
+            if len(boxes) == 0:
+                continue
+
+            cur_results.extend([{
+                'image_id': data_sample['img_id'],
+                'category_id': self.cat_ids[labels[k]],
+                'bbox': box,
+                'score': scores[k],
+            } for k, box in enumerate(boxes)])
+
+        by_cat = defaultdict(list)
+        for ann in cur_results:
+            by_cat[ann['category_id']].append(ann)
+
+        for cat, cat_anns in by_cat.items():
+            if cat not in self.results:
+                self.results[cat] = []
+
+            cur = sorted(
+                cat_anns, key=lambda x: x['score'], reverse=True)[:self.topk]
+            self.results[cat] = _merge_lists(
+                self.results[cat], cur, self.topk, key=lambda x: x['score'])
+
+    def compute_metrics(self, results: dict) -> dict:
+        logger: MMLogger = MMLogger.get_current_instance()
+
+        new_results = []
+
+        missing_dets_cats = set()
+        for cat, cat_anns in results.items():
+            if len(cat_anns) < self.topk:
+                missing_dets_cats.add(cat)
+            new_results.extend(
+                sorted(cat_anns, key=lambda x: x['score'],
+                       reverse=True)[:self.topk])
+
+        if missing_dets_cats:
+            logger.info(
+                f'\n===\n'
+                f'{len(missing_dets_cats)} classes had less than {self.topk} '
+                f'detections!\n Outputting {self.topk} detections for each '
+                f'class will improve AP further.\n ===')
+
+        new_results = LVISResults(self._lvis_api, new_results, max_dets=-1)
+        lvis_eval = LVISEval(self._lvis_api, new_results, iou_type='bbox')
+        params = lvis_eval.params
+        params.max_dets = -1  # No limit on detections per image.
+        lvis_eval.run()
+        lvis_eval.print_results()
+        metrics = {
+            k: v
+            for k, v in lvis_eval.results.items() if k.startswith('AP')
+        }
+        logger.info(f'mAP_copypaste: {metrics}')
+        return metrics
+
+    def evaluate(self, size: int) -> dict:
+        if len(self.results) == 0:
+            print_log(
+                f'{self.__class__.__name__} got empty `self.results`. Please '
+                'ensure that the processed results are properly added into '
+                '`self.results` in `process` method.',
+                logger='current',
+                level=logging.WARNING)
+
+        all_cats = all_gather_object(self.results)
+        results = defaultdict(list)
+        for cats in all_cats:
+            for cat, cat_anns in cats.items():
+                results[cat].extend(cat_anns)
+
+        if is_main_process():
+            # cast all tensors in results list to cpu
+            results = _to_cpu(results)
+            _metrics = self.compute_metrics(results)  # type: ignore
+            # Add prefix to metric names
+            if self.prefix:
+                _metrics = {
+                    '/'.join((self.prefix, k)): v
+                    for k, v in _metrics.items()
+                }
+            metrics = [_metrics]
+        else:
+            metrics = [None]  # type: ignore
+
+        broadcast_object_list(metrics)
+
+        # reset the results
+        self.results = {}
+        return metrics[0]
