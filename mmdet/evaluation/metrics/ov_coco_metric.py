@@ -50,7 +50,13 @@ class OVCocoMetric(CocoMetric):
         # handle lazy init
         if self.cat_ids is None:
             self.cat_ids = self._coco_api.get_cat_ids(
-                cat_names=self.dataset_meta['classes'])
+                cat_names=self.dataset_meta['classes'],
+                sup_names=[
+                    cat['supercategory']
+                    for cat in self._coco_api.dataset['categories']
+                    if (cat.get('supercategory', 'none') != 'none')
+                ],
+            )
             self.base_cat_ids = self._coco_api.get_cat_ids(
                 cat_names=self.dataset_meta['base_classes'])
             self.novel_cat_ids = self._coco_api.get_cat_ids(

@@ -386,7 +386,13 @@ class Coco90Metric(BaseMetric):
             # handle lazy init
         if self.cat_ids is None:
             self.cat_ids = self._coco_api.get_cat_ids(
-                cat_names=self.dataset_meta['classes'])
+                cat_names=self.dataset_meta['classes'],
+                sup_names=[
+                    cat['supercategory']
+                    for cat in self._coco_api.dataset['categories']
+                    if (cat.get('supercategory', 'none') != 'none')
+                ],
+            )
         if self.img_ids is None:
             self.img_ids = self._coco_api.get_img_ids()
 
