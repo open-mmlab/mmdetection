@@ -486,13 +486,13 @@ class RTDETRHybridEncoder(BaseModule):
                 pos_embed = self.build_2d_sincos_position_embedding(
                     w,
                     h,
-                    embed_dim=self.out_channels,
+                    embed_dim=self.in_channels[enc_ind],
                     temperature=self.pe_temperature,
                     device=src_flatten.device)
                 memory = self.transformer_blocks[i](
                     src_flatten, query_pos=pos_embed, key_padding_mask=None)
                 inputs[enc_ind] = memory.permute(0, 2, 1).contiguous().reshape(
-                    -1, self.out_channels, h, w)
+                    -1, self.in_channels[enc_ind], h, w)
 
         # top-down path
         inner_outs = [inputs[-1]]

@@ -236,7 +236,6 @@ class BatchSyncRandomResize(nn.Module):
         self._input_size = None
         self._interval = interval
         self._size_divisor = size_divisor
-        self._interp = None
 
         if random_size_range is not None:
             assert random_sizes is None, (
@@ -262,6 +261,7 @@ class BatchSyncRandomResize(nn.Module):
         for interp in interpolations:
             assert interp in supported_interpolations, (
                 f'unsupported interpolation method: {interp}')
+        self._interp = interpolations[0]
         self._interpolations = interpolations
 
     def forward(
@@ -271,8 +271,6 @@ class BatchSyncRandomResize(nn.Module):
         h, w = inputs.shape[-2:]
         if self._input_size is None:
             self._input_size = (h, w)
-        if self._interp is None:
-            self._interp = 'bilinear'
         scale_y = self._input_size[0] / h
         scale_x = self._input_size[1] / w
         if scale_x != 1 or scale_y != 1:

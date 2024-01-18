@@ -14,13 +14,15 @@ Collections:
     Paper:
       URL: https://arxiv.org/abs/2304.08069
       Title: 'DETRs Beat YOLOs on Real-time Object Detection'
+    README: configs/rtdetr/README.md
     Code:
-      Version: v3.2.0
+      URL: https://github.com/flytocc/mmdetection/blob/f7cf93dcc8d5574393ca1eeb67a97f30da4290c7/mmdet/models/detectors/rtdetr.py#L15
+      Version: v3.3.0
 
 Models:
-  - Name: rtdetr_r18vd_4xb4-72e_coco
+  - Name: rtdetr_r18vd_8xb2-72e_coco
     In Collection: RT-DETR
-    Config: configs/rtdetr/rtdetr_r18vd_4xb4-72e_coco.py
+    Config: configs/rtdetr/rtdetr_r18vd_8xb2-72e_coco.py
     Metadata:
       Epochs: 72
     Results:
@@ -28,3 +30,40 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 46.5
+    Weights: https://github.com/flytocc/mmdetection/releases/download/model_zoo/rtdetr_r18vd_8xb2-72e_coco_d214e55d.pth
+
+  - Name: rtdetr_r34vd_8xb2-72e_coco
+    In Collection: RT-DETR
+    Config: configs/rtdetr/rtdetr_r34vd_8xb2-72e_coco.py
+    Metadata:
+      Epochs: 72
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 48.9
+    Weights: https://github.com/flytocc/mmdetection/releases/download/model_zoo/rtdetr_r34vd_8xb2-72e_coco_4c1cbe01.pth
+
+  - Name: rtdetr_r50vd_8xb2-72e_coco
+    In Collection: RT-DETR
+    Config: configs/rtdetr/rtdetr_r50vd_8xb2-72e_coco.py
+    Metadata:
+      Epochs: 72
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 53.1
+    Weights: https://github.com/flytocc/mmdetection/releases/download/model_zoo/rtdetr_r50vd_8xb2-72e_coco_ff87da1a.pth
+
+  - Name: rtdetr_r101vd_8xb2-72e_coco
+    In Collection: RT-DETR
+    Config: configs/rtdetr/rtdetr_r101vd_8xb2-72e_coco.py
+    Metadata:
+      Epochs: 72
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 54.3
+    Weights: https://github.com/flytocc/mmdetection/releases/download/model_zoo/rtdetr_r101vd_8xb2-72e_coco_104a0e6b.pth
