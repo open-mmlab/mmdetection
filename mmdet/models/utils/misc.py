@@ -414,14 +414,21 @@ def levels_to_images(mlvl_tensor: List[torch.Tensor]) -> List[torch.Tensor]:
             of shape (num_elements, C)
     """
     batch_size = mlvl_tensor[0].size(0)
-    batch_list = [[] for _ in range(batch_size)]
-    channels = mlvl_tensor[0].size(1)
-    for t in mlvl_tensor:
-        t = t.permute(0, 2, 3, 1)
-        t = t.view(batch_size, -1, channels).contiguous()
-        for img in range(batch_size):
-            batch_list[img].append(t[img])
-    return [torch.cat(item, 0) for item in batch_list]
+    # batch_list = [[] for _ in range(batch_size)]
+    # channels = mlvl_tensor[0].size(1)
+    # for t in mlvl_tensor:
+    #     t = t.permute(0, 2, 3, 1)
+    #     t = t.view(batch_size, -1, channels).contiguous()
+    #     for img in range(batch_size):
+    #         batch_list[img].append(t[img])
+    # return [torch.cat(item, 0) for item in batch_list]
+
+    height = mlvl_tensor[0].size(2)
+    width = mlvl_tensor[0].size(3)
+    res = []
+    for i in range(batch_size):
+        res.append(torch.randn(height*width, channels))
+    return res
 
 
 def images_to_levels(target, num_levels):
