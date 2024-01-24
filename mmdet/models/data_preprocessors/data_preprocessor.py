@@ -215,22 +215,22 @@ class BatchSyncRandomResize(nn.Module):
     Args:
         random_size_range (tuple, optional): The multi-scale random range
             during multi-scale training. Defaults to None.
-        random_sizes (Sequence[int], optional): The multi-scale random size
-            during multi-scale training. Defaults to None.
-        interpolations (Union[str, Sequence[str]]): Algorithm used for
-            torch.nn.functional.interpolation. Default: ``'bilinear'``.
         interval (int): The iter interval of change
             image size. Defaults to 10.
         size_divisor (int): Image size divisible factor.
             Defaults to 32.
+        interpolations (Union[str, Sequence[str]]): Algorithm used for
+            torch.nn.functional.interpolation. Default: ``'bilinear'``.
+        random_sizes (Sequence[int], optional): The multi-scale random size
+            during multi-scale training. Defaults to None.
     """
 
     def __init__(self,
                  random_size_range: Optional[Tuple[int, int]] = None,
-                 random_sizes: Optional[Sequence[int]] = None,
-                 interpolations: Union[str, Sequence[str]] = 'bilinear',
                  interval: int = 10,
-                 size_divisor: int = 32) -> None:
+                 size_divisor: int = 32,
+                 interpolations: Union[str, Sequence[str]] = 'bilinear',
+                 random_sizes: Optional[Sequence[int]] = None) -> None:
         super().__init__()
         self.rank, self.world_size = get_dist_info()
         self._input_size = None

@@ -143,9 +143,6 @@ test_pipeline = [
 ]
 
 train_dataloader = dict(
-    batch_size=4,
-    num_workers=4,
-    batch_sampler=dict(drop_last=True),  # TODO remove
     dataset=dict(
         filter_cfg=dict(filter_empty_gt=False), pipeline=train_pipeline))
 val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
@@ -176,7 +173,7 @@ param_scheduler = [
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
-# base_batch_size = (4 GPUs) x (4 samples per GPU)
+# base_batch_size = (8 GPUs) x (2 samples per GPU)
 auto_scale_lr = dict(base_batch_size=16)
 
 custom_hooks = [
