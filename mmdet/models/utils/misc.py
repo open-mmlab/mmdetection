@@ -415,7 +415,7 @@ def levels_to_images(mlvl_tensor: List[torch.Tensor]) -> List[torch.Tensor]:
     """
     batch_size = mlvl_tensor[0].size(0)
     # batch_list = [[] for _ in range(batch_size)]
-    # channels = mlvl_tensor[0].size(1)
+    channels = mlvl_tensor[0].size(1)
     # for t in mlvl_tensor:
     #     t = t.permute(0, 2, 3, 1)
     #     t = t.view(batch_size, -1, channels).contiguous()
