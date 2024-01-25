@@ -64,10 +64,9 @@ class DeformableDETRHead(DETRHead):
                 [reg_branch for _ in range(self.num_pred_layer)])
         else:
             self.cls_branches = nn.ModuleList(
-                [copy.deepcopy(fc_cls) for _ in range(self.num_pred_layer)])
-            self.reg_branches = nn.ModuleList([
-                copy.deepcopy(reg_branch) for _ in range(self.num_pred_layer)
-            ])
+                [fc_cls for _ in range(self.num_pred_layer)])
+            self.reg_branches = nn.ModuleList(
+                [reg_branch for _ in range(self.num_pred_layer)])
 
     def init_weights(self) -> None:
         """Initialize weights of the Deformable DETR head."""
@@ -236,14 +235,13 @@ class DeformableDETRHead(DETRHead):
 
         # loss of proposal generated from encode feature map.
         if enc_cls_scores is not None:
-            proposal_gt_instances = copy.deepcopy(batch_gt_instances)
-            for i in range(len(proposal_gt_instances)):
-                proposal_gt_instances[i].labels = torch.zeros_like(
-                    proposal_gt_instances[i].labels)
+            for i in range(len(batch_gt_instances)):
+                batch_gt_instances[i].labels = torch.zeros_like(
+                    batch_gt_instances[i].labels)
             enc_loss_cls, enc_losses_bbox, enc_losses_iou = \
                 self.loss_by_feat_single(
                     enc_cls_scores, enc_bbox_preds,
-                    batch_gt_instances=proposal_gt_instances,
+                    batch_gt_instances=batch_gt_instances,
                     batch_img_metas=batch_img_metas)
             loss_dict['enc_loss_cls'] = enc_loss_cls
             loss_dict['enc_loss_bbox'] = enc_losses_bbox
