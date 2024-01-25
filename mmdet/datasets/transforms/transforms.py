@@ -1767,8 +1767,8 @@ class Albu(BaseTransform):
                         [results['masks'][i] for i in results['idx_mapper']])
                     results['masks'] = ori_masks.__class__(
                         results['masks'],
-                        results['masks'][0].shape[0],
-                        results['masks'][0].shape[1],
+                        results['image'].shape[0],
+                        results['image'].shape[1],
                     )
                 if (not len(results['idx_mapper'])
                         and self.skip_img_without_anno):
