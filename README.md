@@ -103,50 +103,16 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 
 ### Highlight
 
-**v3.2.0** was released in 12/10/2023:
+**v3.3.0** was released in 5/1/2024:
 
-**1. Detection Transformer SOTA Model Collection**
-(1) Supported four updated and stronger SOTA Transformer models: [DDQ](configs/ddq/README.md), [CO-DETR](projects/CO-DETR/README.md), [AlignDETR](projects/AlignDETR/README.md), and [H-DINO](projects/HDINO/README.md).
-(2) Based on CO-DETR, MMDet released a model with a COCO performance of 64.1 mAP.
-(3) Algorithms such as DINO support `AMP/Checkpoint/FrozenBN`, which can effectively reduce memory usage.
+**[MM-Grounding-DINO: An Open and Comprehensive Pipeline for Unified Object Grounding and Detection](https://arxiv.org/abs/2401.02361)**
 
-**2. [Comprehensive Performance Comparison between CNN and Transformer](<(projects/RF100-Benchmark/README.md)>)**
-RF100 consists of a dataset collection of 100 real-world datasets, including 7 domains. It can be used to assess the performance differences of Transformer models like DINO and CNN-based algorithms under different scenarios and data volumes. Users can utilize this benchmark to quickly evaluate the robustness of their algorithms in various scenarios.
+Grounding DINO is a grounding pre-training model that unifies 2d open vocabulary object detection and phrase grounding, with wide applications. However, its training part has not been open sourced. Therefore, we propose MM-Grounding-DINO, which not only serves as an open source replication version of Grounding DINO, but also achieves significant performance improvement based on reconstructed data types, exploring different dataset combinations and initialization strategies. Moreover, we conduct evaluations from multiple dimensions, including OOD, REC, Phrase Grounding, OVD, and Fine-tune, to fully excavate the advantages and disadvantages of Grounding pre-training, hoping to provide inspiration for future work.
+
+code: [mm_grounding_dino/README.md](configs/mm_grounding_dino/README.md)
 
 <div align=center>
-<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/86420903-36a8-410d-9251-4304b9704f7d"/>
-</div>
-
-**3. Support for [GLIP](configs/glip/README.md) and [Grounding DINO](configs/grounding_dino/README.md) fine-tuning, the only algorithm library that supports Grounding DINO fine-tuning**
-The Grounding DINO algorithm in MMDet is the only library that supports fine-tuning. Its performance is one point higher than the official version, and of course, GLIP also outperforms the official version.
-We also provide a detailed process for training and evaluating Grounding DINO on custom datasets. Everyone is welcome to give it a try.
-
-|       Model        | Backbone |   Style   |  COCO mAP  | Official COCO mAP |
-| :----------------: | :------: | :-------: | :--------: | :---------------: |
-|  Grounding DINO-T  |  Swin-T  | Zero-shot |    48.5    |       48.4        |
-|  Grounding DINO-T  |  Swin-T  | Finetune  | 58.1(+0.9) |       57.2        |
-|  Grounding DINO-B  |  Swin-B  | Zero-shot |    56.9    |       56.7        |
-|  Grounding DINO-B  |  Swin-B  | Finetune  |    59.7    |                   |
-| Grounding DINO-R50 |   R50    |  Scratch  | 48.9(+0.8) |       48.1        |
-
-**4. Support for the open-vocabulary detection algorithm [Detic](projects/Detic_new/README.md) and multi-dataset joint training.**
-**5. Training detection models using [FSDP and DeepSpeed](<(projects/example_largemodel/README.md)>).**
-
-| ID  | AMP | GC of Backbone | GC of Encoder | FSDP | Peak Mem (GB) | Iter Time (s) |
-| :-: | :-: | :------------: | :-----------: | :--: | :-----------: | :-----------: |
-|  1  |     |                |               |      |   49 (A100)   |      0.9      |
-|  2  |  √  |                |               |      |   39 (A100)   |      1.2      |
-|  3  |     |       √        |               |      |   33 (A100)   |      1.1      |
-|  4  |  √  |       √        |               |      |   25 (A100)   |      1.3      |
-|  5  |     |       √        |       √       |      |      18       |      2.2      |
-|  6  |  √  |       √        |       √       |      |      13       |      1.6      |
-|  7  |     |       √        |       √       |  √   |      14       |      2.9      |
-|  8  |  √  |       √        |       √       |  √   |      8.5      |      2.4      |
-
-**6. Support for the [V3Det](configs/v3det/README.md) dataset, a large-scale detection dataset with over 13,000 categories.**
-
-<div align=center>
-    <img width=960 src="https://github.com/open-mmlab/mmdetection/assets/17425982/9c216387-02be-46e6-b0f2-b856f80f6d84"/>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/fb14d1ee-5469-44d2-b865-aac9850c429c"/>
 </div>
 
 We are excited to announce our latest work on real-time object recognition tasks, **RTMDet**, a family of fully convolutional single-stage detectors. RTMDet not only achieves the best parameter-accuracy trade-off on object detection from tiny to extra-large model sizes but also obtains new state-of-the-art performance on instance segmentation and rotated object detection tasks. Details can be found in the [technical report](https://arxiv.org/abs/2212.07784). Pre-trained models are [here](configs/rtmdet).
