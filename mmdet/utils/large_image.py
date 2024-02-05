@@ -23,6 +23,22 @@ def shift_rbboxes(bboxes: torch.Tensor, offset: Sequence[int]):
     shifted_bboxes[:, 0:2] = shifted_bboxes[:, 0:2] + offset_tensor
     return shifted_bboxes
 
+def shift_bboxes(bboxes: torch.Tensor, offset: Sequence[int]):
+    """Shift bboxes with offset.
+
+    Args:
+        bboxes (Tensor): The bboxes need to be translated.
+            With shape (n, 4), which means (x, y, x, y).
+        offset (Sequence[int]): The translation offsets with shape of (2, ).
+    Returns:
+        Tensor: Shifted rotated bboxes.
+    """
+    offset_tensor = bboxes.new_tensor(offset)
+    shifted_bboxes = bboxes.clone()
+    shifted_bboxes[:, 0:2] = shifted_bboxes[:, 0:2] + offset_tensor
+    shifted_bboxes[:, 2:4] = shifted_bboxes[:, 2:4] + offset_tensor
+    return shifted_bboxes
+
 
 def shift_predictions(det_data_samples: SampleList,
                       offsets: Sequence[Tuple[int, int]],
@@ -39,7 +55,7 @@ def shift_predictions(det_data_samples: SampleList,
         (List[:obj:`DetDataSample`]): shifted results.
     """
     try:
-        from sahi.slicing import shift_bboxes, shift_masks
+        from sahi.slicing import shift_masks
     except ImportError:
         raise ImportError('Please run "pip install -U sahi" '
                           'to install sahi first for large image inference.')
