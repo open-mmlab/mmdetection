@@ -4,6 +4,7 @@ from unittest import TestCase
 
 import torch
 from mmengine.config import ConfigDict
+from mmengine.device import is_musa_available
 
 from mmdet.structures import DetDataSample
 from mmdet.testing import demo_mm_inputs, get_detector_cfg
@@ -50,8 +51,8 @@ class TestCornerNet(TestCase):
         self.assertTrue(detector.backbone is not None)
         self.assertTrue(not hasattr(detector, 'neck'))
 
-    @unittest.skipIf(not torch.cuda.is_available(),
-                     'test requires GPU and torch+cuda')
+    @unittest.skipIf(not (torch.cuda.is_available() or is_musa_available()),
+                     'test requires GPU and torch+cuda/MUSA')
     def test_cornernet_forward_loss_mode(self):
         from mmdet.registry import MODELS
         detector = MODELS.build(self.model_cfg)
@@ -62,8 +63,8 @@ class TestCornerNet(TestCase):
         losses = detector.forward(**data, mode='loss')
         assert isinstance(losses, dict)
 
-    @unittest.skipIf(not torch.cuda.is_available(),
-                     'test requires GPU and torch+cuda')
+    @unittest.skipIf(not (torch.cuda.is_available() or is_musa_available()),
+                     'test requires GPU and torch+cuda/MUSA')
     def test_cornernet_forward_predict_mode(self):
         from mmdet.registry import MODELS
         detector = MODELS.build(self.model_cfg)
@@ -79,8 +80,8 @@ class TestCornerNet(TestCase):
             assert len(batch_results) == 2
             assert isinstance(batch_results[0], DetDataSample)
 
-    @unittest.skipIf(not torch.cuda.is_available(),
-                     'test requires GPU and torch+cuda')
+    @unittest.skipIf(not (torch.cuda.is_available() or is_musa_available()),
+                     'test requires GPU and torch+cuda/MUSA')
     def test_cornernet_forward_tensor_mode(self):
         from mmdet.registry import MODELS
         detector = MODELS.build(self.model_cfg)

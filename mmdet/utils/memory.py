@@ -75,6 +75,23 @@ def _ignore_torch_cuda_oom():
             raise
 
 
+@contextmanager
+def _ignore_torch_musa_oom():
+    """A context which ignores musa OOM exception from pytorch.
+
+    Code is modified from
+    <https://github.com/facebookresearch/detectron2/blob/main/detectron2/utils/memory.py>  # noqa: E501
+    """
+    try:
+        yield
+    except RuntimeError as e:
+        # NOTE: the string may change?
+        if 'MUSA out of memory. ' in str(e):
+            pass
+        else:
+            raise
+
+
 class AvoidOOM:
     """Try to convert inputs to FP16 and CPU if got a PyTorch's CUDA Out of
     Memory error. It will do the following steps:

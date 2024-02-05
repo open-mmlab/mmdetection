@@ -93,6 +93,12 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
         self.teacher_model.cuda(device=device)
         return super().cuda(device=device)
 
+    def musa(self, device: Optional[str] = None) -> nn.Module:
+        """Since teacher_model is registered as a plain object, it is necessary
+        to put the teacher model to musa when calling ``musa`` function."""
+        self.teacher_model.musa(device=device)
+        return super().musa(device=device)
+
     def to(self, device: Optional[str] = None) -> nn.Module:
         """Since teacher_model is registered as a plain object, it is necessary
         to put the teacher model to other device when calling ``to``

@@ -12,7 +12,8 @@ from mmcv.cnn import fuse_conv_bn
 # from mmcv.runner import wrap_fp16_model
 from mmengine import MMLogger
 from mmengine.config import Config
-from mmengine.device import get_max_cuda_memory
+from mmengine.device import (get_max_cuda_memory, get_max_musa_memory,
+                             is_cuda_available, is_musa_available)
 from mmengine.dist import get_world_size
 from mmengine.runner import Runner, load_checkpoint
 from mmengine.utils.dl_utils import set_multi_processing
@@ -192,15 +193,24 @@ class InferenceBenchmark(BaseBenchmark):
         load_checkpoint(model, checkpoint, map_location='cpu')
         if is_fuse_conv_bn:
             model = fuse_conv_bn(model)
-
-        model = model.cuda()
+        if is_cuda_available():
+            model = model.cuda()
+        elif is_musa_available():
+            model = model.musa()
 
         if self.distributed:
-            model = DistributedDataParallel(
-                model,
-                device_ids=[torch.cuda.current_device()],
-                broadcast_buffers=False,
-                find_unused_parameters=False)
+            if is_cuda_available():
+                model = DistributedDataParallel(
+                    model,
+                    device_ids=[torch.cuda.current_device()],
+                    broadcast_buffers=False,
+                    find_unused_parameters=False)
+            elif is_musa_available():
+                model = DistributedDataParallel(
+                    model,
+                    device_ids=[torch.musa.current_device()],
+                    broadcast_buffers=False,
+                    find_unused_parameters=False)
 
         model.eval()
         return model
@@ -214,27 +224,42 @@ class InferenceBenchmark(BaseBenchmark):
 
             if (i + 1) % self.log_interval == 0:
                 print_log('==================================', self.logger)
+            if is_cuda_available():
+                torch.cuda.synchronize()
+            elif is_musa_available():
+                torch.musa.synchronize()
 
-            torch.cuda.synchronize()
             start_time = time.perf_counter()
 
             with torch.no_grad():
                 self.model.test_step(data)
 
-            torch.cuda.synchronize()
+            if is_cuda_available():
+                torch.cuda.synchronize()
+            elif is_musa_available():
+                torch.musa.synchronize()
             elapsed = time.perf_counter() - start_time
 
             if i >= self.num_warmup:
                 pure_inf_time += elapsed
                 if (i + 1) % self.log_interval == 0:
                     fps = (i + 1 - self.num_warmup) / pure_inf_time
-                    cuda_memory = get_max_cuda_memory()
+                    if is_cuda_available():
+                        cuda_memory = get_max_cuda_memory()
 
-                    print_log(
-                        f'Done image [{i + 1:<3}/{self.max_iter}], '
-                        f'fps: {fps:.1f} img/s, '
-                        f'times per image: {1000 / fps:.1f} ms/img, '
-                        f'cuda memory: {cuda_memory} MB', self.logger)
+                        print_log(
+                            f'Done image [{i + 1:<3}/{self.max_iter}], '
+                            f'fps: {fps:.1f} img/s, '
+                            f'times per image: {1000 / fps:.1f} ms/img, '
+                            f'cuda memory: {cuda_memory} MB', self.logger)
+                    elif is_musa_available():
+                        musa_memory = get_max_musa_memory()
+
+                        print_log(
+                            f'Done image [{i + 1:<3}/{self.max_iter}], '
+                            f'fps: {fps:.1f} img/s, '
+                            f'times per image: {1000 / fps:.1f} ms/img, '
+                            f'musa memory: {musa_memory} MB', self.logger)
                     print_process_memory(self._process, self.logger)
 
             if (i + 1) == self.max_iter:
@@ -268,8 +293,11 @@ class InferenceBenchmark(BaseBenchmark):
                 f'Overall fps: {fps_list_[0]:.1f} img/s, '
                 f'times per image: {1000 / fps_list_[0]:.1f} ms/img',
                 self.logger)
+        if is_cuda_available():
+            print_log(f'cuda memory: {get_max_cuda_memory()} MB', self.logger)
+        elif is_musa_available():
+            print_log(f'musa memory: {get_max_musa_memory()} MB', self.logger)
 
-        print_log(f'cuda memory: {get_max_cuda_memory()} MB', self.logger)
         print_process_memory(self._process, self.logger)
 
         return outputs

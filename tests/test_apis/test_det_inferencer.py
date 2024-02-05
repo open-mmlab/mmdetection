@@ -8,6 +8,7 @@ import mmcv
 import mmengine
 import numpy as np
 import torch
+from mmengine.device import is_musa_available
 from mmengine.structures import InstanceData
 from mmengine.utils import is_list_of
 from parameterized import parameterized
@@ -44,6 +45,9 @@ class TestDetInferencer(TestCase):
         'rtmdet-t', 'mask-rcnn_r50_fpn_1x_coco', 'panoptic_fpn_r50_fpn_1x_coco'
     ])
     def test_call(self, model):
+        # TODO:haowen.han@mthreads.com not supported yet.
+        if is_musa_available() and model == 'rtmdet-t':
+            return
         # single img
         img_path = 'tests/data/color.jpg'
 
@@ -97,6 +101,9 @@ class TestDetInferencer(TestCase):
         'rtmdet-t', 'mask-rcnn_r50_fpn_1x_coco', 'panoptic_fpn_r50_fpn_1x_coco'
     ])
     def test_visualize(self, model):
+        # TODO:haowen.han@mthreads.com not supported yet.
+        if is_musa_available() and model == 'rtmdet-t':
+            return
         img_paths = ['tests/data/color.jpg', 'tests/data/gray.jpg']
 
         mock_load = Mock(return_value=None)
@@ -120,7 +127,10 @@ class TestDetInferencer(TestCase):
         'rtmdet-t', 'mask-rcnn_r50_fpn_1x_coco', 'panoptic_fpn_r50_fpn_1x_coco'
     ])
     def test_postprocess(self, model):
-        # return_datasamples
+        # TODO:haowen.han@mthreads.com not supported yet.
+        if is_musa_available() and model == 'rtmdet-t':
+            return
+        # return_datasample
         img_path = 'tests/data/color.jpg'
 
         mock_load = Mock(return_value=None)

@@ -4,6 +4,7 @@ from unittest import TestCase
 
 import torch
 from mmengine.config import Config
+from mmengine.device import is_musa_available
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
@@ -141,23 +142,29 @@ class TestStandardRoIHead(TestCase):
     @parameterized.expand([(False, ), (True, )])
     def test_standard_roi_head_loss(self, with_shared_head):
         """Tests standard roi head loss when truth is empty and non-empty."""
-        if not torch.cuda.is_available():
+        if not (torch.cuda.is_available() or is_musa_available()):
             # RoI pooling only support in GPU
-            return unittest.skip('test requires GPU and torch+cuda')
+            return unittest.skip('test requires GPU and torch+cuda/musa')
         s = 256
         roi_head_cfg = _fake_roi_head(with_shared_head=with_shared_head)
         roi_head = MODELS.build(roi_head_cfg)
-        roi_head = roi_head.cuda()
+        if torch.cuda.is_available():
+            device = 'cuda'
+        elif is_musa_available():
+            # TODO haowen.han@mthreads.com some ops is not supported by musa!
+            device = 'musa'
+            return
+        roi_head = roi_head.to(device)
         feats = []
         for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
             if not with_shared_head:
                 feats.append(
                     torch.rand(1, 1, s // (2**(i + 2)),
-                               s // (2**(i + 2))).to(device='cuda'))
+                               s // (2**(i + 2))).to(device=device))
             else:
                 feats.append(
                     torch.rand(1, 1024, s // (2**(i + 2)),
-                               s // (2**(i + 2))).to(device='cuda'))
+                               s // (2**(i + 2))).to(device=device))
         feats = tuple(feats)
 
         # When truth is non-empty then both cls, box, and mask loss
@@ -169,9 +176,9 @@ class TestStandardRoIHead(TestCase):
             num_items=[1],
             num_classes=4,
             with_mask=True,
-            device='cuda')['data_samples']
+            device=device)['data_samples']
         proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100, device='cuda')
+            image_shapes=image_shapes, num_proposals=100, device=device)
 
         out = roi_head.loss(feats, proposals_list, batch_data_samples)
         loss_cls = out['loss_cls']
@@ -189,9 +196,9 @@ class TestStandardRoIHead(TestCase):
             num_items=[0],
             num_classes=4,
             with_mask=True,
-            device='cuda')['data_samples']
+            device=device)['data_samples']
         proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100, device='cuda')
+            image_shapes=image_shapes, num_proposals=100, device=device)
         out = roi_head.loss(feats, proposals_list, batch_data_samples)
         empty_cls_loss = out['loss_cls']
         empty_bbox_loss = out['loss_bbox']

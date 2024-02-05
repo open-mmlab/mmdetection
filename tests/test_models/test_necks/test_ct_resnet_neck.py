@@ -2,6 +2,7 @@
 import unittest
 
 import torch
+from mmengine.device import is_musa_available
 
 from mmdet.models.necks import CTResNetNeck
 
@@ -49,5 +50,15 @@ class TestCTResNetNeck(unittest.TestCase):
                 num_deconv_kernels=num_kernels)
             ct_resnet_neck = ct_resnet_neck.cuda()
             feat = feat.cuda()
+            out_feat = ct_resnet_neck([feat])[0]
+            self.assertEqual(out_feat.shape, (1, num_filters[-1], 16, 16))
+        if is_musa_available():
+            # test dcn
+            ct_resnet_neck = CTResNetNeck(
+                in_channels=in_channels,
+                num_deconv_filters=num_filters,
+                num_deconv_kernels=num_kernels)
+            ct_resnet_neck = ct_resnet_neck.musa()
+            feat = feat.musa()
             out_feat = ct_resnet_neck([feat])[0]
             self.assertEqual(out_feat.shape, (1, num_filters[-1], 16, 16))

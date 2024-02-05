@@ -6,6 +6,7 @@ import unittest
 import torch
 from mmengine import Config, MMLogger
 from mmengine.dataset import Compose
+from mmengine.device import is_musa_available
 from mmengine.model import BaseModel
 from torch.utils.data import Dataset
 
@@ -83,8 +84,8 @@ class TestInferenceBenchmark(unittest.TestCase):
         self.max_iter = 10
         self.log_interval = 5
 
-    @unittest.skipIf(not torch.cuda.is_available(),
-                     'test requires GPU and torch+cuda')
+    @unittest.skipIf(not (torch.cuda.is_available() or is_musa_available()),
+                     'test requires GPU and torch+cuda/musa')
     def test_init_and_run(self):
         checkpoint_path = os.path.join(tempfile.gettempdir(), 'checkpoint.pth')
         torch.save(ToyDetector().state_dict(), checkpoint_path)

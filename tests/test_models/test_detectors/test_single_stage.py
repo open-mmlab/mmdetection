@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import time
-import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device import is_musa_available
 from mmengine.logging import MessageHub
 from parameterized import parameterized
 
@@ -35,10 +35,11 @@ class TestSingleStageDetector(TestCase):
         self.assertTrue(detector.neck)
         self.assertTrue(detector.bbox_head)
 
+    # TODO some ops is not supported by musa yet! haowen.han@mthreads.com
     @parameterized.expand([
-        ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu',
-                                                                'cuda')),
+        ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu', 'cuda',
+                                                                'musa')),
         ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda')),
         ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda')),
     ])
@@ -51,7 +52,7 @@ class TestSingleStageDetector(TestCase):
         model.backbone.init_cfg = None
 
         from mmdet.registry import MODELS
-        assert all([device in ['cpu', 'cuda'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             detector = MODELS.build(model)
@@ -59,35 +60,47 @@ class TestSingleStageDetector(TestCase):
 
             if device == 'cuda':
                 if not torch.cuda.is_available():
-                    return unittest.skip('test requires GPU and torch+cuda')
+                    continue
                 detector = detector.cuda()
+
+            if device == 'musa':
+                if not is_musa_available():
+                    continue
+                detector = detector.musa()
 
             packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
             data = detector.data_preprocessor(packed_inputs, True)
             losses = detector.forward(**data, mode='loss')
             self.assertIsInstance(losses, dict)
 
+    # TODO some ops is not supported by musa yet! haowen.han@mthreads.com
     @parameterized.expand([
-        ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu',
-                                                                'cuda')),
-        ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda')),
-        ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda')),
+        ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu', 'cuda',
+                                                                'musa')),
+        ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda', 'musa')),
+        ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda',
+                                                            'musa')),
     ])
     def test_single_stage_forward_predict_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
 
         from mmdet.registry import MODELS
-        assert all([device in ['cpu', 'cuda'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             detector = MODELS.build(model)
 
             if device == 'cuda':
                 if not torch.cuda.is_available():
-                    return unittest.skip('test requires GPU and torch+cuda')
+                    continue
                 detector = detector.cuda()
+
+            if device == 'musa':
+                if not is_musa_available():
+                    continue
+                detector = detector.musa()
 
             packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
             data = detector.data_preprocessor(packed_inputs, False)
@@ -99,26 +112,31 @@ class TestSingleStageDetector(TestCase):
                 self.assertIsInstance(batch_results[0], DetDataSample)
 
     @parameterized.expand([
-        ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu',
-                                                                'cuda')),
-        ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda')),
-        ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda')),
+        ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu', 'cuda',
+                                                                'musa')),
+        ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda', 'musa')),
+        ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda',
+                                                            'musa'))
     ])
     def test_single_stage_forward_tensor_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
 
         from mmdet.registry import MODELS
-        assert all([device in ['cpu', 'cuda'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             detector = MODELS.build(model)
 
             if device == 'cuda':
                 if not torch.cuda.is_available():
-                    return unittest.skip('test requires GPU and torch+cuda')
+                    continue
                 detector = detector.cuda()
+            if device == 'musa':
+                if not is_musa_available():
+                    continue
+                detector = detector.musa()
 
             packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
             data = detector.data_preprocessor(packed_inputs, False)

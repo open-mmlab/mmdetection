@@ -245,6 +245,10 @@ class BaseBoxes(metaclass=ABCMeta):
         """Reload ``cuda`` from self.tensor."""
         return type(self)(self.tensor.cuda(*args, **kwargs), clone=False)
 
+    def musa(self: T, *args, **kwargs) -> T:
+        """Reload ``musa`` from self.tensor."""
+        return type(self)(self.tensor.musa(*args, **kwargs), clone=False)
+
     def clone(self: T) -> T:
         """Reload ``clone`` from self.tensor."""
         return type(self)(self.tensor)

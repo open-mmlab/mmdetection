@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 
 import torch
 import torch.nn.functional as F
+from mmengine.device import is_cuda_available, is_musa_available
 from mmengine.structures import InstanceData
 from torch import Tensor
 
@@ -114,14 +115,24 @@ class SimOTAAssigner(BaseAssigner):
                           num_valid, 1, 1))
 
         valid_pred_scores = valid_pred_scores.unsqueeze(1).repeat(1, num_gt, 1)
-        # disable AMP autocast and calculate BCE with FP32 to avoid overflow
-        with torch.cuda.amp.autocast(enabled=False):
-            cls_cost = (
-                F.binary_cross_entropy(
-                    valid_pred_scores.to(dtype=torch.float32),
-                    gt_onehot_label,
-                    reduction='none',
-                ).sum(-1).to(dtype=valid_pred_scores.dtype))
+
+        if is_cuda_available():
+            # disable AMP autocast, calculate BCE with FP32 to avoid overflow
+            with torch.cuda.amp.autocast(enabled=False):
+                cls_cost = (
+                    F.binary_cross_entropy(
+                        valid_pred_scores.to(dtype=torch.float32),
+                        gt_onehot_label,
+                        reduction='none',
+                    ).sum(-1).to(dtype=valid_pred_scores.dtype))
+        elif is_musa_available():
+            with torch.musa.amp.autocast(enabled=False):
+                cls_cost = (
+                    F.binary_cross_entropy(
+                        valid_pred_scores.to(dtype=torch.float32),
+                        gt_onehot_label,
+                        reduction='none',
+                    ).sum(-1).to(dtype=valid_pred_scores.dtype))
 
         cost_matrix = (
             cls_cost * self.cls_weight + iou_cost * self.iou_weight +

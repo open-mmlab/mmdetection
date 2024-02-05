@@ -4,6 +4,7 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device import is_musa_available
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
@@ -25,19 +26,23 @@ class TestTridentRoIHead(TestCase):
 
     def test_trident_roi_head_predict(self):
         """Tests trident roi head predict."""
-        if not torch.cuda.is_available():
+        if not (torch.cuda.is_available() or is_musa_available()):
             # RoI pooling only support in GPU
-            return unittest.skip('test requires GPU and torch+cuda')
+            return unittest.skip('test requires GPU and torch+cuda/musa')
 
         roi_head_cfg = copy.deepcopy(self.roi_head_cfg)
         roi_head = MODELS.build(roi_head_cfg)
-        roi_head = roi_head.cuda()
+        if torch.cuda.is_available():
+            device = 'cuda'
+        elif is_musa_available():
+            device = 'musa'
+        roi_head = roi_head.to(device)
         s = 256
         feats = []
         for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
             feats.append(
                 torch.rand(1, 1024, s // (2**(i + 2)),
-                           s // (2**(i + 2))).to(device='cuda'))
+                           s // (2**(i + 2))).to(device=device))
 
         image_shapes = [(3, s, s)]
         batch_data_samples = demo_mm_inputs(
@@ -46,13 +51,13 @@ class TestTridentRoIHead(TestCase):
             num_items=[0],
             num_classes=4,
             with_mask=True,
-            device='cuda')['data_samples']
+            device=device)['data_samples']
         proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100, device='cuda')
+            image_shapes=image_shapes, num_proposals=100, device=device)
         # When `test_branch_idx == 1`
         roi_head.predict(feats, proposals_list, batch_data_samples)
         # When `test_branch_idx == -1`
         roi_head_cfg.test_branch_idx = -1
         roi_head = MODELS.build(roi_head_cfg)
-        roi_head = roi_head.cuda()
+        roi_head = roi_head.to(device)
         roi_head.predict(feats, proposals_list, batch_data_samples)

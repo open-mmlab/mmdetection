@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 import torch
 import torch.nn as nn
+from mmengine.device import is_musa_available
 from mmengine.evaluator import Evaluator
 from mmengine.model import BaseModel
 from mmengine.optim import OptimWrapper
@@ -85,6 +86,8 @@ class TestTeacherStudentValLoop(TestCase):
 
     def test_teacher_student_val_loop(self):
         device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+        if is_musa_available():
+            device = 'musa:0'
         model = ToyModel2().to(device)
         evaluator = Mock()
         evaluator.evaluate = Mock(return_value=dict(acc=0.5))

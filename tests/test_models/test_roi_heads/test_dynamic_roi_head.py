@@ -3,6 +3,7 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device import is_musa_available
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
@@ -21,12 +22,15 @@ class TestDynamicRoIHead(TestCase):
         roi_head = MODELS.build(self.roi_head_cfg)
         self.assertTrue(roi_head.with_bbox)
 
+    # TODO: some ops is not supported by musa yet! haowen.han@mthreads.com
     @parameterized.expand(['cpu', 'cuda'])
     def test_dynamic_roi_head_loss(self, device):
         """Tests trident roi head predict."""
         if not torch.cuda.is_available() and device == 'cuda':
             # RoI pooling only support in GPU
             return unittest.skip('test requires GPU and torch+cuda')
+        if not is_musa_available() and device == 'musa':
+            return unittest.skip('test requires GPU and torch+musa')
         roi_head = MODELS.build(self.roi_head_cfg)
         roi_head = roi_head.to(device=device)
         s = 256

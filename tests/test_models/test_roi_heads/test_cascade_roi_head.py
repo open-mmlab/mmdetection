@@ -3,6 +3,7 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device import is_musa_available
 from parameterized import parameterized
 
 from mmdet.models.roi_heads import StandardRoIHead  # noqa
@@ -26,9 +27,9 @@ class TestCascadeRoIHead(TestCase):
         ['cascade_rcnn/cascade-mask-rcnn_r50_fpn_1x_coco.py'])
     def test_cascade_roi_head_loss(self, cfg_file):
         """Tests standard roi head loss when truth is empty and non-empty."""
-        if not torch.cuda.is_available():
+        if not (torch.cuda.is_available() or is_musa_available()):
             # RoI pooling only support in GPU
-            return unittest.skip('test requires GPU and torch+cuda')
+            return unittest.skip('test requires GPU and torch+cuda/MUSA')
         s = 256
         img_metas = [{
             'img_shape': (s, s, 3),
@@ -36,25 +37,31 @@ class TestCascadeRoIHead(TestCase):
         }]
         roi_head_cfg = get_roi_head_cfg(cfg_file)
         roi_head = MODELS.build(roi_head_cfg)
-        roi_head = roi_head.cuda()
+        if torch.cuda.is_available():
+            device = 'cuda'
+        elif is_musa_available():
+            device = 'musa'
+            # TODO haowen.han@mthreads.com some ops is not supported by musa!
+            return
+        roi_head = roi_head.to(device)
         feats = []
         for i in range(len(roi_head_cfg.bbox_roi_extractor.featmap_strides)):
             feats.append(
                 torch.rand(1, 1, s // (2**(i + 2)),
-                           s // (2**(i + 2))).to(device='cuda'))
+                           s // (2**(i + 2))).to(device=device))
         feats = tuple(feats)
 
         # When truth is non-empty then both cls, box, and mask loss
         # should be nonzero for random inputs
         img_shape_list = [(3, s, s) for _ in img_metas]
-        proposal_list = demo_mm_proposals(img_shape_list, 100, device='cuda')
+        proposal_list = demo_mm_proposals(img_shape_list, 100, device=device)
         batch_data_samples = demo_mm_inputs(
             batch_size=1,
             image_shapes=[(3, s, s)],
             num_items=[1],
             num_classes=4,
             with_mask=True,
-            device='cuda')['data_samples']
+            device=device)['data_samples']
         out = roi_head.loss(feats, proposal_list, batch_data_samples)
         for name, value in out.items():
             if 'loss' in name:
@@ -63,14 +70,14 @@ class TestCascadeRoIHead(TestCase):
 
         # When there is no truth, the cls loss should be nonzero but
         # there should be no box and mask loss.
-        proposal_list = demo_mm_proposals(img_shape_list, 100, device='cuda')
+        proposal_list = demo_mm_proposals(img_shape_list, 100, device=device)
         batch_data_samples = demo_mm_inputs(
             batch_size=1,
             image_shapes=[(3, s, s)],
             num_items=[0],
             num_classes=4,
             with_mask=True,
-            device='cuda')['data_samples']
+            device=device)['data_samples']
         out = roi_head.loss(feats, proposal_list, batch_data_samples)
         for name, value in out.items():
             if 'loss_cls' in name:

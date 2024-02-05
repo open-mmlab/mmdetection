@@ -5,6 +5,7 @@ from unittest import TestCase
 
 import torch
 import torch.nn as nn
+from mmengine.device import is_musa_available
 from mmengine.evaluator import BaseMetric
 from mmengine.model import BaseModel
 from mmengine.optim import OptimWrapper
@@ -99,6 +100,8 @@ class TestMeanTeacherHook(TestCase):
 
     def test_mean_teacher_hook(self):
         device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+        if is_musa_available():
+            device = 'musa:0'
         model = ToyModel2().to(device)
         runner = Runner(
             model=model,

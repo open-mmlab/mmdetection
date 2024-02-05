@@ -12,6 +12,7 @@ import torch
 from mmengine import Config, DictAction
 from mmengine.analysis import get_model_complexity_info
 from mmengine.analysis.print_helper import _format_size
+from mmengine.device import is_musa_available
 from mmengine.fileio import FileClient
 from mmengine.logging import MMLogger
 from mmengine.model import revert_sync_batchnorm
@@ -120,6 +121,9 @@ def inference(config_file, checkpoint, work_dir, args, exp_name):
             if torch.cuda.is_available():
                 model.cuda()
                 input = input.cuda()
+            if is_musa_available:
+                model.musa()
+                input = input.musa()
             model = revert_sync_batchnorm(model)
             inputs = (input, )
             model.eval()
@@ -145,6 +149,8 @@ def inference(config_file, checkpoint, work_dir, args, exp_name):
             model = MODELS.build(cfg.model)
             if torch.cuda.is_available():
                 model = model.cuda()
+            if is_musa_available:
+                model = model.musa()
             model = revert_sync_batchnorm(model)
             model.eval()
             _forward = model.forward

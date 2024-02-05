@@ -2,6 +2,7 @@
 import unittest
 
 import torch
+from mmengine.device import is_musa_available
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
@@ -34,13 +35,17 @@ class TestTwoStagePanopticSegmentor(unittest.TestCase):
         assert detector.with_semantic_head
         assert detector.with_panoptic_fusion_head
 
-    @parameterized.expand([('cpu', ), ('cuda', )])
+    @parameterized.expand([('cpu', ), ('cuda', ), ('musa', )])
     def test_forward_loss_mode(self, device):
         model_cfg = self._create_model_cfg()
         detector = MODELS.build(model_cfg)
 
         if device == 'cuda' and not torch.cuda.is_available():
-            return unittest.skip('test requires GPU and torch+cuda')
+            return
+
+        if device == 'musa' and not is_musa_available():
+            return
+
         detector = detector.to(device)
 
         packed_inputs = demo_mm_inputs(
@@ -54,12 +59,14 @@ class TestTwoStagePanopticSegmentor(unittest.TestCase):
         losses = detector.forward(**data, mode='loss')
         self.assertIsInstance(losses, dict)
 
-    @parameterized.expand([('cpu', ), ('cuda', )])
+    @parameterized.expand([('cpu', ), ('cuda', ), ('musa', )])
     def test_forward_predict_mode(self, device):
         model_cfg = self._create_model_cfg()
         detector = MODELS.build(model_cfg)
         if device == 'cuda' and not torch.cuda.is_available():
-            return unittest.skip('test requires GPU and torch+cuda')
+            return
+        if device == 'musa' and not is_musa_available():
+            return
         detector = detector.to(device)
         packed_inputs = demo_mm_inputs(
             2,
@@ -75,12 +82,14 @@ class TestTwoStagePanopticSegmentor(unittest.TestCase):
             self.assertEqual(len(batch_results), 2)
             self.assertIsInstance(batch_results[0], DetDataSample)
 
-    @parameterized.expand([('cpu', ), ('cuda', )])
+    @parameterized.expand([('cpu', ), ('cuda', ), ('musa', )])
     def test_forward_tensor_mode(self, device):
         model_cfg = self._create_model_cfg()
         detector = MODELS.build(model_cfg)
         if device == 'cuda' and not torch.cuda.is_available():
-            return unittest.skip('test requires GPU and torch+cuda')
+            return
+        if device == 'musa' and not is_musa_available():
+            return
         detector = detector.to(device)
 
         packed_inputs = demo_mm_inputs(
