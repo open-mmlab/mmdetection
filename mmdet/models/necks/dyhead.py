@@ -113,6 +113,11 @@ class DyHeadBlock(nn.Module):
             if level < len(x) - 1:
                 # this upsample order is weird, but faster than natural order
                 # https://github.com/microsoft/DynamicHead/issues/25
+                out_h = x[level + 1].shape[-2]
+                out_w = x[level + 1].shape[-1]
+                offset = offset_and_mask[:, :self.offset_dim, :out_h, :out_w]
+                mask = offset_and_mask[:, self.offset_dim:, :out_h, :out_w]
+                mask = mask.sigmoid()
                 high_feat = F.interpolate(
                     self.spatial_conv_high(x[level + 1], offset, mask),
                     size=x[level].shape[-2:],
