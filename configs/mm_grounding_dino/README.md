@@ -20,6 +20,10 @@ Grounding-DINO is a state-of-the-art open-set detection model that tackles multi
 
 Please refer to [dataset_prepare.md](dataset_prepare.md) or [中文版数据准备](dataset_prepare_zh-CN.md)
 
+## ✨ What's New
+
+[2024/02/05] 💎 **We have released the swin-b and swin-l weights. You are welcome to try them out.**
+
 ## Usage
 
 Please refer to [usage.md](usage.md) or [中文版用法说明](usage_zh-CN.md)
