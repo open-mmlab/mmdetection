@@ -323,7 +323,13 @@ class CocoPanopticMetric(BaseMetric):
         else:
             categories = self.categories
             cat_ids = self._coco_api.get_cat_ids(
-                cat_names=self.dataset_meta['classes'])
+                cat_names=self.dataset_meta['classes'],
+                sup_names=[
+                    cat['supercategory']
+                    for cat in self._coco_api.dataset['categories']
+                    if (cat.get('supercategory', 'none') != 'none')
+                ],
+            )
             label2cat = {i: cat_id for i, cat_id in enumerate(cat_ids)}
 
         for data_sample in data_samples:
@@ -467,7 +473,13 @@ class CocoPanopticMetric(BaseMetric):
                 gt_folder = self.seg_prefix
 
             self.cat_ids = self._coco_api.get_cat_ids(
-                cat_names=self.dataset_meta['classes'])
+                cat_names=self.dataset_meta['classes'],
+                sup_names=[
+                    cat['supercategory']
+                    for cat in self._coco_api.dataset['categories']
+                    if (cat.get('supercategory', 'none') != 'none')
+                ],
+            )
             self.cat2label = {
                 cat_id: i
                 for i, cat_id in enumerate(self.cat_ids)
