@@ -100,6 +100,8 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 最新进展
 
+💎 **我们已经发布了 MM-Grounding-DINO Swin-B 和 Swin-L 预训练权重，欢迎试用和反馈.**
+
 ### 亮点
 
 **v3.3.0** 版本已经在 2024.1.5 发布：

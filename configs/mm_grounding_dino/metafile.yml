@@ -52,3 +52,39 @@ Models:
         Metrics:
           box AP: 50.4
     Weights: https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth
+  - Name: grounding_dino_swin-b_pretrain_obj365_goldg_v3det
+    In Collection: MM Grounding DINO
+    Config: configs/mm_grounding_dino/grounding_dino_swin-b_pretrain_obj365_goldg_v3det.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 52.5
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-b_pretrain_obj365_goldg_v3det/grounding_dino_swin-b_pretrain_obj365_goldg_v3de-f83eef00.pth
+  - Name: grounding_dino_swin-b_pretrain_all
+    In Collection: MM Grounding DINO
+    Config: configs/mm_grounding_dino/grounding_dino_swin-b_pretrain_all.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 59.5
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-b_pretrain_all/grounding_dino_swin-b_pretrain_all-f9818a7c.pth
+  - Name: grounding_dino_swin-l_pretrain_obj365_goldg
+    In Collection: MM Grounding DINO
+    Config: configs/mm_grounding_dino/grounding_dino_swin-l_pretrain_obj365_goldg.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 53.0
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-l_pretrain_obj365_goldg/grounding_dino_swin-l_pretrain_obj365_goldg-34dcdc53.pth
+  - Name: grounding_dino_swin-l_pretrain_all
+    In Collection: MM Grounding DINO
+    Config: configs/mm_grounding_dino/grounding_dino_swin-l_pretrain_all.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 60.3
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-l_pretrain_all/grounding_dino_swin-l_pretrain_all-56d69e78.pth

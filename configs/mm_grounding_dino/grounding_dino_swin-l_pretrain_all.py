@@ -1,8 +1,10 @@
 _base_ = 'grounding_dino_swin-t_pretrain_obj365.py'
 
-pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'  # noqa
+load_from = 'https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-l_pretrain_obj365_goldg/grounding_dino_swin-l_pretrain_obj365_goldg-34dcdc53.pth'  # noqa
+
 num_levels = 5
 model = dict(
+    use_autocast=True,
     num_feature_levels=num_levels,
     backbone=dict(
         _delete_=True,
@@ -25,7 +27,7 @@ model = dict(
         with_cp=True,
         convert_weights=True,
         frozen_stages=-1,
-        init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
+        init_cfg=None),
     neck=dict(in_channels=[192, 384, 768, 1536], num_outs=num_levels),
     encoder=dict(layer_cfg=dict(self_attn_cfg=dict(num_levels=num_levels))),
     decoder=dict(layer_cfg=dict(cross_attn_cfg=dict(num_levels=num_levels))))
@@ -512,14 +514,10 @@ train_dataloader = dict(
         grit_dataset  # 9M
     ]))
 
-# bs=256
-optim_wrapper = dict(optimizer=dict(lr=0.0008))
+# 4NODES * 8GPU
+optim_wrapper = dict(optimizer=dict(lr=0.0001))
 
-# one epoch = (3.2+3.3)M/256 = 25390 iter
-# 24e=609360 iter
-# 16e=406240 iter
-# 20e=507800 iter
-max_iter = 609360
+max_iter = 250000
 train_cfg = dict(
     _delete_=True,
     type='IterBasedTrainLoop',
@@ -533,7 +531,7 @@ param_scheduler = [
         begin=0,
         end=max_iter,
         by_epoch=False,
-        milestones=[406240, 507800],
+        milestones=[210000],
         gamma=0.1)
 ]
 

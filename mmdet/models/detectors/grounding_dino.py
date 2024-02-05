@@ -6,6 +6,7 @@ from typing import Dict, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
+from mmengine.runner.amp import autocast
 from torch import Tensor
 
 from mmdet.registry import MODELS
@@ -51,10 +52,15 @@ class GroundingDINO(DINO):
     <https://github.com/IDEA-Research/GroundingDINO>`_.
     """
 
-    def __init__(self, language_model, *args, **kwargs) -> None:
+    def __init__(self,
+                 language_model,
+                 *args,
+                 use_autocast=False,
+                 **kwargs) -> None:
 
         self.language_model_cfg = language_model
         self._special_tokens = '. '
+        self.use_autocast = use_autocast
         super().__init__(*args, **kwargs)
 
     def _init_layers(self) -> None:
@@ -483,8 +489,11 @@ class GroundingDINO(DINO):
             data_samples.gt_instances.text_token_mask = \
                 text_token_mask.unsqueeze(0).repeat(
                     len(positive_map), 1)
-
-        visual_features = self.extract_feat(batch_inputs)
+        if self.use_autocast:
+            with autocast(enabled=True):
+                visual_features = self.extract_feat(batch_inputs)
+        else:
+            visual_features = self.extract_feat(batch_inputs)
         head_inputs_dict = self.forward_transformer(visual_features, text_dict,
                                                     batch_data_samples)
 

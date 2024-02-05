@@ -101,6 +101,8 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 
 ## What's New
 
+💎 **We have released the pre-trained weights for MM-Grounding-DINO Swin-B and Swin-L, welcome to try and give feedback.**
+
 ### Highlight
 
 **v3.3.0** was released in 5/1/2024:
