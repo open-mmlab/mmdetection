@@ -423,13 +423,6 @@ def levels_to_images(mlvl_tensor: List[torch.Tensor]) -> List[torch.Tensor]:
             batch_list[img].append(t[img])
     return [torch.cat(item, 0) for item in batch_list]
 
-    # height = mlvl_tensor[0].size(2)
-    # width = mlvl_tensor[0].size(3)
-    # res = []
-    # for i in range(batch_size):
-    #     res.append(torch.randn(height*width, channels, device='cuda'))
-    # return res
-
 
 def images_to_levels(target, num_levels):
     """Convert targets by image to targets by feature level.
