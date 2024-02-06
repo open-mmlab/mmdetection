@@ -160,15 +160,15 @@ class AvoidOOM:
                                  'cannot get dtype and device.')
 
             # Convert to FP16
-            fp16_args = cast_tensor_type(args, dst_type=torch.half)
-            fp16_kwargs = cast_tensor_type(kwargs, dst_type=torch.half)
             logger = MMLogger.get_current_instance()
-            logger.warning(f'Attempting to copy inputs of {str(func)} '
-                           'to FP16 due to CUDA OOM')
-
-            # get input tensor type, the output type will same as
-            # the first parameter type.
             with _ignore_torch_cuda_oom():
+                fp16_args = cast_tensor_type(args, dst_type=torch.half)
+                fp16_kwargs = cast_tensor_type(kwargs, dst_type=torch.half)
+                logger.warning(f'Attempting to copy inputs of {str(func)} '
+                            'to FP16 due to CUDA OOM')
+
+                # get input tensor type, the output type will same as
+                # the first parameter type.
                 output = func(*fp16_args, **fp16_kwargs)
                 output = cast_tensor_type(
                     output, src_type=torch.half, dst_type=dtype)
