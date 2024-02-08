@@ -56,13 +56,14 @@ class DynamicSoftLabelAssigner(BaseAssigner):
         soft_center_radius: float = 3.0,
         topk: int = 13,
         iou_weight: float = 3.0,
+        gpu_assign_thr: int = 50,
         iou_calculator: ConfigType = dict(type='BboxOverlaps2D')
     ) -> None:
         self.soft_center_radius = soft_center_radius
         self.topk = topk
         self.iou_weight = iou_weight
         self.iou_calculator = TASK_UTILS.build(iou_calculator)
-
+        self.gpu_assign_thr = gpu_assign_thr
     def assign(self,
                pred_instances: InstanceData,
                gt_instances: InstanceData,
@@ -96,7 +97,18 @@ class DynamicSoftLabelAssigner(BaseAssigner):
         pred_scores = pred_instances.scores
         priors = pred_instances.priors
         num_bboxes = decoded_bboxes.size(0)
-
+                   
+        assign_on_cpu = True if (self.gpu_assign_thr > 0) and (
+            num_gt > self.gpu_assign_thr) else False
+                   
+        if assign_on_cpu:
+            device = priors.device
+            priors = priors.cpu()
+            gt_bboxes = gt_bboxes.cpu()
+            gt_labels = gt_labels.cpu()
+            decoded_bboxes = decoded_bboxes.cpu()
+            pred_scores = pred_scores.cpu()
+            
         # assign 0 by default
         assigned_gt_inds = decoded_bboxes.new_full((num_bboxes, ),
                                                    0,
@@ -136,6 +148,11 @@ class DynamicSoftLabelAssigner(BaseAssigner):
             assigned_labels = decoded_bboxes.new_full((num_bboxes, ),
                                                       -1,
                                                       dtype=torch.long)
+            if assign_on_cpu:
+                assigned_gt_inds = assigned_gt_inds.to(device)
+                max_overlaps =  max_overlaps.to(device)
+                assigned_labels = assigned_labels.to(device)
+                
             return AssignResult(
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
         if hasattr(gt_instances, 'masks'):
@@ -180,6 +197,12 @@ class DynamicSoftLabelAssigner(BaseAssigner):
                                                  -INF,
                                                  dtype=torch.float32)
         max_overlaps[valid_mask] = matched_pred_ious
+                   
+        if assign_on_cpu:
+            assigned_gt_inds = assigned_gt_inds.to(device)
+            max_overlaps =  max_overlaps.to(device)
+            assigned_labels = assigned_labels.to(device)
+            
         return AssignResult(
             num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
 
