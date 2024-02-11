@@ -33,7 +33,7 @@ wget https://download.openmmlab.com/mmdetection/v3.0/xdecoder/xdecoder_focalt_be
 
 The above two weights are directly copied from the official website without any modification. The specific source is https://github.com/microsoft/X-Decoder
 
-For convenience of demonstration, please download [the folder](https://github.com/microsoft/X-Decoder/tree/main/images) and place it in the root directory of mmdetection.
+For convenience of demonstration, please download [the folder](https://github.com/microsoft/X-Decoder/tree/main/inference_demo/images) and place it in the root directory of mmdetection.
 
 **(1) Open Vocabulary Semantic Segmentation**
 

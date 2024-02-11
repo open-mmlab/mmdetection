@@ -40,7 +40,7 @@ class TripletLoss(BaseModule):
             inputs (torch.Tensor): feature matrix with shape
                 (batch_size, feat_dim).
             targets (torch.LongTensor): ground truth labels with shape
-                (num_classes).
+                (batch_size).
 
         Returns:
             torch.Tensor: triplet loss with hard mining.

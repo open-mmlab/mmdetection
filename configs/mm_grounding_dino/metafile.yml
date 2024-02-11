@@ -1,0 +1,90 @@
+Collections:
+  - Name: MM Grounding DINO
+    Metadata:
+      Training Data: Objects365, GoldG, GRIT and V3Det
+      Training Techniques:
+        - AdamW
+        - Multi Scale Train
+        - Gradient Clip
+      Training Resources: 3090 GPUs
+      Architecture:
+        - Swin Transformer
+        - BERT
+    README: configs/mm_grounding_dino/README.md
+    Code:
+      URL:
+      Version: v3.0.0
+
+Models:
+  - Name: grounding_dino_swin-t_pretrain_obj365_goldg
+    In Collection: MM Grounding DINO
+    Config: configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 50.4
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg/grounding_dino_swin-t_pretrain_obj365_goldg_20231122_132602-4ea751ce.pth
+  - Name: grounding_dino_swin-t_pretrain_obj365_goldg_grit9m
+    In Collection: MM Grounding DINO
+    Config: configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 50.5
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_20231128_200818-169cc352.pth
+  - Name: grounding_dino_swin-t_pretrain_obj365_goldg_v3det
+    In Collection: MM Grounding DINO
+    Config: configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_v3det.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 50.6
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_v3det_20231218_095741-e316e297.pth
+  - Name: grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det
+    In Collection: MM Grounding DINO
+    Config: configs/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 50.4
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth
+  - Name: grounding_dino_swin-b_pretrain_obj365_goldg_v3det
+    In Collection: MM Grounding DINO
+    Config: configs/mm_grounding_dino/grounding_dino_swin-b_pretrain_obj365_goldg_v3det.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 52.5
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-b_pretrain_obj365_goldg_v3det/grounding_dino_swin-b_pretrain_obj365_goldg_v3de-f83eef00.pth
+  - Name: grounding_dino_swin-b_pretrain_all
+    In Collection: MM Grounding DINO
+    Config: configs/mm_grounding_dino/grounding_dino_swin-b_pretrain_all.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 59.5
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-b_pretrain_all/grounding_dino_swin-b_pretrain_all-f9818a7c.pth
+  - Name: grounding_dino_swin-l_pretrain_obj365_goldg
+    In Collection: MM Grounding DINO
+    Config: configs/mm_grounding_dino/grounding_dino_swin-l_pretrain_obj365_goldg.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 53.0
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-l_pretrain_obj365_goldg/grounding_dino_swin-l_pretrain_obj365_goldg-34dcdc53.pth
+  - Name: grounding_dino_swin-l_pretrain_all
+    In Collection: MM Grounding DINO
+    Config: configs/mm_grounding_dino/grounding_dino_swin-l_pretrain_all.py
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 60.3
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-l_pretrain_all/grounding_dino_swin-l_pretrain_all-56d69e78.pth

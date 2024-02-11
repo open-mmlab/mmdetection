@@ -92,10 +92,10 @@ python ./tools/dataset_converters/mot2reid.py -i ./data/MOT17/ -o ./data/MOT17/r
 python ./tools/dataset_converters/crowdhuman2coco.py -i ./data/crowdhuman -o ./data/crowdhuman/annotations
 
 # YouTube-VIS 2019
-python ./tools/dataset_converters/youtubevis/youtubevis2coco.py -i ./data/youtube_vis_2019 -o ./data/youtube_vis_2019/annotations --version 2019
+python ./tools/dataset_converters/youtubevis2coco.py -i ./data/youtube_vis_2019 -o ./data/youtube_vis_2019/annotations --version 2019
 
 # YouTube-VIS 2021
-python ./tools/dataset_converters/youtubevis/youtubevis2coco.py -i ./data/youtube_vis_2021 -o ./data/youtube_vis_2021/annotations --version 2021
+python ./tools/dataset_converters/youtubevis2coco.py -i ./data/youtube_vis_2021 -o ./data/youtube_vis_2021/annotations --version 2021
 
 ```
 
