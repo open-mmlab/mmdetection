@@ -204,8 +204,12 @@ def analyze_individual_category(k,
     cocoEval.params.iouThrs = [0.1]
     cocoEval.params.useCats = 1
     if areas:
-        cocoEval.params.areaRng = [[0**2, areas[2]], [0**2, areas[0]],
-                                   [areas[0], areas[1]], [areas[1], areas[2]]]
+        cocoEval.params.areaRng = [
+            [0**2, areas[2]],
+            [0**2, areas[0]],
+            [areas[0], areas[1]],
+            [areas[1], areas[2]],
+        ]
     cocoEval.evaluate()
     cocoEval.accumulate()
     ps_supercategory = cocoEval.eval['precision'][0, :, k, :, :]
@@ -223,8 +227,12 @@ def analyze_individual_category(k,
     cocoEval.params.iouThrs = [0.1]
     cocoEval.params.useCats = 1
     if areas:
-        cocoEval.params.areaRng = [[0**2, areas[2]], [0**2, areas[0]],
-                                   [areas[0], areas[1]], [areas[1], areas[2]]]
+        cocoEval.params.areaRng = [
+            [0**2, areas[2]],
+            [0**2, areas[0]],
+            [areas[0], areas[1]],
+            [areas[1], areas[2]],
+        ]
     cocoEval.evaluate()
     cocoEval.accumulate()
     ps_allcategory = cocoEval.eval['precision'][0, :, k, :, :]
@@ -237,12 +245,16 @@ def analyze_results(res_file,
                     res_types,
                     out_dir,
                     extraplots=None,
-                    areas=None):
+                    areas=None,
+                    score_thr=None):
     for res_type in res_types:
         assert res_type in ['bbox', 'segm']
     if areas:
-        assert len(areas) == 3, '3 integers should be specified as areas, \
+        assert (len(areas) == 3), '3 integers should be specified as areas, \
             representing 3 area regions'
+
+    if score_thr:
+        assert score_thr >= 0, 'score_thr should be bigger than 0'
 
     directory = os.path.dirname(out_dir + '/')
     if not os.path.exists(directory):
@@ -252,6 +264,13 @@ def analyze_results(res_file,
     cocoGt = COCO(ann_file)
     cocoDt = cocoGt.loadRes(res_file)
     imgIds = cocoGt.getImgIds()
+
+    if score_thr:
+        cocoDt.dataset['annotations'] = list(
+            filter(lambda ann: ann['score'] >= score_thr,
+                   cocoDt.dataset['annotations']))
+        cocoDt.createIndex()
+
     for res_type in res_types:
         res_out_dir = out_dir + '/' + res_type + '/'
         res_directory = os.path.dirname(res_out_dir)
@@ -265,9 +284,12 @@ def analyze_results(res_file,
         cocoEval.params.iouThrs = [0.75, 0.5, 0.1]
         cocoEval.params.maxDets = [100]
         if areas:
-            cocoEval.params.areaRng = [[0**2, areas[2]], [0**2, areas[0]],
-                                       [areas[0], areas[1]],
-                                       [areas[1], areas[2]]]
+            cocoEval.params.areaRng = [
+                [0**2, areas[2]],
+                [0**2, areas[0]],
+                [areas[0], areas[1]],
+                [areas[1], areas[2]],
+            ]
         cocoEval.evaluate()
         cocoEval.accumulate()
         ps = cocoEval.eval['precision']
@@ -312,7 +334,8 @@ def main():
     parser.add_argument(
         '--ann',
         default='data/coco/annotations/instances_val2017.json',
-        help='annotation file path')
+        help='annotation file path',
+    )
     parser.add_argument(
         '--types', type=str, nargs='+', default=['bbox'], help='result types')
     parser.add_argument(
@@ -320,11 +343,19 @@ def main():
         action='store_true',
         help='export extra bar/stat plots')
     parser.add_argument(
+        '--score-thr',
+        type=float,
+        default=None,
+        help='score threshold to filter detection bboxes, only applied'
+        'when users want to change it.',
+    )
+    parser.add_argument(
         '--areas',
         type=int,
         nargs='+',
         default=[1024, 9216, 10000000000],
-        help='area regions')
+        help='area regions',
+    )
     args = parser.parse_args()
     analyze_results(
         args.result,
@@ -332,7 +363,9 @@ def main():
         args.types,
         out_dir=args.out_dir,
         extraplots=args.extraplots,
-        areas=args.areas)
+        areas=args.areas,
+        score_thr=args.score_thr,
+    )
 
 
 if __name__ == '__main__':

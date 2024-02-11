@@ -25,6 +25,7 @@
 [![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/main/LICENSE)
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 [![issue resolution](https://isitmaintained.com/badge/resolution/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
+[![Open in OpenXLab](https://cdn-static.openxlab.org.cn/app-center/openxlab_demo.svg)](https://openxlab.org.cn/apps?search=mmdet)
 
 [📘Documentation](https://mmdetection.readthedocs.io/en/latest/) |
 [🛠️Installation](https://mmdetection.readthedocs.io/en/latest/get_started.html) |
@@ -100,7 +101,21 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 
 ## What's New
 
+💎 **We have released the pre-trained weights for MM-Grounding-DINO Swin-B and Swin-L, welcome to try and give feedback.**
+
 ### Highlight
+
+**v3.3.0** was released in 5/1/2024:
+
+**[MM-Grounding-DINO: An Open and Comprehensive Pipeline for Unified Object Grounding and Detection](https://arxiv.org/abs/2401.02361)**
+
+Grounding DINO is a grounding pre-training model that unifies 2d open vocabulary object detection and phrase grounding, with wide applications. However, its training part has not been open sourced. Therefore, we propose MM-Grounding-DINO, which not only serves as an open source replication version of Grounding DINO, but also achieves significant performance improvement based on reconstructed data types, exploring different dataset combinations and initialization strategies. Moreover, we conduct evaluations from multiple dimensions, including OOD, REC, Phrase Grounding, OVD, and Fine-tune, to fully excavate the advantages and disadvantages of Grounding pre-training, hoping to provide inspiration for future work.
+
+code: [mm_grounding_dino/README.md](configs/mm_grounding_dino/README.md)
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/fb14d1ee-5469-44d2-b865-aac9850c429c"/>
+</div>
 
 We are excited to announce our latest work on real-time object recognition tasks, **RTMDet**, a family of fully convolutional single-stage detectors. RTMDet not only achieves the best parameter-accuracy trade-off on object detection from tiny to extra-large model sizes but also obtains new state-of-the-art performance on instance segmentation and rotated object detection tasks. Details can be found in the [technical report](https://arxiv.org/abs/2212.07784). Pre-trained models are [here](configs/rtmdet).
 
@@ -117,13 +132,6 @@ We are excited to announce our latest work on real-time object recognition tasks
 <div align=center>
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
-
-**v3.1.0** was released in 30/6/2023:
-
-- Supports tracking algorithms including multi-object tracking (MOT) algorithms SORT, DeepSORT, StrongSORT, OCSORT, ByteTrack, QDTrack, and video instance segmentation (VIS) algorithm MaskTrackRCNN, Mask2Former-VIS.
-- Support [ViTDet](projects/ViTDet)
-- Supports inference and evaluation of multimodal algorithms [GLIP](configs/glip) and [XDecoder](projects/XDecoder), and also supports datasets such as COCO semantic segmentation, COCO Caption, ADE20k general segmentation, and RefCOCO. GLIP fine-tuning will be supported in the future.
-- Provides a [gradio demo](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/projects/gradio_demo/README.md) for image type tasks of MMDetection, making it easy for users to experience.
 
 ## Installation
 
@@ -236,9 +244,12 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/dab_detr">DAB-DETR (ICLR'2022)</a></li>
             <li><a href="configs/dino">DINO (ICLR'2023)</a></li>
             <li><a href="configs/glip">GLIP (CVPR'2022)</a></li>
+            <li><a href="configs/ddq">DDQ (CVPR'2023)</a></li>
             <li><a href="projects/DiffusionDet">DiffusionDet (ArXiv'2023)</a></li>
             <li><a href="projects/EfficientDet">EfficientDet (CVPR'2020)</a></li>
+            <li><a href="projects/ViTDet">ViTDet (ECCV'2022)</a></li>
             <li><a href="projects/Detic">Detic (ECCV'2022)</a></li>
+            <li><a href="projects/CO-DETR">CO-DETR (ICCV'2023)</a></li>
       </ul>
       </td>
       <td>
@@ -260,6 +271,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="projects/SparseInst">SparseInst (CVPR'2022)</a></li>
           <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
           <li><a href="configs/boxinst">BoxInst (CVPR'2021)</a></li>
+          <li><a href="projects/ConvNeXt-V2">ConvNeXt-V2 (Arxiv'2023)</a></li>
         </ul>
       </td>
       <td>
@@ -267,6 +279,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
           <li><a href="configs/maskformer">MaskFormer (NeurIPS'2021)</a></li>
           <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
+          <li><a href="configs/XDecoder">XDecoder (CVPR'2023)</a></li>
         </ul>
       </td>
       <td>

@@ -25,6 +25,7 @@
 [![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/main/LICENSE)
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 [![issue resolution](https://isitmaintained.com/badge/resolution/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
+[![Open in OpenXLab](https://cdn-static.openxlab.org.cn/app-center/openxlab_demo.svg)](https://openxlab.org.cn/apps?search=mmdet)
 
 [📘使用文档](https://mmdetection.readthedocs.io/zh_CN/latest/) |
 [🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/latest/get_started.html) |
@@ -99,7 +100,23 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 最新进展
 
+💎 **我们已经发布了 MM-Grounding-DINO Swin-B 和 Swin-L 预训练权重，欢迎试用和反馈.**
+
 ### 亮点
+
+**v3.3.0** 版本已经在 2024.1.5 发布：
+
+**MM-Grounding-DINO: 轻松涨点，数据到评测全面开源**
+
+Grounding DINO 是一个统一了 2d 开放词汇目标检测和 Phrase Grounding 的检测预训练模型，应用广泛，但是其训练部分并未开源，为此提出了 MM-Grounding-DINO。其不仅作为 Grounding DINO 的开源复现版，MM-Grounding-DINO 基于重新构建的数据类型出发，在探索了不同数据集组合和初始化策略基础上实现了 Grounding DINO 的性能极大提升，并且从多个维度包括 OOD、REC、Phrase Grounding、OVD 和 Finetune 等方面进行评测，充分挖掘 Grounding 预训练优缺点，希望能为后续工作提供启发。
+
+arxiv 技术报告：https://arxiv.org/abs/2401.02361
+
+代码地址: [mm_grounding_dino/README.md](configs/mm_grounding_dino/README.md)
+
+<div align=center>
+<img src="https://github.com/open-mmlab/mmdetection/assets/17425982/fb14d1ee-5469-44d2-b865-aac9850c429c"/>
+</div>
 
 我们很高兴向大家介绍我们在实时目标识别任务方面的最新成果 RTMDet，包含了一系列的全卷积单阶段检测模型。 RTMDet 不仅在从 tiny 到 extra-large 尺寸的目标检测模型上实现了最佳的参数量和精度的平衡，而且在实时实例分割和旋转目标检测任务上取得了最先进的成果。 更多细节请参阅[技术报告](https://arxiv.org/abs/2212.07784)。 预训练模型可以在[这里](configs/rtmdet)找到。
 
@@ -116,13 +133,6 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 <div align=center>
 <img src="https://user-images.githubusercontent.com/12907710/208044554-1e8de6b5-48d8-44e4-a7b5-75076c7ebb71.png"/>
 </div>
-
-**v3.1.0** 版本已经在 2023.6.30 发布：
-
-- 支持 Tracking 类算法，包括多目标跟踪 MOT 算法 SORT、DeepSORT、StrongSORT、OCSORT、ByteTrack、QDTrack 和视频实例分割 VIS 算法 MaskTrackRCNN、Mask2Former-VIS。
-- 支持 [ViTDet](projects/ViTDet)
-- 支持多模态开放检测算法 [GLIP](configs/glip) 和 [XDecoder](projects/XDecoder) 推理和评估，并同时支持了 COCO 语义分割、COCO Caption、ADE20k 通用分割、RefCOCO 等数据集。后续将支持 GLIP 微调
-- 提供了包括 MMDetection 图片任务的 [gradio demo](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/projects/gradio_demo/README.md)，方便用户快速体验
 
 ## 安装
 
@@ -237,9 +247,12 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
             <li><a href="configs/dab_detr">DAB-DETR (ICLR'2022)</a></li>
             <li><a href="configs/dino">DINO (ICLR'2023)</a></li>
             <li><a href="configs/glip">GLIP (CVPR'2022)</a></li>
+            <li><a href="configs/ddq">DDQ (CVPR'2023)</a></li>
             <li><a href="projects/DiffusionDet">DiffusionDet (ArXiv'2023)</a></li>
             <li><a href="projects/EfficientDet">EfficientDet (CVPR'2020)</a></li>
+            <li><a href="projects/ViTDet">ViTDet (ECCV'2022)</a></li>
             <li><a href="projects/Detic">Detic (ECCV'2022)</a></li>
+            <li><a href="projects/CO-DETR">CO-DETR (ICCV'2023)</a></li>
       </ul>
       </td>
       <td>
@@ -261,6 +274,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="projects/SparseInst">SparseInst (CVPR'2022)</a></li>
           <li><a href="configs/rtmdet">RTMDet (ArXiv'2022)</a></li>
           <li><a href="configs/boxinst">BoxInst (CVPR'2021)</a></li>
+          <li><a href="projects/ConvNeXt-V2">ConvNeXt-V2 (Arxiv'2023)</a></li>
         </ul>
       </td>
       <td>
@@ -268,6 +282,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
           <li><a href="configs/maskformer">MaskFormer (NeurIPS'2021)</a></li>
           <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
+          <li><a href="configs/XDecoder">XDecoder (CVPR'2023)</a></li>
         </ul>
       </td>
       <td>
@@ -443,10 +458,10 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 
 ## 欢迎加入 OpenMMLab 社区
 
-扫描下方的二维码可关注 OpenMMLab 团队的 [知乎官方账号](https://www.zhihu.com/people/openmmlab)，加入 OpenMMLab 团队的 [官方交流 QQ 群](https://jq.qq.com/?_wv=1027&k=aCvMxdr3)
+扫描下方的二维码可关注 OpenMMLab 团队的 [知乎官方账号](https://www.zhihu.com/people/openmmlab)，扫描下方微信二维码添加喵喵好友，进入 MMDectection 微信交流社群。【加好友申请格式：研究方向+地区+学校/公司+姓名】
 
 <div align="center">
-<img src="resources/zhihu_qrcode.jpg" height="400" />  <img src="resources/qq_group_qrcode.jpg" height="400" />
+<img src="resources/zhihu_qrcode.jpg" height="400" />  <img src="resources/miaomiao_qrcode.jpg" height="400" />
 </div>
 
 我们会在 OpenMMLab 社区为大家

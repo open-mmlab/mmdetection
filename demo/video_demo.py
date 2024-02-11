@@ -40,7 +40,8 @@ def main():
     model = init_detector(args.config, args.checkpoint, device=args.device)
 
     # build test pipeline
-    model.cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromNDArray'
+    model.cfg.test_dataloader.dataset.pipeline[
+        0].type = 'mmdet.LoadImageFromNDArray'
     test_pipeline = Compose(model.cfg.test_dataloader.dataset.pipeline)
 
     # init visualizer
@@ -57,7 +58,7 @@ def main():
             args.out, fourcc, video_reader.fps,
             (video_reader.width, video_reader.height))
 
-    for frame in track_iter_progress(video_reader):
+    for frame in track_iter_progress((video_reader, len(video_reader))):
         result = inference_detector(model, frame, test_pipeline=test_pipeline)
         visualizer.add_datasample(
             name='video',

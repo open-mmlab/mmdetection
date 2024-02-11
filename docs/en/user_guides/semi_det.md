@@ -4,12 +4,13 @@ Semi-supervised object detection uses both labeled data and unlabeled data for t
 
 A typical procedure to train a semi-supervised object detector is as below:
 
-- [Prepare and split dataset](#Prepare-and-split-dataset)
-- [Configure multi-branch pipeline](#Configure-multi-branch-pipeline)
-- [Configure semi-supervised dataloader](#Configure-semi-supervised-dataloader)
-- [Configure semi-supervised model](#Configure-semi-supervised-model)
-- [Configure MeanTeacherHook](#Configure-MeanTeacherHook)
-- [Configure TeacherStudentValLoop](#Configure-TeacherStudentValLoop)
+- [Semi-supervised Object Detection](#semi-supervised-object-detection)
+  - [Prepare and split dataset](#prepare-and-split-dataset)
+  - [Configure multi-branch pipeline](#configure-multi-branch-pipeline)
+  - [Configure semi-supervised dataloader](#configure-semi-supervised-dataloader)
+  - [Configure semi-supervised model](#configure-semi-supervised-model)
+  - [Configure MeanTeacherHook](#configure-meanteacherhook)
+  - [Configure TeacherStudentValLoop](#configure-teacherstudentvalloop)
 
 ## Prepare and split dataset
 
@@ -111,7 +112,7 @@ and [pseudo label](https://www.researchgate.net/profile/Dong-Hyun-Lee/publicatio
 Consistency regularization often requires some careful design, while pseudo label have a simpler form and are easier to extend to downstream tasks.
 We adopt a teacher-student joint training semi-supervised object detection framework based on pseudo label, so labeled data and unlabeled data need to configure different data pipeline:
 
-(1) Pipeline for labeled data：
+(1) Pipeline for labeled data:
 
 ```python
 # pipeline used to augment labeled data,
@@ -127,7 +128,7 @@ sup_pipeline = [
 ]
 ```
 
-(2) Pipeline for unlabeled data：
+(2) Pipeline for unlabeled data:
 
 ```python
 # pipeline used to augment unlabeled data weakly,

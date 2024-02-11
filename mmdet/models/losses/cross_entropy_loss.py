@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from mmdet.registry import MODELS
+from .accuracy import accuracy
 from .utils import weight_reduce_loss
 
 
@@ -299,3 +300,102 @@ class CrossEntropyLoss(nn.Module):
             avg_non_ignore=self.avg_non_ignore,
             **kwargs)
         return loss_cls
+
+
+@MODELS.register_module()
+class CrossEntropyCustomLoss(CrossEntropyLoss):
+
+    def __init__(self,
+                 use_sigmoid=False,
+                 use_mask=False,
+                 reduction='mean',
+                 num_classes=-1,
+                 class_weight=None,
+                 ignore_index=None,
+                 loss_weight=1.0,
+                 avg_non_ignore=False):
+        """CrossEntropyCustomLoss.
+
+        Args:
+            use_sigmoid (bool, optional): Whether the prediction uses sigmoid
+                of softmax. Defaults to False.
+            use_mask (bool, optional): Whether to use mask cross entropy loss.
+                Defaults to False.
+            reduction (str, optional): . Defaults to 'mean'.
+                Options are "none", "mean" and "sum".
+            num_classes (int): Number of classes to classify.
+            class_weight (list[float], optional): Weight of each class.
+                Defaults to None.
+            ignore_index (int | None): The label index to be ignored.
+                Defaults to None.
+            loss_weight (float, optional): Weight of the loss. Defaults to 1.0.
+            avg_non_ignore (bool): The flag decides to whether the loss is
+                only averaged over non-ignored targets. Default: False.
+        """
+        super(CrossEntropyCustomLoss, self).__init__()
+        assert (use_sigmoid is False) or (use_mask is False)
+        self.use_sigmoid = use_sigmoid
+        self.use_mask = use_mask
+        self.reduction = reduction
+        self.loss_weight = loss_weight
+        self.class_weight = class_weight
+        self.ignore_index = ignore_index
+        self.avg_non_ignore = avg_non_ignore
+        if ((ignore_index is not None) and not self.avg_non_ignore
+                and self.reduction == 'mean'):
+            warnings.warn(
+                'Default ``avg_non_ignore`` is False, if you would like to '
+                'ignore the certain label and average loss over non-ignore '
+                'labels, which is the same with PyTorch official '
+                'cross_entropy, set ``avg_non_ignore=True``.')
+
+        if self.use_sigmoid:
+            self.cls_criterion = binary_cross_entropy
+        elif self.use_mask:
+            self.cls_criterion = mask_cross_entropy
+        else:
+            self.cls_criterion = cross_entropy
+
+        self.num_classes = num_classes
+
+        assert self.num_classes != -1
+
+        # custom output channels of the classifier
+        self.custom_cls_channels = True
+        # custom activation of cls_score
+        self.custom_activation = True
+        # custom accuracy of the classsifier
+        self.custom_accuracy = True
+
+    def get_cls_channels(self, num_classes):
+        assert num_classes == self.num_classes
+        if not self.use_sigmoid:
+            return num_classes + 1
+        else:
+            return num_classes
+
+    def get_activation(self, cls_score):
+
+        fine_cls_score = cls_score[:, :self.num_classes]
+
+        if not self.use_sigmoid:
+            bg_score = cls_score[:, [-1]]
+            new_score = torch.cat([fine_cls_score, bg_score], dim=-1)
+            scores = F.softmax(new_score, dim=-1)
+        else:
+            score_classes = fine_cls_score.sigmoid()
+            score_neg = 1 - score_classes.sum(dim=1, keepdim=True)
+            score_neg = score_neg.clamp(min=0, max=1)
+            scores = torch.cat([score_classes, score_neg], dim=1)
+
+        return scores
+
+    def get_accuracy(self, cls_score, labels):
+
+        fine_cls_score = cls_score[:, :self.num_classes]
+
+        pos_inds = labels < self.num_classes
+        acc_classes = accuracy(fine_cls_score[pos_inds], labels[pos_inds])
+        acc = dict()
+        acc['acc_classes'] = acc_classes
+        return acc
