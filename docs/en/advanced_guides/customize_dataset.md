@@ -395,7 +395,7 @@ The annotation json files in COCO Panoptic format has the following necessary ke
 ]
 
 'categories': [  # including both foreground categories and background categories
-    {'id': 0, 'name': 'person'},
+    {'id': 0, 'name': 'person', 'isthing': 1},
     ...
  ]
 ```
