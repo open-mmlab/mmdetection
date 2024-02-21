@@ -38,9 +38,11 @@ tokenizer.save_pretrained("your path/bert-base-uncased")
 MM Grounding DINO 在进行 Phrase Grounding 推理时候可能会进行名词短语提取，虽然会在运行时候下载特定的模型，但是考虑到有些用户运行环境无法联网，因此可以提前下载到 `~/nltk_data` 路径下
 
 ```python
+import os
 import nltk
-nltk.download('punkt', download_dir='~/nltk_data')
-nltk.download('averaged_perceptron_tagger', download_dir='~/nltk_data')
+download_dir = os.path.expanduser('~/nltk_data')
+nltk.download('punkt', download_dir=download_dir)
+nltk.download('averaged_perceptron_tagger', download_dir=download_dir)
 ```
 
 ### MM Grounding DINO-T 模型权重下载
