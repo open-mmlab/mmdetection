@@ -500,8 +500,8 @@ class RTMDetInsHead(RTMDetHead):
                 mask_logits = F.interpolate(
                     mask_logits,
                     size=[
-                        math.ceil(mask_logits.shape[-2] * scale_factor[0]),
-                        math.ceil(mask_logits.shape[-1] * scale_factor[1])
+                        math.ceil(mask_logits.shape[-2] * scale_factor[1]),
+                        math.ceil(mask_logits.shape[-1] * scale_factor[0])
                     ],
                     mode='bilinear',
                     align_corners=False)[..., :ori_h, :ori_w]
