@@ -3,6 +3,7 @@ from .base_video_metric import BaseVideoMetric
 from .cityscapes_metric import CityScapesMetric
 from .coco_caption_metric import COCOCaptionMetric
 from .coco_metric import CocoMetric
+from .coco_oc_cost_metric import CocoOCCostMetric
 from .coco_occluded_metric import CocoOccludedSeparatedMetric
 from .coco_panoptic_metric import CocoPanopticMetric
 from .coco_video_metric import CocoVideoMetric
@@ -31,5 +32,5 @@ __all__ = [
     'MOTChallengeMetric', 'CocoVideoMetric', 'ReIDMetrics', 'YouTubeVISMetric',
     'COCOCaptionMetric', 'SemSegMetric', 'RefSegMetric', 'RefExpMetric',
     'gRefCOCOMetric', 'DODCocoMetric', 'DumpODVGResults', 'Flickr30kMetric',
-    'OVCocoMetric'
+    'OVCocoMetric', 'CocoOCCostMetric'
 ]
