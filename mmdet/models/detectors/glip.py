@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
+import os
 import re
 import warnings
 from typing import Optional, Tuple, Union
@@ -26,7 +27,6 @@ def find_noun_phrases(caption: str) -> list:
         >>> find_noun_phrases(caption) # ['cat', 'a remote', 'the picture']
     """
     try:
-        import os
         import nltk
         download_dir = os.path.expanduser('~/nltk_data')
         nltk.download('punkt', download_dir=download_dir)
