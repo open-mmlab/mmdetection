@@ -38,9 +38,11 @@ tokenizer.save_pretrained("your path/bert-base-uncased")
 When MM Grounding DINO performs Phrase Grounding inference, it may extract noun phrases. Although it downloads specific models at runtime, considering that some users' running environments cannot connect to the internet, it is possible to download them in advance to the `~/nltk_data` path.
 
 ```python
+import os
 import nltk
-nltk.download('punkt', download_dir='~/nltk_data')
-nltk.download('averaged_perceptron_tagger', download_dir='~/nltk_data')
+download_dir = os.path.expanduser('~/nltk_data')
+nltk.download('punkt', download_dir=download_dir)
+nltk.download('averaged_perceptron_tagger', download_dir=download_dir)
 ```
 
 ### Download MM Grounding DINO-T Weight

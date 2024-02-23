@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
+import os
 import re
 import warnings
 from typing import Optional, Tuple, Union
@@ -27,8 +28,9 @@ def find_noun_phrases(caption: str) -> list:
     """
     try:
         import nltk
-        nltk.download('punkt', download_dir='~/nltk_data')
-        nltk.download('averaged_perceptron_tagger', download_dir='~/nltk_data')
+        download_dir = os.path.expanduser('~/nltk_data')
+        nltk.download('punkt', download_dir=download_dir)
+        nltk.download('averaged_perceptron_tagger', download_dir=download_dir)
     except ImportError:
         raise RuntimeError('nltk is not installed, please install it by: '
                            'pip install nltk.')
