@@ -49,7 +49,9 @@ model = dict(
             loss_weight=1.0),
         loss_dfl=dict(type='DistributionFocalLoss', loss_weight=0.25),
         loss_ld=dict(
-            type='KnowledgeDistillationKLDivLoss', loss_weight=0.25, T=10),
+            type='KnowledgeDistillationKLDivLoss',
+            loss_weight=0.25 / (16 + 1),
+            T=10),
         reg_max=16,
         loss_bbox=dict(type='GIoULoss', loss_weight=2.0)),
     # training and testing settings

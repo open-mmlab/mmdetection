@@ -31,7 +31,7 @@ def knowledge_distillation_kl_div_loss(pred: Tensor,
         target = target.detach()
 
     kd_loss = F.kl_div(
-        F.log_softmax(pred / T, dim=1), target, reduction='none').mean(1) * (
+        F.log_softmax(pred / T, dim=1), target, reduction='none').sum(-1) * (
             T * T)
 
     return kd_loss
