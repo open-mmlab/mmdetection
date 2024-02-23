@@ -10,7 +10,7 @@ from mmengine.runner import Runner
 from mmdet.utils import setup_cache_size_limit_of_dynamo
 
 
-def parse_args():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('config', help='train config file path')
     parser.add_argument('--work-dir', help='the dir to save logs and models')
@@ -50,16 +50,19 @@ def parse_args():
     # will pass the `--local-rank` parameter to `tools/train.py` instead
     # of `--local_rank`.
     parser.add_argument('--local_rank', '--local-rank', type=int, default=0)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
 
     return args
 
 
-def main():
-    args = parse_args()
+def main(argv=None):
+    args = parse_args(argv)
+    return main2(args)
 
+
+def main2(args):
     # Reduce the number of repeated compilations and improve
     # training speed.
     setup_cache_size_limit_of_dynamo()
