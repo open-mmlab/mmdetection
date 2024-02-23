@@ -405,7 +405,7 @@ custom_imports=dict(
 到配置文件来实现相同的目的。
 
 如使用，请修改 `loss_xxx` 字段。
-因为 MyLoss 是用于回归的，你需要在 Head 中修改 `loss_xxx` 字段。
+因为 MyLoss 是用于回归的，你需要在 Head 中修改 `loss_bbox` 字段。
 
 ```python
 loss_bbox=dict(type='MyLoss', loss_weight=1.0))
