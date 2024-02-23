@@ -59,8 +59,30 @@ class MaskFormer(SingleStageDetector):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
+
+        # import torch
+        # pth = torch.load('/nvme/data/huanghaian/code/MaskDINO/maskdino.pth')
+        # image=pth['image']
+        # batched_inputs=pth['batched_inputs']
+
+        # from mmengine.structures import InstanceData
+        # from mmdet.structures import DetDataSample
+        # batch_data_samples=[]
+        # batch_inputs=image.tensor
+        # for instance in batched_inputs:
+        #     det_samples=DetDataSample()
+        #     gt_ins=instance['instances']
+        #     gt_instance=InstanceData(bboxes=gt_ins.gt_boxes.tensor, labels=gt_ins.gt_classes, masks=gt_ins.gt_masks.cpu().numpy())
+        #     det_samples.gt_instances=gt_instance
+        #     det_samples.set_metainfo(dict(batch_input_shape=[1024,1024], img_shape=gt_ins.image_size))
+        #     det_samples = det_samples.to('cuda')
+        #     batch_data_samples.append(det_samples)
+
         x = self.extract_feat(batch_inputs)
         losses = self.panoptic_head.loss(x, batch_data_samples)
+
+        # print(losses)
+        # raise ValueError('=====自动停止=====')
         return losses
 
     def predict(self,
@@ -145,8 +167,8 @@ class MaskFormer(SingleStageDetector):
             if 'ins_results' in pred_results:
                 data_sample.pred_instances = pred_results['ins_results']
 
-            assert 'sem_results' not in pred_results, 'segmantic ' \
-                'segmentation results are not supported yet.'
+            if 'sem_results' in pred_results:
+                data_sample.pred_sem_seg = pred_results['sem_results']
 
         return data_samples
 
