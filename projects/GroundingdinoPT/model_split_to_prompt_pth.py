@@ -1,6 +1,7 @@
-import torch
 import argparse
 import os
+
+import torch
 
 
 def split_prompt(weight_path, save_path='./', real_name_list=[]):
@@ -26,19 +27,16 @@ def main():
     parser = argparse.ArgumentParser(
         description='Convert prompt from model weight.')
     parser.add_argument(
-        '--weight_path',
-        default='v.pth',
-        help='src model path, type:str')
+        '--weight_path', default='v.pth', help='src model path, type:str')
     # The dst path must be a full path of the new checkpoint.
     parser.add_argument(
         '--real_name_list',
         nargs='+',
         default=[],
-        help='real_name, type:list[str]', required=True)
+        help='real_name, type:list[str]',
+        required=True)
     parser.add_argument(
-        '--save_path',
-        default='./',
-        help='save path, type:str')
+        '--save_path', default='./', help='save path, type:str')
     args = parser.parse_args()
     os.makedirs(args.save_path, exist_ok=True)
     split_prompt(args.weight_path, args.save_path, args.real_name_list)

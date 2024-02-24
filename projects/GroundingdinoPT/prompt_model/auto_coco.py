@@ -1,14 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
-import random
 import os.path as osp
+import random
 from typing import List, Union
 
 from mmengine.fileio import get_local_path
 
-from mmdet.registry import DATASETS
 from mmdet.datasets.api_wrappers import COCO
 from mmdet.datasets.base_det_dataset import BaseDetDataset
+from mmdet.registry import DATASETS
 
 
 @DATASETS.register_module()
@@ -57,9 +57,7 @@ class Auto_CocoDataset(BaseDetDataset):
     # ann_id is unique in coco dataset.
     ANN_ID_UNIQUE = True
 
-    def __init__(self,
-                 *args,
-                 **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         self.meta_info = None
         super().__init__(*args, **kwargs)
 
@@ -67,12 +65,9 @@ class Auto_CocoDataset(BaseDetDataset):
         text_list = []
         palette = []
         for instance in self.coco.cats.values():
-            text_list.append(instance["name"])
-            palette.append((
-                random.randint(0, 255),
-                random.randint(0, 255),
-                random.randint(0, 255)
-            ))
+            text_list.append(instance['name'])
+            palette.append((random.randint(0, 255), random.randint(0, 255),
+                            random.randint(0, 255)))
         self.meta_info = {'classes': list(text_list), 'palette': palette}
 
     @property

@@ -1,26 +1,24 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import os.path as osp
 import warnings
 from typing import Dict, Tuple, Union
-import os.path as osp
+
 import torch
 import torch.nn as nn
 from mmengine.runner.amp import autocast
 from torch import Tensor
 
+from mmdet.models.detectors.grounding_dino import GroundingDINO
 from mmdet.registry import MODELS
 from mmdet.structures import OptSampleList, SampleList
 from mmdet.utils import OptConfigType
-from mmdet.models.detectors.grounding_dino import GroundingDINO
 
 
 @MODELS.register_module()
 class GroundingDINOPTuning(GroundingDINO):
-    """Implementation of prompt tuning in Grounding DINO.
-    """
-    def __init__(self,
-                 prompt_cfg: OptConfigType,
-                 *args,
-                 **kwargs) -> None:
+    """Implementation of prompt tuning in Grounding DINO."""
+
+    def __init__(self, prompt_cfg: OptConfigType, *args, **kwargs) -> None:
         self.class_num = prompt_cfg['class_num']
         self.prompt_length = prompt_cfg['prompt_length']
         self.prompt_train = True
@@ -28,9 +26,8 @@ class GroundingDINOPTuning(GroundingDINO):
 
         self.learning_prompts = nn.ModuleList([
             nn.Embedding(
-                    self.prompt_length,
-                    self.language_model.language_backbone.body.language_dim
-                    )
+                self.prompt_length,
+                self.language_model.language_backbone.body.language_dim)
             for _ in range(self.class_num)
         ])
         self._freeze_stages()
@@ -62,7 +59,7 @@ class GroundingDINOPTuning(GroundingDINO):
         self.prompt_train = True
         text_prompts = []
         for data_samples in batch_data_samples:
-            word = 'a '*self.prompt_length
+            word = 'a ' * self.prompt_length
             pseudo_words = [word.strip() for _ in range(self.class_num)]
             text_prompts.append(pseudo_words)
 
@@ -82,21 +79,20 @@ class GroundingDINOPTuning(GroundingDINO):
             new_tokens_positive = [
                 tokens_positive[label] for label in gt_label
             ]
-            _, positive_map = self.get_positive_map(
-                tokenized, new_tokens_positive)
+            _, positive_map = self.get_positive_map(tokenized,
+                                                    new_tokens_positive)
             positive_maps.append(positive_map)
 
         text_dict = self.language_model(new_text_prompts)
 
-    #   insert learnable prompt
-        insert_map, _ = self.get_positive_map(
-                tokenized, tokens_positive)
+        #   insert learnable prompt
+        insert_map, _ = self.get_positive_map(tokenized, tokens_positive)
         for i in range(self.class_num):
             cur = self.learning_prompts[i].weight.repeat(
-                text_dict["embedded"].shape[0], 1, 1)
-            text_dict["embedded"][:,
-                                  insert_map[i+1][0]:insert_map[i+1][-1]+1,
-                                  :] = cur
+                text_dict['embedded'].shape[0], 1, 1)
+            text_dict['embedded'][:,
+                                  insert_map[i + 1][0]:insert_map[i + 1][-1] +
+                                  1, :] = cur
 
         if self.text_feat_map is not None:
             text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
@@ -142,7 +138,7 @@ class GroundingDINOPTuning(GroundingDINO):
                 label_list.append(real_name)
                 text_prompts.append(pseudo_words)
             else:
-                word = 'a '*self.prompt_length
+                word = 'a ' * self.prompt_length
                 pseudo_words = [word.strip() for _ in range(self.class_num)]
                 text_prompts.append(pseudo_words)
                 label_list.append(text)
@@ -156,8 +152,7 @@ class GroundingDINOPTuning(GroundingDINO):
         else:
             custom_entities = False
         _positive_maps_and_prompts = [
-            self.get_tokens_positive_and_prompts(text_prompt,
-                                                 custom_entities,
+            self.get_tokens_positive_and_prompts(text_prompt, custom_entities,
                                                  enhanced_text_prompt,
                                                  tokens_positive)
             for text_prompt, enhanced_text_prompt, tokens_positive in zip(
@@ -176,26 +171,27 @@ class GroundingDINOPTuning(GroundingDINO):
         if hasattr(data_samples, 'prompt_pth'):
             positive_map = token_positive_maps[0]
             for i in range(len(visual_query)):
-                cur = visual_query[i].repeat(
-                    text_dict["embedded"].shape[0], 1, 1)
-                text_dict["embedded"][:,
-                                      positive_map[i+1][0]:
-                                      positive_map[i+1][-1]+1,
-                                      :] = cur
+                cur = visual_query[i].repeat(text_dict['embedded'].shape[0], 1,
+                                             1)
+                text_dict['embedded'][:,
+                                      positive_map[i +
+                                                   1][0]:positive_map[i +
+                                                                      1][-1] +
+                                      1, :] = cur
         else:
             positive_map = token_positive_maps[0]
             for i in range(self.class_num):
                 cur = self.learning_prompts[i].weight.repeat(
-                    text_dict["embedded"].shape[0], 1, 1)
-                text_dict["embedded"][:,
-                                      positive_map[i+1][0]:
-                                      positive_map[i+1][-1]+1,
-                                      :] = cur
+                    text_dict['embedded'].shape[0], 1, 1)
+                text_dict['embedded'][:,
+                                      positive_map[i +
+                                                   1][0]:positive_map[i +
+                                                                      1][-1] +
+                                      1, :] = cur
 
         # text feature map layer
         if self.text_feat_map is not None:
-            text_dict['embedded'] = self.text_feat_map(
-                text_dict['embedded'])
+            text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
 
         is_rec_tasks = []
         for i, data_samples in enumerate(batch_data_samples):
@@ -205,8 +201,8 @@ class GroundingDINOPTuning(GroundingDINO):
                 is_rec_tasks.append(True)
             data_samples.token_positive_map = token_positive_maps[i]
 
-        head_inputs_dict = self.forward_transformer(
-            visual_feats, text_dict, batch_data_samples)
+        head_inputs_dict = self.forward_transformer(visual_feats, text_dict,
+                                                    batch_data_samples)
         results_list = self.bbox_head.predict(
             **head_inputs_dict,
             rescale=rescale,
@@ -243,7 +239,7 @@ class GroundingDINOPTuning(GroundingDINO):
             if isinstance(a_embedding, str):
                 root_file = osp.abspath(osp.dirname(osp.dirname(__file__)))
                 embedding_abs_path = osp.normpath(
-                        osp.join(root_file, osp.expanduser(a_embedding)))
+                    osp.join(root_file, osp.expanduser(a_embedding)))
                 embedding = torch.load(embedding_abs_path)
             else:
                 import io

@@ -19,13 +19,11 @@ from mmengine.runner.checkpoint import _load_checkpoint_to_model
 from mmengine.visualization import Visualizer
 from rich.progress import track
 
-from mmdet.evaluation import INSTANCE_OFFSET
+from mmdet.evaluation import INSTANCE_OFFSET, get_classes
 from mmdet.registry import DATASETS
 from mmdet.structures import DetDataSample
 from mmdet.structures.mask import encode_mask_results, mask2bbox
 from mmdet.utils import ConfigType
-from mmdet.evaluation import get_classes
-
 
 id2rgb = None
 VOID = None
@@ -425,7 +423,8 @@ class DetInferencer(BaseInferencer):
                 results_dict['visualization'].extend(results['visualization'])
         return results_dict
 
-    def vl_deploy_visualize(self, inputs: InputsType,
+    def vl_deploy_visualize(self,
+                            inputs: InputsType,
                             preds: PredType,
                             return_vis: bool = False,
                             show: bool = False,
@@ -437,16 +436,16 @@ class DetInferencer(BaseInferencer):
                             **kwargs) -> Union[List[np.ndarray], None]:
         ori_inputs = self._inputs_to_list(inputs)
         visualization = self.visualize(
-                                        ori_inputs,
-                                        preds,
-                                        return_vis=return_vis,
-                                        show=show,
-                                        wait_time=wait_time,
-                                        draw_pred=draw_pred,
-                                        pred_score_thr=pred_score_thr,
-                                        no_save_vis=no_save_vis,
-                                        img_out_dir=img_out_dir,
-                                        **kwargs)
+            ori_inputs,
+            preds,
+            return_vis=return_vis,
+            show=show,
+            wait_time=wait_time,
+            draw_pred=draw_pred,
+            pred_score_thr=pred_score_thr,
+            no_save_vis=no_save_vis,
+            img_out_dir=img_out_dir,
+            **kwargs)
         return visualization
 
     def visualize(self,
