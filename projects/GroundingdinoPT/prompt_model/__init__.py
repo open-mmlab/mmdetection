@@ -2,5 +2,5 @@
 from .gdptuning import GroundingDINOPTuning
 from .auto_coco import Auto_CocoDataset
 __all__ = [
-    'GroundingDINOPTuning','Auto_CocoDataset'
+    'GroundingDINOPTuning', 'Auto_CocoDataset'
 ]

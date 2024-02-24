@@ -5,28 +5,35 @@ from mmengine.logging import print_log
 from cdet_inferencer import DetInferencer
 import warnings
 warnings.filterwarnings('ignore')
+
+
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
-        '--inputs', type=str, 
+        '--inputs', type=str,
         default="1.jpg",
         help='Input image file or folder path.')
     parser.add_argument(
         '--model',
         type=str,
-        default="D:/RocketDet/mmdetection/projects/GroundingdinoPT/config/grounding_dino_swinT_prompt.py",
+        default="D:/RocketDet/mmdetection/projects/ \
+                GroundingdinoPT/config/grounding_dino_swinT_prompt.py",
         help='Config or checkpoint .pth file or the model name '
         'and alias defined in metafile. The model configuration '
         'file will try to read from .pth if the parameter is '
         'a .pth weights file.')
-    parser.add_argument('--weights', default="D:/RocketDet/model_weight/detector/gdino/grounding_dino_swin-t_mmdet.pth", help='Checkpoint file')
+    parser.add_argument('--weights', default="D:/RocketDet/model_weight/\
+                        detector/gdino/grounding_dino_swin-t_mmdet.pth",
+                        help='Checkpoint file')
     parser.add_argument(
         '--out-dir',
         type=str,
         default='outputs',
         help='Output directory of images or prediction results.')
-    parser.add_argument('--texts', default='car',help='text prompt')
-    parser.add_argument('--prompt_pth', nargs='+', default=['a.pth','b.pth'], help='prompt')
+    parser.add_argument('--texts', default='car', help='text prompt')
+    parser.add_argument('--prompt_pth', nargs='+',
+                        default=['a.pth', 'b.pth'],
+                        help='prompt')
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(

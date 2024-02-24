@@ -366,7 +366,7 @@ class DetInferencer(BaseInferencer):
             texts = [texts] * len(ori_inputs)
         if stuff_texts is not None and isinstance(stuff_texts, str):
             stuff_texts = [stuff_texts] * len(ori_inputs)
-         # Currently only supports bs=1
+        # Currently only supports bs=1
         tokens_positive = [tokens_positive] * len(ori_inputs)
         if texts is not None:
             assert len(texts) == len(ori_inputs)
@@ -424,30 +424,31 @@ class DetInferencer(BaseInferencer):
             if results['visualization'] is not None:
                 results_dict['visualization'].extend(results['visualization'])
         return results_dict
-    
-    def vl_deploy_visualize(self,inputs: InputsType,
-                  preds: PredType,
-                  return_vis: bool = False,
-                  show: bool = False,
-                  wait_time: int = 0,
-                  draw_pred: bool = True,
-                  pred_score_thr: float = 0.3,
-                  no_save_vis: bool = False,
-                  img_out_dir: str = '',
-                  **kwargs) -> Union[List[np.ndarray], None]:
+
+    def vl_deploy_visualize(self, inputs: InputsType,
+                            preds: PredType,
+                            return_vis: bool = False,
+                            show: bool = False,
+                            wait_time: int = 0,
+                            draw_pred: bool = True,
+                            pred_score_thr: float = 0.3,
+                            no_save_vis: bool = False,
+                            img_out_dir: str = '',
+                            **kwargs) -> Union[List[np.ndarray], None]:
         ori_inputs = self._inputs_to_list(inputs)
         visualization = self.visualize(
-                ori_inputs,
-                preds,
-                return_vis=return_vis,
-                show=show,
-                wait_time=wait_time,
-                draw_pred=draw_pred,
-                pred_score_thr=pred_score_thr,
-                no_save_vis=no_save_vis,
-                img_out_dir=img_out_dir,
-                **kwargs)
-        
+                                        ori_inputs,
+                                        preds,
+                                        return_vis=return_vis,
+                                        show=show,
+                                        wait_time=wait_time,
+                                        draw_pred=draw_pred,
+                                        pred_score_thr=pred_score_thr,
+                                        no_save_vis=no_save_vis,
+                                        img_out_dir=img_out_dir,
+                                        **kwargs)
+        return visualization
+
     def visualize(self,
                   inputs: InputsType,
                   preds: PredType,

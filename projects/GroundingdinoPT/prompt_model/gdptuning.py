@@ -19,14 +19,20 @@ class GroundingDINOPTuning(GroundingDINO):
     """
     def __init__(self,
                  prompt_cfg: OptConfigType,
-                 *args, 
+                 *args,
                  **kwargs) -> None:
         self.class_num = prompt_cfg['class_num']
         self.prompt_length = prompt_cfg['prompt_length']
         self.prompt_train = True
         super().__init__(*args, **kwargs)
 
-        self.learning_prompts = nn.ModuleList([nn.Embedding(self.prompt_length, self.language_model.language_backbone.body.language_dim) for _ in range(self.class_num)])
+        self.learning_prompts = nn.ModuleList([
+            nn.Embedding(
+                    self.prompt_length,
+                    self.language_model.language_backbone.body.language_dim
+                    )
+            for _ in range(self.class_num)
+        ])
         self._freeze_stages()
 
     def _freeze_stages(self):
@@ -44,11 +50,12 @@ class GroundingDINOPTuning(GroundingDINO):
                 continue
             else:
                 param.requires_grad = False
+
     def train(self, mode=True):
         """Convert the model into training mode while keep normalization layer
         freezed."""
         super(GroundingDINOPTuning, self).train(mode)
-        self._freeze_stages()   
+        self._freeze_stages()
 
     def loss(self, batch_inputs: Tensor,
              batch_data_samples: SampleList) -> Union[dict, list]:
@@ -81,12 +88,15 @@ class GroundingDINOPTuning(GroundingDINO):
 
         text_dict = self.language_model(new_text_prompts)
 
-        #insert learnable prompt
+    #   insert learnable prompt
         insert_map, _ = self.get_positive_map(
                 tokenized, tokens_positive)
         for i in range(self.class_num):
-            cur = self.learning_prompts[i].weight.repeat(text_dict["embedded"].shape[0],1,1)
-            text_dict["embedded"][:,insert_map[i+1][0]:insert_map[i+1][-1]+1,:] = cur        
+            cur = self.learning_prompts[i].weight.repeat(
+                text_dict["embedded"].shape[0], 1, 1)
+            text_dict["embedded"][:,
+                                  insert_map[i+1][0]:insert_map[i+1][-1]+1,
+                                  :] = cur
 
         if self.text_feat_map is not None:
             text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
@@ -125,7 +135,8 @@ class GroundingDINOPTuning(GroundingDINO):
             text = list(text)
 
             if hasattr(data_samples, 'prompt_pth'):
-                visual_query, real_name, pseudo_words = self.predict_add_prompt(data_samples)
+                visual_query, real_name, pseudo_words = \
+                    self.predict_add_prompt(data_samples)
                 real_name.extend(text)
                 pseudo_words.extend(text)
                 label_list.append(real_name)
@@ -146,9 +157,9 @@ class GroundingDINOPTuning(GroundingDINO):
             custom_entities = False
         _positive_maps_and_prompts = [
             self.get_tokens_positive_and_prompts(text_prompt,
-                                                    custom_entities,
-                                                    enhanced_text_prompt,
-                                                    tokens_positive)
+                                                 custom_entities,
+                                                 enhanced_text_prompt,
+                                                 tokens_positive)
             for text_prompt, enhanced_text_prompt, tokens_positive in zip(
                 text_prompts, enhanced_text_prompts, tokens_positives)
         ]
@@ -165,13 +176,21 @@ class GroundingDINOPTuning(GroundingDINO):
         if hasattr(data_samples, 'prompt_pth'):
             positive_map = token_positive_maps[0]
             for i in range(len(visual_query)):
-                cur = visual_query[i].repeat(text_dict["embedded"].shape[0],1,1)
-                text_dict["embedded"][:,positive_map[i+1][0]:positive_map[i+1][-1]+1,:] = cur
+                cur = visual_query[i].repeat(
+                    text_dict["embedded"].shape[0], 1, 1)
+                text_dict["embedded"][:,
+                                      positive_map[i+1][0]:
+                                      positive_map[i+1][-1]+1,
+                                      :] = cur
         else:
             positive_map = token_positive_maps[0]
             for i in range(self.class_num):
-                cur = self.learning_prompts[i].weight.repeat(text_dict["embedded"].shape[0],1,1)
-                text_dict["embedded"][:,positive_map[i+1][0]:positive_map[i+1][-1]+1,:] = cur
+                cur = self.learning_prompts[i].weight.repeat(
+                    text_dict["embedded"].shape[0], 1, 1)
+                text_dict["embedded"][:,
+                                      positive_map[i+1][0]:
+                                      positive_map[i+1][-1]+1,
+                                      :] = cur
 
         # text feature map layer
         if self.text_feat_map is not None:
@@ -214,28 +233,29 @@ class GroundingDINOPTuning(GroundingDINO):
                 pred_instances.label_names = label_names
             data_sample.pred_instances = pred_instances
         return batch_data_samples
-    
-    def predict_add_prompt(self,data_samples):
+
+    def predict_add_prompt(self, data_samples):
         embedding_path = data_samples.prompt_pth
         real_name = []
         pseudo_words = []
         visual_query = []
         for a_embedding in embedding_path:
-            if isinstance(a_embedding,str):
+            if isinstance(a_embedding, str):
                 root_file = osp.abspath(osp.dirname(osp.dirname(__file__)))
-                embedding_abs_path = osp.normpath(osp.join(root_file,osp.expanduser(a_embedding)))
+                embedding_abs_path = osp.normpath(
+                        osp.join(root_file, osp.expanduser(a_embedding)))
                 embedding = torch.load(embedding_abs_path)
             else:
                 import io
                 buffer = io.BytesIO(a_embedding)
                 embedding = torch.load(buffer)
-            for k,v in embedding.items():
+            for k, v in embedding.items():
                 visual_query.append(v['embeddning'])
                 real_name.append(k)
-                word = 'a '*v['embeddning'].shape[0]
+                word = 'a ' * v['embeddning'].shape[0]
                 pseudo_words.append(word.strip())
         return visual_query, real_name, pseudo_words
-    
+
     def pre_decoder(
         self,
         memory: Tensor,

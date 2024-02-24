@@ -1,23 +1,26 @@
 import torch
 import argparse
-import os 
+import os
+
+
 def split_prompt(weight_path, save_path='./', real_name_list=[]):
     assert os.path.isfile(weight_path), f'权重文件路径:{weight_path}有误,不存在对应文件'
     promptmodel = torch.load(weight_path)
     weight = promptmodel['state_dict']
     prompt_weight = []
-    for n,v in weight.items():
+    for n, v in weight.items():
         if 'learning_prompts' in n:
             prompt_weight.append(v)
     if not real_name_list:
         real_name_list = promptmodel['meta']['dataset_meta']['classes']
     assert len(real_name_list) == len(prompt_weight), '真名数量和prompt权重数量不一致'
-    for v ,name in zip(prompt_weight,real_name_list):
+    for v, name in zip(prompt_weight, real_name_list):
         final = {}
         final[name] = {}
         final[name]['embeddning'] = v
-        path = os.path.join(save_path,os.path.expanduser(f'{name}.pth'))
+        path = os.path.join(save_path, os.path.expanduser(f'{name}.pth'))
         torch.save(final, path)
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -39,6 +42,7 @@ def main():
     args = parser.parse_args()
     os.makedirs(args.save_path, exist_ok=True)
     split_prompt(args.weight_path, args.save_path, args.real_name_list)
+
 
 if __name__ == '__main__':
     main()

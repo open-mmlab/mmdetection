@@ -3,17 +3,21 @@ _base_ = [
     '../../../configs/_base_/default_runtime.py'
 ]
 custom_imports = dict(
-    imports=['projects.GroundingdinoPT.prompt_model'], allow_failed_imports=False)
+    imports=[
+        'projects.GroundingdinoPT.prompt_model'
+    ],
+    allow_failed_imports=False
+)
 
 data_root = 'D:/RocketDet/data/Aquarium/'
 lang_model_name = 'D:/RocketDet/model_weight/language_model/bert-base-uncased'
-# load_from = "D:/RocketDet/model_weight/detector/gdino/groundingdino_swint_rocketdet.pth"
+# load_from = "D:/RocketDet/model_weight/detector/gdino/ \
+# groundingdino_swint_rocketdet.pth"
 
 model = dict(
     type='GroundingDINOPTuning',
     num_queries=900,
-    prompt_cfg=dict(prompt_length=10, 
-                    class_num=7),
+    prompt_cfg=dict(prompt_length=10, class_num=7),
     with_box_refine=True,
     as_two_stage=True,
     data_preprocessor=dict(

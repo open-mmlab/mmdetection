@@ -68,8 +68,12 @@ class Auto_CocoDataset(BaseDetDataset):
         palette = []
         for instance in self.coco.cats.values():
             text_list.append(instance["name"])
-            palette.append((random.randint(0, 255),random.randint(0, 255),random.randint(0, 255)))
-        self.meta_info = {'classes':list(text_list),'palette':palette}
+            palette.append((
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255)
+            ))
+        self.meta_info = {'classes': list(text_list), 'palette': palette}
 
     @property
     def metainfo(self) -> dict:
@@ -83,7 +87,7 @@ class Auto_CocoDataset(BaseDetDataset):
             return copy.deepcopy(self.meta_info)
         else:
             return copy.deepcopy(self._metainfo)
-    
+
     def load_data_list(self) -> List[dict]:
         """Load annotations from an annotation file named as ``self.ann_file``
 
