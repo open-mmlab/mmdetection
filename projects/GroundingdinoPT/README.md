@@ -1,4 +1,4 @@
-# Prompt Tuning For Grounding DINO
+# Prompt Tuning For mmGroundingDINO
 
 ## Description
 
