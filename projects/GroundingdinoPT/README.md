@@ -31,7 +31,7 @@ After training, it is necessary to separate the learnable prompt from the saved 
 python model_split_to_prompt_pth.py --weight_path {saved_model_path} --real_name_list {name1,name2,...}  --save_path {save_dir_path}
 ```
 
-real_name_list: used to display the class name during visualization
+real_name_list: used to display the class name during visualization.
 
 ### Visualization
 
