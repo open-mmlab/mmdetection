@@ -260,7 +260,7 @@ class DDQAuxLoss(nn.Module):
                                               gt_instances)
 
         num_valid_anchors = len(cls_scores)
-        bbox_targets = torch.zeros_like(bbox_preds)
+        bbox_targets = torch.zeros_like(bbox_preds, dtype=gt_bboxes.dtype)
         labels = bbox_preds.new_full((num_valid_anchors, ),
                                      cls_scores.size(-1),
                                      dtype=torch.long)
