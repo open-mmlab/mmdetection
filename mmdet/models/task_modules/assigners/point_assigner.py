@@ -2,6 +2,7 @@
 from typing import Optional
 
 import torch
+from mmengine.device import get_device
 from mmengine.structures import InstanceData
 
 from mmdet.registry import TASK_UTILS
@@ -104,7 +105,8 @@ class PointAssigner(BaseAssigner):
         assigned_gt_inds = points.new_zeros((num_points, ), dtype=torch.long)
         # stores the assigned gt dist (to this point) of each point
         assigned_gt_dist = points.new_full((num_points, ), float('inf'))
-        points_range = torch.arange(points.shape[0])
+        device = get_device()
+        points_range = torch.arange(points.shape[0], device=device)
 
         for idx in range(num_gts):
             gt_lvl = gt_bboxes_lvl[idx]
