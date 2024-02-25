@@ -145,8 +145,11 @@ class MaskFormer(SingleStageDetector):
             if 'ins_results' in pred_results:
                 data_sample.pred_instances = pred_results['ins_results']
 
-            assert 'sem_results' not in pred_results, 'segmantic ' \
-                'segmentation results are not supported yet.'
+            if 'sem_results' in pred_results:
+                data_sample.pred_sem_seg = pred_results['sem_results']
+
+            # assert 'sem_results' not in pred_results, 'segmantic ' \
+            #     'segmentation results are not supported yet.'
 
         return data_samples
 
