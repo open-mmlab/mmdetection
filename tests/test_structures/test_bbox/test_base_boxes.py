@@ -274,3 +274,9 @@ class TestBaseBoxes(TestCase):
         if torch.cuda.is_available():
             new_boxes = boxes.fake_boxes((3, 4, 4), device='cuda')
             self.assertTrue(new_boxes.tensor.is_cuda)
+
+    def test_pin_memory(self):
+        boxes = ToyBaseBoxes(torch.rand(3, 4, 4))
+        self.assertEqual(boxes.tensor.is_pinned(), False)
+        boxes = boxes.pin_memory()
+        self.assertEqual(boxes.tensor.is_pinned(), True)
