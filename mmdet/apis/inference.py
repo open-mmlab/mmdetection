@@ -258,7 +258,9 @@ def build_test_pipeline(cfg: ConfigType) -> ConfigType:
     # remove the "LoadImageFromFile" and "LoadTrackAnnotations" in pipeline
     transform_broadcaster = cfg.test_dataloader.dataset.pipeline[0].copy()
     for transform in transform_broadcaster['transforms']:
-        if transform['type'] == 'Resize':
+        # add OR condition for new config:
+        if transform['type'] == 'Resize' or transform[
+                'type'].__name__ == 'Resize':
             transform_broadcaster['transforms'] = transform
     pack_track_inputs = cfg.test_dataloader.dataset.pipeline[-1].copy()
     test_pipeline = Compose([transform_broadcaster, pack_track_inputs])
