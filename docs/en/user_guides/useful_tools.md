@@ -385,6 +385,15 @@ comparisons, but double check it before you adopt it in technical reports or pap
 2. Some operators are not counted into FLOPs like GN and custom operators. Refer to [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/2.x/mmcv/cnn/utils/flops_counter.py) for details.
 3. The FLOPs of two-stage detectors is dependent on the number of proposals.
 
+In addition, if you want to use [`PyTriton`](https://github.com/triton-inference-server/pytriton) to directly set up an `MMDetection` Pytorch model service, you can follow the steps below:
+
+1. Install PyTriton:
+Please refer to the official documentation [PyTriton](https://github.com/triton-inference-server/pytriton#installation).
+
+2. Modify the model config, checkpoint path, and device in 'demo/server.py':
+
+3. Modify the server's network parameters, please refer to the official library [`PyTriton`](https://github.com/triton-inference-server/pytriton).
+
 ## Model conversion
 
 ### MMDetection model to ONNX

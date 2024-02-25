@@ -373,6 +373,16 @@ Params: 37.74 M
 2. 一些算子并不计入 FLOPs，比如 GN 或其他自定义的算子。你可以参考 [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/2.x/mmcv/cnn/utils/flops_counter.py) 查看更详细的说明。
 3. 两阶段检测的 FLOPs 大小取决于 proposal 的数量。
 
+
+此外如果你想使用 [`PyTriton`](https://github.com/triton-inference-server/pytriton) 直接搭建一个 `MMDetection` Pytorch模型服务，可以参考以下步骤：
+
+1. 安装 `PyTriton`：
+
+请参考官方文档 [PyTriton](https://github.com/triton-inference-server/pytriton#installation)。
+
+2. 修改'demo/server.py'中的模型config和checkpoint路径以及device：
+
+3. 修改server的网络参数，请参考官方库[`PyTriton`](https://github.com/triton-inference-server/pytriton)
 ## 模型转换
 
 ### MMDetection 模型转换至 ONNX 格式
