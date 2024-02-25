@@ -180,8 +180,10 @@ class GroupMultiSourceSampler(MultiSourceSampler):
         } for group in range(len(self.group_ratio))]
 
     def _get_source_group_info(self) -> None:
-        self.group2size_per_source = [{0: 0, 1: 0}, {0: 0, 1: 0}]
-        self.group2inds_per_source = [{0: [], 1: []}, {0: [], 1: []}]
+        num_sources = len(self.num_per_source)
+        self.group2size_per_source = [{0: 0, 1: 0} for _ in range(num_sources)]
+        self.group2inds_per_source = [{0: [], 1: []}
+                                      for _ in range(num_sources)]
         for source, dataset in enumerate(self.dataset.datasets):
             for idx in range(len(dataset)):
                 data_info = dataset.get_data_info(idx)
