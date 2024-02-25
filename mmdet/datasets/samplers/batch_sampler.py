@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
 from typing import Sequence
 
 from torch.utils.data import BatchSampler, Sampler
@@ -40,7 +41,14 @@ class AspectRatioBatchSampler(BatchSampler):
     def __iter__(self) -> Sequence[int]:
         for idx in self.sampler:
             data_info = self.sampler.dataset.get_data_info(idx)
-            width, height = data_info['width'], data_info['height']
+            if 'width' not in data_info and 'height' not in data_info:
+                warnings.warn('Since width and height are not in data_info '
+                              'it is not possible to use the group batch '
+                              'sampler by image width and height. If you '
+                              'want to use this feature, please return '
+                              'the width and height fields in the dataset!')
+            width, height = data_info.get('width',
+                                          1), data_info.get('height', 1)
             bucket_id = 0 if width < height else 1
             bucket = self._aspect_ratio_buckets[bucket_id]
             bucket.append(idx)
