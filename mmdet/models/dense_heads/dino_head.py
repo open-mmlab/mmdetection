@@ -3,6 +3,7 @@ from typing import Dict, List, Tuple
 
 import torch
 from mmengine.structures import InstanceData
+from mmengine.runner import amp
 from torch import Tensor
 
 from mmdet.registry import MODELS
@@ -68,10 +69,13 @@ class DINOHead(DeformableDETRHead):
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
 
-        outs = self(hidden_states, references)
-        loss_inputs = outs + (enc_outputs_class, enc_outputs_coord,
-                              batch_gt_instances, batch_img_metas, dn_meta)
-        losses = self.loss_by_feat(*loss_inputs)
+        all_layers_outputs_classes, all_layers_outputs_coords = self(hidden_states, references)
+        with amp.autocast(enabled=False):
+            loss_inputs = (all_layers_outputs_classes.float(),
+                           all_layers_outputs_coords.float(),
+                           enc_outputs_class.float(), enc_outputs_coord.float(),
+                           batch_gt_instances, batch_img_metas, dn_meta)
+            losses = self.loss_by_feat(*loss_inputs)
         return losses
 
     def loss_by_feat(
