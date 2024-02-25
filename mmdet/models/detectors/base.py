@@ -14,6 +14,17 @@ ForwardResults = Union[Dict[str, torch.Tensor], List[DetDataSample],
                        Tuple[torch.Tensor], torch.Tensor]
 
 
+@torch.fx.wrap
+def add_pred_to_datasample(data_samples: SampleList,
+                           results_list: InstanceList) -> SampleList:
+    """Wrap this function with `torch.fx.wrap` so that this function can be
+    regarded as a leaf node in the graph traced by `torch.fx`."""
+    for data_sample, pred_instances in zip(data_samples, results_list):
+        data_sample.pred_instances = pred_instances
+    samplelist_boxtype2tensor(data_samples)
+    return data_samples
+
+
 class BaseDetector(BaseModel, metaclass=ABCMeta):
     """Base class for detectors.
 
@@ -150,7 +161,4 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                     the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        for data_sample, pred_instances in zip(data_samples, results_list):
-            data_sample.pred_instances = pred_instances
-        samplelist_boxtype2tensor(data_samples)
-        return data_samples
+        return add_pred_to_datasample(data_samples, results_list)

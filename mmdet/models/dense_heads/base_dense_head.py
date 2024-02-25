@@ -20,6 +20,19 @@ from ..utils import (filter_scores_and_topk, select_single_mlvl,
                      unpack_gt_instances)
 
 
+@torch.fx.wrap
+def unpack_img_metas(batch_data_samples: SampleList) -> List:
+    """Wrap this function with `torch.fx.wrap` so that this function can be
+    regarded as a leaf node in the graph traced by `torch.fx`."""
+    batch_img_metas = [
+        data_samples.metainfo for data_samples in batch_data_samples
+    ]
+    return batch_img_metas
+
+
+torch.fx.wrap(unpack_gt_instances)
+
+
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):
     """Base class for DenseHeads.
 
@@ -188,9 +201,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             list[obj:`InstanceData`]: Detection results of each image
             after the post process.
         """
-        batch_img_metas = [
-            data_samples.metainfo for data_samples in batch_data_samples
-        ]
+        batch_img_metas = unpack_img_metas(batch_data_samples)
 
         outs = self(x)
 
