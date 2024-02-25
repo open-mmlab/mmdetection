@@ -9,9 +9,10 @@ train_pipeline = [
     dict(type='Resize', scale=(256, 256), keep_ratio=False),
     dict(type='RandomFlip', prob=0.5),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1)),
-    dict(type='PackDetInputs',
-         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                    'scale_factor', 'flip', 'flip_direction', 'text'))
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor', 'flip', 'flip_direction', 'text'))
 ]
 
 test_pipeline = [

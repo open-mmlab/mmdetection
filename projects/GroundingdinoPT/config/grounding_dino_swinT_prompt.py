@@ -1,13 +1,7 @@
-_base_ = [
-    './auto_detection.py',
-    '../../../configs/_base_/default_runtime.py'
-]
+_base_ = ['./auto_detection.py', '../../../configs/_base_/default_runtime.py']
 custom_imports = dict(
-    imports=[
-        'projects.GroundingdinoPT.prompt_model'
-    ],
-    allow_failed_imports=False
-)
+    imports=['projects.GroundingdinoPT.prompt_model'],
+    allow_failed_imports=False)
 
 data_root = 'D:/RocketDet/data/Aquarium/'
 lang_model_name = 'D:/RocketDet/model_weight/language_model/bert-base-uncased'
@@ -161,9 +155,10 @@ train_pipeline = [
                     keep_ratio=True)
             ]
         ]),
-    dict(type='PackDetInputs',
-         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                    'scale_factor', 'flip', 'flip_direction'))
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor', 'flip', 'flip_direction'))
 ]
 
 test_pipeline = [
@@ -184,7 +179,8 @@ test_pipeline = [
 optim_wrapper = dict(
     type='OptimWrapper',
     optimizer=dict(type='AdamW', lr=0.1, weight_decay=0.0001),
-    clip_grad=dict(max_norm=0.1, norm_type=2),)
+    clip_grad=dict(max_norm=0.1, norm_type=2),
+)
 
 # learning policy
 max_epochs = 12
@@ -217,11 +213,12 @@ val_dataloader = dict(
         ann_file='annotations/test.json',
         data_prefix=dict(img='test/')))
 test_dataloader = dict(
-    dataset=dict(return_classes=True,
-                 pipeline=test_pipeline,))
+    dataset=dict(
+        return_classes=True,
+        pipeline=test_pipeline,
+    ))
 val_evaluator = dict(ann_file=data_root + 'annotations/test.json')
 test_evaluator = val_evaluator
-
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
