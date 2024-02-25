@@ -634,3 +634,47 @@ test_evaluator = val_evaluator
     year={2022}
 }
 ```
+
+## 优化器参数策略可视化
+
+该工具旨在帮助用户检查优化器的超参数调度器（无需训练），支持学习率（learning rate）、动量（momentum）和权值衰减（weight decay）。
+
+```bash
+python tools/visualizations/vis_scheduler.py \
+    ${CONFIG_FILE} \
+    [-p, --parameter ${PARAMETER_NAME}] \
+    [-d, --dataset-size ${DATASET_SIZE}] \
+    [-n, --ngpus ${NUM_GPUs}] \
+    [-s, --save-path ${SAVE_PATH}] \
+    [--title ${TITLE}] \
+    [--style ${STYLE}] \
+    [--window-size ${WINDOW_SIZE}] \
+    [--cfg-options]
+```
+
+**所有参数的说明**：
+
+- `config` : 模型配置文件的路径。
+- **`-p, parameter`**: 可视化参数名，只能为 `["lr", "momentum", "wd"]` 之一， 默认为 `"lr"`.
+- **`-d, --dataset-size`**: 数据集的大小。如果指定，`build_dataset` 将被跳过并使用这个大小作为数据集大小，默认使用 `build_dataset` 所得数据集的大小。
+- **`-n, --ngpus`**: 使用 GPU 的数量, 默认为1。
+- **`-s, --save-path`**: 保存的可视化图片的路径，默认不保存。
+- `--title`: 可视化图片的标题，默认为配置文件名。
+- `--style`: 可视化图片的风格，默认为 `whitegrid`。
+- `--window-size`: 可视化窗口大小，如果没有指定，默认为 `12*7`。如果需要指定，按照格式 `'W*H'`。
+- `--cfg-options`: 对配置文件的修改，参考[学习配置文件](../user_guides/config.md)。
+
+```{note}
+部分数据集在解析标注阶段比较耗时，可直接将 `-d, dataset-size` 指定数据集的大小，以节约时间。例如 COCO 训练集图片数量为 118287。
+```
+
+你可以使用如下命令来绘制配置文件 `configs/mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py` 将会使用的变化率曲线：
+
+```bash
+python tools/analysis_tools/vis_scheduler.py \
+    configs/mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py \
+    -d 118287 \
+    -s lr.jpg
+```
+
+<div align=center><img src="https://user-images.githubusercontent.com/81373517/221564742-79f81472-3490-4b91-99a6-fe286c3a8663.jpg" style=" width: auto; height: 40%; "></div>

@@ -658,3 +658,48 @@ Please cite the paper if you use this metric:
     year={2022}
 }
 ```
+
+## Hyper-parameter Scheduler Visualization
+
+This tool aims to help user to check the hyper-parameter scheduler of the optimizer(without training), which support the "learning rate", "momentum" and "weight_decay".
+
+```bash
+python tools/visualizations/vis_scheduler.py \
+    ${CONFIG_FILE} \
+    [-p, --parameter ${PARAMETER_NAME}] \
+    [-d, --dataset-size ${DATASET_SIZE}] \
+    [-n, --ngpus ${NUM_GPUs}] \
+    [-s, --save-path ${SAVE_PATH}] \
+    [--title ${TITLE}] \
+    [--style ${STYLE}] \
+    [--window-size ${WINDOW_SIZE}] \
+    [--cfg-options]
+```
+
+Description of all arguments:
+
+- `config`: The path of a model config file.
+- **`-p, --parameter`**: The param to visualize its change curve, choose form "lr", "momentum" or "wd". Default to use "lr".
+- **`-d, --dataset-size`**: The size of the datasets. If set, `build_dataset` will be skipped and this size will be used. Default to use the function `build_dataset`.
+- **`-n, --ngpus`**: The number of GPUs used in training, default to be 1.
+- **`-s, --save-path`**: The output path of the curve plot, default not to output.
+- `--title`: Title of figure. If not set, default to be config file name.
+- `--style`: Style of plt. If not set, default to be `whitegrid`.
+- `--window-size`: The shape of the display window. If not specified, it will be set to `12*7`. If used, it must be in the format `'W*H'`
+  .
+- `--cfg-options`: Modifications to the configuration file, refer to [Learn about configs](../user_guides/config.md)
+
+```{note}
+Loading annotatons maybe consume much time, you can directly specify the size of the dataset with `-d, dataset-size` to save time. Such as the number of COCO dataset is 118287.
+```
+
+You can use the following command to plot the step learning rate schedule used in the config `configs/mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py`:
+
+```bash
+python tools/analysis_tools/vis_scheduler.py \
+    configs/mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py \
+    -d 118287 \
+    -s lr.jpg
+```
+
+<div align=center><img src="https://user-images.githubusercontent.com/81373517/221564742-79f81472-3490-4b91-99a6-fe286c3a8663.jpg" style=" width: auto; height: 40%; "></div>
