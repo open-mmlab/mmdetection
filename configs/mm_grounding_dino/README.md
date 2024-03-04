@@ -47,6 +47,7 @@ Please refer to [usage.md](usage.md) or [中文版用法说明](usage_zh-CN.md)
 | MM-GDINO-L |  Swin-L  |     -     | 61.1(+0.4) |              O365V2,OpenImageV6,ALL              |                 [config](grounding_dino_swin-l_pretrain_all.py)                  |                                                                                                                                    [model](https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-l_pretrain_all/grounding_dino_swin-l_pretrain_all-56d69e78.pth)  \| [log](<>)                                                                                                                                    |
 
 - ALL: GoldG,V3det,COCO2017,LVISV1,COCO2014,GRIT,RefCOCO,RefCOCO+,RefCOCOg,gRefCOCO.
+- To save computational resources, both MM-GDINO-B and MM-GDINO-L adopt a two-stage training strategy, which involves training on a subset of the data before proceeding to train on the full dataset. This is different from MM-GDINO-T.
 
 ## LVIS Results
 
@@ -59,8 +60,8 @@ Please refer to [usage.md](usage.md) or [中文版用法说明](usage_zh-CN.md)
 | MM-GDINO-T |    34.2     |    37.4     |    46.2     | 41.4(+12.6) |    23.6    |    27.6    |    40.5    | 31.9(+11.8) |              O365,GoldG,GRIT,V3Det               |
 |  GDINO-B   |    27.9     |    33.4     |    37.2     |    34.7     |    19.0    |    24.1    |    32.9    |    26.7     | COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO |
 | MM-GDINO-B |    65.6     |    62.6     |    63.7     |    63.4     |    54.4    |    55.9    |    59.2    |    57.0     |                     O365,ALL                     |
-|  GDINO-L   |    22.2     |    30.7     |    38.8     |    33.9     |            |            |            |             |         O365,OI,GoldG,Cap4M,COCO,RefCOCO         |
-| MM-GDINO-L |    65.3     |    65.1     |    65.4     |    65.2     |            |            |            |             |              O365V2,OpenImageV6,ALL              |
+|  GDINO-L   |    22.2     |    30.7     |    38.8     |    33.9     |     -      |     -      |     -      |      -      |         O365,OI,GoldG,Cap4M,COCO,RefCOCO         |
+| MM-GDINO-L |    65.3     |    65.1     |    65.4     |    65.2     |    56.0    |    58.6    |    60.9    |    59.1     |              O365V2,OpenImageV6,ALL              |
 
 - The MM-GDINO-T config file is [mini-lvis](lvis/grounding_dino_swin-t_pretrain_zeroshot_mini-lvis.py) and [lvis 1.0](lvis/grounding_dino_swin-t_pretrain_zeroshot_lvis.py)
 - MM-GDINO-B/MM-GDINO-L utilized LVISV1 training data, while GDINO-B/GDINO-L did not utilize it.
@@ -215,9 +216,9 @@ Note:
 
 | Method                 | GDINO-B <br/> (COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO) | MM-GDINO-B <br/> (O365,ALL) | MM-GDINO-L <br/> (O365V2,OpenImageV6,ALL) | MM-GDINO-L-Finetune | GDINO-L-Finetune |
 |------------------------|------------------------------------------------------------------|-----------------------------|-------------------------------------------|---------------------|------------------|
-| RefCOCO val @1,5,10    | 84.6/97.9/99.1                                                   | 80.3/98.6/99.5              | 79.1/98.7/99.4                            |                     | 90.6/-/-         |
-| RefCOCO testA @1,5,10  | 88.7/98.9/99.6                                                   | 85.3/99.5/99.7              | 85.1/99.3/99.8                            |                     | 93.2/-/-         |
-| RefCOCO testB @1,5,10  | 80.5/96.6/98.5                                                   | 73.6/98.3/99.4              | 72.6/98.0/99.4                            |                     | 88.2/-/-         |
+| RefCOCO val @1,5,10    | 84.6/97.9/99.1                                                   | 80.3/98.6/99.5              | 79.1/98.7/99.4                            | 91.2/98.6/99.3      | 90.6/-/-         |
+| RefCOCO testA @1,5,10  | 88.7/98.9/99.6                                                   | 85.3/99.5/99.7              | 85.1/99.3/99.8                            | 92.9/99.5/99.8      | 93.2/-/-         |
+| RefCOCO testB @1,5,10  | 80.5/96.6/98.5                                                   | 73.6/98.3/99.4              | 72.6/98.0/99.4                            | 88.0/98.0/99.0      | 88.2/-/-         |
 | RefCOCO+ val @1,5,10   | 73.7/96.6/98.7                                                   | 83.5/98.3/99.4              | 82.3/98.3/99.4                            |                     | 82.8/-/-         |
 | RefCOCO+ testA @1,5,10 | 82.2/97.9/99.1                                                   | 89.3/99.3/99.7              | 88.4/99.3/99.8                            |                     | 89.0/-/-         |
 | RefCOCO+ testB @1,5,10 | 64.1/94.3/97.5                                                   | 76.8/97.5/99.0              | 74.5/97.6/99.2                            |                     | 75.9/-/-         |
@@ -225,7 +226,6 @@ Note:
 | RefCOCOg test @1,5,10  | 78.1/97.1/98.7                                                   | 86.2/98.93/99.4             | 84.3/98.9/99.4                            |                     | 87.0/-/-         |
 
 - The results of GDINO-L are derived from the official paper.
-
 
 | Method                                  | thresh_score | GDINO-T <br/> (O365,GoldG,Cap4M) | MM-GDINO-T <br/> (O365,GoldG) | MM-GDINO-T <br/> (O365,GoldG,GRIT) | MM-GDINO-T <br/> (O365,GoldG,V3Det) | MM-GDINO-T <br/> (O365,GoldG,GRIT,V3Det) |
 | --------------------------------------- | ------------ | -------------------------------- | ----------------------------- | ---------------------------------- | ----------------------------------- | ---------------------------------------- |
@@ -244,20 +244,11 @@ Note:
 
 - The MM-GDINO-T config file is [here](refcoco/grounding_dino_swin-t_pretrain_zeroshot_refexp.py)
 
-| Method                                  | thresh_score | GDINO-B <br/> (COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO) | MM-GDINO-B <br/> (O365,ALL) | GDINO-L <br/> (O365,OI,GoldG,Cap4M,COCO,RefCOCO) | MM-GDINO-L <br/> (O365V2,OpenImageV6,ALL) |
-|-----------------------------------------|--------------|------------------------------------------------------------------|-----------------------------|--------------------------------------------------|-------------------------------------------|
-| gRefCOCO val Pr@(F1=1, IoU≥0.5),N-acc   | 0.5          |                                                                  |                             |                                                  |                                           |
-| gRefCOCO val Pr@(F1=1, IoU≥0.5),N-acc   | 0.6          |                                                                  |                             |                                                  |                                           |
-| gRefCOCO val Pr@(F1=1, IoU≥0.5),N-acc   | 0.7          |                                                                  |                             |                                                  |                                           |
-| gRefCOCO val Pr@(F1=1, IoU≥0.5),N-acc   | 0.8          |                                                                  |                             |                                                  |                                           |
-| gRefCOCO testA Pr@(F1=1, IoU≥0.5),N-acc | 0.5          |                                                                  |                             |                                                  |                                           |
-| gRefCOCO testA Pr@(F1=1, IoU≥0.5),N-acc | 0.6          |                                                                  |                             |                                                  |                                           |
-| gRefCOCO testA Pr@(F1=1, IoU≥0.5),N-acc | 0.7          |                                                                  |                             |                                                  |                                           |
-| gRefCOCO testA Pr@(F1=1, IoU≥0.5),N-acc | 0.8          |                                                                  |                             |                                                  |                                           |
-| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 0.5          |                                                                  |                             |                                                  |                                           |
-| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 0.6          |                                                                  |                             |                                                  |                                           |
-| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 0.7          |                                                                  |                             |                                                  |                                           |
-| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 0.8          |                                                                  |                             |                                                  |                                           |
+| Method                                  | thresh_score | GDINO-B <br/> (COCO,O365,GoldG,Cap4M,OpenImage,ODinW-35,RefCOCO) | MM-GDINO-B <br/> (O365,ALL) | MM-GDINO-L <br/> (O365V2,OpenImageV6,ALL) |
+|-----------------------------------------|--------------|------------------------------------------------------------------|-----------------------------|-------------------------------------------|
+| gRefCOCO val Pr@(F1=1, IoU≥0.5),N-acc   | 0.7          | 46.2/81.4                                                        | 46.1/76.6                   | 45.3/79.9                                 |
+| gRefCOCO testA Pr@(F1=1, IoU≥0.5),N-acc | 0.7          | 38.6/76.16                                                       | 38.6/74.1                   | 37.6/76.0                                 |
+| gRefCOCO testB Pr@(F1=1, IoU≥0.5),N-acc | 0.7          | 35.9/80.6                                                        | 36.8/76.7                   | 35.5/80.8                                 |
 
 
 ## Zero-Shot Description Detection Dataset(DOD)

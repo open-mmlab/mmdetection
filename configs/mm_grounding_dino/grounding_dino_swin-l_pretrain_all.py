@@ -517,7 +517,7 @@ train_dataloader = dict(
 # 4NODES * 8GPU
 optim_wrapper = dict(optimizer=dict(lr=0.0001))
 
-max_iter = 250000
+max_iter = 330000
 train_cfg = dict(
     _delete_=True,
     type='IterBasedTrainLoop',
