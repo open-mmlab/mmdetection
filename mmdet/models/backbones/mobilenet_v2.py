@@ -48,6 +48,7 @@ class MobileNetV2(BaseModule):
                  widen_factor=1.,
                  out_indices=(1, 2, 4, 7),
                  frozen_stages=-1,
+                 input_channels=3,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  act_cfg=dict(type='ReLU6'),
@@ -96,7 +97,7 @@ class MobileNetV2(BaseModule):
         self.in_channels = make_divisible(32 * widen_factor, 8)
 
         self.conv1 = ConvModule(
-            in_channels=3,
+            in_channels=input_channels,
             out_channels=self.in_channels,
             kernel_size=3,
             stride=2,
