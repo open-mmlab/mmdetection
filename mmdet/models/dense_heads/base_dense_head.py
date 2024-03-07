@@ -373,7 +373,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             # the `custom_cls_channels` parameter is derived from
             # CrossEntropyCustomLoss and FocalCustomLoss, and is currently used
             # in v3det.
-            if getattr(self.loss_cls, 'custom_cls_channels', False):
+            if hasattr(self, 'loss_cls') and getattr(
+                    self.loss_cls, 'custom_cls_channels', False):
                 scores = self.loss_cls.get_activation(cls_score)
             elif self.use_sigmoid_cls:
                 scores = cls_score.sigmoid()
