@@ -49,6 +49,7 @@ class MobileNetV2(BaseModule):
                  out_indices=(1, 2, 4, 7),
                  frozen_stages=-1,
                  input_channels=3,
+                 output_channels=1280,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  act_cfg=dict(type='ReLU6'),
@@ -121,9 +122,9 @@ class MobileNetV2(BaseModule):
             self.layers.append(layer_name)
 
         if widen_factor > 1.0:
-            self.out_channel = int(1280 * widen_factor)
+            self.out_channel = int(output_channels * widen_factor)
         else:
-            self.out_channel = 1280
+            self.out_channel = output_channels
 
         layer = ConvModule(
             in_channels=self.in_channels,
