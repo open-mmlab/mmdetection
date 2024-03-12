@@ -339,7 +339,7 @@ def convert_balloon_to_coco(ann_file, out_file, image_prefix):
     annotations = []
     images = []
     obj_count = 0
-    for idx, v in enumerate(track_iter_progress(data_infos.values())):
+    for idx, v in enumerate(track_iter_progress(list(data_infos.values()))):
         filename = v['filename']
         img_path = osp.join(image_prefix, filename)
         height, width = mmcv.imread(img_path).shape[:2]
