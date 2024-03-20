@@ -30,7 +30,7 @@ The results on COCO 2017val are shown in the below table. (results on test-dev a
 
 We provide config files to reproduce the results in the CVPR 2019 paper [Libra R-CNN](https://arxiv.org/pdf/1904.02701.pdf).
 
-The extended version of [Libra R-CNN](https://arxiv.org/pdf/2108.10175.pdf) is accpeted by IJCV.
+The extended version of [Libra R-CNN](https://arxiv.org/pdf/2108.10175.pdf) is accepted by IJCV.
 
 ```latex
 @inproceedings{pang2019libra,
