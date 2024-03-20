@@ -118,7 +118,7 @@ def parse_args():
         '--extra-files',
         type=str,
         default=None,
-        help="Comma separated path to extra dependency files.")
+        help='Comma separated path to extra dependency files.')
     parser.add_argument(
         '-f',
         '--force',
