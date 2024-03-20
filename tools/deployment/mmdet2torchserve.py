@@ -45,7 +45,8 @@ def mmdet2torchserve(
         config_model_file:
             Path to a model config yaml file.
         handler_file:
-            Handler python file path to handle custom TorchServe inference logic.
+            Handler python file path to handle
+            custom TorchServe inference logic.
         extra_files:
             Comma separated path to extra dependency files.
         force:
@@ -55,6 +56,8 @@ def mmdet2torchserve(
     mkdir_or_exist(output_folder)
 
     config = Config.fromfile(config_file)
+    if handler_file is None:
+        handler_file = f'{Path(__file__).parent}/mmdet_handler.py'
 
     with TemporaryDirectory() as tmpdir:
         config.dump(f'{tmpdir}/config.py')
@@ -64,7 +67,7 @@ def mmdet2torchserve(
                 'model_file': f'{tmpdir}/config.py',
                 'config_file': config_model_file,
                 'serialized_file': checkpoint_file,
-                'handler': handler_file if handler_file else f'{Path(__file__).parent}/mmdet_handler.py',
+                'handler': handler_file,
                 'model_name': model_name or Path(checkpoint_file).stem,
                 'version': model_version,
                 'export_path': output_folder,
@@ -76,6 +79,7 @@ def mmdet2torchserve(
             })
         manifest = ModelExportUtils.generate_manifest_json(args)
         package_model(args, manifest)
+
 
 def parse_args():
     parser = ArgumentParser(
@@ -103,7 +107,8 @@ def parse_args():
         '--handler',
         type=str,
         default=None,
-        help='Handler python file path to handle custom TorchServe inference logic.')
+        help='Handler python file path '
+        'to handle custom TorchServe inference logic.')
     parser.add_argument(
         '--config-model-file',
         type=str,
@@ -131,6 +136,14 @@ if __name__ == '__main__':
         raise ImportError('`torch-model-archiver` is required.'
                           'Try: pip install torch-model-archiver')
 
-    mmdet2torchserve(args.config, args.checkpoint, args.output_folder,
-                     args.model_name, args.model_version, args.config_model_file,
-                     args.handler, args.extra_files, args.force)
+    mmdet2torchserve(
+        config_file=args.config,
+        checkpoint_file=args.checkpoint,
+        output_folder=args.output_folder,
+        model_name=args.model_name,
+        model_version=args.model_version,
+        config_model_file=args.config_model_file,
+        handler_file=args.handler,
+        extra_files=args.extra_files,
+        force=args.force,
+    )
