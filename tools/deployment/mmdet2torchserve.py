@@ -19,6 +19,9 @@ def mmdet2torchserve(
     output_folder: str,
     model_name: str,
     model_version: str = '1.0',
+    config_model_file: str = None,
+    handler_file: str = None,
+    extra_files: str = None,
     force: bool = False,
 ):
     """Converts MMDetection model (config + checkpoint) to TorchServe `.mar`.
@@ -39,6 +42,12 @@ def mmdet2torchserve(
             If None, `{Path(checkpoint_file).stem}` will be used.
         model_version:
             Model's version.
+        config_model_file:
+            Path to a model config yaml file.
+        handler_file:
+            Handler python file path to handle custom TorchServe inference logic.
+        extra_files:
+            Comma separated path to extra dependency files.
         force:
             If True, if there is an existing `{model_name}.mar`
             file under `output_folder` it will be overwritten.
@@ -53,21 +62,20 @@ def mmdet2torchserve(
         args = Namespace(
             **{
                 'model_file': f'{tmpdir}/config.py',
-                'config_file': f'{tmpdir}/config.py',
+                'config_file': config_model_file,
                 'serialized_file': checkpoint_file,
-                'handler': f'{Path(__file__).parent}/mmdet_handler.py',
+                'handler': handler_file if handler_file else f'{Path(__file__).parent}/mmdet_handler.py',
                 'model_name': model_name or Path(checkpoint_file).stem,
                 'version': model_version,
                 'export_path': output_folder,
                 'force': force,
                 'requirements_file': None,
-                'extra_files': None,
+                'extra_files': extra_files,
                 'runtime': 'python',
                 'archive_format': 'default'
             })
         manifest = ModelExportUtils.generate_manifest_json(args)
         package_model(args, manifest)
-
 
 def parse_args():
     parser = ArgumentParser(
@@ -92,6 +100,21 @@ def parse_args():
         default='1.0',
         help='Number used for versioning.')
     parser.add_argument(
+        '--handler',
+        type=str,
+        default=None,
+        help='Handler python file path to handle custom TorchServe inference logic.')
+    parser.add_argument(
+        '--config-model-file',
+        type=str,
+        default=None,
+        help='Path to a model config yaml file.')
+    parser.add_argument(
+        '--extra-files',
+        type=str,
+        default=None,
+        help="Comma separated path to extra dependency files.")
+    parser.add_argument(
         '-f',
         '--force',
         action='store_true',
@@ -109,4 +132,5 @@ if __name__ == '__main__':
                           'Try: pip install torch-model-archiver')
 
     mmdet2torchserve(args.config, args.checkpoint, args.output_folder,
-                     args.model_name, args.model_version, args.force)
+                     args.model_name, args.model_version, args.config_model_file,
+                     args.handler, args.extra_files, args.force)
