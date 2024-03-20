@@ -100,7 +100,7 @@ You may refer to [MMEngine](https://github.com/open-mmlab/mmengine/blob/main/doc
 ### Advantages and new features
 
 In mmdetection tracking task, we employ videos to organize the dataset and use
-TrackDataSample to descirbe dataset info.
+TrackDataSample to describe dataset info.
 
 - Based on video organization, we provide transform `UniformRefFrameSample` to sample key frames and ref frames and use `TransformBroadcaster` for for clip training.
 - TrackDataSample can be viewd as a wrapper of multiple DetDataSample to some extent. It contains a property `video_data_samples` which is a list of DetDataSample, each of which corresponds to a single frame. In addition, it's metainfo includes key_frames_inds and ref_frames_inds to apply clip training way.
