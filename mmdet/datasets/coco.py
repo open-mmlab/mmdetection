@@ -69,6 +69,10 @@ class CocoDataset(BaseDetDataset):
         # change with the order of the `classes`
         self.cat_ids = self.coco.get_cat_ids(
             cat_names=self.metainfo['classes'])
+
+        if len(self.cat_ids) == 0:
+            raise Exception(f"Can't find classes in annotation file {self.metainfo['classes']}")
+
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.cat_img_map = copy.deepcopy(self.coco.cat_img_map)
 
