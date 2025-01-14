@@ -17,7 +17,7 @@ def parse_args():
         '--dataset-type',
         choices=['train', 'val', 'test'],
         default='train',
-        help='Specify the dataset type to browse (train, val, test).')
+        help='Specify the set to browse (train, val, test).')
     parser.add_argument(
         '--output-dir',
         default=None,
