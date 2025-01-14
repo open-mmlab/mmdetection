@@ -10,10 +10,14 @@ from mmdet.models.utils import mask2ndarray
 from mmdet.registry import DATASETS, VISUALIZERS
 from mmdet.structures.bbox import BaseBoxes
 
-
 def parse_args():
     parser = argparse.ArgumentParser(description='Browse a dataset')
     parser.add_argument('config', help='train config file path')
+    parser.add_argument(
+        '--dataset-type',
+        choices=['train', 'val', 'test'],
+        default='train',
+        help='Specify the dataset type to browse (train, val, test).')
     parser.add_argument(
         '--output-dir',
         default=None,
@@ -38,7 +42,6 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-
 def main():
     args = parse_args()
     cfg = Config.fromfile(args.config)
@@ -48,7 +51,17 @@ def main():
     # register all modules in mmdet into the registries
     init_default_scope(cfg.get('default_scope', 'mmdet'))
 
-    dataset = DATASETS.build(cfg.train_dataloader.dataset)
+    # Select the dataset based on the specified type
+    if args.dataset_type == 'train':
+        dataset_cfg = cfg.train_dataloader.dataset
+    elif args.dataset_type == 'val':
+        dataset_cfg = cfg.val_dataloader.dataset
+    elif args.dataset_type == 'test':
+        dataset_cfg = cfg.test_dataloader.dataset
+    else:
+        raise ValueError(f"Unknown dataset type: {args.dataset_type}")
+
+    dataset = DATASETS.build(dataset_cfg)
     visualizer = VISUALIZERS.build(cfg.visualizer)
     visualizer.dataset_meta = dataset.metainfo
 
@@ -83,7 +96,6 @@ def main():
             out_file=out_file)
 
         progress_bar.update()
-
 
 if __name__ == '__main__':
     main()
