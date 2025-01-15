@@ -118,7 +118,7 @@ Input can be either of these types:
 - list: A list of basic types above. Each element in the list will be processed separately.
 
   ```python
-  inferencer(['img_1.jpg', 'img_2.jpg])
+  inferencer(['img_1.jpg', 'img_2.jpg'])
   # You can even mix the types
   inferencer(['img_1.jpg', array])
   ```
@@ -186,7 +186,7 @@ Here are extensive lists of parameters that you can use.
 
 - **DetInferencer.\_\_init\_\_():**
 
-| Arguments       | Type          | Type    | Description                                                                                                                                                                                                                                                                                              |
+| Arguments       | Type          | Default | Description                                                                                                                                                                                                                                                                                              |
 | --------------- | ------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `model`         | str, optional | None    | Path to the config file or the model name defined in metafile. For example, it could be 'rtmdet-s' or 'rtmdet_s_8xb32-300e_coco' or 'configs/rtmdet/rtmdet_s_8xb32-300e_coco.py'. If the model is not specified, the user must provide the `weights` saved by MMEngine which contains the config string. |
 | `weights`       | str, optional | None    | Path to the checkpoint. If it is not specified and `model` is a model name of metafile, the weights will be loaded from metafile.                                                                                                                                                                        |
@@ -252,7 +252,7 @@ python demo/webcam_demo.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
     [--device ${GPU_ID}] \
-    [--camera-id ${CAMERA-ID}] \
+    [--camera-id ${CAMERA_ID}] \
     [--score-thr ${SCORE_THR}]
 ```
 
@@ -319,7 +319,7 @@ python demo/video_gpuaccel_demo.py demo/demo.mp4 \
 
 This is a script for slicing inference on large images.
 
-```
+```shell
 python demo/large_image_demo.py \
 	${IMG_PATH} \
 	${CONFIG_FILE} \
