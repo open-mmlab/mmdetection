@@ -10,6 +10,7 @@ from mmdet.models.utils import mask2ndarray
 from mmdet.registry import DATASETS, VISUALIZERS
 from mmdet.structures.bbox import BaseBoxes
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Browse a dataset')
     parser.add_argument('config', help='train config file path')
