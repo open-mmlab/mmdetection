@@ -54,14 +54,14 @@ def main():
     init_default_scope(cfg.get('default_scope', 'mmdet'))
 
     # Select the dataset based on the specified type
-    if args.dataset_type == 'train':
+    if args.set == 'train':
         dataset_cfg = cfg.train_dataloader.dataset
-    elif args.dataset_type == 'val':
+    elif args.set == 'val':
         dataset_cfg = cfg.val_dataloader.dataset
-    elif args.dataset_type == 'test':
+    elif args.set == 'test':
         dataset_cfg = cfg.test_dataloader.dataset
     else:
-        raise ValueError(f"Unknown dataset type: {args.dataset_type}")
+        raise ValueError(f"Unknown set: {args.set}")
 
     dataset = DATASETS.build(dataset_cfg)
     visualizer = VISUALIZERS.build(cfg.visualizer)
