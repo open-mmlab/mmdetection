@@ -14,7 +14,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Browse a dataset')
     parser.add_argument('config', help='train config file path')
     parser.add_argument(
-        '--dataset-type',
+        '--set',
         choices=['train', 'val', 'test'],
         default='train',
         help='Specify the set to browse (train, val, test).')
@@ -41,6 +41,7 @@ def parse_args():
         'is allowed.')
     args = parser.parse_args()
     return args
+
 
 def main():
     args = parse_args()
@@ -96,6 +97,7 @@ def main():
             out_file=out_file)
 
         progress_bar.update()
+
 
 if __name__ == '__main__':
     main()
