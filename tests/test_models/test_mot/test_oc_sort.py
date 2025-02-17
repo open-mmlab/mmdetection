@@ -10,6 +10,7 @@ from parameterized import parameterized
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_track_inputs, get_detector_cfg
+from mmengine.device.utils import is_musa_available
 
 
 class TestByteTrack(TestCase):
@@ -33,14 +34,14 @@ class TestByteTrack(TestCase):
 
     @parameterized.expand([
         ('ocsort/ocsort_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_'
-         'test-mot17halfval.py', ('cpu', 'cuda')),
+         'test-mot17halfval.py', ('cpu', 'cuda','musa')),
     ])
     def test_bytetrack_forward_loss_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
             f'test_bytetrack_forward_loss_mode-{time.time()}')
         message_hub.update_info('iter', 0)
         message_hub.update_info('epoch', 0)
-        assert all([device in ['cpu', 'cuda'] for device in devices])
+        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
 
         for device in devices:
             _model = get_detector_cfg(cfg_file)
@@ -56,6 +57,10 @@ class TestByteTrack(TestCase):
                 if not torch.cuda.is_available():
                     return unittest.skip('test requires GPU and torch+cuda')
                 model = model.cuda()
+            if device == 'musa':
+                if not is_musa_available():
+                    return unittest.skip('test requires GPU and torch+musa')
+                model = model.musa()
 
             packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
             data = model.data_preprocessor(packed_inputs, True)
@@ -64,7 +69,7 @@ class TestByteTrack(TestCase):
 
     @parameterized.expand([
         ('ocsort/ocsort_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_'
-         'test-mot17halfval.py', ('cpu', 'cuda')),
+         'test-mot17halfval.py', ('cpu', 'cuda','musa')),
     ])
     def test_bytetrack_forward_predict_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
@@ -72,7 +77,7 @@ class TestByteTrack(TestCase):
         message_hub.update_info('iter', 0)
         message_hub.update_info('epoch', 0)
 
-        assert all([device in ['cpu', 'cuda'] for device in devices])
+        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
 
         for device in devices:
             _model = get_detector_cfg(cfg_file)

@@ -8,6 +8,7 @@ from parameterized import parameterized
 from mmdet.structures import DetDataSample
 from mmdet.testing import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
+from mmengine.device.utils import is_musa_available
 
 
 class TestGLIP(TestCase):
@@ -37,7 +38,7 @@ class TestGLIP(TestCase):
         model.backbone.init_cfg = None
 
         from mmdet.registry import MODELS
-        assert all([device in ['cpu', 'cuda'] for device in devices])
+        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
 
         for device in devices:
             detector = MODELS.build(model)
@@ -46,7 +47,10 @@ class TestGLIP(TestCase):
                 if not torch.cuda.is_available():
                     return unittest.skip('test requires GPU and torch+cuda')
                 detector = detector.cuda()
-
+            elif device == 'musa':
+                if not is_musa_available():
+                    return unittest.skip('test requires GPU and torch+musa')
+                detector = detector.musa()
             # test custom_entities is True
             packed_inputs = demo_mm_inputs(
                 2, [[3, 128, 128], [3, 125, 130]],

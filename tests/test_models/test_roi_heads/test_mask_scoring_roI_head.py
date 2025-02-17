@@ -7,6 +7,7 @@ import torch
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
 from mmdet.utils import register_all_modules
+from mmengine.device.utils import is_musa_available
 
 
 class TestMaskScoringRoiHead(TestCase):
@@ -24,101 +25,187 @@ class TestMaskScoringRoiHead(TestCase):
 
     def test_mask_scoring_roi_head_loss(self):
         """Tests trident roi head predict."""
-        if not torch.cuda.is_available():
+        if not torch.cuda.is_available() and not is_musa_available():
             # RoI pooling only support in GPU
-            return unittest.skip('test requires GPU and torch+cuda')
+            return unittest.skip('test requires GPU and torch+cuda+musa')
         roi_head = MODELS.build(self.roi_head_cfg)
-        roi_head = roi_head.cuda()
-        s = 256
-        feats = []
-        for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
-            feats.append(
-                torch.rand(1, 256, s // (2**(i + 2)),
-                           s // (2**(i + 2))).to(device='cuda'))
+        if is_musa_available():
+            roi_head = roi_head.musa()
+            s = 256
+            feats = []
+            for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
+                feats.append(
+                    torch.rand(1, 256, s // (2**(i + 2)),
+                            s // (2**(i + 2))).to(device='musa'))
 
-        image_shapes = [(3, s, s)]
-        batch_data_samples = demo_mm_inputs(
-            batch_size=1,
-            image_shapes=image_shapes,
-            num_items=[1],
-            num_classes=4,
-            with_mask=True,
-            device='cuda')['data_samples']
-        proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100, device='cuda')
+            image_shapes = [(3, s, s)]
+            batch_data_samples = demo_mm_inputs(
+                batch_size=1,
+                image_shapes=image_shapes,
+                num_items=[1],
+                num_classes=4,
+                with_mask=True,
+                device='musa')['data_samples']
+            proposals_list = demo_mm_proposals(
+                image_shapes=image_shapes, num_proposals=100, device='musa')
 
-        out = roi_head.loss(feats, proposals_list, batch_data_samples)
-        loss_cls = out['loss_cls']
-        loss_bbox = out['loss_bbox']
-        loss_mask = out['loss_mask']
-        self.assertGreater(loss_cls.sum(), 0, 'cls loss should be non-zero')
-        self.assertGreater(loss_bbox.sum(), 0, 'box loss should be non-zero')
-        self.assertGreater(loss_mask.sum(), 0, 'mask loss should be non-zero')
+            out = roi_head.loss(feats, proposals_list, batch_data_samples)
+            loss_cls = out['loss_cls']
+            loss_bbox = out['loss_bbox']
+            loss_mask = out['loss_mask']
+            self.assertGreater(loss_cls.sum(), 0, 'cls loss should be non-zero')
+            self.assertGreater(loss_bbox.sum(), 0, 'box loss should be non-zero')
+            self.assertGreater(loss_mask.sum(), 0, 'mask loss should be non-zero')
 
-        batch_data_samples = demo_mm_inputs(
-            batch_size=1,
-            image_shapes=image_shapes,
-            num_items=[0],
-            num_classes=4,
-            with_mask=True,
-            device='cuda')['data_samples']
-        proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100, device='cuda')
+            batch_data_samples = demo_mm_inputs(
+                batch_size=1,
+                image_shapes=image_shapes,
+                num_items=[0],
+                num_classes=4,
+                with_mask=True,
+                device='musa')['data_samples']
+            proposals_list = demo_mm_proposals(
+                image_shapes=image_shapes, num_proposals=100, device='musa')
 
-        out = roi_head.loss(feats, proposals_list, batch_data_samples)
-        empty_cls_loss = out['loss_cls']
-        empty_bbox_loss = out['loss_bbox']
-        empty_mask_loss = out['loss_mask']
-        self.assertGreater(empty_cls_loss.sum(), 0,
-                           'cls loss should be non-zero')
-        self.assertEqual(
-            empty_bbox_loss.sum(), 0,
-            'there should be no box loss when there are no true boxes')
-        self.assertEqual(
-            empty_mask_loss.sum(), 0,
-            'there should be no mask loss when there are no true boxes')
+            out = roi_head.loss(feats, proposals_list, batch_data_samples)
+            empty_cls_loss = out['loss_cls']
+            empty_bbox_loss = out['loss_bbox']
+            empty_mask_loss = out['loss_mask']
+            self.assertGreater(empty_cls_loss.sum(), 0,
+                            'cls loss should be non-zero')
+            self.assertEqual(
+                empty_bbox_loss.sum(), 0,
+                'there should be no box loss when there are no true boxes')
+            self.assertEqual(
+                empty_mask_loss.sum(), 0,
+                'there should be no mask loss when there are no true boxes')
+        else:
+            roi_head = roi_head.cuda()
+            s = 256
+            feats = []
+            for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
+                feats.append(
+                    torch.rand(1, 256, s // (2**(i + 2)),
+                            s // (2**(i + 2))).to(device='cuda'))
+
+            image_shapes = [(3, s, s)]
+            batch_data_samples = demo_mm_inputs(
+                batch_size=1,
+                image_shapes=image_shapes,
+                num_items=[1],
+                num_classes=4,
+                with_mask=True,
+                device='cuda')['data_samples']
+            proposals_list = demo_mm_proposals(
+                image_shapes=image_shapes, num_proposals=100, device='cuda')
+
+            out = roi_head.loss(feats, proposals_list, batch_data_samples)
+            loss_cls = out['loss_cls']
+            loss_bbox = out['loss_bbox']
+            loss_mask = out['loss_mask']
+            self.assertGreater(loss_cls.sum(), 0, 'cls loss should be non-zero')
+            self.assertGreater(loss_bbox.sum(), 0, 'box loss should be non-zero')
+            self.assertGreater(loss_mask.sum(), 0, 'mask loss should be non-zero')
+
+            batch_data_samples = demo_mm_inputs(
+                batch_size=1,
+                image_shapes=image_shapes,
+                num_items=[0],
+                num_classes=4,
+                with_mask=True,
+                device='cuda')['data_samples']
+            proposals_list = demo_mm_proposals(
+                image_shapes=image_shapes, num_proposals=100, device='cuda')
+
+            out = roi_head.loss(feats, proposals_list, batch_data_samples)
+            empty_cls_loss = out['loss_cls']
+            empty_bbox_loss = out['loss_bbox']
+            empty_mask_loss = out['loss_mask']
+            self.assertGreater(empty_cls_loss.sum(), 0,
+                            'cls loss should be non-zero')
+            self.assertEqual(
+                empty_bbox_loss.sum(), 0,
+                'there should be no box loss when there are no true boxes')
+            self.assertEqual(
+                empty_mask_loss.sum(), 0,
+                'there should be no mask loss when there are no true boxes')
 
     def test_mask_scoring_roi_head_predict(self):
         """Tests trident roi head predict."""
-        if not torch.cuda.is_available():
+        if not torch.cuda.is_available() and not is_musa_available():
             # RoI pooling only support in GPU
-            return unittest.skip('test requires GPU and torch+cuda')
+            return unittest.skip('test requires GPU and torch+cuda+musa')
         roi_head = MODELS.build(self.roi_head_cfg)
-        roi_head = roi_head.cuda()
-        s = 256
-        feats = []
-        for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
-            feats.append(
-                torch.rand(1, 256, s // (2**(i + 2)),
-                           s // (2**(i + 2))).to(device='cuda'))
+        if is_musa_available():
+            roi_head = roi_head.musa()
+            s = 256
+            feats = []
+            for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
+                feats.append(
+                    torch.rand(1, 256, s // (2**(i + 2)),
+                            s // (2**(i + 2))).to(device='musa'))
 
-        image_shapes = [(3, s, s)]
-        batch_data_samples = demo_mm_inputs(
-            batch_size=1,
-            image_shapes=image_shapes,
-            num_items=[0],
-            num_classes=4,
-            with_mask=True,
-            device='cuda')['data_samples']
-        proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100, device='cuda')
-        roi_head.predict(feats, proposals_list, batch_data_samples)
+            image_shapes = [(3, s, s)]
+            batch_data_samples = demo_mm_inputs(
+                batch_size=1,
+                image_shapes=image_shapes,
+                num_items=[0],
+                num_classes=4,
+                with_mask=True,
+                device='musa')['data_samples']
+            proposals_list = demo_mm_proposals(
+                image_shapes=image_shapes, num_proposals=100, device='musa')
+            roi_head.predict(feats, proposals_list, batch_data_samples)
+        else:
+            roi_head = roi_head.cuda()
+            s = 256
+            feats = []
+            for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
+                feats.append(
+                    torch.rand(1, 256, s // (2**(i + 2)),
+                            s // (2**(i + 2))).to(device='cuda'))
+
+            image_shapes = [(3, s, s)]
+            batch_data_samples = demo_mm_inputs(
+                batch_size=1,
+                image_shapes=image_shapes,
+                num_items=[0],
+                num_classes=4,
+                with_mask=True,
+                device='cuda')['data_samples']
+            proposals_list = demo_mm_proposals(
+                image_shapes=image_shapes, num_proposals=100, device='cuda')
+            roi_head.predict(feats, proposals_list, batch_data_samples)
 
     def test_mask_scoring_roi_head_forward(self):
         """Tests trident roi head forward."""
-        if not torch.cuda.is_available():
+        if not torch.cuda.is_available() and not is_musa_available():
             # RoI pooling only support in GPU
-            return unittest.skip('test requires GPU and torch+cuda')
+            return unittest.skip('test requires GPU and torch+cuda+musa')
         roi_head = MODELS.build(self.roi_head_cfg)
-        roi_head = roi_head.cuda()
-        s = 256
-        feats = []
-        for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
-            feats.append(
-                torch.rand(1, 256, s // (2**(i + 2)),
-                           s // (2**(i + 2))).to(device='cuda'))
+        if is_musa_available():
+            roi_head = roi_head.cuda()
+            s = 256
+            feats = []
+            for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
+                feats.append(
+                    torch.rand(1, 256, s // (2**(i + 2)),
+                            s // (2**(i + 2))).to(device='cuda'))
 
-        image_shapes = [(3, s, s)]
-        proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100, device='cuda')
-        roi_head.forward(feats, proposals_list)
+            image_shapes = [(3, s, s)]
+            proposals_list = demo_mm_proposals(
+                image_shapes=image_shapes, num_proposals=100, device='cuda')
+            roi_head.forward(feats, proposals_list)
+        else:
+            roi_head = roi_head.cuda()
+            s = 256
+            feats = []
+            for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
+                feats.append(
+                    torch.rand(1, 256, s // (2**(i + 2)),
+                            s // (2**(i + 2))).to(device='cuda'))
+
+            image_shapes = [(3, s, s)]
+            proposals_list = demo_mm_proposals(
+                image_shapes=image_shapes, num_proposals=100, device='cuda')
+            roi_head.forward(feats, proposals_list)

@@ -6,7 +6,7 @@ from functools import wraps
 
 import torch
 from mmengine.logging import MMLogger
-
+from mmengine.device.utils import is_musa_available
 
 def cast_tensor_type(inputs, src_type=None, dst_type=None):
     """Recursively convert Tensor in inputs from ``src_type`` to ``dst_type``.
@@ -143,7 +143,10 @@ class AvoidOOM:
                     return func(*args, **kwargs)
 
                 # Clear cache and retry
-                torch.cuda.empty_cache()
+                if is_musa_available():
+                    torch.musa.empty_cache()
+                else:
+                    torch.cuda.empty_cache()
                 with _ignore_torch_cuda_oom():
                     return func(*args, **kwargs)
 

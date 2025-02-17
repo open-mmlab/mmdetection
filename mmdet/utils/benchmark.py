@@ -19,6 +19,7 @@ from mmengine.utils.dl_utils import set_multi_processing
 from torch.nn.parallel import DistributedDataParallel
 
 from mmdet.registry import DATASETS, MODELS
+from mmengine.device.utils import is_musa_available
 
 try:
     import psutil
@@ -193,14 +194,23 @@ class InferenceBenchmark(BaseBenchmark):
         if is_fuse_conv_bn:
             model = fuse_conv_bn(model)
 
-        model = model.cuda()
 
-        if self.distributed:
-            model = DistributedDataParallel(
-                model,
-                device_ids=[torch.cuda.current_device()],
-                broadcast_buffers=False,
-                find_unused_parameters=False)
+        if is_musa_available():
+            model = model.musa()
+            if self.distributed:
+                model = DistributedDataParallel(
+                    model,
+                    device_ids=[torch.musa.current_device()],
+                    broadcast_buffers=False,
+                    find_unused_parameters=False)
+        else :
+            model = model.cuda()
+            if self.distributed:
+                model = DistributedDataParallel(
+                    model,
+                    device_ids=[torch.cuda.current_device()],
+                    broadcast_buffers=False,
+                    find_unused_parameters=False)
 
         model.eval()
         return model
@@ -209,37 +219,69 @@ class InferenceBenchmark(BaseBenchmark):
         """Executes the benchmark once."""
         pure_inf_time = 0
         fps = 0
+        if is_musa_available():
+            for i, data in enumerate(self.data_loader):
 
-        for i, data in enumerate(self.data_loader):
-
-            if (i + 1) % self.log_interval == 0:
-                print_log('==================================', self.logger)
-
-            torch.cuda.synchronize()
-            start_time = time.perf_counter()
-
-            with torch.no_grad():
-                self.model.test_step(data)
-
-            torch.cuda.synchronize()
-            elapsed = time.perf_counter() - start_time
-
-            if i >= self.num_warmup:
-                pure_inf_time += elapsed
                 if (i + 1) % self.log_interval == 0:
+                    print_log('==================================', self.logger)
+
+                torch.musa.synchronize()
+                start_time = time.perf_counter()
+
+                with torch.no_grad():
+                    self.model.test_step(data)
+
+                torch.musa.synchronize()
+                elapsed = time.perf_counter() - start_time
+
+                if i >= self.num_warmup:
+                    pure_inf_time += elapsed
+                    if (i + 1) % self.log_interval == 0:
+                        fps = (i + 1 - self.num_warmup) / pure_inf_time
+                        musa_memory = get_max_musa_memory()
+
+                        print_log(
+                            f'Done image [{i + 1:<3}/{self.max_iter}], '
+                            f'fps: {fps:.1f} img/s, '
+                            f'times per image: {1000 / fps:.1f} ms/img, '
+                            f'musa memory: {musa_memory} MB', self.logger)
+                        print_process_memory(self._process, self.logger)
+
+                if (i + 1) == self.max_iter:
                     fps = (i + 1 - self.num_warmup) / pure_inf_time
-                    cuda_memory = get_max_cuda_memory()
+                    break
 
-                    print_log(
-                        f'Done image [{i + 1:<3}/{self.max_iter}], '
-                        f'fps: {fps:.1f} img/s, '
-                        f'times per image: {1000 / fps:.1f} ms/img, '
-                        f'cuda memory: {cuda_memory} MB', self.logger)
-                    print_process_memory(self._process, self.logger)
+        else:
+            for i, data in enumerate(self.data_loader):
 
-            if (i + 1) == self.max_iter:
-                fps = (i + 1 - self.num_warmup) / pure_inf_time
-                break
+                if (i + 1) % self.log_interval == 0:
+                    print_log('==================================', self.logger)
+
+                torch.cuda.synchronize()
+                start_time = time.perf_counter()
+
+                with torch.no_grad():
+                    self.model.test_step(data)
+
+                torch.cuda.synchronize()
+                elapsed = time.perf_counter() - start_time
+
+                if i >= self.num_warmup:
+                    pure_inf_time += elapsed
+                    if (i + 1) % self.log_interval == 0:
+                        fps = (i + 1 - self.num_warmup) / pure_inf_time
+                        cuda_memory = get_max_cuda_memory()
+
+                        print_log(
+                            f'Done image [{i + 1:<3}/{self.max_iter}], '
+                            f'fps: {fps:.1f} img/s, '
+                            f'times per image: {1000 / fps:.1f} ms/img, '
+                            f'cuda memory: {cuda_memory} MB', self.logger)
+                        print_process_memory(self._process, self.logger)
+
+                if (i + 1) == self.max_iter:
+                    fps = (i + 1 - self.num_warmup) / pure_inf_time
+                    break
 
         return {'fps': fps}
 

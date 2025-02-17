@@ -8,6 +8,7 @@ from parameterized import parameterized
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
 from mmdet.utils import register_all_modules
+from mmengine.device.utils import is_musa_available
 
 
 class TestPISARoIHead(TestCase):
@@ -21,12 +22,15 @@ class TestPISARoIHead(TestCase):
         roi_head = MODELS.build(self.roi_head_cfg)
         self.assertTrue(roi_head.with_bbox)
 
-    @parameterized.expand(['cpu', 'cuda'])
+    @parameterized.expand(['cpu', 'cuda','musa'])
     def test_pisa_roi_head(self, device):
         """Tests trident roi head predict."""
         if not torch.cuda.is_available() and device == 'cuda':
             # RoI pooling only support in GPU
             return unittest.skip('test requires GPU and torch+cuda')
+        elif not is_musa_available() and device == 'musa':
+            # RoI pooling only support in GPU
+            return unittest.skip('test requires GPU and torch+musa')
         roi_head = MODELS.build(self.roi_head_cfg)
         roi_head = roi_head.to(device=device)
         s = 256

@@ -22,7 +22,6 @@ from ..registry import MODELS
 from ..structures import DetDataSample, SampleList
 from ..utils import get_test_pipeline_cfg
 
-
 def init_detector(
     config: Union[str, Path, Config],
     checkpoint: Optional[str] = None,
@@ -289,7 +288,9 @@ def inference_mot(model: nn.Module, img: np.ndarray, frame_id: int,
     test_pipeline = build_test_pipeline(cfg)
     data = test_pipeline(data)
 
-    if not next(model.parameters()).is_cuda:
+#   if not next(model.parameters()).is_cuda:
+    if not next(model.parameters()).is_cuda and not (next(model.parameters()).device.type =='musa'):
+    
         for m in model.modules():
             assert not isinstance(
                 m, RoIPool

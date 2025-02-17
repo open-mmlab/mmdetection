@@ -5,6 +5,7 @@ import torch
 from mmengine.testing import assert_allclose
 
 from .utils import ToyBaseBoxes
+from mmengine.device.utils import is_musa_available
 
 
 class TestBaseBoxes(TestCase):
@@ -19,7 +20,9 @@ class TestBaseBoxes(TestCase):
         if torch.cuda.is_available():
             boxes = ToyBaseBoxes(box_tensor, device='cuda')
             self.assertTrue(boxes.tensor.is_cuda)
-
+        elif is_musa_available():
+            boxes = ToyBaseBoxes(box_tensor, device='musa')
+            self.assertTrue(boxes.tensor.is_musa)
         with self.assertRaises(AssertionError):
             box_tensor = torch.rand((4, ))
             boxes = ToyBaseBoxes(box_tensor)
@@ -147,15 +150,25 @@ class TestBaseBoxes(TestCase):
         if torch.cuda.is_available():
             new_boxes = boxes.to(device='cuda')
             self.assertTrue(new_boxes.tensor.is_cuda)
+        elif is_musa_available():
+            new_boxes = boxes.to(device='musa')
+            self.assertTrue(new_boxes.tensor.is_musa)
         # cpu
         if torch.cuda.is_available():
             new_boxes = boxes.to(device='cuda')
             new_boxes = new_boxes.cpu()
             self.assertFalse(new_boxes.tensor.is_cuda)
+        elif is_musa_available():
+            new_boxes = boxes.to(device='musa')
+            new_boxes = new_boxes.cpu()
+            self.assertFalse(new_boxes.tensor.is_musa)
         # cuda
         if torch.cuda.is_available():
             new_boxes = boxes.cuda()
             self.assertTrue(new_boxes.tensor.is_cuda)
+        elif is_musa_available():
+            new_boxes = boxes.to('musa')
+            self.assertTrue(new_boxes.tensor.is_musa)
         # clone
         boxes.clone()
         # detach
@@ -274,3 +287,6 @@ class TestBaseBoxes(TestCase):
         if torch.cuda.is_available():
             new_boxes = boxes.fake_boxes((3, 4, 4), device='cuda')
             self.assertTrue(new_boxes.tensor.is_cuda)
+        if is_musa_available():
+            new_boxes = boxes.fake_boxes((3, 4, 4), device='musa')
+            self.assertTrue(new_boxes.tensor.is_musa)

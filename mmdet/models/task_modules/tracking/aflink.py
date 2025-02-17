@@ -158,10 +158,17 @@ class AppearanceFreeLink(BaseModule):
         self.confidence_threshold = confidence_threshold
 
         self.model = AFLinkModel()
+        try:
+            import torch_musa  
+            IS_MUSA_AVAILABLE = True
+        except Exception:
+            IS_MUSA_AVAILABLE = False
         if checkpoint:
             load_checkpoint(self.model, checkpoint)
         if torch.cuda.is_available():
             self.model.cuda()
+        elif torch.musa.is_available():
+            self.model.musa()
         self.model.eval()
 
         self.device = next(self.model.parameters()).device

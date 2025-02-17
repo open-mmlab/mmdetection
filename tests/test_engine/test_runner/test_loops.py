@@ -10,6 +10,7 @@ from mmengine.model import BaseModel
 from mmengine.optim import OptimWrapper
 from mmengine.runner import Runner
 from torch.utils.data import Dataset
+from mmengine.device.utils import is_musa_available
 
 from mmdet.registry import DATASETS
 from mmdet.utils import register_all_modules
@@ -84,7 +85,7 @@ class TestTeacherStudentValLoop(TestCase):
         self.temp_dir.cleanup()
 
     def test_teacher_student_val_loop(self):
-        device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+        device = 'cuda:0' if torch.cuda.is_available() else ('musa:0' if is_musa_available() else 'cpu')
         model = ToyModel2().to(device)
         evaluator = Mock()
         evaluator.evaluate = Mock(return_value=dict(acc=0.5))

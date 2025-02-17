@@ -89,10 +89,17 @@ class ScoreHLRSampler(BaseSampler):
         """
         assert len(gallery) >= num
 
+        try:
+            import torch_musa  
+            IS_MUSA_AVAILABLE = True
+        except Exception:
+            IS_MUSA_AVAILABLE = False
         is_tensor = isinstance(gallery, torch.Tensor)
         if not is_tensor:
             if torch.cuda.is_available():
                 device = torch.cuda.current_device()
+            elif IS_MUSA_AVAILABLE:
+                device = torch.musa.current_device()
             else:
                 device = 'cpu'
             gallery = torch.tensor(gallery, dtype=torch.long, device=device)
