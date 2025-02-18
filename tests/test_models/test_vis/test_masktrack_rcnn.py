@@ -4,13 +4,13 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device.utils import is_musa_available
 from mmengine.logging import MessageHub
 from mmengine.registry import init_default_scope
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_track_inputs, get_detector_cfg
-from mmengine.device.utils import is_musa_available
 
 
 class TestMaskTrackRCNN(TestCase):
@@ -33,14 +33,14 @@ class TestMaskTrackRCNN(TestCase):
     @parameterized.expand([
         (
             'masktrack_rcnn/masktrack-rcnn_mask-rcnn_r50_fpn_8xb1-12e_youtubevis2019.py',  # noqa: E501
-            ('cpu', 'cuda','musa')),
+            ('cpu', 'cuda', 'musa')),
     ])
     def test_mask_track_rcnn_forward_loss_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
             f'test_mask_track_rcnn_forward_loss_mode-{time.time()}')
         message_hub.update_info('iter', 0)
         message_hub.update_info('epoch', 0)
-        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             _model = get_detector_cfg(cfg_file)
@@ -70,7 +70,7 @@ class TestMaskTrackRCNN(TestCase):
     @parameterized.expand([
         (
             'masktrack_rcnn/masktrack-rcnn_mask-rcnn_r50_fpn_8xb1-12e_youtubevis2019.py',  # noqa: E501
-            ('cpu', 'cuda','musa')),
+            ('cpu', 'cuda', 'musa')),
     ])
     def test_mask_track_rcnn_forward_predict_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
@@ -78,7 +78,7 @@ class TestMaskTrackRCNN(TestCase):
         message_hub.update_info('iter', 0)
         message_hub.update_info('epoch', 0)
 
-        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             _model = get_detector_cfg(cfg_file)

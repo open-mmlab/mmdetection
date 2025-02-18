@@ -5,8 +5,9 @@ from contextlib import contextmanager
 from functools import wraps
 
 import torch
-from mmengine.logging import MMLogger
 from mmengine.device.utils import is_musa_available
+from mmengine.logging import MMLogger
+
 
 def cast_tensor_type(inputs, src_type=None, dst_type=None):
     """Recursively convert Tensor in inputs from ``src_type`` to ``dst_type``.

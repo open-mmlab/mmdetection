@@ -159,7 +159,7 @@ class AppearanceFreeLink(BaseModule):
 
         self.model = AFLinkModel()
         try:
-            import torch_musa  
+            import torch_musa
             IS_MUSA_AVAILABLE = True
         except Exception:
             IS_MUSA_AVAILABLE = False

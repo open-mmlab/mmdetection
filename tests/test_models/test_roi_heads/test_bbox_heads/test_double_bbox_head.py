@@ -3,15 +3,15 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device.utils import is_musa_available
 from parameterized import parameterized
 
 from mmdet.models.roi_heads.bbox_heads import DoubleConvFCBBoxHead
-from mmengine.device.utils import is_musa_available
 
 
 class TestDoubleBboxHead(TestCase):
 
-    @parameterized.expand(['cpu', 'cuda','musa'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_forward_loss(self, device):
         if device == 'cuda':
             if not torch.cuda.is_available():

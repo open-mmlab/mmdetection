@@ -90,7 +90,7 @@ class ScoreHLRSampler(BaseSampler):
         assert len(gallery) >= num
 
         try:
-            import torch_musa  
+            import torch_musa
             IS_MUSA_AVAILABLE = True
         except Exception:
             IS_MUSA_AVAILABLE = False

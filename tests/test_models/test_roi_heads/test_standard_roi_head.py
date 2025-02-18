@@ -4,12 +4,12 @@ from unittest import TestCase
 
 import torch
 from mmengine.config import Config
+from mmengine.device.utils import is_musa_available
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals
 from mmdet.utils import register_all_modules
-from mmengine.device.utils import is_musa_available
 
 register_all_modules()
 
@@ -155,11 +155,11 @@ class TestStandardRoIHead(TestCase):
                 if not with_shared_head:
                     feats.append(
                         torch.rand(1, 1, s // (2**(i + 2)),
-                                s // (2**(i + 2))).to(device='musa'))
+                                   s // (2**(i + 2))).to(device='musa'))
                 else:
                     feats.append(
                         torch.rand(1, 1024, s // (2**(i + 2)),
-                                s // (2**(i + 2))).to(device='musa'))
+                                   s // (2**(i + 2))).to(device='musa'))
             feats = tuple(feats)
 
             # When truth is non-empty then both cls, box, and mask loss
@@ -179,9 +179,12 @@ class TestStandardRoIHead(TestCase):
             loss_cls = out['loss_cls']
             loss_bbox = out['loss_bbox']
             loss_mask = out['loss_mask']
-            self.assertGreater(loss_cls.sum(), 0, 'cls loss should be non-zero')
-            self.assertGreater(loss_bbox.sum(), 0, 'box loss should be non-zero')
-            self.assertGreater(loss_mask.sum(), 0, 'mask loss should be non-zero')
+            self.assertGreater(loss_cls.sum(), 0,
+                               'cls loss should be non-zero')
+            self.assertGreater(loss_bbox.sum(), 0,
+                               'box loss should be non-zero')
+            self.assertGreater(loss_mask.sum(), 0,
+                               'mask loss should be non-zero')
 
             # When there is no truth, the cls loss should be nonzero but
             # there should be no box and mask loss.
@@ -199,7 +202,7 @@ class TestStandardRoIHead(TestCase):
             empty_bbox_loss = out['loss_bbox']
             empty_mask_loss = out['loss_mask']
             self.assertGreater(empty_cls_loss.sum(), 0,
-                            'cls loss should be non-zero')
+                               'cls loss should be non-zero')
             self.assertEqual(
                 empty_bbox_loss.sum(), 0,
                 'there should be no box loss when there are no true boxes')
@@ -214,11 +217,11 @@ class TestStandardRoIHead(TestCase):
                 if not with_shared_head:
                     feats.append(
                         torch.rand(1, 1, s // (2**(i + 2)),
-                                s // (2**(i + 2))).to(device='cuda'))
+                                   s // (2**(i + 2))).to(device='cuda'))
                 else:
                     feats.append(
                         torch.rand(1, 1024, s // (2**(i + 2)),
-                                s // (2**(i + 2))).to(device='cuda'))
+                                   s // (2**(i + 2))).to(device='cuda'))
             feats = tuple(feats)
 
             # When truth is non-empty then both cls, box, and mask loss
@@ -238,9 +241,12 @@ class TestStandardRoIHead(TestCase):
             loss_cls = out['loss_cls']
             loss_bbox = out['loss_bbox']
             loss_mask = out['loss_mask']
-            self.assertGreater(loss_cls.sum(), 0, 'cls loss should be non-zero')
-            self.assertGreater(loss_bbox.sum(), 0, 'box loss should be non-zero')
-            self.assertGreater(loss_mask.sum(), 0, 'mask loss should be non-zero')
+            self.assertGreater(loss_cls.sum(), 0,
+                               'cls loss should be non-zero')
+            self.assertGreater(loss_bbox.sum(), 0,
+                               'box loss should be non-zero')
+            self.assertGreater(loss_mask.sum(), 0,
+                               'mask loss should be non-zero')
 
             # When there is no truth, the cls loss should be nonzero but
             # there should be no box and mask loss.
@@ -258,7 +264,7 @@ class TestStandardRoIHead(TestCase):
             empty_bbox_loss = out['loss_bbox']
             empty_mask_loss = out['loss_mask']
             self.assertGreater(empty_cls_loss.sum(), 0,
-                            'cls loss should be non-zero')
+                               'cls loss should be non-zero')
             self.assertEqual(
                 empty_bbox_loss.sum(), 0,
                 'there should be no box loss when there are no true boxes')

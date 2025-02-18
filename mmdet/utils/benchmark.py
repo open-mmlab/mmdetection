@@ -13,13 +13,13 @@ from mmcv.cnn import fuse_conv_bn
 from mmengine import MMLogger
 from mmengine.config import Config
 from mmengine.device import get_max_cuda_memory
+from mmengine.device.utils import is_musa_available
 from mmengine.dist import get_world_size
 from mmengine.runner import Runner, load_checkpoint
 from mmengine.utils.dl_utils import set_multi_processing
 from torch.nn.parallel import DistributedDataParallel
 
 from mmdet.registry import DATASETS, MODELS
-from mmengine.device.utils import is_musa_available
 
 try:
     import psutil
@@ -194,7 +194,6 @@ class InferenceBenchmark(BaseBenchmark):
         if is_fuse_conv_bn:
             model = fuse_conv_bn(model)
 
-
         if is_musa_available():
             model = model.musa()
             if self.distributed:
@@ -203,7 +202,7 @@ class InferenceBenchmark(BaseBenchmark):
                     device_ids=[torch.musa.current_device()],
                     broadcast_buffers=False,
                     find_unused_parameters=False)
-        else :
+        else:
             model = model.cuda()
             if self.distributed:
                 model = DistributedDataParallel(
@@ -223,7 +222,8 @@ class InferenceBenchmark(BaseBenchmark):
             for i, data in enumerate(self.data_loader):
 
                 if (i + 1) % self.log_interval == 0:
-                    print_log('==================================', self.logger)
+                    print_log('==================================',
+                              self.logger)
 
                 torch.musa.synchronize()
                 start_time = time.perf_counter()
@@ -255,7 +255,8 @@ class InferenceBenchmark(BaseBenchmark):
             for i, data in enumerate(self.data_loader):
 
                 if (i + 1) % self.log_interval == 0:
-                    print_log('==================================', self.logger)
+                    print_log('==================================',
+                              self.logger)
 
                 torch.cuda.synchronize()
                 start_time = time.perf_counter()

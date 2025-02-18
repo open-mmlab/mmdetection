@@ -2,10 +2,10 @@ from unittest import TestCase
 
 import numpy as np
 import torch
+from mmengine.device.utils import is_musa_available
 from mmengine.testing import assert_allclose
 
 from .utils import ToyBaseBoxes
-from mmengine.device.utils import is_musa_available
 
 
 class TestBaseBoxes(TestCase):

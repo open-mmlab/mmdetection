@@ -4,16 +4,16 @@ from unittest import TestCase
 
 import torch
 from mmengine.config import ConfigDict
+from mmengine.device.utils import is_musa_available
 from mmengine.structures import InstanceData
 from parameterized import parameterized
 
 from mmdet.models.roi_heads.mask_heads import FCNMaskHead
-from mmengine.device.utils import is_musa_available
 
 
 class TestFCNMaskHead(TestCase):
 
-    @parameterized.expand(['cpu', 'cuda','musa'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_get_seg_masks(self, device):
         if device == 'cuda':
             if not torch.cuda.is_available():

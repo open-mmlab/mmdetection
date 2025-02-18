@@ -4,13 +4,13 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device.utils import is_musa_available
 from mmengine.logging import MessageHub
 from mmengine.registry import init_default_scope
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_track_inputs, get_detector_cfg
-from mmengine.device.utils import is_musa_available
 
 
 class TestQDTrack(TestCase):
@@ -32,14 +32,14 @@ class TestQDTrack(TestCase):
 
     @parameterized.expand([
         ('qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17'
-         'halftrain_test-mot17halfval.py', ('cpu', 'cuda','musa')),
+         'halftrain_test-mot17halfval.py', ('cpu', 'cuda', 'musa')),
     ])
     def test_qdtrack_forward_loss_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
             f'test_qdtrack_forward_loss_mode-{time.time()}')
         message_hub.update_info('iter', 0)
         message_hub.update_info('epoch', 0)
-        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             _model = get_detector_cfg(cfg_file)
@@ -69,7 +69,7 @@ class TestQDTrack(TestCase):
 
     @parameterized.expand([
         ('qdtrack/qdtrack_faster-rcnn_r50_fpn_8xb2-4e_mot17'
-         'halftrain_test-mot17halfval.py', ('cpu', 'cuda','musa')),
+         'halftrain_test-mot17halfval.py', ('cpu', 'cuda', 'musa')),
     ])
     def test_qdtrack_forward_predict_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
@@ -77,7 +77,7 @@ class TestQDTrack(TestCase):
         message_hub.update_info('iter', 0)
         message_hub.update_info('epoch', 0)
 
-        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             _model = get_detector_cfg(cfg_file)
@@ -91,7 +91,7 @@ class TestQDTrack(TestCase):
                 if not is_musa_available():
                     return unittest.skip('test requires GPU and torch+musa')
                 model = model.musa()
-                
+
             packed_inputs = demo_track_inputs(
                 batch_size=1, num_frames=1, image_shapes=(3, 128, 128))
             out_data = model.data_preprocessor(packed_inputs, False)

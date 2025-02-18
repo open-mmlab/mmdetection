@@ -3,16 +3,16 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device.utils import is_musa_available
 from parameterized import parameterized
 from torch import Tensor
 
 from mmdet.models.roi_heads.mask_heads import GlobalContextHead
-from mmengine.device.utils import is_musa_available
 
 
 class TestGlobalContextHead(TestCase):
 
-    @parameterized.expand(['cpu', 'cuda','musa'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_forward_loss(self, device):
         if device == 'cuda':
             if not torch.cuda.is_available():

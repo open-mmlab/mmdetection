@@ -3,16 +3,16 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device.utils import is_musa_available
 from parameterized import parameterized
 from torch import Tensor
 
 from mmdet.models.roi_heads.mask_heads import HTCMaskHead
-from mmengine.device.utils import is_musa_available
 
 
 class TestHTCMaskHead(TestCase):
 
-    @parameterized.expand(['cpu', 'cuda','musa'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_forward(self, device):
         if device == 'cuda':
             if not torch.cuda.is_available():

@@ -4,13 +4,13 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device.utils import is_musa_available
 from mmengine.logging import MessageHub
 from mmengine.registry import init_default_scope
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_track_inputs, get_detector_cfg
-from mmengine.device.utils import is_musa_available
 
 
 class TestByteTrack(TestCase):
@@ -34,14 +34,14 @@ class TestByteTrack(TestCase):
 
     @parameterized.expand([
         ('ocsort/ocsort_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_'
-         'test-mot17halfval.py', ('cpu', 'cuda','musa')),
+         'test-mot17halfval.py', ('cpu', 'cuda', 'musa')),
     ])
     def test_bytetrack_forward_loss_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
             f'test_bytetrack_forward_loss_mode-{time.time()}')
         message_hub.update_info('iter', 0)
         message_hub.update_info('epoch', 0)
-        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             _model = get_detector_cfg(cfg_file)
@@ -69,7 +69,7 @@ class TestByteTrack(TestCase):
 
     @parameterized.expand([
         ('ocsort/ocsort_yolox_x_8xb4-amp-80e_crowdhuman-mot17halftrain_'
-         'test-mot17halfval.py', ('cpu', 'cuda','musa')),
+         'test-mot17halfval.py', ('cpu', 'cuda', 'musa')),
     ])
     def test_bytetrack_forward_predict_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
@@ -77,7 +77,7 @@ class TestByteTrack(TestCase):
         message_hub.update_info('iter', 0)
         message_hub.update_info('epoch', 0)
 
-        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             _model = get_detector_cfg(cfg_file)

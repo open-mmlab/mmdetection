@@ -3,12 +3,12 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device.utils import is_musa_available
 from parameterized import parameterized
 
 from mmdet.structures import DetDataSample
 from mmdet.testing import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
-from mmengine.device.utils import is_musa_available
 
 
 class TestGLIP(TestCase):
@@ -38,7 +38,7 @@ class TestGLIP(TestCase):
         model.backbone.init_cfg = None
 
         from mmdet.registry import MODELS
-        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             detector = MODELS.build(model)

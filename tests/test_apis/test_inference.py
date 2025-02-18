@@ -4,16 +4,18 @@ from pathlib import Path
 import numpy as np
 import pytest
 import torch
+from mmengine.device.utils import is_musa_available
 
 from mmdet.apis import inference_detector, init_detector
 from mmdet.structures import DetDataSample
 from mmdet.utils import register_all_modules
-from mmengine.device.utils import is_musa_available
+
 # TODO: Waiting to fix multiple call error bug
 register_all_modules()
 
 
-@pytest.mark.parametrize('config', ['configs/retinanet/retinanet_r18_fpn_1x_coco.py'])
+@pytest.mark.parametrize('config',
+                         ['configs/retinanet/retinanet_r18_fpn_1x_coco.py'])
 @pytest.mark.parametrize('device', [
     'cpu',
     pytest.param(
@@ -42,14 +44,13 @@ def test_init_detector(config, device):
                     type='Pretrained', checkpoint='torchvision://resnet18'))))
 
     # for device in devices:
-        # pytest.set_trace()
-        # if device == 'cuda' and not torch.cuda.is_available():
-        #     pytest.skip('test requires GPU and torch+cuda')
-        # elif device == 'musa' and not is_musa_available():
-        #     print('$$$$$$$$$$$$$$$$$$$$$$$')
-        #     pytest.skip('test requires GPU and torch+musa')
-    model = init_detector(
-        config_file, device=device, cfg_options=cfg_options)
+    # pytest.set_trace()
+    # if device == 'cuda' and not torch.cuda.is_available():
+    #     pytest.skip('test requires GPU and torch+cuda')
+    # elif device == 'musa' and not is_musa_available():
+    #     print('$$$$$$$$$$$$$$$$$$$$$$$')
+    #     pytest.skip('test requires GPU and torch+musa')
+    model = init_detector(config_file, device=device, cfg_options=cfg_options)
 
     # test init_detector with :obj:`Path`
     config_path_object = Path(config_file)
@@ -64,9 +65,9 @@ def test_init_detector(config, device):
 
 @pytest.mark.parametrize('config,devices',
                          [('configs/retinanet/retinanet_r18_fpn_1x_coco.py',
-                           ('cpu', 'cuda','musa'))])
+                           ('cpu', 'cuda', 'musa'))])
 def test_inference_detector(config, devices):
-    assert all([device in ['cpu', 'cuda','musa'] for device in devices])
+    assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
     project_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     project_dir = os.path.join(project_dir, '..')

@@ -3,12 +3,12 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device.utils import is_musa_available
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
 from mmdet.utils import register_all_modules
-from mmengine.device.utils import is_musa_available
 
 
 class TestPISARoIHead(TestCase):
@@ -22,7 +22,7 @@ class TestPISARoIHead(TestCase):
         roi_head = MODELS.build(self.roi_head_cfg)
         self.assertTrue(roi_head.with_bbox)
 
-    @parameterized.expand(['cpu', 'cuda','musa'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_pisa_roi_head(self, device):
         """Tests trident roi head predict."""
         if not torch.cuda.is_available() and device == 'cuda':

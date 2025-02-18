@@ -2,13 +2,13 @@
 import unittest
 
 import torch
+from mmengine.device.utils import is_musa_available
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
 from mmdet.testing._utils import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
-from mmengine.device.utils import is_musa_available
 
 
 class TestMaskFormer(unittest.TestCase):
@@ -55,7 +55,7 @@ class TestMaskFormer(unittest.TestCase):
         assert detector.backbone
         assert detector.panoptic_head
 
-    @parameterized.expand([('cpu', ), ('cuda', ),('musa',)])
+    @parameterized.expand([('cpu', ), ('cuda', ), ('musa', )])
     def test_forward_loss_mode(self, device):
         model_cfg = self._create_model_cfg()
         detector = MODELS.build(model_cfg)
@@ -84,7 +84,7 @@ class TestMaskFormer(unittest.TestCase):
         if device == 'cuda' and not torch.cuda.is_available():
             return unittest.skip('test requires GPU and torch+cuda')
         elif device == 'musa' and not is_musa_available():
-            return unittest.skip('test requires GPU and torch+musa')   
+            return unittest.skip('test requires GPU and torch+musa')
         detector = detector.to(device)
         packed_inputs = demo_mm_inputs(
             2,
@@ -172,7 +172,6 @@ class TestMask2Former(unittest.TestCase):
         ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py'),
         ('musa', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
         ('musa', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py')
-
     ])
     def test_forward_loss_mode(self, device, cfg_path):
         print(device, cfg_path)

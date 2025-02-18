@@ -4,13 +4,13 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device.utils import is_musa_available
 from mmengine.logging import MessageHub
 from mmengine.registry import init_default_scope
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_track_inputs, get_detector_cfg
-from mmengine.device.utils import is_musa_available
 
 
 class TestMask2Former(TestCase):
@@ -31,14 +31,14 @@ class TestMask2Former(TestCase):
 
     @parameterized.expand([
         ('mask2former_vis/mask2former_r50_8xb2-8e_youtubevis2021.py',
-         ('cpu', 'cuda','musa')),
+         ('cpu', 'cuda', 'musa')),
     ])
     def test_mask2former_forward_loss_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
             f'test_mask2former_forward_loss_mode-{time.time()}')
         message_hub.update_info('iter', 0)
         message_hub.update_info('epoch', 0)
-        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             _model = get_detector_cfg(cfg_file)
@@ -68,7 +68,7 @@ class TestMask2Former(TestCase):
 
     @parameterized.expand([
         ('mask2former_vis/mask2former_r50_8xb2-8e_youtubevis2021.py',
-         ('cpu', 'cuda','musa')),
+         ('cpu', 'cuda', 'musa')),
     ])
     def test_mask2former_forward_predict_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
@@ -76,7 +76,7 @@ class TestMask2Former(TestCase):
         message_hub.update_info('iter', 0)
         message_hub.update_info('epoch', 0)
 
-        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             _model = get_detector_cfg(cfg_file)

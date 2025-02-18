@@ -116,7 +116,7 @@ class SimOTAAssigner(BaseAssigner):
         valid_pred_scores = valid_pred_scores.unsqueeze(1).repeat(1, num_gt, 1)
         # disable AMP autocast and calculate BCE with FP32 to avoid overflow
         try:
-            import torch_musa  
+            import torch_musa
             IS_MUSA_AVAILABLE = True
         except Exception:
             IS_MUSA_AVAILABLE = False

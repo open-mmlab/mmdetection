@@ -1,10 +1,10 @@
 import unittest
 
 import torch
+from mmengine.device.utils import is_musa_available
 from parameterized import parameterized
 
 from mmdet.models.roi_heads.mask_heads import CoarseMaskHead
-from mmengine.device.utils import is_musa_available
 
 
 class TestCoarseMaskHead(unittest.TestCase):
@@ -16,7 +16,7 @@ class TestCoarseMaskHead(unittest.TestCase):
         with self.assertRaises(AssertionError):
             CoarseMaskHead(downsample_factor=0.5)
 
-    @parameterized.expand(['cpu', 'cuda','musa'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_forward(self, device):
         if device == 'cuda':
             if not torch.cuda.is_available():

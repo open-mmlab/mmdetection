@@ -4,11 +4,11 @@ from unittest import TestCase
 
 import torch
 from mmengine.config import Config
+from mmengine.device.utils import is_musa_available
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals
 from mmdet.utils import register_all_modules
-from mmengine.device.utils import is_musa_available
 
 register_all_modules()
 
@@ -94,7 +94,7 @@ class TestMultiInstanceRoIHead(TestCase):
             for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
                 feats.append(
                     torch.rand(1, 1, s // (2**(i + 2)),
-                            s // (2**(i + 2))).to(device='musa'))
+                               s // (2**(i + 2))).to(device='musa'))
             feats = tuple(feats)
 
             # When truth is non-empty then emd loss should be nonzero for
@@ -135,7 +135,7 @@ class TestMultiInstanceRoIHead(TestCase):
             for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
                 feats.append(
                     torch.rand(1, 1, s // (2**(i + 2)),
-                            s // (2**(i + 2))).to(device='cuda'))
+                               s // (2**(i + 2))).to(device='cuda'))
             feats = tuple(feats)
 
             # When truth is non-empty then emd loss should be nonzero for

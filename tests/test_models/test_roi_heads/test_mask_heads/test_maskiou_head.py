@@ -4,6 +4,7 @@ from unittest import TestCase
 
 import torch
 from mmengine.config import ConfigDict
+from mmengine.device.utils import is_musa_available
 from mmengine.structures import InstanceData
 from parameterized import parameterized
 
@@ -12,12 +13,11 @@ from mmdet.models.utils import unpack_gt_instances
 from mmdet.structures.mask import mask_target
 from mmdet.testing import (demo_mm_inputs, demo_mm_proposals,
                            demo_mm_sampling_results)
-from mmengine.device.utils import is_musa_available
 
 
 class TestMaskIoUHead(TestCase):
 
-    @parameterized.expand(['cpu', 'cuda','musa'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_mask_iou_head_loss_and_target(self, device):
         if device == 'cuda':
             if not torch.cuda.is_available():
@@ -70,7 +70,7 @@ class TestMaskIoUHead(TestCase):
                                       mask_targets, sampling_results,
                                       batch_gt_instances, train_cfg)
 
-    @parameterized.expand(['cpu', 'cuda','musa'])
+    @parameterized.expand(['cpu', 'cuda', 'musa'])
     def test_mask_iou_head_predict_by_feat(self, device):
         if device == 'cuda':
             if not torch.cuda.is_available():

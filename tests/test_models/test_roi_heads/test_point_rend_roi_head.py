@@ -3,12 +3,12 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device.utils import is_musa_available
 from parameterized import parameterized
 
 from mmdet.models.roi_heads import PointRendRoIHead  # noqa
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
-from mmengine.device.utils import is_musa_available
 
 
 class TestHTCRoIHead(TestCase):
@@ -40,16 +40,18 @@ class TestHTCRoIHead(TestCase):
         if is_musa_available():
             roi_head = roi_head.musa()
             feats = []
-            for i in range(len(roi_head_cfg.bbox_roi_extractor.featmap_strides)):
+            for i in range(
+                    len(roi_head_cfg.bbox_roi_extractor.featmap_strides)):
                 feats.append(
                     torch.rand(1, 256, s // (2**(i + 2)),
-                            s // (2**(i + 2))).to(device='musa'))
+                               s // (2**(i + 2))).to(device='musa'))
             feats = tuple(feats)
 
             # When truth is non-empty then both cls, box, and mask loss
             # should be nonzero for random inputs
             img_shape_list = [img_meta['img_shape'] for img_meta in img_metas]
-            proposal_list = demo_mm_proposals(img_shape_list, 100, device='musa')
+            proposal_list = demo_mm_proposals(
+                img_shape_list, 100, device='musa')
             batch_data_samples = demo_mm_inputs(
                 batch_size=1,
                 image_shapes=[(3, s, s)],
@@ -64,7 +66,8 @@ class TestHTCRoIHead(TestCase):
                         value.sum(), 0, msg='loss should be non-zero')
 
             # Positive rois must not be empty
-            proposal_list = demo_mm_proposals(img_shape_list, 100, device='musa')
+            proposal_list = demo_mm_proposals(
+                img_shape_list, 100, device='musa')
             batch_data_samples = demo_mm_inputs(
                 batch_size=1,
                 image_shapes=[(3, s, s)],
@@ -77,16 +80,18 @@ class TestHTCRoIHead(TestCase):
         else:
             roi_head = roi_head.cuda()
             feats = []
-            for i in range(len(roi_head_cfg.bbox_roi_extractor.featmap_strides)):
+            for i in range(
+                    len(roi_head_cfg.bbox_roi_extractor.featmap_strides)):
                 feats.append(
                     torch.rand(1, 256, s // (2**(i + 2)),
-                            s // (2**(i + 2))).to(device='cuda'))
+                               s // (2**(i + 2))).to(device='cuda'))
             feats = tuple(feats)
 
             # When truth is non-empty then both cls, box, and mask loss
             # should be nonzero for random inputs
             img_shape_list = [img_meta['img_shape'] for img_meta in img_metas]
-            proposal_list = demo_mm_proposals(img_shape_list, 100, device='cuda')
+            proposal_list = demo_mm_proposals(
+                img_shape_list, 100, device='cuda')
             batch_data_samples = demo_mm_inputs(
                 batch_size=1,
                 image_shapes=[(3, s, s)],
@@ -101,7 +106,8 @@ class TestHTCRoIHead(TestCase):
                         value.sum(), 0, msg='loss should be non-zero')
 
             # Positive rois must not be empty
-            proposal_list = demo_mm_proposals(img_shape_list, 100, device='cuda')
+            proposal_list = demo_mm_proposals(
+                img_shape_list, 100, device='cuda')
             batch_data_samples = demo_mm_inputs(
                 batch_size=1,
                 image_shapes=[(3, s, s)],

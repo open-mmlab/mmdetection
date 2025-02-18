@@ -4,13 +4,13 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device.utils import is_musa_available
 from mmengine.logging import MessageHub
 from mmengine.registry import init_default_scope
 from parameterized import parameterized
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_track_inputs, get_detector_cfg
-from mmengine.device.utils import is_musa_available
 
 
 class TestDeepSORT(TestCase):
@@ -31,7 +31,7 @@ class TestDeepSORT(TestCase):
 
     @parameterized.expand([
         ('sort/sort_faster-rcnn_r50_fpn_8xb2-4e'
-         '_mot17halftrain_test-mot17halfval.py', ('cpu', 'cuda','musa')),
+         '_mot17halftrain_test-mot17halfval.py', ('cpu', 'cuda', 'musa')),
     ])
     def test_deepsort_forward_predict_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
@@ -39,7 +39,7 @@ class TestDeepSORT(TestCase):
         message_hub.update_info('iter', 0)
         message_hub.update_info('epoch', 0)
 
-        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             _model = get_detector_cfg(cfg_file)

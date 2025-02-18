@@ -5,6 +5,7 @@ import time
 
 import torch
 from mmengine.device.utils import is_musa_available
+
 if sys.version_info >= (3, 7):
 
     @contextlib.contextmanager
@@ -18,7 +19,8 @@ if sys.version_info >= (3, 7):
         Useful as a temporary context manager to find sweet spots of code
         suitable for async implementation.
         """
-        if (not enabled) or not torch.cuda.is_available() and is_musa_available():
+        if (not enabled
+            ) or not torch.cuda.is_available() and is_musa_available():
             yield
             return
         if is_musa_available():

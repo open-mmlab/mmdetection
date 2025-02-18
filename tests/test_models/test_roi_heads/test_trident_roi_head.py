@@ -4,11 +4,11 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device.utils import is_musa_available
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
 from mmdet.utils import register_all_modules
-from mmengine.device.utils import is_musa_available
 
 
 class TestTridentRoIHead(TestCase):
@@ -39,7 +39,7 @@ class TestTridentRoIHead(TestCase):
             for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
                 feats.append(
                     torch.rand(1, 1024, s // (2**(i + 2)),
-                            s // (2**(i + 2))).to(device='musa'))
+                               s // (2**(i + 2))).to(device='musa'))
 
             image_shapes = [(3, s, s)]
             batch_data_samples = demo_mm_inputs(
@@ -66,7 +66,7 @@ class TestTridentRoIHead(TestCase):
             for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
                 feats.append(
                     torch.rand(1, 1024, s // (2**(i + 2)),
-                            s // (2**(i + 2))).to(device='cuda'))
+                               s // (2**(i + 2))).to(device='cuda'))
 
             image_shapes = [(3, s, s)]
             batch_data_samples = demo_mm_inputs(

@@ -3,11 +3,11 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device.utils import is_musa_available
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
 from mmdet.utils import register_all_modules
-from mmengine.device.utils import is_musa_available
 
 
 class TestMaskScoringRoiHead(TestCase):
@@ -36,7 +36,7 @@ class TestMaskScoringRoiHead(TestCase):
             for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
                 feats.append(
                     torch.rand(1, 256, s // (2**(i + 2)),
-                            s // (2**(i + 2))).to(device='musa'))
+                               s // (2**(i + 2))).to(device='musa'))
 
             image_shapes = [(3, s, s)]
             batch_data_samples = demo_mm_inputs(
@@ -53,9 +53,12 @@ class TestMaskScoringRoiHead(TestCase):
             loss_cls = out['loss_cls']
             loss_bbox = out['loss_bbox']
             loss_mask = out['loss_mask']
-            self.assertGreater(loss_cls.sum(), 0, 'cls loss should be non-zero')
-            self.assertGreater(loss_bbox.sum(), 0, 'box loss should be non-zero')
-            self.assertGreater(loss_mask.sum(), 0, 'mask loss should be non-zero')
+            self.assertGreater(loss_cls.sum(), 0,
+                               'cls loss should be non-zero')
+            self.assertGreater(loss_bbox.sum(), 0,
+                               'box loss should be non-zero')
+            self.assertGreater(loss_mask.sum(), 0,
+                               'mask loss should be non-zero')
 
             batch_data_samples = demo_mm_inputs(
                 batch_size=1,
@@ -72,7 +75,7 @@ class TestMaskScoringRoiHead(TestCase):
             empty_bbox_loss = out['loss_bbox']
             empty_mask_loss = out['loss_mask']
             self.assertGreater(empty_cls_loss.sum(), 0,
-                            'cls loss should be non-zero')
+                               'cls loss should be non-zero')
             self.assertEqual(
                 empty_bbox_loss.sum(), 0,
                 'there should be no box loss when there are no true boxes')
@@ -86,7 +89,7 @@ class TestMaskScoringRoiHead(TestCase):
             for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
                 feats.append(
                     torch.rand(1, 256, s // (2**(i + 2)),
-                            s // (2**(i + 2))).to(device='cuda'))
+                               s // (2**(i + 2))).to(device='cuda'))
 
             image_shapes = [(3, s, s)]
             batch_data_samples = demo_mm_inputs(
@@ -103,9 +106,12 @@ class TestMaskScoringRoiHead(TestCase):
             loss_cls = out['loss_cls']
             loss_bbox = out['loss_bbox']
             loss_mask = out['loss_mask']
-            self.assertGreater(loss_cls.sum(), 0, 'cls loss should be non-zero')
-            self.assertGreater(loss_bbox.sum(), 0, 'box loss should be non-zero')
-            self.assertGreater(loss_mask.sum(), 0, 'mask loss should be non-zero')
+            self.assertGreater(loss_cls.sum(), 0,
+                               'cls loss should be non-zero')
+            self.assertGreater(loss_bbox.sum(), 0,
+                               'box loss should be non-zero')
+            self.assertGreater(loss_mask.sum(), 0,
+                               'mask loss should be non-zero')
 
             batch_data_samples = demo_mm_inputs(
                 batch_size=1,
@@ -122,7 +128,7 @@ class TestMaskScoringRoiHead(TestCase):
             empty_bbox_loss = out['loss_bbox']
             empty_mask_loss = out['loss_mask']
             self.assertGreater(empty_cls_loss.sum(), 0,
-                            'cls loss should be non-zero')
+                               'cls loss should be non-zero')
             self.assertEqual(
                 empty_bbox_loss.sum(), 0,
                 'there should be no box loss when there are no true boxes')
@@ -143,7 +149,7 @@ class TestMaskScoringRoiHead(TestCase):
             for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
                 feats.append(
                     torch.rand(1, 256, s // (2**(i + 2)),
-                            s // (2**(i + 2))).to(device='musa'))
+                               s // (2**(i + 2))).to(device='musa'))
 
             image_shapes = [(3, s, s)]
             batch_data_samples = demo_mm_inputs(
@@ -163,7 +169,7 @@ class TestMaskScoringRoiHead(TestCase):
             for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
                 feats.append(
                     torch.rand(1, 256, s // (2**(i + 2)),
-                            s // (2**(i + 2))).to(device='cuda'))
+                               s // (2**(i + 2))).to(device='cuda'))
 
             image_shapes = [(3, s, s)]
             batch_data_samples = demo_mm_inputs(
@@ -190,7 +196,7 @@ class TestMaskScoringRoiHead(TestCase):
             for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
                 feats.append(
                     torch.rand(1, 256, s // (2**(i + 2)),
-                            s // (2**(i + 2))).to(device='cuda'))
+                               s // (2**(i + 2))).to(device='cuda'))
 
             image_shapes = [(3, s, s)]
             proposals_list = demo_mm_proposals(
@@ -203,7 +209,7 @@ class TestMaskScoringRoiHead(TestCase):
             for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
                 feats.append(
                     torch.rand(1, 256, s // (2**(i + 2)),
-                            s // (2**(i + 2))).to(device='cuda'))
+                               s // (2**(i + 2))).to(device='cuda'))
 
             image_shapes = [(3, s, s)]
             proposals_list = demo_mm_proposals(

@@ -4,13 +4,13 @@ import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.device.utils import is_musa_available
 from mmengine.logging import MessageHub
 from parameterized import parameterized
 
 from mmdet.structures import DetDataSample
 from mmdet.testing import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
-from mmengine.device.utils import is_musa_available
 
 
 class TestSingleStageDetector(TestCase):
@@ -37,11 +37,12 @@ class TestSingleStageDetector(TestCase):
         self.assertTrue(detector.bbox_head)
 
     @parameterized.expand([
-        ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda','musa')),
-        ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu',
-                                                                'cuda','musa')),
-        ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda','musa')),
-        ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda','musa')),
+        ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu', 'cuda',
+                                                                'musa')),
+        ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda', 'musa')),
+        ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda',
+                                                            'musa')),
     ])
     def test_single_stage_forward_loss_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
@@ -52,7 +53,7 @@ class TestSingleStageDetector(TestCase):
         model.backbone.init_cfg = None
 
         from mmdet.registry import MODELS
-        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             detector = MODELS.build(model)
@@ -73,18 +74,19 @@ class TestSingleStageDetector(TestCase):
             self.assertIsInstance(losses, dict)
 
     @parameterized.expand([
-        ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda','musa')),
-        ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu',
-                                                                'cuda','musa')),
-        ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda','musa')),
-        ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda','musa')),
+        ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu', 'cuda',
+                                                                'musa')),
+        ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda', 'musa')),
+        ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda',
+                                                            'musa')),
     ])
     def test_single_stage_forward_predict_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
 
         from mmdet.registry import MODELS
-        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             detector = MODELS.build(model)
@@ -108,19 +110,19 @@ class TestSingleStageDetector(TestCase):
                 self.assertIsInstance(batch_results[0], DetDataSample)
 
     @parameterized.expand([
-        ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda','musa')),
-        ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu',
-                                                                'cuda',
+        ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda', 'musa')),
+        ('centernet/centernet_r18_8xb16-crop512-140e_coco.py', ('cpu', 'cuda',
                                                                 'musa')),
-        ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda','musa')),
-        ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda','musa')),
+        ('yolox/yolox_tiny_8xb8-300e_coco.py', ('cpu', 'cuda', 'musa')),
+        ('yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py', ('cpu', 'cuda',
+                                                            'musa')),
     ])
     def test_single_stage_forward_tensor_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
 
         from mmdet.registry import MODELS
-        assert all([device in ['cpu', 'cuda','musa'] for device in devices])
+        assert all([device in ['cpu', 'cuda', 'musa'] for device in devices])
 
         for device in devices:
             detector = MODELS.build(model)
