@@ -59,8 +59,8 @@ async def completed(trace_name='',
 
             grad_enabled_after = torch.is_grad_enabled()
 
-            # observed change of torch.is_grad_enabled() during concurrent run of
-            # async_test_bboxes code
+            # observed change of torch.is_grad_enabled() during concurrent
+            # run of async_test_bboxes code
             assert (grad_enabled_before == grad_enabled_after
                     ), 'Unexpected is_grad_enabled() value change'
 
@@ -125,8 +125,8 @@ async def completed(trace_name='',
 
             grad_enabled_after = torch.is_grad_enabled()
 
-            # observed change of torch.is_grad_enabled() during concurrent run of
-            # async_test_bboxes code
+            # observed change of torch.is_grad_enabled() during concurrent
+            # run of async_test_bboxes code
             assert (grad_enabled_before == grad_enabled_after
                     ), 'Unexpected is_grad_enabled() value change'
 

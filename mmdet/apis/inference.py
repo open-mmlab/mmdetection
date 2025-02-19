@@ -289,7 +289,6 @@ def inference_mot(model: nn.Module, img: np.ndarray, frame_id: int,
     test_pipeline = build_test_pipeline(cfg)
     data = test_pipeline(data)
 
-    #   if not next(model.parameters()).is_cuda:
     if not next(model.parameters()).is_cuda and not (next(
             model.parameters()).device.type == 'musa'):
 

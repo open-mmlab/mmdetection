@@ -28,7 +28,6 @@ register_all_modules()
             not is_musa_available(), reason='requires musa support')),
 ])
 def test_init_detector(config, device):
-    # assert all([device in ['cpu', 'cuda','musa'] for device in devices])
 
     project_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     project_dir = os.path.join(project_dir, '..')
@@ -43,13 +42,6 @@ def test_init_detector(config, device):
                 init_cfg=dict(
                     type='Pretrained', checkpoint='torchvision://resnet18'))))
 
-    # for device in devices:
-    # pytest.set_trace()
-    # if device == 'cuda' and not torch.cuda.is_available():
-    #     pytest.skip('test requires GPU and torch+cuda')
-    # elif device == 'musa' and not is_musa_available():
-    #     print('$$$$$$$$$$$$$$$$$$$$$$$')
-    #     pytest.skip('test requires GPU and torch+musa')
     model = init_detector(config_file, device=device, cfg_options=cfg_options)
 
     # test init_detector with :obj:`Path`

@@ -54,7 +54,8 @@ class BboxOverlaps2D:
             bboxes1 = cast_tensor_type(bboxes1, self.scale, self.dtype)
             bboxes2 = cast_tensor_type(bboxes2, self.scale, self.dtype)
             overlaps = bbox_overlaps(bboxes1, bboxes2, mode, is_aligned)
-            if not overlaps.is_cuda and overlaps.device.type != 'musa' and overlaps.dtype == torch.float16:
+            if not overlaps.is_cuda and overlaps.device.type != 'musa'
+                and overlaps.dtype == torch.float16:
                 # resume cpu float32
                 overlaps = overlaps.float()
             return overlaps

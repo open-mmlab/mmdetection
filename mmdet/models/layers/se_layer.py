@@ -154,6 +154,7 @@ class ChannelAttention(BaseModule):
             self.act = nn.Hardsigmoid(inplace=True)
 
     def forward(self, x: Tensor) -> Tensor:
+        """Forward function for ChannelAttention."""
         if x.device.type == 'musa':
             with torch_musa.core.amp.autocast(enabled=False):
                 out = self.global_avgpool(x)

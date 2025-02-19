@@ -6,7 +6,6 @@ import unittest
 import torch
 from mmengine import Config, MMLogger
 from mmengine.dataset import Compose
-from mmengine.device.utils import is_musa_available
 from mmengine.model import BaseModel
 from torch.utils.data import Dataset
 
