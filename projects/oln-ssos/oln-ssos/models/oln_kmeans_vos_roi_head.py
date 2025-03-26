@@ -145,6 +145,10 @@ class OLNKMeansVOSRoIHead(OLNRoIHead):
             bbox_results = self.bbox_loss(x, sampling_results)
             losses.update(bbox_results['loss_bbox'])
 
+            if 'loss_ood' in bbox_results.keys():
+                losses.update({'loss_ood': bbox_results['loss_ood'] * self.ood_loss_weight})
+                losses.update({'loss_pseudo_class': bbox_results['loss_pseudo_class'] * self.pseudo_label_loss_weight})
+
         # mask head forward and loss
         if self.with_mask:
             mask_results = self.mask_loss(x, sampling_results,

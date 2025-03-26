@@ -3,9 +3,9 @@ data_root = '/media/capture/hdd8tb/dataset/dbf6/'
 
 custom_imports = dict(
     imports=[
-        'projects.oln_ssos.vos.datasets.vos_coco',
-        'projects.oln_ssos.vos.datasets.pipelines.loading',
-        'projects.oln_ssos.vos.datasets.pipelines.formatting'
+        'projects.oln_ssos_legacy.vos.datasets.vos_coco',
+        'projects.oln_ssos_legacy.vos.datasets.pipelines.loading',
+        'projects.oln_ssos_legacy.vos.datasets.pipelines.formatting'
     ],
     allow_failed_imports=False)
 

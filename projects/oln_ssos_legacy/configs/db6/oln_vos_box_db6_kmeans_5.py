@@ -6,13 +6,13 @@ _base_ = ['../oln_box/oln_box_model.py',
 
 custom_imports = dict(
     imports=[
-        'projects.oln_ssos.vos.models.roi_heads.oln_mask_vos_roi_head',
-        'projects.oln_ssos.vos.models.detectors.epoch_faster_rcnn',
-        'projects.oln_ssos.vos.models.roi_heads.bbox_heads.oln_vos_bbox_head',
-        'projects.oln_ssos.vos.datasets.vos_coco',
-        'projects.oln_ssos.epochs.pseudo_label_runner',
-        'projects.oln_ssos.vos.datasets.pipelines.loading',
-        'projects.oln_ssos.vos.datasets.pipelines.formatting'
+        'projects.oln_ssos_legacy.vos.models.roi_heads.oln_mask_vos_roi_head',
+        'projects.oln_ssos_legacy.vos.models.detectors.epoch_faster_rcnn',
+        'projects.oln_ssos_legacy.vos.models.roi_heads.bbox_heads.oln_vos_bbox_head',
+        'projects.oln_ssos_legacy.vos.datasets.vos_coco',
+        'projects.oln_ssos_legacy.epochs.pseudo_label_runner',
+        'projects.oln_ssos_legacy.vos.datasets.pipelines.loading',
+        'projects.oln_ssos_legacy.vos.datasets.pipelines.formatting'
     ],
     allow_failed_imports=False)
 
