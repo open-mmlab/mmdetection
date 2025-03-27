@@ -293,7 +293,7 @@ class PseudoLabelCocoSplitMetric(CocoSplitMetric):
                     optimal_score_threshold = np.array(optimal_score_threshold)
                     optimal_score_threshold = optimal_score_threshold[optimal_score_threshold != 0]
                     optimal_score_threshold = optimal_score_threshold.mean()
-                    logger.info("Optimal score threshold: ", optimal_score_threshold)
+                    logger.info("Optimal score threshold: ", optimal_score_threshold.item())
 
                     dt_ids_with_match = [int(dt_id) for ev_im in coco_eval.evalImgs for dt_id in ev_im['gtMatches'][0]
                                          if
@@ -304,13 +304,13 @@ class PseudoLabelCocoSplitMetric(CocoSplitMetric):
                     ood_scores = [o['ood_score'] for o in valid_detections]
                     ood_scores.sort()
                     anomaly_score_threshold = ood_scores[int(len(ood_scores) * 0.05)]
-                    logger.info("Non OS Detected Anomaly Score Threshold: ", anomaly_score_threshold)
+                    logger.info("Non OS Detected Anomaly Score Threshold: ", anomaly_score_threshold.item())
                     # data_to_print += f',{anomaly_score_threshold:.5f}'
                     valid_detections = coco_eval.cocoDt.anns.values()  # list(results_api.cocoDt.anns.values())#
                     ood_scores = [o['ood_score'] for o in valid_detections]
                     ood_scores.sort()
                     anomaly_score_threshold = ood_scores[int(len(ood_scores) * 0.05)]
-                    logger.info("Non OS All Anomaly Score Threshold: ", anomaly_score_threshold)
+                    logger.info("Non OS All Anomaly Score Threshold: ", anomaly_score_threshold.item())
                     # data_to_print += f',{anomaly_score_threshold:.5f}'
                     dt_ids_with_match = [int(dt_id) for ev_im in coco_eval.evalImgs for dt_id in ev_im['gtMatches'][0]
                                          if
@@ -322,14 +322,14 @@ class PseudoLabelCocoSplitMetric(CocoSplitMetric):
                     ood_scores = [o['ood_score'] for o in optimal_detections]
                     ood_scores.sort()
                     anomaly_score_threshold = ood_scores[int(len(ood_scores) * 0.05)]
-                    logger.info("Detected Anomaly Score Threshold: ", anomaly_score_threshold)
+                    logger.info("Detected Anomaly Score Threshold: ", anomaly_score_threshold.item())
                     # data_to_print += f',{anomaly_score_threshold:.5f}'
                     valid_detections = coco_eval.cocoDt.anns.values()  # list(results_api.cocoDt.anns.values())#
                     optimal_detections = [v for v in valid_detections if v['score'] > optimal_score_threshold]
                     ood_scores = [o['ood_score'] for o in optimal_detections]
                     ood_scores.sort()
                     anomaly_score_threshold = ood_scores[int(len(ood_scores) * 0.05)]
-                    logger.info("All Anomaly Score Threshold: ", anomaly_score_threshold)
+                    logger.info("All Anomaly Score Threshold: ", anomaly_score_threshold.item())
                     # data_to_print += f',{anomaly_score_threshold:.5f}'
 
                 if metric_items is None:
