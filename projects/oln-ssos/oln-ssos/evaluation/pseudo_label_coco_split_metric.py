@@ -304,13 +304,13 @@ class PseudoLabelCocoSplitMetric(CocoSplitMetric):
                     ood_scores = [o['ood_score'] for o in valid_detections]
                     ood_scores.sort()
                     anomaly_score_threshold = ood_scores[int(len(ood_scores) * 0.05)]
-                    logger.info(f"Non OS Detected Anomaly Score Threshold: {anomaly_score_threshold.item()}")
+                    logger.info(f"Non OS Detected Anomaly Score Threshold: {anomaly_score_threshold}")
                     # data_to_print += f',{anomaly_score_threshold:.5f}'
                     valid_detections = coco_eval.cocoDt.anns.values()  # list(results_api.cocoDt.anns.values())#
                     ood_scores = [o['ood_score'] for o in valid_detections]
                     ood_scores.sort()
                     anomaly_score_threshold = ood_scores[int(len(ood_scores) * 0.05)]
-                    logger.info(f"Non OS All Anomaly Score Threshold: {anomaly_score_threshold.item()}")
+                    logger.info(f"Non OS All Anomaly Score Threshold: {anomaly_score_threshold}")
                     # data_to_print += f',{anomaly_score_threshold:.5f}'
                     dt_ids_with_match = [int(dt_id) for ev_im in coco_eval.evalImgs for dt_id in ev_im['gtMatches'][0]
                                          if
@@ -322,14 +322,14 @@ class PseudoLabelCocoSplitMetric(CocoSplitMetric):
                     ood_scores = [o['ood_score'] for o in optimal_detections]
                     ood_scores.sort()
                     anomaly_score_threshold = ood_scores[int(len(ood_scores) * 0.05)]
-                    logger.info(f"Detected Anomaly Score Threshold: {anomaly_score_threshold.item()}")
+                    logger.info(f"Detected Anomaly Score Threshold: {anomaly_score_threshold}")
                     # data_to_print += f',{anomaly_score_threshold:.5f}'
                     valid_detections = coco_eval.cocoDt.anns.values()  # list(results_api.cocoDt.anns.values())#
                     optimal_detections = [v for v in valid_detections if v['score'] > optimal_score_threshold]
                     ood_scores = [o['ood_score'] for o in optimal_detections]
                     ood_scores.sort()
                     anomaly_score_threshold = ood_scores[int(len(ood_scores) * 0.05)]
-                    logger.info(f"All Anomaly Score Threshold: {anomaly_score_threshold.item()}")
+                    logger.info(f"All Anomaly Score Threshold: {anomaly_score_threshold}")
                     # data_to_print += f',{anomaly_score_threshold:.5f}'
 
                 if metric_items is None:
