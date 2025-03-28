@@ -22,9 +22,11 @@ import os.path as osp
 @METRICS.register_module()
 class PseudoLabelCocoSplitMetric(CocoSplitMetric):
 
-    def __init__(self, mode='id', *args, **kwargs):
+    def __init__(self, mode='id', optimal_score_threshold=0.0, anomaly_score_threshold=1.0, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mode = mode
+        self.optimal_score_threshold = optimal_score_threshold
+        self.anomaly_score_threshold = anomaly_score_threshold
 
     def results2json(self, results: Sequence[dict],
                      outfile_prefix: str) -> dict:
@@ -210,6 +212,9 @@ class PseudoLabelCocoSplitMetric(CocoSplitMetric):
                     # small/medium/large mask AP results.
                     for x in predictions:
                         x.pop('bbox')
+                if self.mode == 'ood':
+                    predictions = [p for p in predictions if p['score'] > self.optimal_score_threshold
+                               and p['ood_score'] < self.anomaly_score_threshold]
                 coco_dt = self._coco_api.loadRes(predictions)
 
             except IndexError:
