@@ -48,7 +48,7 @@ nltk.download('averaged_perceptron_tagger', download_dir='~/nltk_data')
 为了方便演示，您可以提前下载 MM Grounding DINO-T 模型权重到当前路径下
 
 ```shell
-wget load_from = 'https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth' # noqa
+wget https://download.openmmlab.com/mmdetection/v3.0/mm_grounding_dino/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det/grounding_dino_swin-t_pretrain_obj365_goldg_grit9m_v3det_20231204_095047-b448804b.pth
 ```
 
 ## 推理
