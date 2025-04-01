@@ -34,7 +34,7 @@ class PseudoLabelCocoSplitDataset(CocoSplitDataset):
                 ann['pseudo_label'] = 0
             else:
                 if ann['id'] in self.cat_pseudo_label_mapping.keys():
-                    ann['pseudo_label'] = self.cat_pseudo_label_mapping[ann['id']]
+                    ann['pseudo_label'] = int(self.cat_pseudo_label_mapping[ann['id']])
                 else:
                     ann['pseudo_label'] = 0
 

@@ -34,8 +34,26 @@ class PseudoLabelClusteringHook(Hook):
 
                 pseudo_classes = {ann_id: label for ann_id, label in zip(ann_ids, labels)}
                 runner.train_dataloader.dataset.cat_pseudo_label_mapping = pseudo_classes
-                runner.train_dataloader.dataset._fully_initialized = False
-                runner.train_dataloader.dataset.full_init()
+                # runner.train_dataloader.dataset._fully_initialized = False
+                # runner.train_dataloader.dataset.full_init()
+
+                # Changing _fully_initialized to False and calling full_init() again doesn't work
+                # load data information
+                runner.train_dataloader.dataset.data_list = runner.train_dataloader.dataset.load_data_list()
+                # get proposals from file
+                if runner.train_dataloader.dataset.proposal_file is not None:
+                    runner.train_dataloader.dataset.load_proposals()
+                # filter illegal data, such as data that has no annotations.
+                runner.train_dataloader.dataset.data_list = runner.train_dataloader.dataset.filter_data()
+
+                # Get subset data according to indices.
+                if runner.train_dataloader.dataset._indices is not None:
+                    runner.train_dataloader.dataset.data_list = \
+                        runner.train_dataloader.dataset._get_unserialized_subset(runner.train_dataloader.dataset._indices)
+
+                # serialize data_list
+                if runner.train_dataloader.dataset.serialize_data:
+                    runner.train_dataloader.dataset.data_bytes, runner.train_dataloader.dataset.data_address = runner.train_dataloader.dataset._serialize_data()
 
                 # dataset = runner.train_dataloader.dataset.coco.dataset
                 # for ann_id, label in zip(ann_ids, labels):
