@@ -234,7 +234,7 @@ class PseudoLabelCocoSplitMetric(CocoSplitMetric):
             else:
                 coco_eval = COCOEvalXclassWrapper(self._coco_api, coco_dt, iou_type)
 
-            coco_eval.params.catIds = self.eval_cat_ids
+            coco_eval.params.catIds = self.eval_cat_ids if 1 in self.eval_cat_ids else self.eval_cat_ids + [1]
             coco_eval.params.imgIds = self.img_ids
             coco_eval.params.maxDets = list(self.proposal_nums)
             coco_eval.params.iouThrs = self.iou_thrs

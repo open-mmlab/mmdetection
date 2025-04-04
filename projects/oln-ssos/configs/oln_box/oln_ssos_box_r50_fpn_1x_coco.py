@@ -36,7 +36,7 @@ model = dict(
         bottomk_epsilon_dist=1,
         ood_loss_weight=0.1,
         pseudo_label_loss_weight=1.,
-        k=5,
+        k=100,
         repeat_ood_sampling=4,
         pseudo_bbox_roi_extractor=dict(
                      type='SingleRoIExtractor',
@@ -170,7 +170,7 @@ param_scheduler = [
 # optimizer
 optim_wrapper = dict(
     type='OptimWrapper',
-    optimizer=dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.0001))
+    optimizer=dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001))
 default_hooks = dict(
     checkpoint=dict(type='CheckpointHook', interval=2))
 custom_hooks = [dict(type='PseudoLabelClusteringHook', calculate_pseudo_labels_from_epoch=0)]
