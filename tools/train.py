@@ -1,13 +1,28 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import argparse
+# add submodules to path
+import sys
 import os
 import os.path as osp
+sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
+# add mmdet to path
+sys.path.append(osp.join(osp.dirname(osp.dirname(osp.abspath(__file__))), 'mmdet'))
+# add submodules/latent-diffusion/ldm to path
+sys.path.append(osp.join(osp.dirname(osp.dirname(osp.abspath(__file__))), 'submodules', 'latent-diffusion', 'ldm'))
 
+# add tools to path
+sys.path.append(osp.join(osp.dirname(osp.dirname(osp.abspath(__file__))), 'tools'))
+
+# add mmdet.models.backbones.ldm_encoder_backbone
+sys.path.append(osp.join(osp.dirname(osp.dirname(osp.abspath(__file__))), 'mmdet', 'models', 'backbones'))
+
+import argparse
 from mmengine.config import Config, DictAction
 from mmengine.registry import RUNNERS
 from mmengine.runner import Runner
 
 from mmdet.utils import setup_cache_size_limit_of_dynamo
+
+
 
 
 def parse_args():
