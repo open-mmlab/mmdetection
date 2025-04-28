@@ -63,6 +63,8 @@ class LDMEncoderBackbone(BaseModule):
             self._load_pretrained(pretrained)
             
         # Freeze the encoder if specified
+
+
         if self.freeze:
             self._freeze_encoder()
             

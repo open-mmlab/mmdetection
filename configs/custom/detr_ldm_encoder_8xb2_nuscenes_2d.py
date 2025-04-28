@@ -99,7 +99,7 @@ data_root = 'data/nuscenes/'
 class_names = [
     'car', 'truck', 'bus', 'trailer',
     'motorcycle', 'bicycle', 'pedestrian'
-] # no barries, cones or construction_vehicle in this example
+]  # no barries, cones or construction_vehicle in this example
 
 # Data pipeline for training
 train_pipeline = [
@@ -143,7 +143,8 @@ train_pipeline = [
 test_pipeline = [
     dict(type='LoadImageFromFile', backend_args=dict(backend='local')),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
-    dict(type='PackDetInputs', meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape', 'scale_factor'))
+    dict(type='PackDetInputs', meta_keys=(
+        'img_id', 'img_path', 'ori_shape', 'img_shape', 'scale_factor'))
 ]
 
 # DataLoader settings
@@ -185,7 +186,10 @@ test_dataloader = val_dataloader
 val_evaluator = dict(
     type='CocoMetric',
     ann_file=data_root + 'annotations/nuscenes_2d_val.json',
-    metric='bbox')
+    metric=['bbox'],
+    classwise=True,  # Track per-class performance
+    outfile_prefix='work_dirs/detr_ldm_nuscenes_2d/results',
+)
 test_evaluator = val_evaluator
 
 # Optimizer
@@ -221,6 +225,44 @@ default_hooks = dict(
     checkpoint=dict(type='CheckpointHook', interval=5, max_keep_ckpts=5),
     sampler_seed=dict(type='DistSamplerSeedHook'),
     visualization=dict(type='DetVisualizationHook'))
+
+
+# Add visualization hook configuration to see predictions during validation
+default_hooks.update(dict(
+    visualization=dict(
+        type='DetVisualizationHook',
+        draw=True,
+        interval=100,  # Visualize every 100 iterations
+        score_thr=0.3  # Only visualize detections with confidence > 0.3
+    )
+))
+
+# Add or modify this section in your config
+vis_backends = [
+    dict(type='LocalVisBackend'),
+    dict(type='TensorboardVisBackend')
+]
+
+visualizer = dict(
+    type='DetLocalVisualizer',
+    vis_backends=vis_backends,
+    name='visualizer'
+)
+
+# Add more detailed log config
+log_config = dict(
+    interval=50,  # Log every 50 iterations
+    hooks=[
+        dict(type='TextLoggerHook'),
+        dict(type='TensorboardLoggerHook',
+             log_dir='work_dirs/detr_ldm_nuscenes_2d/tensorboard_logs',
+             interval=50,  # Log every 50 iterations
+             ignore_last=False,
+             reset_flag=False,
+             by_epoch=True)
+    ]
+)
+
 
 # Auto-scale learning rate
 auto_scale_lr = dict(base_batch_size=16)

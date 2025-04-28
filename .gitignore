@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.ckpt
+*.slurm
+.out
 
 # C extensions
 *.so
