@@ -1,28 +1,28 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # add submodules to path
+from mmdet.utils import setup_cache_size_limit_of_dynamo
+from mmengine.runner import Runner
+from mmengine.registry import RUNNERS
+from mmengine.config import Config, DictAction
+import argparse
 import sys
 import os
 import os.path as osp
 sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 # add mmdet to path
-sys.path.append(osp.join(osp.dirname(osp.dirname(osp.abspath(__file__))), 'mmdet'))
+sys.path.append(osp.join(osp.dirname(
+    osp.dirname(osp.abspath(__file__))), 'mmdet'))
 # add submodules/latent-diffusion/ldm to path
-sys.path.append(osp.join(osp.dirname(osp.dirname(osp.abspath(__file__))), 'submodules', 'latent-diffusion', 'ldm'))
+sys.path.append(osp.join(osp.dirname(osp.dirname(
+    osp.abspath(__file__))), 'submodules', 'latent-diffusion', 'ldm'))
 
 # add tools to path
-sys.path.append(osp.join(osp.dirname(osp.dirname(osp.abspath(__file__))), 'tools'))
+sys.path.append(osp.join(osp.dirname(
+    osp.dirname(osp.abspath(__file__))), 'tools'))
 
 # add mmdet.models.backbones.ldm_encoder_backbone
-sys.path.append(osp.join(osp.dirname(osp.dirname(osp.abspath(__file__))), 'mmdet', 'models', 'backbones'))
-
-import argparse
-from mmengine.config import Config, DictAction
-from mmengine.registry import RUNNERS
-from mmengine.runner import Runner
-
-from mmdet.utils import setup_cache_size_limit_of_dynamo
-
-
+sys.path.append(osp.join(osp.dirname(osp.dirname(
+    osp.abspath(__file__))), 'mmdet', 'models', 'backbones'))
 
 
 def parse_args():
@@ -119,6 +119,18 @@ def main():
         cfg.resume = True
         cfg.load_from = args.resume
 
+    cfg.visualizer = dict(
+        type='Visualizer',  # Specify the type of the visualizer
+        vis_backends=[
+            dict(type='TensorboardVisBackend', save_dir='tensorboard_logs'),
+            dict(type='LocalVisBackend', save_dir='local_logs')
+        ]
+    )
+    # remove interval from val_cfg
+    if 'val_cfg' in cfg and 'interval' in cfg.val_cfg:
+        del cfg.val_cfg['interval']
+    print("Config file: ")
+    print(cfg.pretty_text)
     # build the runner from config
     if 'runner_type' not in cfg:
         # build the default runner

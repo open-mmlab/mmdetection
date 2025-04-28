@@ -151,7 +151,8 @@ def main():
                             "category_id": category_id,
                             "bbox": [float(x1), float(y1), float(x2 - x1), float(y2 - y1)],
                             "area": float(area),
-                            "iscrowd": 0
+                            "iscrowd": 0,
+                            "segmentation": [],
                         }
                         coco_data["annotations"].append(annotation)
                         ann_id += 1

@@ -203,7 +203,7 @@ optim_wrapper = dict(
 # Learning policy
 max_epochs = 150
 train_cfg = dict(
-    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=10)
+    type='EpochBasedTrainLoop', max_epochs=max_epochs)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 
@@ -224,43 +224,12 @@ default_hooks = dict(
     param_scheduler=dict(type='ParamSchedulerHook'),
     checkpoint=dict(type='CheckpointHook', interval=5, max_keep_ckpts=5),
     sampler_seed=dict(type='DistSamplerSeedHook'),
-    visualization=dict(type='DetVisualizationHook'))
-
-
-# Add visualization hook configuration to see predictions during validation
-default_hooks.update(dict(
     visualization=dict(
         type='DetVisualizationHook',
         draw=True,
         interval=100,  # Visualize every 100 iterations
         score_thr=0.3  # Only visualize detections with confidence > 0.3
     )
-))
-
-# Add or modify this section in your config
-vis_backends = [
-    dict(type='LocalVisBackend'),
-    dict(type='TensorboardVisBackend')
-]
-
-visualizer = dict(
-    type='DetLocalVisualizer',
-    vis_backends=vis_backends,
-    name='visualizer'
-)
-
-# Add more detailed log config
-log_config = dict(
-    interval=50,  # Log every 50 iterations
-    hooks=[
-        dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHook',
-             log_dir='work_dirs/detr_ldm_nuscenes_2d/tensorboard_logs',
-             interval=50,  # Log every 50 iterations
-             ignore_last=False,
-             reset_flag=False,
-             by_epoch=True)
-    ]
 )
 
 
