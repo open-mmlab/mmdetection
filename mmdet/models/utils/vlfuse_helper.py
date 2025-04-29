@@ -198,8 +198,9 @@ class BiMultiHeadAttention(nn.Module):
             attention_mask = attention_mask_l.unsqueeze(1).unsqueeze(1)
             attention_mask = attention_mask.expand(bsz, 1, tgt_len, src_len)
             if attention_mask.dtype == torch.bool:
-                attention_mask = torch.zeros_like(attention_mask, dtype=query_states.dtype).masked_fill_(
-                                                  attention_mask == True, -9e15)
+                attention_mask = torch.zeros_like(
+                    attention_mask, dtype=query_states.dtype).masked_fill_(
+                        attention_mask, -9e15)
 
             if attention_mask.size() != (bsz, 1, tgt_len, src_len):
                 raise ValueError('Attention mask should be of '
