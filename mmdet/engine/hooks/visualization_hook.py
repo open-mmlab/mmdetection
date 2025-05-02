@@ -106,7 +106,7 @@ class DetVisualizationHook(Hook):
                 data_sample=outputs[0],
                 show=self.show,
                 wait_time=self.wait_time,
-                pred_score_thr=self.score_thr,
+                # pred_score_thr=self.score_thr,
                 step=total_curr_iter)
 
     def after_test_iter(self, runner: Runner, batch_idx: int, data_batch: dict,
@@ -146,7 +146,7 @@ class DetVisualizationHook(Hook):
                 data_sample=data_sample,
                 show=self.show,
                 wait_time=self.wait_time,
-                pred_score_thr=self.score_thr,
+                # pred_score_thr=self.score_thr,
                 out_file=out_file,
                 step=self._test_index)
 
@@ -310,7 +310,7 @@ class TrackVisualizationHook(Hook):
             data_sample=img_data_sample,
             show=self.show,
             wait_time=self.wait_time,
-            pred_score_thr=self.score_thr,
+            # pred_score_thr=self.score_thr,
             out_file=out_file,
             step=step)
 
@@ -510,6 +510,6 @@ class GroundingVisualizationHook(DetVisualizationHook):
                     data_sample=data_sample,
                     show=self.show,
                     wait_time=self.wait_time,
-                    pred_score_thr=self.score_thr,
+                    # pred_score_thr=self.score_thr,
                     out_file=out_file,
                     step=self._test_index)

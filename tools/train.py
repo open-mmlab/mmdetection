@@ -129,6 +129,16 @@ def main():
     # remove interval from val_cfg
     if 'val_cfg' in cfg and 'interval' in cfg.val_cfg:
         del cfg.val_cfg['interval']
+        
+    # TypeError: Visualizer.add_datasample() got an unexpected keyword argument 'pred_score_thr' in <mmdet.engine.hooks.visualization_hook.DetVisualizationHook object at 0x7f5a75791f60>
+    # remove pred_score_thr from visualization
+    if 'pred_score_thr' in cfg.visualizer:
+        del cfg.visualizer['pred_score_thr']
+    
+    if 'visualization' in cfg:
+        if 'pred_score_thr' in cfg.visualization:
+            del cfg.visualization['pred_score_thr']
+
     print("Config file: ")
     print(cfg.pretty_text)
     # build the runner from config
