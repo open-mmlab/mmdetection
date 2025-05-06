@@ -6,6 +6,7 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmengine.model import BaseModule
 from torch import Tensor
+import torchvision.utils as vutils
 
 from mmdet.registry import MODELS
 from ldm.modules.diffusionmodules.model import Encoder as LDMEncoder

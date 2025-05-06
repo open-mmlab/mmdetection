@@ -19,6 +19,173 @@ from mmdet.utils import (ConfigType, InstanceList, OptInstanceList,
 from ..losses import QualityFocalLoss
 from ..utils import multi_apply
 
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import torch
+import numpy as np
+import os
+from datetime import datetime
+
+def visualize_boxes_on_feature_map(feature_map, gt_boxes, pred_boxes, img_shape, 
+                                  gt_labels=None, pred_labels=None, pred_scores=None, 
+                                  save_dir='vis_output', batch_idx=0, image=None):
+    """
+    Visualize ground truth and predicted boxes on feature maps and original image
+    
+    Args:
+        feature_map (Tensor): Feature map tensor [C, H, W]
+        gt_boxes (Tensor): Ground truth boxes in [x1, y1, x2, y2] format
+        pred_boxes (Tensor): Predicted boxes in [x1, y1, x2, y2] format
+        img_shape (tuple): Original image shape (h, w)
+        gt_labels (Tensor, optional): Ground truth labels
+        pred_labels (Tensor, optional): Predicted labels
+        pred_scores (Tensor, optional): Prediction scores
+        save_dir (str): Directory to save visualizations
+        batch_idx (int): Index in the batch for filename
+        image (ndarray): Original image if available
+    """
+    # Create output directory if it doesn't exist
+    os.makedirs(save_dir, exist_ok=True)
+    
+    # Create a unique filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{save_dir}/detr_vis_{timestamp}_batch{batch_idx}.png"
+    
+    # For feature map, we'll visualize the mean across channels
+    if feature_map is not None:
+        if isinstance(feature_map, torch.Tensor):
+            # Take the mean across channels for visualization
+            feature_map_mean = feature_map.clone().mean(dim=0).cpu().detach().numpy()
+            # Normalize for better visualization
+            feature_map_mean = (feature_map_mean - feature_map_mean.min()) / (feature_map_mean.max() - feature_map_mean.min() + 1e-6)
+    else:
+        # Create a blank feature map if none is provided
+        feature_map_mean = np.zeros((100, 100))  # Default size
+    
+    # Convert boxes to numpy if they're tensors
+    if isinstance(gt_boxes, torch.Tensor):
+        gt_boxes = gt_boxes.cpu().detach().numpy()
+    if isinstance(pred_boxes, torch.Tensor):
+        pred_boxes = pred_boxes.cpu().detach().numpy()
+    
+    # Create figure with two columns if image is available, otherwise just one
+    if image is not None:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
+    else:
+        fig, ax2 = plt.subplots(1, 1, figsize=(10, 10))
+    
+    # If image is available, plot it with boxes
+    if image is not None:
+        ax1.imshow(image)
+        ax1.set_title('Original Image with Bounding Boxes')
+        
+        # Plot GT boxes in green
+        if gt_boxes is not None:
+            for i, box in enumerate(gt_boxes):
+                # Create rectangle patch
+                rect = patches.Rectangle(
+                    (box[0], box[1]), 
+                    box[2]-box[0], box[3]-box[1],
+                    linewidth=2, edgecolor='g', facecolor='none'
+                )
+                ax1.add_patch(rect)
+                
+                # Add label if provided
+                if gt_labels is not None:
+                    label = gt_labels[i].item() if isinstance(gt_labels[i], torch.Tensor) else gt_labels[i]
+                    ax1.text(box[0], box[1]-5, f'GT: {label}', 
+                            color='white', fontsize=9, backgroundcolor='green')
+        
+        # Plot predicted boxes in red
+        if pred_boxes is not None:
+            for i, box in enumerate(pred_boxes):
+                # Create rectangle patch
+                rect = patches.Rectangle(
+                    (box[0], box[1]), 
+                    box[2]-box[0], box[3]-box[1],
+                    linewidth=2, edgecolor='r', facecolor='none'
+                )
+                ax1.add_patch(rect)
+                
+                # Add label and score if provided
+                label_text = ""
+                if pred_labels is not None:
+                    label = pred_labels[i].item() if isinstance(pred_labels[i], torch.Tensor) else pred_labels[i]
+                    label_text = f'Pred: {label}'
+                if pred_scores is not None:
+                    score = pred_scores[i].item() if isinstance(pred_scores[i], torch.Tensor) else pred_scores[i]
+                    label_text += f' ({score:.2f})'
+                
+                if label_text:
+                    ax1.text(box[0], box[3]+15, label_text, 
+                            color='white', fontsize=9, backgroundcolor='red')
+    
+    # Plot feature map
+    ax2.imshow(feature_map_mean, cmap='viridis')
+    ax2.set_title('Feature Map with Bounding Boxes')
+    
+    # Scale factors to convert box coordinates to feature map coordinates
+    h_scale = feature_map_mean.shape[0] / img_shape[0]
+    w_scale = feature_map_mean.shape[1] / img_shape[1]
+    
+    # Plot GT boxes in green
+    if gt_boxes is not None:
+        for i, box in enumerate(gt_boxes):
+            # Scale box to feature map size
+            scaled_box = [
+                box[0] * w_scale, box[1] * h_scale,
+                box[2] * w_scale, box[3] * h_scale
+            ]
+            # Create rectangle patch
+            rect = patches.Rectangle(
+                (scaled_box[0], scaled_box[1]), 
+                scaled_box[2]-scaled_box[0], scaled_box[3]-scaled_box[1],
+                linewidth=2, edgecolor='g', facecolor='none'
+            )
+            ax2.add_patch(rect)
+            
+            # Add label if provided
+            if gt_labels is not None:
+                label = gt_labels[i].item() if isinstance(gt_labels[i], torch.Tensor) else gt_labels[i]
+                ax2.text(scaled_box[0], scaled_box[1]-5, f'GT: {label}', 
+                        color='white', fontsize=9, backgroundcolor='green')
+    
+    # Plot predicted boxes in red
+    if pred_boxes is not None:
+        for i, box in enumerate(pred_boxes):
+            # Scale box to feature map size
+            scaled_box = [
+                box[0] * w_scale, box[1] * h_scale,
+                box[2] * w_scale, box[3] * h_scale
+            ]
+            # Create rectangle patch
+            rect = patches.Rectangle(
+                (scaled_box[0], scaled_box[1]), 
+                scaled_box[2]-scaled_box[0], scaled_box[3]-scaled_box[1],
+                linewidth=2, edgecolor='r', facecolor='none'
+            )
+            ax2.add_patch(rect)
+            
+            # Add label and score if provided
+            label_text = ""
+            if pred_labels is not None:
+                label = pred_labels[i].item() if isinstance(pred_labels[i], torch.Tensor) else pred_labels[i]
+                label_text = f'Pred: {label}'
+            if pred_scores is not None:
+                score = pred_scores[i].item() if isinstance(pred_scores[i], torch.Tensor) else pred_scores[i]
+                label_text += f' ({score:.2f})'
+            
+            if label_text:
+                ax2.text(scaled_box[0], scaled_box[3]+15, label_text, 
+                        color='white', fontsize=9, backgroundcolor='red')
+    
+    # Save the visualization
+    plt.tight_layout()
+    plt.savefig(filename)
+    plt.close()
+    
+    # print(f"Visualization saved to {filename}")
+    return filename
 
 @MODELS.register_module()
 class DETRHead(BaseModule):
@@ -185,7 +352,7 @@ class DETRHead(BaseModule):
 
         outs = self(hidden_states)
         loss_inputs = outs + (batch_gt_instances, batch_img_metas)
-        losses = self.loss_by_feat(*loss_inputs)
+        losses = self.loss_by_feat(features=hidden_states, *loss_inputs)
         return losses
 
     def loss_by_feat(
@@ -194,7 +361,8 @@ class DETRHead(BaseModule):
         all_layers_bbox_preds: Tensor,
         batch_gt_instances: InstanceList,
         batch_img_metas: List[dict],
-        batch_gt_instances_ignore: OptInstanceList = None
+        batch_gt_instances_ignore: OptInstanceList = None,
+        features=None,
     ) -> Dict[str, Tensor]:
         """"Loss function.
 
@@ -231,7 +399,8 @@ class DETRHead(BaseModule):
             all_layers_cls_scores,
             all_layers_bbox_preds,
             batch_gt_instances=batch_gt_instances,
-            batch_img_metas=batch_img_metas)
+            batch_img_metas=batch_img_metas,
+            features=features,)
 
         loss_dict = dict()
         # loss from the last decoder layer
@@ -250,7 +419,8 @@ class DETRHead(BaseModule):
 
     def loss_by_feat_single(self, cls_scores: Tensor, bbox_preds: Tensor,
                             batch_gt_instances: InstanceList,
-                            batch_img_metas: List[dict]) -> Tuple[Tensor]:
+                            batch_img_metas: List[dict],
+                            features) -> Tuple[Tensor]:
         """Loss function for outputs from a single decoder layer of a single
         feature level.
 
@@ -342,6 +512,54 @@ class DETRHead(BaseModule):
         # regression L1 loss
         loss_bbox = self.loss_bbox(
             bbox_preds, bbox_targets, bbox_weights, avg_factor=num_total_pos)
+        image_path = batch_img_metas[0]['img_path']
+        
+        # load image from path as tensor
+        image = plt.imread(image_path)
+        
+        if hasattr(self, 'iter_count'):
+            self.iter_count += 1
+        else:
+            self.iter_count = 0
+        
+        # Prepare boxes for visualization (for the first image in batch)
+        img_shape = batch_img_metas[0]['img_shape']
+        
+        # Get GT boxes for the first image
+        gt_bboxes = batch_gt_instances[0].bboxes
+        gt_labels = batch_gt_instances[0].labels
+        
+        # Get predicted boxes
+        # We need to reshape bboxes back to (num_imgs, num_queries, 4)
+        bboxes_reshaped = bboxes.reshape(num_imgs, -1, 4)
+        pred_bboxes = bboxes_reshaped[0]  # First image
+        
+        # Get predicted scores and labels
+        cls_scores_reshaped = cls_scores.reshape(num_imgs, -1, self.cls_out_channels)
+        if self.loss_cls.use_sigmoid:
+            pred_scores, pred_labels = cls_scores_reshaped[0].sigmoid().max(dim=-1)
+        else:
+            pred_scores, pred_labels = F.softmax(cls_scores_reshaped[0], dim=-1)[..., :-1].max(-1)
+        
+        # Only keep top K predictions for visualization clarity
+        k = 10
+        top_scores, top_indices = pred_scores.topk(min(k, len(pred_scores)))
+        top_pred_bboxes = pred_bboxes[top_indices]
+        top_pred_labels = pred_labels[top_indices]
+        feature_map = features[0] if features is not None else None
+        
+        # Visualize
+        # visualize_boxes_on_feature_map(
+        #     feature_map=feature_map,  # Assuming features[0] is the feature map
+        #     gt_boxes=gt_bboxes,
+        #     pred_boxes=top_pred_bboxes,
+        #     img_shape=img_shape,
+        #     gt_labels=gt_labels,
+        #     pred_labels=top_pred_labels,
+        #     pred_scores=top_scores,
+        #     batch_idx=self.iter_count,
+        #     image=image,
+        # )
         return loss_cls, loss_bbox, loss_iou
 
     def get_targets(self, cls_scores_list: List[Tensor],

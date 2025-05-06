@@ -5,6 +5,11 @@ custom_imports = dict(
 
 default_scope = 'mmdet'
 
+class_names = [
+    'car', 'truck', 'trailer', 'bus', 'construction_vehicle',
+    'bicycle', 'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
+]  # Include all classes in NuScenes
+
 env_cfg = dict(
     cudnn_benchmark=False,
     mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0),
@@ -92,7 +97,7 @@ model = dict(
     positional_encoding=dict(num_feats=128, normalize=True),
     bbox_head=dict(
         type='DETRHead',
-        num_classes=10,  # NuScenes has 10 classes
+        num_classes=len(class_names),
         embed_dims=256,
         loss_cls=dict(
             type='CrossEntropyLoss',
@@ -118,15 +123,19 @@ dataset_type = 'CocoDataset'
 data_root = 'data/nuscenes/'
 backend_args = None
 
-class_names = [
-    'car', 'truck', 'bus', 'trailer',
-    'motorcycle', 'bicycle', 'pedestrian'
-]  # no barriers, cones or construction_vehicle in this example
 
 # Data pipeline for training
 train_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
+    dict(
+        type='RandomChoice',
+        transforms=[[
+            dict(
+                type='RandomChoiceResize',
+                scales=[(900, 1600)],
+                keep_ratio=True)
+        ]]),
     dict(type='PackDetInputs')
 ]
 
@@ -135,7 +144,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
     # If you don't have a gt annotation, delete the pipeline
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', scale=(1600, 900), keep_ratio=True),
+    dict(type='Resize', scale=(900, 1600), keep_ratio=True),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
@@ -183,7 +192,7 @@ val_evaluator = dict(
     ann_file=data_root + 'annotations/nuscenes_2d_val.json',
     metric=['bbox'],
     classwise=True,  # Track per-class performance
-    outfile_prefix='work_dirs/detr_ldm_nuscenes_2d/results',
+    outfile_prefix='.out/work_dirs/detr_ldm_nuscenes_2d/results',
 )
 test_evaluator = val_evaluator
 
@@ -196,31 +205,31 @@ optim_wrapper = dict(
         custom_keys={'backbone': dict(lr_mult=0.0, decay_mult=1.0)}))
 
 # Learning policy
-max_epochs = 150
+max_epochs = 1000
 train_cfg = dict(
-    type='EpochBasedTrainLoop', max_epochs=max_epochs)
-val_cfg = dict(type='ValLoop', interval=1)
+    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=20)
+val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 
 # Default hooks
 default_hooks = dict(
     timer=dict(type='IterTimerHook'),
-    logger=dict(type='LoggerHook', interval=1),
+    logger=dict(type='LoggerHook', interval=50),
     param_scheduler=dict(type='ParamSchedulerHook'),
     checkpoint=dict(
         type='CheckpointHook',
-        interval=1,             # Still save after each epoch
+        interval=2000,             # Still save after each epoch
         by_epoch=False,          # This controls epoch-based saving
-        out_dir='work_dirs/detr_ldm_nuscenes_2d/checkpoints',
+        out_dir='.out/work_dirs/detr_ldm_nuscenes_2d/checkpoints',
         save_optimizer=True,    # Save optimizer state
-        max_keep_ckpts=5,       # Keep at most 5 epoch checkpoints
+        max_keep_ckpts=3,       # Keep at most 5 epoch checkpoints
         save_last=True,         # Save the last checkpoint
     ),
     sampler_seed=dict(type='DistSamplerSeedHook'),
     visualization=dict(
         type='DetVisualizationHook',
         draw=True,          # Enable drawing
-        interval=1,       # Visualize every 100 iterations
-        show=True,
+        interval=200,       # Visualize every 100 iterations
+        show=False,
     ),
 )

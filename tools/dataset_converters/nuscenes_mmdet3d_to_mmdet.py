@@ -23,6 +23,12 @@ NUSCENES_CATEGORIES = [
     {"id": 10, "name": "barrier"}
 ]
 
+IGNORED_CATEGORIES = [
+    {"id": 5, "name": "construction_vehicle"},
+    {"id": 9, "name": "traffic_cone"},
+    {"id": 10, "name": "barrier"}
+]
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -37,7 +43,7 @@ def parse_args():
                         help='Prefix of the pkl files')
     parser.add_argument('--mini', action='store_true',
                         help='Create a mini dataset for debugging')
-    parser.add_argument('--mini-size', type=int, default=100,
+    parser.add_argument('--mini-size', type=int, default=50,
                         help='Number of images in mini dataset')
     parser.add_argument('--mini-prefix', default='mini_',
                         help='Prefix for mini dataset files')
@@ -166,6 +172,10 @@ def main():
                         bbox_label = instance.get('bbox_label', -1)
                         # Convert label index to category ID (add 1 to match the IDs in NUSCENES_CATEGORIES)
                         category_id = bbox_label + 1
+
+                        # dont add construction_vehicle, traffic_cone, barrier
+                        if category_id in [cat['id'] for cat in IGNORED_CATEGORIES]:
+                            continue
 
                         # assert category_id is valid
                         assert category_id in [

@@ -91,7 +91,7 @@ def main():
         cfg.work_dir = args.work_dir
     elif cfg.get('work_dir', None) is None:
         # use config filename as default work_dir if cfg.work_dir is None
-        cfg.work_dir = osp.join('./work_dirs',
+        cfg.work_dir = osp.join('.out/work_dirs',
                                 osp.splitext(osp.basename(args.config))[0])
 
     # enable automatic-mixed-precision training
@@ -119,14 +119,22 @@ def main():
         cfg.resume = True
         cfg.load_from = args.resume
 
+    # Before setting the visualizer, make sure work_dir is properly defined
+    if args.work_dir is not None:
+        cfg.work_dir = args.work_dir
+    elif cfg.get('work_dir', None) is None:
+        cfg.work_dir = osp.join('.out/work_dirs',
+                                osp.splitext(osp.basename(args.config))[0])
     cfg.visualizer = dict(
-        type='Visualizer',  # Specify the type of the visualizer
+        type='DetLocalVisualizer',  # Use detection-specific visualizer
         vis_backends=[
-            dict(type='TensorboardVisBackend', save_dir='tensorboard_logs'),
-            dict(type='LocalVisBackend', save_dir='local_logs')
-        ]
+            dict(type='TensorboardVisBackend',
+                 save_dir=osp.join(cfg.work_dir, 'tensorboard_logs')),
+            dict(type='LocalVisBackend',
+                 save_dir=osp.join(cfg.work_dir, 'local_logs'))
+        ],
+        name='visualizer'
     )
-    # remove interval from val_cfg
     if 'val_cfg' in cfg and 'interval' in cfg.val_cfg:
         del cfg.val_cfg['interval']
         
@@ -134,7 +142,7 @@ def main():
     # remove pred_score_thr from visualization
     if 'pred_score_thr' in cfg.visualizer:
         del cfg.visualizer['pred_score_thr']
-    
+
     if 'visualization' in cfg:
         if 'pred_score_thr' in cfg.visualization:
             del cfg.visualization['pred_score_thr']
