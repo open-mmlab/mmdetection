@@ -1,0 +1,73 @@
+Collections:
+  - Name: DETR
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - AdamW
+        - Weight Decay
+        - Multi-step LR Scheduler
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - ResNet
+        - Transformer
+        - Hungarian Loss
+    Paper:
+      URL: https://arxiv.org/abs/2005.12872
+      Title: 'End-to-End Object Detection with Transformers'
+    README: configs/detr/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/detectors/detr.py
+      Version: v2.28.2
+
+  - Name: ODVAE-DETR
+    Metadata:
+      Training Data: NuScenes
+      Training Techniques:
+        - AdamW
+        - Weight Decay
+        - Multi-step LR Scheduler
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - LDM Encoder
+        - Transformer
+        - Hungarian Loss
+    Paper:
+      URL: (Your project paper URL if available)
+      Title: 'Object Detection with VAE Encoder Backbone'
+    README: configs/detr/README.md
+    Code:
+      URL: https://github.com/YOUR_USERNAME/YOUR_REPO/blob/main/projects/ODVAE/odvae/backbones/vae_encoder.py
+      Version: v1.0.0
+
+Models:
+  - Name: detr_r50_nuscenes
+    In Collection: DETR
+    Config: configs/detr/detr_r50_nuscenes.py
+    Metadata:
+      Training Memory (GB): 8.0
+      Epochs: 1000
+    Results:
+      - Task: Object Detection
+        Dataset: NuScenes
+        Metrics:
+          box AP: (Your benchmark result)
+    Weights: (Your model weights URL)
+
+  - Name: detr_vae_encoder_nuscenes
+    In Collection: ODVAE-DETR
+    Config: configs/detr/vae_encoder_nuscenes.py
+    Metadata:
+      Training Memory (GB): 7.5
+      Epochs: 1000
+    Results:
+      - Task: Object Detection
+        Dataset: NuScenes
+        Metrics:
+          box AP: (Your benchmark result)
+    Weights: (Your model weights URL)
+
+  # You can add more model variants here as your project expands
+  # For example:
+  # - Name: detr_r101_nuscenes
+  # - Name: detr_swin_nuscenes
+  # - etc.

@@ -7,8 +7,6 @@ from mmengine.config import Config, DictAction
 import argparse
 import os
 import os.path as osp
-
-
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('config', help='train config file path')
