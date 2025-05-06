@@ -6,7 +6,6 @@ import torch.utils.checkpoint as cp
 from mmcv.cnn import build_conv_layer, build_norm_layer, build_plugin_layer
 from mmengine.model import BaseModule
 from torch.nn.modules.batchnorm import _BatchNorm
-import torchvision.utils as vutils
 
 from mmdet.registry import MODELS
 from ..layers import ResLayer
@@ -629,130 +628,23 @@ class ResNet(BaseModule):
             for param in m.parameters():
                 param.requires_grad = False
 
-    def forward(self, x, visualize=True, save_dir="resnet_visualizations"):
+    def forward(self, x):
         """Forward function."""
-        # Create save directory if needed
-        if visualize and save_dir is not None:
-            import os
-            os.makedirs(save_dir, exist_ok=True)
-        
-        # Input visualization
-        if visualize:
-            self._visualize_tensor(x, "input", save_dir)
-        
-        # Forward through stem
         if self.deep_stem:
             x = self.stem(x)
         else:
             x = self.conv1(x)
             x = self.norm1(x)
             x = self.relu(x)
-        
-        # Visualize after stem
-        if visualize:
-            self._visualize_tensor(x, "after_stem", save_dir)
-        
         x = self.maxpool(x)
-        
-        # Visualize after maxpool
-        if visualize:
-            self._visualize_tensor(x, "after_maxpool", save_dir)
-        
         outs = []
         for i, layer_name in enumerate(self.res_layers):
             res_layer = getattr(self, layer_name)
             x = res_layer(x)
-            
-            # Visualize after each resnet layer
-            if visualize:
-                self._visualize_tensor(x, f"layer{i+1}", save_dir)
-            
             if i in self.out_indices:
                 outs.append(x)
-        
         return tuple(outs)
-
-    def _visualize_tensor(self, tensor, name, save_dir=None):
-        """Visualize feature maps from a tensor.
-        
-        Args:
-            tensor (torch.Tensor): Feature map tensor [B, C, H, W]
-            name (str): Name of the feature map
-            save_dir (str): Directory to save visualizations
-        """
-        import matplotlib.pyplot as plt
-        import numpy as np
-        import torch
-        import os
-        
-        # Only process the first sample in the batch
-        x = tensor.detach()[0]  # [C, H, W]
-        
-        # Normalize each channel for better visualization
-        n_channels = x.shape[0]
-        
-        # Make grid of feature maps using torchvision
-        num_vis_channels = min(64, n_channels)  # Limit visualization to 64 channels
-        
-        # Use vutils to create a grid of images
-        grid = vutils.make_grid(
-            x[:num_vis_channels].unsqueeze(1),  # Add a dummy dimension [C, 1, H, W]
-            normalize=True,  # Normalize to [0, 1]
-            nrow=8,  # Number of images per row
-            padding=2  # Padding between images
-        )
-        
-        # Convert to numpy and transpose from [C, H, W] to [H, W, C]
-        grid_np = grid.cpu().numpy().transpose((1, 2, 0))
-        
-        # Create figure and save
-        plt.figure(figsize=(15, 15))
-        
-        # Create title with information about shape
-        plt.title(f"{name} - shape: {tuple(x.shape)}, min: {x.min().item():.3f}, max: {x.max().item():.3f}")
-        
-        # Show the grid
-        plt.imshow(grid_np)
-        plt.axis('off')
-        plt.tight_layout()
-        
-        # Save if directory is specified
-        if save_dir is not None:
-            save_path = os.path.join(save_dir, f"{name}_featmap.png")
-            plt.savefig(save_path, dpi=150, bbox_inches='tight')
-            print(f"Saved feature map visualization to {save_path}")
-        
-        plt.close()
-        
-        # For the first few layers, also show individual channels in detail
-        if n_channels <= 64 or name in ["input", "after_stem", "after_maxpool", "layer1"]:
-            # Create a grid for showing individual channels
-            num_cols = min(8, n_channels)
-            num_rows = int(np.ceil(min(64, n_channels) / num_cols))
-            
-            plt.figure(figsize=(2*num_cols, 2*num_rows))
-            
-            for i in range(min(64, n_channels)):
-                plt.subplot(num_rows, num_cols, i+1)
-                
-                # Get individual channel and normalize it for visualization
-                channel_data = x[i].cpu().numpy()
-                vmin, vmax = channel_data.min(), channel_data.max()
-                normalized = (channel_data - vmin) / (vmax - vmin + 1e-8)
-                
-                plt.imshow(normalized, cmap='viridis')
-                plt.title(f"Ch {i}")
-                plt.axis('off')
-            
-            plt.tight_layout()
-            
-            # Save detailed view if directory is specified
-            if save_dir is not None:
-                save_path = os.path.join(save_dir, f"{name}_channels_detail.png")
-                plt.savefig(save_path, dpi=150, bbox_inches='tight')
-            
-            plt.close()
-
+    
     def train(self, mode=True):
         """Convert the model into training mode while keep normalization layer
         freezed."""

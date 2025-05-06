@@ -1,11 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+# add submodules to path
+from mmdet.utils import setup_cache_size_limit_of_dynamo
+from mmengine.runner import Runner
+from mmengine.registry import RUNNERS
+from mmengine.config import Config, DictAction
 import argparse
 import os
 import os.path as osp
-from mmengine.config import Config, DictAction
-from mmengine.registry import RUNNERS
-from mmengine.runner import Runner
-from mmdet.utils import setup_cache_size_limit_of_dynamo
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
@@ -100,7 +102,17 @@ def main():
     elif args.resume is not None:
         cfg.resume = True
         cfg.load_from = args.resume
-    
+
+    # Before setting the visualizer, make sure work_dir is properly defined
+    if args.work_dir is not None:
+        cfg.work_dir = args.work_dir
+    elif cfg.get('work_dir', None) is None:
+        cfg.work_dir = osp.join('.out/work_dirs',
+                                osp.splitext(osp.basename(args.config))[0])
+    # set the visualizer
+    if 'val_cfg' in cfg and 'interval' in cfg.val_cfg:
+        del cfg.val_cfg['interval']
+
     # build the runner from config
     if 'runner_type' not in cfg:
         # build the default runner

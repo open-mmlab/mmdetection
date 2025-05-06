@@ -5,9 +5,6 @@ __pycache__/
 *.ckpt
 *.slurm
 .out
-tensorboard_logs
-local_logs
-*_logs
 
 # C extensions
 *.so

@@ -1,6 +1,6 @@
 # Custom imports for NuScenes dataset
 custom_imports = dict(
-    imports=['mmdet.models.backbones.ldm_encoder_backbone'],
+    imports=['projects.ODVAE.odvae.backbones.vae_encoder'],
     allow_failed_imports=False)
 
 default_scope = 'mmdet'
