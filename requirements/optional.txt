@@ -1,5 +1,5 @@
-cityscapesscripts
-emoji
-fairscale
-imagecorruptions
-scikit-learn
+cityscapesscripts>=1.1.0
+emoji>=2.8.0
+fairscale>=0.4.13
+imagecorruptions>=1.1.2
+scikit-learn>=1.3.0

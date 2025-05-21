@@ -1,5 +1,20 @@
 # GET STARTED
 
+## Table of Contents
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+  - [Best Practices](#best-practices)
+  - [Verify the installation](#verify-the-installation)
+- [Tracking Installation](#tracking-installation)
+- [Customize Installation](#customize-installation)
+  - [CUDA versions](#cuda-versions)
+  - [Install MMEngine without MIM](#install-mmengine-without-mim)
+  - [Install MMCV without MIM](#install-mmcv-without-mim)
+  - [Install on CPU-only platforms](#install-on-cpu-only-platforms)
+  - [Install on Google Colab](#install-on-google-colab)
+- [Version Compatibility Matrix](#version-compatibility-matrix)
+- [Troubleshooting](#troubleshooting)
+
 ## Prerequisites
 
 In this section, we demonstrate how to prepare an environment with PyTorch.
@@ -295,3 +310,28 @@ To install the default version of MMDetection in your environment, you can exclu
 ```shell
 PYTHONPATH="$(dirname $0)/..":$PYTHONPATH
 ```
+
+## Version Compatibility Matrix
+
+| MMDetection | MMCV | MMEngine | PyTorch | CUDA |
+|:-----------:|:----:|:--------:|:-------:|:----:|
+| 3.1.0       | 2.0.0| 0.7.1    | 1.8.0+  | 9.2+ |
+| 3.0.0       | 2.0.0| 0.7.1    | 1.8.0+  | 9.2+ |
+| 2.28.2      | 1.7.1| 0.7.1    | 1.7.0+  | 9.2+ |
+| 2.28.1      | 1.7.1| 0.7.1    | 1.7.0+  | 9.2+ |
+
+## Troubleshooting
+
+### Common Installation Issues
+
+1. **CUDA version mismatch**
+   - Error: `RuntimeError: CUDA error: no kernel image is available for execution on the device`
+   - Solution: Make sure your CUDA version matches the PyTorch version. See the [Version Compatibility Matrix](#version-compatibility-matrix).
+
+2. **MMCV installation failure**
+   - Error: `RuntimeError: CUDA not available`
+   - Solution: Install CPU-only version if you don't have a GPU: `pip install mmcv-lite`
+
+3. **ImportError: cannot import name 'xxx' from 'mmdet'**
+   - Error: `ImportError: cannot import name 'xxx' from 'mmdet'`
+   - Solution: Make sure you have installed all dependencies: `pip install -r requirements/build.txt -r requirements/runtime.txt`
