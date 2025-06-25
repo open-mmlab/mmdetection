@@ -10,7 +10,7 @@ custom_imports = dict(
     imports=['projects.oln-ssos.oln-ssos', 'projects.OLN.oln'], allow_failed_imports=False)
 
 model = dict(
-    type='FasterRCNN',
+    type='FasterRCNNMeanWrapper',
     rpn_head=dict(
         type='OLNRPNHead',
         anchor_generator=dict(
@@ -119,7 +119,7 @@ test_pipeline = [
 
 data_root = 'data/voc0712/'
 train_dataloader = dict(
-    batch_size=2,
+    batch_size=16,
     persistent_workers=False,
     dataset=dict(
         type=dataset_type,

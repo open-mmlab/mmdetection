@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import torch
 from sklearn.cluster import MiniBatchKMeans
 from torch import nn, Tensor
@@ -103,8 +105,8 @@ class OLNKMeansFFSRoIHead(OLNRoIHead):
 
         self.nll_loss_weight = nll_loss_weight
 
-        self.weight_energy = torch.nn.Linear(self.k, 1).cuda()
-        torch.nn.init.uniform_(self.weight_energy.weight)
+        # self.weight_energy = torch.nn.Linear(self.k, 1).cuda()
+        # torch.nn.init.uniform_(self.weight_energy.weight)
 
         self.in1 = InputNode(1024, name='input1')
         self.layer1 = Node(self.in1, GLOWCouplingBlock, {'subnet_constructor': self.subnet_fc, 'clamp': 2.0},
@@ -242,7 +244,7 @@ class OLNKMeansFFSRoIHead(OLNRoIHead):
 
         # VOS STARTS HERE
         oln_ssos_loss = self._ood_forward_train(bbox_results, bbox_loss_and_target['bbox_targets'], device=x[0].device)
-        bbox_results.update(loss_ood=oln_ssos_loss['loss_ood'], loss_pseudo_class=oln_ssos_loss['loss_pseudo_class'])
+        bbox_results.update(loss_ood=oln_ssos_loss['loss_ood'], loss_pseudo_class=oln_ssos_loss['loss_pseudo_class'], loss_nll=oln_ssos_loss['loss_nll'])
         return bbox_results
 
     def _bbox_forward(self, x: Tuple[Tensor], rois: Tensor):
