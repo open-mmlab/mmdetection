@@ -1,14 +1,12 @@
 version: 2
 
-build:
-  os: ubuntu-22.04
-  tools:
-    python: "3.8"
-
-formats:
-  - epub
+sphinx:
+  configuration: docs/conf.py
 
 python:
+  version: 3.8
   install:
-    - requirements: requirements/docs.txt
-    - requirements: requirements/readthedocs.txt
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
