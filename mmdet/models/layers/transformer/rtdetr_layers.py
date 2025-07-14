@@ -325,9 +325,9 @@ class RTDETRFPN(BaseModule):
             feature maps. Defaults to [256, 256, 256].
         out_channels (int, optional): The output dimension of the MLP.
             Defaults to 256.
+        num_csp_blocks (int): Number of bottlenecks in CSPLayer.
+            Defaults to 3.
         expansion (float, optional): The expansion of the CSPLayer.
-            Defaults to 1.0.
-        depth_mult (float, optional): The depth multiplier of the CSPLayer.
             Defaults to 1.0.
         upsample_cfg (dict): Config dict for interpolate layer.
             Default: `dict(scale_factor=2, mode='nearest')`
@@ -345,8 +345,8 @@ class RTDETRFPN(BaseModule):
         self,
         in_channels: List[int] = [256, 256, 256],
         out_channels: int = 256,
+        num_csp_blocks: int = 3,
         expansion: float = 1.0,
-        depth_mult: float = 1.0,
         upsample_cfg: ConfigType = dict(scale_factor=2, mode='nearest'),
         conv_cfg: OptConfigType = None,
         norm_cfg: OptConfigType = dict(type='BN', requires_grad=True),
@@ -362,7 +362,6 @@ class RTDETRFPN(BaseModule):
         super().__init__(init_cfg=init_cfg)
         self.in_channels = in_channels
         self.out_channels = out_channels
-        num_csp_blocks = round(3 * depth_mult)
 
         # top-down fpn
         self.upsample = nn.Upsample(**upsample_cfg)
