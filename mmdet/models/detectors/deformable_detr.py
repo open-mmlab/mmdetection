@@ -130,7 +130,7 @@ class DeformableDETR(DetectionTransformer):
         Args:
             mlvl_feats (tuple[Tensor]): Multi-level features that may have
                 different resolutions, output from neck. Each feature has
-                shape (bs, dim, h_lvl, w_lvl), where 'lvl' means 'layer'.
+                shape (bs, dim, h_lvl, w_lvl), where 'lvl' means 'level'.
             batch_data_samples (list[:obj:`DetDataSample`], optional): The
                 batch data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
