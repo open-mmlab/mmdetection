@@ -64,6 +64,21 @@ class ResLayer(Sequential):
                 build_norm_layer(norm_cfg, planes * block.expansion)[1]
             ])
             downsample = nn.Sequential(*downsample)
+        else:
+            if avg_down:  # for `r18vd` and `r34vd`.
+                downsample = []
+                conv_stride = 1
+                downsample.extend([
+                    build_conv_layer(
+                        conv_cfg,
+                        inplanes,
+                        planes * block.expansion,
+                        kernel_size=1,
+                        stride=conv_stride,
+                        bias=False),
+                    build_norm_layer(norm_cfg, planes * block.expansion)[1]
+                ])
+                downsample = nn.Sequential(*downsample)
 
         layers = []
         if downsample_first:
