@@ -1,5 +1,5 @@
 _base_ = './rtdetr_r50vd_8xb2-72e_coco.py'
-pretrained = 'https://github.com/flytocc/mmdetection/releases/download/model_zoo/resnet101vd_ssld_pretrained_64ed664a.pth'  # noqa
+pretrained = 'https://github.com/flytocc/mmdetection/releases/download/model_zoo/resnet101vd_ssld_pretrained_99188ec9.pth'  # noqa
 
 model = dict(
     backbone=dict(

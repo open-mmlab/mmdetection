@@ -14,12 +14,13 @@ Recently, end-to-end transformer-based detectors~(DETRs) have achieved remarkabl
 
 ## Results and Models
 
-| Backbone |    Model     | Lr schd | box AP |                   Config                   |                                                          Download                                                           |
-| :------: | :----------: | :-----: | :----: | :----------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------: |
-|  R-18vd  | RT-DETR Dec3 |   72e   |  46.5  | [config](./rtdetr_r18vd_8xb2-72e_coco.py)  | [model](https://github.com/flytocc/mmdetection/releases/download/model_zoo/rtdetr_r18vd_8xb2-72e_coco_3dda8dd4.pth)  \| log |
-|  R-34vd  | RT-DETR Dec4 |   72e   |  48.9  | [config](./rtdetr_r34vd_8xb2-72e_coco.py)  | [model](https://github.com/flytocc/mmdetection/releases/download/model_zoo/rtdetr_r34vd_8xb2-72e_coco_9159eb52.pth)  \| log |
-|  R-50vd  | RT-DETR Dec6 |   72e   |  53.1  | [config](./rtdetr_r50vd_8xb2-72e_coco.py)  | [model](https://github.com/flytocc/mmdetection/releases/download/model_zoo/rtdetr_r50vd_8xb2-72e_coco_ad2bdcfe.pth)  \| log |
-| R-101vd  | RT-DETR Dec6 |   72e   |  54.3  | [config](./rtdetr_r101vd_8xb2-72e_coco.py) | [model](https://github.com/flytocc/mmdetection/releases/download/model_zoo/rtdetr_r101vd_8xb2-72e_coco_83ad1b19.pth) \| log |
+| Backbone |    Model     | Lr schd | box AP |                   Config                    |                                                          Download                                                   |
+| :------: | :----------: | :-----: | :----: | :-----------------------------------------: | :------------------------------------------------------------------------------------------------------------------: |
+|  R-18vd  | RT-DETR Dec3 |   72e   |  46.5  | [config](./rtdetr_r18vd_8xb2-72e_coco.py)   | [model](https://github.com/flytocc/mmdetection/releases/download/model_zoo/rtdetr_r18vd_8xb2-72e_coco_4415cbaf.pth)  |
+|  R-34vd  | RT-DETR Dec4 |   72e   |  48.9  | [config](./rtdetr_r34vd_8xb2-72e_coco.py)   | [model](https://github.com/flytocc/mmdetection/releases/download/model_zoo/rtdetr_r34vd_8xb2-72e_coco_bb97061e.pth)  |
+|  R-50vd  | RT-DETR Dec2 |   72e   |  51.3  | [config](./rtdetr_r50vd_m_8xb2-72e_coco.py) | [model](https://github.com/flytocc/mmdetection/releases/download/model_zoo/rtdetr_r50vd_8xb2-72e_coco_cc2c61e8.pth)  |
+|  R-50vd  | RT-DETR Dec6 |   72e   |  53.1  | [config](./rtdetr_r50vd_8xb2-72e_coco.py)   | [model](https://github.com/flytocc/mmdetection/releases/download/model_zoo/rtdetr_r50vd_8xb2-72e_coco_cc2c61e8.pth)  |
+| R-101vd  | RT-DETR Dec6 |   72e   |  54.3  | [config](./rtdetr_r101vd_8xb2-72e_coco.py)  | [model](https://github.com/flytocc/mmdetection/releases/download/model_zoo/rtdetr_r101vd_8xb2-72e_coco_41368c9e.pth) |
 
 ### NOTE
 
