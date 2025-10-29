@@ -341,6 +341,7 @@ class OLNKMeansVOSRoIHead(OLNRoIHead):
         for iter_fts in self.post_epoch_features:
             if iter_fts is None:
                 continue
+            print(f"iter_fts shape: {iter_fts.shape}, content: {iter_fts}")
             _labels = self.kmeans.predict(iter_fts.cpu())
             labels.append(torch.tensor(_labels).to(dev))
         labels = torch.cat(labels).cpu()
