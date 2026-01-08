@@ -75,10 +75,11 @@ class OneDLDataset(BaseDetDataset):
             )
             dataset.clip_bboxes_to_image_size(inplace=True)
 
-        logger.info(
-            f"Filtering dataset '{self.dataset_name}' bboxes by surface "
-            f'({self.min_bbox_area}<).')
-        dataset.filter_by_sqrt_area(self.min_bbox_area, inplace=True)
+        if self.min_bbox_area > 0:
+            logger.info(
+                f"Filtering dataset '{self.dataset_name}' bboxes by surface "
+                f'({self.min_bbox_area}<).')
+            dataset.filter_by_sqrt_area(self.min_bbox_area, inplace=True)
 
     def load_data_list(self) -> List[dict]:
         from onedl.client import Client
