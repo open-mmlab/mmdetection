@@ -637,11 +637,12 @@ class RTMDetInsHead(RTMDetHead):
         if batch_pos_mask_logits.shape[0] == 0:
             return mask_feats.sum() * 0
 
-        scale = self.prior_generator.strides[0][0] // self.mask_loss_stride
+        upsample_scale = (pos_gt_masks.shape[-1] // self.mask_loss_stride
+                          ) // batch_pos_mask_logits.shape[-1]
         # upsample pred masks
         batch_pos_mask_logits = F.interpolate(
             batch_pos_mask_logits.unsqueeze(0),
-            scale_factor=scale,
+            scale_factor=upsample_scale,
             mode='bilinear',
             align_corners=False).squeeze(0)
         # downsample gt masks
