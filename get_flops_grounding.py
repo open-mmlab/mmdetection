@@ -2,7 +2,7 @@
 """Get FLOPs for GroundingDINO models.
 
 This script is specifically designed for models that require text inputs,
-such as GroundingDINO and other vision-language models.
+such as GroundingDINO, , and other vision-language models.
 
 Gradient Checkpointing (with_cp) Compatibility:
     This script uses fvcore's FlopCountAnalysis for accurate backbone
