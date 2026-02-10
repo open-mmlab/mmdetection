@@ -9,11 +9,16 @@ from mmengine.config import Config
 
 # Add tools path so we can import the module directly
 sys.path.insert(0, 'tools/analysis_tools')  # pragma: no cover
-from get_flops_grounding import (  # noqa: E402
-    _get_backbone_out_channels, _get_feature_strides, _get_neck_out_channels,
-    _get_transformer_config, count_neck_flops, count_text_encoder_flops,
-    count_transformer_flops, format_flops, format_params,
-)
+from get_flops_grounding import (
+    _get_backbone_out_channels,  # noqa: E402
+    _get_feature_strides,
+    _get_neck_out_channels,
+    _get_transformer_config,
+    count_neck_flops,
+    count_text_encoder_flops,
+    count_transformer_flops,
+    format_flops,
+    format_params)
 
 
 class TestFormatFlops(unittest.TestCase):
