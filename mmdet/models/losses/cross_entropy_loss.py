@@ -39,11 +39,11 @@ def cross_entropy(pred,
     """
     # The default value of ignore_index is the same as F.cross_entropy
     ignore_index = -100 if ignore_index is None else ignore_index
-    
+
     # label[0] are categorical labels of images
     if isinstance(label, tuple) and len(label) > 1:
         label = label[0]
-        
+
     # element-wise losses
     loss = F.cross_entropy(
         pred,
@@ -121,7 +121,7 @@ def binary_cross_entropy(pred,
     """
     # The default value of ignore_index is the same as F.cross_entropy
     ignore_index = -100 if ignore_index is None else ignore_index
-    
+
     # label[0] are categorical labels of images
     if isinstance(label, tuple) and len(label) > 1:
         label = label[0]
