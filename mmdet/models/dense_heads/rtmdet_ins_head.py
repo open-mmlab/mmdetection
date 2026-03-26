@@ -917,7 +917,7 @@ class RTMDetInsSepBNHead(RTMDetInsHead):
                         norm_cfg=self.norm_cfg,
                         act_cfg=self.act_cfg))
             self.cls_convs.append(cls_convs)
-            self.reg_convs.append(cls_convs)
+            self.reg_convs.append(reg_convs)
             self.kernel_convs.append(kernel_convs)
 
             self.rtm_cls.append(
