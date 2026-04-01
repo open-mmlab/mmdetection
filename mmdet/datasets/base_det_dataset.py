@@ -7,6 +7,7 @@ from mmengine.fileio import load
 from mmengine.utils import is_abs
 
 from ..registry import DATASETS
+from .utils import validate_pipeline_order
 
 
 @DATASETS.register_module()
@@ -48,6 +49,11 @@ class BaseDetDataset(BaseDataset):
                 'please use `backend_args` instead, please refer to'
                 'https://github.com/open-mmlab/mmdetection/blob/main/configs/_base_/datasets/coco_detection.py'  # noqa: E501
             )
+        # Validate pipeline transform order before building the dataset
+        # so that users get early warnings about suspicious configurations.
+        pipeline = kwargs.get('pipeline', None)
+        if pipeline is not None:
+            validate_pipeline_order(pipeline)
         super().__init__(*args, **kwargs)
 
     def full_init(self) -> None:

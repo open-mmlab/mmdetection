@@ -28,7 +28,7 @@ from .samplers import (AspectRatioBatchSampler, ClassAwareSampler,
                        CustomSampleSizeSampler, GroupMultiSourceSampler,
                        MultiSourceSampler, TrackAspectRatioBatchSampler,
                        TrackImgSampler)
-from .utils import get_loading_pipeline
+from .utils import get_loading_pipeline, validate_pipeline_order
 from .v3det import V3DetDataset
 from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
@@ -49,5 +49,6 @@ __all__ = [
     'BaseSegDataset', 'ADE20KSegDataset', 'CocoSegDataset',
     'ADE20KInstanceDataset', 'iSAIDDataset', 'V3DetDataset', 'ConcatDataset',
     'ODVGDataset', 'MDETRStyleRefCocoDataset', 'DODDataset',
-    'CustomSampleSizeSampler', 'Flickr30kDataset'
+    'CustomSampleSizeSampler', 'Flickr30kDataset',
+    'validate_pipeline_order'
 ]
