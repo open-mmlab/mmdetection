@@ -223,8 +223,8 @@ class ConcatDataset(MMENGINE_ConcatDataset):
         for dataset in self.datasets:
             meta_keys |= dataset.metainfo.keys()
         # if the metainfo of multiple datasets are the same, use metainfo
-        # of the first dataset, else the metainfo is a list with metainfo
-        # of all the datasets
+        # of the first dataset, else try to merge the class lists from
+        # different datasets into a unified metainfo dict
         is_all_same = True
         self._metainfo_first = self.datasets[0].metainfo
         for i, dataset in enumerate(self.datasets, 1):
@@ -241,19 +241,78 @@ class ConcatDataset(MMENGINE_ConcatDataset):
         if is_all_same:
             self._metainfo = self.datasets[0].metainfo
         else:
-            self._metainfo = [dataset.metainfo for dataset in self.datasets]
+            self._metainfo = self._merge_metainfo()
 
         self._fully_initialized = False
         if not lazy_init:
             self.full_init()
 
-            if is_all_same:
+            if isinstance(self._metainfo, dict):
                 self._metainfo.update(
                     dict(cumulative_sizes=self.cumulative_sizes))
             else:
                 for i, dataset in enumerate(self.datasets):
                     self._metainfo[i].update(
                         dict(cumulative_sizes=self.cumulative_sizes))
+
+    def _merge_metainfo(self) -> Union[dict, List[dict]]:
+        """Merge metainfo from all sub-datasets.
+
+        When datasets have different ``classes`` (e.g. concatenating a
+        CocoDataset with a VOCDataset), merge the class lists into a
+        unified set so that downstream evaluation receives a single
+        consistent metainfo dict instead of a list.
+
+        Returns:
+            Union[dict, List[dict]]: Merged metainfo dict when class
+                merging succeeds, otherwise a list of per-dataset
+                metainfo dicts (original fallback behaviour).
+        """
+        # Check whether all datasets carry a 'classes' key
+        all_have_classes = all(
+            'classes' in ds.metainfo for ds in self.datasets)
+        if not all_have_classes:
+            return [dataset.metainfo for dataset in self.datasets]
+
+        # Build the merged class list preserving insertion order
+        merged_classes: List[str] = []
+        seen: set = set()
+        for dataset in self.datasets:
+            for cls_name in dataset.metainfo['classes']:
+                if cls_name not in seen:
+                    merged_classes.append(cls_name)
+                    seen.add(cls_name)
+
+        # Build a merged palette that matches the merged class order.
+        # Re-use palette colours from whichever dataset already defines
+        # a colour for a given class; generate a deterministic fallback
+        # colour for any class that has no palette entry.
+        cls_to_palette: dict = {}
+        for dataset in self.datasets:
+            ds_classes = dataset.metainfo.get('classes', ())
+            ds_palette = dataset.metainfo.get('palette', None)
+            if ds_palette is not None and len(ds_palette) == len(ds_classes):
+                for cls_name, colour in zip(ds_classes, ds_palette):
+                    if cls_name not in cls_to_palette:
+                        cls_to_palette[cls_name] = colour
+
+        merged_palette: List[tuple] = []
+        for i, cls_name in enumerate(merged_classes):
+            if cls_name in cls_to_palette:
+                merged_palette.append(cls_to_palette[cls_name])
+            else:
+                # deterministic fallback colour derived from class index
+                merged_palette.append(
+                    ((i * 97 + 23) % 256,
+                     (i * 53 + 89) % 256,
+                     (i * 131 + 47) % 256))
+
+        # Start from the first dataset's metainfo and override class
+        # related fields with the merged versions.
+        merged = copy.deepcopy(self.datasets[0].metainfo)
+        merged['classes'] = tuple(merged_classes)
+        merged['palette'] = merged_palette
+        return merged
 
     def get_dataset_source(self, idx: int) -> int:
         dataset_idx, _ = self._get_ori_dataset_idx(idx)
