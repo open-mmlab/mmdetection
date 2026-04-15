@@ -28,6 +28,7 @@ from .samplers import (AspectRatioBatchSampler, ClassAwareSampler,
                        CustomSampleSizeSampler, GroupMultiSourceSampler,
                        MultiSourceSampler, TrackAspectRatioBatchSampler,
                        TrackImgSampler)
+from .single_tree_coco import SingleTreeCocoDataset
 from .utils import get_loading_pipeline
 from .v3det import V3DetDataset
 from .voc import VOCDataset
@@ -49,5 +50,5 @@ __all__ = [
     'BaseSegDataset', 'ADE20KSegDataset', 'CocoSegDataset',
     'ADE20KInstanceDataset', 'iSAIDDataset', 'V3DetDataset', 'ConcatDataset',
     'ODVGDataset', 'MDETRStyleRefCocoDataset', 'DODDataset',
-    'CustomSampleSizeSampler', 'Flickr30kDataset'
+    'CustomSampleSizeSampler', 'Flickr30kDataset', 'SingleTreeCocoDataset'
 ]
