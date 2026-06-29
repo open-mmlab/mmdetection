@@ -195,7 +195,8 @@ class DetInferencer(BaseInferencer):
             Visualizer or None: Visualizer initialized with config.
         """
         visualizer = super()._init_visualizer(cfg)
-        visualizer.dataset_meta = self.model.dataset_meta
+        if visualizer is not None:
+            visualizer.dataset_meta = self.model.dataset_meta
         return visualizer
 
     def _inputs_to_list(self, inputs: InputsType) -> list:
