@@ -1,0 +1,50 @@
+{
+    "apply_layernorm": true,
+    "architectures": [
+        "Dinov2WithRegistersModel"
+    ],
+    "attention_probs_dropout_prob": 0.0,
+    "drop_path_rate": 0.0,
+    "hidden_act": "gelu",
+    "hidden_dropout_prob": 0.0,
+    "hidden_size": 768,
+    "image_size": 518,
+    "initializer_range": 0.02,
+    "interpolate_antialias": true,
+    "interpolate_offset": 0.0,
+    "layer_norm_eps": 1e-06,
+    "layerscale_value": 1.0,
+    "mlp_ratio": 4,
+    "model_type": "dinov2_with_registers",
+    "num_attention_heads": 12,
+    "num_channels": 3,
+    "num_hidden_layers": 12,
+    "num_register_tokens": 4,
+    "out_features": [
+        "stage12"
+    ],
+    "out_indices": [
+        12
+    ],
+    "patch_size": 14,
+    "qkv_bias": true,
+    "reshape_hidden_states": true,
+    "stage_names": [
+        "stem",
+        "stage1",
+        "stage2",
+        "stage3",
+        "stage4",
+        "stage5",
+        "stage6",
+        "stage7",
+        "stage8",
+        "stage9",
+        "stage10",
+        "stage11",
+        "stage12"
+    ],
+    "torch_dtype": "float32",
+    "transformers_version": "4.48.0.dev0",
+    "use_swiglu_ffn": false
+}
