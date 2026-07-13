@@ -11,7 +11,13 @@ from mmdet.registry import MODELS
 from mmdet.structures import SampleList
 from mmdet.structures.bbox import bbox_xyxy_to_cxcywh
 
-from ..layers.rf_detr.config import RFDETRSmallConfig, TrainConfig
+from ..layers.rf_detr.config import (
+    KeypointTrainConfig, RFDETRBaseConfig, RFDETRKeypointPreviewConfig,
+    RFDETRLargeConfig, RFDETRMediumConfig, RFDETRNanoConfig,
+    RFDETRSeg2XLargeConfig, RFDETRSegLargeConfig, RFDETRSegMediumConfig,
+    RFDETRSegNanoConfig, RFDETRSegPreviewConfig, RFDETRSegSmallConfig,
+    RFDETRSegXLargeConfig, RFDETRSmallConfig, SegmentationTrainConfig,
+    TrainConfig)
 from ..layers.rf_detr.models.lwdetr import (build_criterion_from_config,
                                             build_model_from_config)
 from ..layers.rf_detr.utilities.tensors import NestedTensor
@@ -27,11 +33,32 @@ class RFDETR(BaseDetector):
     predict modes, and ``InstanceData`` outputs.
     """
 
-    config_cls = RFDETRSmallConfig
+    model_config_classes = {
+        'base': RFDETRBaseConfig,
+        'nano': RFDETRNanoConfig,
+        'small': RFDETRSmallConfig,
+        'medium': RFDETRMediumConfig,
+        'large': RFDETRLargeConfig,
+        'seg_preview': RFDETRSegPreviewConfig,
+        'seg_nano': RFDETRSegNanoConfig,
+        'seg_small': RFDETRSegSmallConfig,
+        'seg_medium': RFDETRSegMediumConfig,
+        'seg_large': RFDETRSegLargeConfig,
+        'seg_xlarge': RFDETRSegXLargeConfig,
+        'seg_2xlarge': RFDETRSeg2XLargeConfig,
+        'keypoint_preview': RFDETRKeypointPreviewConfig,
+    }
+    train_config_classes = {
+        'detection': TrainConfig,
+        'segmentation': SegmentationTrainConfig,
+        'keypoint': KeypointTrainConfig,
+    }
 
     def __init__(
         self,
         num_classes: int = 80,
+        model_config_type: str = 'small',
+        train_config_type: str = 'detection',
         model_config: dict[str, Any] | None = None,
         train_config: dict[str, Any] | None = None,
         score_thr: float = 0.0,
@@ -39,18 +66,29 @@ class RFDETR(BaseDetector):
         init_cfg: dict | None = None,
     ) -> None:
         super().__init__(data_preprocessor=data_preprocessor, init_cfg=init_cfg)
+        if model_config_type not in self.model_config_classes:
+            valid = ', '.join(sorted(self.model_config_classes))
+            raise ValueError(f'Unknown RF-DETR model_config_type '
+                             f'{model_config_type!r}. Valid values: {valid}.')
+        if train_config_type not in self.train_config_classes:
+            valid = ', '.join(sorted(self.train_config_classes))
+            raise ValueError(f'Unknown RF-DETR train_config_type '
+                             f'{train_config_type!r}. Valid values: {valid}.')
+
         model_cfg = dict(model_config or {})
         model_cfg.setdefault('num_classes', num_classes)
         # MMEngine checkpoint loading owns pretrained weights.  Avoid implicit
         # RF-DETR cache downloads during model construction.
         model_cfg.setdefault('pretrain_weights', None)
         model_cfg.setdefault('device', 'cpu')
-        self.model_config = self.config_cls(**model_cfg)
+        model_config_cls = self.model_config_classes[model_config_type]
+        self.model_config = model_config_cls(**model_cfg)
 
         train_cfg = dict(train_config or {})
         train_cfg.setdefault('dataset_dir', '.')
         train_cfg.setdefault('output_dir', 'work_dirs/rf_detr')
-        self.train_config = TrainConfig(**train_cfg)
+        train_config_cls = self.train_config_classes[train_config_type]
+        self.train_config = train_config_cls(**train_cfg)
 
         self.model = build_model_from_config(self.model_config, self.train_config)
         self.criterion, self.postprocessor = build_criterion_from_config(
