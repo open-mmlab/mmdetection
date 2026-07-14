@@ -1,0 +1,14 @@
+# Extra runtime dependencies for the native RF-DETR integration.
+#
+# Install these inside an environment that already has a working MMDetection,
+# MMEngine, MMCV, PyTorch, and TorchVision stack:
+#
+#   pip install -r requirements/rf_detr.txt
+#
+# Keep PyTorch/TorchVision/MMCV pinned by your existing MMDetection install;
+# those packages are intentionally not listed here because their compatible
+# versions depend on your CUDA and MMCV build.
+transformers
+safetensors
+pydantic>=2
+supervision
