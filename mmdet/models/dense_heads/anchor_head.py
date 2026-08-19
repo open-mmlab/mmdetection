@@ -248,6 +248,12 @@ class AnchorHead(BaseDenseHead):
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags]
 
+        if getattr(self.sampler, 'add_gt_as_proposals', False):
+            raise ValueError(
+                '`add_gt_as_proposals` must be False for anchor-based dense '
+                'heads because ground-truth boxes do not have corresponding '
+                'model predictions.')
+
         pred_instances = InstanceData(priors=anchors)
         assign_result = self.assigner.assign(pred_instances, gt_instances,
                                              gt_instances_ignore)
