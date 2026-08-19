@@ -11,6 +11,39 @@ from mmdet.models.dense_heads import AnchorHead
 
 class TestAnchorHead(TestCase):
 
+    def test_anchor_head_rejects_gt_as_proposals(self):
+        """Tests that GT boxes cannot be injected into anchor samples."""
+        cfg = Config(
+            dict(
+                assigner=dict(
+                    type='MaxIoUAssigner',
+                    pos_iou_thr=0.5,
+                    neg_iou_thr=0.4,
+                    min_pos_iou=0.0,
+                    match_low_quality=True,
+                    ignore_iof_thr=-1),
+                sampler=dict(
+                    type='RandomSampler',
+                    num=2,
+                    pos_fraction=1.0,
+                    neg_pos_ub=-1,
+                    add_gt_as_proposals=True),
+                allowed_border=-1,
+                pos_weight=-1,
+                debug=False))
+        anchor_head = AnchorHead(num_classes=1, in_channels=1, train_cfg=cfg)
+
+        gt_instances = InstanceData()
+        gt_instances.bboxes = torch.Tensor([[0, 0, 10, 10]])
+        gt_instances.labels = torch.LongTensor([0])
+
+        with self.assertRaisesRegex(ValueError, 'add_gt_as_proposals'):
+            anchor_head._get_targets_single(
+                flat_anchors=torch.Tensor([[0, 0, 10, 10]]),
+                valid_flags=torch.BoolTensor([True]),
+                gt_instances=gt_instances,
+                img_meta=dict(img_shape=(20, 20, 3)))
+
     def test_anchor_head_loss(self):
         """Tests anchor head loss when truth is empty and non-empty."""
         s = 256
