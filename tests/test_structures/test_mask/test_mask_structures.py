@@ -71,3 +71,13 @@ class TestMaskStructures(TestCase):
         assert len(cat_mask) == 3 * 5
         for i, m in enumerate(masks):
             assert_allclose(m.masks, cat_mask.masks[i * 3:(i + 1) * 3])
+
+    def test_polygon_rotate_default_center(self):
+        masks = [[np.array([1., 1., 3., 1., 3., 3., 1., 3.])]]
+        mask = PolygonMasks(masks, 10, 10)
+        center = ((mask.width - 1) * 0.5, (mask.height - 1) * 0.5)
+
+        rotated = mask.rotate((10, 10), 90)
+        expected = mask.rotate((10, 10), 90, center=center)
+
+        assert_allclose(rotated.masks[0][0], expected.masks[0][0])

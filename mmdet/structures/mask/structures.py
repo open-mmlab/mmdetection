@@ -925,6 +925,8 @@ class PolygonMasks(BaseInstanceMasks):
             rotated_masks = PolygonMasks([], *out_shape)
         else:
             rotated_masks = []
+            if center is None:
+                center = ((out_shape[1] - 1) * 0.5, (out_shape[0] - 1) * 0.5)
             rotate_matrix = cv2.getRotationMatrix2D(center, -angle, scale)
             for poly_per_obj in self.masks:
                 rotated_poly = []
