@@ -585,7 +585,7 @@ class BitmapMasks(BaseInstanceMasks):
             masks (Sequence[BitmapMasks]): A sequence of mask instances.
 
         Returns:
-            BitmapMasks: Concatenated mask instance.
+            BitmapMasks: Concatenated bitmap masks.
         """
         assert isinstance(masks, Sequence)
         if len(masks) == 0:
@@ -925,6 +925,9 @@ class PolygonMasks(BaseInstanceMasks):
             rotated_masks = PolygonMasks([], *out_shape)
         else:
             rotated_masks = []
+            if center is None:
+                center = ((out_shape[1] - 1) * 0.5,
+                          (out_shape[0] - 1) * 0.5)
             rotate_matrix = cv2.getRotationMatrix2D(center, -angle, scale)
             for poly_per_obj in self.masks:
                 rotated_poly = []
@@ -1020,7 +1023,7 @@ class PolygonMasks(BaseInstanceMasks):
         Adapted from [1]_
 
         References:
-            .. [1] https://gitlab.kitware.com/computer-vision/kwimage/-/blob/928cae35ca8/kwimage/structs/polygon.py#L379  # noqa: E501
+            .. [1] https://gitlab.kitware.com/computer-vision/kwimage/-/blob/928cae35ca8f949a1b28c86ab2b3a05a34e546ce/kwimage/structs/polygon.py#L379  # noqa: E501
 
         Example:
             >>> from mmdet.data_elements.mask.structures import PolygonMasks
