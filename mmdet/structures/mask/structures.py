@@ -585,7 +585,7 @@ class BitmapMasks(BaseInstanceMasks):
             masks (Sequence[BitmapMasks]): A sequence of mask instances.
 
         Returns:
-            BitmapMasks: Concatenated bitmap masks.
+            BitmapMasks: Concatenated mask instance.
         """
         assert isinstance(masks, Sequence)
         if len(masks) == 0:
@@ -1023,7 +1023,7 @@ class PolygonMasks(BaseInstanceMasks):
         Adapted from [1]_
 
         References:
-            .. [1] https://gitlab.kitware.com/computer-vision/kwimage/-/blob/928cae35ca8f949a1b28c86ab2b3a05a34e546ce/kwimage/structs/polygon.py#L379  # noqa: E501
+            .. [1] https://gitlab.kitware.com/computer-vision/kwimage/-/blob/928cae35ca8/kwimage/structs/polygon.py#L379  # noqa: E501
 
         Example:
             >>> from mmdet.data_elements.mask.structures import PolygonMasks
