@@ -61,7 +61,7 @@ class TestHTCRoIHead(TestCase):
                 self.assertGreaterEqual(
                     value.sum(), 0, msg='loss should be non-zero')
 
-        # Positive rois must not be empty
+        # Empty positive rois are valid for background-only images.
         proposal_list = demo_mm_proposals(img_shape_list, 100, device='cuda')
         batch_data_samples = demo_mm_inputs(
             batch_size=1,
@@ -70,8 +70,8 @@ class TestHTCRoIHead(TestCase):
             num_classes=4,
             with_mask=True,
             device='cuda')['data_samples']
-        with self.assertRaises(AssertionError):
-            out = roi_head.loss(feats, proposal_list, batch_data_samples)
+        out = roi_head.loss(feats, proposal_list, batch_data_samples)
+        self.assertIn('loss_mask', out)
 
     @parameterized.expand(
         ['point_rend/point-rend_r50-caffe_fpn_ms-1x_coco.py'])
