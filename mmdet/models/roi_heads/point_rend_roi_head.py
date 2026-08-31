@@ -55,6 +55,9 @@ class PointRendRoIHead(StandardRoIHead):
                          batch_gt_instances: InstanceList) -> dict:
         """Run forward function and calculate loss for point head in
         training."""
+        if mask_preds.shape[0] == 0:
+            return dict(loss_point=mask_preds.sum() * 0)
+
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
         rel_roi_points = self.point_head.get_roi_rel_points_train(
             mask_preds, pos_labels, cfg=self.train_cfg)
@@ -143,7 +146,11 @@ class PointRendRoIHead(StandardRoIHead):
             Tensor: The fine grained features for each points,
             has shape (num_rois, feats_channels, num_points).
         """
-        assert rois.shape[0] > 0, 'RoI is a empty tensor.'
+        if rois.shape[0] == 0:
+            channels = sum(
+                x[idx].shape[1]
+                for idx in range(self.mask_roi_extractor.num_inputs))
+            return rois.new_empty((0, channels, rel_roi_points.shape[1]))
         num_imgs = x[0].shape[0]
         fine_grained_feats = []
         for idx in range(self.mask_roi_extractor.num_inputs):
