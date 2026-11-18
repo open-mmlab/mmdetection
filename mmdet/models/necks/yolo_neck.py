@@ -77,7 +77,7 @@ class YOLOV3Neck(BaseModule):
         The input feats should be from top to bottom.
             i.e., from high-lvl to low-lvl
         But YOLOV3Neck will process them in reversed order.
-            i.e., from bottom (high-lvl) to top (low-lvl)
+            i.e., from bottom (low-lvl) to top (high-lvl)
 
     Args:
         num_scales (int): The number of scales / stages.
@@ -125,7 +125,7 @@ class YOLOV3Neck(BaseModule):
     def forward(self, feats=Tuple[Tensor]) -> Tuple[Tensor]:
         assert len(feats) == self.num_scales
 
-        # processed from bottom (high-lvl) to top (low-lvl)
+        # processed from bottom (low-lvl) to top (high-lvl)
         outs = []
         out = self.detect1(feats[-1])
         outs.append(out)
